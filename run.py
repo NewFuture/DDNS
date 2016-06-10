@@ -29,11 +29,13 @@ def update():
         for domain in get_config('ipv4'):
             print dnspod.change_record(domain, ipv4, 'A')
 
-    ipv6 = ip.local_v6(get_config('index6'))
-    print 'update ipv6 to:', ipv6
-    if ipv6 != None:
-        for domain in get_config('ipv6'):
-            print dnspod.change_record(domain, ipv6, 'AAAA')
+    v6_domains=get_config("ipv6")
+    if len(v6_domains) > 0:
+        ipv6 = ip.local_v6(get_config('index6'))
+        print 'update ipv6 to:', ipv6
+        if ipv6 != None:
+            for domain in v6_domains:
+                print dnspod.change_record(domain, ipv6, 'AAAA')
 
 if __name__ == '__main__':
     dnspod.TOKEN = "%s,%s" % (get_config('id'), get_config('token'))
