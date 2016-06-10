@@ -20,7 +20,10 @@ def get_config(key=None, file="config.json"):
 
 
 def update():
-    ipv4 = ip.local_v4(get_config('index4'))
+    if get_config('index4') == 'nku':
+        ipv4 = ip.nku()
+    else:
+        ipv4 = ip.local_v4(get_config('index4'))
     print 'update ipv4 to:', ipv4
     if ipv4 != None:
         for domain in get_config('ipv4'):
@@ -35,4 +38,5 @@ def update():
 if __name__ == '__main__':
     dnspod.TOKEN = "%s,%s" % (get_config('id'), get_config('token'))
     dnspod.PROXY = get_config('proxy')
+    ip.DEBUG = get_config('debug')
     update()
