@@ -37,7 +37,7 @@ def public_v6(url="http://v6.ipv6-test.com/api/myip.php"):  # 公网IPV6地址
 
 
 def nku_v4():  # nku 内网ipv4地址
-    host = ['http://202.113.18.110', 'http://202.113.18.210']
+    host = ['http://202.113.18.106']
     for url in host:
         try:
             html = urllib2.urlopen(url, timeout=60).read()
