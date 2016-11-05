@@ -5,6 +5,19 @@ import socket
 import urllib2
 DEBUG = False  # 是否打印错误
 
+def default_v4(): #默认连接外网的ipv4
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8",8))
+    ip=s.getsockname()[0]
+    s.close()
+    return ip
+
+def default_v6(): #默认连接外网的ipv6
+    s = socket.socket(socket.AF_INET6,socket.SOCK_DGRAM)
+    s.connect(('8:8:8:8:8:8:8:8',8))
+    ip=s.getsockname()[0]
+    s.close()
+    return ip
 
 def local_v6(i=0):  # 本地ipv6地址
     info = socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET6)
@@ -49,5 +62,5 @@ def nku_v4():  # nku 内网ipv4地址
                     return result
         except Exception, e:
             if DEBUG:
-                print(p)
+                print(e)
             continue

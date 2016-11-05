@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 #-*- coding:utf-8 -*-
+
 # DNSPOD API 接口
 import httplib
 import urllib

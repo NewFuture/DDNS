@@ -8,8 +8,8 @@
 	"ipv6": [
 		"ipv6.your.domain"
 	],
-	"index4": 0,
-	"index6": 0,
+	"index4": "default",
+	"index6": "default",
 	"proxy": null,
 	"debug": null
 }
