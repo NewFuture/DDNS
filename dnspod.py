@@ -5,95 +5,124 @@ import httplib
 import urllib
 import json
 
-TOKEN = "yourid,yourkey"  # token
+TOKEN = "id,token"  # token
 PROXY = None  # 代理设置
 
-_domain_id_list = {}
-
-
-def get_domain_info(domain):  # 切割域名
-    domain_split = domain.split('.')
-    domain_split_len = len(domain_split)
-    maindomain = domain_split[domain_split_len - 2] + '.' + domain_split[domain_split_len - 1]
-    return maindomain, domain
-
-
-def request(action, params, method='POST'):  # 发送请求
-    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/json"}
+def request(action,method='POST',**params):  # 发送请求
     API_SITE = "dnsapi.cn"
     if PROXY:
         conn = httplib.HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
     else:
         conn = httplib.HTTPSConnection(API_SITE)
+    
+    params['login_token'],params['format'] = TOKEN,'json'
+    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/json"}
     conn.request(method, '/' + action, urllib.urlencode(params), headers)
+    
     response = conn.getresponse()
     data = response.read()
     conn.close()
+    
     if response.status == 200:
-        return data
+        return json.loads(data)
     else:
         return None
 
+def get_domain_info(domain):  # 切割域名获取主域名和对应ID
+    """
+    TODO @记录支持
+    """
+    domain_split = domain.split('.')
+    if 3 == len(domain_split) : # 长度为3
+        sub, main = domain_split[0], domain_split[1] + '.' + domain_split[2]
+        id = get_domain_id(main)
+    else : # 长度大于三通过API判断,最后两个，三个递增
+        main = domain_split.pop()
+        while domain_split:
+            main = domain_split.pop()+'.'+main
+            id = get_domain_id(main)
+            if id:
+                sub = ".".join(domain_split)
+                break 
+        else:
+            return None,None
+    return id, sub
 
-def get_domain_id():  # 获取域名ID
-    if len(_domain_id_list) > 0:
-        return _domain_id_list
+
+def get_domain_id(domain):  
+    """
+        获取域名ID
+        http://www.dnspod.cn/docs/domains.html#domain-info
+    """
+    if not hasattr(get_domain_id, "domain_list"):
+        get_domain_id.domain_list = {}  # "静态变量"存储已查询过的id
+
+    if domain in get_domain_id.domain_list:
+        #如果已经存在直接返回防止再次请求
+        return get_domain_id.domain_list[domain]
     else:
-        params = {'login_token': TOKEN, 'format': 'json'}
-        data = request('Domain.List', params)
-        data = json.loads(data)
-        domainlist = data.get('domains')
-        for d in domainlist:
-            _domain_id_list[d.get('name')] = d.get('id')
-        return _domain_id_list
+        info = request('Domain.Info', domain=domain)
+        if info and info.get('status',{}).get('code') == "1":
+            id = info.get("domain",{}).get("id")
+            if id:
+                get_domain_id.domain_list[domain] = id
+                return id
 
 
-def get_domain_record_id(domain_id, domain_type="A"):  # 获取记录ID
-    params = {'login_token': TOKEN, 'domain_id': domain_id, 'format': 'json'}
-    data = request('Record.List', params)
-    data = json.loads(data)
-    if data.get('code') == '10':
-        return None
+def get_records(id, **conditions):
+    """
+        获取记录ID
+        返回满足条件的所有记录[]
+        TODO 大于3000翻页
+        http://www.dnspod.cn/docs/records.html#record-list
+    """
+    if not hasattr(get_records, "records"):
+        get_records.records = {}  # "静态变量"存储已查询过的id
+        get_records.keys = ("id","name","type","line","line_id","enabled","mx","value")
+    
+    if not id in get_records.records:
+        get_records.records[id]={}
+        data = request('Record.List', domain_id=id)
+        if data and data.get("status",{}).get("code") == "1":
+            for r in data.get('records'):
+                get_records.records[id][r["id"]]={k: v for (k, v) in r.items() if k in get_records.keys}
 
-    # print(domain_id, data)
-    domain = data.get('domain')
-    if not domain:
-        return None
-    domainname = domain.get('name')
-    record_list = data.get('records')
     record = {}
-    # print record_list[0]
-    for r in record_list:
-        # print(r.get('id'), r.get('name'), r.get('type'),r.get('value'))
-        if r.get('type') == domain_type:
-            key = r.get('name') != '@' and r.get('name') + '.' + domainname or domainname
-            record[key] = {'id': int(r.get('id')), 'value': r.get('value'), 'sub': r.get('name')}
+    for (id,r) in get_records.records[id].items():
+        for (k,v) in conditions.items():
+            if r.get(k) != v :
+                break
+        else: # for else push
+            record[id] = r
     return record
 
-
-def update_domain_info(domain, domain_type="A"):  # 更新域名信息
-    m, sub_m = get_domain_info(domain)
-    domain_id = get_domain_id().get(m)
-    record_list = get_domain_record_id(domain_id, domain_type)
-    # print(record_list)
-    if record_list == None:
-        return None
-
-    record_info = record_list.get(sub_m)
-    if record_info == None:
-        return None
-    record_info['did'] = domain_id
-    return record_info
-
-
-def change_record(domain, value, record_type="A"):  # 更改记录
-    info = update_domain_info(domain, record_type)
-    if info == None:
-        return None
-    elif info['value'] == value:
-        return domain, value
-    params = {'login_token': TOKEN, 'value': value, 'sub_domain': info['sub'],
-              'domain_id': info['did'], 'record_id': info['id'], 'record_type': record_type,
-              'format': 'json', 'ttl': 600, 'record_line': '默认', }
-    return request('Record.Modify', params)
+def update_record(domain, value, record_type="A"):  # 更改记录
+    domainid,sub = get_domain_info(domain)
+    if not domainid:
+        raise "invalid domain"+domain
+    
+    records = get_records(domainid,name=sub,type=record_type)
+    result={}
+    if records: # update
+        #http://www.dnspod.cn/docs/records.html#record-modify
+        for (id,record) in records.items():
+            if record["value"] != value:
+                r=request('Record.Modify',record_id=id,record_line=record["line"].encode("utf-8"),value=value, sub_domain=sub,domain_id=domainid,record_type=record_type,ttl=600)
+                if r and r.get("status",{}).get("code") == "1":
+                    get_records.records[domainid][id]["value"]=value
+                    result[id]=r.get("record")
+                else:
+                     result[id]="update fail!\n"+str(r)
+            else:
+                result[id]=value
+    else: # create
+        #http://www.dnspod.cn/docs/records.html#record-create
+        r = request("Record.Create", domain_id=domainid, value=value, sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
+        if r and r.get("status",{}).get("code") == "1":
+            id = r.get("record")["id"]
+            get_records.records[domainid][id]=r.get("record")
+            result=r.get("record")
+        else:
+            result=domain + " created fail!"
+    return result
