@@ -28,7 +28,7 @@ def update():
     print 'update ipv4 to:', ipv4
     if ipv4 != None:
         for domain in get_config('ipv4'):
-            print dnspod.change_record(domain, ipv4, 'A')
+            print dnspod.update_record(domain, ipv4, 'A')
 
     v6_domains=get_config("ipv6")
     if len(v6_domains) > 0:
@@ -40,7 +40,7 @@ def update():
         print 'update ipv6 to:', ipv6
         if ipv6 != None:
             for domain in v6_domains:
-                print dnspod.change_record(domain, ipv6, 'AAAA')
+                print dnspod.update_record(domain, ipv6, 'AAAA')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
