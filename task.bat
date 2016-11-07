@@ -7,11 +7,14 @@ REM [/M months] [/I idletime] /TN taskname /TR taskrun [/ST starttime]
 REM [/RI interval] [ {/ET endtime | /DU duration} [/K] 
 REM [/XML xmlfile] [/V1]] [/SD startdate] [/ED enddate] [/IT] [/Z] [/F]
 
+SET RUNCMD="%~dp0run.bat" "%~dp0run.log"
+
+net session >nul 2>&1
 IF %ERRORLEVEL% EQU 0 (
   echo run task as SYSTEM
-  schtasks /Create /SC MINUTE /MO 5 /TR "%~dp0run.bat" /TN "DDNS" /F /RU "SYSTEM"
+  schtasks /Create /SC MINUTE /MO 5 /TR "%RUNCMD%" /TN "DDNS" /F /RU "SYSTEM"
 ) ELSE (
   echo run task as USER
-  schtasks /Create /SC MINUTE /MO 5 /TR "%~dp0run.bat" /TN "DDNS" /F
+  schtasks /Create /SC MINUTE /MO 5 /TR "%RUNCMD%" /TN "DDNS" /F
 ) 
 PAUSE

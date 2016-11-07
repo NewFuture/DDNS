@@ -8,12 +8,14 @@ DNSPOD
 * [x] 内网IP
 * [x] 公网IP
 * [x] ipv6支持
-* [x] 代理模式
+* [x] 代理模式(http代理)
 * [x] 定时任务
 * [x] 自动创建记录
 * [x] 多系统(Widnows, Linux, MacOS)
 * [x] DNSPOD
 * [ ] 阿里DNS
+* [ ] socks代理
+
 
 ## 使用
 1. 复制 `example.config.json`到`config.json`
