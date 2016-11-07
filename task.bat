@@ -1,20 +1,12 @@
 @ECHO OFF
 REM https://msdn.microsoft.com/zh-cn/library/windows/desktop/bb736357(v=vs.85).aspx
-REM schtasks /Create 
-REM [/S system [/U username [/P [password]]]]
-REM [/RU username [/RP [password]] /SC schedule [/MO modifier] [/D day]
-REM [/M months] [/I idletime] /TN taskname /TR taskrun [/ST starttime]
-REM [/RI interval] [ {/ET endtime | /DU duration} [/K] 
-REM [/XML xmlfile] [/V1]] [/SD startdate] [/ED enddate] [/IT] [/Z] [/F]
 
 SET RUNCMD="%~dp0run.bat" "%~dp0run.log"
 
-net session >nul 2>&1
-IF %ERRORLEVEL% EQU 0 (
-  echo run task as SYSTEM
-  schtasks /Create /SC MINUTE /MO 5 /TR "%RUNCMD%" /TN "DDNS" /F /RU "SYSTEM"
-) ELSE (
-  echo run task as USER
-  schtasks /Create /SC MINUTE /MO 5 /TR "%RUNCMD%" /TN "DDNS" /F
-) 
+SET RUN_USER=%USERNAME%
+WHOAMI /GROUPS | FIND "12288" > NUL && SET RUN_USER="SYSTEM"
+
+ECHO Create task run as %RUN_USER%
+schtasks /Create /SC MINUTE /MO 10 /TR "%RUNCMD%" /TN "DDNS" /F /RU "%RUN_USER%"
+
 PAUSE
