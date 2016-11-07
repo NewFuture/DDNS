@@ -35,7 +35,7 @@ python run.py -c /path/to/config.json
 * `public`使用公网ip(使用公网API查询)
 * `nku` NKU网关ip(只支持ipv4)
 
-## example
+### 配置example
 
 ```json
 {
@@ -53,3 +53,14 @@ python run.py -c /path/to/config.json
 	"debug": true
 }
 ```
+
+## 定时任务
+默认没5分钟检查一次ip变化,自动更新
+
+### windows
+**需要已经安装python**
+* 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
+* 以系统身份运行定时任务,双击或者运行`task.bat` (右键管理员身份运行)
+
+### linux
+运行 `sudo ./task.sh`
