@@ -21,8 +21,8 @@ def get_config(key=None, file="config.json"):
 
 
 def update():
-    print time.ctime()
-    index4=get_config('index4') or 0
+    print "="*25+" "+time.ctime()+" "+"="*25
+    index4=get_config('index4') or "default"
     if str(index4).isdigit():
         ipv4 = ip.local_v4(index4)
     else:
@@ -32,7 +32,7 @@ def update():
         for domain in get_config('ipv4'):
             print dnspod.update_record(domain, ipv4, 'A')
 
-    v6_domains=get_config("ipv6")
+    v6_domains=get_config("ipv6") or "default"
     if len(v6_domains) > 0:
         index6=get_config('index6')
         if str(index6).isdigit():

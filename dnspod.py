@@ -25,7 +25,13 @@ def request(action,method='POST',**params):  # 发送请求
     conn.close()
     
     if response.status == 200:
-        return json.loads(data)
+        data = json.loads(data)
+        if not data:
+            raise Exception("empty response")
+        elif data.get("status",{}).get("code") == "1":
+            return data
+        else:
+            raise Exception(data.get('status',{}))            
     else:
         return None
 
@@ -84,7 +90,7 @@ def get_records(id, **conditions):
     if not id in get_records.records:
         get_records.records[id]={}
         data = request('Record.List', domain_id=id)
-        if data and data.get("status",{}).get("code") == "1":
+        if data:
             for r in data.get('records'):
                 get_records.records[id][r["id"]]={k: v for (k, v) in r.items() if k in get_records.keys}
 
@@ -100,7 +106,7 @@ def get_records(id, **conditions):
 def update_record(domain, value, record_type="A"):  # 更改记录
     domainid,sub = get_domain_info(domain)
     if not domainid:
-        raise "invalid domain"+domain
+        raise Exception("invalid domain: [ %s ] "%domain)
     
     records = get_records(domainid,name=sub,type=record_type)
     result={}
@@ -109,7 +115,7 @@ def update_record(domain, value, record_type="A"):  # 更改记录
         for (id,record) in records.items():
             if record["value"] != value:
                 r=request('Record.Modify',record_id=id,record_line=record["line"].encode("utf-8"),value=value, sub_domain=sub,domain_id=domainid,record_type=record_type,ttl=600)
-                if r and r.get("status",{}).get("code") == "1":
+                if r :
                     get_records.records[domainid][id]["value"]=value
                     result[id]=r.get("record")
                 else:
@@ -119,7 +125,7 @@ def update_record(domain, value, record_type="A"):  # 更改记录
     else: # create
         #http://www.dnspod.cn/docs/records.html#record-create
         r = request("Record.Create", domain_id=domainid, value=value, sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
-        if r and r.get("status",{}).get("code") == "1":
+        if r :
             id = r.get("record")["id"]
             get_records.records[domainid][id]=r.get("record")
             result=r.get("record")
