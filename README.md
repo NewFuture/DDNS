@@ -14,6 +14,7 @@ DNSPOD
 * [x] 多系统(Widnows, Linux, MacOS)
 * [x] DNSPOD
 * [ ] 阿里DNS
+* [ ] 同线路多记录支持
 * [ ] socks代理
 
 

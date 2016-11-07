@@ -7,6 +7,7 @@ import json
 
 TOKEN = "id,token"  # token
 PROXY = None  # 代理设置
+DEBUG = False
 
 def request(action,method='POST',**params):  # 发送请求
     API_SITE = "dnsapi.cn"
@@ -15,8 +16,9 @@ def request(action,method='POST',**params):  # 发送请求
         conn.set_tunnel(API_SITE, 443)
     else:
         conn = httplib.HTTPSConnection(API_SITE)
-    
-    params['login_token'],params['format'] = TOKEN,'json'
+
+    params.update({'login_token':TOKEN, 'format':'json'})
+    if DEBUG: print("%s : params:%s"%(action,params))
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/json"}
     conn.request(method, '/' + action, urllib.urlencode(params), headers)
     
@@ -104,16 +106,18 @@ def get_records(id, **conditions):
     return record
 
 def update_record(domain, value, record_type="A"):  # 更改记录
+    if DEBUG: print(">>>>>%s(%s)"%(domain,record_type))
     domainid,sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] "%domain)
-    
+    if DEBUG: print(sub)    
     records = get_records(domainid,name=sub,type=record_type)
     result={}
     if records: # update
         #http://www.dnspod.cn/docs/records.html#record-modify
         for (id,record) in records.items():
             if record["value"] != value:
+                if DEBUG: print(record)
                 r=request('Record.Modify',record_id=id,record_line=record["line"].encode("utf-8"),value=value, sub_domain=sub,domain_id=domainid,record_type=record_type,ttl=600)
                 if r :
                     get_records.records[domainid][id]["value"]=value
