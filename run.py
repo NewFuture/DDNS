@@ -5,6 +5,7 @@ import dnspod
 import ip
 import json
 import argparse
+import time
 
 def get_config(key=None, file="config.json"):
     if not hasattr(get_config, "config"):
@@ -20,6 +21,7 @@ def get_config(key=None, file="config.json"):
 
 
 def update():
+    print time.ctime()
     index4=get_config('index4') or 0
     if str(index4).isdigit():
         ipv4 = ip.local_v4(index4)

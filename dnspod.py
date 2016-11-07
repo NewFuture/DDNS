@@ -115,7 +115,7 @@ def update_record(domain, value, record_type="A"):  # 更改记录
                 else:
                      result[id]="update fail!\n"+str(r)
             else:
-                result[id]=value
+                result[id]=domain
     else: # create
         #http://www.dnspod.cn/docs/records.html#record-create
         r = request("Record.Create", domain_id=domainid, value=value, sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
