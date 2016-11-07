@@ -3,18 +3,28 @@ DNSPOD
 自动更新DNS解析 到本机地址,地址解析支持 ipv4和ipv6, 支持本地(内网)和代理模式。
 支持自动创建域名记录
 
+* [x] 多个域名支持
+* [x] 多级域名解析
+* [x] 内网IP
+* [x] 公网IP
+* [x] ipv6支持
+* [x] 代理模式
+* [x] 定时任务
+* [x] 自动创建记录
+* [x] 多系统(Widnows, Linux, MacOS)
+* [x] DNSPOD
+* [ ] 阿里DNS
+
 ## 使用
 1. 复制 `example.config.json`到`config.json`
-2. [申请api token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)修改配置 `token` ,`ipv4`和`ipv6`字段，没有则设为`[]`,q
-3. 运行run.py (widnows `python run.py`, *nix `./run.py`)
+2. [申请api token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)修改配置 `token` ,`ipv4`和`ipv6`字段，没有则设为`[]`
+3. 运行run.py (widnows 双击`run.bat`或者运行`python run.py`, *nix `./run.py`)
 
-## 指定配置文件
-`-c`使用指定的配置文件
+## 配置
+`-c`使用指定的配置文件 (默认读取当前目录的 config.json)
 ```bash
 python run.py -c /path/to/config.json 
 ```
-
-## 配置说明
 
 ### 配置说明
 
@@ -42,15 +52,17 @@ python run.py -c /path/to/config.json
 	"id": "12345",
 	"token": "mythokenkey",
 	"ipv4": [
-		"dns.newfuture.xyz"
+		"dns.newfuture.xyz",
+		"ipv4.dns.newfuture.xyz"
 	],
 	"ipv6": [
-		"dns.newfuture.xyz"	
+		"dns.newfuture.xyz",
+		"ipv6.dns.newfuture.xyz"
 	],
 	"index4": "0",
 	"index6": "public",
 	"proxy": "127.0.0.1:1111",
-	"debug": true
+	"debug": false
 }
 ```
 
@@ -60,7 +72,7 @@ python run.py -c /path/to/config.json
 ### windows
 **需要已经安装python**
 * 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
-* 以系统身份运行定时任务,双击或者运行`task.bat` (右键管理员身份运行)
+* 以系统身份运行定时任务,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 
 ### linux
 运行 `sudo ./task.sh`
