@@ -48,7 +48,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c',default="config.json")
     get_config(file=parser.parse_args().c)
-    dnspod.TOKEN = "%s,%s" % (get_config('id'), get_config('token'))
+    dnspod.ID, dnspod.TOKEN =get_config('id'), get_config('token')
     dnspod.PROXY = get_config('proxy')
     ip.DEBUG = get_config('debug')
     update()

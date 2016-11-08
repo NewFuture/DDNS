@@ -1,41 +1,44 @@
-#-*- coding:utf-8 -*-
+# coding=utf-8
 
 # DNSPOD API 接口
 import httplib
 import urllib
 import json
 
-TOKEN = "id,token"  # token
+ID = "token id"
+TOKEN = "token key"
 PROXY = None  # 代理设置
 DEBUG = False
+API_SITE = "dnsapi.cn"
+API_METHOD = "POST"
 
-def request(action,method='POST',**params):  # 发送请求
-    API_SITE = "dnsapi.cn"
+def request(action, param={}, **params):  # 发送请求
+    params.update(param)
+    params.update({'login_token':"%s,%s"%(ID,TOKEN), 'format':'json'})
+    if DEBUG: print("%s : params:%s"%(action,params))
+    
     if PROXY:
         conn = httplib.HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
     else:
         conn = httplib.HTTPSConnection(API_SITE)
 
-    params.update({'login_token':TOKEN, 'format':'json'})
-    if DEBUG: print("%s : params:%s"%(action,params))
-    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/json"}
-    conn.request(method, '/' + action, urllib.urlencode(params), headers)
-    
+    conn.request(API_METHOD, '/'+action, urllib.urlencode(params), {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
     data = response.read()
     conn.close()
     
-    if response.status == 200:
+    if response.status < 200 or response.status >= 300:
+        raise Exception(data)
+    else:
         data = json.loads(data)
         if not data:
             raise Exception("empty response")
         elif data.get("status",{}).get("code") == "1":
             return data
         else:
-            raise Exception(data.get('status',{}))            
-    else:
-        return None
+            raise Exception(data.get('status',{}))
+
 
 def get_domain_info(domain):  # 切割域名获取主域名和对应ID
     """
