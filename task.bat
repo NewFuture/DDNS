@@ -7,6 +7,6 @@ SET RUN_USER=%USERNAME%
 WHOAMI /GROUPS | FIND "12288" > NUL && SET RUN_USER="SYSTEM"
 
 ECHO Create task run as %RUN_USER%
-schtasks /Create /SC MINUTE /MO 10 /TR "%RUNCMD%" /TN "DDNS" /F /RU "%RUN_USER%"
+schtasks /Create /SC MINUTE /MO 5 /TR "%RUNCMD%" /TN "DDNS" /F /RU "%RUN_USER%"
 
 PAUSE
