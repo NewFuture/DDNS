@@ -1,6 +1,7 @@
 {
 	"id": "your token id",
 	"token": "your dnspod token",
+	"dns": "dnspod",
 	"ipv4": [
 		"ipv4.your.domain",
 		"ipv4.yours.domain"

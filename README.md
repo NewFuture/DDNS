@@ -15,7 +15,7 @@ DDNS
 * [x] 自动创建记录
 * [x] 多系统(Widnows, Linux, MacOS)
 * [x] DNSPOD
-* [ ] 阿里DNS
+* [x] 阿里DNS
 
 ### TODO:
 * [ ] 文件缓存(减少服务器IP请求)
@@ -41,6 +41,7 @@ python run.py -c /path/to/config.json
 | ------| ------- | --------- | ---- | ----------- | 
 | id | string |  Yes | 无 | api授权id |
 | token | string | Yes | 无 | api授权token | 
+| dns | string | No | dnspod | dns服务商,阿里为`alidns` | 
 | ipv4 | array | No | [] | ipv4 域名列表 |
 | ipv6 | array | No | [] | ipv6 域名列表 |
 | index4 | string/int | No | 'default'| ipv4获取方式 |
