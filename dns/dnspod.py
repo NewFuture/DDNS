@@ -11,7 +11,7 @@ import httplib
 import json
 import urllib
 
-import debug
+import dns.debug as debug
 
 __author__ = 'New Future'
 
@@ -147,7 +147,7 @@ def update_record(domain, value, record_type="A"):
             if record["value"] != value:
                 DEBUG(sub, record)
                 res = request('Record.Modify', record_id=did, record_line=record["line"].encode(
-                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type, ttl=600)
+                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type)
                 if res:
                     get_records.records[domainid][did]["value"] = value
                     result[did] = res.get("record")

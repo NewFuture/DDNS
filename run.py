@@ -8,9 +8,8 @@ import argparse
 import json
 import time
 
-import dnspod
-import alidns
 import ip
+from dns import alidns, dnspod
 
 DNS = dnspod
 

@@ -14,7 +14,7 @@ import urllib
 import uuid
 from datetime import datetime
 
-import debug
+import dns.debug as debug
 
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
@@ -150,6 +150,8 @@ def update_record(domain, value, record_type='A'):
                     result[rid] = res
                 else:
                     result[rid] = "update fail!\n" + str(res)
+            else:
+                result[rid] = domain
     else:  # https://help.aliyun.com/document_detail/29772.html
         res = request(Action="AddDomainRecord", DomainName=main,
                       Value=value, RR=sub, Type=record_type)
