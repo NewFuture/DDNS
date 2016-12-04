@@ -7,14 +7,21 @@
 import argparse
 import json
 import time
+import os
+import tempfile
 
-import ip
 from dns import alidns, dnspod
+from util import ip
+from util.cache import Cache
 
 DNS = dnspod
+CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
 
 
 def get_config(key=None, default=None, file="config.json"):
+    """
+    读取配置
+    """
     if not hasattr(get_config, "config"):
         try:
             with open(file) as configfile:
@@ -27,31 +34,38 @@ def get_config(key=None, default=None, file="config.json"):
         return get_config.config
 
 
-def update():
-    print "=" * 25 + " " + time.ctime() + " " + "=" * 25
-    index4 = get_config('index4') or "default"
-    if str(index4).isdigit():
-        ipv4 = ip.local_v4(index4)
+def update_ip(Type, cache):
+    """
+    更新IP
+    """
+    ipname = 'ipv' + Type
+    domains = get_config(ipname)
+    if not domains:
+        return None
+
+    index = get_config('index' + Type) or "default"
+    if str(index).isdigit():
+        value = getattr(ip, "local_v" + Type)(index)
+
     else:
-        ipv4 = getattr(ip, index4 + "_v4")()
-    print 'update ipv4 to:', ipv4
-    if ipv4 != None:
-        for domain in get_config('ipv4'):
-            print DNS.update_record(domain, ipv4, 'A')
+        value = getattr(ip, index + "_v" + Type)()
 
-    v6_domains = get_config("ipv6") or "default"
-    if len(v6_domains) > 0:
-        index6 = get_config('index6')
-        if str(index6).isdigit():
-            ipv6 = ip.local_v6(index6)
-        else:
-            ipv6 = getattr(ip, index6 + "_v6")()
-        print 'update ipv6 to:', ipv6
-        if ipv6 != None:
-            for domain in v6_domains:
-                print DNS.update_record(domain, ipv6, 'AAAA')
+    if value is None:
+        return False
+    elif value == cache[ipname]:
+        print '.',
+    else:
+        cache[ipname] = value
+        print 'update %s to: %s' % (ipname, value)
+        record_type = (Type == '4') and 'A' or 'AAAA'
+        for domain in domains:
+            print DNS.update_record(domain, value, record_type=record_type)
 
-if __name__ == '__main__':
+
+def main():
+    """
+    更新
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', default="config.json")
     get_config(file=parser.parse_args().c)
@@ -60,4 +74,14 @@ if __name__ == '__main__':
     DNS.ID, DNS.TOKEN = get_config('id'), get_config('token')
     DNS.PROXY = get_config('proxy')
     ip.DEBUG = get_config('debug')
-    update()
+
+    cache = Cache(CACHE_FILE)
+    if len(cache) < 1:
+        print "=" * 25 + " " + time.ctime() + " " + "=" * 25
+
+    update_ip('4', cache)
+    update_ip('6', cache)
+
+
+if __name__ == '__main__':
+    main()
