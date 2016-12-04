@@ -14,15 +14,13 @@ import urllib
 import uuid
 from datetime import datetime
 
-import dns.debug as debug
+import logging as log
 
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
-debug.ENABLE = False
 
 ID = "id"
 TOKEN = "TOKEN"
-DEBUG = debug.log()
 PROXY = None  # 代理设置
 API_SITE = "alidns.aliyuncs.com"
 API_METHOD = "POST"
@@ -42,10 +40,10 @@ def signature(params):
         'SignatureVersion': "1.0",
     })
     query = urllib.urlencode(sorted(params.items()))
-    DEBUG(query)
+    log.debug(query)
     sign = API_METHOD + "&" + \
         urllib.quote_plus("/") + "&" + urllib.quote(query, safe='')
-    DEBUG("signString: %s" % sign)
+    log.debug("signString: %s", sign)
 
     sign = hmac.new(str(TOKEN + "&"), sign, hashlib.sha1).digest()
     params["Signature"] = sign.encode("base64").strip()
@@ -59,7 +57,7 @@ def request(param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    DEBUG("params:%s" % (params))
+    log.debug("params:%s", params)
 
     if PROXY:
         conn = httplib.HTTPSConnection(PROXY)
@@ -77,7 +75,7 @@ def request(param=None, **params):
         raise Exception(data)
     else:
         data = json.loads(data)
-        DEBUG(data)
+        log.debug(data)
         return data
 
 
@@ -130,7 +128,7 @@ def update_record(domain, value, record_type='A'):
         add
         https://help.aliyun.com/document_detail/29772.html?
     """
-    DEBUG(">>>>>%s(%s)" % (domain, record_type))
+    log.debug(">>>>>%s(%s)", domain, record_type)
     sub, main = get_domain_info(domain)
     if not sub:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -141,7 +139,7 @@ def update_record(domain, value, record_type='A'):
     if records:
         for (rid, record) in records.items():
             if record["Value"] != value:
-                DEBUG(sub, record)
+                log.debug(sub, record)
                 res = request(Action="UpdateDomainRecord", RecordId=rid,
                               Value=value, RR=sub, Type=record_type)
                 if res:
@@ -170,4 +168,5 @@ def update_record(domain, value, record_type='A'):
     return result
 
 if __name__ == '__main__':
-    print update_record('dns.newfuture.win', '6.6.6.6')
+    log.basicConfig(level=log.DEBUG)
+    log.info(get_records('www.newfuture.win'))

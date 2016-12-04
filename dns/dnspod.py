@@ -11,7 +11,7 @@ import httplib
 import json
 import urllib
 
-import dns.debug as debug
+import logging as log
 
 __author__ = 'New Future'
 
@@ -21,7 +21,6 @@ TOKEN = "token key"
 PROXY = None  # 代理设置
 API_SITE = "dnsapi.cn"
 API_METHOD = "POST"
-DEBUG = debug.log()
 
 
 def request(action, param=None, **params):
@@ -32,7 +31,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({'login_token': "%s,%s" % (ID, TOKEN), 'format': 'json'})
-    DEBUG("%s : params:%s" % (action, params))
+    log.debug("%s : params:%s", action, params)
 
     if PROXY:
         conn = httplib.HTTPSConnection(PROXY)
@@ -134,7 +133,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    DEBUG(">>>>>%s(%s)" % (domain, record_type))
+    log.debug(">>>>>%s(%s)", domain, record_type)
     domainid, sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -145,7 +144,7 @@ def update_record(domain, value, record_type="A"):
         # http://www.dnspod.cn/docs/records.html#record-modify
         for (did, record) in records.items():
             if record["value"] != value:
-                DEBUG(sub, record)
+                log.debug(sub, record)
                 res = request('Record.Modify', record_id=did, record_line=record["line"].encode(
                     "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type)
                 if res:
