@@ -26,8 +26,9 @@ DDNS
 
 ## 使用
 1. 复制 `example.config.json`到`config.json`
-2. [申请api token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)修改配置 `token` ,`ipv4`和`ipv6`字段，没有则设为`[]`
-3. 运行run.py (widnows 双击`run.bat`或者运行`python run.py`, *nix `./run.py`)
+2. 申请api token([DNSPOD创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/),[阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html))
+3. 修改配置,`ipv4`和`ipv6`字段，没有则设为`[]`,详细参照配置说明
+4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
 ## 配置
 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
@@ -55,8 +56,7 @@ python run.py -c /path/to/config.json
 * `public`使用公网ip(使用公网API查询)
 * `nku` NKU网关ip(只支持ipv4)
 
-### 配置example
-
+### 配置示例
 ```json
 {
 	"id": "12345",
