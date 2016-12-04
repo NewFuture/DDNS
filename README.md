@@ -18,7 +18,7 @@ DDNS
 * [x] 阿里DNS
 
 ### TODO:
-* [ ] 文件缓存(减少服务器IP请求)
+* [x] 文件缓存(减少服务器IP请求)
 * [ ] 同线路多记录支持
 * [ ] socks代理
 * [ ] 多代理自动切换
@@ -61,6 +61,7 @@ python run.py -c /path/to/config.json
 {
 	"id": "12345",
 	"token": "mythokenkey",
+	"dns": "dnspod 或者 alidns",
 	"ipv4": [
 		"dns.newfuture.xyz",
 		"ipv4.dns.newfuture.xyz"
