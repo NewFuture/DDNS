@@ -25,7 +25,8 @@ def get_config(key=None, default=None, path="config.json"):
         try:
             with open(path) as configfile:
                 get_config.config = json.load(configfile)
-        except IOError:
+                get_config.time = os.stat(path).st_mtime
+        except Exception:
             exit('fail to load config from file: %s' % path)
     if key:
         return get_config.config.get(key, default)
@@ -45,7 +46,6 @@ def update_ip(ip_type, cache, dns):
     index = get_config('index' + ip_type) or "default"
     if str(index).isdigit():
         value = getattr(ip, "local_v" + ip_type)(index)
-
     else:
         value = getattr(ip, index + "_v" + ip_type)()
 
@@ -68,6 +68,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', default="config.json")
     get_config(path=parser.parse_args().c)
+
     if get_config('dns', 'dnspod').startswith('ali'):
         dns = alidns
     else:
@@ -77,7 +78,8 @@ def main():
     ip.DEBUG = get_config('debug')
 
     cache = Cache(CACHE_FILE)
-    if len(cache) < 1:
+    if len(cache) < 1 or get_config.time >= cache.time:
+        cache.clear()
         print "=" * 25 + " " + time.ctime() + " " + "=" * 25
 
     update_ip('4', cache, dns)

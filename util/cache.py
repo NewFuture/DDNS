@@ -25,6 +25,7 @@ class Cache(MutableMapping):
         self.__data = {}
         self.__filename = path
         self.__sync = sync
+        self.__time = time.time()
         self.__changed = False
         self.load()
 
@@ -72,6 +73,7 @@ class Cache(MutableMapping):
             with open(self.__filename, 'w') as data:
                 pickle.dump(self.__data, data)
                 LOG.debug('save cache data to %s', self.__filename)
+            self.__time = time.time()
             self.__changed = False
         return self
 
@@ -86,19 +88,27 @@ class Cache(MutableMapping):
         del self.__time
         self.__sync = False
 
+    def __update(self):
+        self.__changed = True
+        if self.__sync:
+            self.sync()
+        else:
+            self.__time = time.time()
+
+    def clear(self):
+        if self.data():
+            self.__data = {}
+            self.__update()
+
     def __setitem__(self, key, value):
         if self.data(key) != value:
             self.__data[key] = value
-            self.__changed = True
-            if self.__sync:
-                self.sync()
+            self.__update()
 
     def __delitem__(self, key):
         if key in self.data():
             del self.__data[key]
-            self.__changed = True
-            if self.__sync:
-                self.sync()
+            self.__update()
 
     def __getitem__(self, key):
         return self.data(key)
@@ -125,13 +135,11 @@ def main():
     test
     """
     LOG.basicConfig(level=LOG.DEBUG)
-    # LOG.debug('test log')
     cache = Cache('test.txt')
-    cache['s'] = ['a', 's']
     print cache
-    print cache['s']
     print cache.time
-    cache['t'] = '哈哈'
+    cache['s'] = 'a'
+    print cache['s']
     print cache.time
 
 
