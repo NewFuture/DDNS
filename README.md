@@ -1,7 +1,3 @@
----
-
----
-
 DDNS
 ===================
 自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
@@ -86,8 +82,10 @@ python run.py -c /path/to/config.json
 ```
 </details>
 
+
 ## 定时任务
-默认没5分钟检查一次ip变化,自动更新
+<details>
+<summary>可以通过脚本方便的设置定时任务（默认没5分钟检查一次ip变化,自动更新）</summary>
 
 ### windows
 **需要已经安装python**
@@ -96,3 +94,5 @@ python run.py -c /path/to/config.json
 
 ### linux
 运行 `sudo ./task.sh`
+
+</details>
