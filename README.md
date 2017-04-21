@@ -82,7 +82,7 @@ python run.py -c /path/to/config.json
 	"debug": false
 }
 ```
-<details>
+</details>
 
 ## 定时任务
 默认没5分钟检查一次ip变化,自动更新
