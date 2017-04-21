@@ -1,3 +1,6 @@
+---
+---
+
 DDNS
 ===================
 自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
@@ -31,7 +34,10 @@ DDNS
 4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
 ## 配置
-`-c`使用指定的配置文件 (默认读取当前目录的 config.json)
+<details>
+<summary> config.json</summary>
+
+可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
 ```bash
 python run.py -c /path/to/config.json 
 ```
@@ -76,6 +82,7 @@ python run.py -c /path/to/config.json
 	"debug": false
 }
 ```
+<details>
 
 ## 定时任务
 默认没5分钟检查一次ip变化,自动更新
