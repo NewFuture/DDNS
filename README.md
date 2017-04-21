@@ -1,4 +1,5 @@
 ---
+
 ---
 
 DDNS
@@ -34,6 +35,7 @@ DDNS
 4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
 ## 配置
+
 <details>
 <summary> config.json</summary>
 
