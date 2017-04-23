@@ -51,14 +51,15 @@ def update_ip(ip_type, cache, dns):
 
     if value is None:
         return False
-    elif value == cache[ipname]:
+    elif cache and value == cache[ipname]:
         print '.',
     else:
-        cache[ipname] = value
         print 'update %s to: %s' % (ipname, value)
         record_type = (ip_type == '4') and 'A' or 'AAAA'
         for domain in domains:
             print dns.update_record(domain, value, record_type=record_type)
+        if cache:
+            cache[ipname] = value
 
 
 def main():
@@ -77,11 +78,12 @@ def main():
     dns.PROXY = get_config('proxy')
     ip.DEBUG = get_config('debug')
 
-    cache = Cache(CACHE_FILE)
-    if len(cache) < 1 or get_config.time >= cache.time:
+    cache = get_config('cache', True) and Cache(CACHE_FILE)
+    if not cache:
+        print "Cache is disabled!"
+    elif len(cache) < 1 or get_config.time >= cache.time:
         cache.clear()
         print "=" * 25 + " " + time.ctime() + " " + "=" * 25
-
     update_ip('4', cache, dns)
     update_ip('6', cache, dns)
 
