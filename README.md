@@ -16,6 +16,7 @@ DDNS
 * [x] 多系统(Widnows, Linux, MacOS)
 * [x] DNSPOD
 * [x] 阿里DNS
+* [x] 兼容 python2 和 python3
 
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
