@@ -6,12 +6,16 @@ http://www.dnspod.cn/docs/domains.html
 @author: New Future
 """
 
-
-import httplib
 import json
-import urllib
-
 import logging as log
+try:
+    # python 2
+    from httplib import HTTPSConnection
+    import urllib
+except ImportError:
+    # python 3
+    from http.client import HTTPSConnection
+    import urllib.parse as urllib
 
 __author__ = 'New Future'
 
@@ -34,10 +38,10 @@ def request(action, param=None, **params):
     log.debug("%s : params:%s", action, params)
 
     if PROXY:
-        conn = httplib.HTTPSConnection(PROXY)
+        conn = HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
     else:
-        conn = httplib.HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API_SITE)
 
     conn.request(API_METHOD, '/' + action, urllib.urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
@@ -48,7 +52,7 @@ def request(action, param=None, **params):
     if response.status < 200 or response.status >= 300:
         raise Exception(res)
     else:
-        data = json.loads(res)
+        data = json.loads(res.decode('utf8'))
         if not data:
             raise Exception("empty response")
         elif data.get("status", {}).get("code") == "1":

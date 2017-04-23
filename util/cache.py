@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-r"""
+"""
 cache module
 文件缓存
 """
 
+from __future__ import print_function
 import logging as LOG
 import os
 import pickle
@@ -45,9 +46,13 @@ class Cache(MutableMapping):
 
         LOG.debug('load cache data from %s', path)
         if os.path.isfile(path):
-            with open(self.__filename, 'r') as data:
-                self.__data = pickle.load(data)
-            self.__time = os.stat(path).st_mtime
+            with open(self.__filename, 'rb') as data:
+                try:
+                    self.__data = pickle.load(data)
+                    self.__time = os.stat(path).st_mtime
+                except ValueError:
+                    self.__data = {}
+                    self.__time = time.time()
         else:
             LOG.info('cache file not exist')
             self.__data = {}
@@ -70,7 +75,7 @@ class Cache(MutableMapping):
         """Sync the write buffer with the cache files and clear the buffer.
         """
         if self.__changed:
-            with open(self.__filename, 'w') as data:
+            with open(self.__filename, 'wb') as data:
                 pickle.dump(self.__data, data)
                 LOG.debug('save cache data to %s', self.__filename)
             self.__time = time.time()
@@ -136,11 +141,9 @@ def main():
     """
     LOG.basicConfig(level=LOG.DEBUG)
     cache = Cache('test.txt')
-    print cache
-    print cache.time
+    print(cache, cache.time)
     cache['s'] = 'a'
-    print cache['s']
-    print cache.time
+    print(cache['s'], cache.time)
 
 
 if __name__ == '__main__':

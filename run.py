@@ -4,6 +4,7 @@
 自动更新DNS
 @author: New Future
 """
+from __future__ import print_function
 import argparse
 import json
 import time
@@ -13,6 +14,7 @@ import tempfile
 from dns import alidns, dnspod
 from util import ip
 from util.cache import Cache
+
 
 CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
 
@@ -52,13 +54,13 @@ def update_ip(ip_type, cache, dns):
     if value is None:
         return False
     elif cache and value == cache[ipname]:
-        print '.',
+        print('.', end=" ")
     else:
-        print 'update %s to: %s' % (ipname, value)
+        print ('update %s to: %s' % (ipname, value))
         record_type = (ip_type == '4') and 'A' or 'AAAA'
         for domain in domains:
-            print dns.update_record(domain, value, record_type=record_type)
-        if cache:
+            print (dns.update_record(domain, value, record_type=record_type))
+        if cache is not False:
             cache[ipname] = value
 
 
@@ -79,11 +81,11 @@ def main():
     ip.DEBUG = get_config('debug')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
-    if not cache:
-        print "Cache is disabled!"
+    if cache is False:
+        print("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
         cache.clear()
-        print "=" * 25 + " " + time.ctime() + " " + "=" * 25
+        print ("=" * 25, time.ctime(), "=" * 25, sep=' ')
     update_ip('4', cache, dns)
     update_ip('6', cache, dns)
 

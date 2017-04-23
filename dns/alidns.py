@@ -8,13 +8,21 @@ https://help.aliyun.com/document_detail/29739.html
 
 import hashlib
 import hmac
-import httplib
-import json
-import urllib
 import uuid
+import base64
+import json
+import logging as log
 from datetime import datetime
 
-import logging as log
+try:
+    # python 2
+    from httplib import HTTPSConnection
+    import urllib
+except ImportError:
+    # python 3
+    from http.client import HTTPSConnection
+    import urllib.parse as urllib
+
 
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
@@ -45,8 +53,11 @@ def signature(params):
         urllib.quote_plus("/") + "&" + urllib.quote(query, safe='')
     log.debug("signString: %s", sign)
 
-    sign = hmac.new(str(TOKEN + "&"), sign, hashlib.sha1).digest()
-    params["Signature"] = sign.encode("base64").strip()
+    sign = hmac.new((TOKEN + "&").encode('utf-8'),
+                    sign.encode('utf-8'), hashlib.sha1).digest()
+    sign = base64.b64encode(sign).strip()
+    params["Signature"] = sign
+    # sign.decode('utf-8').encode("base64").strip()
     return params
 
 
@@ -60,10 +71,10 @@ def request(param=None, **params):
     log.debug("params:%s", params)
 
     if PROXY:
-        conn = httplib.HTTPSConnection(PROXY)
+        conn = HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
     else:
-        conn = httplib.HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API_SITE)
 
     conn.request(API_METHOD, '/', urllib.urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
@@ -74,7 +85,7 @@ def request(param=None, **params):
     if response.status < 200 or response.status >= 300:
         raise Exception(data)
     else:
-        data = json.loads(data)
+        data = json.loads(data.decode('utf8'))
         log.debug(data)
         return data
 
