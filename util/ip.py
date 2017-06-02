@@ -3,10 +3,10 @@
 
 import socket
 try:
-    #python2
+    # python2
     from urllib2 import urlopen
 except ImportError:
-    #python3
+    # python3
     from urllib.request import urlopen
 
 DEBUG = False  # 是否打印错误

@@ -20,6 +20,7 @@ DDNS
 
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
+* [ ] 腾讯云
 * [ ] 同线路多记录支持
 * [ ] socks代理
 * [ ] 多代理自动切换
@@ -33,7 +34,7 @@ DDNS
 
 ## 配置
 
-<details>
+<details open>
 <summary> config.json</summary>
 
 可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
