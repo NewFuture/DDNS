@@ -10,8 +10,9 @@ import json
 import time
 import os
 import tempfile
+import logging as log
 
-from dns import alidns, dnspod
+from dns import alidns, dnspod, dnscom
 from util import ip
 from util.cache import Cache
 
@@ -74,6 +75,8 @@ def main():
 
     if get_config('dns', 'dnspod').startswith('ali'):
         dns = alidns
+    elif get_config('dns', 'dnspod').startswith('dnscom'):
+        dns = dnscom
     else:
         dns = dnspod
     dns.ID, dns.TOKEN = get_config('id'), get_config('token')
@@ -91,4 +94,5 @@ def main():
 
 
 if __name__ == '__main__':
+    log.basicConfig(level=log.DEBUG)
     main()
