@@ -10,7 +10,6 @@ import json
 import time
 import os
 import tempfile
-import logging as log
 
 from dns import alidns, dnspod, dnscom
 from util import ip
@@ -94,5 +93,4 @@ def main():
 
 
 if __name__ == '__main__':
-    log.basicConfig(level=log.DEBUG)
     main()

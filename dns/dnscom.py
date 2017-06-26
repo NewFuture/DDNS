@@ -138,7 +138,7 @@ def update_record(domain, value, record_type='A'):
 
     if records:
         for (rid, record) in records.items():
-            if record["Value"] != value:
+            if record["value"] != value:
                 log.debug(sub, record)
                 res = request("record/modify", domainID=domainID, recordID=rid, newvalue=value)
                 if res:
