@@ -29,7 +29,7 @@ DDNS
 
 ## 使用
 1. 复制 `example.config.json`到`config.json`
-2. 申请api token([DNSPOD创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/),[阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html)),[DNS.COM API Key/Secret](https://www.dns.com/member/apiSet))
+2. 申请api token([DNSPOD创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/),[阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html),[DNS.COM API Key/Secret](https://www.dns.com/member/apiSet))
 3. 修改配置,`ipv4`和`ipv6`字段，没有则设为`[]`,详细参照配置说明
 4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
