@@ -13,6 +13,7 @@ import uuid
 import base64
 import json
 import logging as log
+import time
 from datetime import datetime
 
 try:
@@ -25,7 +26,7 @@ except ImportError:
     import urllib.parse as urllib
 
 
-__author__ = 'New Future'
+__author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
 ID = "id"
@@ -41,7 +42,7 @@ def signature(params):
     """
     params.update({
         'apiKey': ID,
-        'timestamp': int(datetime.utcnow().timestamp()),
+        'timestamp': time.mktime(datetime.now().timetuple()),
     })
     query = urllib.urlencode(sorted(params.items()))
     log.debug(query)
@@ -79,7 +80,12 @@ def request(action, param=None, **params):
         raise Exception(data)
     else:
         data = json.loads(data.decode('utf8'))
+        if data.get('code') != 0:
+            raise Exception("api error: [ %s ] " % data.get('message'))
         log.debug(data)
+        data = data.get('data')
+        if data is None:
+            raise Exception('response data is none')
         return data
 
 
@@ -87,11 +93,16 @@ def get_domain_info(domain):
     """
     切割域名获取主域名和对应ID
     """
-    domains = domain.split('.', 1)
-    sub = domains[0]
-    main = domains[1]
+    if len(domain.split('.')) > 2:
+        domains = domain.split('.', 1)
+        sub = domains[0]
+        main = domains[1]
+    else:
+        sub = '' #接口有bug 不能传 @ * 作为主机头，但是如果为空，默认为 @
+        main = domain
+        
     res = request("domain/getsingle", domainID=main)
-    domainID = res.get('data').get('domainID')
+    domainID = res.get('domainID')
     return sub, main, domainID
 
 
@@ -110,8 +121,8 @@ def get_records(domain, domainID, **conditions):
         get_records.records[domain] = {}
         data = request("record/list",
                        domainID=domainID, pageSize=500)
-        if data:
-            for record in data.get('data').get('data'):
+        if data.get('data'):
+            for record in data.get('data'):
                 get_records.records[domain][record["recordID"]] = {
                     k: v for (k, v) in record.items() if k in get_records.keys}
     records = {}
@@ -130,8 +141,6 @@ def update_record(domain, value, record_type='A'):
     """
     log.debug(">>>>>%s(%s)", domain, record_type)
     sub, main, domainID = get_domain_info(domain)
-    if not sub:
-        raise Exception("invalid domain: [ %s ] " % domain)
 
     records = get_records(main, domainID, record=sub, type=record_type)
     result = {}
@@ -149,12 +158,12 @@ def update_record(domain, value, record_type='A'):
                     result[rid] = "update fail!\n" + str(res)
             else:
                 result[rid] = domain
-    else:  # https://help.aliyun.com/document_detail/29772.html
+    else:
         res = request("record/create", domainID=domainID,
                       value=value, host=sub, type=record_type)
         if res:
             # update records INFO
-            rid = res.get('data').get('recordID')
+            rid = res.get('recordID')
             get_records.records[main][rid] = {
                 'value': value,
                 "recordID": rid,
