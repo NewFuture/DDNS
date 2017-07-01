@@ -81,7 +81,7 @@ def request(action, param=None, **params):
     else:
         data = json.loads(data.decode('utf8'))
         if data.get('code') != 0:
-            raise Exception("api error: [ %s ] " % data.get('message'))
+            raise Exception("api error:", data.get('message'))
         log.debug(data)
         data = data.get('data')
         if data is None:
@@ -98,9 +98,9 @@ def get_domain_info(domain):
         sub = domains[0]
         main = domains[1]
     else:
-        sub = '' #接口有bug 不能传 @ * 作为主机头，但是如果为空，默认为 @
+        sub = ''  # 接口有bug 不能传 @ * 作为主机头，但是如果为空，默认为 @
         main = domain
-        
+
     res = request("domain/getsingle", domainID=main)
     domainID = res.get('domainID')
     return sub, main, domainID
@@ -149,7 +149,8 @@ def update_record(domain, value, record_type='A'):
         for (rid, record) in records.items():
             if record["value"] != value:
                 log.debug(sub, record)
-                res = request("record/modify", domainID=domainID, recordID=rid, newvalue=value)
+                res = request("record/modify", domainID=domainID,
+                              recordID=rid, newvalue=value)
                 if res:
                     # update records
                     get_records.records[main][rid]["value"] = value
