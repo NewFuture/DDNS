@@ -11,10 +11,8 @@ import time
 import os
 import tempfile
 
-from dns import alidns, dnspod, dnscom
 from util import ip
 from util.cache import Cache
-
 
 CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
 
@@ -71,15 +69,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', default="config.json")
     get_config(path=parser.parse_args().c)
-
-    if get_config('dns', 'dnspod').startswith('ali'):
-        dns = alidns
-    elif get_config('dns', 'dnspod').startswith('dnscom'):
-        dns = dnscom
-    else:
-        dns = dnspod
+    # Dynamicly import the dns module as configuration
+    dns_provider = get_config('dns', 'dnspod').lower()
+    dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
     dns.ID, dns.TOKEN = get_config('id'), get_config('token')
     dns.PROXY = get_config('proxy')
+
     ip.DEBUG = get_config('debug')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)

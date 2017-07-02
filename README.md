@@ -14,11 +14,12 @@ DDNS
 * [x] 定时任务
 * [x] 自动创建记录
 * [x] 多系统(Widnows, Linux, MacOS)
-* [x] DNSPOD
-* [x] 阿里DNS
-* [x] DNS.COM
 * [x] 兼容 python2 和 python3
-
+* [x] 多厂商兼容支持:
+	* [x] [DNSPOD](https://www.dnspod.cn/)
+	* [x] [阿里DNS](http://www.alidns.com/)
+	* [x] [DNS.COM](https://www.dns.com/)
+	
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
 * [ ] 腾讯云

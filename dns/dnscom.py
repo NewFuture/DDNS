@@ -8,9 +8,6 @@ http://open.dns.com/
 """
 
 import hashlib
-import hmac
-import uuid
-import base64
 import json
 import logging as log
 import time
@@ -73,13 +70,13 @@ def request(action, param=None, **params):
     conn.request(API_METHOD, '/api/' + action + '/', urllib.urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    data = response.read()
+    result = response.read()
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        raise Exception(data)
+        raise Exception(result)
     else:
-        data = json.loads(data.decode('utf8'))
+        data = json.loads(result.decode('utf8'))
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))
         log.debug(data)
@@ -102,11 +99,11 @@ def get_domain_info(domain):
         main = domain
 
     res = request("domain/getsingle", domainID=main)
-    domainID = res.get('domainID')
-    return sub, main, domainID
+    domain_id = res.get('domainID')
+    return sub, main, domain_id
 
 
-def get_records(domain, domainID, **conditions):
+def get_records(domain, domain_id, **conditions):
     """
         获取记录ID
         返回满足条件的所有记录[]
@@ -120,7 +117,7 @@ def get_records(domain, domainID, **conditions):
     if not domain in get_records.records:
         get_records.records[domain] = {}
         data = request("record/list",
-                       domainID=domainID, pageSize=500)
+                       domainID=domain_id, pageSize=500)
         if data.get('data'):
             for record in data.get('data'):
                 get_records.records[domain][record["recordID"]] = {
@@ -140,16 +137,16 @@ def update_record(domain, value, record_type='A'):
         更新记录
     """
     log.debug(">>>>>%s(%s)", domain, record_type)
-    sub, main, domainID = get_domain_info(domain)
+    sub, main, domain_id = get_domain_info(domain)
 
-    records = get_records(main, domainID, record=sub, type=record_type)
+    records = get_records(main, domain_id, record=sub, type=record_type)
     result = {}
 
     if records:
         for (rid, record) in records.items():
             if record["value"] != value:
                 log.debug(sub, record)
-                res = request("record/modify", domainID=domainID,
+                res = request("record/modify", domainID=domain_id,
                               recordID=rid, newvalue=value)
                 if res:
                     # update records
@@ -160,7 +157,7 @@ def update_record(domain, value, record_type='A'):
             else:
                 result[rid] = domain
     else:
-        res = request("record/create", domainID=domainID,
+        res = request("record/create", domainID=domain_id,
                       value=value, host=sub, type=record_type)
         if res:
             # update records INFO
