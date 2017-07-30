@@ -18,10 +18,11 @@ DDNS
 * [x] 多厂商兼容支持:
 	* [x] [DNSPOD](https://www.dnspod.cn/)
 	* [x] [阿里DNS](http://www.alidns.com/)
-	* [x] [DNS.COM](https://www.dns.com/)
+	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
 	
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
+* [ ] 二进制打包
 * [ ] 腾讯云
 * [ ] 同线路多记录支持
 * [ ] socks代理
