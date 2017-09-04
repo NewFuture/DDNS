@@ -64,7 +64,6 @@ def request(action, param=None, **params):
 def get_domain_info(domain):
     """
     切割域名获取主域名和对应ID
-    TODO @记录支持
     """
     domain_split = domain.split('.')
     if len(domain_split) == 3:  # 长度为3
@@ -80,6 +79,8 @@ def get_domain_info(domain):
                 break
         else:
             return None, None
+        if not sub: # root domain根域名https://github.com/NewFuture/DDNS/issues/9
+            sub = '@'
     return did, sub
 
 
