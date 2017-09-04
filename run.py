@@ -70,7 +70,7 @@ def main():
     parser.add_argument('-c', default="config.json")
     get_config(path=parser.parse_args().c)
     # Dynamicly import the dns module as configuration
-    dns_provider = get_config('dns', 'dnspod').lower()
+    dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
     dns.ID, dns.TOKEN = get_config('id'), get_config('token')
     dns.PROXY = get_config('proxy')
