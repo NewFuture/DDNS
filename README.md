@@ -19,6 +19,7 @@ DDNS
 	* [x] [DNSPOD](https://www.dnspod.cn/)
 	* [x] [阿里DNS](http://www.alidns.com/)
 	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
+	* [x] [DNSPOD国际版](https://www.dnspod.com/)
 	
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
@@ -31,7 +32,12 @@ DDNS
 
 ## 使用
 1. 复制 `example.config.json`到`config.json`
-2. 申请api token([DNSPOD创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/),[阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html),[DNS.COM API Key/Secret](https://www.dns.com/member/apiSet))
+2. 申请api token:
+	* [DNSPOD(国内版)创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
+	* [阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html)
+	* [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
+	* [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
+
 3. 修改配置,`ipv4`和`ipv6`字段，没有则设为`[]`,详细参照配置说明
 4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
@@ -51,7 +57,7 @@ python run.py -c /path/to/config.json
 | ------| ------- | --------- | ---- | ----------- | 
 | id | string |  Yes | 无 | api授权id |
 | token | string | Yes | 无 | api授权token | 
-| dns | string | No | dnspod | dns服务商,阿里为`alidns`,DNS.COM为`dnscom` | 
+| dns | string | No | `dnspod` | dns服务商,阿里为`alidns`,DNS.COM为`dnscom`,DNSPOD国际版为(`dnspod_com`)| 
 | ipv4 | array | No | [] | ipv4 域名列表 |
 | ipv6 | array | No | [] | ipv6 域名列表 |
 | index4 | string/int | No | 'default'| ipv4获取方式 |
@@ -70,7 +76,7 @@ python run.py -c /path/to/config.json
 {
 	"id": "12345",
 	"token": "mythokenkey",
-	"dns": "dnspod 或者 alidns 或者 dnscom",
+	"dns": "dnspod 或者 dnspod_com 或者 alidns 或者 dnscom",
 	"ipv4": [
 		"dns.newfuture.xyz",
 		"ipv4.dns.newfuture.xyz"
