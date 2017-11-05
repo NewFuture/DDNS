@@ -165,7 +165,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # http://www.dnspod.cn/docs/records.html#record-create
         res = request("Record.Create", domain_id=domainid, value=value,
-                      sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
+                      sub_domain=sub, record_type=record_type, record_line="default", ttl=600)
         if res:
             did = res.get("record")["id"]
             get_records.records[domainid][did] = res.get("record")
