@@ -9,6 +9,7 @@ import argparse
 import json
 import time
 import os
+import sys
 import tempfile
 
 from util import ip
@@ -26,8 +27,29 @@ def get_config(key=None, default=None, path="config.json"):
             with open(path) as configfile:
                 get_config.config = json.load(configfile)
                 get_config.time = os.stat(path).st_mtime
-        except Exception:
-            exit('fail to load config from file: %s' % path)
+        except IOError:
+            print('Config file %s does not appear to exist.' % path)
+            with open(path, 'w') as configfile:
+                configure = {
+                    "id": "your id",
+                    "token": "your token",
+                    "dns": "dnspod",
+                    "ipv4": [
+                        "your.domain",
+                        "ipv4.yours.domain"
+                    ],
+                    "ipv6": [
+                        "your.domain",
+                        "ipv6.your.domain"
+                    ],
+                    "index4": "default",
+                    "index6": "default",
+                    "proxy": None
+                }
+                json.dump(configure, configfile, indent=2, sort_keys=True)
+            sys.exit("New template configure file is created!")
+        except:
+            sys.exit('fail to load config from file: %s' % path)
     if key:
         return get_config.config.get(key, default)
     else:

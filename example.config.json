@@ -1,12 +1,13 @@
 {
-	"id": "your token id",
-	"token": "your dnspod token",
+	"id": "your id",
+	"token": "your token",
 	"dns": "dnspod",
 	"ipv4": [
-		"ipv4.your.domain",
+		"your.domain",
 		"ipv4.yours.domain"
 	],
 	"ipv6": [
+		"your.domain",		
 		"ipv6.your.domain"
 	],
 	"index4": "default",
