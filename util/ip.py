@@ -73,3 +73,19 @@ def nku_v4():  # nku 内网ipv4地址
             if DEBUG:
                 print(e)
             continue
+def reip4(re_ex4):
+    import re
+    info = socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET)
+    for i in info:
+        if re.match(re_ex4, i[4][0]):
+            ipv4=i[4][0]
+            break
+    return ipv4
+def reip6(re_ex6):
+    import re
+    info = socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET6)
+    for i in info:
+        if re.match(re_ex6, i[4][0]):
+            ipv6=i[4][0]
+            break
+    return ipv6
