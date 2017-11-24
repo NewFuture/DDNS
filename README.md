@@ -20,7 +20,8 @@ DDNS
 	* [x] [阿里DNS](http://www.alidns.com/)
 	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
 	* [x] [DNSPOD国际版](https://www.dnspod.com/)
-	
+* [x] 正则选取支持
+* [x] 可选代理失败返回直连
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
 * [ ] 二进制打包
@@ -64,7 +65,9 @@ python run.py -c /path/to/config.json
 | index6 | string/int | No | 'default'| ipv6获取方式 |
 | proxy | string | No | 无 | 设置请求代理 |
 | debug | boolean | No | false | 是否开启调试(输出调试信息) |
-
+|no_proxy_try|boolean| No | false|代理失败改直连|
+| re4 | string | No | 无 | ipv4的正则选取，index无效化，注意json的转义|
+| re6 | string | No | 无 | ipv6的正则选取，index无效化 |
 ### index4和index6参数说明
 * `default` 系统访问外网默认IP
 * 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
@@ -88,7 +91,9 @@ python run.py -c /path/to/config.json
 	"index4": "0",
 	"index6": "public",
 	"proxy": "127.0.0.1:1111",
-	"debug": false
+	"debug": false,
+	"no_proxy_try":true,
+	"re4":"10\\..*?"
 }
 ```
 </details>
