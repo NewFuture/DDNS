@@ -43,8 +43,16 @@ def request(action, param=None, **params):
     else:
         conn = HTTPSConnection(API_SITE)
 
-    conn.request(API_METHOD, '/' + action, urllib.urlencode(params),
+    try:
+        conn.request(API_METHOD, '/' + action, urllib.urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
+    except:
+        if no_proxy_try:
+            conn = HTTPSConnection(API_SITE)
+            conn.request(API_METHOD, '/' + action, urllib.urlencode(params),
+                     {"Content-type": "application/x-www-form-urlencoded"})
+        else:
+            raise
     response = conn.getresponse()
     res = response.read()
     conn.close()
