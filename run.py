@@ -3,6 +3,7 @@
 """
 自动更新DNS
 @author: New Future
+@modified: rufengsuixing
 """
 from __future__ import print_function
 import argparse
@@ -64,13 +65,14 @@ def update_ip(ip_type, cache, dns):
     domains = get_config(ipname)
     if not domains:
         return None
-
-    index = get_config('index' + ip_type) or "default"
-    if str(index).isdigit():
-        value = getattr(ip, "local_v" + ip_type)(index)
+    if get_config('re'+ip_type):
+        value=getattr(ip, "reip" + ip_type)(get_config('re'+ip_type))
     else:
-        value = getattr(ip, index + "_v" + ip_type)()
-
+        index = get_config('index' + ip_type) or "default"
+        if str(index).isdigit():
+            value = getattr(ip, "local_v" + ip_type)(index)
+        else:
+            value = getattr(ip, index + "_v" + ip_type)()
     if value is None:
         return False
     elif cache and value == cache[ipname]:
