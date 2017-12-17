@@ -3,7 +3,7 @@ DDNS
 自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
 代理模式,支持自动创建域名记录。
 
-### 特性
+### 功能
 
 * [x] 多个域名支持
 * [x] 多级域名解析
@@ -14,7 +14,7 @@ DDNS
 * [x] 定时任务
 * [x] 自动创建记录
 * [x] 多系统(Widnows, Linux, MacOS)
-* [x] 兼容 python2 和 python3
+* [x] 兼容 python2 和 python3 或无python环境
 * [x] 多厂商兼容支持:
 	* [x] [DNSPOD](https://www.dnspod.cn/)
 	* [x] [阿里DNS](http://www.alidns.com/)
@@ -23,7 +23,7 @@ DDNS
 	
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
-* [ ] 二进制打包
+* [x] 二进制打包
 * [ ] 腾讯云
 * [ ] 同线路多记录支持
 * [ ] socks代理
@@ -31,15 +31,27 @@ DDNS
 * [ ] 简化混合配置
 
 ## 使用
+
+### 1.下载
+
+* 二进制版(无需python环境,preview)
+	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns.exe)
+	* Linux （仅Ubuntu测试) [ddns][https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns]
+* 源码运行(需要python环境)
+	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
+	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+
+### 2.快速配置
+
 1. 复制 `example.config.json`到`config.json`
-2. 申请api token:
+2. 申请 api token:
 	* [DNSPOD(国内版)创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
 	* [阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html)
 	* [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
 	* [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
 
-3. 修改配置,`ipv4`和`ipv6`字段，没有则设为`[]`,详细参照配置说明
-4. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+3. 修改配置,`ipv4`和`ipv6`字段，无则设为`[]`,详细参照配置说明
+
 
 ## 配置
 
@@ -94,7 +106,7 @@ python run.py -c /path/to/config.json
 </details>
 
 
-## 定时任务
+## 定时任务 (暂时需要源码)
 <details>
 <summary>可以通过脚本方便的设置定时任务（默认没5分钟检查一次ip变化,自动更新）</summary>
 
