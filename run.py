@@ -107,9 +107,14 @@ def main():
     elif len(cache) < 1 or get_config.time >= cache.time:
         cache.clear()
         print ("=" * 25, time.ctime(), "=" * 25, sep=' ')
-    update_ip('4', cache, dns)
-    update_ip('6', cache, dns)
-
+    try:
+        update_ip('4', cache, dns)
+        update_ip('6', cache, dns)
+    except:
+        if dns.PROXY and get_config('no_proxy_try'):
+            dns.PROXY=None
+            update_ip('4', cache, dns)
+            update_ip('6', cache, dns)
 
 if __name__ == '__main__':
     main()
