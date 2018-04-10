@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
-
+import psutil
 import socket
 try:
     # python2
@@ -11,7 +11,21 @@ except ImportError:
 
 DEBUG = False  # 是否打印错误
 
-
+ipv4=[]
+ipv6=[]
+info=psutil.net_if_addrs()
+for k,v in info.items():  
+    for item in v:
+        try:
+            #windows
+            fam=item.family.value 
+        except:
+            #linux
+            fam=item.family
+        if fam == 2 and not item[1]=='127.0.0.1':
+            ipv4.append(item[1])
+        elif fam == 10 and not item[1]=='::1':
+            ipv6.append(item[1])
 def default_v4():  # 默认连接外网的ipv4
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 8))
@@ -29,17 +43,11 @@ def default_v6():  # 默认连接外网的ipv6
 
 
 def local_v6(i=0):  # 本地ipv6地址
-    info = socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET6)
-    if DEBUG:
-        print(info)
-    return info[int(i)][4][0]
+    return ipv6[i]
 
 
 def local_v4(i=0):  # 本地ipv4地址
-    info = socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET)
-    if DEBUG:
-        print(info)
-    return info[int(i)][-1][0]
+    return ipv4[i]
 
 
 def public_v4(url="http://v4.ipv6-test.com/api/myip.php"):  # 公网IPV4地址
@@ -73,3 +81,15 @@ def nku_v4():  # nku 内网ipv4地址
             if DEBUG:
                 print(e)
             continue
+def reip4(re_ex4):
+    import re
+    for ip in ipv4:
+        if re.match(re_ex4, ip):
+            return ip
+    
+def reip6(re_ex6):
+    import re
+    for ip in ipv6:
+        if re.match(re_ex6, ip):
+            return ip
+    
