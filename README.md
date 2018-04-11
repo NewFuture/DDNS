@@ -20,14 +20,15 @@ DDNS
 	* [x] [阿里DNS](http://www.alidns.com/)
 	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
 	* [x] [DNSPOD国际版](https://www.dnspod.com/)
-	
+* [x] 正则选取支持(@rufengsuixing)
+
 ### TODO:
 * [x] 文件缓存(减少服务器IP请求)
 * [x] 二进制打包
 * [ ] 腾讯云
 * [ ] 同线路多记录支持
 * [ ] socks代理
-* [ ] 多代理自动切换
+* [x] 多代理自动切换
 * [ ] 简化混合配置
 
 ## 使用
@@ -36,7 +37,7 @@ DDNS
 
 * 二进制版(无需python环境,preview)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns.exe)
-	* Linux （仅Ubuntu测试) [ddns][https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns]
+	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns)
 * 源码运行(需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
@@ -74,12 +75,13 @@ python run.py -c /path/to/config.json
 | ipv6 | array | No | [] | ipv6 域名列表 |
 | index4 | string/int | No | 'default'| ipv4获取方式 |
 | index6 | string/int | No | 'default'| ipv6获取方式 |
-| proxy | string | No | 无 | 设置请求代理 |
+| proxy | string | No | 无 | 多个代理`;`分割，`DIRECT`表示直连，从第一个代理尝试|
 | debug | boolean | No | false | 是否开启调试(输出调试信息) |
 
 ### index4和index6参数说明
-* `default` 系统访问外网默认IP
 * 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
+* 正则表达(如`192.168.*`) 提取`ifconfig`/`ipconfig`第一个与之匹配的IP地址
+* `default` 系统访问外网默认IP
 * `public`使用公网ip(使用公网API查询)
 * `nku` NKU网关ip(只支持ipv4)
 
