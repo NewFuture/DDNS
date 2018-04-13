@@ -36,11 +36,12 @@ DDNS
 ### 1.下载
 
 * 二进制版(无需python环境,preview)
-	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns.exe)
-	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/download/v2.2.0/ddns)
+	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/download/v2.3.0-beta/ddns.exe)
+	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/download/v2.3.0-beta/ddns)
 * 源码运行(需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+* [历史版本](https://github.com/NewFuture/DDNS/releases)
 
 ### 2.快速配置
 
@@ -80,7 +81,9 @@ python run.py -c /path/to/config.json
 
 ### index4和index6参数说明
 * 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
-* 正则表达(如`192.168.*`) 提取`ifconfig`/`ipconfig`第一个与之匹配的IP地址
+* 正则表达(如`192.*`) 提取`ifconfig`/`ipconfig`中与之匹配的首个IP地址,**注意json转义**(`\`要写成`\\`)
+	* `192.*`表示192开头的所有ip
+	* 如果想匹配`10.00.xxxx`应该写成`10\\.00\\..*`(`\\`json转义成`\`)
 * `default` 系统访问外网默认IP
 * `public`使用公网ip(使用公网API查询)
 * `nku` NKU网关ip(只支持ipv4)
