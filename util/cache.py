@@ -53,6 +53,10 @@ class Cache(MutableMapping):
                 except ValueError:
                     self.__data = {}
                     self.__time = time.time()
+                except Exception as e:
+                    print(e)
+                    self.__data = {}
+                    self.__time = time.time()
         else:
             LOG.info('cache file not exist')
             self.__data = {}
