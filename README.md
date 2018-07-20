@@ -87,6 +87,7 @@ python run.py -c /path/to/config.json
 * `default` 系统访问外网默认IP
 * `public`使用公网ip(使用公网API查询)
 * `nku` NKU网关ip(只支持ipv4)
+* `none` 不更新ipv4/ipv6的DNS解析
 
 ### 配置示例
 ```json
