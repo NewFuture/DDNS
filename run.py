@@ -61,9 +61,9 @@ def get_ip(ip_type):
     """
     get IP address
     """
-    index = get_config('index' + ip_type) or "default"
-    if index == 'none':
-        return None
+    index = get_config('index' + ip_type,"default")
+    if index is False: # disabled
+        return False
     elif str(index).isdigit():  # local eth
         value = getattr(ip, "local_v" + ip_type)(index)
     elif any((c in index) for c in '*.:'):  # regex
