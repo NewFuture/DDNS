@@ -59,23 +59,6 @@ def public_v6(url="http://v6.ipv6-test.com/api/myip.php"):  # 公网IPV6地址
             print(e)
 
 
-def nku_v4():  # nku 内网ipv4地址
-    host = ['http://202.113.18.106']
-    for url in host:
-        try:
-            html = urlopen(url, timeout=60).read()
-            p = html.find("v4ip='")
-            if p > 0:
-                html = html[p + 6:]
-                result = html[:html.find("'")].strip()
-                if result != None:
-                    return result
-        except Exception as e:
-            if DEBUG:
-                print(e)
-            continue
-
-
 def get_ip_config():
     if os.name == 'nt':  # windows:
         cmd = 'ipconfig'

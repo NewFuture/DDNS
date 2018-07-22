@@ -15,22 +15,22 @@ DDNS
 * [x] 自动创建记录
 * [x] 多系统(Widnows, Linux, MacOS)
 * [x] 兼容 python2 和 python3 或无python环境
+* [x] 正则选取支持(@rufengsuixing)
+* [x] 文件缓存(减少服务器IP请求)
+* [x] 二进制打包
+* [x] 多代理自动切换
 * [x] 多厂商兼容支持:
 	* [x] [DNSPOD](https://www.dnspod.cn/)
 	* [x] [阿里DNS](http://www.alidns.com/)
 	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
 	* [x] [DNSPOD国际版](https://www.dnspod.com/)
 	* [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
-* [x] 正则选取支持(@rufengsuixing)
 
 ### TODO:
-* [x] 文件缓存(减少服务器IP请求)
-* [x] 二进制打包
 * [ ] 腾讯云
 * [ ] 同线路多记录支持
 * [ ] socks代理
-* [x] 多代理自动切换
-* [ ] 简化混合配置
+* [ ] TTL自定义(更多配置) 
 
 ## 使用
 
@@ -63,6 +63,7 @@ DDNS
 <summary> config.json</summary>
 
 可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
+
 ```bash
 python run.py -c /path/to/config.json 
 ```
@@ -82,6 +83,7 @@ python run.py -c /path/to/config.json
 | debug | boolean | No | false | 是否开启调试(输出调试信息) |
 
 ### index4和index6参数说明
+
 * 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
 * 正则表达(如`"192.*"`) 提取`ifconfig`/`ipconfig`中与之匹配的首个IP地址,**注意json转义**(`\`要写成`\\`)
 	* `"192.*"`表示192开头的所有ip
@@ -91,6 +93,7 @@ python run.py -c /path/to/config.json
 * `false` 强制禁止更新ipv4或ipv6的DNS解析
 
 ### 配置示例
+
 ```json
 {
 	"id": "12345",
@@ -110,19 +113,23 @@ python run.py -c /path/to/config.json
 	"debug": false
 }
 ```
+
 </details>
 
 
 ## 定时任务 (暂时需要源码)
+
 <details>
-<summary>可以通过脚本方便的设置定时任务（默认没5分钟检查一次ip变化,自动更新）</summary>
+
+<summary>可以通过脚本设置定时任务（默认每5分钟检查一次ip,自动更新）</summary>
 
 ### windows
-**需要已经安装python**
+
 * 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
-* 以系统身份运行定时任务,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
+* 以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 
 ### linux
+
 运行 `sudo ./task.sh`
 
 </details>
