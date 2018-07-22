@@ -60,7 +60,9 @@ DDNS
 ## 配置
 
 <details open>
-<summary> config.json</summary>
+
+<summary>config.json
+</summary>
 
 可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
 
@@ -68,7 +70,7 @@ DDNS
 python run.py -c /path/to/config.json 
 ```
 
-### 配置说明
+#### 配置说明
 
 | key  | type |  required |default |  comment|
 | ------| ------- | --------- | ---- | ----------- | 
@@ -82,7 +84,7 @@ python run.py -c /path/to/config.json
 | proxy | string | No | 无 | 多个代理`;`分割，`DIRECT`表示直连，从第一个代理尝试|
 | debug | boolean | No | false | 是否开启调试(输出调试信息) |
 
-### index4和index6参数说明
+#### index4和index6参数说明
 
 * 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
 * 正则表达(如`"192.*"`) 提取`ifconfig`/`ipconfig`中与之匹配的首个IP地址,**注意json转义**(`\`要写成`\\`)
@@ -92,7 +94,7 @@ python run.py -c /path/to/config.json
 * 字符串`"public"`使用公网ip(使用公网API查询)
 * `false` 强制禁止更新ipv4或ipv6的DNS解析
 
-### 配置示例
+#### 配置示例
 
 ```json
 {
@@ -121,15 +123,17 @@ python run.py -c /path/to/config.json
 
 <details>
 
-<summary>可以通过脚本设置定时任务（默认每5分钟检查一次ip,自动更新）</summary>
+<summary>可以通过脚本设置定时任务(默认每5分钟检查一次ip,自动更新)
+</summary>
 
-### windows
+#### windows
 
 * 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
 * 以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 
-### linux
+#### linux
 
 运行 `sudo ./task.sh`
 
 </details>
+
