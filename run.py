@@ -37,15 +37,17 @@ def get_config(key=None, default=None, path="config.json"):
                     "dns": "dnspod",
                     "ipv4": [
                         "your.domain",
-                        "ipv4.yours.domain"
+                        "server.your.domain"
                     ],
                     "ipv6": [
                         "your.domain",
-                        "ipv6.your.domain"
+                        "server.your.domain",
+                        "ipv6.server.your.domain"
                     ],
                     "index4": "default",
                     "index6": "default",
-                    "proxy": None
+                    "proxy": None,
+                    "debug": False,
                 }
                 json.dump(configure, configfile, indent=2, sort_keys=True)
             sys.exit("New template configure file is created!")

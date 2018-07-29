@@ -36,7 +36,7 @@ DDNS
 
 ### 1.下载
 
-* 二进制版(无需python环境,preview)
+* 单文件版(二进制编译,无需python环境,preview)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/)
 	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/)
 * 源码运行(需要python环境)
@@ -47,14 +47,14 @@ DDNS
 ### 2.快速配置
 
 1. 复制 `example.config.json`到`config.json`
-2. 申请 api token:
+2. 申请 api `token`:
 	* [DNSPOD(国内版)创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
 	* [阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html)
 	* [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
 	* [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
 	* [CloudFlare](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)
 
-3. 修改配置,`ipv4`和`ipv6`字段，无则设为`[]`,详细参照配置说明
+3. 修改配置,`ipv4`和`ipv6`字段，无则设为`[]`(此时不会解析和更新对应IP),详细参照配置说明
 
 
 ## 配置
@@ -64,7 +64,8 @@ DDNS
 <summary>config.json
 </summary>
 
-可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
+* 首次运行会自动生成一个模板配置文件
+* 可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
 
 ```bash
 python run.py -c /path/to/config.json 
@@ -119,7 +120,7 @@ python run.py -c /path/to/config.json
 </details>
 
 
-## 定时任务 (暂时需要源码)
+## 定时任务
 
 <details>
 
