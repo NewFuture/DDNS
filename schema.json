@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://ddns.newfuture.cc/schema.json",
+  "description": "DDNS 配置文件 https://github.com/NewFuture/DDNS",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$id": "/properties/id",
+      "type": "string",
+      "title": "ID or Email",
+      "description": "DNS服务API认证的ID或者邮箱"
+    },
+    "token": {
+      "$id": "/properties/token",
+      "type": "string",
+      "title": "API Token",
+      "description": "DNS服务商的访问Token或者Key"
+    },
+    "dns": {
+      "$id": "/properties/dns",
+      "type": "string",
+      "title": "DNS Provider",
+      "description": "dns服务商,阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com)，cloudflare",
+      "default": "dnspod",
+      "examples": [
+        "dnspod",
+        "alidns",
+        "cloudflare",
+        "dnspod_com",
+        "dnscom"
+      ]
+    },
+    "ipv4": {
+      "$id": "/properties/ipv4",
+      "type": "array",
+      "title": "IPv4 domain list",
+      "description": "待更新的IPv4 域名列表",
+      "items": {
+        "$id": "/properties/ipv4/items",
+        "type": "string",
+        "title": "The DDNS ipv4 domain",
+        "examples": [
+          "example.newfuture.cc",
+          "ipv4.example.newfuture.cc"
+        ]
+      }
+    },
+    "ipv6": {
+      "$id": "/properties/ipv6",
+      "type": "array",
+      "title": "IPv6 domain list",
+      "description": "待更新的IPv6 域名列表",
+      "items": {
+        "$id": "/properties/ipv6/items",
+        "type": "string",
+        "title": "The DDNS ipv6 domain ",
+        "examples": [
+          "example.newfuture.cc",
+          "ipv6.example.newfuture.cc"
+        ]
+      }
+    },
+    "index4": {
+      "$id": "/properties/index4",
+      "type": [
+        "string",
+        "integer"
+      ],
+      "title": "IPv4 address Setting",
+      "description": "本机 IPv4 获取方式设置",
+      "default": "default",
+      "examples": [
+        "default",
+        "public",
+        0,
+        1,
+        "192\\\\.168\\\\..*",
+        false
+      ],
+      "enum": [
+        false
+      ]
+    },
+    "index6": {
+      "$id": "/properties/index6",
+      "type": [
+        "string",
+        "integer"
+      ],
+      "title": "IPv6 address Setting",
+      "description": "本机 IPv6 获取方式设置",
+      "default": "default",
+      "examples": [
+        "default",
+        "public",
+        0,
+        1,
+        "2404:f801:10:.*",
+        false
+      ],
+      "enum": [
+        false
+      ]
+    },
+    "proxy": {
+      "$id": "/properties/proxy",
+      "type": "string",
+      "title": "HTTP Proxy Setting",
+      "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
+      "examples": [
+        "127.0.0.1:1080;DIRECT"
+      ]
+    },
+    "debug": {
+      "$id": "/properties/debug",
+      "type": "boolean",
+      "title": "Enable Debug Mode",
+      "description": "是否启用调试模式显示更多信息",
+      "default": false,
+      "examples": [
+        false,
+        true
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "token"
+  ]
+}
+
