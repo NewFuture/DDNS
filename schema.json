@@ -1,9 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "http://ddns.newfuture.cc/schema.json",
+  "$id": "https://ddns.newfuture.cc/schema.json",
   "description": "DDNS 配置文件 https://github.com/NewFuture/DDNS",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "enum": [
+        "http://ddns.newfuture.cc/schema.json",
+        "https://ddns.newfuture.cc/schema.json",
+        "./schema.json"
+      ]
+    },
     "id": {
       "$id": "/properties/id",
       "type": "string",
@@ -20,9 +28,14 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商,阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com)，cloudflare",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com)，cloudflare",
       "default": "dnspod",
       "examples": [
+        "dnspod",
+        "alidns",
+        "cloudflare"
+      ],
+      "enum": [
         "dnspod",
         "alidns",
         "cloudflare",
@@ -32,15 +45,17 @@
     },
     "ipv4": {
       "$id": "/properties/ipv4",
-      "type": "array",
       "title": "IPv4 domain list",
       "description": "待更新的IPv4 域名列表",
+      "type": "array",
+      "uniqueItems": true,
       "items": {
         "$id": "/properties/ipv4/items",
+        "title": "ipv4 domain for DDNS",
         "type": "string",
-        "title": "The DDNS ipv4 domain",
+        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
         "examples": [
-          "example.newfuture.cc",
+          "newfuture.cc",
           "ipv4.example.newfuture.cc"
         ]
       }
@@ -50,12 +65,14 @@
       "type": "array",
       "title": "IPv6 domain list",
       "description": "待更新的IPv6 域名列表",
+      "uniqueItems": true,
       "items": {
         "$id": "/properties/ipv6/items",
+        "title": "The ipv6 domain for DDNS",
         "type": "string",
-        "title": "The DDNS ipv6 domain ",
+        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}$",
         "examples": [
-          "example.newfuture.cc",
+          "newfuture.cc",
           "ipv6.example.newfuture.cc"
         ]
       }
@@ -64,7 +81,8 @@
       "$id": "/properties/index4",
       "type": [
         "string",
-        "integer"
+        "integer",
+        "boolean"
       ],
       "title": "IPv4 address Setting",
       "description": "本机 IPv4 获取方式设置",
@@ -76,16 +94,14 @@
         1,
         "192\\\\.168\\\\..*",
         false
-      ],
-      "enum": [
-        false
       ]
     },
     "index6": {
       "$id": "/properties/index6",
       "type": [
         "string",
-        "integer"
+        "integer",
+        "boolean"
       ],
       "title": "IPv6 address Setting",
       "description": "本机 IPv6 获取方式设置",
@@ -97,16 +113,17 @@
         1,
         "2404:f801:10:.*",
         false
-      ],
-      "enum": [
-        false
       ]
     },
     "proxy": {
       "$id": "/properties/proxy",
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "title": "HTTP Proxy Setting",
       "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
+      "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
       "examples": [
         "127.0.0.1:1080;DIRECT"
       ]
@@ -126,6 +143,6 @@
   "required": [
     "id",
     "token"
-  ]
+  ],
+  "additionalProperties": false
 }
-
