@@ -37,8 +37,8 @@ DDNS
 ### 1.下载
 
 * 单文件版(二进制编译,无需python环境,preview)
-	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/)
-	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/)
+	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
+	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
 * 源码运行(需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
