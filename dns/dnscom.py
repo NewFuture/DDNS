@@ -9,7 +9,7 @@ http://open.dns.com/
 
 import hashlib
 import json
-import logging
+import logging as logger
 import time
 from datetime import datetime
 
@@ -31,8 +31,6 @@ TOKEN = "TOKEN"
 PROXY = None  # 代理设置
 API_SITE = "www.dns.com"
 API_METHOD = "POST"
-
-logger = logging.getLogger(__name__)
 
 
 def signature(params):

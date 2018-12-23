@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 import json
-import logging
+import logging as logger
 
 try:
     # python 2
@@ -24,8 +24,6 @@ ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台�
 TOKEN = "API KEY"
 PROXY = None  # 代理设置
 API_SITE = "api.cloudflare.com"
-
-logger = logging.getLogger(__name__)
 
 
 def request(method, action, param=None, **params):

@@ -3,15 +3,13 @@
 import re
 import os
 import socket
-import logging
+import logging as logger
 try:
     # python2
     from urllib2 import urlopen
 except ImportError:
     # python3
     from urllib.request import urlopen
-
-logger = logging.getLogger(__name__)
 
 
 def default_v4():  # 默认连接外网的ipv4

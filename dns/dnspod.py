@@ -7,7 +7,7 @@ http://www.dnspod.cn/docs/domains.html
 """
 
 import json
-import logging
+import logging as logger
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -25,8 +25,6 @@ TOKEN = "token key"
 PROXY = None  # 代理设置
 API_SITE = "dnsapi.cn"
 API_METHOD = "POST"
-
-logger = logging.getLogger(__name__)
 
 
 def request(action, param=None, **params):

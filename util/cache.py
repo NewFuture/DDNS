@@ -4,7 +4,7 @@ cache module
 文件缓存
 """
 
-import logging
+import logging as logger
 import os
 import pickle
 import time
@@ -14,8 +14,6 @@ try:
 except ImportError:
     # Python 2 imports
     from collections import MutableMapping
-
-logger = logging.getLogger(__name__)
 
 
 class Cache(MutableMapping):

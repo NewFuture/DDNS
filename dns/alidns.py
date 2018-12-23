@@ -11,7 +11,7 @@ import hmac
 import uuid
 import base64
 import json
-import logging
+import logging as logger
 from datetime import datetime
 
 try:
@@ -31,8 +31,6 @@ TOKEN = "TOKEN"
 PROXY = None  # 代理设置
 API_SITE = "alidns.aliyuncs.com"
 API_METHOD = "POST"
-
-logger = logging.getLogger(__name__)
 
 
 def signature(params):
