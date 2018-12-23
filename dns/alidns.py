@@ -11,7 +11,7 @@ import hmac
 import uuid
 import base64
 import json
-import logging as log
+import logging
 from datetime import datetime
 
 try:
@@ -23,7 +23,6 @@ except ImportError:
     from http.client import HTTPSConnection
     import urllib.parse as urllib
 
-
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
@@ -32,6 +31,8 @@ TOKEN = "TOKEN"
 PROXY = None  # 代理设置
 API_SITE = "alidns.aliyuncs.com"
 API_METHOD = "POST"
+
+logger = logging.getLogger(__name__)
 
 
 def signature(params):
@@ -48,10 +49,10 @@ def signature(params):
         'SignatureVersion': "1.0",
     })
     query = urllib.urlencode(sorted(params.items()))
-    log.debug(query)
+    logger.debug(query)
     sign = API_METHOD + "&" + \
         urllib.quote_plus("/") + "&" + urllib.quote(query, safe='')
-    log.debug("signString: %s", sign)
+    logger.debug("signString: %s", sign)
 
     sign = hmac.new((TOKEN + "&").encode('utf-8'),
                     sign.encode('utf-8'), hashlib.sha1).digest()
@@ -68,7 +69,7 @@ def request(param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    log.debug("params:%s", params)
+    logger.debug("params:%s", params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -86,7 +87,7 @@ def request(param=None, **params):
         raise Exception(data)
     else:
         data = json.loads(data.decode('utf8'))
-        log.debug(data)
+        logger.debug(data)
         return data
 
 
@@ -139,7 +140,7 @@ def update_record(domain, value, record_type='A'):
         add
         https://help.aliyun.com/document_detail/29772.html?
     """
-    log.debug(">>>>>%s(%s)", domain, record_type)
+    logger.debug(">>>>>%s(%s)", domain, record_type)
     sub, main = get_domain_info(domain)
     if not sub:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -150,7 +151,7 @@ def update_record(domain, value, record_type='A'):
     if records:
         for (rid, record) in records.items():
             if record["Value"] != value:
-                log.debug(sub, record)
+                logger.debug(sub, record)
                 res = request(Action="UpdateDomainRecord", RecordId=rid,
                               Value=value, RR=sub, Type=record_type)
                 if res:
@@ -178,6 +179,7 @@ def update_record(domain, value, record_type='A'):
             result = domain + " created fail!"
     return result
 
+
 if __name__ == '__main__':
-    log.basicConfig(level=log.DEBUG)
-    log.info(get_records('www.newfuture.win'))
+    logger.basicConfig(level=logger.DEBUG)
+    logger.info(get_records('www.newfuture.win'))

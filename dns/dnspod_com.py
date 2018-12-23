@@ -7,7 +7,7 @@ http://www.dnspod.com/docs/domains.html
 """
 
 import json
-import logging as log
+import logging
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -26,6 +26,8 @@ PROXY = None  # 代理设置
 API_SITE = "api.dnspod.com"
 API_METHOD = "POST"
 
+logger = logging.getLogger(__name__)
+
 
 def request(action, param=None, **params):
     """
@@ -35,7 +37,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({'user_token': "%s,%s" % (ID, TOKEN), 'format': 'json'})
-    log.debug("%s : params:%s", action, params)
+    logger.debug("%s : params:%s", action, params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -141,7 +143,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    log.debug(">>>>>%s(%s)", domain, record_type)
+    logger.debug(">>>>>%s(%s)", domain, record_type)
     domainid, sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -152,7 +154,7 @@ def update_record(domain, value, record_type="A"):
         # http://www.dnspod.cn/docs/records.html#record-modify
         for (did, record) in records.items():
             if record["value"] != value:
-                log.debug(sub, record)
+                logger.debug(sub, record)
                 line = record["line"].replace(
                     "Default", "default").encode("utf-8")
                 res = request('Record.Modify', record_id=did, record_line=line, value=value,

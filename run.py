@@ -12,6 +12,7 @@ import time
 import os
 import sys
 import tempfile
+import logging
 
 from util import ip
 from util.cache import Cache
@@ -38,12 +39,12 @@ def get_config(key=None, default=None, path="config.json"):
                     "dns": "dnspod",
                     "ipv4": [
                         "newfuture.cc",
-                        "test-pc.newfuture.cc"
+                        "ddns.newfuture.cc"
                     ],
                     "ipv6": [
                         "newfuture.cc",
-                        "test-pc.newfuture.cc",
-                        "ipv6.test-pc.newfuture.cc"
+                        "ddns.newfuture.cc",
+                        "ipv6.ddns.newfuture.cc"
                     ],
                     "index4": "default",
                     "index6": "default",
@@ -84,7 +85,7 @@ def change_dns_record(dns, proxy_list, **kw):
         else:
             dns.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
-        print('%s(%s) ==> %s [via %s]' %
+        print('\n%s(%s) ==> %s [via %s]' %
               (domain, record_type, kw['ip'], proxy))
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
@@ -128,7 +129,11 @@ def main():
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
     dns.ID, dns.TOKEN = get_config('id'), get_config('token')
-    ip.DEBUG = get_config('debug')
+    if get_config('debug'):
+        ip.DEBUG = get_config('debug')
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(module)s.%(funcName)s - %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')

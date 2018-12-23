@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 import json
-import logging as log
+import logging
 
 try:
     # python 2
@@ -25,6 +25,8 @@ TOKEN = "API KEY"
 PROXY = None  # 代理设置
 API_SITE = "api.cloudflare.com"
 
+logger = logging.getLogger(__name__)
+
 
 def request(method, action, param=None, **params):
     """
@@ -33,7 +35,7 @@ def request(method, action, param=None, **params):
     if param:
         params.update(param)
 
-    log.debug("$s %s : params:%s", action, params)
+    logger.debug("$s %s : params:%s", action, params)
     if PROXY:
         conn = HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
@@ -70,7 +72,7 @@ def get_zone_id(domain):
         切割域名获取主域名ID(Zone_ID)
         https://api.cloudflare.com/#zone-list-zones
     """
-    zones = request('GET', '', per_page=50) 
+    zones = request('GET', '', per_page=50)
     zone = next((z for z in zones if domain.endswith(z.get('name'))), None)
     zoneid = zone and zone['id']
     return zoneid
@@ -108,7 +110,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    log.debug(">>>>>%s(%s)", domain, record_type)
+    logger.debug(">>>>>%s(%s)", domain, record_type)
     zoneid = get_zone_id(domain)
     if not zoneid:
         raise Exception("invalid domain: [ %s ] " % domain)

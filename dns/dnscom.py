@@ -9,7 +9,7 @@ http://open.dns.com/
 
 import hashlib
 import json
-import logging as log
+import logging
 import time
 from datetime import datetime
 
@@ -32,6 +32,8 @@ PROXY = None  # 代理设置
 API_SITE = "www.dns.com"
 API_METHOD = "POST"
 
+logger = logging.getLogger(__name__)
+
 
 def signature(params):
     """
@@ -42,9 +44,9 @@ def signature(params):
         'timestamp': time.mktime(datetime.now().timetuple()),
     })
     query = urllib.urlencode(sorted(params.items()))
-    log.debug(query)
+    logger.debug(query)
     sign = query
-    log.debug("signString: %s", sign)
+    logger.debug("signString: %s", sign)
 
     sign = hashlib.md5((sign + TOKEN).encode('utf-8')).hexdigest()
     params["hash"] = sign
@@ -59,7 +61,7 @@ def request(action, param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    log.debug("%s : params:%s", action, params)
+    logger.debug("%s : params:%s", action, params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -79,7 +81,7 @@ def request(action, param=None, **params):
         data = json.loads(result.decode('utf8'))
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))
-        log.debug(data)
+        logger.debug(data)
         data = data.get('data')
         if data is None:
             raise Exception('response data is none')
@@ -136,7 +138,7 @@ def update_record(domain, value, record_type='A'):
     """
         更新记录
     """
-    log.debug(">>>>>%s(%s)", domain, record_type)
+    logger.debug(">>>>>%s(%s)", domain, record_type)
     sub, main, domain_id = get_domain_info(domain)
 
     records = get_records(main, domain_id, record=sub, type=record_type)
@@ -145,7 +147,7 @@ def update_record(domain, value, record_type='A'):
     if records:
         for (rid, record) in records.items():
             if record["value"] != value:
-                log.debug(sub, record)
+                logger.debug(sub, record)
                 res = request("record/modify", domainID=domain_id,
                               recordID=rid, newvalue=value)
                 if res:
@@ -173,6 +175,7 @@ def update_record(domain, value, record_type='A'):
             result = domain + " created fail!"
     return result
 
+
 if __name__ == '__main__':
-    log.basicConfig(level=log.DEBUG)
-    log.info(get_records('www.newfuture.win', 111))
+    logger.basicConfig(level=logger.DEBUG)
+    logger.info(get_records('www.newfuture.win', 111))

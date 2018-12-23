@@ -4,8 +4,7 @@ cache module
 文件缓存
 """
 
-from __future__ import print_function
-import logging as LOG
+import logging
 import os
 import pickle
 import time
@@ -15,6 +14,8 @@ try:
 except ImportError:
     # Python 2 imports
     from collections import MutableMapping
+
+logger = logging.getLogger(__name__)
 
 
 class Cache(MutableMapping):
@@ -44,7 +45,7 @@ class Cache(MutableMapping):
         if not path:
             path = self.__filename
 
-        LOG.debug('load cache data from %s', path)
+        logger.debug('load cache data from %s', path)
         if os.path.isfile(path):
             with open(self.__filename, 'rb') as data:
                 try:
@@ -54,11 +55,11 @@ class Cache(MutableMapping):
                     self.__data = {}
                     self.__time = time.time()
                 except Exception as e:
-                    print(e)
+                    logger.error(e)
                     self.__data = {}
                     self.__time = time.time()
         else:
-            LOG.info('cache file not exist')
+            logger.info('cache file not exist')
             self.__data = {}
             self.__time = time.time()
         return self
@@ -81,7 +82,7 @@ class Cache(MutableMapping):
         if self.__changed:
             with open(self.__filename, 'wb') as data:
                 pickle.dump(self.__data, data)
-                LOG.debug('save cache data to %s', self.__filename)
+                logger.debug('save cache data to %s', self.__filename)
             self.__time = time.time()
             self.__changed = False
         return self
@@ -143,11 +144,11 @@ def main():
     """
     test
     """
-    LOG.basicConfig(level=LOG.DEBUG)
+    logger.basicConfig(level=logger.DEBUG)
     cache = Cache('test.txt')
-    print(cache, cache.time)
+    logger.info(cache, cache.time)
     cache['s'] = 'a'
-    print(cache['s'], cache.time)
+    logger.info(cache['s'], cache.time)
 
 
 if __name__ == '__main__':
