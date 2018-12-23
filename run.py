@@ -43,7 +43,6 @@ def get_config(key=None, default=None, path="config.json"):
                     ],
                     "ipv6": [
                         "newfuture.cc",
-                        "ddns.newfuture.cc",
                         "ipv6.ddns.newfuture.cc"
                     ],
                     "index4": "default",
@@ -133,7 +132,7 @@ def main():
         ip.DEBUG = get_config('debug')
         logging.basicConfig(
             level=logging.DEBUG,
-            format='%(asctime)s - %(module)s.%(funcName)s - %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
+            format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')

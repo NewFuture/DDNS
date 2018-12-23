@@ -34,8 +34,9 @@ def request(action, param=None, **params):
     if param:
         params.update(param)
 
-    params.update({'login_token': "%s,%s" % (ID, TOKEN), 'format': 'json'})
+    params.update({'login_token': '***', 'format': 'json'})
     logger.debug("%s : params:%s", action, params)
+    params['login_token'] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -78,9 +79,11 @@ def get_domain_info(domain):
                 sub = ".".join(domain_split)
                 break
         else:
+            logger.warn('domain_id: %s, sub: %s', did, sub)
             return None, None
         if not sub:  # root domain根域名https://github.com/NewFuture/DDNS/issues/9
             sub = '@'
+    logger.info('domain_id: %s, sub: %s', did, sub)
     return did, sub
 
 
@@ -96,7 +99,10 @@ def get_domain_id(domain):
         # 如果已经存在直接返回防止再次请求
         return get_domain_id.domain_list[domain]
     else:
-        info = request('Domain.Info', domain=domain)
+        try:
+            info = request('Domain.Info', domain=domain)
+        except Exception:
+            return
         if info and info.get('status', {}).get('code') == "1":
             did = info.get("domain", {}).get("id")
             if did:
