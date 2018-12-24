@@ -3,28 +3,32 @@ DDNS
 自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
 代理模式,支持自动创建域名记录。
 
-### 功能
-
-* [x] 多个域名支持
-* [x] 多级域名解析
-* [x] 内网IP
-* [x] 公网IP
-* [x] ipv6支持
-* [x] 代理模式(http代理)
+### Features
+* 域名
+    * [x] 多个域名支持
+    * [x] 多级域名解析
+    * [x] 自动创建记录
+* IP支持 
+    * [x] 内网IP
+    * [x] 公网IP
+    * [x] ipv6支持
+    * [x] 正则选取支持(@rufengsuixing)
+* 兼容和跨平台
+    * [x] 多系统(Widnows, Linux, MacOS)
+    * [x] python2 
+    * [x] python3
+    * [x] 无Python可执行文件
 * [x] 定时任务
-* [x] 自动创建记录
-* [x] 多系统(Widnows, Linux, MacOS)
-* [x] 兼容 python2 和 python3 或无python环境
-* [x] 正则选取支持(@rufengsuixing)
 * [x] 文件缓存(减少服务器IP请求)
-* [x] 二进制打包
-* [x] 多代理自动切换
-* [x] 多厂商兼容支持:
-	* [x] [DNSPOD](https://www.dnspod.cn/)
-	* [x] [阿里DNS](http://www.alidns.com/)
-	* [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
-	* [x] [DNSPOD国际版](https://www.dnspod.com/)
-	* [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
+* 网络代理
+    * [x] http代理支持
+    * [x] 多代理自动切换
+* 多厂商兼容支持:
+    * [x] [DNSPOD](https://www.dnspod.cn/)
+    * [x] [阿里DNS](http://www.alidns.com/)
+    * [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
+    * [x] [DNSPOD国际版](https://www.dnspod.com/)
+    * [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
 
 ### TODO:
 * [ ] 腾讯云
@@ -137,4 +141,3 @@ python run.py -c /path/to/config.json
 运行 `sudo ./task.sh`
 
 </details>
-
