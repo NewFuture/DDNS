@@ -107,12 +107,12 @@ python run.py -c /path/to/config.json
 	"token": "mythokenkey",
 	"dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare",
 	"ipv4": [
-		"dns.newfuture.xyz",
-		"ipv4.dns.newfuture.xyz"
+		"ddns.newfuture.xyz",
+		"ipv4.ddns.newfuture.xyz"
 	],
 	"ipv6": [
-		"dns.newfuture.xyz",
-		"ipv6.dns.newfuture.xyz"
+		"ddns.newfuture.xyz",
+		"ipv6.ddns.newfuture.xyz"
 	],
 	"index4": 0,
 	"index6": "public",
