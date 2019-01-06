@@ -46,7 +46,9 @@ def get_config(key=None, default=None, path="config.json"):
                         "ipv6.ddns.newfuture.cc"
                     ],
                     "index4": "default",
+                    "index4_url": 'http://v4.ipv6-test.com/api/myip.php',
                     "index6": "default",
+                    "index6_url": 'http://v6.ipv6-test.com/api/myip.php',
                     "proxy": None,
                     "debug": False,
                 }
@@ -71,8 +73,17 @@ def get_ip(ip_type):
         value = getattr(ip, "local_v" + ip_type)(index)
     elif any((c in index) for c in '*.:'):  # regex
         value = getattr(ip, "regex_v" + ip_type)(index)
-    else:
+    elif index == 'default':
         value = getattr(ip, index + "_v" + ip_type)()
+    else:  # 'global' only for current schema
+        if ip_type == '4':
+            url = get_config('index4_url', 'http://v4.ipv6-test.com/api/myip.php')
+            value = getattr(ip, index + "_v4")(url)
+            value = ip.IPV4.search(value).group()
+        else:
+            url = get_config('index6_url', 'http://v6.ipv6-test.com/api/myip.php')
+            value = getattr(ip, index + "_v6")(url)
+            value = ip.IPV6.search(value).group()
 
     return value
 

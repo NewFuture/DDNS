@@ -85,7 +85,9 @@ python run.py -c /path/to/config.json
 | ipv4 | array | No | [] | ipv4 域名列表 |
 | ipv6 | array | No | [] | ipv6 域名列表 |
 | index4 | string/int | No | 'default'| ipv4获取方式 |
+| index4_url | string | No | 'http://v4.ipv6-test.com/api/myip.php' | ipv4获取 |
 | index6 | string/int | No | 'default'| ipv6获取方式 |
+| index6_url | string | No | 'http://v6.ipv6-test.com/api/myip.php' | ipv6获取 |
 | proxy | string | No | 无 | 多个代理`;`分割，`DIRECT`表示直连，从第一个代理尝试|
 | debug | boolean | No | false | 是否开启调试(输出调试信息) |
 
