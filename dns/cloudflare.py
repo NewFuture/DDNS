@@ -46,6 +46,8 @@ def request(method, action, param=None, **params):
         params = json.dumps(params)
     else:
         params = urllib.urlencode(params)
+    if method == 'GET':
+        action = action + '?' + params
     conn.request(method, '/client/v4/zones' + action, params,
                  {"Content-type": "application/json",
                   "X-Auth-Email": ID,
@@ -88,7 +90,7 @@ def get_records(zoneid, **conditions):
 
     if not zoneid in get_records.records:
         get_records.records[zoneid] = {}
-        data = request('GET', '/' + zoneid + '/dns_records', per_page=100)
+        data = request('GET', '/' + zoneid + '/dns_records', per_page=100, **conditions)
         if data:
             for record in data:
                 get_records.records[zoneid][record['id']] = {
