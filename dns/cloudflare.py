@@ -40,12 +40,14 @@ def request(method, action, param=None, **params):
     else:
         conn = HTTPSConnection(API_SITE)
 
-    if method in ['PUT', 'POST']:
+    if method in ['PUT', 'POST', 'PATCH']:
         # 从public_v(4,6)获取的IP是bytes类型，在json.dumps时会报TypeError
         params['content'] = str(params.get('content'))
         params = json.dumps(params)
-    else:
-        params = urllib.urlencode(params)
+    else:  # (GET, DELETE) where DELETE doesn't require params in Cloudflare
+        if params:
+            action = '?' + urllib.urlencode(params)
+        params = None
     conn.request(method, '/client/v4/zones' + action, params,
                  {"Content-type": "application/json",
                   "X-Auth-Email": ID,
@@ -88,7 +90,7 @@ def get_records(zoneid, **conditions):
 
     if not zoneid in get_records.records:
         get_records.records[zoneid] = {}
-        data = request('GET', '/' + zoneid + '/dns_records', per_page=100)
+        data = request('GET', '/' + zoneid + '/dns_records', per_page=100, **conditions)
         if data:
             for record in data:
                 get_records.records[zoneid][record['id']] = {
