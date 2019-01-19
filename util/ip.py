@@ -42,14 +42,14 @@ def local_v4(i=0):  # 本地ipv4地址
 
 def public_v4(url="http://v4.ipv6-test.com/api/myip.php"):  # 公网IPV4地址
     try:
-        return urlopen(url, timeout=60).read()
+        return urlopen(url, timeout=60).read().decode('utf8')
     except Exception as e:
         logger.error(e)
 
 
 def public_v6(url="http://v6.ipv6-test.com/api/myip.php"):  # 公网IPV6地址
     try:
-        return urlopen(url, timeout=60).read()
+        return urlopen(url, timeout=60).read().decode('utf8')
     except Exception as e:
         logger.error(e)
 
