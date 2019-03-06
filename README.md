@@ -79,7 +79,7 @@ python run.py -c /path/to/config.json
 
 | key  | type |  required |default |  comment|
 | ------| ------- | --------- | ---- | ----------- | 
-| id | string |  Yes | 无 | api授权id |
+| id | string |  Yes | 无 | api授权id(`cloudflare`为登录邮箱) |
 | token | string | Yes | 无 | api授权token | 
 | dns | string | No | `dnspod` | dns服务商,阿里为`alidns`,DNS.COM为`dnscom`,DNSPOD国际版为(`dnspod_com`)，`cloudflare`| 
 | ipv4 | array | No | [] | ipv4 域名列表 |

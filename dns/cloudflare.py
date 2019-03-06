@@ -46,7 +46,7 @@ def request(method, action, param=None, **params):
         params = json.dumps(params)
     else:  # (GET, DELETE) where DELETE doesn't require params in Cloudflare
         if params:
-            action = '?' + urllib.urlencode(params)
+            action += '?' + urllib.urlencode(params)
         params = None
     conn.request(method, '/client/v4/zones' + action, params,
                  {"Content-type": "application/json",
