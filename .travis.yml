@@ -1,7 +1,7 @@
 language: python
 python:
   - "2.7"
-  - "latest"
+  - "3.7"
 
 # command to install dependencies
 install:
@@ -10,4 +10,4 @@ install:
 # command to run tests
 script:
   - ./build.cmd
-  - ./dist/ddns
+  - ./dist/ddns || test -e "config.json"
