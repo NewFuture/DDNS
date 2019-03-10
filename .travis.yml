@@ -29,3 +29,7 @@ deploy:
     file:
       - "tash.sh"
       - "dist/ddns"
+    on:
+      tags: true
+      branch: master
+      python: '3.7'
