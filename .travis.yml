@@ -3,11 +3,11 @@ python:
   - "2.7"
   - "3.7"
 
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-    - os: osx
+dist: xenial
+
+os: 
+  - linux
+  - osx
 
 
 # command to install dependencies
