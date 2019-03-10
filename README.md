@@ -1,5 +1,6 @@
-DDNS
+DDNS [![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS)
 ===================
+
 自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
 代理模式,支持自动创建域名记录。
 
