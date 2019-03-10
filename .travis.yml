@@ -5,9 +5,9 @@ python:
 
 dist: xenial
 
-os: 
-  - linux
-  - osx
+# os: 
+#   - linux
+#   - osx
 
 
 # command to install dependencies
