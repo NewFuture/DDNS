@@ -104,6 +104,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
+        "$schema": "https://ddns.newfuture.cc/schema.json",
 	"id": "12345",
 	"token": "mythokenkey",
 	"dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare",
