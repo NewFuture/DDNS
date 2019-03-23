@@ -31,24 +31,25 @@ jobs:
   - script: pip install pyinstaller
     displayName: 'pyinstaller'
 
-  - task: Build@0
-  - script: .\\build.cmd
-    displayName: 'pyinstaller'
+  - script: build.cmd
+    displayName: 'build'
 
 - job: 'Publish'
   dependsOn: 'Test'
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'Ubuntu-16.04'
 
   steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
-
+  
+  - script: pip install pyinstaller
+    displayName: 'pyinstaller'
+    
   - script: pip install pyinstaller
     displayName: 'pyinstaller'
 
-  - task: Build@0
-  - script: .\\build.cmd
-    displayName: 'pyinstaller'
+  - script: build.cmd
+    displayName: 'build'
