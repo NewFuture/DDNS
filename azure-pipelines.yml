@@ -37,7 +37,7 @@ jobs:
 - job: 'Publish'
   dependsOn: 'Test'
   pool:
-    vmImage: 'Ubuntu-16.04'
+    vmImage: 'vs2017-win2016'
 
   steps:
   - task: UsePythonVersion@0
