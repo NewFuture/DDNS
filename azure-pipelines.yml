@@ -31,7 +31,7 @@ jobs:
   - script: pip install pyinstaller
     displayName: 'pyinstaller'
 
-  - task: Build
+  - task: Build@0
   - script: .\\build.cmd
     displayName: 'pyinstaller'
 
@@ -49,6 +49,6 @@ jobs:
   - script: pip install pyinstaller
     displayName: 'pyinstaller'
 
-  - task: Build
+  - task: Build@0
   - script: .\\build.cmd
     displayName: 'pyinstaller'
