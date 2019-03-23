@@ -1,14 +1,13 @@
 DDNS
-------------
+===================
 
 Ubuntu[![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS)
 Windows[![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
 
-===================
 
 
-自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
-代理模式,支持自动创建域名记录。
+>自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
+>代理模式,支持自动创建域名记录。
 
 ### Features
 * 域名
