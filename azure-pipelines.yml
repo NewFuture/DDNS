@@ -44,17 +44,6 @@ jobs:
     inputs:
       pathtoPublish: './dist/'
       artifactName: 'ddns-win-$(python.version)'
-
-- job: 'PublishWindows'
-  dependsOn: 'Windows'
-  pool:
-    vmImage: 'vs2017-win2016'
-
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      architecture: 'x64'
     
 - job: 'MacOS'
   pool:
@@ -86,15 +75,3 @@ jobs:
     inputs:
       pathtoPublish: './dist/'
       artifactName: 'ddns-mac-$(python.version)'
-      
-- job: 'PublishMacOS'
-  dependsOn: 'MacOS'
-  pool:
-    vmImage: 'macos-10.13'
-
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      architecture: 'x64'
-
