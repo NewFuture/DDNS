@@ -56,7 +56,7 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
     
-  - job: 'MacOS'
+- job: 'MacOS'
   pool:
     vmImage: 'macos-10.13'
   strategy:
