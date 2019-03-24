@@ -4,11 +4,17 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- master
+  batch: true
+  branches:
+    include: [ master ]
 
+pr:
+  autoCancel: true
+
+    
 jobs:
 
-- job: 'Test'
+- job: 'Windows'
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
@@ -33,9 +39,14 @@ jobs:
 
   - script: build.cmd
     displayName: 'build'
+ 
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: './dist/'
+      artifactName: 'ddns-win-$(python.version)'
 
-- job: 'Publish'
-  dependsOn: 'Test'
+- job: 'PublishWindows'
+  dependsOn: 'Windows'
   pool:
     vmImage: 'vs2017-win2016'
 
@@ -44,12 +55,46 @@ jobs:
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
-  
-  - script: pip install pyinstaller
-    displayName: 'pyinstaller'
     
+  - job: 'MacOS'
+  pool:
+    vmImage: 'macos-10.13'
+  strategy:
+    matrix:
+      Python27:
+        python.version: '2.7'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 4
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(python.version)'
+      architecture: 'x64'
+
+  - script: python -m pip install --upgrade pip
+    displayName: 'Install dependencies'
+
   - script: pip install pyinstaller
     displayName: 'pyinstaller'
 
-  - script: build.cmd
+  - script: ./build.cmd
     displayName: 'build'
+  
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: './dist/'
+      artifactName: 'ddns-mac-$(python.version)'
+      
+- job: 'PublishMacOS'
+  dependsOn: 'MacOS'
+  pool:
+    vmImage: 'macos-10.13'
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
+
