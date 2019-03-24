@@ -40,14 +40,8 @@ jobs:
   - script: build.cmd
     displayName: 'build'
   
-  - script: dist\\ddns.exe || echo done
-    displayName: run
-    failOnStderr: false
-    continueOnError: true
-  
-  - script: copy config.json config.test-exist.json
-    failOnStderr: false
-    displayName: 'test'
+  - bash: dist/ddns.exe || test -e "config.json"
+    name: run
 
   - task: PublishBuildArtifacts@1
     inputs:
