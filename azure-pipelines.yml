@@ -70,6 +70,9 @@ jobs:
 
   - script: ./build.cmd
     displayName: 'build'
+
+  - script: ./dist/ddns || test -e "config.json"
+    displayName: 'test'
   
   - task: PublishBuildArtifacts@1
     inputs:
