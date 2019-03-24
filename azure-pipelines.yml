@@ -39,7 +39,16 @@ jobs:
 
   - script: build.cmd
     displayName: 'build'
- 
+  
+  - script: ./dist/ddns.exe
+    displayName: run
+    failOnStderr: false
+    continueOnError: true
+  
+  - script: copy config.json config.test-exist.json
+    failOnStderr: false
+    displayName: 'test'
+
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: './dist/'
