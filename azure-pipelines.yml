@@ -7,10 +7,16 @@ trigger:
   batch: true
   branches:
     include: [ master ]
+  tags:
+    include:
+    - "v*"
+    - "V*"
 
 pr:
   autoCancel: true
-
+  branches:
+    include:
+    - master
     
 jobs:
 
