@@ -82,10 +82,11 @@ def request(param=None, **params):
     conn.close()
 
     if response.status < 200 or response.status >= 300:
+        logger.warn('%s : error:%s', action, data)       
         raise Exception(data)
     else:
         data = json.loads(data.decode('utf8'))
-        logger.debug(data)
+        logger.debug('%s : result:%s', action, data)
         return data
 
 

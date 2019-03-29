@@ -35,7 +35,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({'login_token': '***', 'format': 'json'})
-    logger.debug("%s : params:%s", action, params)
+    logger.info("%s : params:%s", action, params)
     params['login_token'] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
@@ -51,9 +51,11 @@ def request(action, param=None, **params):
     conn.close()
 
     if response.status < 200 or response.status >= 300:
+        logger.warn('%s : error:%s', action, res) 
         raise Exception(res)
     else:
         data = json.loads(res.decode('utf8'))
+        logger.debug('%s : result:%s', action, data)
         if not data:
             raise Exception("empty response")
         elif data.get("status", {}).get("code") == "1":
@@ -99,15 +101,11 @@ def get_domain_id(domain):
         # 如果已经存在直接返回防止再次请求
         return get_domain_id.domain_list[domain]
     else:
-        try:
-            info = request('Domain.Info', domain=domain)
-        except Exception:
-            return
-        if info and info.get('status', {}).get('code') == "1":
-            did = info.get("domain", {}).get("id")
-            if did:
-                get_domain_id.domain_list[domain] = did
-                return did
+        info = request('Domain.Info', domain=domain)
+        did = info.get("domain", {}).get("id")
+        if did:
+            get_domain_id.domain_list[domain] = did
+            return did
 
 
 def get_records(did, **conditions):
@@ -144,7 +142,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    logger.debug(">>>>>%s(%s)", domain, record_type)
+    logger.info(">>>>>%s(%s)", domain, record_type)
     domainid, sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] " % domain)

@@ -35,7 +35,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({'login_token': '***', 'format': 'json'})
-    logger.debug("%s : params:%s", action, params)
+    logger.info("%s : params:%s", action, params)
     params['login_token'] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
@@ -57,6 +57,7 @@ def request(action, param=None, **params):
         raise Exception(res)
     else:
         data = json.loads(res.decode('utf8'))
+        logger.debug('%s : result:%s', action, data)
         if not data:
             raise Exception("empty response")
         elif data.get("status", {}).get("code") == "1":
@@ -142,7 +143,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    logger.debug(">>>>>%s(%s)", domain, record_type)
+    logger.info(">>>>>%s(%s)", domain, record_type)
     domainid, sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] " % domain)

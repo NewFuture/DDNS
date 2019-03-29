@@ -59,7 +59,7 @@ def request(action, param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    logger.debug("%s : params:%s", action, params)
+    logger.info("%s : params:%s", action, params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -77,9 +77,9 @@ def request(action, param=None, **params):
         raise Exception(result)
     else:
         data = json.loads(result.decode('utf8'))
+        logger.debug('%s : result:%s', action, data)
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))
-        logger.debug(data)
         data = data.get('data')
         if data is None:
             raise Exception('response data is none')
@@ -136,7 +136,7 @@ def update_record(domain, value, record_type='A'):
     """
         更新记录
     """
-    logger.debug(">>>>>%s(%s)", domain, record_type)
+    logger.info(">>>>>%s(%s)", domain, record_type)
     sub, main, domain_id = get_domain_info(domain)
 
     records = get_records(main, domain_id, record=sub, type=record_type)

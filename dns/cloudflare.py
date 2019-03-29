@@ -33,7 +33,7 @@ def request(method, action, param=None, **params):
     if param:
         params.update(param)
 
-    logger.debug("$s %s : params:%s", action, params)
+    logger.info("$s %s : params:%s", action, params)
     if PROXY:
         conn = HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
@@ -59,6 +59,7 @@ def request(method, action, param=None, **params):
         raise Exception(res)
     else:
         data = json.loads(res.decode('utf8'))
+        logger.debug('%s : result:%s', action, data)
         if not data:
             raise Exception("Empty Response")
         elif data.get('success'):
@@ -111,7 +112,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    logger.debug(">>>>>%s(%s)", domain, record_type)
+    logger.info(">>>>>%s(%s)", domain, record_type)
     zoneid = get_zone_id(domain)
     if not zoneid:
         raise Exception("invalid domain: [ %s ] " % domain)
