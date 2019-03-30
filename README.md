@@ -1,7 +1,7 @@
 [DDNS](https://github.com/NewFuture/DDNS)
 ===================
 
-Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master) [![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS)
+Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master) [![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS) [![latest deploy](https://vsrm.dev.azure.com/NewFuture-CI/_apis/public/Release/badge/2ab09aad-c4b4-4c57-ab1b-2fb92c485664/1/1)](https://github.com/NewFuture/DDNS/releases/latest)
 
 | Ubuntu | Windows Python3.7 | Windows Python2.7 | Mac Python3.7 | Mac Python2.7 |
 | :-----: | :-----: | :-----: | :-----: | :-----: |
@@ -14,31 +14,32 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 >代理模式,支持自动创建域名记录。
 
 ### Features
-* 域名
+* 域名支持:
     * [x] 多个域名支持
     * [x] 多级域名解析
-    * [x] 自动创建记录
-* IP支持 
+    * [x] 自动创建新记录
+* IP类型:
     * [x] 内网IP
     * [x] 公网IP
     * [x] ipv6支持
     * [x] 正则选取支持(@rufengsuixing)
-* 兼容和跨平台
+* 兼容和跨平台:
     * [x] 多系统(Widnows, Linux, MacOS)
     * [x] python2 
     * [x] python3
     * [x] 无Python可执行文件
-* [x] 定时任务
-* [x] 文件缓存(减少服务器IP请求)
-* 网络代理
+* 网络代理:
     * [x] http代理支持
     * [x] 多代理自动切换
-* 多厂商兼容支持:
+* 服务商支持:
     * [x] [DNSPOD](https://www.dnspod.cn/)
     * [x] [阿里DNS](http://www.alidns.com/)
     * [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
     * [x] [DNSPOD国际版](https://www.dnspod.com/)
     * [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
+* 其他: 
+	* [x] 可设置定时任务
+	* [x] 本地文件缓存(减少服务器请求和查询)
 
 ### TODO:
 * [ ] 腾讯云
@@ -72,7 +73,7 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 3. 修改配置,`ipv4`和`ipv6`字段，无则设为`[]`(此时不会解析和更新对应IP),详细参照配置说明
 
 
-## 配置
+## 详细配置
 
 <details open>
 
