@@ -91,6 +91,8 @@ jobs:
   
   - script: cp release/*.sh dist/ && cp release/*.md dist/
     name: 'CopyRlease'
+
+  - bash: envsubst < dist/README.md
   
   - task: PublishBuildArtifacts@1
     inputs:
