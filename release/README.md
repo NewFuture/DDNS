@@ -9,8 +9,8 @@
 
 ### Windows
 
-* 下载 `ddns.exe` 运行
-* 定时任务 下载 `create-task.bat` 相同目录
+* 下载 [`ddns.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns.exe) 运行
+* 定时任务 下载 [`create-task.bat`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/create-task.bat) 于**相同目录**，以管理员权限运行
 
 ### Ubunutu
 
