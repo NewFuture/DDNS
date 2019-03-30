@@ -20,7 +20,7 @@ script:
   - ./dist/ddns || test -e "config.json"
 
 git:
-  depth: 1
+  depth: 2
 
 deploy:
   - provider: releases
