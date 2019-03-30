@@ -41,13 +41,16 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: pip install pyinstaller
-    displayName: 'pyinstaller'
+    name: 'pyinstaller'
 
   - script: build.cmd
-    displayName: 'build'
+    name: 'build'
   
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
+
+  - script: copy release/*.bat dist/ && copy release/*.md dist/
+    name: 'CopyRlease'
 
   - task: PublishBuildArtifacts@1
     inputs:
@@ -75,13 +78,19 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: pip install pyinstaller
-    displayName: 'pyinstaller'
+    name: 'pyinstaller'
 
   - script: ./build.cmd
-    displayName: 'build'
+    name: 'build'
 
   - script: ./dist/ddns || test -e "config.json"
-    displayName: 'test'
+    name: 'test'
+
+  - script: cp dist/ddns dist/ddns-osx
+    name: 'CopyDist'
+  
+  - script: cp release/*.sh dist/ && cp release/*.md dist/
+    name: 'CopyRlease'
   
   - task: PublishBuildArtifacts@1
     inputs:
