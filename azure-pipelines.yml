@@ -49,7 +49,7 @@ jobs:
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
 
-  - script: copy release/*.bat dist/ && copy release/*.md dist/
+  - bash: cp release/*.sh dist/ && cp release/*.md dist/
     name: 'CopyRlease'
 
   - task: PublishBuildArtifacts@1
