@@ -99,3 +99,20 @@ jobs:
     inputs:
       pathtoPublish: './dist/'
       artifactName: 'ddns-mac-$(python.version)'
+
+# release
+# steps:
+# - task: GitHubRelease@0
+#   displayName: 'GitHub release (edit)'
+#   inputs:
+#     gitHubConnection: 'github connection'
+#     repositoryName: NewFuture/DDNS
+#     action: edit
+#     tag: '$(Build.SourceBranchName)'
+#     releaseNotesFile: '$(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/README.md'
+#     assets: |
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/*.exe
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/*.bat
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.7/ddns-osx
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.7/*.sh
+#     assetUploadMode: replace
