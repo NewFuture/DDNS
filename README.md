@@ -50,9 +50,10 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 
 ### 1.下载
 
-* 单文件版(二进制编译,无需python环境,preview)
+* 二进制版(无需python环境)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
 	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
+	* Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
 * 源码运行(需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
@@ -113,7 +114,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
-        "$schema": "https://ddns.newfuture.cc/schema.json",
+    "$schema": "https://ddns.newfuture.cc/schema.json",
 	"id": "12345",
 	"token": "mythokenkey",
 	"dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare",

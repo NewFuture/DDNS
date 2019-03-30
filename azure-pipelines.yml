@@ -49,12 +49,12 @@ jobs:
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
 
-  - bash: cp release/*.sh dist/ && cp release/*.md dist/
+  - script: copy release\\*.bat dist
     name: 'CopyRlease'
 
-  - bash: envsubst < dist/README.md
+  - bash: envsubst < release/README.md > dist/README.md
     name: ReplaceVersion
-    
+
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: './dist/'
