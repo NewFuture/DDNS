@@ -52,6 +52,9 @@ jobs:
   - bash: cp release/*.sh dist/ && cp release/*.md dist/
     name: 'CopyRlease'
 
+  - bash: envsubst < dist/README.md
+    name: ReplaceVersion
+    
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: './dist/'
@@ -92,8 +95,6 @@ jobs:
   - script: cp release/*.sh dist/ && cp release/*.md dist/
     name: 'CopyRlease'
 
-  - bash: envsubst < dist/README.md
-  
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: './dist/'
