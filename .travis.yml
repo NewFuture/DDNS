@@ -27,7 +27,6 @@ deploy:
     api_key: "${GH_TOKEN}"
     skip_cleanup: true
     file:
-      - "task.sh"
       - "dist/ddns"
     on:
       tags: true
