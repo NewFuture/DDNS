@@ -36,7 +36,7 @@ def request(action, param=None, **params):
 
     params.update({'login_token': '***', 'format': 'json'})
     logger.info("%s : params:%s", action, params)
-    params['login_token'] = "%s,%s" % (ID, TOKEN)
+    params['user_token'] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
