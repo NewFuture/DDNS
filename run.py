@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """
-自动更新DNS
+DDNS
 @author: New Future
 @modified: rufengsuixing
 """
@@ -17,9 +17,13 @@ import logging
 from util import ip
 from util.cache import Cache
 
-# https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
+__version__ = "python@none-build"
+
 if getattr(sys, 'frozen', False):
-    os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'cert.pem')
+    __version__ = "${BUILD_SOURCEBRANCHNAME}@${SYSTEM_PIPELINESTARTTIME}"
+    if os.name != 'nt':
+        # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
+        os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'cert.pem')
 
 CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
 
@@ -137,6 +141,7 @@ def main():
         logging.basicConfig(
             level=logging.DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
+        logging.info("DDNS[%s] run: %s,%s", __version__, os.name, sys.platform)
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
