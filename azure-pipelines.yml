@@ -5,6 +5,12 @@
 
 trigger:
   batch: true
+  branches:
+    include:
+      - 'master'
+      - 'fix*'
+      - 'feat*'
+      - 'dev*'
   tags:
     include:
     - "v*"
@@ -42,7 +48,7 @@ jobs:
     name: 'pyinstaller'
   
   - bash: envsubst < run.py > run.py
-    name: ReplaceVersion
+    name: replaceBuild
 
   - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
     name: 'build'
