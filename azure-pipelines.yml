@@ -43,7 +43,7 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
 
-  - script: build.cmd
+  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
     name: 'build'
   
   - bash: dist/ddns.exe || test -e "config.json"
@@ -83,7 +83,7 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
 
-  - script: ./build.cmd
+  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
     name: 'build'
 
   - script: ./dist/ddns || test -e "config.json"

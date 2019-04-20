@@ -16,7 +16,7 @@ install:
 
 # command to run tests
 script:
-  - ./build.cmd
+  - pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
   - ./dist/ddns || test -e "config.json"
 
 git:
