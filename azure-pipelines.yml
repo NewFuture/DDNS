@@ -5,8 +5,6 @@
 
 trigger:
   batch: true
-  branches:
-    include: [ master ]
   tags:
     include:
     - "v*"
@@ -43,16 +41,16 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
 
-  - script: build.cmd
+  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
     name: 'build'
   
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
 
-  - script: copy release\\*.bat dist
+  - script: copy .release\\*.bat dist
     name: 'CopyRlease'
 
-  - bash: envsubst < release/README.md > dist/README.md
+  - bash: envsubst < .release/README.md > dist/README.md
     name: ReplaceVersion
 
   - task: PublishBuildArtifacts@1
@@ -83,7 +81,7 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
 
-  - script: ./build.cmd
+  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
     name: 'build'
 
   - script: ./dist/ddns || test -e "config.json"
@@ -92,7 +90,7 @@ jobs:
   - script: cp dist/ddns dist/ddns-osx
     name: 'CopyDist'
   
-  - script: cp release/*.sh dist/ && cp release/*.md dist/
+  - script: cp .release/*.sh dist/ && cp .release/*.md dist/
     name: 'CopyRlease'
 
   - task: PublishBuildArtifacts@1

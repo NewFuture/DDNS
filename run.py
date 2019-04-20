@@ -17,6 +17,10 @@ import logging
 from util import ip
 from util.cache import Cache
 
+# https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
+if getattr(sys, 'frozen', False):
+    os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'cert.pem')
+
 CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
 
 
