@@ -47,10 +47,10 @@ jobs:
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
 
-  - script: copy release\\*.bat dist
+  - script: copy .release\\*.bat dist
     name: 'CopyRlease'
 
-  - bash: envsubst < release/README.md > dist/README.md
+  - bash: envsubst < .release/README.md > dist/README.md
     name: ReplaceVersion
 
   - task: PublishBuildArtifacts@1
@@ -90,7 +90,7 @@ jobs:
   - script: cp dist/ddns dist/ddns-osx
     name: 'CopyDist'
   
-  - script: cp release/*.sh dist/ && cp release/*.md dist/
+  - script: cp .release/*.sh dist/ && cp .release/*.md dist/
     name: 'CopyRlease'
 
   - task: PublishBuildArtifacts@1
