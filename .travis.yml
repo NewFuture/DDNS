@@ -16,7 +16,7 @@ install:
 
 # command to run tests
 script:
-  - sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${TRAVIS_BRANCH}/" -e "s/\${SYSTEM_PIPELINESTARTTIME}/$(date)/" run.py
+  - sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${TRAVIS_BRANCH}/" -e "s/\${BUILD_DATE}/$(date)/" run.py
   - pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
   - ./dist/ddns || test -e "config.json"
 

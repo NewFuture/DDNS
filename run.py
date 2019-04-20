@@ -20,7 +20,7 @@ from util.cache import Cache
 __version__ = "python@none-build"
 
 if getattr(sys, 'frozen', False):
-    __version__ = "${BUILD_SOURCEBRANCHNAME}@${SYSTEM_PIPELINESTARTTIME}"
+    __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"
     if os.name != 'nt':
         # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
         os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'cert.pem')
