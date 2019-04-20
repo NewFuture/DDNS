@@ -47,7 +47,7 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
   
-  - bash: envsubst < run.py > run.py
+  - bash: envsubst  < run.py > run.py
     name: replaceBuild
 
   - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
@@ -90,7 +90,7 @@ jobs:
   - script: pip install pyinstaller
     name: 'pyinstaller'
 
-  - script: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${SYSTEM_PIPELINESTARTTIME}/$(date)/" run.py
+  - bash: sed -i.temp -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${SYSTEM_PIPELINESTARTTIME}/$(date)/" run.py
     name: 'replaceBuild'
 
   - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
