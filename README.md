@@ -82,9 +82,13 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 
 * 首次运行会自动生成一个模板配置文件
 * 可以使用 `-c`使用指定的配置文件 (默认读取当前目录的 config.json)
+* 推荐使用vscode等支持JsonSchema的编辑器编辑配置文件
 
 ```bash
+#python
 python run.py -c /path/to/config.json 
+#二进制可执行文件
+ddns -c path/to/config.json
 ```
 
 #### 配置说明
