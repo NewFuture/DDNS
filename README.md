@@ -28,6 +28,7 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
     * [x] python2 
     * [x] python3
     * [x] 无Python可执行文件
+	* [x] `pip`安装
 * 网络代理:
     * [x] http代理支持
     * [x] 多代理自动切换
@@ -49,13 +50,18 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 
 ## 使用
 
-### 1.下载
+### 1.安装
 
-* 二进制版(无需python环境)
+根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
+
+* `pip` 安装(需要`pip2`或`pip3`) __beta__
+	1. 安装ddns: `pip install ddns`
+	2. 运行: `ddns`
+* 二进制版(单文件,无需任何python环境)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
-	* Linux （仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
+	* Linux (仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
 	* Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
-* 源码运行(需要python环境)
+* 源码运行(无任何依赖, 需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 * [历史版本](https://github.com/NewFuture/DDNS/releases)
