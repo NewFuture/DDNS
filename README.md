@@ -164,3 +164,20 @@ ddns -c path/to/config.json
 运行 `sudo ./task.sh`
 
 </details>
+
+<details>
+
+## FAQ
+<summary> Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]
+</summary>
+
+> Windows Server 默认安全策略会禁止任何未添加的信任ssl证书,可手动添加一下对应的证书 [#56](https://github.com/NewFuture/DDNS/issues/56#issuecomment-487371078)
+
+使用系统自带的IE浏览器访问一次对应的API即可
+* alidns打开: <https://alidns.aliyuncs.com>
+* cloudflare打开: <https://api.cloudflare.com>
+* dns.com打开: <https://www.dns.com>
+* dnspod.cn打开: <https://dnsapi.cn>
+* dnspod国际版:  <https://api.dnspod.com>
+
+</details>
