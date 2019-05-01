@@ -36,6 +36,7 @@ deploy:
   - provider: pypi
     user: newfuture
     password: "${PYPI_PWD}"
+    skip_cleanup: false
     distributions: "sdist bdist_wheel" # Your distributions here
     on:
       tags: true

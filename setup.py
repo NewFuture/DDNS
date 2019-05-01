@@ -24,12 +24,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get version from environment vars
-if hasattr(environ,'TRAVIS_TAG'):
-    version = environ['TRAVIS_TAG'] # `TRAVIS_TAG` from Travis
-elif hasattr(environ,'BUILD_SOURCEBRANCHNAME'):
-    version = environ['BUILD_SOURCEBRANCHNAME'] # `BUILD_SOURCEBRANCHNAME` from azure pipelines
+if 'TRAVIS_TAG' in environ:
+    version = environ['TRAVIS_TAG']  # `TRAVIS_TAG` from Travis
+elif 'BUILD_SOURCEBRANCHNAME' in environ:
+    version = environ['BUILD_SOURCEBRANCHNAME']  # from azure pipelines
 else:
-    raise Exception("This setup script should be run in CI/CD environment (TravisCI or AzurePipelines)")
+    raise Exception("setup.py should be run in CI (Travis or AzurePipelines)")
 version = version.strip('v').strip('V')
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
