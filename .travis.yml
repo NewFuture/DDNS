@@ -34,7 +34,7 @@ deploy:
       branch: master
       python: '3.7'
   - provider: pypi
-    user: newfuture
+    user: newfuture-bot
     password: "${PYPI_PWD}"
     skip_cleanup: false
     distributions: "sdist bdist_wheel" # Your distributions here
