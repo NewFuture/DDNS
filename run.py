@@ -6,8 +6,8 @@ DDNS
 @modified: rufengsuixing
 """
 from __future__ import print_function
-import argparse
-import json
+from argparse import ArgumentParser, RawTextHelpFormatter
+from json import load
 import time
 import os
 import sys
@@ -18,6 +18,13 @@ from util import ip
 from util.cache import Cache
 
 __version__ = "python@none-build"
+__description__ = "自动更新DNS记录指向本地IP [automatically update DNS records to dynamic local IP]"
+__doc__ = """
+ddns[%s]
+(i) 文档主页[homepage or docs]: https://ddns.newfuture.cc/
+(?) 问题和帮助[issues or bugs]: https://github.com/NewFuture/DDNS/issues
+Copyright (c) New Future ♥ (MIT License)
+""" % (__version__)
 
 if getattr(sys, 'frozen', False):
     __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"
@@ -34,7 +41,7 @@ def get_config(key=None, default=None, path="config.json"):
     if not hasattr(get_config, "config"):
         try:
             with open(path) as configfile:
-                get_config.config = json.load(configfile)
+                get_config.config = load(configfile)
                 get_config.time = os.stat(path).st_mtime
         except IOError:
             print('Config file %s does not appear to exist.' % path)
@@ -128,9 +135,12 @@ def main():
     """
     更新
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', default="config.json")
-    get_config(path=parser.parse_args().c)
+    parser = ArgumentParser(description=__description__,
+                            epilog=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument('--version', action='version', version=__version__)
+    parser.add_argument(
+        '-c', '--config', default="config.json", help="配置文件路径[config file]")
+    get_config(path=parser.parse_args().config)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)

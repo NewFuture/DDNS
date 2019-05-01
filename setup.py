@@ -16,6 +16,7 @@ from os import path, environ
 # and accepts an argument to specify the text encoding
 # Python 3 only projects can skip this import
 from io import open
+from run import __description__
 
 here = path.abspath(path.dirname(__file__))
 
@@ -61,7 +62,7 @@ setup(
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
     # Optional
-    description='自动更新域名解析到本机IP(支持dnspod,阿里DNS,CloudFlare,DNSCOM...)',
+    description=__description__,
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
