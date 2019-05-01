@@ -54,7 +54,7 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
-* `pip` 安装(需要`pip2`或`pip3`) __beta__
+* `pip` 安装(需要`pip2`或`pip3`) _beta_
 	1. 安装ddns: `pip install ddns`
 	2. 运行: `ddns`
 * 二进制版(单文件,无需任何python环境)

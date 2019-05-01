@@ -23,8 +23,6 @@ script:
 git:
   depth: 2
 
-before_deploy: sed -i -e "s/\${VERSION}/${TRAVIS_TAG:1}/" setup.py
-
 deploy:
   - provider: releases
     api_key: "${GH_TOKEN}"

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 """A setuptools based setup module.
 
 See:
@@ -7,7 +10,7 @@ https://github.com/pypa/sampleproject
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-from os import path
+from os import path, environ
 # io.open is needed for projects that support Python 2.7
 # It ensures open() defaults to text mode with universal newlines,
 # and accepts an argument to specify the text encoding
@@ -19,6 +22,13 @@ here = path.abspath(path.dirname(__file__))
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
+
+# Get version from environment vars
+# `TRAVIS_TAG` from Travis
+# `BUILD_SOURCEBRANCHNAME` from azure
+version = environ['TRAVIS_TAG'] or environ['BUILD_SOURCEBRANCHNAME']
+version = version.strip('v').strip('V')
+
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
@@ -42,12 +52,13 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='${VERSION}',  # Required
+    version=version,  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='自动更新域名解析到本机IP(支持dnspod,阿里DNS,CloudFlare,DNSCOM...)',  # Optional
+    # Optional
+    description='自动更新域名解析到本机IP(支持dnspod,阿里DNS,CloudFlare,DNSCOM...)',
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -130,7 +141,8 @@ setup(
     #
     py_modules=["run"],
     #
-    packages=find_packages(exclude=['contrib', 'docs', 'tests', 'dist']),  # Required
+    packages=find_packages(
+        exclude=['contrib', 'docs', 'tests', 'dist']),  # Required
 
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
