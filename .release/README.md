@@ -1,7 +1,9 @@
 
 ![latest deploy](https://vsrm.dev.azure.com/NewFuture-CI/_apis/public/Release/badge/2ab09aad-c4b4-4c57-ab1b-2fb92c485664/1/1)
+[![PyPI](https://img.shields.io/badge/PyPI%20ddns%20-${BUILD_SOURCEBRANCHNAME}-1abc9c.svg?style=social)](https://pypi.org/project/ddns/${BUILD_SOURCEBRANCHNAME}/
+)
 
-
+## 二进制文件
 * Windows 下载 [ddns.exe](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns.exe)
 * Ubuntu 下载 [ddns](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns)
 * Mac OS X下载 [ddns-osx](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns-osx)
@@ -26,4 +28,15 @@ curl -sSL https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRAN
 ### Mac OSX
 ```sh
 curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns-osx -#SLo ddns && chmod +x ddns
+```
+
+## pip
+
+### current version
+```
+pip install ddns=${BUILD_SOURCEBRANCHNAME}
+```
+### update latest version
+```
+pip install -U ddns
 ```
