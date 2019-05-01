@@ -6,17 +6,17 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 @author: TongYifan
 """
 
-import json
-import logging as logger
+from json import loads as jsondecode, dumps as jsonencode
+from logging import debug, info, warn
 
 try:
     # python 2
     from httplib import HTTPSConnection
-    import urllib
+    from urllib import urlencode
 except ImportError:
     # python 3
     from http.client import HTTPSConnection
-    import urllib.parse as urllib
+    from urllib.parse import urlencode
 
 __author__ = 'TongYifan'
 
@@ -33,7 +33,7 @@ def request(method, action, param=None, **params):
     if param:
         params.update(param)
 
-    logger.info("$s %s : params:%s", action, params)
+    info("$s %s : params:%s", action, params)
     if PROXY:
         conn = HTTPSConnection(PROXY)
         conn.set_tunnel(API_SITE, 443)
@@ -43,10 +43,10 @@ def request(method, action, param=None, **params):
     if method in ['PUT', 'POST', 'PATCH']:
         # 从public_v(4,6)获取的IP是bytes类型，在json.dumps时会报TypeError
         params['content'] = str(params.get('content'))
-        params = json.dumps(params)
+        params = jsonencode(params)
     else:  # (GET, DELETE) where DELETE doesn't require params in Cloudflare
         if params:
-            action += '?' + urllib.urlencode(params)
+            action += '?' + urlencode(params)
         params = None
     conn.request(method, '/client/v4/zones' + action, params,
                  {"Content-type": "application/json",
@@ -58,8 +58,8 @@ def request(method, action, param=None, **params):
     if response.status < 200 or response.status >= 300:
         raise Exception(res)
     else:
-        data = json.loads(res.decode('utf8'))
-        logger.debug('%s : result:%s', action, data)
+        data = jsondecode(res.decode('utf8'))
+        debug('%s : result:%s', action, data)
         if not data:
             raise Exception("Empty Response")
         elif data.get('success'):
@@ -85,14 +85,16 @@ def get_records(zoneid, **conditions):
            返回满足条件的所有记录[]
            TODO 大于100翻页
     """
-    cache_key = zoneid + "_" + conditions.get('name', "") + "_" + conditions.get('type', "")
+    cache_key = zoneid + "_" + \
+        conditions.get('name', "") + "_" + conditions.get('type', "")
     if not hasattr(get_records, 'records'):
         get_records.records = {}  # "静态变量"存储已查询过的id
         get_records.keys = ('id', 'type', 'name', 'content', 'proxied', 'ttl')
 
     if not zoneid in get_records.records:
         get_records.records[cache_key] = {}
-        data = request('GET', '/' + zoneid + '/dns_records', per_page=100, **conditions)
+        data = request('GET', '/' + zoneid + '/dns_records',
+                       per_page=100, **conditions)
         if data:
             for record in data:
                 get_records.records[cache_key][record['id']] = {
@@ -112,7 +114,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    logger.info(">>>>>%s(%s)", domain, record_type)
+    info(">>>>>%s(%s)", domain, record_type)
     zoneid = get_zone_id(domain)
     if not zoneid:
         raise Exception("invalid domain: [ %s ] " % domain)

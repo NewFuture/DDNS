@@ -6,16 +6,17 @@ http://www.dnspod.com/docs/domains.html
 @author: New Future
 """
 
-import json
-import logging as logger
+from json import loads as jsondecode
+from logging import debug, info, warn
 try:
     # python 2
     from httplib import HTTPSConnection
-    import urllib
+    from urllib import urlencode
 except ImportError:
     # python 3
     from http.client import HTTPSConnection
-    import urllib.parse as urllib
+    from urllib.parse import urlencode
+
 
 __author__ = 'New Future'
 
@@ -35,7 +36,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({'login_token': '***', 'format': 'json'})
-    logger.info("%s : params:%s", action, params)
+    info("%s : params:%s", action, params)
     params['user_token'] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
@@ -44,7 +45,7 @@ def request(action, param=None, **params):
     else:
         conn = HTTPSConnection(API_SITE)
 
-    conn.request(API_METHOD, '/' + action, urllib.urlencode(params),
+    conn.request(API_METHOD, '/' + action, urlencode(params),
                  {
                      "Content-type": "application/x-www-form-urlencoded",
                      "User-Agent": "DDNS Client/1.0"
@@ -56,8 +57,8 @@ def request(action, param=None, **params):
     if response.status < 200 or response.status >= 300:
         raise Exception(res)
     else:
-        data = json.loads(res.decode('utf8'))
-        logger.debug('%s : result:%s', action, data)
+        data = jsondecode(res.decode('utf8'))
+        debug('%s : result:%s', action, data)
         if not data:
             raise Exception("empty response")
         elif data.get("status", {}).get("code") == "1":
@@ -143,7 +144,7 @@ def update_record(domain, value, record_type="A"):
     """
     更新记录
     """
-    logger.info(">>>>>%s(%s)", domain, record_type)
+    info(">>>>>%s(%s)", domain, record_type)
     domainid, sub = get_domain_info(domain)
     if not domainid:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -154,7 +155,7 @@ def update_record(domain, value, record_type="A"):
         # http://www.dnspod.cn/docs/records.html#record-modify
         for (did, record) in records.items():
             if record["value"] != value:
-                logger.debug(sub, record)
+                debug(sub, record)
                 line = record["line"].replace(
                     "Default", "default").encode("utf-8")
                 res = request('Record.Modify', record_id=did, record_line=line, value=value,

@@ -4,10 +4,12 @@ cache module
 文件缓存
 """
 
-import logging as logger
-import os
-import pickle
-import time
+
+from os import path, stat
+from pickle import dump, load
+from time import time
+
+from logging import info, debug, error
 
 try:
     from collections.abc import MutableMapping
@@ -25,7 +27,7 @@ class Cache(MutableMapping):
         self.__data = {}
         self.__filename = path
         self.__sync = sync
-        self.__time = time.time()
+        self.__time = time()
         self.__changed = False
         self.load()
 
@@ -36,30 +38,30 @@ class Cache(MutableMapping):
         """
         return self.__time
 
-    def load(self, path=None):
+    def load(self, file=None):
         """
         load data from path
         """
-        if not path:
-            path = self.__filename
+        if not file:
+            file = self.__filename
 
-        logger.debug('load cache data from %s', path)
-        if os.path.isfile(path):
+        debug('load cache data from %s', file)
+        if path.isfile(file):
             with open(self.__filename, 'rb') as data:
                 try:
-                    self.__data = pickle.load(data)
-                    self.__time = os.stat(path).st_mtime
+                    self.__data = load(data)
+                    self.__time = stat(file).st_mtime
                 except ValueError:
                     self.__data = {}
-                    self.__time = time.time()
+                    self.__time = time()
                 except Exception as e:
-                    logger.error(e)
+                    error(e)
                     self.__data = {}
-                    self.__time = time.time()
+                    self.__time = time()
         else:
-            logger.info('cache file not exist')
+            info('cache file not exist')
             self.__data = {}
-            self.__time = time.time()
+            self.__time = time()
         return self
 
     def data(self, key=None, default=None):
@@ -79,9 +81,9 @@ class Cache(MutableMapping):
         """
         if self.__changed:
             with open(self.__filename, 'wb') as data:
-                pickle.dump(self.__data, data)
-                logger.debug('save cache data to %s', self.__filename)
-            self.__time = time.time()
+                dump(self.__data, data)
+                debug('save cache data to %s', self.__filename)
+            self.__time = time()
             self.__changed = False
         return self
 
@@ -101,7 +103,7 @@ class Cache(MutableMapping):
         if self.__sync:
             self.sync()
         else:
-            self.__time = time.time()
+            self.__time = time()
 
     def clear(self):
         if self.data():
@@ -136,18 +138,3 @@ class Cache(MutableMapping):
 
     def __del__(self):
         self.close()
-
-
-def main():
-    """
-    test
-    """
-    logger.basicConfig(level=logger.DEBUG)
-    cache = Cache('test.txt')
-    logger.info(cache, cache.time)
-    cache['s'] = 'a'
-    logger.info(cache['s'], cache.time)
-
-
-if __name__ == '__main__':
-    main()

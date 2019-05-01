@@ -7,17 +7,18 @@ DDNS
 """
 from __future__ import print_function
 from argparse import ArgumentParser, RawTextHelpFormatter
-from json import load
-import time
-import os
+from json import load as loadjson, dump as dumpjson
+from time import ctime
+from os import path, environ, stat, name as os_name
+from tempfile import gettempdir
+from logging import info, DEBUG, basicConfig
+
 import sys
-import tempfile
-import logging
 
 from util import ip
 from util.cache import Cache
 
-__version__ = "python@none-build"
+__version__ = "python@none-build"  # CI 时会被Tag替换
 __description__ = "自动更新DNS记录指向本地IP [automatically update DNS records to dynamic local IP]"
 __doc__ = """
 ddns[%s]
@@ -29,9 +30,9 @@ Copyright (c) New Future ♥ (MIT License)
 if getattr(sys, 'frozen', False):
     __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
-    os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'cert.pem')
+    environ['SSL_CERT_FILE'] = path.join(sys._MEIPASS, 'lib', 'cert.pem')
 
-CACHE_FILE = os.path.join(tempfile.gettempdir(), 'ddns.cache')
+CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
 
 
 def get_config(key=None, default=None, path="config.json"):
@@ -41,8 +42,8 @@ def get_config(key=None, default=None, path="config.json"):
     if not hasattr(get_config, "config"):
         try:
             with open(path) as configfile:
-                get_config.config = load(configfile)
-                get_config.time = os.stat(path).st_mtime
+                get_config.config = loadjson(configfile)
+                get_config.time = stat(path).st_mtime
         except IOError:
             print('Config file %s does not appear to exist.' % path)
             with open(path, 'w') as configfile:
@@ -64,7 +65,7 @@ def get_config(key=None, default=None, path="config.json"):
                     "proxy": None,
                     "debug": False,
                 }
-                json.dump(configure, configfile, indent=2, sort_keys=True)
+                dumpjson(configure, configfile, indent=2, sort_keys=True)
             sys.exit("New template configure file [%s] is generated!" % path)
         except:
             sys.exit('fail to load config from file: %s' % path)
@@ -147,10 +148,10 @@ def main():
     dns.ID, dns.TOKEN = get_config('id'), get_config('token')
     if get_config('debug'):
         ip.DEBUG = get_config('debug')
-        logging.basicConfig(
-            level=logging.DEBUG,
+        basicConfig(
+            level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
-        logging.info("DDNS[%s] run: %s,%s", __version__, os.name, sys.platform)
+        info("DDNS[%s] run: %s,%s", __version__, os_name, sys.platform)
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
@@ -160,7 +161,7 @@ def main():
         print("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
         cache.clear()
-        print("=" * 25, time.ctime(), "=" * 25, sep=' ')
+        print("=" * 25, ctime(), "=" * 25, sep=' ')
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 

@@ -6,22 +6,22 @@ https://help.aliyun.com/document_detail/29739.html
 @author: New Future
 """
 
-import hashlib
-import hmac
-import uuid
-import base64
-import json
-import logging as logger
+from hashlib import sha1
+from hmac import new as hmac
+from uuid import uuid4
+from base64 import b64encode
+from json import loads as jsondecode
+from logging import debug, info, warn
 from datetime import datetime
 
 try:
     # python 2
     from httplib import HTTPSConnection
-    import urllib
+    from urllib import urlencode, quote_plus, quote
 except ImportError:
     # python 3
     from http.client import HTTPSConnection
-    import urllib.parse as urllib
+    from urllib.parse import urlencode, quote_plus, quote
 
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
@@ -43,20 +43,18 @@ def signature(params):
         'AccessKeyId': ID,
         'Timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         'SignatureMethod': 'HMAC-SHA1',
-        'SignatureNonce': uuid.uuid4(),
+        'SignatureNonce': uuid4(),
         'SignatureVersion': "1.0",
     })
-    query = urllib.urlencode(sorted(params.items()))
-    logger.debug(query)
-    sign = API_METHOD + "&" + \
-        urllib.quote_plus("/") + "&" + urllib.quote(query, safe='')
-    logger.debug("signString: %s", sign)
+    query = urlencode(sorted(params.items()))
+    debug(query)
+    sign = API_METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
+    debug("signString: %s", sign)
 
-    sign = hmac.new((TOKEN + "&").encode('utf-8'),
-                    sign.encode('utf-8'), hashlib.sha1).digest()
-    sign = base64.b64encode(sign).strip()
+    sign = hmac((TOKEN + "&").encode('utf-8'),
+                sign.encode('utf-8'), sha1).digest()
+    sign = b64encode(sign).strip()
     params["Signature"] = sign
-    # sign.decode('utf-8').encode("base64").strip()
     return params
 
 
@@ -67,7 +65,7 @@ def request(param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    logger.debug("params:%s", params)
+    debug("params:%s", params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
@@ -75,18 +73,18 @@ def request(param=None, **params):
     else:
         conn = HTTPSConnection(API_SITE)
 
-    conn.request(API_METHOD, '/', urllib.urlencode(params),
+    conn.request(API_METHOD, '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
     data = response.read()
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        logger.warn('%s : error:%s', params['Action'], data)       
+        warn('%s : error:%s', params['Action'], data)
         raise Exception(data)
     else:
-        data = json.loads(data.decode('utf8'))
-        logger.debug('%s : result:%s', params['Action'], data)
+        data = jsondecode(data.decode('utf8'))
+        debug('%s : result:%s', params['Action'], data)
         return data
 
 
@@ -139,7 +137,7 @@ def update_record(domain, value, record_type='A'):
         add
         https://help.aliyun.com/document_detail/29772.html?
     """
-    logger.debug(">>>>>%s(%s)", domain, record_type)
+    debug(">>>>>%s(%s)", domain, record_type)
     sub, main = get_domain_info(domain)
     if not sub:
         raise Exception("invalid domain: [ %s ] " % domain)
@@ -150,7 +148,7 @@ def update_record(domain, value, record_type='A'):
     if records:
         for (rid, record) in records.items():
             if record["Value"] != value:
-                logger.debug(sub, record)
+                debug(sub, record)
                 res = request(Action="UpdateDomainRecord", RecordId=rid,
                               Value=value, RR=sub, Type=record_type)
                 if res:
@@ -177,8 +175,3 @@ def update_record(domain, value, record_type='A'):
         else:
             result = domain + " created fail!"
     return result
-
-
-if __name__ == '__main__':
-    logger.basicConfig(level=logger.DEBUG)
-    logger.info(get_records('www.newfuture.win'))
