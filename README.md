@@ -83,7 +83,7 @@ Build Status [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/b
 
 <details open>
 
-<summary>config.json
+<summary markdown="span">config.json
 </summary>
 
 * 首次运行会自动生成一个模板配置文件
@@ -151,13 +151,13 @@ ddns -c path/to/config.json
 
 <details>
 
-<summary>可以通过脚本设置定时任务(默认每5分钟检查一次ip,自动更新)
+<summary markdown="span">可以通过脚本设置定时任务(默认每5分钟检查一次ip,自动更新)
 </summary>
 
 #### windows
 
+* [推荐]以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 * 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
-* 以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 
 #### linux
 
@@ -165,10 +165,11 @@ ddns -c path/to/config.json
 
 </details>
 
+## FAQ
+
 <details>
 
-## FAQ
-<summary> Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]
+<summary markdown="span"> Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]
 </summary>
 
 > Windows Server 默认安全策略会禁止任何未添加的信任ssl证书,可手动添加一下对应的证书 [#56](https://github.com/NewFuture/DDNS/issues/56#issuecomment-487371078)
