@@ -33,3 +33,11 @@ deploy:
       tags: true
       branch: master
       python: '3.7'
+  - provider: pypi
+    user: newfuture
+    password: "${PYPI_PWD}"
+    distributions: "sdist bdist_wheel" # Your distributions here
+    on:
+      tags: true
+      branch: master
+      python: '3.7'
