@@ -1,4 +1,4 @@
-[![PyPI version](https://img.shields.io/badge/DDNS-${BUILD_SOURCEBRANCHNAME}-1abc9c.svg?style=social)](https://pypi.org/project/ddns/${BUILD_SOURCEBRANCHNAME}/)[![Deploy OK](https://img.shields.io/badge/release-success-brightgreen.svg?style=flat-square)
+[![PyPI version](https://img.shields.io/badge/DDNS-${BUILD_SOURCEBRANCHNAME}-1abc9c.svg?style=social)](https://pypi.org/project/ddns/${BUILD_SOURCEBRANCHNAME}/) ![Deploy OK](https://img.shields.io/badge/release-success-brightgreen.svg?style=flat-square)
 
 ## 使用二进制文件 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=flat-square)
 
@@ -13,7 +13,7 @@
     2. 定时任务 下载 [`create-task.bat`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/create-task.bat) 于**相同目录**，以管理员权限运行
 * Ubunutu
     1. 下载ddns: `curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/ddns -#SLo ddns && chmod +x ddns`
-    2. 创建定时任务(当前文件夹): `curl -sSL https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/create-task.sh | bash`
+    2. 定时任务(当前目录): `curl -sSL https://github.com/NewFuture/DDNS/releases/download/${BUILD_SOURCEBRANCHNAME}/create-task.sh | bash`
 * Mac OSX
     * 命令行下载
 ```sh
