@@ -19,11 +19,11 @@ from util import ip
 from util.cache import Cache
 
 __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"  # CI 时会被Tag替换
-__description__ = "自动更新DNS记录指向本地IP [automatically update DNS records to dynamic local IP]"
+__description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
 __doc__ = """
 ddns[%s]
-(i) 文档主页[homepage or docs]: https://ddns.newfuture.cc/
-(?) 问题和帮助[issues or bugs]: https://github.com/NewFuture/DDNS/issues
+(i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
+(?) issues or bugs [问题和帮助]: https://github.com/NewFuture/DDNS/issues
 Copyright (c) New Future (MIT License)
 """ % (__version__)
 
@@ -140,7 +140,7 @@ def main():
                             epilog=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument(
-        '-c', '--config', default="config.json", help="配置文件路径[config file]")
+        '-c', '--config', default="config.json", help="config file [配置文件路径]")
     get_config(path=parser.parse_args().config)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
