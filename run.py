@@ -18,19 +18,19 @@ import sys
 from util import ip
 from util.cache import Cache
 
-__version__ = "python@none-build"  # CI 时会被Tag替换
+__version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"  # CI 时会被Tag替换
 __description__ = "自动更新DNS记录指向本地IP [automatically update DNS records to dynamic local IP]"
 __doc__ = """
 ddns[%s]
 (i) 文档主页[homepage or docs]: https://ddns.newfuture.cc/
 (?) 问题和帮助[issues or bugs]: https://github.com/NewFuture/DDNS/issues
-Copyright (c) New Future ♥ (MIT License)
+Copyright (c) New Future (MIT License)
 """ % (__version__)
 
 if getattr(sys, 'frozen', False):
-    __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
-    environ['SSL_CERT_FILE'] = path.join(sys._MEIPASS, 'lib', 'cert.pem')
+    environ['SSL_CERT_FILE'] = path.join(
+        getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
 
 CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
 

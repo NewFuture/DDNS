@@ -20,6 +20,11 @@ from run import __description__
 
 here = path.abspath(path.dirname(__file__))
 
+# Clean dist after binary build
+if path.isfile('dist/ddns') or path.isfile('dist/ddns.exe') or path.isfile('dist/ddns-osx'):
+    from shutil import rmtree
+    rmtree('dist/')
+
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -218,4 +223,6 @@ setup(
         'Bug Reports': 'https://github.com/NewFuture/DDNS/issues',
         'Source': 'https://github.com/NewFuture/DDNS',
     },
+    license="MIT",
+    platforms=['any'],
 )
