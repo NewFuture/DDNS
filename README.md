@@ -55,14 +55,14 @@ Build Status
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
-* `pip` 安装(需要`pip`或`easy_install`) _beta_
+* #### `pip` 安装(需要`pip`或`easy_install`) _beta_
 	1. 安装ddns: `pip install ddns` 或 `easy_install ddns`
 	2. 运行: `ddns`
-* 二进制版(单文件,无需任何python环境)
+* #### 二进制版(单文件,无需任何python环境)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
 	* Linux (仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
 	* Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
-* 源码运行(无任何依赖, 需要python环境)
+* #### 源码运行(无任何依赖, 需要python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 * [历史版本](https://github.com/NewFuture/DDNS/releases)
