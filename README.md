@@ -1,6 +1,9 @@
 [DDNS](https://github.com/NewFuture/DDNS)
 ===================
 
+>自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
+>代理模式,支持自动创建域名记录。
+
 Build Status 
 [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
 [![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS) [![latest deploy](https://vsrm.dev.azure.com/NewFuture-CI/_apis/public/Release/badge/2ab09aad-c4b4-4c57-ab1b-2fb92c485664/1/1)](https://github.com/NewFuture/DDNS/releases/latest)
@@ -12,11 +15,12 @@ Build Status
 
 ------------
 
-
->自动更新DNS解析 到本机IP地址,支持 ipv4和ipv6 以 本地(内网)IP 和 公网IP。
->代理模式,支持自动创建域名记录。
-
 ### Features
+* 兼容和跨平台:
+    * [x] 多系统(Widnows, Linux, MacOS) ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social) 
+    * [x] python2和python3支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social) 
+    * [x] 无Python可执行文件
+	* [x] PIP安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
 * 域名支持:
     * [x] 多个域名支持
     * [x] 多级域名解析
@@ -26,12 +30,6 @@ Build Status
     * [x] 公网IP
     * [x] ipv6支持
     * [x] 正则选取支持(@rufengsuixing)
-* 兼容和跨平台:
-    * [x] 多系统(Widnows, Linux, MacOS)
-    * [x] python2 
-    * [x] python3
-    * [x] 无Python可执行文件
-	* [x] `pip`安装
 * 网络代理:
     * [x] http代理支持
     * [x] 多代理自动切换
@@ -57,8 +55,8 @@ Build Status
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
-* `pip` 安装(需要`pip2`或`pip3`) _beta_
-	1. 安装ddns: `pip install ddns`
+* `pip` 安装(需要`pip`或`easy_install`) _beta_
+	1. 安装ddns: `pip install ddns` 或 `easy_install ddns`
 	2. 运行: `ddns`
 * 二进制版(单文件,无需任何python环境)
 	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
