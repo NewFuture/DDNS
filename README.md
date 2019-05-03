@@ -11,7 +11,7 @@
 
 <details>
 
-<summary>Build Details
+<summary markdown="span">Build Details
 </summary>
 
 * Linux Python (2和3): [![Travis build](https://img.shields.io/travis/com/NewFuture/DDNS/master.svg?label=python2%2Cpython3&logo=ubuntu&logoColor=white)](https://travis-ci.com/NewFuture/DDNS)
@@ -69,7 +69,6 @@
 * #### 源码运行(无任何依赖, 需python环境)
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
-* [历史版本](https://github.com/NewFuture/DDNS/releases)
 
 ### 2.快速配置
 
