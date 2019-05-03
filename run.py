@@ -138,9 +138,10 @@ def main():
     """
     parser = ArgumentParser(description=__description__,
                             epilog=__doc__, formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--version', action='version', version=__version__)
-    parser.add_argument(
-        '-c', '--config', default="config.json", help="config file [配置文件路径]")
+    parser.add_argument('-v', '--version',
+                        action='version', version=__version__)
+    parser.add_argument('-c', '--config',
+                        default="config.json", help="run with config file [配置文件路径]")
     get_config(path=parser.parse_args().config)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
