@@ -103,15 +103,15 @@ python run.py -c /path/to/config.json
 #### 配置参数表
 
 | key   | type   | required | default | description | tips | 
-| ------| :----: | :------: | :-----: | :---------: | ------- |
+| :---: | :----: | :------: | :-----: | :---------: | ------- |
 | id    | string | √        | 无      | api访问ID | cloudflare为邮箱 |
 | token | string | √        | 无      | api授权token | 也叫secret key, **反馈粘贴时删除** |
-| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,<br>DNS.COM为`dnscom`,<br>DNSPOD国际版`dnspod_com`|
+| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,<br>dns.com为`dnscom`,<br>DNSPOD国际版`dnspod_com`|
 | ipv4  | array  | No       | `[]`     | ipv4域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
 | ipv6  | array  | No       | `[]`     | ipv6域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
-| index4|string\|int|No      |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
-| index6|string\|int|No      |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
-| proxy | string | No       | 无      | 多代理`;`分割 | `DIRECT`表示直连,通常至于最后作为最后尝试 |
+| index4|string\|int|No     |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
+| index6|string\|int|No     |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
+| proxy | string | No       | 无      | 多代理`;`分割 | 多代理逐个尝试直到成功,`DIRECT`为直连|
 | debug | bool   | No       | `false` | 是否开启调试 | 运行异常是,打开调试输出,方便诊断错误 |
 | cache | bool   | No       | `true`  | 是否缓存记录 | 正常情况打开避免频繁更新 |
 
@@ -144,7 +144,7 @@ python run.py -c /path/to/config.json
 	],
 	"index4": 0,
 	"index6": "public",
-	"proxy": "127.0.0.1:1080",
+	"proxy": "127.0.0.1:1080;DIRECT",
 	"debug": false
 }
 ```
