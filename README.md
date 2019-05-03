@@ -100,19 +100,21 @@ ddns -c path/to/config.json
 python run.py -c /path/to/config.json 
 ```
 
-#### 配置说明
+#### 配置参数表
 
-| key  | type |  required |default |  comment|
-| ------| ------- | --------- | ---- | ----------- | 
-| id | string |  Yes | 无 | api授权id(`cloudflare`为登录邮箱) |
-| token | string | Yes | 无 | api授权token | 
-| dns | string | No | `dnspod` | dns服务商 (阿里为`alidns`,DNS.COM为`dnscom`,DNSPOD国际版为`dnspod_com`，`cloudflare`)| 
-| ipv4 | array | No | [] | ipv4 域名列表 |
-| ipv6 | array | No | [] | ipv6 域名列表 |
-| index4 | string/int | No | 'default'| ipv4获取方式 |
-| index6 | string/int | No | 'default'| ipv6获取方式 |
-| proxy | string | No | 无 | 多个代理`;`分割，`DIRECT`表示直连，从第一个代理尝试|
-| debug | boolean | No | false | 是否开启调试(输出调试信息) |
+| key   | type   | required | default | description | tips | 
+| ------| ------ | -------- | ------- | ----------- | ---- |
+| id    | string | √        | 无      | api授权用户 | cloudflare为邮箱 |
+| token | string | √        | 无      | api授权token | 也叫secret key, 反馈时删除此项 |
+| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,DNS.COM为`dnscom`,DNSPOD国际版`dnspod_com`|
+| ipv4  | array  | No       | `[]`     | ipv4 域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
+| ipv6  | array  | No       | `[]`     | ipv6 域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
+| index4|string/int|No      |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
+| index6|string/int|No      |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
+| proxy | string | No       | 无      | 多代理`;`分割 | `DIRECT`表示直连,通常至于最后作为最后尝试 |
+| debug | bool   | No       | `false` | 是否开启调试 | 运行异常是,打开调试输出,方便诊断错误 |
+| cache | bool   | No       | `true`  | 是否缓存记录 | 正常情况打开避免频繁更新 |
+
 
 #### index4和index6参数说明
 
