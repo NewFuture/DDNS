@@ -55,7 +55,7 @@
 
 ## 使用
 
-### ①安装
+### ① 安装
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
@@ -70,7 +70,7 @@
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
-### ②快速配置
+### ② 快速配置
 
 1. 首次运行`ddns`会自动创建一个配置文件 `config.json`
 2. 申请 api `token`,填写到对应的`id`和`token`字段:
@@ -112,19 +112,19 @@ python run.py -c /path/to/config.json
 | index4|string\|int|No     |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
 | index6|string\|int|No     |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
 | proxy | string | No       | 无      | 多代理`;`分割 | 多代理逐个尝试直到成功,`DIRECT`为直连|
-| debug | bool   | No       | `false` | 是否开启调试 | 运行异常是,打开调试输出,方便诊断错误 |
+| debug | bool   | No       | `false` | 是否开启调试 | 运行异常时,打开调试输出,方便诊断错误 |
 | cache | bool   | No       | `true`  | 是否缓存记录 | 正常情况打开避免频繁更新 |
 
 
 #### index4和index6参数说明
 
-* 数字(`0`,`1`,`2`,`3`等)第i个网卡ip
-* 正则表达(如`"192.*"`) 提取`ifconfig`/`ipconfig`中与之匹配的首个IP地址,**注意json转义**(`\`要写成`\\`)
+* 数字(`0`,`1`,`2`,`3`等): 第i个网卡ip
+* 正则表达(如`"192.*"`): 提取`ifconfig`/`ipconfig`中与之匹配的首个IP地址,**注意json转义**(`\`要写成`\\`)
 	* `"192.*"`表示192开头的所有ip
 	* 如果想匹配`10.00.xxxx`应该写成`"10\\.00\\..*"`(`"\\"`json转义成`\`)
-* 字符串`"default"`(或者无此项) 系统访问外网默认IP
-* 字符串`"public"`使用公网ip(使用公网API查询)
-* `false` 强制禁止更新ipv4或ipv6的DNS解析
+* 字符串`"default"`(或者无此项): 系统访问外网默认IP
+* 字符串`"public"`: 使用公网ip(使用公网API查询)
+* `false`: 强制禁止更新ipv4或ipv6的DNS解析
 
 #### 配置示例
 
