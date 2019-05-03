@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 from json import loads as jsondecode, dumps as jsonencode
-from logging import debug, info, warn
+from logging import debug, info
 
 try:
     # python 2

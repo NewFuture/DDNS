@@ -9,7 +9,7 @@ http://open.dns.com/
 
 from hashlib import md5
 from json import loads as jsondecode
-from logging import debug, info, warn
+from logging import debug, info
 from time import mktime
 from datetime import datetime
 

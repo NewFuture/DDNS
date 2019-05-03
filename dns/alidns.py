@@ -11,7 +11,7 @@ from hmac import new as hmac
 from uuid import uuid4
 from base64 import b64encode
 from json import loads as jsondecode
-from logging import debug, info, warn
+from logging import debug, info, warning
 from datetime import datetime
 
 try:
@@ -80,7 +80,7 @@ def request(param=None, **params):
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warn('%s : error:%s', params['Action'], data)
+        warning('%s : error:%s', params['Action'], data)
         raise Exception(data)
     else:
         data = jsondecode(data.decode('utf8'))

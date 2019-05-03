@@ -11,7 +11,7 @@ from json import load as loadjson, dump as dumpjson
 from time import ctime
 from os import path, environ, stat, name as os_name
 from tempfile import gettempdir
-from logging import info, DEBUG, basicConfig
+from logging import DEBUG, basicConfig, info, warning, error
 
 import sys
 
@@ -45,10 +45,10 @@ def get_config(key=None, default=None, path="config.json"):
                 get_config.config = loadjson(configfile)
                 get_config.time = stat(path).st_mtime
         except IOError:
-            print('Config file %s does not appear to exist.' % path)
+            error(' Config file `%s` does not exist!' % path)
             with open(path, 'w') as configfile:
                 configure = {
-                    "$schema": "https://ddns.newfuture.cc/schema.json",
+                    "$schema": "https://ddns.newfuture.cc/schema/v2.json",
                     "id": "YOUR ID or EAMIL for DNS Provider",
                     "token": "YOUR TOKEN or KEY for DNS Provider",
                     "dns": "dnspod",
@@ -66,7 +66,7 @@ def get_config(key=None, default=None, path="config.json"):
                     "debug": False,
                 }
                 dumpjson(configure, configfile, indent=2, sort_keys=True)
-            sys.exit("New template configure file [%s] is generated!" % path)
+            sys.exit("New template configure file `%s` is generated." % path)
         except:
             sys.exit('fail to load config from file: %s' % path)
     if key:
@@ -104,7 +104,7 @@ def change_dns_record(dns, proxy_list, **kw):
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
-            print(e)
+            error(e)
     return False
 
 
@@ -159,7 +159,7 @@ def main():
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
-        print("Cache is disabled!")
+        warning("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
         cache.clear()
         print("=" * 25, ctime(), "=" * 25, sep=' ')

@@ -7,7 +7,7 @@ http://www.dnspod.cn/docs/domains.html
 """
 
 from json import loads as jsondecode
-from logging import debug, info, warn
+from logging import debug, info, warning
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -51,7 +51,7 @@ def request(action, param=None, **params):
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warn('%s : error:%s', action, res)
+        warning('%s : error:%s', action, res)
         raise Exception(res)
     else:
         data = jsondecode(res.decode('utf8'))
@@ -81,7 +81,7 @@ def get_domain_info(domain):
                 sub = ".".join(domain_split)
                 break
         else:
-            warn('domain_id: %s, sub: %s', did, sub)
+            warning('domain_id: %s, sub: %s', did, sub)
             return None, None
         if not sub:  # root domain根域名https://github.com/NewFuture/DDNS/issues/9
             sub = '@'
