@@ -55,7 +55,7 @@
 
 ## 使用
 
-### 1.安装
+### ①安装
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
@@ -70,7 +70,7 @@
 	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
 	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
-### 2.快速配置
+### ②快速配置
 
 1. 首次运行`ddns`会自动创建一个配置文件 `config.json`
 2. 申请 api `token`,填写到对应的`id`和`token`字段:
@@ -103,14 +103,14 @@ python run.py -c /path/to/config.json
 #### 配置参数表
 
 | key   | type   | required | default | description | tips | 
-| ------| ------ | -------- | ------- | ----------- | ---- |
-| id    | string | √        | 无      | api授权用户 | cloudflare为邮箱 |
-| token | string | √        | 无      | api授权token | 也叫secret key, 反馈时删除此项 |
-| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,DNS.COM为`dnscom`,DNSPOD国际版`dnspod_com`|
-| ipv4  | array  | No       | `[]`     | ipv4 域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
-| ipv6  | array  | No       | `[]`     | ipv6 域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
-| index4|string/int|No      |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
-| index6|string/int|No      |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
+| ------| :----: | :------: | :-----: | :---------: | ------- |
+| id    | string | √        | 无      | api访问ID | cloudflare为邮箱 |
+| token | string | √        | 无      | api授权token | 也叫secret key, **反馈粘贴时删除** |
+| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,<br>DNS.COM为`dnscom`,<br>DNSPOD国际版`dnspod_com`|
+| ipv4  | array  | No       | `[]`     | ipv4域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
+| ipv6  | array  | No       | `[]`     | ipv6域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
+| index4|string\|int|No      |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
+| index6|string\|int|No      |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`, `正则`(注意转义) 等 |
 | proxy | string | No       | 无      | 多代理`;`分割 | `DIRECT`表示直连,通常至于最后作为最后尝试 |
 | debug | bool   | No       | `false` | 是否开启调试 | 运行异常是,打开调试输出,方便诊断错误 |
 | cache | bool   | No       | `true`  | 是否缓存记录 | 正常情况打开避免频繁更新 |
