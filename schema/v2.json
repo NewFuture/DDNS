@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://ddns.newfuture.cc/schema.json",
+  "$id": "https://ddns.newfuture.cc/schema/v2.json",
   "description": "DDNS 配置文件 https://github.com/NewFuture/DDNS",
   "type": "object",
   "properties": {
@@ -31,7 +31,7 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com)，cloudflare",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为dnspod_com,cloudflare",
       "default": "dnspod",
       "examples": [
         "dnspod",
@@ -88,7 +88,7 @@
         "boolean"
       ],
       "title": "IPv4 address Setting",
-      "description": "本机 IPv4 获取方式设置",
+      "description": "本机 IPv4 获取方式:default默认请求IP,public公网,数字表示网卡,正则提取IPconfig",
       "default": "default",
       "examples": [
         "default",
@@ -107,7 +107,7 @@
         "boolean"
       ],
       "title": "IPv6 address Setting",
-      "description": "本机 IPv6 获取方式设置",
+      "description": "本机 IPv6 获取方式:default默认请求IP,public公网,数字表示网卡,正则提取IPconfig",
       "default": "default",
       "examples": [
         "default",
@@ -125,7 +125,7 @@
         "null"
       ],
       "title": "HTTP Proxy Setting",
-      "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
+      "description": "DIRECT表示直连,多个代理分号(;)分割,逐个尝试直到成功",
       "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
       "examples": [
         "127.0.0.1:1080;DIRECT"
@@ -146,7 +146,7 @@
     "cache": {
       "$id": "/properties/cache",
       "type": "boolean",
-      "title": "Enable cache",
+      "title": "Enable Cache",
       "description": "是否使用缓存",
       "default": true,
       "examples": [
