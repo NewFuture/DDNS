@@ -51,7 +51,7 @@
     * [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
 * 其他: 
 	* [x] 可设置定时任务
-	* [x] 本地文件缓存(减少服务器请求和查询)
+	* [x] 本地文件缓存(减少API请求)
 
 ## 使用
 
@@ -72,15 +72,14 @@
 
 ### ② 快速配置
 
-1. 首次运行`ddns`会自动创建一个配置文件 `config.json`
-2. 申请 api `token`,填写到对应的`id`和`token`字段:
+1. 申请 api `token`,填写到对应的`id`和`token`字段:
 	* [DNSPOD(国内版)创建token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
 	* [阿里云accesskey](https://help.aliyun.com/knowledge_detail/38738.html)
 	* [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
 	* [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
 	* [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)
 
-3. 修改配置,`ipv4`和`ipv6`字段，无则设为`[]`(此时不会解析和更新对应IP),详细参照配置说明
+2. 修改配置文件,`ipv4`和`ipv6`字段，为待更新的域名,详细参照配置说明
 
 
 ## 详细配置
@@ -106,12 +105,12 @@ python run.py -c /path/to/config.json
 | :---: | :----: | :------: | :-----: | :---------: | ------- |
 | id    | string | √        | 无      | api访问ID | cloudflare为邮箱 |
 | token | string | √        | 无      | api授权token | 也叫secret key, **反馈粘贴时删除** |
-| dns   | string | No       |`"dnspod"`| dns服务商 | 阿里`alidns`,<br>dns.com为`dnscom`,<br>DNSPOD国际版`dnspod_com`|
-| ipv4  | array  | No       | `[]`     | ipv4域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
-| ipv6  | array  | No       | `[]`     | ipv6域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
-| index4|string\|int|No     |`"default"`| ipv4获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
-| index6|string\|int|No     |`"default"`| ipv6获取方式 | 支持`指定网卡`,`公网`,`正则`(注意转义) 等 |
-| proxy | string | No       | 无      | 多代理`;`分割 | 多代理逐个尝试直到成功,`DIRECT`为直连|
+| dns   | string | No       |`"dnspod"`| dns 服务商 | 阿里`alidns`,<br>dns.com为`dnscom`,<br>DNSPOD国际版`dnspod_com`|
+| ipv4  | array  | No       | `[]`     | ipv4 域名列表 | 为`[]`时,不会获取和更新IPv4地址 |
+| ipv6  | array  | No       | `[]`     | ipv6 域名列表 | 为`[]`时,不会获取和更新IPv6地址 |
+| index4|string\|int|No     |`"default"`| ipv4 获取方式 | 可设置`网卡`,`内网`,`公网`,`正则`等方式 |
+| index6|string\|int|No     |`"default"`| ipv6 获取方式 | 可设置`网卡`,`内网`,`公网`,`正则`等方式 |
+| proxy | string | No       | 无      | http代理`;`分割 | 多代理逐个尝试直到成功,`DIRECT`为直连|
 | debug | bool   | No       | `false` | 是否开启调试 | 运行异常时,打开调试输出,方便诊断错误 |
 | cache | bool   | No       | `true`  | 是否缓存记录 | 正常情况打开避免频繁更新 |
 
@@ -130,7 +129,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema.json",
+	"$schema": "https://ddns.newfuture.cc/schema/v2.json",
 	"id": "12345",
 	"token": "mytokenkey",
 	"dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare",
