@@ -144,9 +144,9 @@
       ]
     },
     "cache": {
-      "$id": "/properties/debug",
+      "$id": "/properties/cache",
       "type": "boolean",
-      "title": "using cache",
+      "title": "Enable cache",
       "description": "是否使用缓存",
       "default": true,
       "examples": [
