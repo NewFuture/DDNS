@@ -75,7 +75,7 @@ def regex_v4(reg):  # ipv4 正则提取
     if os_name == 'nt':  # Windows: IPv4 xxx: 192.168.1.2
         regex_str = r'IPv4 .*: ((?:\d{1,3}\.){3}\d{1,3})\W'
     else:
-        regex_str = r'inet (?:addr\:)?((?:\d{1,3}\.){3}\d{1,3})\s'
+        regex_str = r'inet (?:addr\:)?((?:\d{1,3}\.){3}\d{1,3})[\s/]'
     return ip_regex_match(regex_str, reg)
 
 
@@ -83,5 +83,5 @@ def regex_v6(reg):  # ipv6 正则提取
     if os_name == 'nt':  # Windows: IPv4 xxx: ::1
         regex_str = r'IPv6 .*: ([\:\dabcdef]*)?\W'
     else:
-        regex_str = r'inet6 (?:addr\:)?([\:\dabcdef]*)?\s'
+        regex_str = r'inet6 (?:addr\:)?([\:\dabcdef]*)?[\s/]'
     return ip_regex_match(regex_str, reg)
