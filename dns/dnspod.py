@@ -101,7 +101,10 @@ def get_domain_id(domain):
         # 如果已经存在直接返回防止再次请求
         return get_domain_id.domain_list[domain]
     else:
-        info = request('Domain.Info', domain=domain)
+        try:
+            info = request('Domain.Info', domain=domain)
+        except Exception:
+            return
         did = info.get("domain", {}).get("id")
         if did:
             get_domain_id.domain_list[domain] = did
