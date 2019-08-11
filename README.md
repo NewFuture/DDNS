@@ -123,6 +123,8 @@ python run.py -c /path/to/config.json
 	* 如果想匹配`10.00.xxxx`应该写成`"10\\.00\\..*"`(`"\\"`json转义成`\`)
 * 字符串`"default"`(或者无此项): 系统访问外网默认IP
 * 字符串`"public"`: 使用公网ip(使用公网API查询)
+* 字符串`"cmd:xxxx"`: 执行命令`xxxx`的stdout输出结果作为目标IP
+* 字符串`"shell:xxx"`: 使用系统shell运行`xxx`,并把结果stdout作为目标IP
 * `false`: 强制禁止更新ipv4或ipv6的DNS解析
 
 #### 配置示例
