@@ -12,6 +12,7 @@ from time import ctime
 from os import path, environ, stat, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error
+from subprocess import check_output
 
 import sys
 
@@ -84,6 +85,10 @@ def get_ip(ip_type):
         return False
     elif str(index).isdigit():  # local eth
         value = getattr(ip, "local_v" + ip_type)(index)
+    elif index.startswith('cmd:'): # cmd
+        value = check_output(index[4:]).strip()
+    elif index.startswith('shell:'): # shell
+        value = check_output(index[6:], shell=True).strip()
     elif any((c in index) for c in '*.:'):  # regex
         value = getattr(ip, "regex_v" + ip_type)(index)
     else:

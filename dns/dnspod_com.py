@@ -73,6 +73,7 @@ def get_domain_info(domain):
     切割域名获取主域名和对应ID
     """
     domain_split = domain.split('.')
+    sub = '@' # root domain根域名https://github.com/NewFuture/DDNS/issues/9
     if len(domain_split) == 3:  # 长度为3
         sub, main = domain_split[0], domain_split[1] + '.' + domain_split[2]
         did = get_domain_id(main)
@@ -87,8 +88,6 @@ def get_domain_info(domain):
         else:
             warning('domain_id: %s, sub: %s', did, sub)
             return None, None
-        if not sub:  # root domain根域名https://github.com/NewFuture/DDNS/issues/9
-            sub = '@'
     return did, sub
 
 
