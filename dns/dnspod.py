@@ -83,7 +83,8 @@ def get_domain_info(domain):
                 break
         else:
             warning('domain_id: %s, sub: %s', did, sub)
-            return None, None 
+            return None, None
+    sub = sub or '@'
     info('domain_id: %s, sub: %s', did, sub)
     return did, sub
 
