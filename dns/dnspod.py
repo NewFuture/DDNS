@@ -42,7 +42,7 @@ def request(action, param=None, **params):
         params.update(param)
 
     params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
-    info("%s : params:%s", action, params)
+    info("%s/%s : %s", API.SITE, action, params)
     params[API.TOKEN_PARAM] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:

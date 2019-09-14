@@ -23,15 +23,18 @@ except ImportError:
     from urllib.parse import urlencode
 
 
-
 __author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
 ID = "id"
 TOKEN = "TOKEN"
 PROXY = None  # 代理设置
-API_SITE = "www.dns.com"
-API_METHOD = "POST"
+
+
+class API:
+    # API 配置
+    SITE = "www.dns.com"  # API endpoint
+    METHOD = "POST"  # 请求方法
 
 
 def signature(params):
@@ -60,15 +63,15 @@ def request(action, param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    info("%s : params:%s", action, params)
+    info("%s/api/%s/ : params:%s", API.SITE, action, params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
-    conn.request(API_METHOD, '/api/' + action + '/', urlencode(params),
+    conn.request(API.METHOD, '/api/' + action + '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
     result = response.read()
