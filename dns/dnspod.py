@@ -23,8 +23,15 @@ __author__ = 'New Future'
 ID = "token id"
 TOKEN = "token key"
 PROXY = None  # 代理设置
-API_SITE = "dnsapi.cn"
-API_METHOD = "POST"
+TTL = 600
+
+
+class API:
+    # API 配置
+    SITE = "dnsapi.cn"  # API endpoint
+    METHOD = "POST"  # 请求方法
+    TOKEN_PARAM = "login_token"  # token参数
+    DEFAULT = "默认"  # 默认线路名
 
 
 def request(action, param=None, **params):
@@ -34,17 +41,17 @@ def request(action, param=None, **params):
     if param:
         params.update(param)
 
-    params.update({'login_token': '***', 'format': 'json'})
+    params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
     info("%s : params:%s", action, params)
-    params['login_token'] = "%s,%s" % (ID, TOKEN)
+    params[API.TOKEN_PARAM] = "%s,%s" % (ID, TOKEN)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
-    conn.request(API_METHOD, '/' + action, urlencode(params),
+    conn.request(API.METHOD, '/' + action, urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
     res = response.read()
@@ -69,22 +76,15 @@ def get_domain_info(domain):
     切割域名获取主域名和对应ID
     """
     domain_split = domain.split('.')
-    sub = '@' # root domain根域名https://github.com/NewFuture/DDNS/issues/9
-    if len(domain_split) == 3:  # 长度为3
-        sub, main = domain_split[0], domain_split[1] + '.' + domain_split[2]
+    sub, did = None, None
+    main = domain_split.pop()
+    while domain_split:  # 通过API判断,最后两个，三个递增
+        main = domain_split.pop() + '.' + main
         did = get_domain_id(main)
-    else:  # 长度大于三通过API判断,最后两个，三个递增
-        main = domain_split.pop()
-        while domain_split:
-            main = domain_split.pop() + '.' + main
-            did = get_domain_id(main)
-            if did:
-                sub = ".".join(domain_split)
-                break
-        else:
-            warning('domain_id: %s, sub: %s', did, sub)
-            return None, None
-    sub = sub or '@'
+        if did:
+            sub = ".".join(domain_split) or '@'
+            # root domain根域名https://github.com/NewFuture/DDNS/issues/9
+            break
     info('domain_id: %s, sub: %s', did, sub)
     return did, sub
 
@@ -157,7 +157,7 @@ def update_record(domain, value, record_type="A"):
         for (did, record) in records.items():
             if record["value"] != value:
                 debug(sub, record)
-                res = request('Record.Modify', record_id=did, record_line=record["line"].encode(
+                res = request('Record.Modify', record_id=did, record_line=record["line"].replace("Default", "default").encode(
                     "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type)
                 if res:
                     get_records.records[domainid][did]["value"] = value
@@ -169,7 +169,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # http://www.dnspod.cn/docs/records.html#record-create
         res = request("Record.Create", domain_id=domainid, value=value,
-                      sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
+                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=TTL)
         if res:
             did = res.get("record")["id"]
             get_records.records[domainid][did] = res.get("record")
