@@ -29,8 +29,12 @@ __author__ = 'New Future'
 ID = "id"
 TOKEN = "TOKEN"
 PROXY = None  # 代理设置
-API_SITE = "alidns.aliyuncs.com"
-API_METHOD = "POST"
+
+
+class API:
+    # API 配置
+    SITE = "alidns.aliyuncs.com"  # API endpoint
+    METHOD = "POST"  # 请求方法
 
 
 def signature(params):
@@ -48,7 +52,7 @@ def signature(params):
     })
     query = urlencode(sorted(params.items()))
     debug(query)
-    sign = API_METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
+    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
 
     sign = hmac((TOKEN + "&").encode('utf-8'),
@@ -65,15 +69,14 @@ def request(param=None, **params):
     if param:
         params.update(param)
     params = signature(params)
-    debug("params:%s", params)
+    info("%s: %s", API.SITE, params)
 
     if PROXY:
         conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
-
-    conn.request(API_METHOD, '/', urlencode(params),
+        conn = HTTPSConnection(API.SITE)
+    conn.request(API.METHOD, '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
     data = response.read()

@@ -23,7 +23,11 @@ __author__ = 'TongYifan'
 ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
 TOKEN = "API KEY"
 PROXY = None  # 代理设置
-API_SITE = "api.cloudflare.com"
+
+
+class API:
+    # API 配置
+    SITE = "api.cloudflare.com"  # API endpoint
 
 
 def request(method, action, param=None, **params):
@@ -33,12 +37,12 @@ def request(method, action, param=None, **params):
     if param:
         params.update(param)
 
-    info("$s %s : params:%s", action, params)
+    info("%s/%s : %s", API.SITE, action, params)
     if PROXY:
         conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
     if method in ['PUT', 'POST', 'PATCH']:
         # 从public_v(4,6)获取的IP是bytes类型，在json.dumps时会报TypeError
