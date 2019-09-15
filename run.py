@@ -83,13 +83,17 @@ def get_ip(ip_type):
     index = get_config('index' + ip_type, "default")
     if index is False:  # disabled
         return False
-    elif str(index).isdigit():  # local eth
+    elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
     elif index.startswith('cmd:'): # cmd
         value = check_output(index[4:]).strip()
     elif index.startswith('shell:'): # shell
         value = check_output(index[6:], shell=True).strip()
-    elif any((c in index) for c in '*.:'):  # regex
+    elif index.startswith('url:'): # 自定义 url
+        value = getattr(ip, "public_v" + ip_type)(index[4:])
+    elif index.startswith('regex:'):  # 正则 regex
+        value = getattr(ip, "regex_v" + ip_type)(index[6:])
+    elif any((c in index) for c in '*.:'):  # 兼容 regex
         value = getattr(ip, "regex_v" + ip_type)(index)
     else:
         value = getattr(ip, index + "_v" + ip_type)()
