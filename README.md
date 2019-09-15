@@ -35,9 +35,9 @@
   - [x] 多级域名解析
   - [x] 自动创建新记录
 - IP 类型:
-  - [x] 内网 IP
-  - [x] 公网 IP
-  - [x] ipv6 支持
+  - [x] 内网 IPv4 / IPv6
+  - [x] 公网 IPv4 / IPv6 (支持自定义 API)
+  - [x] 自定义命令(shell)
   - [x] 正则选取支持(@rufengsuixing)
 - 网络代理:
   - [x] http 代理支持
@@ -49,8 +49,8 @@
   - [x] [DNSPOD 国际版](https://www.dnspod.com/)
   - [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
 - 其他:
-  _ [x] 可设置定时任务
-  _ [x] 本地文件缓存(减少 API 请求)
+  - [x] 可设置定时任务
+  - [x] 本地文件缓存(减少 API 请求)
 
 ## 使用
 
@@ -58,16 +58,16 @@
 
 根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
 
-- #### pip 安装(需要 pip 或 easy*install) \_beta*
-      	1. 安装ddns: `pip install ddns` 或 `easy_install ddns`
-      	2. 运行: `ddns`
+- #### pip 安装(需要 pip 或 easy_install)
+      1. 安装ddns: `pip install ddns` 或 `easy_install ddns`
+      2. 运行: `ddns`
 - #### 二进制版(单文件,无需 python)
-      	* Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
-      	* Linux (仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-      	* Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
+      * Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
+      * Linux (仅Ubuntu测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
+      * Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
 - #### 源码运行(无任何依赖, 需 python 环境)
-      	1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
-      	2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+      1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
+      2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 
 ### ② 快速配置
 
