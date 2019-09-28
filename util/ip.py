@@ -58,11 +58,11 @@ def _open(url, reg):
         error(e)
 
 
-def public_v4(url="https://ipv4.ip.sb", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://api-ipv4.ip.sb/ip", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
-def public_v6(url="http://ipv6.ip.sb", reg=IPV6_REG):  # 公网IPV6地址
+def public_v6(url="https://api-ipv6.ip.sb/ip", reg=IPV6_REG):  # 公网IPV6地址
     return _open(url, reg)
 
 
