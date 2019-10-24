@@ -86,9 +86,9 @@ def get_ip(ip_type):
     elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
     elif index.startswith('cmd:'): # cmd
-        value = check_output(index[4:]).strip()
+        value = str(check_output(index[4:]).strip().decode('utf-8'))
     elif index.startswith('shell:'): # shell
-        value = check_output(index[6:], shell=True).strip()
+        value = str(check_output(index[6:], shell=True).strip().decode('utf-8'))
     elif index.startswith('url:'): # 自定义 url
         value = getattr(ip, "public_v" + ip_type)(index[4:])
     elif index.startswith('regex:'):  # 正则 regex
