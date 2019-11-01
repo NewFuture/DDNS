@@ -20,10 +20,11 @@ except ImportError:
 __author__ = 'New Future'
 
 
-ID = "token id"
-TOKEN = "token key"
-PROXY = None  # 代理设置
-TTL = 600
+class Config:
+    ID = "token id"
+    TOKEN = "token key"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -43,10 +44,9 @@ def request(action, param=None, **params):
 
     params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
     info("%s/%s : %s", API.SITE, action, params)
-    params[API.TOKEN_PARAM] = "%s,%s" % (ID, TOKEN)
-
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    params[API.TOKEN_PARAM] = "%s,%s" % (Config.ID, Config.TOKEN)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
@@ -169,7 +169,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # http://www.dnspod.cn/docs/records.html#record-create
         res = request("Record.Create", domain_id=domainid, value=value,
-                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=TTL)
+                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=Config.TTL)
         if res:
             did = res.get("record")["id"]
             get_records.records[domainid][did] = res.get("record")

@@ -26,9 +26,12 @@ except ImportError:
 __author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
-ID = "id"
-TOKEN = "TOKEN"
-PROXY = None  # 代理设置
+
+class Config:
+    ID = "id"
+    TOKEN = "TOKEN"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -42,7 +45,7 @@ def signature(params):
     计算签名,返回签名后的查询参数
     """
     params.update({
-        'apiKey': ID,
+        'apiKey': Config.ID,
         'timestamp': mktime(datetime.now().timetuple()),
     })
     query = urlencode(sorted(params.items()))
@@ -50,7 +53,7 @@ def signature(params):
     sign = query
     debug("signString: %s", sign)
 
-    sign = md5((sign + TOKEN).encode('utf-8')).hexdigest()
+    sign = md5((sign + Config.TOKEN).encode('utf-8')).hexdigest()
     params["hash"] = sign
 
     return params
@@ -65,8 +68,8 @@ def request(action, param=None, **params):
     params = signature(params)
     info("%s/api/%s/ : params:%s", API.SITE, action, params)
 
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
