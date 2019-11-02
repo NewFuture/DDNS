@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 from json import loads as jsondecode, dumps as jsonencode
-from logging import debug, info
+from logging import debug, info, warning
 
 try:
     # python 2
@@ -20,9 +20,12 @@ except ImportError:
 
 __author__ = 'TongYifan'
 
-ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
-TOKEN = "API KEY"
-PROXY = None  # 代理设置
+
+class Config:
+    ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
+    TOKEN = "API KEY"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -38,8 +41,8 @@ def request(method, action, param=None, **params):
         params.update(param)
 
     info("%s/%s : %s", API.SITE, action, params)
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
@@ -54,15 +57,16 @@ def request(method, action, param=None, **params):
         params = None
     conn.request(method, '/client/v4/zones' + action, params,
                  {"Content-type": "application/json",
-                  "X-Auth-Email": ID,
-                  "X-Auth-Key": TOKEN})
+                  "X-Auth-Email": Config.ID,
+                  "X-Auth-Key": Config.TOKEN})
     response = conn.getresponse()
-    res = response.read()
+    res = response.read().decode('utf8')
     conn.close()
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res.decode('utf8'))
+        data = jsondecode(res)
         debug('%s : result:%s', action, data)
         if not data:
             raise Exception("Empty Response")

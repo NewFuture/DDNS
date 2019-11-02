@@ -28,6 +28,8 @@ ddns[%s]
 Copyright (c) New Future (MIT License)
 """ % (__version__)
 
+environ["DDNS_VERSION"] = "${BUILD_SOURCEBRANCHNAME}"
+
 if getattr(sys, 'frozen', False):
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
     environ['SSL_CERT_FILE'] = path.join(
@@ -85,11 +87,12 @@ def get_ip(ip_type):
         return False
     elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
-    elif index.startswith('cmd:'): # cmd
+    elif index.startswith('cmd:'):  # cmd
         value = str(check_output(index[4:]).strip().decode('utf-8'))
-    elif index.startswith('shell:'): # shell
-        value = str(check_output(index[6:], shell=True).strip().decode('utf-8'))
-    elif index.startswith('url:'): # 自定义 url
+    elif index.startswith('shell:'):  # shell
+        value = str(check_output(
+            index[6:], shell=True).strip().decode('utf-8'))
+    elif index.startswith('url:'):  # 自定义 url
         value = getattr(ip, "public_v" + ip_type)(index[4:])
     elif index.startswith('regex:'):  # 正则 regex
         value = getattr(ip, "regex_v" + ip_type)(index[6:])
@@ -151,27 +154,30 @@ def main():
                         action='version', version=__version__)
     parser.add_argument('-c', '--config',
                         default="config.json", help="run with config file [配置文件路径]")
-    get_config(path=parser.parse_args().config)
+    config_file = parser.parse_args().config
+    get_config(path=config_file)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
-    dns.ID, dns.TOKEN = get_config('id'), get_config('token')
+    dns.Config.ID, dns.Config.TOKEN = get_config('id'), get_config('token')
     if get_config('debug'):
         ip.DEBUG = get_config('debug')
         basicConfig(
             level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
-        info("DDNS[%s] run: %s,%s", __version__, os_name, sys.platform)
+        print("DDNS[", __version__, "] run:", os_name, sys.platform)
+        print("Configuration was loaded from <==", path.abspath(config_file))
+        print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
-        warning("Cache is disabled!")
+        info("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
+        warning("Cache file is out of dated.")
         cache.clear()
-        print("=" * 25, ctime(), "=" * 25, sep=' ')
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 

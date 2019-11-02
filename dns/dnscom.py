@@ -9,7 +9,7 @@ http://open.dns.com/
 
 from hashlib import md5
 from json import loads as jsondecode
-from logging import debug, info
+from logging import debug, info, warning
 from time import mktime
 from datetime import datetime
 
@@ -26,9 +26,12 @@ except ImportError:
 __author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
-ID = "id"
-TOKEN = "TOKEN"
-PROXY = None  # 代理设置
+
+class Config:
+    ID = "id"
+    TOKEN = "TOKEN"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -42,7 +45,7 @@ def signature(params):
     计算签名,返回签名后的查询参数
     """
     params.update({
-        'apiKey': ID,
+        'apiKey': Config.ID,
         'timestamp': mktime(datetime.now().timetuple()),
     })
     query = urlencode(sorted(params.items()))
@@ -50,7 +53,7 @@ def signature(params):
     sign = query
     debug("signString: %s", sign)
 
-    sign = md5((sign + TOKEN).encode('utf-8')).hexdigest()
+    sign = md5((sign + Config.TOKEN).encode('utf-8')).hexdigest()
     params["hash"] = sign
 
     return params
@@ -65,8 +68,8 @@ def request(action, param=None, **params):
     params = signature(params)
     info("%s/api/%s/ : params:%s", API.SITE, action, params)
 
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
@@ -74,13 +77,14 @@ def request(action, param=None, **params):
     conn.request(API.METHOD, '/api/' + action + '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    result = response.read()
+    result = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, result)        
         raise Exception(result)
     else:
-        data = jsondecode(result.decode('utf8'))
+        data = jsondecode(result)
         debug('%s : result:%s', action, data)
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))

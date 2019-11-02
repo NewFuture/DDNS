@@ -8,6 +8,7 @@ http://www.dnspod.cn/docs/domains.html
 
 from json import loads as jsondecode
 from logging import debug, info, warning
+from os import environ
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -20,10 +21,11 @@ except ImportError:
 __author__ = 'New Future'
 
 
-ID = "token id"
-TOKEN = "token key"
-PROXY = None  # 代理设置
-TTL = 600
+class Config:
+    ID = "token id"
+    TOKEN = "token key"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -43,25 +45,26 @@ def request(action, param=None, **params):
 
     params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
     info("%s/%s : %s", API.SITE, action, params)
-    params[API.TOKEN_PARAM] = "%s,%s" % (ID, TOKEN)
-
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    params[API.TOKEN_PARAM] = "%s,%s" % (Config.ID, Config.TOKEN)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
 
-    conn.request(API.METHOD, '/' + action, urlencode(params),
-                 {"Content-type": "application/x-www-form-urlencoded"})
+    conn.request(API.METHOD, '/' + action, urlencode(params), {
+        "Content-type": "application/x-www-form-urlencoded",
+        "User-Agent": "DDNS/%s (ddns@newfuture.cc)" % environ.get("DDNS_VERSION", "1.0.0")
+    })
     response = conn.getresponse()
-    res = response.read()
+    res = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error:%s', action, res)
+        warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res.decode('utf8'))
+        data = jsondecode(res)
         debug('%s : result:%s', action, data)
         if not data:
             raise Exception("empty response")
@@ -169,7 +172,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # http://www.dnspod.cn/docs/records.html#record-create
         res = request("Record.Create", domain_id=domainid, value=value,
-                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=TTL)
+                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=Config.TTL)
         if res:
             did = res.get("record")["id"]
             get_records.records[domainid][did] = res.get("record")

@@ -26,9 +26,12 @@ except ImportError:
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
-ID = "id"
-TOKEN = "TOKEN"
-PROXY = None  # 代理设置
+
+class Config:
+    ID = "id"
+    TOKEN = "TOKEN"
+    PROXY = None  # 代理设置
+    TTL = 600
 
 
 class API:
@@ -44,7 +47,7 @@ def signature(params):
     params.update({
         'Format': 'json',
         'Version': '2015-01-09',
-        'AccessKeyId': ID,
+        'AccessKeyId': Config.ID,
         'Timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         'SignatureMethod': 'HMAC-SHA1',
         'SignatureNonce': uuid4(),
@@ -55,7 +58,7 @@ def signature(params):
     sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
 
-    sign = hmac((TOKEN + "&").encode('utf-8'),
+    sign = hmac((Config.TOKEN + "&").encode('utf-8'),
                 sign.encode('utf-8'), sha1).digest()
     sign = b64encode(sign).strip()
     params["Signature"] = sign
@@ -71,22 +74,22 @@ def request(param=None, **params):
     params = signature(params)
     info("%s: %s", API.SITE, params)
 
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
     else:
         conn = HTTPSConnection(API.SITE)
     conn.request(API.METHOD, '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    data = response.read()
+    data = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error:%s', params['Action'], data)
+        warning('%s : error[%d]: %s', params['Action'], response.status, data)
         raise Exception(data)
     else:
-        data = jsondecode(data.decode('utf8'))
+        data = jsondecode(data)
         debug('%s : result:%s', params['Action'], data)
         return data
 
