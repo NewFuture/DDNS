@@ -165,16 +165,17 @@ def main():
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
         print("DDNS[", __version__, "] run:", os_name, sys.platform)
         print("Configuration was loaded from <==", path.abspath(config_file))
+        print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
-        warning("Cache is disabled!")
+        info("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
+        warning("Cache file is out of dated.")
         cache.clear()
-        print("=" * 25, ctime(), "=" * 25, sep=' ')
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 
