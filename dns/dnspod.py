@@ -8,6 +8,7 @@ http://www.dnspod.cn/docs/domains.html
 
 from json import loads as jsondecode
 from logging import debug, info, warning
+from os import environ
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -51,8 +52,10 @@ def request(action, param=None, **params):
     else:
         conn = HTTPSConnection(API.SITE)
 
-    conn.request(API.METHOD, '/' + action, urlencode(params),
-                 {"Content-type": "application/x-www-form-urlencoded"})
+    conn.request(API.METHOD, '/' + action, urlencode(params), {
+        "Content-type": "application/x-www-form-urlencoded",
+        "User-Agent": "DDNS/%s (ddns@newfuture.cc)" % environ.get("DDNS_VERSION", "1.0.0")
+    })
     response = conn.getresponse()
     res = response.read().decode('utf8')
     conn.close()

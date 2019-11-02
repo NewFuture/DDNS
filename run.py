@@ -28,6 +28,8 @@ ddns[%s]
 Copyright (c) New Future (MIT License)
 """ % (__version__)
 
+environ["DDNS_VERSION"] = "${BUILD_SOURCEBRANCHNAME}"
+
 if getattr(sys, 'frozen', False):
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
     environ['SSL_CERT_FILE'] = path.join(
