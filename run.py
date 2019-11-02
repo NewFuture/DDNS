@@ -152,7 +152,8 @@ def main():
                         action='version', version=__version__)
     parser.add_argument('-c', '--config',
                         default="config.json", help="run with config file [配置文件路径]")
-    get_config(path=parser.parse_args().config)
+    config_file = parser.parse_args().config
+    get_config(path=config_file)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
@@ -162,7 +163,8 @@ def main():
         basicConfig(
             level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
-        info("DDNS[%s] run: %s,%s", __version__, os_name, sys.platform)
+        print("DDNS[", __version__, "] run:", os_name, sys.platform)
+        print("Configuration was loaded from <==", path.abspath(config_file))
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
