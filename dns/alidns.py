@@ -82,14 +82,14 @@ def request(param=None, **params):
     conn.request(API.METHOD, '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    data = response.read()
+    data = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error:%s', params['Action'], data)
+        warning('%s : error[%d]: %s', params['Action'], response.status, data)
         raise Exception(data)
     else:
-        data = jsondecode(data.decode('utf8'))
+        data = jsondecode(data)
         debug('%s : result:%s', params['Action'], data)
         return data
 

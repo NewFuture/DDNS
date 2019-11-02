@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 from json import loads as jsondecode, dumps as jsonencode
-from logging import debug, info
+from logging import debug, info, warning
 
 try:
     # python 2
@@ -60,12 +60,13 @@ def request(method, action, param=None, **params):
                   "X-Auth-Email": Config.ID,
                   "X-Auth-Key": Config.TOKEN})
     response = conn.getresponse()
-    res = response.read()
+    res = response.read().decode('utf8')
     conn.close()
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res.decode('utf8'))
+        data = jsondecode(res)
         debug('%s : result:%s', action, data)
         if not data:
             raise Exception("Empty Response")

@@ -9,7 +9,7 @@ http://open.dns.com/
 
 from hashlib import md5
 from json import loads as jsondecode
-from logging import debug, info
+from logging import debug, info, warning
 from time import mktime
 from datetime import datetime
 
@@ -77,13 +77,14 @@ def request(action, param=None, **params):
     conn.request(API.METHOD, '/api/' + action + '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    result = response.read()
+    result = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, result)        
         raise Exception(result)
     else:
-        data = jsondecode(result.decode('utf8'))
+        data = jsondecode(result)
         debug('%s : result:%s', action, data)
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))
