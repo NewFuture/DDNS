@@ -48,6 +48,7 @@
   - [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
   - [x] [DNSPOD 国际版](https://www.dnspod.com/)
   - [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
+  - [x] [HE.net](https://dns.he.net/)(@NN708)
 - 其他:
   - [x] 可设置定时任务
   - [x] 本地文件缓存(减少 API 请求)
@@ -102,9 +103,9 @@ python run.py -c /path/to/config.json
 
 |  key   |    type     | required |   default   |   description    | tips                                                              |
 | :----: | :---------: | :------: | :---------: | :--------------: | ----------------------------------------------------------------- |
-|   id   |   string    |    √     |     无      |   api 访问 ID    | cloudflare 为邮箱                                                 |
+|   id   |   string    |    √     |     无      |   api 访问 ID    | cloudflare 为邮箱,<br>HE.net 可留空                                                 |
 | token  |   string    |    √     |     无      |  api 授权 token  | 也叫 secret key, **反馈粘贴时删除**                               |
-|  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商    | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com` |
+|  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商    | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he` |
 |  ipv4  |    array    |    No    |    `[]`     |  ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                 |
 |  ipv6  |    array    |    No    |    `[]`     |  ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                 |
 | index4 | string\|int |    No    | `"default"` |  ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                           |
@@ -133,7 +134,7 @@ python run.py -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v2.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,
