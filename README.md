@@ -48,7 +48,7 @@
   - [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
   - [x] [DNSPOD 国际版](https://www.dnspod.com/)
   - [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
-  - [x] [HE.net](https://dns.he.net/)(@NN708)
+  - [x] [HE.net](https://dns.he.net/)(@NN708) (不支持自动创建记录)
 - 其他:
   - [x] 可设置定时任务
   - [x] 本地文件缓存(减少 API 请求)
