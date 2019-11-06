@@ -79,6 +79,7 @@
    - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
    - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
    - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)
+   - [HE.net DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入`token`字段，`id`字段可留空）
 
 2. 修改配置文件,`ipv4`和`ipv6`字段，为待更新的域名,详细参照配置说明
 
