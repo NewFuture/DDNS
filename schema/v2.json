@@ -31,10 +31,10 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为dnspod_com,cloudflare",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为dnspod_com,cloudflare,HE.net为he",
       "default": "dnspod",
       "examples": ["dnspod", "alidns", "cloudflare"],
-      "enum": ["dnspod", "alidns", "cloudflare", "dnspod_com", "dnscom"]
+      "enum": ["dnspod", "alidns", "cloudflare", "dnspod_com", "dnscom", "he"]
     },
     "ipv4": {
       "$id": "/properties/ipv4",
