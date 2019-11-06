@@ -64,7 +64,7 @@ def request(param=None, **params):
         debug('%s : result:%s', API.ACTION, res)
         if not res:
             raise Exception("empty response")
-        elif res == "nochg" or res == "good": # No change or success
+        elif res[:5] == "nochg" or res[:4] == "good": # No change or success
             return res
         else:
             raise Exception(res)
@@ -76,10 +76,10 @@ def update_record(domain, value, record_type="A"):
     """
     info(">>>>>%s(%s)", domain, record_type)
     res = request(hostname=domain, myip=value)
-    if res == "good":
-        result = "Record updated. New IP is: " + value
-    elif res == "nochg":
-        result = "IP not changed."
+    if res[:4] == "good":
+        result = "Record updated. New IP is: " + res[5:-1]
+    elif res[:5] == "nochg":
+        result = "IP not changed. IP is: " + res[6:-1]
     else:
         result = "Record update failed."
     return result
