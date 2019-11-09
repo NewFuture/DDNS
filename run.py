@@ -51,7 +51,7 @@ def get_config(key=None, default=None, path="config.json"):
             error(' Config file `%s` does not exist!' % path)
             with open(path, 'w') as configfile:
                 configure = {
-                    "$schema": "https://ddns.newfuture.cc/schema/v2.json",
+                    "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
                     "id": "YOUR ID or EAMIL for DNS Provider",
                     "token": "YOUR TOKEN or KEY for DNS Provider",
                     "dns": "dnspod",
@@ -65,6 +65,7 @@ def get_config(key=None, default=None, path="config.json"):
                     ],
                     "index4": "default",
                     "index6": "default",
+                    "ttl": None,
                     "proxy": None,
                     "debug": False,
                 }
@@ -159,7 +160,9 @@ def main():
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
-    dns.Config.ID, dns.Config.TOKEN = get_config('id'), get_config('token')
+    dns.Config.ID = get_config('id')
+    dns.Config.TOKEN = get_config('token')
+    dns.Config.TTL = get_config('ttl')
     if get_config('debug'):
         ip.DEBUG = get_config('debug')
         basicConfig(
