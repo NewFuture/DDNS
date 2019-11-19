@@ -117,6 +117,20 @@
         false
       ]
     },
+    "ttl": {
+      "$id": "/properties/ttl",
+      "type": [
+        "number",
+        "null"
+      ],
+      "title": "TTL",
+      "description": "设置DNS TTL,默认不填读取DNS服务商的配置",
+      "default": null,
+      "examples": [
+        600,
+        null
+      ]
+    },
     "proxy": {
       "$id": "/properties/proxy",
       "type": [

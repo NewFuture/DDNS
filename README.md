@@ -51,6 +51,7 @@
   - [x] [HE.net](https://dns.he.net/)(@NN708) (不支持自动创建记录)
 - 其他:
   - [x] 可设置定时任务
+  - [x] TTL配置支持
   - [x] 本地文件缓存(减少 API 请求)
 
 ## 使用
@@ -111,6 +112,7 @@ python run.py -c /path/to/config.json
 |  ipv6  |    array    |    No    |    `[]`     |  ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                 |
 | index4 | string\|int |    No    | `"default"` |  ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                           |
 | index6 | string\|int |    No    | `"default"` |  ipv6 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                           |
+|  ttl   |    number   |    No    |    `null`   |  DNS解析TTL时间  | 不设置采用DNS默认策略        |
 | proxy  |   string    |    No    |     无      | http 代理`;`分割 | 多代理逐个尝试直到成功,`DIRECT`为直连                             |
 | debug  |    bool     |    No    |   `false`   |   是否开启调试   | 运行异常时,打开调试输出,方便诊断错误                              |
 | cache  |    bool     |    No    |   `true`    |   是否缓存记录   | 正常情况打开避免频繁更新                                          |
@@ -132,7 +134,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v2.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he",
@@ -140,6 +142,7 @@ python run.py -c /path/to/config.json
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,
   "index6": "public",
+  "ttl": 600,
   "proxy": "127.0.0.1:1080;DIRECT",
   "debug": false
 }

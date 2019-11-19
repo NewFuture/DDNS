@@ -25,7 +25,7 @@ class Config:
     ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
     TOKEN = "API KEY"
     PROXY = None  # 代理设置
-    TTL = 600
+    TTL = None
 
 
 class API:
@@ -39,7 +39,8 @@ def request(method, action, param=None, **params):
     """
     if param:
         params.update(param)
-
+    
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     info("%s/%s : %s", API.SITE, action, params)
     if Config.PROXY:
         conn = HTTPSConnection(Config.PROXY)
@@ -135,7 +136,7 @@ def update_record(domain, value, record_type="A"):
         for (rid, record) in records.items():
             if record['content'] != value:
                 res = request('PUT', '/' + zoneid + '/dns_records/' + record['id'],
-                              type=record_type, content=value, name=domain)
+                              type=record_type, content=value, name=domain, ttl=Config.TTL)
                 if res:
                     get_records.records[cache_key][rid]['content'] = value
                     result[rid] = res.get("name")
@@ -146,7 +147,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # https://api.cloudflare.com/#dns-records-for-a-zone-create-dns-record
         res = request('POST', '/' + zoneid + '/dns_records',
-                      type=record_type, name=domain, content=value, proxied=False, ttl=600)
+                      type=record_type, name=domain, content=value, proxied=False, ttl=Config.TTL)
         if res:
             get_records.records[cache_key][res['id']] = res
             result = res

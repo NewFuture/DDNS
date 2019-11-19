@@ -31,7 +31,7 @@ class Config:
     ID = "id"
     TOKEN = "TOKEN"
     PROXY = None  # 代理设置
-    TTL = 600
+    TTL = None
 
 
 class API:
@@ -65,6 +65,7 @@ def request(action, param=None, **params):
     """
     if param:
         params.update(param)
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     params = signature(params)
     info("%s/api/%s/ : params:%s", API.SITE, action, params)
 
@@ -81,7 +82,7 @@ def request(action, param=None, **params):
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error[%d]:%s', action, response.status, result)        
+        warning('%s : error[%d]:%s', action, response.status, result)
         raise Exception(result)
     else:
         data = jsondecode(result)
@@ -155,7 +156,7 @@ def update_record(domain, value, record_type='A'):
             if record["value"] != value:
                 debug(sub, record)
                 res = request("record/modify", domainID=domain_id,
-                              recordID=rid, newvalue=value)
+                              recordID=rid, newvalue=value, newTTL=Config.TTL)
                 if res:
                     # update records
                     get_records.records[main][rid]["value"] = value
@@ -166,7 +167,7 @@ def update_record(domain, value, record_type='A'):
                 result[rid] = domain
     else:
         res = request("record/create", domainID=domain_id,
-                      value=value, host=sub, type=record_type)
+                      value=value, host=sub, type=record_type, TTL=Config.TTL)
         if res:
             # update records INFO
             rid = res.get('recordID')
