@@ -55,10 +55,11 @@ def request(method, action, param=None, **params):
         if params:
             action += '?' + urlencode(params)
         params = None
-    conn.request(method, '/client/v4/zones' + action, params,
-                 {"Content-type": "application/json",
-                  "X-Auth-Email": Config.ID,
-                  "X-Auth-Key": Config.TOKEN})
+    if Config.ID is None:
+        headers = {"Content-type": "application/json", "Authorization": "Bearer " + Config.TOKEN}
+    else:
+        headers = {"Content-type": "application/json", "X-Auth-Email": Config.ID, "X-Auth-Key": Config.TOKEN}
+    conn.request(method, '/client/v4/zones' + action, params, headers)
     response = conn.getresponse()
     res = response.read().decode('utf8')
     conn.close()
