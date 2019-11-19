@@ -105,7 +105,7 @@ python run.py -c /path/to/config.json
 
 |  key   |    type     | required |   default   |   description    | tips                                                              |
 | :----: | :---------: | :------: | :---------: | :--------------: | ----------------------------------------------------------------- |
-|   id   |   string    |    √     |     无      |   api 访问 ID    | cloudflare 为邮箱,<br>HE.net 可留空                                                 |
+|   id   |   string    |    √     |     无      |   api 访问 ID    | cloudflare 为邮箱(使用api token可为空,但对应的token需要Zone权限),<br>HE.net 可留空                                                 |
 | token  |   string    |    √     |     无      |  api 授权 token  | 也叫 secret key, **反馈粘贴时删除**                               |
 |  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商    | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he` |
 |  ipv4  |    array    |    No    |    `[]`     |  ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                 |
