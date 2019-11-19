@@ -25,7 +25,7 @@ class Config:
     ID = "token id"
     TOKEN = "token key"
     PROXY = None  # 代理设置
-    TTL = 600
+    TTL = None
 
 
 class API:
@@ -42,7 +42,7 @@ def request(action, param=None, **params):
     """
     if param:
         params.update(param)
-
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
     info("%s/%s : %s", API.SITE, action, params)
     params[API.TOKEN_PARAM] = "%s,%s" % (Config.ID, Config.TOKEN)
@@ -161,7 +161,7 @@ def update_record(domain, value, record_type="A"):
             if record["value"] != value:
                 debug(sub, record)
                 res = request('Record.Modify', record_id=did, record_line=record["line"].replace("Default", "default").encode(
-                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type)
+                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type, ttl=Config.TTL)
                 if res:
                     get_records.records[domainid][did]["value"] = value
                     result[did] = res.get("record")

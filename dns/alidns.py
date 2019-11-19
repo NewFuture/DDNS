@@ -31,7 +31,7 @@ class Config:
     ID = "id"
     TOKEN = "TOKEN"
     PROXY = None  # 代理设置
-    TTL = 600
+    TTL = None
 
 
 class API:
@@ -71,6 +71,7 @@ def request(param=None, **params):
     """
     if param:
         params.update(param)
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     params = signature(params)
     info("%s: %s", API.SITE, params)
 
@@ -156,7 +157,7 @@ def update_record(domain, value, record_type='A'):
             if record["Value"] != value:
                 debug(sub, record)
                 res = request(Action="UpdateDomainRecord", RecordId=rid,
-                              Value=value, RR=sub, Type=record_type)
+                              Value=value, RR=sub, Type=record_type, TTL=Config.TTL)
                 if res:
                     # update records
                     get_records.records[main][rid]["Value"] = value
@@ -167,7 +168,7 @@ def update_record(domain, value, record_type='A'):
                 result[rid] = domain
     else:  # https://help.aliyun.com/document_detail/29772.html
         res = request(Action="AddDomainRecord", DomainName=main,
-                      Value=value, RR=sub, Type=record_type)
+                      Value=value, RR=sub, Type=record_type, TTL=Config.TTL)
         if res:
             # update records INFO
             rid = res.get('RecordId')
