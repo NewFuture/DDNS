@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+import netifaces as ni
 from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
@@ -45,6 +45,18 @@ def local_v4(i=0):  # 本地ipv4地址
     info = getaddrinfo(gethostname(), 0, AF_INET)
     debug(info)
     return info[int(i)][-1][0]
+
+def interface_v6(interface=None):  # 本地网卡的ipv6地址
+    debug("open: %s", interface)
+    info = ni.ifaddresses(interface)[ni.AF_INET6][0]['addr']
+    return info
+
+
+def interface_v4(interface=None):  # 本地网卡的ipv4地址
+    debug("open: %s", interface)
+    info = ni.ifaddresses()[ni.AF_INET][0]['addr']
+    debug(info)
+    return info
 
 
 def _open(url, reg):
