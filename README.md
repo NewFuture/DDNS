@@ -122,6 +122,7 @@ python run.py -c /path/to/config.json
 - 数字(`0`,`1`,`2`,`3`等): 第 i 个网卡 ip
 - 字符串`"default"`(或者无此项): 系统访问外网默认 IP
 - 字符串`"public"`: 使用公网 ip(使用公网 API 查询,url 的简化模式)
+- 字符串`"interface"`: 使用指定网卡 ip(如:`"interface:eno1"`)
 - 字符串`"url:xxx"`: 打开 URL `xxx`(如:`"url:http://ip.sb"`),从返回的数据提取 IP 地址
 - 字符串`"regex:xxx"` 正则表达(如`"regex:192.*"`): 提取`ifconfig`/`ipconfig`中与之匹配的首个 IP 地址,**注意 json 转义**(`\`要写成`\\`)
   - `"192.*"`表示 192 开头的所有 ip
