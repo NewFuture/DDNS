@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+import netifaces as ni
 from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
