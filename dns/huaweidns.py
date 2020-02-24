@@ -3,7 +3,7 @@
 HuaweiDNS API
 华为DNS解析操作库
 https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
-@author: New Future、TongYifan、cybmp3
+@author: cybmp3
 """
 
 import hashlib
