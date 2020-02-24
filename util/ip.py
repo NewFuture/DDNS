@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
 from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
@@ -46,6 +45,17 @@ def local_v4(i=0):  # 本地ipv4地址
     debug(info)
     return info[int(i)][-1][0]
 
+def local_v6(i=0):  # 本地ipv6地址
+    info = getaddrinfo(gethostname(), 0, AF_INET6)
+    debug(info)
+    return info[int(i)][4][0]
+
+
+def local_v4(i=0):  # 本地ipv4地址
+    info = getaddrinfo(gethostname(), 0, AF_INET)
+    debug(info)
+    return info[int(i)][-1][0]
+
 
 def _open(url, reg):
     try:
@@ -59,11 +69,11 @@ def _open(url, reg):
         error(e)
 
 
-def public_v4(url="https://api-ipv4.ip.sb/ip", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://pv.sohu.com/cityjson", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
-def public_v6(url="https://api-ipv6.ip.sb/ip", reg=IPV6_REG):  # 公网IPV6地址
+def public_v6(url="http://ipv6-test.com/api/myip.php", reg=IPV6_REG):  # 公网IPV6地址
     return _open(url, reg)
 
 
