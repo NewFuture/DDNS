@@ -88,8 +88,6 @@ def get_ip(ip_type):
         return False
     elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
-    elif index.startswith('interface:'):  # 自定义网卡界面比如eno1
-        value = getattr(ip, "interface_v" + ip_type)(index[10:])
     elif index.startswith('cmd:'):  # cmd
         value = str(check_output(index[4:]).strip().decode('utf-8'))
     elif index.startswith('shell:'):  # shell
