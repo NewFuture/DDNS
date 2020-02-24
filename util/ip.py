@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+import netifaces as ni
 from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
@@ -46,24 +46,36 @@ def local_v4(i=0):  # 本地ipv4地址
     debug(info)
     return info[int(i)][-1][0]
 
+def interface_v6(interface=None):  # 本地网卡的ipv6地址
+    debug("open: %s", interface)
+    info = ni.ifaddresses(interface)[ni.AF_INET6][0]['addr']
+    return info
+
+
+def interface_v4(interface=None):  # 本地网卡的ipv4地址
+    debug("open: %s", interface)
+    info = ni.ifaddresses()[ni.AF_INET][0]['addr']
+    debug(info)
+    return info
+
 
 def _open(url, reg):
     try:
         debug("open: %s", url)
         res = urlopen(
             Request(url, headers={'User-Agent': 'curl/7.63.0-ddns'}),  timeout=60
-        ).read().decode('utf8')
+        ).read().decode('unicode_escape')
         debug("response: %s",  res)
         return compile(reg).search(res).group()
     except Exception as e:
         error(e)
 
 
-def public_v4(url="https://api-ipv4.ip.sb/ip", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://pv.sohu.com/cityjson", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
-def public_v6(url="https://api-ipv6.ip.sb/ip", reg=IPV6_REG):  # 公网IPV6地址
+def public_v6(url="http://ipv6-test.com/api/myip.php", reg=IPV6_REG):  # 公网IPV6地址
     return _open(url, reg)
 
 
