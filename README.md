@@ -49,7 +49,7 @@
   - [x] [DNSPOD 国际版](https://www.dnspod.com/)
   - [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
   - [x] [HE.net](https://dns.he.net/)(@NN708) (不支持自动创建记录)
-  - [x] [HE.net](https://huaweicloud.com/)(@cybmp3)   
+  - [x] [华为云](https://huaweicloud.com/)(@cybmp3)   
 - 其他:
   - [x] 可设置定时任务
   - [x] TTL配置支持
