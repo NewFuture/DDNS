@@ -187,7 +187,7 @@ python run.py -c /path/to/config.json
 - dns.com 打开: <https://www.dns.com>
 - dnspod.cn 打开: <https://dnsapi.cn>
 - dnspod 国际版: <https://api.dnspod.com>
-- 华为DNS  <https://dns.huaweicloud.com>
+- 华为DNS  <https://dns.myhuaweicloud.com>
 </details>
 
 <details>
