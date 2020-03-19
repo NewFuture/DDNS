@@ -77,7 +77,7 @@
 1. 申请 api `token`,填写到对应的`id`和`token`字段:
 
    - [DNSPOD(国内版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
-   - [阿里云 accesskey](https://help.aliyun.com/knowledge_detail/38738.html)
+   - [阿里云 accesskey](https://help.aliyun.com/document_detail/28637.html)
    - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
    - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
    - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)
