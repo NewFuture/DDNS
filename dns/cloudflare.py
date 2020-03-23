@@ -56,7 +56,7 @@ def request(method, action, param=None, **params):
         if params:
             action += '?' + urlencode(params)
         params = None
-    if Config.ID is None:
+    if not Config.ID:
         headers = {"Content-type": "application/json", "Authorization": "Bearer " + Config.TOKEN}
     else:
         headers = {"Content-type": "application/json", "X-Auth-Email": Config.ID, "X-Auth-Key": Config.TOKEN}
