@@ -126,11 +126,12 @@ def update_ip(ip_type, cache, dns, proxy_list):
     更新IP
     """
     ipname = 'ipv' + ip_type
-    domains = get_config('ipv' + ip_type)
+    domains = get_config(ipname)
     if not domains:
         return None
     address = get_ip(ip_type)
     if not address:
+        error('Fail to get %s address!' ,ipname)
         return False
     elif cache and (address == cache[ipname]):
         print('.', end=" ")  # 缓存命中
