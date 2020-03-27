@@ -53,6 +53,7 @@
 - 其他:
   - [x] 可设置定时任务
   - [x] TTL 配置支持
+  - [x] 自定义 API 域名配置
   - [x] 本地文件缓存(减少 API 请求)
 
 ## 使用
@@ -115,6 +116,7 @@ python run.py -c /path/to/config.json
 | index4 | string\|int |    No    | `"default"` |   ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
 | index6 | string\|int |    No    | `"default"` |   ipv6 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
 |  ttl   |   number    |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
+| dnsapi |   string    |    No    |     无      | 自定义 DNS API 域名| 表示默认 DNS API 域名，只支持运行在 443 端口且证书可被认可的 HTTPS 站点                                       |
 | proxy  |   string    |    No    |     无      | http 代理`;`分割  | 多代理逐个尝试直到成功,`DIRECT`为直连                                                                       |
 | debug  |    bool     |    No    |   `false`   |   是否开启调试    | 运行异常时,打开调试输出,方便诊断错误                                                                        |
 | cache  |    bool     |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新                                                                                    |
@@ -137,7 +139,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v2.10.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns",
@@ -146,6 +148,7 @@ python run.py -c /path/to/config.json
   "index4": 0,
   "index6": "public",
   "ttl": 600,
+  "dnsapi": "",
   "proxy": "127.0.0.1:1080;DIRECT",
   "debug": false
 }
