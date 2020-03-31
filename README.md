@@ -54,6 +54,7 @@
   - [x] 可设置定时任务
   - [x] TTL 配置支持
   - [x] 本地文件缓存(减少 API 请求)
+  - [x] 地址变更时触发自定义回调API(与 DDNS 功能互斥)
 
 ## 使用
 
@@ -83,6 +84,7 @@
    - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (除了`email + API KEY`,也可使用`Token`需要列出 Zone 权限)
    - [HE.net DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入`token`字段，`id`字段可留空）
    - [华为 APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
+   - 自定义回调的参数填写方式请查看下方的自定义回调配置说明
 
 2. 修改配置文件,`ipv4`和`ipv6`字段，为待更新的域名,详细参照配置说明
 
@@ -109,7 +111,7 @@ python run.py -c /path/to/config.json
 | :----: | :---------: | :------: | :---------: | :---------------: | ----------------------------------------------------------------------------------------------------------- |
 |   id   |   string    |    √     |     无      |    api 访问 ID    | Cloudflare 为邮箱(使用 Token 时留空)<br>HE.net 可留空                                                       |
 | token  |   string    |    √     |     无      |  api 授权 token   | 部分平台叫 secret key , **反馈粘贴时删除**                                                                  |
-|  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商     | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he`，华为 DNS 为`huaweidns` |
+|  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商     | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he`，华为 DNS 为`huaweidns`，<br>自定义回调为`callback` |
 |  ipv4  |    array    |    No    |    `[]`     |   ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                                                           |
 |  ipv6  |    array    |    No    |    `[]`     |   ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                                                           |
 | index4 | string\|int |    No    | `"default"` |   ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
@@ -133,6 +135,19 @@ python run.py -c /path/to/config.json
 - 字符串`"shell:xxx"`: 使用系统 shell 运行`xxx`,并把结果 stdout 作为目标 IP
 - `false`: 强制禁止更新 ipv4 或 ipv6 的 DNS 解析
 
+#### 自定义回调配置说明
+
+- `id` 字段填写回调地址，以 HTTP 或 HTTPS 开头，推荐采用 HTTPS 方式的回调 API ，当 `token` 字段非空且 URL 参数包含下表所示的常量字符串时，常量会被程序替换为实际值
+- `token` 字段为 POST 参数，本字段为空或不存在则使用 GET 方式发起回调，回调参数采用 JSON 格式编码，当 JSON 的首层参数值包含下表所示的常量字符串时，常量会被程序替换为实际值
+
+| 常量名称          | 常量内容               | 说明      |
+| ---------------- | ---------------------- | -------- |
+| `__DOMAIN__`     | DDNS 域名              |          |
+| `__RECORDTYPE__` | DDNS 记录类型           |          |
+| `__TTL__`        | DDNS TTL               |          |
+| `__TIMESTAMP__`  | 请求发起时间戳          | 包含小数 |
+| `__IP__`         | 获取的对应类型的IP地址   |          |
+
 #### 配置示例
 
 ```json
@@ -140,7 +155,7 @@ python run.py -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 callback",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,

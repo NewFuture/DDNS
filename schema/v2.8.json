@@ -34,7 +34,7 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,自定义回调为callback",
       "default": "dnspod",
       "examples": [
         "dnspod",
@@ -48,7 +48,8 @@
         "dnspod_com",
         "dnscom",
         "he",
-        "huaweidns"
+        "huaweidns",
+        "callback"
       ]
     },
     "ipv4": {
