@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
 """
 DDNS
@@ -13,6 +13,7 @@ from os import path, environ, stat, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error
 from subprocess import check_output
+import time
 
 import sys
 
@@ -36,6 +37,10 @@ if getattr(sys, 'frozen', False):
         getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
 
 CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
+
+
+def time_str():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 
 def get_config(key=None, default=None, path="config.json"):
@@ -112,8 +117,7 @@ def change_dns_record(dns, proxy_list, **kw):
         else:
             dns.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
-        print('\n%s(%s) ==> %s [via %s]' %
-              (domain, record_type, kw['ip'], proxy))
+        print(time_str(), '-', '%s(%s) ==> %s [via %s]' % (domain, record_type, kw['ip'], proxy), end='\n')
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
@@ -131,10 +135,10 @@ def update_ip(ip_type, cache, dns, proxy_list):
         return None
     address = get_ip(ip_type)
     if not address:
-        error('Fail to get %s address!' ,ipname)
+        error('Fail to get %s address!', ipname)
         return False
     elif cache and (address == cache[ipname]):
-        print('.', end=" ")  # 缓存命中
+        print(time_str(), '-', address, 'cached', end="\n")  # 缓存命中
         return True
     record_type = (ip_type == '4') and 'A' or 'AAAA'
     update_fail = False  # https://github.com/NewFuture/DDNS/issues/16
@@ -174,7 +178,7 @@ def main():
         print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
-    proxy_list = proxy.strip('; ') .split(';')
+    proxy_list = proxy.strip('; ').split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
