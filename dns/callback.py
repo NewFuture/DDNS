@@ -70,14 +70,8 @@ def request(method, action, param=None, **params):
         warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res)
-        debug('%s : result:%s', action, data)
-        if not data:
-            raise Exception("Empty Response")
-        elif data.get('success'):
-            return str(data.get('result', [{}]))
-        else:
-            raise Exception(data.get('errors', [{}]))
+        debug('%s : result:%s', action, res)
+        return data
 
 def replace_params(domain, record_type, ip, params):
     """
