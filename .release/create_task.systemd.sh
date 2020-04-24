@@ -10,7 +10,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Timer]
-OnStartupSec=30
+OnStartupSec=60
 OnUnitActiveSec=300
 
 [Install]
@@ -24,9 +24,9 @@ After=network-online.target
 
 [Service]
 User=root
-Type=simple
+Type=oneshot
 ExecStart=$CMD
-TimeoutSec=30
+TimeoutSec=180
 
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/newfuture_ddns.service;
