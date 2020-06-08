@@ -8,6 +8,7 @@ http://www.dnspod.cn/docs/domains.html
 
 from json import loads as jsondecode
 from logging import debug, info, warning
+from os import environ
 try:
     # python 2
     from httplib import HTTPSConnection
@@ -20,11 +21,19 @@ except ImportError:
 __author__ = 'New Future'
 
 
-ID = "token id"
-TOKEN = "token key"
-PROXY = None  # 代理设置
-API_SITE = "dnsapi.cn"
-API_METHOD = "POST"
+class Config:
+    ID = "token id"
+    TOKEN = "token key"
+    PROXY = None  # 代理设置
+    TTL = None
+
+
+class API:
+    # API 配置
+    SITE = "dnsapi.cn"  # API endpoint
+    METHOD = "POST"  # 请求方法
+    TOKEN_PARAM = "login_token"  # token参数
+    DEFAULT = "默认"  # 默认线路名
 
 
 def request(action, param=None, **params):
@@ -33,28 +42,29 @@ def request(action, param=None, **params):
     """
     if param:
         params.update(param)
-
-    params.update({'login_token': '***', 'format': 'json'})
-    info("%s : params:%s", action, params)
-    params['login_token'] = "%s,%s" % (ID, TOKEN)
-
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+    params = dict((k, params[k]) for k in params if params[k] is not None)
+    params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
+    info("%s/%s : %s", API.SITE, action, params)
+    params[API.TOKEN_PARAM] = "%s,%s" % (Config.ID, Config.TOKEN)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
-    conn.request(API_METHOD, '/' + action, urlencode(params),
-                 {"Content-type": "application/x-www-form-urlencoded"})
+    conn.request(API.METHOD, '/' + action, urlencode(params), {
+        "Content-type": "application/x-www-form-urlencoded",
+        "User-Agent": "DDNS/%s (ddns@newfuture.cc)" % environ.get("DDNS_VERSION", "1.0.0")
+    })
     response = conn.getresponse()
-    res = response.read()
+    res = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error:%s', action, res)
+        warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res.decode('utf8'))
+        data = jsondecode(res)
         debug('%s : result:%s', action, data)
         if not data:
             raise Exception("empty response")
@@ -69,22 +79,15 @@ def get_domain_info(domain):
     切割域名获取主域名和对应ID
     """
     domain_split = domain.split('.')
-    if len(domain_split) == 3:  # 长度为3
-        sub, main = domain_split[0], domain_split[1] + '.' + domain_split[2]
+    sub, did = None, None
+    main = domain_split.pop()
+    while domain_split:  # 通过API判断,最后两个，三个递增
+        main = domain_split.pop() + '.' + main
         did = get_domain_id(main)
-    else:  # 长度大于三通过API判断,最后两个，三个递增
-        main = domain_split.pop()
-        while domain_split:
-            main = domain_split.pop() + '.' + main
-            did = get_domain_id(main)
-            if did:
-                sub = ".".join(domain_split)
-                break
-        else:
-            warning('domain_id: %s, sub: %s', did, sub)
-            return None, None
-        if not sub:  # root domain根域名https://github.com/NewFuture/DDNS/issues/9
-            sub = '@'
+        if did:
+            sub = ".".join(domain_split) or '@'
+            # root domain根域名https://github.com/NewFuture/DDNS/issues/9
+            break
     info('domain_id: %s, sub: %s', did, sub)
     return did, sub
 
@@ -101,7 +104,10 @@ def get_domain_id(domain):
         # 如果已经存在直接返回防止再次请求
         return get_domain_id.domain_list[domain]
     else:
-        info = request('Domain.Info', domain=domain)
+        try:
+            info = request('Domain.Info', domain=domain)
+        except Exception:
+            return
         did = info.get("domain", {}).get("id")
         if did:
             get_domain_id.domain_list[domain] = did
@@ -154,8 +160,8 @@ def update_record(domain, value, record_type="A"):
         for (did, record) in records.items():
             if record["value"] != value:
                 debug(sub, record)
-                res = request('Record.Modify', record_id=did, record_line=record["line"].encode(
-                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type)
+                res = request('Record.Modify', record_id=did, record_line=record["line"].replace("Default", "default").encode(
+                    "utf-8"), value=value, sub_domain=sub, domain_id=domainid, record_type=record_type, ttl=Config.TTL)
                 if res:
                     get_records.records[domainid][did]["value"] = value
                     result[did] = res.get("record")
@@ -166,7 +172,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # http://www.dnspod.cn/docs/records.html#record-create
         res = request("Record.Create", domain_id=domainid, value=value,
-                      sub_domain=sub, record_type=record_type, record_line="默认", ttl=600)
+                      sub_domain=sub, record_type=record_type, record_line=API.DEFAULT, ttl=Config.TTL)
         if res:
             did = res.get("record")["id"]
             get_records.records[domainid][did] = res.get("record")

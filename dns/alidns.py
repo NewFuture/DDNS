@@ -26,11 +26,18 @@ except ImportError:
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
-ID = "id"
-TOKEN = "TOKEN"
-PROXY = None  # 代理设置
-API_SITE = "alidns.aliyuncs.com"
-API_METHOD = "POST"
+
+class Config:
+    ID = "id"
+    TOKEN = "TOKEN"
+    PROXY = None  # 代理设置
+    TTL = None
+
+
+class API:
+    # API 配置
+    SITE = "alidns.aliyuncs.com"  # API endpoint
+    METHOD = "POST"  # 请求方法
 
 
 def signature(params):
@@ -40,7 +47,7 @@ def signature(params):
     params.update({
         'Format': 'json',
         'Version': '2015-01-09',
-        'AccessKeyId': ID,
+        'AccessKeyId': Config.ID,
         'Timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
         'SignatureMethod': 'HMAC-SHA1',
         'SignatureNonce': uuid4(),
@@ -48,10 +55,10 @@ def signature(params):
     })
     query = urlencode(sorted(params.items()))
     debug(query)
-    sign = API_METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
+    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
 
-    sign = hmac((TOKEN + "&").encode('utf-8'),
+    sign = hmac((Config.TOKEN + "&").encode('utf-8'),
                 sign.encode('utf-8'), sha1).digest()
     sign = b64encode(sign).strip()
     params["Signature"] = sign
@@ -64,26 +71,26 @@ def request(param=None, **params):
     """
     if param:
         params.update(param)
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     params = signature(params)
-    debug("params:%s", params)
+    info("%s: %s", API.SITE, params)
 
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
-
-    conn.request(API_METHOD, '/', urlencode(params),
+        conn = HTTPSConnection(API.SITE)
+    conn.request(API.METHOD, '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    data = response.read()
+    data = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
-        warning('%s : error:%s', params['Action'], data)
+        warning('%s : error[%d]: %s', params['Action'], response.status, data)
         raise Exception(data)
     else:
-        data = jsondecode(data.decode('utf8'))
+        data = jsondecode(data)
         debug('%s : result:%s', params['Action'], data)
         return data
 
@@ -150,7 +157,7 @@ def update_record(domain, value, record_type='A'):
             if record["Value"] != value:
                 debug(sub, record)
                 res = request(Action="UpdateDomainRecord", RecordId=rid,
-                              Value=value, RR=sub, Type=record_type)
+                              Value=value, RR=sub, Type=record_type, TTL=Config.TTL)
                 if res:
                     # update records
                     get_records.records[main][rid]["Value"] = value
@@ -161,7 +168,7 @@ def update_record(domain, value, record_type='A'):
                 result[rid] = domain
     else:  # https://help.aliyun.com/document_detail/29772.html
         res = request(Action="AddDomainRecord", DomainName=main,
-                      Value=value, RR=sub, Type=record_type)
+                      Value=value, RR=sub, Type=record_type, TTL=Config.TTL)
         if res:
             # update records INFO
             rid = res.get('RecordId')

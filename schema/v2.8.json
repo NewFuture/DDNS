@@ -1,21 +1,26 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://ddns.newfuture.cc/schema.json",
-  "description": "[Deprecated] 已弃用,请使用 https://ddns.newfuture.cc/schema/v2.json",
+  "$id": "https://ddns.newfuture.cc/schema/v2.8.json",
+  "description": "DNS 配置文件 https://github.com/NewFuture/DDNS",
   "type": "object",
   "properties": {
     "$schema": {
       "type": "string",
-      "title": "please use https://ddns.newfuture.cc/schema/v2.json",
-      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.json",
+      "title": "please use https://ddns.newfuture.cc/schema/v2.8.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.8.json",
+      "default": "https://ddns.newfuture.cc/schema/v2.8.json",
       "enum": [
-        "https://ddns.newfuture.cc/schema/v2.json",
-        "http://ddns.newfuture.cc/schema/v2.json"
+        "https://ddns.newfuture.cc/schema/v2.8.json",
+        "http://ddns.newfuture.cc/schema/v2.8.json",
+        "./schema/v2.8.json"
       ]
     },
     "id": {
       "$id": "/properties/id",
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "title": "ID or Email",
       "description": "DNS服务API认证的ID或者邮箱"
     },
@@ -29,7 +34,7 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,自定义回调为callback",
       "default": "dnspod",
       "examples": [
         "dnspod",
@@ -42,7 +47,9 @@
         "cloudflare",
         "dnspod_com",
         "dnscom",
-        "he"
+        "he",
+        "huaweidns",
+        "callback"
       ]
     },
     "ipv4": {

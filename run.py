@@ -12,6 +12,7 @@ from time import ctime
 from os import path, environ, stat, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error
+from subprocess import check_output
 
 import sys
 
@@ -26,6 +27,8 @@ ddns[%s]
 (?) issues or bugs [问题和帮助]: https://github.com/NewFuture/DDNS/issues
 Copyright (c) New Future (MIT License)
 """ % (__version__)
+
+environ["DDNS_VERSION"] = "${BUILD_SOURCEBRANCHNAME}"
 
 if getattr(sys, 'frozen', False):
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
@@ -48,7 +51,7 @@ def get_config(key=None, default=None, path="config.json"):
             error(' Config file `%s` does not exist!' % path)
             with open(path, 'w') as configfile:
                 configure = {
-                    "$schema": "https://ddns.newfuture.cc/schema/v2.json",
+                    "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
                     "id": "YOUR ID or EAMIL for DNS Provider",
                     "token": "YOUR TOKEN or KEY for DNS Provider",
                     "dns": "dnspod",
@@ -62,6 +65,7 @@ def get_config(key=None, default=None, path="config.json"):
                     ],
                     "index4": "default",
                     "index6": "default",
+                    "ttl": None,
                     "proxy": None,
                     "debug": False,
                 }
@@ -82,9 +86,18 @@ def get_ip(ip_type):
     index = get_config('index' + ip_type, "default")
     if index is False:  # disabled
         return False
-    elif str(index).isdigit():  # local eth
+    elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
-    elif any((c in index) for c in '*.:'):  # regex
+    elif index.startswith('cmd:'):  # cmd
+        value = str(check_output(index[4:]).strip().decode('utf-8'))
+    elif index.startswith('shell:'):  # shell
+        value = str(check_output(
+            index[6:], shell=True).strip().decode('utf-8'))
+    elif index.startswith('url:'):  # 自定义 url
+        value = getattr(ip, "public_v" + ip_type)(index[4:])
+    elif index.startswith('regex:'):  # 正则 regex
+        value = getattr(ip, "regex_v" + ip_type)(index[6:])
+    elif any((c in index) for c in '*.:'):  # 兼容 regex
         value = getattr(ip, "regex_v" + ip_type)(index)
     else:
         value = getattr(ip, index + "_v" + ip_type)()
@@ -113,11 +126,12 @@ def update_ip(ip_type, cache, dns, proxy_list):
     更新IP
     """
     ipname = 'ipv' + ip_type
-    domains = get_config('ipv' + ip_type)
+    domains = get_config(ipname)
     if not domains:
         return None
     address = get_ip(ip_type)
     if not address:
+        error('Fail to get %s address!' ,ipname)
         return False
     elif cache and (address == cache[ipname]):
         print('.', end=" ")  # 缓存命中
@@ -142,27 +156,32 @@ def main():
                         action='version', version=__version__)
     parser.add_argument('-c', '--config',
                         default="config.json", help="run with config file [配置文件路径]")
-    get_config(path=parser.parse_args().config)
+    config_file = parser.parse_args().config
+    get_config(path=config_file)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
-    dns.ID, dns.TOKEN = get_config('id'), get_config('token')
+    dns.Config.ID = get_config('id')
+    dns.Config.TOKEN = get_config('token')
+    dns.Config.TTL = get_config('ttl')
     if get_config('debug'):
         ip.DEBUG = get_config('debug')
         basicConfig(
             level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
-        info("DDNS[%s] run: %s,%s", __version__, os_name, sys.platform)
+        print("DDNS[", __version__, "] run:", os_name, sys.platform)
+        print("Configuration was loaded from <==", path.abspath(config_file))
+        print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy.strip('; ') .split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
-        warning("Cache is disabled!")
+        info("Cache is disabled!")
     elif len(cache) < 1 or get_config.time >= cache.time:
+        warning("Cache file is out of dated.")
         cache.clear()
-        print("=" * 25, ctime(), "=" * 25, sep=' ')
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 

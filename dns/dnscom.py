@@ -9,7 +9,7 @@ http://open.dns.com/
 
 from hashlib import md5
 from json import loads as jsondecode
-from logging import debug, info
+from logging import debug, info, warning
 from time import mktime
 from datetime import datetime
 
@@ -23,15 +23,21 @@ except ImportError:
     from urllib.parse import urlencode
 
 
-
 __author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 
-ID = "id"
-TOKEN = "TOKEN"
-PROXY = None  # 代理设置
-API_SITE = "www.dns.com"
-API_METHOD = "POST"
+
+class Config:
+    ID = "id"
+    TOKEN = "TOKEN"
+    PROXY = None  # 代理设置
+    TTL = None
+
+
+class API:
+    # API 配置
+    SITE = "www.dns.com"  # API endpoint
+    METHOD = "POST"  # 请求方法
 
 
 def signature(params):
@@ -39,7 +45,7 @@ def signature(params):
     计算签名,返回签名后的查询参数
     """
     params.update({
-        'apiKey': ID,
+        'apiKey': Config.ID,
         'timestamp': mktime(datetime.now().timetuple()),
     })
     query = urlencode(sorted(params.items()))
@@ -47,7 +53,7 @@ def signature(params):
     sign = query
     debug("signString: %s", sign)
 
-    sign = md5((sign + TOKEN).encode('utf-8')).hexdigest()
+    sign = md5((sign + Config.TOKEN).encode('utf-8')).hexdigest()
     params["hash"] = sign
 
     return params
@@ -59,25 +65,27 @@ def request(action, param=None, **params):
     """
     if param:
         params.update(param)
+    params = dict((k, params[k]) for k in params if params[k] is not None)
     params = signature(params)
-    info("%s : params:%s", action, params)
+    info("%s/api/%s/ : params:%s", API.SITE, action, params)
 
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
-    conn.request(API_METHOD, '/api/' + action + '/', urlencode(params),
+    conn.request(API.METHOD, '/api/' + action + '/', urlencode(params),
                  {"Content-type": "application/x-www-form-urlencoded"})
     response = conn.getresponse()
-    result = response.read()
+    result = response.read().decode('utf8')
     conn.close()
 
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, result)
         raise Exception(result)
     else:
-        data = jsondecode(result.decode('utf8'))
+        data = jsondecode(result)
         debug('%s : result:%s', action, data)
         if data.get('code') != 0:
             raise Exception("api error:", data.get('message'))
@@ -148,7 +156,7 @@ def update_record(domain, value, record_type='A'):
             if record["value"] != value:
                 debug(sub, record)
                 res = request("record/modify", domainID=domain_id,
-                              recordID=rid, newvalue=value)
+                              recordID=rid, newvalue=value, newTTL=Config.TTL)
                 if res:
                     # update records
                     get_records.records[main][rid]["value"] = value
@@ -159,7 +167,7 @@ def update_record(domain, value, record_type='A'):
                 result[rid] = domain
     else:
         res = request("record/create", domainID=domain_id,
-                      value=value, host=sub, type=record_type)
+                      value=value, host=sub, type=record_type, TTL=Config.TTL)
         if res:
             # update records INFO
             rid = res.get('recordID')

@@ -7,7 +7,7 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 """
 
 from json import loads as jsondecode, dumps as jsonencode
-from logging import debug, info
+from logging import debug, info, warning
 
 try:
     # python 2
@@ -20,10 +20,17 @@ except ImportError:
 
 __author__ = 'TongYifan'
 
-ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
-TOKEN = "API KEY"
-PROXY = None  # 代理设置
-API_SITE = "api.cloudflare.com"
+
+class Config:
+    ID = "AUTH EMAIL"  # CloudFlare 验证的是用户Email，等同于其他平台的userID
+    TOKEN = "API KEY"
+    PROXY = None  # 代理设置
+    TTL = None
+
+
+class API:
+    # API 配置
+    SITE = "api.cloudflare.com"  # API endpoint
 
 
 def request(method, action, param=None, **params):
@@ -32,13 +39,14 @@ def request(method, action, param=None, **params):
     """
     if param:
         params.update(param)
-
-    info("$s %s : params:%s", action, params)
-    if PROXY:
-        conn = HTTPSConnection(PROXY)
-        conn.set_tunnel(API_SITE, 443)
+    
+    params = dict((k, params[k]) for k in params if params[k] is not None)
+    info("%s/%s : %s", API.SITE, action, params)
+    if Config.PROXY:
+        conn = HTTPSConnection(Config.PROXY)
+        conn.set_tunnel(API.SITE, 443)
     else:
-        conn = HTTPSConnection(API_SITE)
+        conn = HTTPSConnection(API.SITE)
 
     if method in ['PUT', 'POST', 'PATCH']:
         # 从public_v(4,6)获取的IP是bytes类型，在json.dumps时会报TypeError
@@ -48,17 +56,19 @@ def request(method, action, param=None, **params):
         if params:
             action += '?' + urlencode(params)
         params = None
-    conn.request(method, '/client/v4/zones' + action, params,
-                 {"Content-type": "application/json",
-                  "X-Auth-Email": ID,
-                  "X-Auth-Key": TOKEN})
+    if not Config.ID:
+        headers = {"Content-type": "application/json", "Authorization": "Bearer " + Config.TOKEN}
+    else:
+        headers = {"Content-type": "application/json", "X-Auth-Email": Config.ID, "X-Auth-Key": Config.TOKEN}
+    conn.request(method, '/client/v4/zones' + action, params, headers)
     response = conn.getresponse()
-    res = response.read()
+    res = response.read().decode('utf8')
     conn.close()
     if response.status < 200 or response.status >= 300:
+        warning('%s : error[%d]:%s', action, response.status, res)
         raise Exception(res)
     else:
-        data = jsondecode(res.decode('utf8'))
+        data = jsondecode(res)
         debug('%s : result:%s', action, data)
         if not data:
             raise Exception("Empty Response")
@@ -127,7 +137,7 @@ def update_record(domain, value, record_type="A"):
         for (rid, record) in records.items():
             if record['content'] != value:
                 res = request('PUT', '/' + zoneid + '/dns_records/' + record['id'],
-                              type=record_type, content=value, name=domain)
+                              type=record_type, content=value, name=domain, ttl=Config.TTL)
                 if res:
                     get_records.records[cache_key][rid]['content'] = value
                     result[rid] = res.get("name")
@@ -138,7 +148,7 @@ def update_record(domain, value, record_type="A"):
     else:  # create
         # https://api.cloudflare.com/#dns-records-for-a-zone-create-dns-record
         res = request('POST', '/' + zoneid + '/dns_records',
-                      type=record_type, name=domain, content=value, proxied=False, ttl=600)
+                      type=record_type, name=domain, content=value, proxied=False, ttl=Config.TTL)
         if res:
             get_records.records[cache_key][res['id']] = res
             result = res
