@@ -21,6 +21,7 @@ a = Analysis(['../run.py'],
                  'dns.dnspod_com',
                  'dns.dnscom',
                  'dns.cloudflare',
+                 'dns.he',
                  'dns.huaweidns',
                  'dns.callback'
              ],
