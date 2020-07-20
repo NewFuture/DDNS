@@ -5,4 +5,5 @@ RUN pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
 
 FROM alpine:latest
 COPY --from=0 /app/dist/ddns /
-CMD [ "/ddns" ]
+RUN echo "*/5 * * * *   /ddns -c /config.json" > /etc/crontabs/root
+CMD [ "crond", "-f" ]
