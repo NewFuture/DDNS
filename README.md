@@ -30,6 +30,7 @@
   - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
   - [x] python2 和 python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)
   - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
+  - [x] Docker 支持(@NN708)
 - 域名支持:
   - [x] 多个域名支持
   - [x] 多级域名解析
@@ -72,6 +73,8 @@
 - #### 源码运行(无任何依赖, 需 python 环境)
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+- #### Docker(需要安装 Docker)
+  `docker run -d -v /path/to/config.json:/config.json --network host newfuture/ddns`
 
 ### ② 快速配置
 
