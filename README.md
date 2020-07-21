@@ -69,7 +69,7 @@
 - #### 二进制版(单文件,无需 python)
   - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
   - Linux (仅 Ubuntu 测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-  - Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
+  - Mac OSX [ddns-osx](https://github.com/NewFuture/DDNS/releases/latest)
 - #### 源码运行(无任何依赖, 需 python 环境)
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
