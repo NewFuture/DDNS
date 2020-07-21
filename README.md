@@ -61,7 +61,7 @@
 
 ### ① 安装
 
-根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
+根据需要选择一种方式: `二进制`版,`pip`版,`源码`运行,或者`Docker`
 
 - #### pip 安装(需要 pip 或 easy_install)
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
