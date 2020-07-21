@@ -79,13 +79,10 @@ def get_config(key=None, default=None, path="config.json"):
         return get_config.config
 
 
-def get_ip(ip_type, index=None):
+def get_ip(ip_type, index="default"):
     """
     get IP address
     """
-    if not index:
-        index = get_config('index' + ip_type, "default")
-
     if index is False:  # disabled
         return False
     elif type(index) == list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
@@ -137,7 +134,8 @@ def update_ip(ip_type, cache, dns, proxy_list):
     domains = get_config(ipname)
     if not domains:
         return None
-    address = get_ip(ip_type)
+    index_rule = get_config('index' + ip_type, "default")  # 从配置中获取index配置
+    address = get_ip(ip_type, index_rule)
     if not address:
         error('Fail to get %s address!' ,ipname)
         return False
