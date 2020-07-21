@@ -79,13 +79,21 @@ def get_config(key=None, default=None, path="config.json"):
         return get_config.config
 
 
-def get_ip(ip_type):
+def get_ip(ip_type, index=None):
     """
     get IP address
     """
-    index = get_config('index' + ip_type, "default")
+    if not index:
+        index = get_config('index' + ip_type, "default")
+
     if index is False:  # disabled
         return False
+    elif type(index) == list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
+        value = None
+        for i in index:
+            value = get_ip(ip_type, i)
+            if value:
+                break
     elif str(index).isdigit():  # 数字 local eth
         value = getattr(ip, "local_v" + ip_type)(index)
     elif index.startswith('cmd:'):  # cmd

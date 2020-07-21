@@ -91,7 +91,8 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
       "title": "IPv4 address Setting",
       "description": "本机 IPv4 获取方式设置",
@@ -110,7 +111,8 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
       "title": "IPv6 address Setting",
       "description": "本机 IPv6 获取方式设置",
