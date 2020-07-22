@@ -91,8 +91,19 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
       "title": "IPv4 address Setting",
       "description": "本机 IPv4 获取方式设置",
       "default": "default",
@@ -110,8 +121,19 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
       "title": "IPv6 address Setting",
       "description": "本机 IPv6 获取方式设置",
       "default": "default",
