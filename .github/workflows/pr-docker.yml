@@ -1,4 +1,4 @@
-name: PR-Docker for preview and test
+name: PR-Docker
 
 on:
   pull_request:
