@@ -31,7 +31,7 @@ jobs:
           echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
       - name: Docker login
         run: |
-          echo "${DOCKER_PASSWORD}" | docker "${DOCKER_REGISTRY}"  \
+          echo "${DOCKER_PASSWORD}" | docker login "${DOCKER_REGISTRY}"  \
             --username "${DOCKER_USERNAME}" \
             --password-stdin
       - name: Run buildx and push
@@ -65,7 +65,7 @@ jobs:
           echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
       - name: Docker login
         run: |
-          echo "${DOCKER_PASSWORD}" | docker "${DOCKER_REGISTRY}" \
+          echo "${DOCKER_PASSWORD}" | docker login "${DOCKER_REGISTRY}" \
             --username "${DOCKER_USERNAME}" \
             --password-stdin
       - name: Run buildx and push
