@@ -1,4 +1,4 @@
-name: ci
+name: docker release
 
 on:
   push:
@@ -6,52 +6,71 @@ on:
       - master
     tags:
       - v*
-  pull_request:
-    branches:
-      - master
 
 jobs:
-  docker-buildx:
+  dockerhub-buildx:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_REPO: newfuture/ddns
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKER_REGISTRY: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker buildx
+        id: buildx
         uses: crazy-max/ghaction-docker-buildx@v3
       - name: Prepare arguments
         id: prepare
-        env:
-          DOCKER_REPO: newfuture/ddns
-          DOCKER_PLATFORMS: linux/amd64,linux/arm,linux/arm64
         run: |
-          DOCKER_PUSH=false
           DOCKER_TAGS="--tag ${DOCKER_REPO}:latest"
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            DOCKER_PUSH=true
-            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/v}"
+            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
           fi
-          echo ::set-output name=buildx_push::${DOCKER_PUSH}
-          echo ::set-output name=buildx_args::--platform ${DOCKER_PLATFORMS} ${DOCKER_TAGS} .
-      - name: Run buildx
+          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
+      - name: Docker login
         run: |
-          docker buildx build \
-            --output "type=image,push=false" \
-            ${{ steps.prepare.outputs.buildx_args }}
-      - name: Docker Hub login
-        if: success() && steps.prepare.outputs.buildx_push == 'true'
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          echo "${DOCKER_PASSWORD}" | docker login \
+          echo "${DOCKER_PASSWORD}" | docker "${DOCKER_REGISTRY}"  \
             --username "${DOCKER_USERNAME}" \
             --password-stdin
       - name: Run buildx and push
-        if: success() && steps.prepare.outputs.buildx_push == 'true'
-        run: |
-          docker buildx build \
-            --output "type=image,push=true" \
-            ${{ steps.prepare.outputs.buildx_args }}
+        if: success()
+        run: docker buildx build ${{ steps.prepare.outputs.buildx_args }}
       - name: Docker Hub logout
-        if: always() && steps.prepare.outputs.buildx_push == 'true'
+        if: always()
+        run: docker logout
+
+
+  githubdocker-buildx:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_REPO: newfuture/ddns/ddns
+      DOCKER_USERNAME: ${{ github.actor }}
+      DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      DOCKER_REGISTRY: login docker.pkg.github.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Docker buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v3
+      - name: Prepare arguments
+        id: prepare
+        run: |
+          DOCKER_TAGS="--tag ${DOCKER_REPO}:latest"
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
+          fi
+          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
+      - name: Docker login
+        run: |
+          echo "${DOCKER_PASSWORD}" | docker "${DOCKER_REGISTRY}" \
+            --username "${DOCKER_USERNAME}" \
+            --password-stdin
+      - name: Run buildx and push
+        if: success()
+        run: docker buildx build ${{ steps.prepare.outputs.buildx_args }}
+      - name: Docker Hub logout
+        if: always()
         run: docker logout
