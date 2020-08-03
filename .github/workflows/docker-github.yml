@@ -17,25 +17,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build and push Docker images to test docker
+      - name: GetRepo
+        id: repo
+        run: |
+          DOCKER_REPO="newfuture/ddns/ddns"
+          if [[ "${{ github.event_name }}" = "pull_request" ]]; then
+            DOCKER_REPO="newfuture/ddns/preview-ddns"
+          fi
+          echo ::set-output name=name::${DOCKER_REPO}
+
+      - name: Build and push Docker images
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v1.1.0
         with:
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
             registry: docker.pkg.github.com
-            repository: newfuture/ddns/preview-ddns
+            repository: ${{ steps.repo.outputs.name }}
             tag_with_ref: true 
             add_git_labels: true
-      - name: Build and push Docker images to release docker
-        if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v1.1.0
-        with:
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
-            registry: docker.pkg.github.com
-            repository: newfuture/ddns/ddns
-            tag_with_ref: true 
-            add_git_labels: true
-
-            
