@@ -14,6 +14,7 @@ jobs:
       DOCKER_REPO: newfuture/ddns
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKER_PLATFORMS: linux/amd64,linux/arm,linux/arm64
       DOCKER_REGISTRY: ""
     steps:
       - name: Checkout
@@ -28,7 +29,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
           fi
-          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
+          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${DOCKER_PLATFORMS} ${DOCKER_TAGS} .
       - name: Docker login
         run: |
           echo "${DOCKER_PASSWORD}" | docker login "${DOCKER_REGISTRY}"  \
@@ -62,7 +63,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
           fi
-          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${{ steps.buildx.outputs.platforms }} ${DOCKER_TAGS} .
+          echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${DOCKER_PLATFORMS} ${DOCKER_TAGS} .
       - name: Docker login
         run: |
           echo "${DOCKER_PASSWORD}" | docker login "${DOCKER_REGISTRY}" \
