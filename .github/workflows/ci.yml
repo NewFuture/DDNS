@@ -47,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_REPO: newfuture/ddns/ddns
+      DOCKER_PLATFORMS: linux/amd64,linux/arm,linux/arm64
       DOCKER_USERNAME: ${{ github.actor }}
       DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       DOCKER_REGISTRY: docker.pkg.github.com
