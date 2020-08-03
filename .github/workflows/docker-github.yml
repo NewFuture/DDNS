@@ -27,7 +27,6 @@ jobs:
           echo ::set-output name=name::${DOCKER_REPO}
 
       - name: Build and push Docker images
-        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v1.1.0
         with:
             username: ${{ github.actor }}
