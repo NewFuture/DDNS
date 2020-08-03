@@ -49,7 +49,7 @@ jobs:
       DOCKER_REPO: newfuture/ddns/ddns
       DOCKER_USERNAME: ${{ github.actor }}
       DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      DOCKER_REGISTRY: login docker.pkg.github.com
+      DOCKER_REGISTRY: docker.pkg.github.com
     steps:
       - name: Checkout
         uses: actions/checkout@v2
