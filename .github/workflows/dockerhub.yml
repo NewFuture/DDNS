@@ -6,7 +6,9 @@ on:
   push:
     branches:
       - master
-
+    tags:
+      - v*
+ 
 jobs:
   buildx-dockerhub:
     runs-on: ubuntu-latest
