@@ -27,9 +27,9 @@ jobs:
       - name: Prepare arguments
         id: prepare
         run: |
-          DOCKER_TAGS="--tag ${DOCKER_REPO}:latest"
+          DOCKER_TAGS="--tag ${DOCKER_REPO}:edge"
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            DOCKER_TAGS="${DOCKER_TAGS} --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
+            DOCKER_TAGS="--tag ${DOCKER_REPO}:latest --tag ${DOCKER_REPO}:${GITHUB_REF#refs/tags/}"
           fi
           echo ::set-output name=buildx_args:: --output "type=image,push=true" --platform ${DOCKER_PLATFORMS} ${DOCKER_TAGS} .
       - name: Docker login
