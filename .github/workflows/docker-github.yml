@@ -1,0 +1,40 @@
+name: Github Docker
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - edge
+    tags:
+      - v*
+      - V*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  docker-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: GetRepo
+        id: repo
+        run: |
+          DOCKER_REPO="newfuture/ddns/ddns"
+          if [[ "${{ github.event_name }}" = "pull_request" ]]; then
+            DOCKER_REPO="newfuture/ddns/preview-ddns"
+          fi
+          echo ::set-output name=name::${DOCKER_REPO}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1.1.0
+        with:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+            registry: docker.pkg.github.com
+            repository: ${{ steps.repo.outputs.name }}
+            tag_with_ref: true 
+            add_git_labels: true

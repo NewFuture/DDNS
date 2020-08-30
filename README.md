@@ -30,6 +30,7 @@
   - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
   - [x] python2 和 python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)
   - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
+  - [x] Docker 支持(@NN708)
 - 域名支持:
   - [x] 多个域名支持
   - [x] 多级域名解析
@@ -60,7 +61,7 @@
 
 ### ① 安装
 
-根据需要选择一种方式: `二进制`版,`pip`版,或者`源码`运行
+根据需要选择一种方式: `二进制`版,`pip`版,`源码`运行,或者`Docker`
 
 - #### pip 安装(需要 pip 或 easy_install)
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
@@ -68,10 +69,12 @@
 - #### 二进制版(单文件,无需 python)
   - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
   - Linux (仅 Ubuntu 测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-  - Mac OSX [ddns-oxs](https://github.com/NewFuture/DDNS/releases/latest)
+  - Mac OSX [ddns-osx](https://github.com/NewFuture/DDNS/releases/latest)
 - #### 源码运行(无任何依赖, 需 python 环境)
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+- #### Docker(需要安装 Docker)
+  `docker run -d -v /path/to/config.json:/config.json --network host newfuture/ddns`
 
 ### ② 快速配置
 
@@ -107,19 +110,19 @@ python run.py -c /path/to/config.json
 
 #### 配置参数表
 
-|  key   |    type     | required |   default   |    description    | tips                                                                                                        |
-| :----: | :---------: | :------: | :---------: | :---------------: | ----------------------------------------------------------------------------------------------------------- |
-|   id   |   string    |    √     |     无      |    api 访问 ID    | Cloudflare 为邮箱(使用 Token 时留空)<br>HE.net 可留空                                                       |
-| token  |   string    |    √     |     无      |  api 授权 token   | 部分平台叫 secret key , **反馈粘贴时删除**                                                                  |
-|  dns   |   string    |    No    | `"dnspod"`  |    dns 服务商     | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he`，华为 DNS 为`huaweidns`，<br>自定义回调为`callback` |
-|  ipv4  |    array    |    No    |    `[]`     |   ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                                                           |
-|  ipv6  |    array    |    No    |    `[]`     |   ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                                                           |
-| index4 | string\|int |    No    | `"default"` |   ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
-| index6 | string\|int |    No    | `"default"` |   ipv6 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
-|  ttl   |   number    |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
-| proxy  |   string    |    No    |     无      | http 代理`;`分割  | 多代理逐个尝试直到成功,`DIRECT`为直连                                                                       |
-| debug  |    bool     |    No    |   `false`   |   是否开启调试    | 运行异常时,打开调试输出,方便诊断错误                                                                        |
-| cache  |    bool     |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新                                                                                    |
+|  key   |        type        | required |   default   |    description    | tips                                                                                                        |
+| :----: | :----------------: | :------: | :---------: | :---------------: | ----------------------------------------------------------------------------------------------------------- |
+|   id   |       string       |    √     |     无      |    api 访问 ID    | Cloudflare 为邮箱(使用 Token 时留空)<br>HE.net 可留空                                                       |
+| token  |       string       |    √     |     无      |  api 授权 token   | 部分平台叫 secret key , **反馈粘贴时删除**                                                                  |
+|  dns   |       string       |    No    | `"dnspod"`  |    dns 服务商     | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he`，华为 DNS 为`huaweidns`，<br>自定义回调为`callback` |
+|  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                                                           |
+|  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                                                           |
+| index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
+| index6 | string\|int\|array |    No    | `"default"` |   ipv6 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
+|  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
+| proxy  |       string       |    No    |     无      | http 代理`;`分割  | 多代理逐个尝试直到成功,`DIRECT`为直连                                                                       |
+| debug  |        bool        |    No    |   `false`   |   是否开启调试    | 运行异常时,打开调试输出,方便诊断错误                                                                        |
+| cache  |        bool        |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新                                                                                    |
 
 #### index4 和 index6 参数说明
 
@@ -134,6 +137,8 @@ python run.py -c /path/to/config.json
 - 字符串`"cmd:xxxx"`: 执行命令`xxxx`的 stdout 输出结果作为目标 IP
 - 字符串`"shell:xxx"`: 使用系统 shell 运行`xxx`,并把结果 stdout 作为目标 IP
 - `false`: 强制禁止更新 ipv4 或 ipv6 的 DNS 解析
+- 列表：依次执行列表中的index规则，并将最先获得的结果作为目标 IP
+  - 例如`["public", "172.*"]`将先查询公网API，未获取到IP后再从本地寻找172开头的IP
 
 #### 自定义回调配置说明
 
