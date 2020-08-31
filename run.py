@@ -151,6 +151,10 @@ def update_ip(ip_type, cache, dns, proxy_list):
         # 如果更新失败删除缓存
         cache[ipname] = update_fail and address
 
+def runtest():
+    import test,sys
+    test.main()
+    sys.exit()
 
 def main():
     """
@@ -162,7 +166,11 @@ def main():
                         action='version', version=__version__)
     parser.add_argument('-c', '--config',
                         default="config.json", help="run with config file [配置文件路径]")
-    config_file = parser.parse_args().config
+    parser.add_argument('-t', '--test', action="store_true", help="run unittest and exit")
+    args = parser.parse_args()
+    if args.test:
+        runtest()
+    config_file = args.config
     get_config(path=config_file)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
