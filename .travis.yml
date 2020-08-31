@@ -17,6 +17,8 @@ install:
 # command to run tests
 script:
   - sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${TRAVIS_BRANCH}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+  - cp /etc/ssl/certs/ca-certificates.crt cert.pem
+  - export SSL_CERT_FILE=${PWD}/cert.pem
   - pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
   - ./dist/ddns || test -e "config.json"
 
