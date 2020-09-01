@@ -44,7 +44,7 @@ jobs:
   - script: python -m pip install --upgrade pip
     displayName: 'Install dependencies'
 
-  - script: pip install pyinstaller
+  - script: pip install pyinstaller==3.6
     name: 'pyinstaller'
   
   - bash: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -87,7 +87,7 @@ jobs:
   - script: python -m pip install --upgrade pip
     displayName: 'Install dependencies'
 
-  - script: pip install pyinstaller
+  - script: pip install pyinstaller==3.6
     name: 'pyinstaller'
 
   - bash: sed -i.temp -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
