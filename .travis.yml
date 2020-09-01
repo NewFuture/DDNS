@@ -12,7 +12,7 @@ dist: xenial
 
 # command to install dependencies 
 install:
-  - pip install pyinstaller
+  - pip install pyinstaller==3.6
 
 # command to run tests
 script:
