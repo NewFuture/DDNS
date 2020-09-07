@@ -9,10 +9,12 @@ dist: xenial
 #   - linux
 #   - osx
 
+before_install:
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PYINSTALLER='pyinstaller==3.6';else export PYINSTALLER=pyinstaller;fi
 
 # command to install dependencies 
 install:
-  - pip install pyinstaller==3.6
+  - pip install ${PYINSTALLER}
 
 # command to run tests
 script:
