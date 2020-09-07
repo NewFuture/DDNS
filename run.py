@@ -11,7 +11,7 @@ from json import load as loadjson, dump as dumpjson
 from time import ctime
 from os import path, environ, stat, name as os_name
 from tempfile import gettempdir
-from logging import DEBUG, basicConfig, info, warning, error
+from logging import DEBUG, basicConfig, info, warning, error, debug
 from subprocess import check_output
 
 import sys
@@ -185,9 +185,11 @@ def main():
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
         info("Cache is disabled!")
-    elif len(cache) < 1 or get_config.time >= cache.time:
+    elif get_config.time >= cache.time:
         warning("Cache file is out of dated.")
         cache.clear()
+    elif not cache:
+        debug("Cache is empty.")
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 
