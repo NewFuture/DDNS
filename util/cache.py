@@ -9,7 +9,7 @@ from os import path, stat
 from pickle import dump, load
 from time import time
 
-from logging import info, debug, error
+from logging import info, debug, warning
 
 try:
     from collections.abc import MutableMapping
@@ -51,17 +51,17 @@ class Cache(MutableMapping):
                 try:
                     self.__data = load(data)
                     self.__time = stat(file).st_mtime
+                    return self
                 except ValueError:
-                    self.__data = {}
-                    self.__time = time()
+                    pass
                 except Exception as e:
-                    error(e)
-                    self.__data = {}
-                    self.__time = time()
+                    warning(e)
         else:
             info('cache file not exist')
-            self.__data = {}
-            self.__time = time()
+
+        self.__data = {}
+        self.__time = time()
+        self.__changed = True
         return self
 
     def data(self, key=None, default=None):
@@ -106,7 +106,7 @@ class Cache(MutableMapping):
             self.__time = time()
 
     def clear(self):
-        if self.data():
+        if self.data() is not None:
             self.__data = {}
             self.__update()
 
