@@ -31,8 +31,10 @@ jobs:
     matrix:
       Python27:
         python.version: '2.7'
+        pyinstaller.version: 'pyinstaller==3.6'
       Python37:
         python.version: '3.7'
+        pyinstaller.version: 'pyinstaller'
     maxParallel: 4
 
   steps:
@@ -44,7 +46,7 @@ jobs:
   - script: python -m pip install --upgrade pip
     displayName: 'Install dependencies'
 
-  - script: pip install pyinstaller==3.6
+  - script: pip install $(pyinstaller.version)
     name: 'pyinstaller'
   
   - bash: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -74,8 +76,10 @@ jobs:
     matrix:
       Python27:
         python.version: '2.7'
+        pyinstaller.version: 'pyinstaller==3.6'
       Python37:
         python.version: '3.7'
+        pyinstaller.version: 'pyinstaller'
     maxParallel: 4
 
   steps:
@@ -87,7 +91,7 @@ jobs:
   - script: python -m pip install --upgrade pip
     displayName: 'Install dependencies'
 
-  - script: pip install pyinstaller==3.6
+  - script: pip install $(pyinstaller.version)
     name: 'pyinstaller'
 
   - bash: sed -i.temp -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
