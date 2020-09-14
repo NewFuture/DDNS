@@ -78,15 +78,17 @@ def request(method, action, param=None, **params):
             raise Exception(data.get('errors', [{}]))
 
 
+def get_level1_domain(domain):
+    return ".".join(domain.split(".")[-2:])
+
+
 def get_zone_id(domain):
     """
         切割域名获取主域名ID(Zone_ID)
         https://api.cloudflare.com/#zone-list-zones
     """
-    zones = request('GET', '', per_page=50)
-    zone = next((z for z in zones if domain.endswith(z.get('name'))), None)
-    zoneid = zone and zone['id']
-    return zoneid
+    zones = request('GET', '', {"name": get_level1_domain(domain)}, per_page=50)
+    return zones[0]["id"]
 
 
 def get_records(zoneid, **conditions):
