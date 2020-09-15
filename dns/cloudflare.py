@@ -87,8 +87,13 @@ def get_zone_id(domain):
         切割域名获取主域名ID(Zone_ID)
         https://api.cloudflare.com/#zone-list-zones
     """
-    zones = request('GET', '', {"name": get_level1_domain(domain)}, per_page=50)
-    return zones[0]["id"]
+    domain1 = get_level1_domain(domain)
+    # noinspection PyBroadException
+    try:
+        zones = request('GET', '', name=domain1)
+        return zones[0]["id"]
+    except Exception:
+        raise Exception("token require include specific zone: {}".format(domain))
 
 
 def get_records(zoneid, **conditions):
