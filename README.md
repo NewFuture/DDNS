@@ -114,7 +114,7 @@ python run.py -c /path/to/config.json
 | :----: | :----------------: | :------: | :---------: | :---------------: | ----------------------------------------------------------------------------------------------------------- |
 |   id   |       string       |    √     |     无      |    api 访问 ID    | Cloudflare 为邮箱(使用 Token 时留空)<br>HE.net 可留空                                                       |
 | token  |       string       |    √     |     无      |  api 授权 token   | 部分平台叫 secret key , **反馈粘贴时删除**                                                                  |
-|  dns   |       string       |    No    | `"dnspod"`  |    dns 服务商     | 阿里`alidns`,<br>dns.com 为`dnscom`,<br>DNSPOD 国际版`dnspod_com`,<br>HE.net 为`he`，华为 DNS 为`huaweidns`，<br>自定义回调为`callback` |
+|  dns   |       string       |    No    | `"dnspod"`  |    dns 服务商     | 阿里 DNS 为`alidns`,<br>Cloudflare 为 `cloudflare`,<br>dns.com 为 `dnscom`,<br>DNSPOD 国内为 `dnspod`,<br>DNSPOD 国际版为 `dnspod_com`,<br>HE.net 为`he`,<br>华为 DNS 为`huaweidns`,<br>自定义回调为`callback` |
 |  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表   | 为`[]`时,不会获取和更新 IPv4 地址                                                                           |
 |  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表   | 为`[]`时,不会获取和更新 IPv6 地址                                                                           |
 | index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
