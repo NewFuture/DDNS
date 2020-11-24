@@ -71,7 +71,7 @@ def get_config(key=None, default=None, path="config.json"):
                 }
                 dumpjson(configure, configfile, indent=2, sort_keys=True)
             sys.stdout.write("New template configure file `%s` is generated.\n" % path)
-            sys.exit(0)
+            sys.exit(1)
         except:
             sys.exit('fail to load config from file: %s' % path)
     if key:
