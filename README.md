@@ -187,8 +187,18 @@ python run.py -c /path/to/config.json
 
 #### linux
 
-运行 `sudo ./task.sh`
-
+- 使用init.d和crontab:
+`sudo ./task.sh`
+- 使用systemd:
+    ```bash
+    安装:
+    sudo ./systemd.sh install
+    卸载:
+    sudo ./systemd.sh uninstall
+    ```
+  该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
+  可执行文件所在目录为 `/usr/share/DDNS`
+  配置文件所在目录为 `/etc/DDNS`
 </details>
 
 ## FAQ
