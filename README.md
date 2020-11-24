@@ -192,9 +192,9 @@ python run.py -c /path/to/config.json
 - 使用systemd:
     ```bash
     安装:
-    sudo ./systemd_install.sh install
+    sudo ./systemd.sh install
     卸载:
-    sudo ./systemd_install.sh uninstall
+    sudo ./systemd.sh uninstall
     ```
   该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
 </details>
