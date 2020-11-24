@@ -28,7 +28,7 @@ if [[ "install" == $1 ]]; then
     mkdir -p /etc/DDNS
     if [ ! -f "/etc/DDNS/config.json" ];then
         if [ ! -f "config.json" ];then
-            python /usr/share/DDNS/run.py -c /etc/DDNS/config.json 2> /dev/null
+            echo "create new template configure file on /etc/DDNS/config.json"
         else
             cp config.json /etc/DDNS/config.json
             echo "config file is /etc/DDNS/config.json"
