@@ -21,34 +21,18 @@ Unit=ddns.service
 [Install]
 WantedBy=multi-user.target'
 
-config='{
-    "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
-    "id": "YOUR ID or EAMIL for DNS Provider",
-    "token": "YOUR TOKEN or KEY for DNS Provider",
-    "dns": "dnspod",
-    "ipv4": [
-        "newfuture.cc",
-        "ddns.newfuture.cc"
-    ],
-    "ipv6": [
-        "newfuture.cc",
-        "ipv6.ddns.newfuture.cc"
-    ],
-    "index4": "default",
-    "index6": "default",
-    "ttl": None,
-    "proxy": None,
-    "debug": False,
-}'
-
 if [[ "install" == $1 ]]; then
     echo "$service" > /usr/lib/systemd/system/ddns.service
     echo "$timer" > /usr/lib/systemd/system/ddns.timer
     cp -r `pwd` /usr/share/
     mkdir -p /etc/DDNS
     if [ ! -f "/etc/DDNS/config.json" ];then
-        echo "$config" > /etc/DDNS/config.json
-        echo "create new config file on /etc/DDNS/config.json"
+        if [ ! -f "config.json" ];then
+            python /usr/share/DDNS/run.py -c /etc/DDNS/config.json
+        else
+            cp config.json /etc/DDNS/config.json
+            echo "config file is /etc/DDNS/config.json"
+        fi
     fi
     systemctl enable ddns.timer
     systemctl start ddns.timer
