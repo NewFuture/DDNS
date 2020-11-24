@@ -187,8 +187,16 @@ python run.py -c /path/to/config.json
 
 #### linux
 
-运行 `sudo ./task.sh`
-
+- 使用init.d和crontab:
+`sudo ./task.sh`
+- 使用systemd:
+    ```bash
+    安装:
+    sudo ./systemd_install.sh install
+    卸载:
+    sudo ./systemd_install.sh uninstall
+    ```
+  该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
 </details>
 
 ## FAQ
