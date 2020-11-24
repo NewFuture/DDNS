@@ -27,18 +27,18 @@ if [[ "install" == $1 ]]; then
     cp -r `pwd` /usr/share/
     mkdir -p /etc/DDNS
     if [ ! -f "/etc/DDNS/config.json" ];then
-        if [ ! -f "config.json" ];then
-            echo "create new template configure file on /etc/DDNS/config.json"
-        else
+        if [ -f "config.json" ];then
             cp config.json /etc/DDNS/config.json
-            echo "config file is /etc/DDNS/config.json"
         fi
     fi
     systemctl enable ddns.timer
     systemctl start ddns.timer
     echo "installed"
-    echo "use systemctl status ddns to view service status"
-    echo "use journalctl -u ddns.timer to view logs"
+    echo "useful commands:"
+    echo "  systemctl status ddns       view service status."
+    echo "  journalctl -u ddns.timer    view the logs."
+    echo "config file: /etc/DDNS/config.json"
+                
 elif [[ "uninstall" == $1 ]]; then
     systemctl disable ddns.timer
     rm /usr/lib/systemd/system/ddns.service
@@ -49,6 +49,6 @@ elif [[ "uninstall" == $1 ]]; then
     echo "uninstalled"
 else
     echo "Tips:"
-    echo "use install to install"
-    echo "use uninstall to uninstall"
+    echo "  $0 install      install the ddns systemd service."
+    echo "  $0 uninstall    uninstall the ddns service."
 fi
