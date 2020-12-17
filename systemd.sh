@@ -1,4 +1,4 @@
-# /bin/bash
+#!/bin/bash
 service='[Unit]
 Description=NewFuture ddns
 After=network.target
