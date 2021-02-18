@@ -71,7 +71,7 @@ def request(method, action, param=None, **params):
         raise Exception(res)
     else:
         debug('%s : result:%s', action, res)
-        return data
+        return res
 
 def replace_params(domain, record_type, ip, params):
     """
