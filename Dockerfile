@@ -1,4 +1,4 @@
-FROM six8/pyinstaller-alpine:latest
+FROM six8/pyinstaller-alpine:alpine-3.6-pyinstaller-v3.4
 WORKDIR /app
 COPY . .
 RUN pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
