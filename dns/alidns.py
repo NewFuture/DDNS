@@ -53,7 +53,7 @@ def signature(params):
         'SignatureNonce': uuid4(),
         'SignatureVersion': "1.0",
     })
-    query = urlencode(sorted(params.items()))
+    query = urlencode(sorted(params.items()), quote_via=quote)
     debug(query)
     sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
