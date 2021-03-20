@@ -55,7 +55,7 @@ def signature(params):
     })
     query = urlencode(sorted(params.items()), quote_via=quote)
     debug(query)
-    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
+    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query)
     debug("signString: %s", sign)
 
     sign = hmac((Config.TOKEN + "&").encode('utf-8'),
