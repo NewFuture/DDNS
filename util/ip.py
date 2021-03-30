@@ -94,5 +94,5 @@ def regex_v6(reg):  # ipv6 正则提取
     if os_name == 'nt':  # Windows: IPv4 xxx: ::1
         regex_str = r'IPv6 .*: ([\:\dabcdef]*)?\W'
     else:
-        regex_str = r'inet6 (?:addr\:)?([\:\dabcdef]*)?[\s/%]'
+        regex_str = r'inet6 (?:addr\:\s*)?([\:\dabcdef]*)?[\s/%]'
     return _ip_regex_match(regex_str, reg)
