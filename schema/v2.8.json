@@ -62,7 +62,7 @@
         "$id": "/properties/ipv4/items",
         "title": "ipv4 domain for DDNS",
         "type": "string",
-        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
         "examples": [
           "newfuture.cc",
           "ipv4.example.newfuture.cc"
@@ -79,7 +79,7 @@
         "$id": "/properties/ipv6/items",
         "title": "The ipv6 domain for DDNS",
         "type": "string",
-        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}$",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
         "examples": [
           "newfuture.cc",
           "ipv6.example.newfuture.cc"
