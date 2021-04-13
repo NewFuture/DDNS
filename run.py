@@ -52,7 +52,7 @@ def get_config(key=None, default=None, path="config.json"):
             with open(path, 'w') as configfile:
                 configure = {
                     "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
-                    "id": "YOUR ID or EAMIL for DNS Provider",
+                    "id": "YOUR ID or EMAIL for DNS Provider",
                     "token": "YOUR TOKEN or KEY for DNS Provider",
                     "dns": "dnspod",
                     "ipv4": [
