@@ -53,9 +53,10 @@ def signature(params):
         'SignatureNonce': uuid4(),
         'SignatureVersion': "1.0",
     })
-    query = urlencode(sorted(params.items()), quote_via=quote)
+    query = urlencode(sorted(params.items()))
+    query = query.replace('+','%20')
     debug(query)
-    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query)
+    sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
 
     sign = hmac((Config.TOKEN + "&").encode('utf-8'),
