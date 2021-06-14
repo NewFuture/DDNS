@@ -57,7 +57,8 @@ def init_config(description, doc, version):
     is_configfile_optional = get_config("token") or get_config("id")
     config_file = get_config("config");
     if not is_configfile_optional or config_file is not None:
-        __load_config(config_file, is_configfile_optional)
+        __load_config(config_file  or "config.json", is_configfile_optional)
+        __cli_args.config = config_file or "config.json"
 
 
 def __load_config(path="config.json", skip_auto_generation=False):
