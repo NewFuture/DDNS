@@ -3,7 +3,7 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from logging import error
-from os import stat
+from os import stat, environ
 from time import time
 
 import sys
@@ -54,10 +54,10 @@ def init_config(description, doc, version):
                         const=True, help="eusing cache [是否缓存记录,默认是]")
 
     __cli_args = parser.parse_args()
-    has_cli_config = __cli_args.token or __cli_args.id
-    __load_config(__cli_args.config or "config.json", has_cli_config)
-    if __cli_args.config is None:
-        __cli_args.config = "config.json"
+    is_configfile_optional = get_config("token") or get_config("id")
+    config_file = get_config("config");
+    if not is_configfile_optional or config_file is not None:
+        __load_config(config_file, is_configfile_optional)
 
 
 def __load_config(path="config.json", skip_auto_generation=False):
@@ -105,9 +105,17 @@ def __load_config(path="config.json", skip_auto_generation=False):
 def get_config(key, default=None):
     """
     读取配置
+    1. 命令行参数
+    2. 配置文件
+    3. 环境变量
     """
     if hasattr(__cli_args, key) and getattr(__cli_args, key) is not None:
         return getattr(__cli_args, key)
     if key in __config:
         return __config.get(key)
+    env_name = 'DDNS_'+key.upper()  # type:str
+    if env_name in environ:  # 大写环境变量
+        return environ.get(env_name)
+    if env_name.lower() in environ:  # 小写环境变量
+        return environ.get(env_name.lower())
     return default

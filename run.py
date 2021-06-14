@@ -92,6 +92,8 @@ def update_ip(ip_type, cache, dns, proxy_list):
     domains = get_config(ipname)
     if not domains:
         return None
+    if not isinstance(domains, list):
+        domains = domains.strip('; ').replace(',',';').replace(' ',';').split(';')
     index_rule = get_config('index' + ip_type, "default")  # 从配置中获取index配置
     address = get_ip(ip_type, index_rule)
     if not address:
@@ -127,12 +129,14 @@ def main():
             level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
         print("DDNS[", __version__, "] run:", os_name, sys.platform)
-        print("Configuration was loaded from <==",
-              path.abspath(get_config("config")))
+        if get_config("config"):
+            print("Configuration was loaded from <==",
+                  path.abspath(get_config("config")))
         print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
-    proxy_list = proxy.strip('; ') .split(';')
+    proxy_list = proxy if isinstance(
+        proxy, list) else proxy.strip('; ').replace(',',';').split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
