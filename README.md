@@ -93,6 +93,12 @@
 
 ## 详细配置
 
+所有字段可通过三种方式进行配置
+
+1. 命令行参数 `ddns --key=value` (`ddns -h` 查看详情)，优先级最高
+2. JSON配置文件(值为null认为是有效值，会覆盖环境变量的设置，如果没有对应的key则会尝试试用环境变量)
+3. 环境变量DDNS_前缀加上key 全大写或者全小写 (`${ddns_key}` 或 `${DDNS_KEY}`)
+
 <details open>
 
 <summary markdown="span">config.json 配置文件

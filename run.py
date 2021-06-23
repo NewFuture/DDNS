@@ -6,10 +6,8 @@ DDNS
 @modified: rufengsuixing
 """
 from __future__ import print_function
-from argparse import ArgumentParser, RawTextHelpFormatter
-from json import load as loadjson, dump as dumpjson
 from time import ctime
-from os import path, environ, stat, name as os_name
+from os import path, environ, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error, debug
 from subprocess import check_output
@@ -18,6 +16,7 @@ import sys
 
 from util import ip
 from util.cache import Cache
+from util.config import init_config, get_config
 
 __version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"  # CI 时会被Tag替换
 __description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
@@ -36,48 +35,6 @@ if getattr(sys, 'frozen', False):
         getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
 
 CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
-
-
-def get_config(key=None, default=None, path="config.json"):
-    """
-    读取配置
-    """
-    if not hasattr(get_config, "config"):
-        try:
-            with open(path) as configfile:
-                get_config.config = loadjson(configfile)
-                get_config.time = stat(path).st_mtime
-        except IOError:
-            error(' Config file `%s` does not exist!' % path)
-            with open(path, 'w') as configfile:
-                configure = {
-                    "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
-                    "id": "YOUR ID or EMAIL for DNS Provider",
-                    "token": "YOUR TOKEN or KEY for DNS Provider",
-                    "dns": "dnspod",
-                    "ipv4": [
-                        "newfuture.cc",
-                        "ddns.newfuture.cc"
-                    ],
-                    "ipv6": [
-                        "newfuture.cc",
-                        "ipv6.ddns.newfuture.cc"
-                    ],
-                    "index4": "default",
-                    "index6": "default",
-                    "ttl": None,
-                    "proxy": None,
-                    "debug": False,
-                }
-                dumpjson(configure, configfile, indent=2, sort_keys=True)
-            sys.stdout.write("New template configure file `%s` is generated.\n" % path)
-            sys.exit(1)
-        except:
-            sys.exit('fail to load config from file: %s' % path)
-    if key:
-        return get_config.config.get(key, default)
-    else:
-        return get_config.config
 
 
 def get_ip(ip_type, index="default"):
@@ -135,10 +92,12 @@ def update_ip(ip_type, cache, dns, proxy_list):
     domains = get_config(ipname)
     if not domains:
         return None
+    if not isinstance(domains, list):
+        domains = domains.strip('; ').replace(',',';').replace(' ',';').split(';')
     index_rule = get_config('index' + ip_type, "default")  # 从配置中获取index配置
     address = get_ip(ip_type, index_rule)
     if not address:
-        error('Fail to get %s address!' ,ipname)
+        error('Fail to get %s address!', ipname)
         return False
     elif cache and (address == cache[ipname]):
         print('.', end=" ")  # 缓存命中
@@ -157,14 +116,7 @@ def main():
     """
     更新
     """
-    parser = ArgumentParser(description=__description__,
-                            epilog=__doc__, formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-v', '--version',
-                        action='version', version=__version__)
-    parser.add_argument('-c', '--config',
-                        default="config.json", help="run with config file [配置文件路径]")
-    config_file = parser.parse_args().config
-    get_config(path=config_file)
+    init_config(__description__, __doc__, __version__)
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
@@ -177,16 +129,19 @@ def main():
             level=DEBUG,
             format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
         print("DDNS[", __version__, "] run:", os_name, sys.platform)
-        print("Configuration was loaded from <==", path.abspath(config_file))
+        if get_config("config"):
+            print("Configuration was loaded from <==",
+                  path.abspath(get_config("config")))
         print("=" * 25, ctime(), "=" * 25, sep=' ')
 
     proxy = get_config('proxy') or 'DIRECT'
-    proxy_list = proxy.strip('; ') .split(';')
+    proxy_list = proxy if isinstance(
+        proxy, list) else proxy.strip('; ').replace(',',';').split(';')
 
     cache = get_config('cache', True) and Cache(CACHE_FILE)
     if cache is False:
         info("Cache is disabled!")
-    elif get_config.time >= cache.time:
+    elif get_config("config_modified_time") is None or get_config("config_modified_time") >= cache.time:
         warning("Cache file is out of dated.")
         cache.clear()
     elif not cache:
