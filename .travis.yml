@@ -5,8 +5,8 @@ python:
 
 dist: xenial
 
-# os: 
-#   - linux
+os: 
+  - linux
 #   - osx
 
 before_install:
@@ -29,8 +29,8 @@ git:
 
 deploy:
   - provider: releases
-    api_key: "${GH_TOKEN}"
-    skip_cleanup: true
+    token: "${GH_TOKEN}"
+    cleanup: false
     file:
       - "dist/ddns"
     on:
@@ -38,9 +38,9 @@ deploy:
       branch: master
       python: '3.7'
   - provider: pypi
-    user: newfuture-bot
+    username: newfuture-bot
     password: "${PYPI_PWD}"
-    skip_cleanup: true
+    cleanup: false
     distributions: "sdist bdist_wheel" # Your distributions here
     on:
       tags: true
