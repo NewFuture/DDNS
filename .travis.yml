@@ -5,10 +5,6 @@ python:
 
 dist: xenial
 
-branches:
-  only: 
-    - master
-
 os: 
   - linux
 #   - osx
