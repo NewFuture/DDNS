@@ -3,8 +3,6 @@ python:
   - "2.7"
   - "3.7"
 
-dist: xenial
-
 os: 
   - linux
 #   - osx
@@ -30,6 +28,7 @@ git:
 deploy:
   - provider: releases
     token: "${GH_TOKEN}"
+    skip_cleanup: true
     cleanup: false
     file:
       - "dist/ddns"
