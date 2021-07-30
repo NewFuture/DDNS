@@ -21,6 +21,8 @@ script:
   - export SSL_CERT_FILE=${PWD}/cert.pem
   - pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
   - ./dist/ddns || test -e "config.json"
+  - ./dist/ddns -h
+  
 
 git:
   depth: 2
@@ -39,6 +41,7 @@ deploy:
   - provider: pypi
     username: newfuture-bot
     password: "${PYPI_PWD}"
+    skip_cleanup: true
     cleanup: false
     distributions: "sdist bdist_wheel" # Your distributions here
     on:
