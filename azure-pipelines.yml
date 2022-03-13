@@ -29,9 +29,6 @@ jobs:
     vmImage: 'windows-latest'
   strategy:
     matrix:
-      Python27:
-        python.version: '2.7'
-        pyinstaller.version: 'pyinstaller==3.6'
       Python37:
         python.version: '3.7'
         pyinstaller.version: 'pyinstaller'
