@@ -74,14 +74,31 @@
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 - #### Docker(需要安装 Docker)
-  `docker run -d -v /path/to/config.json:/config.json --network host newfuture/ddns`
+  - 使用环境变量：
+    ```
+    docker run -d \
+      -e DDNS_DNS=dnspod \
+      -e DDNS_ID=12345 \
+      -e DDNS_TOKEN=mytokenkey \
+      -e DDNS_IPV4=ddns.newfuture.cc \
+      -e DDNS_IPV6=ddns.newfuture.cc \
+      --network host \
+      newfuture/ddns
+    ```
+  - 使用配置文件：
+    ```
+    docker run -d \
+      -v /path/to/config.json:/config.json \
+      --network host \
+      newfuture/ddns
+    ```
 
 ### ② 快速配置
 
 1. 申请 api `token`,填写到对应的`id`和`token`字段:
 
    - [DNSPOD(国内版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
-   - [阿里云 accesskey](https://help.aliyun.com/document_detail/28637.html)
+   - [阿里云 accesskey](https://help.aliyun.com/document_detail/87745.htm)
    - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
    - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
    - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (除了`email + API KEY`,也可使用`Token`需要列出 Zone 权限)
@@ -186,12 +203,12 @@ python run.py -c /path/to/config.json
 <summary markdown="span">可以通过脚本设置定时任务(默认每5分钟检查一次ip,自动更新)
 </summary>
 
-#### windows
+#### Windows
 
 - [推荐]以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 - 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
 
-#### linux
+#### Linux
 
 - 使用init.d和crontab:
 `sudo ./task.sh`
@@ -205,6 +222,10 @@ python run.py -c /path/to/config.json
   该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
   可执行文件所在目录为 `/usr/share/DDNS`
   配置文件所在目录为 `/etc/DDNS`
+
+#### Docker
+
+Docker镜像在无额外参数的情况下，已默认启用每5分钟执行一次的定时任务
 </details>
 
 ## FAQ
