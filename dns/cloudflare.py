@@ -39,7 +39,7 @@ def request(method, action, param=None, **params):
     """
     if param:
         params.update(param)
-    
+
     params = dict((k, params[k]) for k in params if params[k] is not None)
     info("%s/%s : %s", API.SITE, action, params)
     if Config.PROXY:
