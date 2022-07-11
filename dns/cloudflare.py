@@ -83,7 +83,8 @@ def get_zone_id(domain):
         切割域名获取主域名ID(Zone_ID)
         https://api.cloudflare.com/#zone-list-zones
     """
-    zones = request('GET', '', per_page=50)
+    domain_slice = domain.split('.')
+    zones = request('GET', '', params={'name': domain_slice[-2]})
     zone = next((z for z in zones if domain.endswith(z.get('name'))), None)
     zoneid = zone and zone['id']
     return zoneid
