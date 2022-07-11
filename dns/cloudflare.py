@@ -84,7 +84,7 @@ def get_zone_id(domain):
         https://api.cloudflare.com/#zone-list-zones
     """
     domain_slice = domain.split('.')
-    zones = request('GET', '', params={'name': domain_slice[-2]})
+    zones = request('GET', '', name='.'.join(domain_slice[-2]))
     zone = next((z for z in zones if domain.endswith(z.get('name'))), None)
     zoneid = zone and zone['id']
     return zoneid
