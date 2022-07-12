@@ -57,9 +57,11 @@ def request(method, action, param=None, **params):
             action += '?' + urlencode(params)
         params = None
     if not Config.ID:
-        headers = {"Content-type": "application/json", "Authorization": "Bearer " + Config.TOKEN}
+        headers = {"Content-type": "application/json",
+                   "Authorization": "Bearer " + Config.TOKEN}
     else:
-        headers = {"Content-type": "application/json", "X-Auth-Email": Config.ID, "X-Auth-Key": Config.TOKEN}
+        headers = {"Content-type": "application/json",
+                   "X-Auth-Email": Config.ID, "X-Auth-Key": Config.TOKEN}
     conn.request(method, '/client/v4/zones' + action, params, headers)
     response = conn.getresponse()
     res = response.read().decode('utf8')
@@ -107,7 +109,7 @@ def get_records(zoneid, **conditions):
         get_records.records = {}  # "静态变量"存储已查询过的id
         get_records.keys = ('id', 'type', 'name', 'content', 'proxied', 'ttl')
 
-    if not zoneid in get_records.records:
+    if zoneid not in get_records.records:
         get_records.records[cache_key] = {}
         data = request('GET', '/' + zoneid + '/dns_records',
                        per_page=100, **conditions)

@@ -99,7 +99,7 @@ def __load_config(path="config.json", skip_auto_generation=False):
             sys.stdout.write(
                 "New template configure file `%s` is generated.\n" % path)
             sys.exit(1)
-    except:
+    except Exception:
         sys.exit('fail to load config from file: %s' % path)
 
 

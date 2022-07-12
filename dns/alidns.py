@@ -54,7 +54,7 @@ def signature(params):
         'SignatureVersion': "1.0",
     })
     query = urlencode(sorted(params.items()))
-    query = query.replace('+','%20')
+    query = query.replace('+', '%20')
     debug(query)
     sign = API.METHOD + "&" + quote_plus("/") + "&" + quote(query, safe='')
     debug("signString: %s", sign)
@@ -119,7 +119,7 @@ def get_records(domain, **conditions):
         get_records.keys = ("RecordId", "RR", "Type", "Line",
                             "Locked", "Status", "Priority", "Value")
 
-    if not domain in get_records.records:
+    if domain not in get_records.records:
         get_records.records[domain] = {}
         data = request(Action="DescribeDomainRecords",
                        DomainName=domain, PageSize=500)

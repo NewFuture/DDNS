@@ -64,7 +64,7 @@ def request(param=None, **params):
         debug('%s : result:%s', API.ACTION, res)
         if not res:
             raise Exception("empty response")
-        elif res[:5] == "nochg" or res[:4] == "good": # No change or success
+        elif res[:5] == "nochg" or res[:4] == "good":  # No change or success
             return res
         else:
             raise Exception(res)

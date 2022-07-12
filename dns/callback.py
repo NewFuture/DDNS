@@ -6,7 +6,7 @@ Custom Callback API
 @author: 老周部落
 """
 
-from json import loads as jsondecode, dumps as jsonencode
+from json import loads as jsondecode
 from logging import debug, info, warning
 from time import time
 
@@ -22,11 +22,13 @@ except ImportError:
 
 __author__ = '老周部落'
 
+
 class Config:
-    ID = None # 自定义回调 URL
-    TOKEN = None # 使用 JSON 编码的 POST 参数
-    PROXY = None  # 代理设置
+    ID = None  # 自定义回调 URL
+    TOKEN = None  # 使用 JSON 编码的 POST 参数
+    PROXY = None   # 代理设置
     TTL = None
+
 
 def request(method, action, param=None, **params):
     """
@@ -73,15 +75,18 @@ def request(method, action, param=None, **params):
         debug('%s : result:%s', action, res)
         return res
 
+
 def replace_params(domain, record_type, ip, params):
     """
     替换定义常量为实际值
     """
-    dict = {"__DOMAIN__": domain, "__RECORDTYPE__": record_type, "__TTL__": Config.TTL, "__TIMESTAMP__": time(), "__IP__": ip}
+    dict = {"__DOMAIN__": domain, "__RECORDTYPE__": record_type,
+            "__TTL__": Config.TTL, "__TIMESTAMP__": time(), "__IP__": ip}
     for key, value in params.items():
         if dict.get(value):
             params[key] = dict.get(value)
     return params
+
 
 def update_record(domain, value, record_type="A"):
     """
@@ -91,7 +96,7 @@ def update_record(domain, value, record_type="A"):
 
     result = {}
 
-    if not Config.TOKEN: # 此处使用 TOKEN 参数透传 POST 参数所用的 JSON
+    if not Config.TOKEN:  # 此处使用 TOKEN 参数透传 POST 参数所用的 JSON
         method = "GET"
         URLObj = urlparse(Config.ID)
         path = URLObj.path
@@ -101,7 +106,8 @@ def update_record(domain, value, record_type="A"):
         method = "POST"
         URLObj = urlparse(Config.ID)
         path = URLObj.path
-        params = replace_params(domain, record_type, value, jsondecode(Config.TOKEN))
+        params = replace_params(domain, record_type,
+                                value, jsondecode(Config.TOKEN))
 
     res = request(method, path, params)
 

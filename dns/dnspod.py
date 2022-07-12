@@ -34,7 +34,7 @@ class API:
     METHOD = "POST"  # 请求方法
     TOKEN_PARAM = "login_token"  # token参数
     DEFAULT = "默认"  # 默认线路名
-    LENGTH="length" #添加参数
+    LENGTH = "length"  # 添加参数
 
 
 def request(action, param=None, **params):
@@ -47,7 +47,7 @@ def request(action, param=None, **params):
     params.update({API.TOKEN_PARAM: '***', 'format': 'json'})
     info("%s/%s : %s", API.SITE, action, params)
     params[API.TOKEN_PARAM] = "%s,%s" % (Config.ID, Config.TOKEN)
-    params[API.LENGTH] = "3000" #添加参数
+    params[API.LENGTH] = "3000"  # 添加参数
     if Config.PROXY:
         conn = HTTPSConnection(Config.PROXY)
         conn.set_tunnel(API.SITE, 443)
@@ -128,7 +128,7 @@ def get_records(did, **conditions):
         get_records.keys = ("id", "name", "type", "line",
                             "line_id", "enabled", "mx", "value")
 
-    if not did in get_records.records:
+    if did not in get_records.records:
         get_records.records[did] = {}
         data = request('Record.List', domain_id=did)
         if data:

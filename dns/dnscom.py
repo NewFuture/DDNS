@@ -123,7 +123,7 @@ def get_records(domain, domain_id, **conditions):
         get_records.keys = ("recordID", "record", "type", "viewID",
                             "TTL", "state", "value")
 
-    if not domain in get_records.records:
+    if domain not in get_records.records:
         get_records.records[domain] = {}
         data = request("record/list",
                        domainID=domain_id, pageSize=500)
