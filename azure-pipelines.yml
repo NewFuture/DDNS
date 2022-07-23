@@ -29,8 +29,8 @@ jobs:
     vmImage: 'windows-latest'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python3:
+        python.version: '3.x'
         pyinstaller.version: 'pyinstaller'
     maxParallel: 4
 
@@ -48,7 +48,7 @@ jobs:
   - bash: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
     name: 'replaceBuild'
 
-  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
+  - script: pyinstaller --noconfirm --clean ./.build/ddns.spec
     name: 'build'
   
   - bash: dist/ddns.exe || test -e "config.json"
@@ -70,8 +70,8 @@ jobs:
     vmImage: 'macos-latest'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python3:
+        python.version: '3.x'
         pyinstaller.version: 'pyinstaller'
     maxParallel: 4
 
@@ -89,7 +89,7 @@ jobs:
   - bash: sed -i.temp -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
     name: 'replaceBuild'
 
-  - script: pyinstaller --onefile --noconfirm --clean ./.build/ddns.spec
+  - script: pyinstaller --noconfirm --clean ./.build/ddns.spec
     name: 'build'
 
   - script: ./dist/ddns || test -e "config.json"
@@ -115,10 +115,10 @@ jobs:
 #     repositoryName: NewFuture/DDNS
 #     action: edit
 #     tag: '$(Build.SourceBranchName)'
-#     releaseNotesFile: '$(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/README.md'
+#     releaseNotesFile: '$(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.x/README.md'
 #     assets: |
-#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/*.exe
-#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.7/*.bat
-#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.7/ddns-osx
-#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.7/*.sh
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.x/*.exe
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-win-3.x/*.bat
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.x/ddns-osx
+#      $(System.DefaultWorkingDirectory)/DDNS/ddns-mac-3.x/*.sh
 #     assetUploadMode: replace
