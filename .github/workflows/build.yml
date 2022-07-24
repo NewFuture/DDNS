@@ -75,7 +75,8 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install pyinstaller${{ fromJSON('["","==3.6"]')[matrix.python-version == '2.7'] }}
 
-            - run: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${{ github.head_ref || github.ref }}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+            -  name: replace build number
+               run: sed -i${{ fromJSON('["",".temp"]')[matrix.os == 'macos'] }} -e "s/\${BUILD_SOURCEBRANCHNAME}/${{ github.head_ref || github.ref }}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
             - name: copy cert on ubuntu
               if: ${{ matrix.os == 'ubuntu' }}
               run: cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
