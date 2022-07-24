@@ -35,11 +35,11 @@ if 'TRAVIS_TAG' in environ:
     version = environ['TRAVIS_TAG']  # `TRAVIS_TAG` from Travis
 elif 'BUILD_SOURCEBRANCHNAME' in environ:
     version = environ['BUILD_SOURCEBRANCHNAME']  # from azure pipelines
-elif 'GITHUB_REF_NAME' in environ: # github actions
+elif 'GITHUB_REF_NAME' in environ:  # github actions
     ref = environ['GITHUB_REF_NAME']
-    if ref == 'master' or ref == 'main': # CI
-        version = '0.0.b'+ str(int(time()))
-    else: # pr
+    if ref == 'master' or ref == 'main':  # CI
+        version = '0.0.b' + str(int(time()))
+    else:  # PR
         version = '0.0.a1'
 else:
     raise Exception("setup.py should be run in CI (Travis or AzurePipelines)")
