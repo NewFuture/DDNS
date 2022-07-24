@@ -58,7 +58,7 @@ jobs:
 
     pyinstaller:
         strategy:
-            # fail-fast: false
+            fail-fast: false
             matrix:
                 os: [ubuntu, macos, windows]
                 python-version: ["2.7", "3.x"]
@@ -75,7 +75,8 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install pyinstaller${{ fromJSON('["","==3.6"]')[matrix.python-version == '2.7'] }}
 
-            -  name: Replace build number
+            # Prepare build version and cert
+            -  name: Replace build version
                run: sed -i${{ fromJSON('["",".temp"]')[matrix.os == 'macos'] }} -e "s/\${BUILD_SOURCEBRANCHNAME}/${{ github.head_ref || github.ref }}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
                shell: bash
             - name: Copy cert on ubuntu
@@ -90,6 +91,7 @@ jobs:
             - run: ./dist/ddns || test -e "config.json"
             - run: ./dist/ddns -h
 
+            # Upload build result  
             - uses: actions/upload-artifact@v3
               with:
                   name: ${{ matrix.os }}-py${{ matrix.python-version }}
