@@ -76,7 +76,7 @@ jobs:
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
-                  pip install pyinstaller${{ ["","=3.6"][matrix.python-version == '2.7'] }}
+                  pip install pyinstaller${{ fromJSON('["","=3.6"]')[matrix.python-version == '2.7'] }}
 
             - run: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${GITHUB_REF_NAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
             - name: copy cert on ubuntu
@@ -86,7 +86,7 @@ jobs:
             - run: python run.py -h
 
             - name: package to exe
-              run: pyinstaller --noconfirm --clean ${{ ["", "--onefile"][matrix.python-version == '2.7'] }} ./.build/ddns.spec
+              run: pyinstaller --noconfirm --clean ${{ fromJSON('["", "--onefile"]')[matrix.python-version == '2.7'] }} ./.build/ddns.spec
 
             - run: ./dist/ddns || test -e "config.json"
             - run: ./dist/ddns -h
@@ -94,6 +94,6 @@ jobs:
             - uses: actions/upload-artifact@v3
               with:
                   name: ddns-${{ matrix.os }}-py${{ matrix.python-version }}
-                  path: dist/ddns${{ ["",".exe"][matrix.os == 'windows'] }}
+                  path: dist/ddns${{ fromJSON('["",".exe"]')[matrix.os == 'windows'] }}
                   retention-days: 14
 
