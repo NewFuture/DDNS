@@ -58,7 +58,7 @@ jobs:
 
     pyinstaller:
         strategy:
-            fail-fast: false
+            # fail-fast: false
             matrix:
                 os: [windows, macos, ubuntu]
                 python-version: ["2.7", "3.x"]
