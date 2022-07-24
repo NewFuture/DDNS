@@ -83,7 +83,8 @@ jobs:
               if: ${{ matrix.os == 'ubuntu' }}
               run: cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
-            - run: python run.py -h
+            - run: ./run.py -h
+              shell: bash
 
             - name: Package binary
               run: pyinstaller --noconfirm --clean ${{ fromJSON('["", "--onefile"]')[matrix.python-version == '2.7'] }} ./.build/ddns.spec
