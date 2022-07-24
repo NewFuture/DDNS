@@ -9,9 +9,6 @@ on:
         tags:
             - v*
             - V*
-    pull_request:
-        branches:
-            - master
 
 jobs:
     docker-push:

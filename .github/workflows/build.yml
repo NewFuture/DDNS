@@ -46,7 +46,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   pip install build
-            - run: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${GITHUB_REF_NAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+            - run: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${{ github.head_ref || github.ref }}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
             - name: Build package
               run: python -m build --sdist --wheel --outdir dist/
 
@@ -94,3 +94,15 @@ jobs:
                   path: dist/ddns${{ fromJSON('["",".exe"]')[matrix.os == 'windows'] }}
                   retention-days: 14
 
+    docker:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        env:
+            DOCKER_REPO: newfuture/ddns
+            DOCKER_PLATFORMS: linux/amd64,linux/arm,linux/arm64
+
+        steps:
+            - uses: actions/checkout@v3
+            - uses: docker/setup-qemu-action@v2
+            - uses: docker/setup-buildx-action@v2
+            - run: docker buildx build --output "type=image" --platform ${DOCKER_PLATFORMS}
