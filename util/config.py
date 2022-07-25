@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter
+from argparse import OPTIONAL, SUPPRESS, ZERO_OR_MORE, ArgumentDefaultsHelpFormatter, ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from logging import error
 from os import stat, environ
@@ -10,6 +10,23 @@ import sys
 
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
+
+class TextHelpFormatter(RawTextHelpFormatter):
+    """Help message formatter which retains formatting of all help text.
+
+    Only the name of this class is considered a public API. All the methods
+    provided by the class are considered an implementation detail.
+    """
+
+    def _get_help_string(self, action):
+        help = action.help
+        help = help.split('[')[0]
+        if '%(default)' not in action.help:
+            if action.default is not SUPPRESS:
+                defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
+                if action.option_strings or action.nargs in defaulting_nargs:
+                    help += ' (default: %(default)s)'
+        return help
 
 
 def str2bool(v):
@@ -29,7 +46,7 @@ def init_config(description, doc, version):
     """
     global __cli_args
     parser = ArgumentParser(description=description,
-                            epilog=doc, formatter_class=RawDescriptionHelpFormatter)
+                            epilog=doc, formatter_class=TextHelpFormatter)
     parser.add_argument('-v', '--version',
                         action='version', version=version)
     parser.add_argument('-c', '--config', help="run with config file [配置文件路径]")
@@ -51,7 +68,7 @@ def init_config(description, doc, version):
     parser.add_argument('--debug',  type=str2bool, nargs='?',
                         const=True, help="debug mode [是否开启调试,默认否]", )
     parser.add_argument('--cache',  type=str2bool, nargs='?',
-                        const=True, help="eusing cache [是否缓存记录,默认是]")
+                        const=True, help="enable cache [是否缓存记录,默认是]")
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")
