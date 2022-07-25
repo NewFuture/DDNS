@@ -26,6 +26,8 @@ jobs:
             - uses: actions/setup-python@v4
               with:
                   python-version: "3.x"
+            - run: python ./run.py -h
+              continue-on-error: true
             - uses: shaowenchen/debugger-action@v2
               name: debugger
               timeout-minutes: 30

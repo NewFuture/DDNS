@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter
+from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from logging import error
 from os import stat, environ
@@ -24,12 +24,12 @@ def str2bool(v):
 
 
 def init_config(description, doc, version):
-    global __cli_args
     """
     配置
     """
+    global __cli_args
     parser = ArgumentParser(description=description,
-                            epilog=doc, formatter_class=RawTextHelpFormatter)
+                            epilog=doc, formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-v', '--version',
                         action='version', version=version)
     parser.add_argument('-c', '--config', help="run with config file [配置文件路径]")
