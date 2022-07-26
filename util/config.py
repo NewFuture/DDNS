@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import OPTIONAL, SUPPRESS, ZERO_OR_MORE, ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter, RawTextHelpFormatter
+from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from logging import error
 from os import stat, environ
@@ -12,22 +12,6 @@ import sys
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
 
-
-class TextHelpFormatter(RawTextHelpFormatter):
-    """Help message formatter which retains formatting of all help text.
-
-    Only the name of this class is considered a public API. All the methods
-    provided by the class are considered an implementation detail.
-    """
-
-    def _get_help_string(self, action):
-        help_text = action.help
-        if '%(default)' not in action.help:
-            if action.default is not SUPPRESS:
-                defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
-                if action.option_strings or action.nargs in defaulting_nargs:
-                    help_text += ' (default: %(default)s)'
-        return help_text
 
 
 def str2bool(v):
@@ -50,7 +34,7 @@ def init_config(description, doc, version):
     """
     global __cli_args
     parser = ArgumentParser(description=description,
-                            epilog=doc, formatter_class=TextHelpFormatter)
+                            epilog=doc, formatter_class=RawTextHelpFormatter)
     parser.add_argument('-v', '--version',
                         action='version', version=version)
     parser.add_argument('-c', '--config', help="run with config file [配置文件路径]")
