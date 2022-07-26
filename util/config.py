@@ -8,11 +8,15 @@ from time import time
 
 import sys
 
+
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
 
 
 def str2bool(v):
+    """
+    parse string to boolean
+    """
     if isinstance(v, bool):
         return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -24,10 +28,10 @@ def str2bool(v):
 
 
 def init_config(description, doc, version):
-    global __cli_args
     """
     配置
     """
+    global __cli_args
     parser = ArgumentParser(description=description,
                             epilog=doc, formatter_class=RawTextHelpFormatter)
     parser.add_argument('-v', '--version',
@@ -51,7 +55,7 @@ def init_config(description, doc, version):
     parser.add_argument('--debug',  type=str2bool, nargs='?',
                         const=True, help="debug mode [是否开启调试,默认否]", )
     parser.add_argument('--cache',  type=str2bool, nargs='?',
-                        const=True, help="eusing cache [是否缓存记录,默认是]")
+                        const=True, help="enable cache [是否缓存记录,默认是]")
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")

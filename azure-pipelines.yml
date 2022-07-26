@@ -48,11 +48,16 @@ jobs:
   - bash: sed -i -e "s/\${BUILD_SOURCEBRANCHNAME}/${BUILD_SOURCEBRANCHNAME}/" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
     name: 'replaceBuild'
 
+  # - script: python ./run.py -h
+  #   name: RunWithPython
+
   - script: pyinstaller --noconfirm --clean ./.build/ddns.spec
     name: 'build'
   
   - bash: dist/ddns.exe || test -e "config.json"
     name: run
+
+  - bash: ./dist/ddns -h
 
   - script: copy .release\\*.bat dist
     name: 'CopyRlease'
