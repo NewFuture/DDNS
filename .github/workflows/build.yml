@@ -63,7 +63,7 @@ jobs:
                 os: [windows, macos, ubuntu]
                 python-version: ["2.7", "3.x"]
         runs-on: ${{ matrix.os }}-latest
-        timeout-minutes: 5
+        timeout-minutes: 8
         steps:
             - uses: actions/checkout@v3
             - name: Set up Python ${{ matrix.python-version }}
