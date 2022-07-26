@@ -13,7 +13,6 @@ __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
 
 
-
 def str2bool(v):
     """
     parse string to boolean
