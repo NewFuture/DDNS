@@ -152,4 +152,8 @@ def main():
 
 
 if __name__ == '__main__':
+    if sys.version_info.major == 3 and os_name=='nt':
+        from io import TextIOWrapper
+        sys.stdout = TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+        sys.stderr = TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
     main()

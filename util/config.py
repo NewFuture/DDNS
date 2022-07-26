@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import OPTIONAL, SUPPRESS, ZERO_OR_MORE, ArgumentDefaultsHelpFormatter, ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter, RawTextHelpFormatter
+from argparse import OPTIONAL, SUPPRESS, ZERO_OR_MORE, ArgumentParser, ArgumentTypeError, Namespace, RawDescriptionHelpFormatter, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from logging import error
 from os import stat, environ
@@ -8,8 +8,10 @@ from time import time
 
 import sys
 
+
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
+
 
 class TextHelpFormatter(RawTextHelpFormatter):
     """Help message formatter which retains formatting of all help text.
@@ -19,17 +21,19 @@ class TextHelpFormatter(RawTextHelpFormatter):
     """
 
     def _get_help_string(self, action):
-        help = action.help
-        help = help.split('[')[0]
+        help_text = action.help
         if '%(default)' not in action.help:
             if action.default is not SUPPRESS:
                 defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
-                    help += ' (default: %(default)s)'
-        return help
+                    help_text += ' (default: %(default)s)'
+        return help_text
 
 
 def str2bool(v):
+    """
+    parse string to boolean
+    """
     if isinstance(v, bool):
         return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
