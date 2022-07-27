@@ -145,7 +145,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}/ddns
       - uses: docker/build-push-action@v3
         with:
           context: .
