@@ -112,10 +112,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: [lint, pypi]
+    timeout-minutes: 3
     environment:
       name: preview
       url: https://test.pypi.org/project/ddns/
-    timeout-minutes: 3
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -130,7 +130,10 @@ jobs:
   release-github-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    environment: preview
+    timeout-minutes: 5
+    environment:
+      name: preview
+      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/29877583?tag=master    
     steps:
       - uses: actions/checkout@v3
       - run: sed -i -e "s#\${BUILD_SOURCEBRANCHNAME}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -139,8 +142,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
       - uses: docker/build-push-action@v3
         with:
           context: .
-          tags: newfuture/ddns/ddns:preview
           push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
