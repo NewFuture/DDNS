@@ -114,12 +114,13 @@ jobs:
     needs: [lint, pypi]
     environment:
       name: preview
-      url: https://test.pypi.org/
+      url: https://test.pypi.org/project/ddns/
     timeout-minutes: 3
     steps:
       - uses: actions/download-artifact@v3
         with:
           name: pypi
+          path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
@@ -135,6 +136,5 @@ jobs:
       - run: sed -i -e "s#\${BUILD_SOURCEBRANCHNAME}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/build-push-action@v3
         with:
-          registry: docker.pkg.github.com
-          repository: newfuture/ddns/ddns
+          tags: newfuture/ddns/ddns:preview
           push: true
