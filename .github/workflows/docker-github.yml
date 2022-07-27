@@ -2,10 +2,10 @@ name: Github Docker
 
 on:
     push:
-        branches:
-            - master
-            - dev
-            - edge
+        # branches:
+        #     - master
+        #     - dev
+        #     - edge
         tags:
             - v*
             - V*
