@@ -116,14 +116,15 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           path: dist
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v0.1.14
         with:
           draft: false
           prerelease: false
           generate_release_notes: true
           body_path: .release/README.md
+          fail_on_unmatched_files: true
           append_body: true
           files: |
             .release/*.sh
             .release/*.bat
-            dist/*
+            dist/*/*
