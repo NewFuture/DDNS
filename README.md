@@ -5,7 +5,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=DDNS&style=social)](https://pypi.org/project/ddns/)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
-[![latest deploy](https://vsrm.dev.azure.com/NewFuture-CI/_apis/public/Release/badge/2ab09aad-c4b4-4c57-ab1b-2fb92c485664/1/1)](https://github.com/NewFuture/DDNS/releases/latest)
+[![Publish Status](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/releases/latest)
 
 ---
 
