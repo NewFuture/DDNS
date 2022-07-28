@@ -107,8 +107,8 @@ jobs:
           context: .
           load: true
           tags: ddns:test
-      - run: docker run -rm ddns:test -h
-      - run: docker run -it -v "$(pwd)":/config/ ddns:test -c /config/config.json && test -e config.json
+      - run: docker run --rm ddns:test -h
+      - run: docker run --rm -v "$(pwd)":/config/ ddns:test -c /config/config.json && test -e config.json
 
   preview-pypi:
     runs-on: ubuntu-latest
