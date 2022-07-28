@@ -18,7 +18,7 @@ from util import ip
 from util.cache import Cache
 from util.config import init_config, get_config
 
-__version__ = "${BUILD_SOURCEBRANCHNAME}@${BUILD_DATE}"  # CI 时会被Tag替换
+__version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
 __description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
 __doc__ = """
 ddns[%s]
@@ -27,7 +27,7 @@ ddns[%s]
 Copyright (c) New Future (MIT License)
 """ % (__version__)
 
-environ["DDNS_VERSION"] = "${BUILD_SOURCEBRANCHNAME}"
+environ["DDNS_VERSION"] = "${BUILD_VERSION}"
 
 if getattr(sys, 'frozen', False):
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
