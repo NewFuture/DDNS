@@ -115,6 +115,8 @@ jobs:
         with:
           draft: false
           generate_release_notes: true
+          append_body: true
+          body_path: .release/README.md
           files: |
             .release/*.sh
             .release/*.bat
