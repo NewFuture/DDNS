@@ -133,7 +133,7 @@ jobs:
     timeout-minutes: 5
     environment:
       name: preview
-      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/29877583?tag=master
+      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/?tag=master
     permissions:
       packages: write
     steps:
@@ -147,7 +147,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta
         with:
-          images: ghcr.io/${{ github.repository }}/ddns
+          images: ghcr.io/newfuture/ddns
       - uses: docker/build-push-action@v3
         with:
           context: .
