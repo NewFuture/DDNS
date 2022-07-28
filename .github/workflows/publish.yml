@@ -93,7 +93,7 @@ jobs:
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - run: cp ./dist/ddns ./dist/ddns-osx
+      - run: mv ./dist/ddns ./dist/ddns-osx
         if: runner.os == 'macOS'
       - uses: actions/upload-artifact@v3
         with:
@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 5
     environment:
       name: publish
-      url: https://github.com/NewFuture/DDNS/releases
+      url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
     needs: [publish-docker, publish-pypi, publish-binary]
