@@ -119,9 +119,11 @@ jobs:
       - uses: softprops/action-gh-release@v1
         with:
           draft: false
+          prerelease: false
           generate_release_notes: true
-          append_body: true
           body_path: .release/README.md
+          append_body: true
           files: |
             .release/*.sh
             .release/*.bat
+            dist/*
