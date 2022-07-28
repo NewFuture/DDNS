@@ -133,7 +133,9 @@ jobs:
     timeout-minutes: 5
     environment:
       name: preview
-      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/29877583?tag=master    
+      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/29877583?tag=master
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@v3
       - run: sed -i -e "s#\${BUILD_SOURCEBRANCHNAME}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
