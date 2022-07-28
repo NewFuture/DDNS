@@ -116,7 +116,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           path: dist
-      - uses: softprops/action-gh-release@v0.1.14
+      - uses: softprops/action-gh-release@master
         with:
           draft: false
           prerelease: false
