@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    tags: [v*, V*]
+    tags: [v*]
 
 permissions:
   contents: read
@@ -97,7 +97,7 @@ jobs:
         if: runner.os == 'macOS'
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-py${{ matrix.python-version }}
+          name: ${{ runner.os }}
           path: dist/
           retention-days: 10
 
