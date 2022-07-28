@@ -99,16 +99,17 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      DOCKER_REPO: newfuture/ddns
-      DOCKER_PLATFORMS: linux/amd64,linux/arm,linux/arm64
     steps:
       - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
-      - run: docker buildx build --output "type=image" --platform ${DOCKER_PLATFORMS} .
+      - run: sed -i -e "s#\${BUILD_SOURCEBRANCHNAME}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+      - uses: docker/build-push-action@v3
+        with:
+          context: .
+          load: true
+          tags: ddns:test
+      - run: docker -rm ddns:test -h
 
-  release-pypi:
+  preview-pypi:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: [lint, pypi]
@@ -127,18 +128,21 @@ jobs:
           repository_url: https://test.pypi.org/legacy/
           print_hash: true
 
-  release-github-docker:
+  preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     timeout-minutes: 5
+    needs: [docker]
     environment:
       name: preview
-      url: https://github.com/NewFuture/DDNS/pkgs/container/DDNS/ddns/?tag=master
+      url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
     permissions:
       packages: write
     steps:
       - uses: actions/checkout@v3
       - run: sed -i -e "s#\${BUILD_SOURCEBRANCHNAME}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -151,6 +155,7 @@ jobs:
       - uses: docker/build-push-action@v3
         with:
           context: .
+          platforms: linux/amd64,linux/arm,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
