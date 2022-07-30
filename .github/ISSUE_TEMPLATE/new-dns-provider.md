@@ -7,10 +7,7 @@ assignees: ''
 
 ---
 
-## info
-
 * DNS provider 服务商 :
-* Document of DNS Provider:
-* pull request linke: #
+* Document of DNS Provider 文档:
+* Pull Request: #
 
-##

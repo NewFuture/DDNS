@@ -158,7 +158,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta
         with:
-          images: | 
+          images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
       - uses: docker/build-push-action@v3
