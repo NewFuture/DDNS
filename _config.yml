@@ -4,4 +4,3 @@ kramdown:
 
 plugins:
   - jekyll-mentions
-
