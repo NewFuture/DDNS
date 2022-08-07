@@ -84,7 +84,7 @@ jobs:
       - run: python ./run.py -h
 
       - name: Package binary
-        run: pyinstaller --noconfirm --clean ./.build/ddns.spec
+        run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
