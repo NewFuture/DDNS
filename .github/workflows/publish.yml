@@ -67,11 +67,39 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           print_hash: true
 
-  publish-binary:
+  build-binary-windows:
     strategy:
       # fail-fast: false
       matrix:
-        os: [windows, macos, ubuntu]
+        os: [macos, ubuntu]
+    runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: pip install pyinstaller
+
+      - name: Replace build version
+        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
+        shell: bash
+
+      - run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
+      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -h
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ runner.os }}
+          path: dist/
+          retention-days: 10
+
+  build-binary:
+    strategy:
+      matrix:
+        os: [macos, ubuntu]
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
@@ -109,7 +137,7 @@ jobs:
       url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
-    needs: [publish-docker, publish-pypi, publish-binary]
+    needs: [publish-docker, publish-pypi, build-binary, build-binary-windows]
     steps:
       - uses: actions/checkout@v3
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .release/README.md
