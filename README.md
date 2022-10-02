@@ -179,6 +179,34 @@ python run.py -c /path/to/config.json
 }
 ```
 
+dnspod + PowerShell 配置示例：
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
+  "debug": false,
+  "dns": "dnspod",
+  "id": "2xxxx4",
+  "index4": "powershell:",
+  "index6": "",
+  "ipv4": [
+    "abc.test.cn"
+  ],
+  "ipv6": [
+  ],
+  "proxy": null,
+  "token": "xxx",
+  "ttl": null
+}
+```
+
+```powershell
+# Replace Ehternet_UCAS with the <InterfaceAlias> of your target interface.
+#                                      ↓
+(Get-NetIPAddress -InterfaceAlias Ethernet_UCAS -AddressFamily IPv4).IPAddress
+
+```
+
 </details>
 
 ## 定时任务
