@@ -143,7 +143,7 @@ python run.py -c /path/to/config.json
   - `"192.*"`表示 192 开头的所有 ip
   - 如果想匹配`10.00.xxxx`应该写成`"regex:10\\.00\\..\*"`(`"\\"`json 转义成`\`)
 - 字符串`"cmd:xxxx"`: 执行命令`xxxx`的 stdout 输出结果作为目标 IP
-- 字符串`"if_alias:xxx"`: 以 `xxx` 为网卡索引，查询出对应的 IPv4 地址。此选项仅在 Windows 平台受支持。
+- 字符串`"if_alias:xxx"`: 以 `xxx` 代表的**网络接口别名**为索引，查询出对应的 IPv4 地址。此选项仅在 Windows 平台受支持。
 - 字符串`"shell:xxx"`: 使用系统 shell 运行`xxx`,并把结果 stdout 作为目标 IP
 - `false`: 强制禁止更新 ipv4 或 ipv6 的 DNS 解析
 - 列表：依次执行列表中的index规则，并将最先获得的结果作为目标 IP
