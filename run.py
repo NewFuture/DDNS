@@ -11,6 +11,7 @@ from os import path, environ, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error, debug
 from subprocess import check_output
+from subprocess import run
 
 import sys
 
@@ -56,6 +57,8 @@ def get_ip(ip_type, index="default"):
     elif index.startswith('shell:'):  # shell
         value = str(check_output(
             index[6:], shell=True).strip().decode('utf-8'))
+    elif index.startswith('powershell:'):  # powershell
+        value = run("powershell.exe -ExecutionPolicy RemoteSigned -file get-ipv4.ps1", capture_output=True).stdout.decode('utf-8')[:-2]
     elif index.startswith('url:'):  # 自定义 url
         value = getattr(ip, "public_v" + ip_type)(index[4:])
     elif index.startswith('regex:'):  # 正则 regex
