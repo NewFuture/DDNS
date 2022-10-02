@@ -13,6 +13,7 @@ from logging import DEBUG, basicConfig, info, warning, error, debug
 from subprocess import check_output
 
 import sys
+import psutil
 
 from util import ip
 from util.cache import Cache
@@ -36,6 +37,18 @@ if getattr(sys, 'frozen', False):
 
 CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
 
+def get_ipv4_by_if_alias(if_alias):
+    """
+    Get the IPv4 address of the desired IF-alias.
+    """
+    # All IFs on your Windows machines.
+    addr_all = psutil.net_if_addrs()
+    
+    target_struct = addr_all[if_alias]
+    AddressesFamily = "AddressFamily.AF_INET"
+    for snicaddr in target_struct:
+        if AddressesFamily in str(snicaddr[0]):
+            return snicaddr[1]
 
 def get_ip(ip_type, index="default"):
     """
@@ -56,6 +69,9 @@ def get_ip(ip_type, index="default"):
     elif index.startswith('shell:'):  # shell
         value = str(check_output(
             index[6:], shell=True).strip().decode('utf-8'))
+    elif index.startswith('if_alias:'): # if_alias
+        if_alias=index[9:]
+        value = get_ipv4_by_if_alias(if_alias)
     elif index.startswith('url:'):  # 自定义 url
         value = getattr(ip, "public_v" + ip_type)(index[4:])
     elif index.startswith('regex:'):  # 正则 regex
