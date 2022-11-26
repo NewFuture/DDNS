@@ -58,11 +58,11 @@ def _open(url, reg):
         error(e)
 
 
-def public_v4(url="https://pv.sohu.com/cityjson?ie=utf-8", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://myip4.ipip.net", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
-def public_v6(url="https://ipv6-test.com/api/myip.php", reg=IPV6_REG):  # 公网IPV6地址
+def public_v6(url="https://myip6.ipip.net", reg=IPV6_REG):  # 公网IPV6地址
     return _open(url, reg)
 
 
