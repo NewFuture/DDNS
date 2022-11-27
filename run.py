@@ -76,7 +76,7 @@ def change_dns_record(dns, proxy_list, **kw):
             dns.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
         print('\n%s %s(%s) ==> %s [via %s]' %
-              (time.asctime(), domain, record_type, kw['ip'], proxy))
+              (asctime(), domain, record_type, kw['ip'], proxy))
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
