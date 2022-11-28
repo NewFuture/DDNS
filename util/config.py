@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter
+from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
 from json import load as loadjson, dump as dumpjson
 from logging import error
 from os import stat, environ
