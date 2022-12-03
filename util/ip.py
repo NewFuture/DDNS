@@ -26,6 +26,7 @@ def default_v4():  # 默认连接外网的ipv4
         s.close()
         return ip
     except Exception as e:
+        debug(e)
         warning('This device not have IPv4 default route, cannot get valid IPv4 address for DDNS.')
         return False
 
@@ -38,6 +39,7 @@ def default_v6():  # 默认连接外网的ipv6
         s.close()
         return ip
     except Exception as e:
+        debug(e)
         warning('This device not have IPv6 default route, cannot get valid IPv6 address for DDNS.')
         return False
 
