@@ -186,13 +186,17 @@
     },
     "cache": {
       "$id": "/properties/cache",
-      "type": "boolean",
+      "type": [
+        "string",
+        "boolean"
+      ],
       "title": "Enable Cache",
       "description": "是否启用缓存记录以避免频繁更新",
       "default": true,
       "examples": [
         true,
-        false
+        false,
+        "/path/to/cache/ddns.cache"
       ]
     }
   },
