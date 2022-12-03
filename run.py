@@ -137,7 +137,7 @@ def main():
         proxy, list) else proxy.strip('; ').replace(',', ';').split(';')
 
     cache = get_config('cache', True)
-    cache = cache is True ? path.join(gettempdir(), 'ddns.cache') : cache;
+    cache = cache is True and path.join(gettempdir(), 'ddns.cache') or cache;
     cache = Cache(cache)
     if cache is False:
         info("Cache is disabled!")
