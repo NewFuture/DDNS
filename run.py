@@ -34,6 +34,7 @@ if getattr(sys, 'frozen', False):
     environ['SSL_CERT_FILE'] = path.join(
         getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
 
+
 def get_ip(ip_type, index="default"):
     """
     get IP address
@@ -137,7 +138,7 @@ def main():
         proxy, list) else proxy.strip('; ').replace(',', ';').split(';')
 
     cache = get_config('cache', True)
-    cache = cache is True and path.join(gettempdir(), 'ddns.cache') or cache;
+    cache = cache is True and path.join(gettempdir(), 'ddns.cache') or cache
     cache = Cache(cache)
     if cache is False:
         info("Cache is disabled!")
