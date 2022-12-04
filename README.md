@@ -131,7 +131,7 @@ python run.py -c /path/to/config.json
 |  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
 | proxy  |       string       |    No    |     无      | http 代理`;`分割  | 多代理逐个尝试直到成功,`DIRECT`为直连                                                                       |
 | debug  |        bool        |    No    |   `false`   |   是否开启调试    | 运行异常时,打开调试输出,方便诊断错误                                                                        |
-| cache  |        bool        |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新                                                                                    |
+| cache  |    string\|bool    |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新,默认位置为临时目录下`ddns.cache`,<br>也可以指定一个具体文件实现自定义文件缓存位置         |
 
 #### index4 和 index6 参数说明
 
