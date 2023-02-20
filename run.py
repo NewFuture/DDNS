@@ -137,15 +137,20 @@ def main():
     proxy_list = proxy if isinstance(
         proxy, list) else proxy.strip('; ').replace(',', ';').split(';')
 
-    cache = get_config('cache', True)
-    cache = cache is True and path.join(gettempdir(), 'ddns.cache') or cache
-    cache = Cache(cache)
+    cache_config = get_config('cache', True)
+    if cache_config is False:
+        cache = cache_config
+    elif cache_config is True:
+        cache = Cache(path.join(gettempdir(), 'ddns.cache'))
+    else:
+        cache = Cache(cache_config)
+
     if cache is False:
         info("Cache is disabled!")
     elif get_config("config_modified_time") is None or get_config("config_modified_time") >= cache.time:
         warning("Cache file is out of dated.")
         cache.clear()
-    elif not cache:
+    else:
         debug("Cache is empty.")
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
