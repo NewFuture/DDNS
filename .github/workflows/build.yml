@@ -71,7 +71,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install pyinstaller${{ fromJSON('["","==3.6"]')[matrix.python-version == '2.7'] }}
+        if: matrix.python-version != '2.7'
+        run: pip install pyinstaller
 
       # Prepare build version and cert
       - name: Replace build version
@@ -84,13 +85,17 @@ jobs:
       - run: python ./run.py -h
 
       - name: Package binary
+        if: matrix.python-version != '2.7'
         run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
 
       - run: ./dist/ddns || test -e config.json
+        if: matrix.python-version != '2.7'
       - run: ./dist/ddns -h
+        if: matrix.python-version != '2.7'
 
       # Upload build result
       - uses: actions/upload-artifact@v3
+        if: matrix.python-version != '2.7'
         with:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/
