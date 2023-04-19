@@ -108,7 +108,7 @@ jobs:
       url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
-    needs: [publish-docker, publish-pypi, build-binary, build-binary-windows]
+    needs: [publish-docker, publish-pypi, build-binary]
     steps:
       - uses: actions/checkout@v3
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .release/README.md
