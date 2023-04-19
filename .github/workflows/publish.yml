@@ -106,9 +106,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: "2.7"
+          python-version: "3.x"
       - name: Install dependencies
-        run: pip install pyinstaller==3.6
+        run: pip install pyinstaller
 
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
