@@ -91,6 +91,7 @@ jobs:
       - run: ./dist/ddns || test -e config.json
         if: matrix.python-version != '2.7'
       - run: ./dist/ddns -h
+        if: matrix.python-version != '2.7'
 
       # Upload build result
       - uses: actions/upload-artifact@v3
