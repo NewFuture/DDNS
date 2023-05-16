@@ -69,9 +69,9 @@ def get_ip(ip_type, index="default"):
 def change_dns_record(dns, proxy_list, **kw):
     for proxy in proxy_list:
         if not proxy or (proxy.upper() in ['DIRECT', 'NONE']):
-            dns.PROXY = None
+            dns.Config.PROXY = None
         else:
-            dns.PROXY = proxy
+            dns.Config.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
         print('\n%s %s(%s) ==> %s [via %s]' %
               (asctime(), domain, record_type, kw['ip'], proxy))
