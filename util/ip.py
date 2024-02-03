@@ -50,7 +50,7 @@ def _open(url, reg):
     try:
         debug("open: %s", url)
         res = urlopen(
-            Request(url, headers={'User-Agent': 'curl/7.63.0-ddns'}),  timeout=60
+            Request(url, headers={'User-Agent': 'Mozilla/5.0 Python/ddns'}),  timeout=60
         ).read().decode('utf8', 'ignore')
         debug("response: %s",  res)
         return compile(reg).search(res).group()
@@ -58,11 +58,11 @@ def _open(url, reg):
         error(e)
 
 
-def public_v4(url="https://myip4.ipip.net", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://api-ipv4.ip.sb/ip ", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
-def public_v6(url="https://myip6.ipip.net", reg=IPV6_REG):  # 公网IPV6地址
+def public_v6(url="https://api-ipv6.ip.sb/ip ", reg=IPV6_REG):  # 公网IPV6地址
     return _open(url, reg)
 
 
