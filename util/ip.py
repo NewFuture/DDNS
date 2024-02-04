@@ -58,7 +58,7 @@ def _open(url, reg):
         error(e)
 
 
-def public_v4(url="https://myip4.ipip.net", reg=IPV4_REG):  # 公网IPV4地址
+def public_v4(url="https://myip.ipip.net", reg=IPV4_REG):  # 公网IPV4地址
     return _open(url, reg)
 
 
