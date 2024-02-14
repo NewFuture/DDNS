@@ -135,7 +135,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
-        'Programming Language :: Python :: 2.7',
+        # 'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ],
 
