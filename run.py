@@ -41,7 +41,7 @@ def get_ip(ip_type, index="default"):
     """
     if index is False:  # disabled
         return False
-    elif type(index) == list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
+    elif type(index) is list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
         value = None
         for i in index:
             value = get_ip(ip_type, i)
