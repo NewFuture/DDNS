@@ -14,7 +14,7 @@
 - 兼容和跨平台:
   - [x] 可执行文件(无需 python 环境)
   - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
-  - [x] python2 和 python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)
+  - [x] python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)(2.x支持python2和python3)
   - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
   - [x] Docker 支持(@NN708)
 - 域名支持:
