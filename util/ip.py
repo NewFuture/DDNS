@@ -15,7 +15,6 @@ IPV6_REG = r'((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){
 
 dns_mapping = {}
 _orig_getaddrinfo = getaddrinfo
-getaddrinfo = _custom_getaddrinfo
 
 def default_v4():  # 默认连接外网的ipv4
     s = socket(AF_INET, SOCK_DGRAM)
@@ -52,6 +51,7 @@ def _custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     else:
         return _orig_getaddrinfo(host, port, family, type, proto, flags)
 
+getaddrinfo = _custom_getaddrinfo
 
 def _open(url, reg, sock):
     try:
