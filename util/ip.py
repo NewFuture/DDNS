@@ -65,7 +65,7 @@ def _open(url, reg, sock):
         ).read().decode('utf8', 'ignore')
         print("response: %s",  res)
     except Exception as e:
-        print(e)
+        error(e)
 
 
 def public_v4(url="https://myip.ipip.net", reg=IPV4_REG):  # 公网IPV4地址
