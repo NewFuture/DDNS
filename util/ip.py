@@ -46,8 +46,10 @@ def local_v4(i=0):  # 本地ipv4地址
 
 
 def _custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    debug("host: %s", host)
     if host in dns_mapping:
         ip = dns_mapping[host]
+        debug("ip: %s", ip)
         return [(family, type, proto, '', (ip, port))]
     else:
         return _orig_getaddrinfo(host, port, family, type, proto, flags)
