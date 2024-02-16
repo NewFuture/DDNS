@@ -55,14 +55,14 @@ def _custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
         return _orig_getaddrinfo(host, port, family, type, proto, flags)
 
 
-getaddrinfo = _custom_getaddrinfo
+socket.getaddrinfo = _custom_getaddrinfo
 
 
 def _open(url, reg, sock):
     try:
         debug("open: %s", url)
         parse = urlparse(url)
-        ip = getaddrinfo(parse.hostname, None, sock)[0][4][0]
+        ip = _orig_getaddrinfo(parse.hostname, None, sock)[0][4][0]
         debug("ip address: %s", ip)
         dns_mapping[parse.hostname] = ip
         res = urlopen(
