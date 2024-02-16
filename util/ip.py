@@ -51,7 +51,9 @@ def _custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     else:
         return _orig_getaddrinfo(host, port, family, type, proto, flags)
 
+
 getaddrinfo = _custom_getaddrinfo
+
 
 def _open(url, reg, sock):
     try:
