@@ -16,6 +16,7 @@ IPV6_REG = r'((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){
 dns_mapping = {}
 _orig_getaddrinfo = getaddrinfo
 
+
 def default_v4():  # 默认连接外网的ipv4
     s = socket(AF_INET, SOCK_DGRAM)
     s.connect(("1.1.1.1", 53))
