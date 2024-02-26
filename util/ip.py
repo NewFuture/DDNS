@@ -3,7 +3,7 @@
 from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
-from logging import debug, error
+from logging import debug, warning, error
 try:
     # python2
     from urllib2 import urlopen, Request
@@ -19,19 +19,29 @@ IPV6_REG = r'((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){
 
 
 def default_v4():  # 默认连接外网的ipv4
-    s = socket(AF_INET, SOCK_DGRAM)
-    s.connect(("1.1.1.1", 53))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
+    try:
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.connect(("1.1.1.1", 53))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception as e:
+        debug(e)
+        warning('This device not have IPv4 default route, cannot get valid IPv4 address for DDNS.')
+        return False
 
 
 def default_v6():  # 默认连接外网的ipv6
-    s = socket(AF_INET6, SOCK_DGRAM)
-    s.connect(('1:1:1:1:1:1:1:1', 8))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
+    try:
+        s = socket(AF_INET6, SOCK_DGRAM)
+        s.connect(("2606:4700:4700::1111", 53))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception as e:
+        debug(e)
+        warning('This device not have IPv6 default route, cannot get valid IPv6 address for DDNS.')
+        return False
 
 
 def local_v6(i=0):  # 本地ipv6地址
