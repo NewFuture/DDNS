@@ -143,12 +143,19 @@ def request(method, path, param=None, body=None, **params):
 
 def get_zone_id(domain):
     """
-    切割域名获取主域名和对应ID https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134402.html
+    切割域名获取主域名和对应ID https://support.huaweicloud.com/api-dns/dns_api_62003.html
+    优先匹配级数最长的主域名
     """
-    zones = request('GET', '/v2/zones', limit=500)['zones']
-    domain += '.'
-    zone = next((z for z in zones if domain.endswith(z.get('name'))), None)
-    zoneid = zone and zone['id']
+    zoneid = None
+    domain_slice = domain.split('.')
+    index = len(domain_slice)
+    root_domain = '.'.join(domain_slice[-2:])
+    zones = request('GET', '/v2/zones', limit=500, name=root_domain)['zones']
+    while (not zoneid) and (index >= 2):
+        domain = '.'.join(domain_slice[-index:]) + '.'
+        zone = next((z for z in zones if domain == (z.get('name'))), None)
+        zoneid = zone and zone['id']
+        index -= 1
     return zoneid
 
 
@@ -156,7 +163,7 @@ def get_records(zoneid, **conditions):
     """
         获取记录ID
         返回满足条件的所有记录[]
-        https://support.huaweicloud.com/api-dns/zh-cn_topic_0037129970.html
+        https://support.huaweicloud.com/api-dns/dns_api_64004.html
         TODO 大于500翻页
     """
     cache_key = zoneid + "_" + \
@@ -187,13 +194,13 @@ def get_records(zoneid, **conditions):
     return records
 
 
-def update_record(domain, value, record_type='A', name=None):
+def update_record(domain, value, record_type='A'):
     """
         更新记录
         update
-        https://support.huaweicloud.com/api-dns/dns_api_64006.html
+        https://support.huaweicloud.com/api-dns/UpdateRecordSet.html
         add
-        https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134404.html
+        https://support.huaweicloud.com/api-dns/dns_api_64001.html
     """
     info(">>>>>%s(%s)", domain, record_type)
     zoneid = get_zone_id(domain)
@@ -207,20 +214,27 @@ def update_record(domain, value, record_type='A', name=None):
         for (rid, record) in records.items():
             if record['records'] != value:
                 """
+                PUT https://{endpoint}/v2/zones/{zone_id}/recordsets/{recordset_id}
+
                 {
-                    "description": "This is an example record set.",
-                    "ttl": 3600,
-                    "records": [
-                        "192.168.10.1",
-                        "192.168.10.2"
-                    ]
+                    "name" : "www.example.com.",
+                    "description" : "This is an example record set.",
+                    "type" : "A",
+                    "ttl" : 3600,
+                    "records" : [ "192.168.10.1", "192.168.10.2" ]
                 }
                 """
                 body = {
+                    "name": domain,
+                    "description": "Managed by DDNS.",
+                    "type": record_type,
                     "records": [
                         value
                     ]
                 }
+                # 如果TTL不为空，则添加到字典中
+                if Config.TTL is not None:
+                    body['ttl'] = Config.TTL
                 res = request('PUT', '/v2/zones/' + zoneid + '/recordsets/' + record['id'],
                               body=str(jsonencode(body)))
                 if res:
@@ -231,14 +245,17 @@ def update_record(domain, value, record_type='A', name=None):
             else:
                 result[rid] = domain
     else:  # create
-        print(domain)
         body = {
             "name": domain,
+            "description": "Managed by DDNS.",
             "type": record_type,
             "records": [
                 value
             ]
         }
+        # 如果TTL不为空，则添加到字典中
+        if Config.TTL is not None:
+            body['ttl'] = Config.TTL
         res = request('POST', '/v2/zones/' + zoneid + '/recordsets',
                       body=str(jsonencode(body)))
         if res:
