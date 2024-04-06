@@ -104,6 +104,7 @@ def update_ip(ip_type, cache, dns, proxy_list):
     record_type = (ip_type == '4') and 'A' or 'AAAA'
     update_fail = False  # https://github.com/NewFuture/DDNS/issues/16
     for domain in domains:
+        domain = domain.lower()  # https://github.com/NewFuture/DDNS/issues/431
         if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type):
             update_fail = True
     if cache is not False:
