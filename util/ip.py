@@ -50,7 +50,7 @@ def _open(url, reg):
     try:
         debug("open: %s", url)
         res = urlopen(
-            Request(url, headers={'User-Agent': 'curl/7.63.0-ddns'}),  timeout=60
+            Request(url, headers={'User-Agent': 'Mozilla/5.0 ddns'}),  timeout=60
         ).read().decode('utf8', 'ignore')
         debug("response: %s",  res)
         return compile(reg).search(res).group()
