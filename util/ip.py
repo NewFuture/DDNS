@@ -74,7 +74,7 @@ def _ip_regex_match(parrent_regex, match_regex):
     if os_name == 'nt':  # windows:
         cmd = 'ipconfig'
     else:
-        cmd = 'ifconfig 2>/dev/null || ip address'
+        cmd = 'ip address || ifconfig 2>/dev/null'
 
     for s in popen(cmd).readlines():
         addr = ip_pattern.search(s)
