@@ -78,7 +78,23 @@
       --network host \
       newfuture/ddns
     ```
+  - 使用配置文件夹：
+    ```
+    docker run -d \
+      -v /path/to/config/:/config/ \
+      --network host \
+      newfuture/ddns
+    ```
 
+- #### Docker Compose (需要安装 Docker, docker-compose)
+    ```
+    mkdir /tmp/ddns
+    cd /tmp/ddns
+    wget https://github.com/NewFuture/DDNS/raw/refs/heads/master/docker-compose.yaml
+    vi / vim / nano docker-compose.yaml
+    docker compose up -d
+    docker compose exec -ti command_run -h
+    ```
 ### ② 快速配置
 
 1. 申请 api `token`,填写到对应的`id`和`token`字段:
