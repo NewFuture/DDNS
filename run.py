@@ -39,32 +39,38 @@ def get_ip(ip_type, index="default"):
     """
     get IP address
     """
-    if index is False:  # disabled
-        return False
-    elif type(index) is list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
-        value = None
-        for i in index:
-            value = get_ip(ip_type, i)
-            if value:
-                break
-    elif str(index).isdigit():  # 数字 local eth
-        value = getattr(ip, "local_v" + ip_type)(index)
-    elif index.startswith('cmd:'):  # cmd
-        value = str(check_output(index[4:]).strip().decode('utf-8'))
-    elif index.startswith('shell:'):  # shell
-        value = str(check_output(
-            index[6:], shell=True).strip().decode('utf-8'))
-    elif index.startswith('url:'):  # 自定义 url
-        value = getattr(ip, "public_v" + ip_type)(index[4:])
-    elif index.startswith('regex:'):  # 正则 regex
-        value = getattr(ip, "regex_v" + ip_type)(index[6:])
-    elif any((c in index) for c in '*.:'):  # 兼容 regex
-        value = getattr(ip, "regex_v" + ip_type)(index)
-    else:
-        value = getattr(ip, index + "_v" + ip_type)()
-
-    return value
-
+    # CN: 捕获异常
+    # EN: Catch exceptions
+    value = None
+    try:
+        debug(f"get_ip({ip_type}, {index})")
+        if index is False:  # disabled
+            return False
+        elif type(index) is list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
+            for i in index:
+                value = get_ip(ip_type, i)
+                if value:
+                    break
+        elif str(index).isdigit():  # 数字 local eth
+            value = getattr(ip, "local_v" + ip_type)(index)
+        elif index.startswith('cmd:'):  # cmd
+            value = str(check_output(index[4:]).strip().decode('utf-8'))
+        elif index.startswith('shell:'):  # shell
+            value = str(check_output(
+                index[6:], shell=True).strip().decode('utf-8'))
+        elif index.startswith('url:'):  # 自定义 url
+            value = getattr(ip, "public_v" + ip_type)(index[4:])
+        elif index.startswith('regex:'):  # 正则 regex
+            value = getattr(ip, "regex_v" + ip_type)(index[6:])
+        elif any((c in index) for c in '*.:'):  # 兼容 regex
+            value = getattr(ip, "regex_v" + ip_type)(index)
+        else:
+            value = getattr(ip, index + "_v" + ip_type)()
+        return value
+    except Exception as e:
+        error(e)
+    finally:
+        return value
 
 def change_dns_record(dns, proxy_list, **kw):
     for proxy in proxy_list:
