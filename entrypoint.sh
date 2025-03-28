@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
-set -x
-
 # CN: 该脚本用于在容器启动时执行 ddns 命令, 并创建定时任务
 # EN: This script is used to execute the ddns command when the container starts and create a scheduled task
 
@@ -34,7 +32,6 @@ function  fun_run_and_crond()
         fi
     cat >/tmp/run.sh << 'EOF'
 #!/usr/bin/env sh
-set -x
 # CN: 遍历 /config 文件夹下的json文件,依次执行 /ddns -c /config/xxx.json
 # EN: Traverse the json file under the /config folder, and execute /ddns -c /config/xxx.json
 for file in /config/*.json
