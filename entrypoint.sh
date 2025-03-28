@@ -21,7 +21,7 @@ function  fun_run_and_crond()
     # EN: If the /config folder does not exist, execute the command
     if [ ! -d /config ]; then
         exec /ddns $@
-        echo "*/1 * * * *  /ddns $@" > /etc/crontabs/root
+        echo "*/5 * * * *  /ddns $@" > /etc/crontabs/root
         exec crond -f
     fi
     ### CONF FILE OR ENV ###
@@ -45,7 +45,7 @@ done
 EOF
         chmod +x /tmp/run.sh
         /tmp/run.sh
-        echo "*/1 * * * *   /tmp/run.sh" > /etc/crontabs/root
+        echo "*/5 * * * *   /tmp/run.sh" > /etc/crontabs/root
         exec crond -f
     fi
     ### CONF PATH        ###
