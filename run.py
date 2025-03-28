@@ -66,7 +66,6 @@ def get_ip(ip_type, index="default"):
             value = getattr(ip, "regex_v" + ip_type)(index)
         else:
             value = getattr(ip, index + "_v" + ip_type)()
-        return value
     except Exception as e:
         error(e)
     finally:
