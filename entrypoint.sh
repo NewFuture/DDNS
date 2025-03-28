@@ -8,7 +8,6 @@ set -x
 # EN: Run the `ddns` command, execute the `ddns` command when the container starts, and create a cron job
 function  fun_run_and_crond()
 {
-    
     printenv > /etc/environment
     # CN: 如果传入参数包含 `-h` 或 `--help`, 则执行 `ddns -h` 命令
     # EN: If the parameter contains `-h` or `--help`, execute the `ddns -h` command
@@ -30,9 +29,9 @@ function  fun_run_and_crond()
     # CN: 存在 /config 文件夹, 且文件夹下有json文件, 则创建shell脚本
     # EN: If the /config folder exists, and there are json files under the folder, create a shell script
     if [ -d /config ]; then
-    if [ ! "$(ls -A /config/*.json 2>/dev/null)" ]; then
-        ecec /ddns  -c /config/config.json $@
-    fi
+        if [ ! "$(ls -A /config/*.json 2>/dev/null)" ]; then
+            ecec /ddns  -c /config/config.json $@
+        fi
     cat >/tmp/run.sh << 'EOF'
 #!/usr/bin/env sh
 set -x
