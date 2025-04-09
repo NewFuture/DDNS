@@ -135,4 +135,4 @@ jobs:
         run: |
           gh release view ${{ github.ref_name }} --json body -q '.body' > .release/notes.md
           cat .release/README.md >> .release/notes.md
-          gh release edit ${{ github.ref_name }} --notes-file .release/notes.md --prerelease=false
+          gh release edit ${{ github.ref_name }} --notes-file .release/notes.md --latest --prerelease=false
