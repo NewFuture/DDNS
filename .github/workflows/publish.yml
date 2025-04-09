@@ -17,26 +17,26 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
-      - uses: docker/login-action@v2
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/metadata-action@v4
+      - uses: docker/metadata-action@v5
         id: meta
         with:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64,linux/arm,linux/arm64
@@ -51,9 +51,9 @@ jobs:
       name: publish
       url: https://pypi.org/project/ddns/
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
@@ -74,8 +74,8 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
@@ -94,7 +94,7 @@ jobs:
 
       - run: mv ./dist/ddns ./dist/ddns-osx
         if: runner.os == 'macOS'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}
           path: dist/
@@ -110,12 +110,12 @@ jobs:
       contents: write
     needs: [publish-docker, publish-pypi, build-binary]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .release/README.md
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4
         with:
           path: dist
-      - uses: softprops/action-gh-release@master
+      - uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
