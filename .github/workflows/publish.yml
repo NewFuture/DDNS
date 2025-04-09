@@ -70,7 +70,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          print_hash: true
+          print-hash: true
 
   build-binary:
     strategy:
@@ -120,15 +120,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-      - uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          body_path: .release/README.md
-          fail_on_unmatched_files: true
-          append_body: true
-          files: |
-            .release/*.sh
-            .release/*.bat
-            dist/*/*
+
+      - name: Upload files
+        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat dist/*/* --clobber
+
+      - name: Generate release notes and append README.md
+        run: |
+          gh release view ${{ github.ref_name }} --json body -q '.body' > .release/notes.md
+          cat .release/README.md >> .release/notes.md
+          gh release edit ${{ github.ref_name }} --notes-file .release/notes.md
