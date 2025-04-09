@@ -62,14 +62,13 @@ def get_ip(ip_type, index="default"):
             value = getattr(ip, "public_v" + ip_type)(index[4:])
         elif index.startswith('regex:'):  # 正则 regex
             value = getattr(ip, "regex_v" + ip_type)(index[6:])
-        elif any((c in index) for c in '*.:'):  # 兼容 regex
-            value = getattr(ip, "regex_v" + ip_type)(index)
         else:
             value = getattr(ip, index + "_v" + ip_type)()
     except Exception as e:
         error(e)
     finally:
         return value
+
 
 def change_dns_record(dns, proxy_list, **kw):
     for proxy in proxy_list:
