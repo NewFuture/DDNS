@@ -69,7 +69,7 @@ def __load_config(path="config.json", skip_auto_generation=False):
     """
     加载配置
     """
-    global __config, config_modified_time
+    global __config
     try:
         with open(path) as configfile:
             __config = loadjson(configfile)
