@@ -46,6 +46,7 @@ jobs:
           context: .
           platforms: ${{ env.arch }}
           push: true
+          DOCKER_BUILD_RECORD_UPLOAD: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -55,6 +56,9 @@ jobs:
     environment:
       name: publish
       url: https://pypi.org/project/ddns/
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -69,7 +73,6 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
           print-hash: true
 
   build-binary:
