@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 5
     environment:
       name: publish
-      # url: https://hub.docker.com/r/newfuture/ddns
+      url: https://hub.docker.com/r/newfuture/ddns
     permissions:
       packages: write
     env:
@@ -126,8 +126,12 @@ jobs:
 
       - name: Upload files
         run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat dist/*/* --clobber
-
+        env:
+          GH_TOKEN: ${{ github.token }}
+          
       - name: Generate release notes and append README.md
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release view ${{ github.ref_name }} --json body -q '.body' > .release/notes.md
           cat .release/README.md >> .release/notes.md
