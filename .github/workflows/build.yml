@@ -129,6 +129,7 @@ jobs:
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           print-hash: true
 
   preview-docker:
