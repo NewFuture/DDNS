@@ -120,6 +120,8 @@ jobs:
     environment:
       name: preview
       url: https://test.pypi.org/project/ddns/
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -127,8 +129,6 @@ jobs:
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
           print-hash: true
 
   preview-docker:
