@@ -16,10 +16,16 @@ jobs:
       url: https://hub.docker.com/r/newfuture/ddns
     permissions:
       packages: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: false
+      arch: linux/amd64,linux/arm,linux/arm64
+      # arch: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ env.arch }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -36,10 +42,10 @@ jobs:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
-      - uses: docker/build-push-action@v4
+      - uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm,linux/arm64
+          platforms: ${{ env.arch }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -50,6 +56,9 @@ jobs:
     environment:
       name: publish
       url: https://pypi.org/project/ddns/
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -64,8 +73,7 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          print_hash: true
+          print-hash: true
 
   build-binary:
     strategy:
@@ -115,15 +123,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-      - uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          body_path: .release/README.md
-          fail_on_unmatched_files: true
-          append_body: true
-          files: |
-            .release/*.sh
-            .release/*.bat
-            dist/*/*
+
+      - name: Upload files
+        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat dist/*/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          
+      - name: Generate release notes and append README.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ${{ github.ref_name }} --json body -q '.body' > .release/notes.md
+          cat .release/README.md >> .release/notes.md
+          gh release edit ${{ github.ref_name }} --notes-file .release/notes.md --latest --prerelease=false
