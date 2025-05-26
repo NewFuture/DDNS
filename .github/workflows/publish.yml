@@ -111,7 +111,7 @@ jobs:
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - run: mv ./dist/ddns ./dist/ddns-${{ toLower(runner.os) }}-${{ toLower(runner.arch) }}
+      - run: mv ./dist/ddns ./dist/ddns-${{ runner.os | lower }}-${{ runner.arch | lower }}
         shell: bash
 
       - uses: actions/upload-artifact@v4
