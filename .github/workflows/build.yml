@@ -134,15 +134,8 @@ jobs:
       - name: Package binary
         run: ./.build/nuitka.cmd
 
-      - name: Normalize file name
-        run: |
-          if [ "${{ runner.arch }}" = "X64" ]; then
-            echo "DDNS=ddns-${{ runner.os }}-x86_64" >> $GITHUB_ENV
-          else
-            echo "DDNS=ddns-${{ runner.os }}-${{ runner.arch }}" >> $GITHUB_ENV
-          fi
-      - run: ./dist/$DDNS || test -e config.json
-      - run: ./dist/$DDNS -h
+      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -h
 
       # Upload build result
       - uses: actions/upload-artifact@v4

@@ -19,8 +19,6 @@ from util.cache import Cache
 from util.config import init_config, get_config
 
 
-# nuitka-project: --output-filename=ddns-{OS}-{Arch}
-#
 # nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
 #   nuitka-project: --product-version=${BUILD_VERSION}
 # nuitka-project-else:
