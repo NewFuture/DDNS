@@ -16,6 +16,7 @@ nuitka --standalone --onefile \
        --copyright="© 2016-2025" \
        --windows-icon-from-ico="favor.ico" \
        --linux-icon="favor.ico" \
-       --macos-app-icon="favor.ico" \
+       --macos-app-icon="icon.png" \
        --windows-console-mode=attach \
+       --assume-yes-for-downloads \
        run.py

@@ -101,15 +101,14 @@ jobs:
       # fail-fast: false
       matrix:
         os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
-        python-version: ["3.x"]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.x
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.x
       - name: Install dependencies
         run: pip install nuitka
 
@@ -141,7 +140,7 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.python-version }}
+          name: ${{ runner.os }}-${{ runner.arch }}
           path: dist/
           retention-days: 7
 
