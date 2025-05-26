@@ -23,7 +23,7 @@ from util.config import init_config, get_config
 #
 # nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
 #   nuitka-project: --product-version=${BUILD_VERSION}
-# nuitka-project-else: 
+# nuitka-project-else:
 #   nuitka-project: --product-version=0.0.0
 __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
 __description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
@@ -53,7 +53,7 @@ def get_ip(ip_type, index="default"):
         debug(f"get_ip({ip_type}, {index})")
         if index is False:  # disabled
             return False
-        elif type(index) is list:  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
+        elif isinstance(index, list):  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
             for i in index:
                 value = get_ip(ip_type, i)
                 if value:
@@ -73,8 +73,7 @@ def get_ip(ip_type, index="default"):
             value = getattr(ip, index + "_v" + ip_type)()
     except Exception as e:
         error(e)
-    finally:
-        return value
+    return value
 
 
 def change_dns_record(dns, proxy_list, **kw):

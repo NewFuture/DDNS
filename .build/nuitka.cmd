@@ -12,10 +12,10 @@ nuitka --standalone --onefile \
        --macos-app-name="DDNS" \
        --product-name=DDNS \
        --file-description="DDNS Client 自动更新域名解析到本机IP" \
-       --windows-console-mode=attach \
        --company-name="New Future" \
        --copyright="© 2016-2025" \
-       --windows-icon-from-ico=".build/icon.png" \
-       --linux-icon=".build/icon.png" \
-       --macos-app-icon=".build/icon.png" \
+       --windows-icon-from-ico="favor.ico" \
+       --linux-icon="favor.ico" \
+       --macos-app-icon="favor.ico" \
+       --windows-console-mode=attach \
        run.py
