@@ -15,8 +15,8 @@ nuitka --standalone --onefile \
        --company-name="New Future" \
        --copyright="© 2016-2025" \
        --windows-icon-from-ico="favor.ico" \
-       --linux-icon="favor.ico" \
-       --macos-app-icon="icon.png" \
+       --linux-icon=".build/icon.png" \
+       --macos-app-icon=".build/icon.png" \
        --windows-console-mode=attach \
        --assume-yes-for-downloads \
        run.py
