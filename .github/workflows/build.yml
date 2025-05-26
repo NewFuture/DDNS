@@ -96,6 +96,7 @@ jobs:
           path: dist/
           retention-days: 7
 
+# sudo apt install -y patchelf ccache
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 5
