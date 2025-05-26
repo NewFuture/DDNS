@@ -1,6 +1,5 @@
 nuitka --standalone --onefile \
-       --product-name=DDNS \
-       --file-description="DDNS Client 自动更新域名解析到本机IP" \
+       --output-dir=./dist \
        --remove-output \
        --include-module=dns.dnspod \
        --include-module=dns.alidns \
@@ -10,8 +9,13 @@ nuitka --standalone --onefile \
        --include-module=dns.he \
        --include-module=dns.huaweidns \
        --include-module=dns.callback \
+       --macos-app-name="DDNS" \
+       --product-name=DDNS \
+       --file-description="DDNS Client 自动更新域名解析到本机IP" \
        --windows-console-mode=attach \
-       --copyright="2016-2025, New Future" \
+       --company-name="New Future" \
+       --copyright="© 2016-2025" \
        --windows-icon-from-ico=".build/icon.png" \
+       --linux-icon=".build/icon.png" \
        --macos-app-icon=".build/icon.png" \
        run.py

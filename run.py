@@ -18,12 +18,8 @@ from util import ip
 from util.cache import Cache
 from util.config import init_config, get_config
 
-# nuitka-project-if: {OS} == "Windows":
-#    nuitka-project: --output-filename=ddns.exe
-# nuitka-project-else:
-#    nuitka-project: --output-filename=ddns
-# nuitka-project-if: {OS} == "Darwin":
-#    nuitka-project: --output-filename=ddns.app
+
+# nuitka-project: --output-filename=ddns-{OS}-{Arch}
 #
 # nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
 #   nuitka-project: --product-version=${BUILD_VERSION}
