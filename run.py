@@ -21,8 +21,6 @@ from util.config import init_config, get_config
 
 # nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
 #   nuitka-project: --product-version=${BUILD_VERSION}
-# nuitka-project-else:
-#   nuitka-project: --product-version=0.0.0
 __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
 __description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
 __doc__ = """
