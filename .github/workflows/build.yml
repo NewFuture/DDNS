@@ -120,7 +120,7 @@ jobs:
       - name: setup on Linux
         if: runner.os == 'Linux'
         run: |
-          apt-get update && apt install -y patchelf ccache
+          sudo apt-get update && sudo apt install -y patchelf ccache
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
       
       - name: setup on macOS
