@@ -5,8 +5,7 @@ DDNS
 @author: New Future
 @modified: rufengsuixing
 """
-# nuitka-project-if: {OS} == "Linux":
-#   nuitka-project: --static-libpython=yes
+
 # nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
 #   nuitka-project: --product-version=${BUILD_VERSION}
 # nuitka-project-else:
