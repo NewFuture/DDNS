@@ -1,0 +1,70 @@
+# This is a sample docker-compose file for the ddns service
+# It includes different ways to configure the service:
+# 1. Using a config file
+# 2. Using a config directory
+# 3. Using environment variables
+# 4. Using an env file
+# 5. Using command line arguments
+# 6. Using a config file with a custom path
+
+
+services:
+    config_file:
+        image: newfuture/ddns
+        network_mode: host
+        environment:
+            - TZ=Asia/Shanghai
+        volumes:
+            - /path/to/config.json:/config.json
+        restart: unless-stopped
+
+    config_dir:
+        image: newfuture/ddns
+        network_mode: host
+        environment:
+            - TZ=Asia/Shanghai
+        volumes:
+            - /path/to/config/:/config/
+        restart: unless-stopped
+
+    environment_run:
+        image: newfuture/ddns
+        network_mode: host
+        environment:
+            - TZ=Asia/Shanghai
+            - DDNS_DNS=dnspod
+            - DDNS_ID=12345
+            - DDNS_TOKEN=mytokenkey
+            - DDNS_IPV4=ddns.newfuture.cc
+            - DDNS_IPV6=ddns.newfuture.cc
+        restart: unless-stopped
+
+    environment_file:
+        image: newfuture/ddns
+        network_mode: host
+        env_file:
+            - /path/to/envfile.env
+        environment:
+            - TZ=${TZ}
+        restart: unless-stopped
+
+    command_run:
+        image: newfuture/ddns
+        network_mode: host
+        command: >
+            --dns=dnspod 
+            --id=12345
+            --token=mytokenkey
+            --ipv4=ddns.newfuture.cc 
+            --ipv6=ddns.newfuture.cc
+        restart: unless-stopped
+
+    config_file_custom_path:
+        image: newfuture/ddns
+        network_mode: host
+        environment:
+            - TZ=Asia/Shanghai
+        volumes:
+            - /path/to/config.json:/custom/path/config.json
+        command: --config=/custom/path/config.json
+        restart: unless-stopped
