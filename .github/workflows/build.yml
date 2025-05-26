@@ -119,21 +119,29 @@ jobs:
         shell: bash
       - name: Copy cert on ubuntu
         if: runner.os == 'Linux'
-        run: apt-get update && apt install -y patchelf ccache
-             cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+        run: |
+          apt-get update && apt install -y patchelf ccache
+          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
       - run: python ./run.py -h
 
       - name: Package binary
         run: ./.build/nuitka.cmd
 
-      - run: ./dist/ddns || test -e config.json
-      - run: ./dist/ddns -h
+      - name: Normalize file name
+        run: |
+          if [ "${{ runner.arch }}" = "X64" ]; then
+            echo "DDNS=ddns-${{ runner.os }}-x86_64" >> $GITHUB_ENV
+          else
+            echo "DDNS=ddns-${{ runner.os }}-${{ runner.arch }}" >> $GITHUB_ENV
+          fi
+      - run: ./dist/$DDNS || test -e config.json
+      - run: ./dist/$DDNS -h
 
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-${{ matrix.python-version }}
+          name: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.python-version }}
           path: dist/
           retention-days: 7
 
