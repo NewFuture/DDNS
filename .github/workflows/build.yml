@@ -92,7 +92,55 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-py${{ matrix.python-version }}
+          name: PyInstaller-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/
+          retention-days: 7
+
+  nuitka:
+    strategy:
+      # fail-fast: false
+      matrix:
+        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: pip install nuitka
+
+      # Prepare build version and cert
+      - name: Replace build version
+        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
+        shell: bash
+
+      - name: setup on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt install -y patchelf ccache
+          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+      
+      - name: setup on macOS
+        if: runner.os == 'macOS'
+        run: |
+          python3 -m pip install imageio
+
+
+      - run: python ./run.py -h
+
+      - name: Package binary
+        run: ./.build/nuitka.cmd
+
+      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -h
+
+      # Upload build result
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ddns-${{ runner.os }}-${{ runner.arch }}
           path: dist/
           retention-days: 7
 

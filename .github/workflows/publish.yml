@@ -77,31 +77,44 @@ jobs:
 
   build-binary:
     strategy:
+      # fail-fast: false
       matrix:
-        os: [macos, ubuntu, windows]
-    runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 8
+        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
-        run: pip install pyinstaller
+        run: pip install nuitka
 
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
-      - name: Copy cert on ubuntu
-        if: runner.os == 'Linux'
-        run: cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
-      - run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
+      - name: setup on Linux
+        if: runner.os == 'Linux'
+        run: |
+          apt-get update && apt install -y patchelf ccache
+          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+      
+      - name: setup on macOS
+        if: runner.os == 'macOS'
+        run: |
+          python3 -m pip install imageio
+
+      - name: Package binary
+        run: ./.build/nuitka.cmd
+
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - run: mv ./dist/ddns ./dist/ddns-osx
-        if: runner.os == 'macOS'
+      - name: Move and rename binary with lowercase OS and arch
+        run: mv ./dist/ddns "./dist/ddns-$(echo ${{ runner.os }}-${{ runner.arch }} | tr '[:upper:]' '[:lower:]')"
+        shell: bash
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}
