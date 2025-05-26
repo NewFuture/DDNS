@@ -111,7 +111,8 @@ jobs:
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - run: mv ./dist/ddns ./dist/ddns-${{ runner.os | lower }}-${{ runner.arch | lower }}
+      - name: Move and rename binary with lowercase OS and arch
+        run: mv ./dist/ddns "./dist/ddns-$(echo ${{ runner.os }}-${{ runner.arch }} | tr '[:upper:]' '[:lower:]')"
         shell: bash
 
       - uses: actions/upload-artifact@v4
