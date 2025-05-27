@@ -98,7 +98,7 @@ jobs:
 
   nuitka:
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
         os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -148,6 +148,7 @@ jobs:
   docker:
     if: github.event_name == 'pull_request'
     strategy:
+      fail-fast: false
       matrix:
         arch: [linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x]
     runs-on: ubuntu-latest
