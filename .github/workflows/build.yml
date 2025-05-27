@@ -17,7 +17,6 @@ permissions:
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -61,15 +60,14 @@ jobs:
       # fail-fast: false
       matrix:
         os: [windows, macos, ubuntu]
-        python-version: ["3.x"]
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python "3.x"
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.x"
       - name: Install dependencies
         run: pip install pyinstaller
 
@@ -92,15 +90,29 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: PyInstaller-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: PyInstaller-${{ matrix.os }}
           path: dist/
-          retention-days: 7
+          retention-days: 3
 
   nuitka:
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
-        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: x86
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -109,28 +121,30 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: pip install nuitka
+        run: python3 -m pip install -U nuitka
 
       # Prepare build version and cert
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
-
-      - name: setup on Linux
+        
+      - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update && sudo apt install -y patchelf ccache
+          sudo apt-get update
+          sudo apt-get install -y patchelf
           echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
-      
-      - name: setup on macOS
+
+      - name: Set up on macOS
         if: runner.os == 'macOS'
         run: |
           python3 -m pip install imageio
           echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
 
-      - run: python ./run.py -h
+      - run: python3 ./run.py -h
 
       - name: Package binary
         run: ./.build/nuitka.cmd
@@ -141,22 +155,32 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: ddns-${{ runner.os }}-${{ runner.arch }}
+          name: ddns-${{ runner.os }}-${{ matrix.arch }}
           path: dist/
           retention-days: 7
 
   docker:
+    if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.platforms }}
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           file: .build/Dockerfile
+          platforms: ${{ matrix.platforms }}
           tags: ddns:test
+          
       - name: test help command
         run: docker run --rm ddns:test -h
       - name: test config generation
@@ -185,21 +209,20 @@ jobs:
   preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    timeout-minutes: 12
-    needs: [docker]
+    timeout-minutes: 120
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
-    env:
-      arch: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     permissions:
       packages: write
+    env:
+      platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ env.arch }}
+          platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -220,7 +243,12 @@ jobs:
         with:
           context: .
           file: .build/Dockerfile
-          platforms: ${{ env.arch }}
+          platforms: ${{ env.platforms }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: |
+           type=image,name=target,\
+           annotation-index.org.opencontainers.image.description=DDNS alpine container,\
+           annotation-index.org.opencontainers.image.source=https://github.com/NewFuture/DDNS,\
+           annotation-index.org.opencontainers.image.licenses=MIT
