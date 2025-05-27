@@ -121,7 +121,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update && sudo apt install -y patchelf ccache
-          echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
+          echo " --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
       
       - name: setup on macOS
@@ -148,7 +148,7 @@ jobs:
   docker:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -192,7 +192,7 @@ jobs:
   preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    timeout-minutes: 65
+    timeout-minutes: 120
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
