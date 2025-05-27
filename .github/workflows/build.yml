@@ -109,8 +109,6 @@ jobs:
             arch: arm64
           - os: ubuntu-latest
             arch: x64
-          - os: ubuntu-latest
-            arch: x86
           - os: ubuntu-24.04-arm
             arch: arm64
           - os: macos-13
@@ -127,7 +125,7 @@ jobs:
           python-version: 3.x
           architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: python3 -m pip install nuitka
+        run: python3 -m pip install -U nuitka
 
       # Prepare build version and cert
       - name: Replace build version
@@ -137,14 +135,8 @@ jobs:
       - name: setup on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y patchelf ccache
-          if [ "${{ matrix.arch }}" = "x86" ]; then
-            sudo apt-get install -y gcc-multilib g++-multilib libc6:i386 libstdc++6:i386
-            export CFLAGS="-m32"
-            export LDFLAGS="-m32"
-          fi
+          sudo apt-get install -y patchelf
           echo " --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
