@@ -179,7 +179,8 @@ jobs:
           load: true
           file: .build/Dockerfile
           platforms: ${{ matrix.platforms }}
-
+          tags: ddns:test
+          
       - name: test help command
         run: docker run --rm ddns:test -h
       - name: test config generation
