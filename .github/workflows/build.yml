@@ -121,13 +121,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update && sudo apt install -y patchelf ccache
+          echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
       
       - name: setup on macOS
         if: runner.os == 'macOS'
         run: |
           python3 -m pip install imageio
-
+          echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
 
       - run: python ./run.py -h
 
@@ -154,6 +155,7 @@ jobs:
         with:
           context: .
           load: true
+          file: .build/Dockerfile
           tags: ddns:test
       - name: test help command
         run: docker run --rm ddns:test -h
@@ -189,8 +191,7 @@ jobs:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
     env:
-      arch: linux/amd64,linux/arm,linux/arm64
-      # arch: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
+      arch: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     permissions:
       packages: write
     steps:
@@ -218,6 +219,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          file: .build/Dockerfile
           platforms: ${{ env.arch }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
