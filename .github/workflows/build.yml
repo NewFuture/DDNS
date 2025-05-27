@@ -146,8 +146,12 @@ jobs:
           retention-days: 7
 
   docker:
+    if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        arch: [linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -156,11 +160,22 @@ jobs:
           context: .
           load: true
           file: .build/Dockerfile
+          platforms: ${{ matrix.arch }}
           tags: ddns:test
       - name: test help command
         run: docker run --rm ddns:test -h
       - name: test config generation
         run: docker run --rm -v "$(pwd)":/config/ ddns:test -c /config/config.json || test -e config.json
+      
+      # copy /bin/ddns from the container to the host
+      - name: copy binary
+        run: docker cp "$(docker create ddns:test)":/bin/ddns ./dist/ddns
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-bin-${{ matrix.arch }}
+          path: dist/
+          retention-days: 7
 
   preview-pypi:
     runs-on: ubuntu-latest
@@ -185,8 +200,7 @@ jobs:
   preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    timeout-minutes: 12
-    needs: [docker]
+    timeout-minutes: 15
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
