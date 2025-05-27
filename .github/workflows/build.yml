@@ -61,15 +61,14 @@ jobs:
       # fail-fast: false
       matrix:
         os: [windows, macos, ubuntu]
-        python-version: ["3.x"]
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python "3.x"
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.x"
       - name: Install dependencies
         run: pip install pyinstaller
 
@@ -92,9 +91,9 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: PyInstaller-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: PyInstaller-${{ matrix.os }}
           path: dist/
-          retention-days: 7
+          retention-days: 3
 
   nuitka:
     strategy:
@@ -152,7 +151,7 @@ jobs:
       matrix:
         arch: [386,amd64,arm/v6,arm/v7,arm64/v8,ppc64le,riscv64,s390x]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
