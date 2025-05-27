@@ -129,13 +129,8 @@ jobs:
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
-
-      - name : setup on Windows
-        if: runner.os == 'Windows'
-        run: |
-          Set-MpPreference -DisableRealtimeMonitoring $true
         
-      - name: setup on Linux
+      - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -143,7 +138,7 @@ jobs:
           echo " --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
-      - name: setup on macOS
+      - name: Set up on macOS
         if: runner.os == 'macOS'
         run: |
           python3 -m pip install imageio
