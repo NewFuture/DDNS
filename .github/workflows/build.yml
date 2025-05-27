@@ -163,22 +163,24 @@ jobs:
 
   docker:
     if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        platform: ${{ fromJson('["' + replace(env.docker-platforms, ',', '","') + '"]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ env.docker-platforms }}
+          platforms: ${{ matrix.platform }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
+          load: true
           file: .build/Dockerfile
-          platforms: ${{ env.docker-platforms }}
-          push: false
-          tags: ddns:test
+          platforms: ${{ matrix.platform }}
 
       - name: test help command
         run: docker run --rm ddns:test -h
