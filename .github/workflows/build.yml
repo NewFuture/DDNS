@@ -170,12 +170,12 @@ jobs:
       
       # copy /bin/ddns from the container to the host
       - name: copy binary
-        run: docker cp "$(docker create ddns:test)":/bin/ddns ./dist/ddns
+        run: docker cp "$(docker create ddns:test)":/bin/ddns ./ddns
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: docker-bin-${{ matrix.arch }}
-          path: dist/
+          path: ddns
           retention-days: 7
 
   preview-pypi:

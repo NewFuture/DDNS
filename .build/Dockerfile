@@ -1,7 +1,7 @@
 FROM alpine:latest
 WORKDIR /app
 COPY . .
-RUN apk add --no-cache python3 py3-pip python3-dev patchelf build-base libffi-dev
+RUN apk add py3-pip python3-dev patchelf build-base libffi-dev
 RUN pip3 install -U nuitka --break-system-packages
 RUN .build/nuitka.cmd
 
