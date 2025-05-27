@@ -10,7 +10,7 @@ permissions:
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 65
     environment:
       name: publish
       url: https://hub.docker.com/r/newfuture/ddns
@@ -49,6 +49,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: |
+           type=image,name=target,\
+           annotation-index.org.opencontainers.image.description=DDNS alpine container,\
+           annotation-index.org.opencontainers.image.source=https://github.com/NewFuture/DDNS,\
+           annotation-index.org.opencontainers.image.licenses=MIT
+      
 
   publish-pypi:
     runs-on: ubuntu-latest
