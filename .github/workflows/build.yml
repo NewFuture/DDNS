@@ -135,7 +135,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
-          echo " --linux-icon=.build/icon.png" >> .build/nuitka.cmd
+          echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
       - name: Set up on macOS
