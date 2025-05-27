@@ -100,7 +100,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: x86
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-latest
+            arch: x86
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -109,8 +125,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          architecture: ${{ matrix.arch }}
       - name: Install dependencies
-        run: pip install nuitka
+        run: python3 -m pip install nuitka
 
       # Prepare build version and cert
       - name: Replace build version
@@ -120,17 +137,24 @@ jobs:
       - name: setup on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update && sudo apt install -y patchelf ccache
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y patchelf ccache
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            sudo apt-get install -y gcc-multilib g++-multilib libc6:i386 libstdc++6:i386
+            export CFLAGS="-m32"
+            export LDFLAGS="-m32"
+          fi
           echo " --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
-      
+
       - name: setup on macOS
         if: runner.os == 'macOS'
         run: |
           python3 -m pip install imageio
           echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
 
-      - run: python ./run.py -h
+      - run: python3 ./run.py -h
 
       - name: Package binary
         run: ./.build/nuitka.cmd
@@ -141,7 +165,7 @@ jobs:
       # Upload build result
       - uses: actions/upload-artifact@v4
         with:
-          name: ddns-${{ runner.os }}-${{ runner.arch }}
+          name: ddns-${{ runner.os }}-${{ matrix.arch }}
           path: dist/
           retention-days: 7
 
