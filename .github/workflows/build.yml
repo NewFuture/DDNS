@@ -17,8 +17,6 @@ permissions:
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
-env:
-  docker-platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -165,7 +163,7 @@ jobs:
     if: github.event_name == 'pull_request'
     strategy:
       matrix:
-        platform: ${{(format('[{0}]', env.docker-platforms))}}
+        platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x ]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -173,14 +171,14 @@ jobs:
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
         with:
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ matrix.platforms }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           file: .build/Dockerfile
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ matrix.platforms }}
 
       - name: test help command
         run: docker run --rm ddns:test -h
@@ -216,6 +214,8 @@ jobs:
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
     permissions:
       packages: write
+    env:
+      docker-platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
