@@ -160,7 +160,7 @@ jobs:
         with:
           context: .
           file: .build/Dockerfile
-          platforms: ${{ env.docker-platforms }}}
+          platforms: ${{ env.docker-platforms }}
           push: false
           tags: ddns:test
 
