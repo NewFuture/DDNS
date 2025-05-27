@@ -185,7 +185,7 @@ jobs:
   preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    timeout-minutes: 5
+    timeout-minutes: 12
     needs: [docker]
     environment:
       name: preview

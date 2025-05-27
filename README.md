@@ -16,7 +16,7 @@
   - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
   - [x] python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)(2.x支持python2和python3)
   - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
-  - [x] Docker 支持(@NN708)
+  - [x] Docker 支持(@NN708) 
 - 域名支持:
   - [x] 多个域名支持
   - [x] 多级域名解析
@@ -71,10 +71,10 @@
       --network host \
       newfuture/ddns
     ```
-  - 使用配置文件：
+  - 使用配置文件(docker 工作目录`/ddds/`,默认配置位置`/ddns/config.json`)：
     ```
     docker run -d \
-      -v /path/to/config.json:/config.json \
+      -v /local/config/path/:/ddns/ \
       --network host \
       newfuture/ddns
     ```

@@ -10,7 +10,7 @@ permissions:
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     environment:
       name: publish
       url: https://hub.docker.com/r/newfuture/ddns
