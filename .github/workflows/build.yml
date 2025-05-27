@@ -152,7 +152,7 @@ jobs:
       matrix:
         arch: [386,amd64,arm/v6,arm/v7,arm64/v8,ppc64le,riscv64,s390x]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -206,7 +206,7 @@ jobs:
   preview-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
