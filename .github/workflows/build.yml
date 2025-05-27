@@ -165,7 +165,7 @@ jobs:
     if: github.event_name == 'pull_request'
     strategy:
       matrix:
-        platform: ${{ fromJson('["' + replace(env.docker-platforms, ',', '","') + '"]') }}
+        platform: ${{(format('[{0}]', env.docker-platforms))}}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
