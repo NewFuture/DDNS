@@ -99,6 +99,9 @@ jobs:
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
 
+      - name: remove python2 code
+        run:  python3 .build/remove_python2.py
+
       - name: setup on Linux
         if: runner.os == 'Linux'
         run: |

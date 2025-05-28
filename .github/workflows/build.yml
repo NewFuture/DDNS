@@ -33,6 +33,23 @@ jobs:
       - name: check complexity and length # the GitHub editor is 127 chars wide
         run: flake8 . --count --max-complexity=12 --max-line-length=127 --statistics
 
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "2.7","3" ]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.python-version }}
+      - name: test help command
+        run: python${{ matrix.python-version }} run.py -h
+      - name: test config generation
+        run: python${{ matrix.python-version }} run.py || test -e config.json
+      - name: test version
+        run: python${{ matrix.python-version }} run.py --version
+
   pypi:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -55,6 +72,7 @@ jobs:
           path: dist/
           retention-days: 5
 
+          
   pyinstaller:
     strategy:
       # fail-fast: false
@@ -95,6 +113,7 @@ jobs:
           retention-days: 3
 
   nuitka:
+    needs: [ python ]
     strategy:
       fail-fast: false
       matrix:
@@ -122,8 +141,9 @@ jobs:
         with:
           python-version: 3.x
           architecture: ${{ matrix.arch }}
-      - name: Install dependencies
-        run: python3 -m pip install -U nuitka
+
+      - name: remove python2 code
+        run:  python3 .build/remove_python2.py
 
       # Prepare build version and cert
       - name: Replace build version
@@ -133,34 +153,67 @@ jobs:
       - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y patchelf
-          echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
+          sudo apt-get update &&  sudo apt-get install -y patchelf
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
       - name: Set up on macOS
         if: runner.os == 'macOS'
-        run: |
-          python3 -m pip install imageio
-          echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
-
+        run: python3 -m pip install imageio
+   
       - run: python3 ./run.py -h
 
-      - name: Package binary
-        run: ./.build/nuitka.cmd
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: onefile
+          output-dir: dist
+          output-file: ddns
+          no-deployment-flag: self-execution
+          include-module: |
+            dns.dnspod
+            dns.alidns
+            dns.dnspod_com
+            dns.dnscom
+            dns.cloudflare
+            dns.he
+            dns.huaweidns
+            dns.callback
+          file-description: "DDNS Client 更新域名解析本机IP"
+          product-name: DDNS
+          company-name: "New Future"
+          copyright: "https://ddns.newfuture.cc"
+          assume-yes-for-downloads: true
+          lto: auto
+          python-flag: no_site,no_asserts,no_docstrings,isolated,static_hashes
+          nofollow-import-to: tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
+          onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}_{VERSION}"
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && '.build/icon.png' || '' }}
+          static-libpython: ${{ runner.os == 'yes' || 'auto' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && '.build/icon.png' || '' }}
+
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
       # Upload build result
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: ddns-${{ runner.os }}-${{ matrix.arch }}
-          path: dist/
-          retention-days: 7
+          if-no-files-found: error
+          path: |
+            dist/*.exe
+            dist/*.bin
+            dist/*.app
+            dist/ddns
 
   docker:
     if: github.event_name == 'pull_request'
+    needs: [ python ]
     strategy:
       matrix:
         platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x ]
@@ -189,7 +242,7 @@ jobs:
   preview-pypi:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    needs: [lint, pypi]
+    needs: [lint, pypi, python]
     timeout-minutes: 3
     environment:
       name: preview
@@ -207,8 +260,9 @@ jobs:
           print-hash: true
 
   preview-docker:
-    runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    needs: [lint, python]
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     environment:
       name: preview

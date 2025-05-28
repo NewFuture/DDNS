@@ -4,12 +4,10 @@ from re import compile
 from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
-try:
-    # python2
-    from urllib2 import urlopen, Request
-except ImportError:
-    # python3
+try:  # python3
     from urllib.request import urlopen, Request
+except ImportError:  # python2
+    from urllib2 import urlopen, Request
 
 # IPV4正则
 IPV4_REG = r'((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])'

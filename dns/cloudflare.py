@@ -9,14 +9,12 @@ https://api.cloudflare.com/#dns-records-for-a-zone-properties
 from json import loads as jsondecode, dumps as jsonencode
 from logging import debug, info, warning
 
-try:
-    # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
-except ImportError:
-    # python 3
+try:  # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode
+except ImportError:  # python 2
+    from httplib import HTTPSConnection
+    from urllib import urlencode
 
 __author__ = 'TongYifan'
 

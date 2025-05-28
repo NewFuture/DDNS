@@ -14,14 +14,13 @@ from json import loads as jsondecode, dumps as jsonencode
 from logging import debug, info, warning
 from datetime import datetime
 
-try:
-    # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
-except ImportError:
-    # python 3
+try:  # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode
+except ImportError:  # python 2
+    from httplib import HTTPSConnection
+    from urllib import urlencode
+
 
 __author__ = 'New Future'
 BasicDateFormat = "%Y%m%dT%H%M%SZ"

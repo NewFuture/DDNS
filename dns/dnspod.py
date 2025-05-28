@@ -9,14 +9,13 @@ http://www.dnspod.cn/docs/domains.html
 from json import loads as jsondecode
 from logging import debug, info, warning
 from os import environ
-try:
-    # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
-except ImportError:
-    # python 3
+
+try:  # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode
+except ImportError:  # python 2
+    from httplib import HTTPSConnection
+    from urllib import urlencode
 
 __author__ = 'New Future'
 
