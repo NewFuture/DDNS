@@ -168,20 +168,20 @@ jobs:
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
         with:
-          nuitka-version: 2.7.3
+          nuitka-version: main
           script-name: run.py
           mode: onefile
           output-dir: dist
           output-file: ddns
           no-deployment-flag: self-execution
           include-module: |
-            dns.dnspod,
-            dns.alidns,
-            dns.dnspod_com,
-            dns.dnscom,
-            dns.cloudflare,
-            dns.he,
-            dns.huaweidns,
+            dns.dnspod
+            dns.alidns
+            dns.dnspod_com
+            dns.dnscom
+            dns.cloudflare
+            dns.he
+            dns.huaweidns
             dns.callback
           file-description: "DDNS Client 更新域名解析本机IP"
           product-name: DDNS
@@ -192,10 +192,11 @@ jobs:
           python-flag: no_site,no_asserts,no_docstrings,isolated,static_hashes
           nofollow-import-to: tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
           onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}_{VERSION}"
-          windows-icon-from-ico:  'favicon.ico'
-          linux-icon: '.build/icon.png'
-          macos-app-name: 'DDNS'
-          macos-app-icon: '.build/icon.png'
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && '.build/icon.png' || '' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && '.build/icon.png' || '' }}
+
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
