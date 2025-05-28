@@ -14,14 +14,13 @@ from time import mktime
 from datetime import datetime
 
 try:
-    # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
-except ImportError:
     # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode
-
+except ImportError:
+    # python 2
+    from httplib import HTTPSConnection
+    from urllib import urlencode
 
 __author__ = 'Bigjin'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
