@@ -184,7 +184,7 @@ jobs:
       - name: test help command
         run: docker run --rm ddns:test -h
       - name: test config generation
-        run: docker run --rm -v "$(pwd)":/config/ ddns:test -c /config/config.json || test -e config.json
+        run: docker run --rm -v "$(pwd)":/ddns/ ddns:test || test -e config.json
 
   preview-pypi:
     runs-on: ubuntu-latest
