@@ -239,6 +239,9 @@ jobs:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -247,7 +250,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=target,\
-           annotation-index.org.opencontainers.image.description=DDNS alpine container,\
-           annotation-index.org.opencontainers.image.source=https://github.com/NewFuture/DDNS,\
-           annotation-index.org.opencontainers.image.licenses=MIT
+          annotations: ${{ steps.meta.outputs.annotations }}
+
+
