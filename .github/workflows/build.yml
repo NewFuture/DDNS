@@ -125,6 +125,9 @@ jobs:
       - name: Install dependencies
         run: python3 -m pip install -U nuitka
 
+      - name: remove python2 code
+        run:  python3 .build/remove-python2.py
+
       # Prepare build version and cert
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
