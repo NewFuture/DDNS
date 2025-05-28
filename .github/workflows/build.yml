@@ -163,7 +163,7 @@ jobs:
       - run: python3 ./run.py -h
 
       - name: Build Executable
-        uses: Nuitka/Nuitka-Action@v1.3
+        uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
           script-name: run.py
@@ -191,7 +191,7 @@ jobs:
           onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}_{VERSION}"
           windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
           linux-icon: ${{ runner.os == 'Linux' && '.build/icon.png' || '' }}
-          static-libpython: auto
+          static-libpython: ${{ runner.os == 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && '.build/icon.png' || '' }}
 
