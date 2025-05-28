@@ -187,7 +187,7 @@ jobs:
           company-name: "New Future"
           copyright: "https://ddns.newfuture.cc"
           assume-yes-for-downloads: true
-          lto: true
+          lto: auto
           nofollow-import-to: unittest,pydoc
           no-deployment-flag: self-execution
           onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}/{VERSION}"
