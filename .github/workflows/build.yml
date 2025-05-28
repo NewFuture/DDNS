@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: apt-get update && apt-get install -y python${{ matrix.python-version }}
+      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.python-version }}
       - name: test help command
         run: python${{ matrix.python-version }} run.py -h
       - name: test config generation
