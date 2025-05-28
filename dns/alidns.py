@@ -14,15 +14,13 @@ from json import loads as jsondecode
 from logging import debug, info, warning
 from datetime import datetime
 
-try:
-    # python 3
+try:  # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode, quote_plus, quote
-except ImportError:
-    # python 2
+except ImportError:  # python 2
     from httplib import HTTPSConnection
     from urllib import urlencode, quote_plus, quote
- 
+
 __author__ = 'New Future'
 # __all__ = ["request", "ID", "TOKEN", "PROXY"]
 

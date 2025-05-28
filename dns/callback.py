@@ -10,12 +10,10 @@ from json import loads as jsondecode
 from logging import debug, info, warning
 from time import time
 
-try:
-    # python 3
+try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection
     from urllib.parse import urlencode, urlparse, parse_qsl
-except ImportError:
-    # python 2
+except ImportError:  # python 2
     from httplib import HTTPSConnection, HTTPConnection
     from urlparse import urlparse, parse_qsl
     from urllib import urlencode
