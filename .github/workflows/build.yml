@@ -141,8 +141,6 @@ jobs:
         with:
           python-version: 3.x
           architecture: ${{ matrix.arch }}
-      - name: Install dependencies
-        run: python3 -m pip install -U nuitka
 
       - name: remove python2 code
         run:  python3 .build/remove_python2.py
@@ -155,31 +153,63 @@ jobs:
       - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y patchelf
+          sudo apt-get update &&  sudo apt-get install -y patchelf
           echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
-      - name: Set up on macOS
-        if: runner.os == 'macOS'
-        run: |
-          python3 -m pip install imageio
-          echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
+      # - name: Set up on macOS
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     python3 -m pip install imageio
+      #     echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
 
       - run: python3 ./run.py -h
 
-      - name: Package binary
-        run: ./.build/nuitka.cmd
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: onefile
+          output-dir: dist
+          output-file: ddns
+          include-module: |
+            dns.dnspod,
+            dns.alidns,
+            dns.dnspod_com,
+            dns.dnscom,
+            dns.cloudflare,
+            dns.he,
+            dns.huaweidns,
+            dns.callback
+          file-description: "DDNS Client 更新域名解析本机IP"
+          product-name: DDNS
+          company-name: "New Future"
+          copyright: "https://ddns.newfuture.cc"
+          assume-yes-for-downloads: true
+          lto: true
+          nofollow-import-to: unittest,pydoc
+          no-deployment-flag: self-execution
+          onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}/{VERSION}"
+          windows-icon-from-ico: ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && '.build/icon.png' || '' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && '.build/icon.png' || '' }}
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
       # Upload build result
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: ddns-${{ runner.os }}-${{ matrix.arch }}
-          path: dist/
-          retention-days: 7
+          if-no-files-found: error
+          path: |
+            build/*.exe
+            build/*.bin
+            build/*.app
+            build/ddns
 
   docker:
     if: github.event_name == 'pull_request'
