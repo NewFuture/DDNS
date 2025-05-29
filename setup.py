@@ -126,7 +126,15 @@ setup(
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
-        'Topic :: Software Development :: Build Tools',
+        'Intended Audience :: Developers',
+        'Intended Audience :: End Users/Desktop',
+        'Intended Audience :: Information Technology',
+        'Intended Audience :: System Administrators',
+        
+        'Topic :: Internet',
+        'Topic :: Internet :: Name Service (DNS)',
+        'Topic :: System :: Networking',
+        'Topic :: Software Development',
 
         # Pick your license as you wish
         'License :: OSI Approved :: MIT License',
@@ -135,7 +143,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
-        # 'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ],
 
