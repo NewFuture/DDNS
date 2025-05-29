@@ -106,14 +106,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           apt-get update && apt install -y patchelf ccache
-          echo " --static-libpython=yes --linux-icon=.build/icon.png" >> .build/nuitka.cmd
+          echo " --static-libpython=yes --linux-icon=.build/icon.svg" >> .build/nuitka.cmd
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
       
       - name: setup on macOS
         if: runner.os == 'macOS'
         run: |
           python3 -m pip install imageio
-          echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.png" >> .build/nuitka.cmd
+          echo " --macos-app-name=DDNS --macos-app-icon=.build/icon.svg" >> .build/nuitka.cmd
 
       - name: Package binary
         run: ./.build/nuitka.cmd
