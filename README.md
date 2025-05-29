@@ -1,4 +1,4 @@
-# [DDNS](https://github.com/NewFuture/DDNS) [<img src=".build/icon.svg" width="32px" align="middle" />](https://ddns.newfuture.cc)
+# [DDNS](https://github.com/NewFuture/DDNS) [<img src=".build/icon.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc)
 
 
 > 自动更新 DNS 解析 到本机 IP 地址,支持 ipv4 和 ipv6 以 本地(内网)IP 和 公网 IP。
