@@ -129,7 +129,8 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
-        
+
+        # Topics
         'Topic :: Internet',
         'Topic :: Internet :: Name Service (DNS)',
         'Topic :: System :: Networking',
