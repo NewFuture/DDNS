@@ -12,10 +12,11 @@ from time import time
 from logging import info, debug, warning
 
 try:
-    from collections.abc import MutableMapping
-except ImportError:
-    # Python 2 imports
+    # Python 2
     from collections import MutableMapping
+except ImportError:
+    # python3
+    from collections.abc import MutableMapping
 
 
 class Cache(MutableMapping):
