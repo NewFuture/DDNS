@@ -37,8 +37,8 @@ elif 'BUILD_SOURCEBRANCHNAME' in environ:
     version = environ['BUILD_SOURCEBRANCHNAME']  # from azure pipelines
 elif 'GITHUB_REF_NAME' in environ:  # github actions
     ref = environ['GITHUB_REF_NAME']
-    if ref == 'master' or ref == 'main':  # CI
-        version = '0.0.b' + str(int(time()))
+    if ref == 'master' or ref == 'main' or ref == "v3" or ref == "v2":  # CI
+        version = '3.0.b' + str(int(time()))
     elif ref.startswith('v') or ref.startswith('V'):  # Tag
         version = ref
     else:  # PR
