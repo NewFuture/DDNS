@@ -1,7 +1,9 @@
-# [DDNS](https://github.com/NewFuture/DDNS)
+# [DDNS](https://github.com/NewFuture/DDNS) [<img src=".build/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc)
+
 
 > 自动更新 DNS 解析 到本机 IP 地址,支持 ipv4 和 ipv6 以 本地(内网)IP 和 公网 IP。
 > 代理模式,支持自动创建域名记录。
+
 
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=DDNS&style=social)](https://pypi.org/project/ddns/)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
