@@ -97,8 +97,6 @@ jobs:
         if: runner.os == 'Linux'
         run: cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
 
-      - run: python ./run.py -h
-
       - name: Package binary
         run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
 
@@ -159,8 +157,6 @@ jobs:
       - name: Set up on macOS
         if: runner.os == 'macOS'
         run: python3 -m pip install imageio
-   
-      - run: python3 ./run.py -h
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@main
