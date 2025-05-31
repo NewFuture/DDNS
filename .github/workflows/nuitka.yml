@@ -32,7 +32,7 @@ jobs:
             options: -v ${{ github.workspace }}:/DDNS
             run: |
                 yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
-                sudo yum -y install swig gcc gcc-c++ kernel-devel nuitka python3
+                yum -y install swig gcc gcc-c++ kernel-devel nuitka python3
                 python3 .build/remove_python2.py
                 cd /DDNS
                 .build/nuitka.cmd
