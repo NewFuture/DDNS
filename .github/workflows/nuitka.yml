@@ -29,9 +29,9 @@ jobs:
       - name: run centos7
         run: |
             docker run -itd -v "$(pwd)":/tmp/DDNS --name centos7Instance --net="host" docker.io/centos:7 /bin/bash
+            sudo yum -y install yum-utils swig gcc gcc-c++ kernel-devel
             yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
-            sudo yum -y install swig gcc gcc-c++ kernel-devel nuitka python3
-            python3 .build/remove_python2.py
+            sudo yum -y install nuitka
             .build/nuitka.cmd
 
 
