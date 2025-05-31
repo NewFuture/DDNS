@@ -25,16 +25,17 @@ jobs:
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
         
-
-      - name: run centos7
-        run: |
-            docker run -itd -v "$(pwd)":/tmp/DDNS --name centos7Instance --net="host" docker.io/centos:7 /bin/bash
-            sudo yum -y install yum-utils swig gcc gcc-c++ kernel-devel
-            yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
-            sudo yum -y install nuitka
-            .build/nuitka.cmd
-
-
+      - name: Run the build process with Docker
+        uses: addnab/docker-run-action@v3
+        with:
+            image: docker.io/centos:7
+            options: -v "$(pwd)":/tmp/DDNS
+            run: |
+                yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
+                sudo yum -y install swig gcc gcc-c++ kernel-devel nuitka python3
+                python3 .build/remove_python2.py
+                cd /tmp/DDNS
+                .build/nuitka.cmd
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
