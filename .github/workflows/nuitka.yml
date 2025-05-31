@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     container: docker.io/centos:7
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
         with:
@@ -35,8 +35,7 @@ jobs:
       - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update &&  sudo apt-get install -y patchelf
-          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+          sudo yum update &&  sudo yum  install -y patchelf
 
       - name: Set up on macOS
         if: runner.os == 'macOS'
