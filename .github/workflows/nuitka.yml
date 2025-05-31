@@ -29,12 +29,12 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
             image: docker.io/centos:7
-            options: -v "$(pwd)":/tmp/DDNS
+            options: -v ${{ github.workspace }}:/DDNS
             run: |
                 yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
                 sudo yum -y install swig gcc gcc-c++ kernel-devel nuitka python3
                 python3 .build/remove_python2.py
-                cd /tmp/DDNS
+                cd /DDNS
                 .build/nuitka.cmd
 
       - run: ./dist/ddns || test -e config.json
