@@ -26,19 +26,28 @@ jobs:
         shell: bash
         
         # https://github.com/Nuitka/Nuitka/issues/2723#issuecomment-1960831891 
+      # - name: Run the build process with Docker
+      #   uses: addnab/docker-run-action@v3
+      #   with:
+      #       image: docker.io/centos:8
+      #       options: -v ${{ github.workspace }}:/DDNS
+      #       run: |
+      #           cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+      #           dnf install -y epel-release \
+      #           && dnf repolist \
+      #           && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
+      #           python3 -m pip install --upgrade nuitka
+      #           cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.cmd
+
       - name: Run the build process with Docker
         uses: addnab/docker-run-action@v3
         with:
-            image: docker.io/centos:8
+            image: docker.io/debian:stable
             options: -v ${{ github.workspace }}:/DDNS
             run: |
-                cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-                dnf install -y epel-release \
-                && dnf repolist \
-                && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
+                apt install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
                 python3 -m pip install --upgrade nuitka
                 cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.cmd
-
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
