@@ -163,7 +163,7 @@ jobs:
       - run: python3 ./run.py -h
 
       - name: Build Executable
-        uses: Nuitka/Nuitka-Action@main
+        uses: Nuitka/Nuitka-Action@v1.3
         with:
           nuitka-version: main
           script-name: run.py
