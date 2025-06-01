@@ -33,16 +33,12 @@ jobs:
             options: -v ${{ github.workspace }}:/DDNS
             run: |
                 cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-                yum-config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
+                dnf config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
                 dnf install -y epel-release \
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
-                yum -y install nuitka
-                python3 .build/remove_python2.py
-                cd /DDNS
-                .build/nuitka.cmd
-
-                ARG CENTOS_VERSION
+                dnf install nuitka     
+                cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.cmd
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
