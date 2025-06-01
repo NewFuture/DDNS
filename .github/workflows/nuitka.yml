@@ -33,7 +33,7 @@ jobs:
             options: -v ${{ github.workspace }}:/DDNS
             run: |
                 cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-                dnf config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_7/home:kayhayen.repo
+                dnf config-manager --add-repo http://download.opensuse.org/repositories/home:/kayhayen/CentOS_8/home:kayhayen.repo
                 dnf install -y epel-release \
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
