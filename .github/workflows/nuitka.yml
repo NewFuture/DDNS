@@ -45,7 +45,7 @@ jobs:
             image: docker.io/debian:stable
             options: -v ${{ github.workspace }}:/DDNS
             run: |
-                apt install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
+                apt-get update && apt-get install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
                 python3 -m pip install --upgrade nuitka
                 cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.cmd
       - run: ./dist/ddns || test -e config.json
