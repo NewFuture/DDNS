@@ -37,7 +37,7 @@ jobs:
                 dnf install -y epel-release \
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
-                dnf install nuitka     
+                dnf install -y nuitka     
                 cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.cmd
 
       - run: ./dist/ddns || test -e config.json
