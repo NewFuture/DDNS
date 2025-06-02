@@ -6,10 +6,7 @@ DDNS
 @modified: rufengsuixing
 """
 
-# nuitka-project-if: os.getenv("BUILD_VERSION") is not None:
-#   nuitka-project: --product-version=${BUILD_VERSION}
-# nuitka-project-else:
-#   nuitka-project: --product-version=0.0.0
+# nuitka-project: --product-version=0.0.0
 
 from os import path, environ, name as os_name
 from tempfile import gettempdir

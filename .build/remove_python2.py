@@ -27,11 +27,52 @@ def dedent_imports_with_blank(import_block, try_block, except_block):
     return ('\n' * try_lines) + imports + ('\n' * except_lines)
 
 
+def extract_pure_version(version_str):
+    """
+    提取前4组数字并用点拼接，如 v1.2.3.beta4.5 -> 1.2.3.4
+    """
+    import re
+    nums = re.findall(r'\d+', version_str)
+    return '.'.join(nums[:4]) if nums else "0.0.0"
+
+
+def update_nuitka_version(pyfile):
+    """
+    读取 __version__ 并替换 nuitka-project 版本号
+    """
+    with open(pyfile, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # 提取 __version__ 变量
+    version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
+    if not version_match:
+        print(f'No __version__ found in {pyfile}')
+        return False
+
+    version_str = version_match.group(1)
+    pure_version = extract_pure_version(version_str)
+
+    # 替换 nuitka-project 行
+    new_content, n = re.subn(
+        r'(# nuitka-project: --product-version=)[^\n]*',
+        r'\g<1>' + pure_version,
+        content
+    )
+    if n > 0:
+        with open(pyfile, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        print(f'update nuitka-project version: {pure_version} in {pyfile}')
+        return True
+    return False
+
+
 def main():
     """
-    遍历所有py文件并替换兼容导入
+    遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
     changed_files = 0
+    # 先处理 run.py 的 nuitka-project 版本号
+    update_nuitka_version(os.path.join(ROOT, "run.py"))
     for dirpath, _, filenames in os.walk(ROOT):
         for fname in filenames:
             if fname.endswith('.py'):
