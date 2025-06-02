@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import Action, ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
+from argparse import Action, ArgumentParser, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ
 from logging import error, getLevelName
@@ -10,7 +10,7 @@ from time import time
 import sys
 
 
-__cli_args = {}  # type: Namespace
+__cli_args = Namespace()
 __config = {}  # type: dict
 log_levels = ['CRITICAL', 'FATAL', 'ERROR',
               'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
