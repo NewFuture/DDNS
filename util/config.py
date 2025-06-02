@@ -3,7 +3,7 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ
-from logging import error, _nameToLevel
+from logging import error, getLevelName
 
 from time import time
 
@@ -12,6 +12,7 @@ import sys
 
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
+log_levels = ['CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 
 def str2bool(v):
     """
@@ -30,13 +31,7 @@ def log_level(value):
     """
     parse string to log level
     """
-    value = value.upper()
-    if value in _nameToLevel:
-        return _nameToLevel[value]
-    else:
-        raise ArgumentTypeError(
-            "Invalid log level: %s, must be one of %s" % (value, ', '.join(_nameToLevel.keys())))
-
+    return getLevelName(value.upper())
 
 def init_config(description, doc, version):
     """
@@ -66,7 +61,7 @@ def init_config(description, doc, version):
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
     parser.add_argument('--log.file', metavar="LOG_FILE", help="log file [日志文件，默认标准输出]")
-    parser.add_argument('--log.level', type=log_level, metavar="|".join(_nameToLevel.keys()))
+    parser.add_argument('--log.level', type=log_level, metavar="|".join(log_levels))
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")
@@ -90,7 +85,7 @@ def __load_config(path="config.json", skip_auto_generation=False):
                     __config['log.level'] = log_level(__config['log']['level'])
                 if 'file' in __config['log']:
                     __config['log.file'] = __config['log']['file']
-            elif 'log.level' not in __config:
+            elif 'log.level' in __config:
                 __config['log.level'] = log_level(__config['log.level'])
     except IOError:
         if skip_auto_generation:
@@ -124,8 +119,8 @@ def __load_config(path="config.json", skip_auto_generation=False):
             sys.stdout.write(
                 "New template configure file `%s` is generated.\n" % path)
             sys.exit(1)
-    except Exception:
-        sys.exit('fail to load config from file: %s' % path)
+    except Exception as e:
+        sys.exit('fail to load config from file: %s\n%s' % (path, e))
 
 
 def get_config(key, default=None):
