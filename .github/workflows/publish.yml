@@ -17,7 +17,6 @@ jobs:
     permissions:
       packages: write
     env:
-      DOCKER_BUILD_RECORD_UPLOAD: false
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +40,8 @@ jobs:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -49,10 +50,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=target,\
-           annotation-index.org.opencontainers.image.description=DDNS alpine container,\
-           annotation-index.org.opencontainers.image.source=https://github.com/NewFuture/DDNS,\
-           annotation-index.org.opencontainers.image.licenses=MIT
+          annotations: ${{ steps.meta.outputs.annotations }}
       
 
   publish-pypi:
@@ -80,56 +78,140 @@ jobs:
         with:
           print-hash: true
 
-  build-binary:
+  publish-binary:
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
-        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: x86
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Install dependencies
-        run: pip install nuitka
+          architecture: ${{ matrix.arch }}
 
       - name: Replace build version
         run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
         shell: bash
 
       - name: remove python2 code
-        run:  python3 .build/remove_python2.py
+        run:  python3 .build/patch.py
 
-      - name: setup on Linux
+      - name: Set up on Linux
         if: runner.os == 'Linux'
         run: |
-          apt-get update && apt install -y patchelf ccache
-          echo " --static-libpython=yes --linux-icon=.build/ddns.svg" >> .build/nuitka.cmd
+          sudo apt-get update &&  sudo apt-get install -y patchelf
           cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
-      
-      - name: setup on macOS
+      - name: Set up on macOS
         if: runner.os == 'macOS'
-        run: |
-          python3 -m pip install imageio
-          echo " --macos-app-name=DDNS --macos-app-icon=.build/ddns.svg" >> .build/nuitka.cmd
+        run: python3 -m pip install imageio
 
-      - name: Package binary
-        run: ./.build/nuitka.cmd
+      - name: test run.py
+        run: python3 ./run.py -h
+
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: onefile
+          output-dir: dist
+          output-file: ddns
+          no-deployment-flag: self-execution
+          include-module: |
+            dns.dnspod
+            dns.alidns
+            dns.dnspod_com
+            dns.dnscom
+            dns.cloudflare
+            dns.he
+            dns.huaweidns
+            dns.callback
+          file-description: "DDNS Client 更新域名解析本机IP"
+          product-name: DDNS
+          company-name: "New Future"
+          copyright: "https://ddns.newfuture.cc"
+          assume-yes-for-downloads: true
+          lto: auto
+          python-flag: no_site,no_asserts,no_docstrings,isolated,static_hashes
+          nofollow-import-to: tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
+          onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}_{VERSION}"
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
+          static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - name: Move and rename binary with lowercase OS and arch
-        run: mv ./dist/ddns "./dist/ddns-$(echo ${{ runner.os }}-${{ runner.arch }} | tr '[:upper:]' '[:lower:]')"
-        shell: bash
+      - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ runner.arch }}
+        if: runner.os == 'Linux'
+      - run: mv ./dist/ddns ./dist/ddns-mac-${{ runner.arch }}.app
+        if: runner.os == 'macOS'
+      - run: mv ./dist/ddns.exe ./dist/ddns-windows-${{ runner.arch }}.exe
+        if: runner.os == 'Windows'
+      - name: Upload files
+        run: gh release upload ${{ github.ref_name }} dist/ddns* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
 
-      - uses: actions/upload-artifact@v4
+  publish-linux-general:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, ubuntu-24.04-arm ]
+    runs-on:  ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Prepare build
+      - name: Replace build version
+        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
+        shell: bash
+        
+        # https://github.com/Nuitka/Nuitka/issues/2723#issuecomment-1960831891 
+      - name: Run the build process with CentOS Docker
+        uses: addnab/docker-run-action@v3
         with:
-          name: ${{ runner.os }}
-          path: dist/
-          retention-days: 10
+            image: docker.io/centos:8
+            options: -v ${{ github.workspace }}:/DDNS
+            run: |
+                cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+                dnf install -y epel-release \
+                && dnf repolist \
+                && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
+                python3 -m pip install nuitka
+                cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
+
+      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -h 
+      - run: mv ./dist/ddns ./dist/ddns-linux-${{ runner.arch }}
+      - name: Upload files
+        run: gh release upload ${{ github.ref_name }} dist/ddns* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   github-release:
     runs-on: ubuntu-latest
@@ -139,16 +221,13 @@ jobs:
       url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
-    needs: [publish-docker, publish-pypi, build-binary]
+    needs: [publish-docker, publish-pypi, publish-binary, publish-linux-general]
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .release/README.md
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
+      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .github/release.md
 
       - name: Upload files
-        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat dist/*/* --clobber
+        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat --clobber
         env:
           GH_TOKEN: ${{ github.token }}
           
@@ -156,6 +235,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view ${{ github.ref_name }} --json body -q '.body' > .release/notes.md
-          cat .release/README.md >> .release/notes.md
-          gh release edit ${{ github.ref_name }} --notes-file .release/notes.md --latest --prerelease=false
+          gh release view ${{ github.ref_name }} --json body -q '.body' > release_notes.md
+          cat .github/release.md >> release_notes.md
+          gh release edit ${{ github.ref_name }} --notes-file release_notes.md
