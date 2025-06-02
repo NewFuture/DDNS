@@ -2,8 +2,9 @@
 # -*- coding:utf-8 -*-
 from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
 from json import load as loadjson, dump as dumpjson
-from logging import error
 from os import stat, environ
+from logging import error, getLevelName
+
 from time import time
 
 import sys
@@ -11,6 +12,8 @@ import sys
 
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
+log_levels = ['CRITICAL', 'FATAL', 'ERROR',
+              'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 
 
 def str2bool(v):
@@ -24,7 +27,14 @@ def str2bool(v):
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     else:
-        raise ArgumentTypeError('Boolean value expected.')
+        return v
+
+
+def log_level(value):
+    """
+    parse string to log level
+    """
+    return getLevelName(value.upper())
 
 
 def init_config(description, doc, version):
@@ -52,10 +62,12 @@ def init_config(description, doc, version):
     parser.add_argument('--ttl', type=int, help="ttl for DNS [DNS 解析 TTL 时间]")
     parser.add_argument('--proxy', nargs="*",
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
-    parser.add_argument('--debug',  type=str2bool, nargs='?',
-                        const=True, help="debug mode [是否开启调试,默认否]", )
     parser.add_argument('--cache',  type=str2bool, nargs='?',
-                        const=True, help="enable cache [是否缓存记录,默认是]")
+                        const=True, help="cache flag [启用缓存，可配配置路径或开关]")
+    parser.add_argument('--log.file', metavar="LOG_FILE",
+                        help="log file [日志文件，默认标准输出]")
+    parser.add_argument('--log.level', type=log_level,
+                        metavar="|".join(log_levels))
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")
@@ -74,6 +86,13 @@ def __load_config(path="config.json", skip_auto_generation=False):
         with open(path) as configfile:
             __config = loadjson(configfile)
             __config["config_modified_time"] = stat(path).st_mtime
+            if 'log' in __config:
+                if 'level' in __config['log'] and __config['log']['level'] is not None:
+                    __config['log.level'] = log_level(__config['log']['level'])
+                if 'file' in __config['log']:
+                    __config['log.file'] = __config['log']['file']
+            elif 'log.level' in __config:
+                __config['log.level'] = log_level(__config['log.level'])
     except IOError:
         if skip_auto_generation:
             __config["config_modified_time"] = time()
@@ -81,7 +100,7 @@ def __load_config(path="config.json", skip_auto_generation=False):
         error(' Config file `%s` does not exist!' % path)
         with open(path, 'w') as configfile:
             configure = {
-                "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
+                "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
                 "id": "YOUR ID or EMAIL for DNS Provider",
                 "token": "YOUR TOKEN or KEY for DNS Provider",
                 "dns": "dnspod",
@@ -97,14 +116,17 @@ def __load_config(path="config.json", skip_auto_generation=False):
                 "index6": "default",
                 "ttl": None,
                 "proxy": None,
-                "debug": False,
+                "log": {
+                    "level": "INFO",
+                    "file": None
+                }
             }
             dumpjson(configure, configfile, indent=2, sort_keys=True)
             sys.stdout.write(
                 "New template configure file `%s` is generated.\n" % path)
             sys.exit(1)
-    except Exception:
-        sys.exit('fail to load config from file: %s' % path)
+    except Exception as e:
+        sys.exit('fail to load config from file: %s\n%s' % (path, e))
 
 
 def get_config(key, default=None):
@@ -118,9 +140,11 @@ def get_config(key, default=None):
         return getattr(__cli_args, key)
     if key in __config:
         return __config.get(key)
-    env_name = 'DDNS_'+key.upper()  # type:str
-    if env_name in environ:  # 大写环境变量
+    env_name = 'DDNS_' + key.replace('.', '_')  # type:str
+    if env_name in environ:  # 环境变量
         return environ.get(env_name)
-    if env_name.lower() in environ:  # 小写环境变量
+    elif env_name.upper() in environ:  # 大写环境变量
+        return environ.get(env_name.upper())
+    elif env_name.lower() in environ:  # 小写环境变量
         return environ.get(env_name.lower())
     return default

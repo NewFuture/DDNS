@@ -1,9 +1,7 @@
 # [DDNS](https://github.com/NewFuture/DDNS) [<img src=".build/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc)
 
-
 > 自动更新 DNS 解析 到本机 IP 地址,支持 ipv4 和 ipv6 以 本地(内网)IP 和 公网 IP。
 > 代理模式,支持自动创建域名记录。
-
 
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=DDNS&style=social)](https://pypi.org/project/ddns/)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
@@ -18,7 +16,7 @@
   - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
   - [x] python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)(2.x支持python2和python3)
   - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
-  - [x] Docker 支持(@NN708) 
+  - [x] Docker 支持(@NN708)
 - 域名支持:
   - [x] 多个域名支持
   - [x] 多级域名解析
@@ -52,17 +50,25 @@
 根据需要选择一种方式: `二进制`版,`pip`版,`源码`运行,或者`Docker`
 
 - #### pip 安装(需要 pip 或 easy_install)
+
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
   2. 运行: `ddns`
+
 - #### 二进制版(单文件,无需 python)
+
   - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
   - Linux (仅 Ubuntu 测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
   - Mac OSX [ddns-osx](https://github.com/NewFuture/DDNS/releases/latest)
+
 - #### 源码运行(无任何依赖, 需 python 环境)
+
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
+
 - #### Docker(需要安装 Docker)
+
   - 使用环境变量：
+
     ```
     docker run -d \
       -e DDNS_DNS=dnspod \
@@ -73,7 +79,9 @@
       --network host \
       newfuture/ddns
     ```
+
   - 使用配置文件(docker 工作目录`/ddds/`,默认配置位置`/ddns/config.json`)：
+
     ```
     docker run -d \
       -v /local/config/path/:/ddns/ \
@@ -102,7 +110,7 @@
 
 1. 命令行参数 `ddns --key=value` (`ddns -h` 查看详情)，优先级最高
 2. JSON配置文件(值为null认为是有效值，会覆盖环境变量的设置，如果没有对应的key则会尝试试用环境变量)
-3. 环境变量DDNS_前缀加上key 全大写或者全小写 (`${ddns_key}` 或 `${DDNS_KEY}`)
+3. 环境变量DDNS_前缀加上key 全大写或者全小写,点转下划线 (`${ddns_id}` 或 `${DDNS_ID}`,`${DDNS_LOG_LEVEL}`)
 
 <details open>
 
@@ -132,8 +140,9 @@ python run.py -c /path/to/config.json
 | index6 | string\|int\|array |    No    | `"default"` |   ipv6 获取方式   | 可设置`网卡`,`内网`,`公网`,`正则`等方式                                                                     |
 |  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
 | proxy  |       string       |    No    |     无      | http 代理`;`分割  | 多代理逐个尝试直到成功,`DIRECT`为直连                                                                       |
-| debug  |        bool        |    No    |   `false`   |   是否开启调试    | 运行异常时,打开调试输出,方便诊断错误                                                                        |
+| ~~debug~~  |        bool        |    No    |   `false`   |   是否开启调试    | v4 中弃用，请改用log.level=DEBUG                                                               |
 | cache  |    string\|bool    |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新,默认位置为临时目录下`ddns.cache`,<br>也可以指定一个具体文件实现自定义文件缓存位置         |
+| log |       {"level":string,"file":string}       |    No    |   `null`    | 日志配置(可选) | 日志配置,日志级别和路径(默认命令行),<br>例如: `{ "level": "DEBUG", "file": "/path/to/logfile.log" }` |
 
 #### index4 和 index6 参数说明
 
@@ -167,7 +176,7 @@ python run.py -c /path/to/config.json
 
 ```json
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v2.8.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 callback",
@@ -177,7 +186,10 @@ python run.py -c /path/to/config.json
   "index6": "public",
   "ttl": 600,
   "proxy": "127.0.0.1:1080;DIRECT",
-  "debug": false
+  "log": {
+    "level": "DEBUG",
+    "file": "dns.log"
+  },
 }
 ```
 
@@ -200,12 +212,14 @@ python run.py -c /path/to/config.json
 - 使用init.d和crontab:
 `sudo ./task.sh`
 - 使用systemd:
+
     ```bash
     安装:
     sudo ./systemd.sh install
     卸载:
     sudo ./systemd.sh uninstall
     ```
+
   该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
   可执行文件所在目录为 `/usr/share/DDNS`
   配置文件所在目录为 `/etc/DDNS`
