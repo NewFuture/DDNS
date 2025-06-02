@@ -53,14 +53,16 @@ def init_config(description, doc, version):
                         'alidns', 'cloudflare', 'dnscom', 'dnspod', 'dnspod_com', 'he', 'huaweidns', 'callback'])
     parser.add_argument('--id', help="api ID [授权账户]")
     parser.add_argument('--token', help="api token or Secret key [授权访问凭证或密钥]")
-    parser.add_argument('--ipv4', nargs="*",
+    parser.add_argument('--index4', nargs="*", action='extend',
+                        help="list to get ipv4 [IPV4 获取方式]")
+    parser.add_argument('--index6', nargs="*", action='extend',
+                        help="list to get ipv6 [IPV6获取方式]")
+    parser.add_argument('--ipv4', nargs="*", action='extend',
                         help="ipv4 domain list [IPV4域名列表]")
-    parser.add_argument('--ipv6', nargs="*",
+    parser.add_argument('--ipv6', nargs="*", action='extend',
                         help="ipv6 domain list [IPV6域名列表]")
-    parser.add_argument('--index4', help="the way to get ipv4 [IPV4 获取方式]")
-    parser.add_argument('--index6', help="the way to get ipv6 [IPV6获取方式]")
     parser.add_argument('--ttl', type=int, help="ttl for DNS [DNS 解析 TTL 时间]")
-    parser.add_argument('--proxy', nargs="*",
+    parser.add_argument('--proxy', nargs="*", action='extend',
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
