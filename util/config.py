@@ -37,6 +37,7 @@ def log_level(value):
         raise ArgumentTypeError(
             "Invalid log level: %s, must be one of %s" % (value, ', '.join(_nameToLevel.keys())))
 
+
 def init_config(description, doc, version):
     """
     配置
