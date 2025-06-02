@@ -133,7 +133,7 @@ def main():
     basicConfig(
         level=get_config('log.level'),
         format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%m-%d %H:%M:%S.%f',
+        datefmt='%m-%d %H:%M:%S',
         filename=get_config('log.file'),
     )
 

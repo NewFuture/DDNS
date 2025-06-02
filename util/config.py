@@ -33,6 +33,7 @@ def log_level(value):
     """
     return getLevelName(value.upper())
 
+
 def init_config(description, doc, version):
     """
     配置
