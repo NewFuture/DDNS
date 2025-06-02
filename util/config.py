@@ -66,8 +66,8 @@ def init_config(description, doc, version):
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
-    parser.add_argument('--log.file', help="log file [日志文件，默认标准输出]")
-    parser.add_argument('--log.level', type=log_level, choices=__log_name_to_level.keys())
+    parser.add_argument('--log.file',metavar="LOG_FILE", help="log file [日志文件，默认标准输出]")
+    parser.add_argument('--log.level', type=log_level, metavar="|".join(__log_name_to_level.keys()))
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")
@@ -91,6 +91,8 @@ def __load_config(path="config.json", skip_auto_generation=False):
                     __config['log.level'] = log_level(__config['log']['level'])
                 if 'file' in __config['log']:
                     __config['log.file'] = __config['log']['file']
+            elif 'log.level' not in __config:
+                __config['log.level'] = log_level(__config['log.level'])
     except IOError:
         if skip_auto_generation:
             __config["config_modified_time"] = time()
