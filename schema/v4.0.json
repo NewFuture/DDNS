@@ -1,21 +1,26 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://ddns.newfuture.cc/schema.json",
-  "description": "[Deprecated] 已弃用,请使用 https://ddns.newfuture.cc/schema/v2.json",
+  "$id": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "description": "DNS 配置文件 https://github.com/NewFuture/DDNS",
   "type": "object",
   "properties": {
     "$schema": {
       "type": "string",
-      "title": "please use https://ddns.newfuture.cc/schema/v2.json",
-      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.json",
+      "title": "please use https://ddns.newfuture.cc/schema/v2.8.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.8.json",
+      "default": "https://ddns.newfuture.cc/schema/v2.8.json",
       "enum": [
-        "https://ddns.newfuture.cc/schema/v2.json",
-        "http://ddns.newfuture.cc/schema/v2.json"
+        "https://ddns.newfuture.cc/schema/v2.8.json",
+        "http://ddns.newfuture.cc/schema/v2.8.json",
+        "./schema/v2.8.json"
       ]
     },
     "id": {
       "$id": "/properties/id",
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "title": "ID or Email",
       "description": "DNS服务API认证的ID或者邮箱"
     },
@@ -29,7 +34,7 @@
       "$id": "/properties/dns",
       "type": "string",
       "title": "DNS Provider",
-      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,自定义回调为callback",
       "default": "dnspod",
       "examples": [
         "dnspod",
@@ -42,7 +47,9 @@
         "cloudflare",
         "dnspod_com",
         "dnscom",
-        "he"
+        "he",
+        "huaweidns",
+        "callback"
       ]
     },
     "ipv4": {
@@ -55,7 +62,7 @@
         "$id": "/properties/ipv4/items",
         "title": "ipv4 domain for DDNS",
         "type": "string",
-        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
         "examples": [
           "newfuture.cc",
           "ipv4.example.newfuture.cc"
@@ -72,7 +79,7 @@
         "$id": "/properties/ipv6/items",
         "title": "The ipv6 domain for DDNS",
         "type": "string",
-        "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}$",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
         "examples": [
           "newfuture.cc",
           "ipv6.example.newfuture.cc"
@@ -84,8 +91,19 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
       "title": "IPv4 address Setting",
       "description": "本机 IPv4 获取方式设置",
       "default": "default",
@@ -103,8 +121,19 @@
       "type": [
         "string",
         "integer",
-        "boolean"
+        "boolean",
+        "array"
       ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
       "title": "IPv6 address Setting",
       "description": "本机 IPv6 获取方式设置",
       "default": "default",
@@ -144,16 +173,42 @@
         "127.0.0.1:1080;DIRECT"
       ]
     },
-    "debug": {
-      "$id": "/properties/debug",
-      "type": "boolean",
-      "title": "Enable Debug Mode",
-      "description": "是否启用调试模式显示更多信息",
-      "default": false,
+    "cache": {
+      "$id": "/properties/cache",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "Enable Cache",
+      "description": "是否启用缓存记录以避免频繁更新",
+      "default": true,
       "examples": [
+        true,
         false,
-        true
+        "/path/to/cache/ddns.cache"
       ]
+    },
+    "log": {
+      "$id": "/properties/log",
+      "type": "object",
+      "title": "Log Config",
+      "description": "日志配置，支持自定义日志级别和输出位置。可通过命令行 --log.level, --log.file 或环境变量 DDNS_LOG_LEVEL, DDNS_LOG_FILE 设置。",
+      "properties": {
+        "level": {
+          "type": "string",
+          "title": "Log Level",
+          "description": "日志级别，如 DEBUG、INFO、WARNING、ERROR、CRITICAL",
+          "default": "INFO",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        },
+        "file": {
+          "type": ["string", "null"],
+          "title": "Log Output File",
+          "description": "日志输出文件路径，留空或为null时输出到控制台"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
     }
   },
   "required": [

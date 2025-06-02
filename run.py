@@ -11,11 +11,9 @@ DDNS
 # nuitka-project-else:
 #   nuitka-project: --product-version=0.0.0
 
-from __future__ import print_function
-from time import ctime, asctime
 from os import path, environ, name as os_name
 from tempfile import gettempdir
-from logging import DEBUG, basicConfig, info, warning, error, debug
+from logging import basicConfig, info, warning, error, debug
 from subprocess import check_output
 
 import sys
@@ -82,8 +80,7 @@ def change_dns_record(dns, proxy_list, **kw):
         else:
             dns.Config.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
-        print('\n%s %s(%s) ==> %s [via %s]' %
-              (asctime(), domain, record_type, kw['ip'], proxy))
+        info("%s(%s) ==> %s [via %s]", domain, record_type, kw['ip'], proxy)
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
@@ -108,7 +105,7 @@ def update_ip(ip_type, cache, dns, proxy_list):
         error('Fail to get %s address!', ipname)
         return False
     elif cache and (address == cache[ipname]):
-        print('.', end=" ")  # 缓存命中
+        info('%s address not changed, using cache.', ipname)
         return True
     record_type = (ip_type == '4') and 'A' or 'AAAA'
     update_fail = False  # https://github.com/NewFuture/DDNS/issues/16
@@ -132,16 +129,17 @@ def main():
     dns.Config.ID = get_config('id')
     dns.Config.TOKEN = get_config('token')
     dns.Config.TTL = get_config('ttl')
-    if get_config('debug'):
-        ip.DEBUG = get_config('debug')
-        basicConfig(
-            level=DEBUG,
-            format='%(asctime)s <%(module)s.%(funcName)s> %(lineno)d@%(pathname)s \n[%(levelname)s] %(message)s')
-        print("DDNS[", __version__, "] run:", os_name, sys.platform)
-        if get_config("config"):
-            print("Configuration was loaded from <==",
-                  path.abspath(get_config("config")))
-        print("=" * 25, ctime(), "=" * 25, sep=' ')
+
+    basicConfig(
+        level=get_config('log.level'),
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%m-%d %H:%M:%S.%f',
+        filename=get_config('log.file'),
+    )
+
+    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+    if get_config("config"):
+        info("Configuration was loaded from <== %s", path.abspath(get_config('config')))
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy if isinstance(

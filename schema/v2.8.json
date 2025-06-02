@@ -176,13 +176,14 @@
     "debug": {
       "$id": "/properties/debug",
       "type": "boolean",
-      "title": "Enable Debug Mode",
-      "description": "是否启用调试模式显示更多信息",
+      "title": "Enable Debug Mode (deprecated, use logger instead)",
+      "description": "是否启用调试模式显示更多信息（已废弃，请使用 logger 字段）",
       "default": false,
       "examples": [
         false,
         true
-      ]
+      ],
+      "deprecated": true
     },
     "cache": {
       "$id": "/properties/cache",
