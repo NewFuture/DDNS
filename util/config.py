@@ -3,7 +3,7 @@
 from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ
-from logging import error, getLevelNamesMapping
+from logging import error, _nameToLevel
 
 from time import time
 
@@ -12,8 +12,6 @@ import sys
 
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
-
-__log_name_to_level = getLevelNamesMapping()
 
 def str2bool(v):
     """
@@ -33,11 +31,11 @@ def log_level(value):
     parse string to log level
     """
     value = value.upper()
-    if value in __log_name_to_level:
-        return __log_name_to_level[value]
+    if value in _nameToLevel:
+        return _nameToLevel[value]
     else:
         raise ArgumentTypeError(
-            "Invalid log level: %s, must be one of %s" % (value, ', '.join(__log_name_to_level.keys())))
+            "Invalid log level: %s, must be one of %s" % (value, ', '.join(_nameToLevel.keys())))
 
 def init_config(description, doc, version):
     """
@@ -66,8 +64,8 @@ def init_config(description, doc, version):
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
-    parser.add_argument('--log.file',metavar="LOG_FILE", help="log file [日志文件，默认标准输出]")
-    parser.add_argument('--log.level', type=log_level, metavar="|".join(__log_name_to_level.keys()))
+    parser.add_argument('--log.file', metavar="LOG_FILE", help="log file [日志文件，默认标准输出]")
+    parser.add_argument('--log.level', type=log_level, metavar="|".join(_nameToLevel.keys()))
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")
@@ -86,7 +84,7 @@ def __load_config(path="config.json", skip_auto_generation=False):
         with open(path) as configfile:
             __config = loadjson(configfile)
             __config["config_modified_time"] = stat(path).st_mtime
-            if  'log' in __config:
+            if 'log' in __config:
                 if 'level' in __config['log'] and __config['log']['level'] is not None:
                     __config['log.level'] = log_level(__config['log']['level'])
                 if 'file' in __config['log']:
