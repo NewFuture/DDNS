@@ -4,8 +4,8 @@
 
 | 平台/方式   |架构支持  |
 | ----------- |---------------------- |
-| Docker      | `newfuture/ddns:${BUILD_VERSION}`8种架构|
-| Windows     | [64位(x64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x64.exe) / [32位(x86)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x32.exe) / [arm64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-arm64.exe) |
+| Docker      | `newfuture/ddns:${BUILD_VERSION}` 8种架构|
+| Windows     | [64位(x64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x64.exe) / [32位(x86)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x86.exe) / [arm64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-arm64.exe) |
 | Linux |  [64位(x64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-linux-x64) / [arm64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-linux-arm64) |
 | Mac OS X    |  [Apple Silicon (ARM64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-arm64.app) / [Intel x64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64.app) |
 | Python/PIP  | any |
