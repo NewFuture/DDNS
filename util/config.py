@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-from argparse import ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
+from argparse import Action, ArgumentParser, ArgumentTypeError, Namespace, RawTextHelpFormatter  # noqa: F401
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ
 from logging import error, getLevelName
@@ -53,16 +53,16 @@ def init_config(description, doc, version):
                         'alidns', 'cloudflare', 'dnscom', 'dnspod', 'dnspod_com', 'he', 'huaweidns', 'callback'])
     parser.add_argument('--id', help="api ID [授权账户]")
     parser.add_argument('--token', help="api token or Secret key [授权访问凭证或密钥]")
-    parser.add_argument('--index4', nargs="*", action='extend',
+    parser.add_argument('--index4', nargs="*", action=ExtendAction,
                         help="list to get ipv4 [IPV4 获取方式]")
-    parser.add_argument('--index6', nargs="*", action='extend',
+    parser.add_argument('--index6', nargs="*", action=ExtendAction,
                         help="list to get ipv6 [IPV6获取方式]")
-    parser.add_argument('--ipv4', nargs="*", action='extend',
+    parser.add_argument('--ipv4', nargs="*", action=ExtendAction,
                         help="ipv4 domain list [IPV4域名列表]")
-    parser.add_argument('--ipv6', nargs="*", action='extend',
+    parser.add_argument('--ipv6', nargs="*", action=ExtendAction,
                         help="ipv6 domain list [IPV6域名列表]")
     parser.add_argument('--ttl', type=int, help="ttl for DNS [DNS 解析 TTL 时间]")
-    parser.add_argument('--proxy', nargs="*", action='extend',
+    parser.add_argument('--proxy', nargs="*", action=ExtendAction,
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
@@ -150,3 +150,19 @@ def get_config(key, default=None):
     elif env_name.lower() in environ:  # 小写环境变量
         return environ.get(env_name.lower())
     return default
+
+
+class ExtendAction(Action):
+    """
+    兼容 Python <3.8 的 extend action
+    """
+    def __call__(self, parser, namespace, values, option_string=None):
+        items = getattr(namespace, self.dest, None)
+        if items is None:
+            items = []
+        # values 可能是单个值或列表
+        if isinstance(values, list):
+            items.extend(values)
+        else:
+            items.append(values)
+        setattr(namespace, self.dest, items)
