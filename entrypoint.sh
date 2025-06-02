@@ -24,11 +24,13 @@ function  fun_run_and_crond()
     ### CONF FILE OR ENV ###
     
     ### CONF PATH        ###
-    # CN: 存在 /config 文件夹, 且文件夹下有json文件, 则创建shell脚本
-    # EN: If the /config folder exists, and there are json files under the folder, create a shell script
+    # CN: 存在 /config 文件夹, 则创建shell脚本
+    # EN: If the /config folder exists, create a shell script
     if [ -d /config ]; then
+        # CN: 自动生成配置文件
+        # EN: Automatically generate configuration files
         if [ ! "$(ls -A /config/*.json 2>/dev/null)" ]; then
-            ecec /ddns  -c /config/config.json $@
+            exec /ddns  -c /config/config.json $@
         fi
     cat >/tmp/run.sh << 'EOF'
 #!/usr/bin/env sh
