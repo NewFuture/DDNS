@@ -66,6 +66,30 @@ def update_nuitka_version(pyfile):
     return False
 
 
+def remove_windows_textiowrapper(pyfile):
+    """
+    如果当前系统不是 Windows，则删除 run.py 中的 TextIOWrapper 兼容代码块
+    """
+    if os.name == 'nt':
+        return  # Windows 下不处理
+
+    with open(pyfile, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # 匹配并删除 if sys.version_info.major == 3 and os_name == 'nt': ... 代码块
+    pattern = re.compile(
+        r'(?m)^[ \t]*if sys\.version_info\.major == 3 and os_name == [\'"]nt[\'"]:\n'
+        r'(?:[ \t]+from io import TextIOWrapper\n)?'
+        r'(?:[ \t]+sys\.stdout = TextIOWrapper\(sys\.stdout\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
+        r'(?:[ \t]+sys\.stderr = TextIOWrapper\(sys\.stderr\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
+    )
+    new_content, n = pattern.subn('', content)
+    if n > 0:
+        with open(pyfile, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        print(f'Removed Windows TextIOWrapper code from {pyfile}')
+
+
 def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
@@ -73,6 +97,8 @@ def main():
     changed_files = 0
     # 先处理 run.py 的 nuitka-project 版本号
     update_nuitka_version(os.path.join(ROOT, "run.py"))
+    # 非 Windows 平台，移除 TextIOWrapper 兼容代码
+    remove_windows_textiowrapper(os.path.join(ROOT, "run.py"))
     for dirpath, _, filenames in os.walk(ROOT):
         for fname in filenames:
             if fname.endswith('.py'):

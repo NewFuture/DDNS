@@ -4,7 +4,7 @@ COPY . .
 RUN find /lib /usr/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
 RUN apk add py3-pip python3-dev patchelf build-base libffi-dev
 RUN pip3 install -U nuitka --break-system-packages
-RUN python3 .build/remove_python2.py
+RUN python3 .build/patch.py
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\
     --output-dir=./dist\

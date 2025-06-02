@@ -142,7 +142,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
-        run:  python3 .build/remove_python2.py
+        run:  python3 .build/patch.py
 
       # Prepare build version and cert
       - name: Replace build version
@@ -238,7 +238,7 @@ jobs:
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
                 python3 -m pip install nuitka
-                cd /DDNS &&  python3 .build/remove_python2.py && .build/nuitka.sh
+                cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
