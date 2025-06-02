@@ -12,7 +12,9 @@ import sys
 
 __cli_args = {}  # type: Namespace
 __config = {}  # type: dict
-log_levels = ['CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+log_levels = ['CRITICAL', 'FATAL', 'ERROR',
+              'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+
 
 def str2bool(v):
     """
@@ -26,6 +28,7 @@ def str2bool(v):
         return False
     else:
         return v
+
 
 def log_level(value):
     """
@@ -61,8 +64,10 @@ def init_config(description, doc, version):
                         help="https proxy [设置http 代理，多代理逐个尝试直到成功]")
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help="cache flag [启用缓存，可配配置路径或开关]")
-    parser.add_argument('--log.file', metavar="LOG_FILE", help="log file [日志文件，默认标准输出]")
-    parser.add_argument('--log.level', type=log_level, metavar="|".join(log_levels))
+    parser.add_argument('--log.file', metavar="LOG_FILE",
+                        help="log file [日志文件，默认标准输出]")
+    parser.add_argument('--log.level', type=log_level,
+                        metavar="|".join(log_levels))
 
     __cli_args = parser.parse_args()
     is_configfile_optional = get_config("token") or get_config("id")

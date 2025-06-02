@@ -139,7 +139,7 @@ def main():
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
     if get_config("config"):
-        info("Configuration was loaded from <== %s", path.abspath(get_config('config')))
+        info("loaded Config from: %s", path.abspath(get_config('config')))
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy if isinstance(
