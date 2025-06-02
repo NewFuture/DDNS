@@ -1,9 +1,11 @@
-# [<img src="doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS) 
+# [<img src="doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
 
 > 自动更新 DNS 解析 到本机 IP 地址,支持 ipv4 和 ipv6 以 本地(内网)IP 和 公网 IP。
 > 代理模式,支持自动创建域名记录。
 
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=DDNS&style=social)](https://pypi.org/project/ddns/)
+[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=Docker:newfuture/ddns&sort=semver&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Pulls](https://img.shields.io/docker/pulls/newfuture/ddns?style=social)](https://hub.docker.com/r/newfuture/ddns)
+[![PyPi version](https://img.shields.io/pypi/v/ddns.svg?style=social)](https://pypi.org/project/ddns/)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
 [![Publish Status](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/releases/latest)
 
@@ -12,42 +14,43 @@
 ## Features
 
 - 兼容和跨平台:
-  - [x] 可执行文件(无需 python 环境)
-  - [x] 多系统兼容 ![cross platform](https://img.shields.io/badge/platform-windows_%7C%20linux_%7C%20osx-success.svg?style=social)
-  - [x] python3 支持 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)(2.x支持python2和python3)
-  - [x] PIP 安装 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
-  - [x] Docker 支持(@NN708)
+  - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?logo=docker&style=flat-square)](https://hub.docker.com/r/newfuture/ddns)
+  - [PIP 安装 (兼容Python2)](https://pypi.org/project/ddns/) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)
+  - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
+
 - 域名支持:
-  - [x] 多个域名支持
-  - [x] 多级域名解析
-  - [x] 自动创建新记录
+  - 多个域名支持
+  - 多级域名解析
+  - 自动创建新记录
 - IP 类型:
-  - [x] 内网 IPv4 / IPv6
-  - [x] 公网 IPv4 / IPv6 (支持自定义 API)
-  - [x] 自定义命令(shell)
-  - [x] 正则选取支持(@rufengsuixing)
+  - 内网 IPv4 / IPv6
+  - 公网 IPv4 / IPv6 (支持自定义 API)
+  - 自定义命令(shell)
+  - 正则选取支持(@rufengsuixing)
 - 网络代理:
-  - [x] http 代理支持
-  - [x] 多代理自动切换
+  - http 代理支持
+  - 多代理自动切换
 - 服务商支持:
-  - [x] [DNSPOD](https://www.dnspod.cn/)
-  - [x] [阿里 DNS](http://www.alidns.com/)
-  - [x] [DNS.COM](https://www.dns.com/)(@loftor-git)
-  - [x] [DNSPOD 国际版](https://www.dnspod.com/)
-  - [x] [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
-  - [x] [HE.net](https://dns.he.net/)(@NN708) (不支持自动创建记录)
-  - [x] [华为云](https://huaweicloud.com/)(@cybmp3)
+  - [DNSPOD](https://www.dnspod.cn/)
+  - [阿里 DNS](http://www.alidns.com/)
+  - [DNS.COM](https://www.dns.com/)(@loftor-git)
+  - [DNSPOD 国际版](https://www.dnspod.com/)
+  - [CloudFlare](https://www.cloudflare.com/)(@tongyifan)
+  - [HE.net](https://dns.he.net/)(@NN708) (不支持自动创建记录)
+  - [华为云](https://huaweicloud.com/)(@cybmp3)
 - 其他:
-  - [x] 可设置定时任务
-  - [x] TTL 配置支持
-  - [x] 本地文件缓存(减少 API 请求)
-  - [x] 地址变更时触发自定义回调API(与 DDNS 功能互斥)
+  - 可设置定时任务
+  - TTL 配置支持
+  - 本地文件缓存(减少 API 请求)
+  - 地址变更时触发自定义回调API(与 DDNS 功能互斥)
 
 ## 使用
 
 ### ① 安装
 
-根据需要选择一种方式: `二进制`版,`pip`版,`源码`运行,或者`Docker`
+根据需要选择一种方式: `二进制`版,`pip`版,`源码`运行,或者`Docker`.
+
+推荐docker版,兼容性最佳，体积小，性能优化。
 
 - #### pip 安装(需要 pip 或 easy_install)
 
@@ -58,7 +61,7 @@
 
   - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
   - Linux (仅 Ubuntu 测试) [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-  - Mac OSX [ddns-osx](https://github.com/NewFuture/DDNS/releases/latest)
+  - Mac OSX [ddns-mac](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### 源码运行(无任何依赖, 需 python 环境)
 
@@ -69,7 +72,7 @@
 
   - 使用环境变量：
 
-    ```
+    ```sh
     docker run -d \
       -e DDNS_DNS=dnspod \
       -e DDNS_ID=12345 \
@@ -82,7 +85,7 @@
 
   - 使用配置文件(docker 工作目录`/ddds/`,默认配置位置`/ddns/config.json`)：
 
-    ```
+    ```sh
     docker run -d \
       -v /local/config/path/:/ddns/ \
       --network host \
