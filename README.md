@@ -3,10 +3,10 @@
 > 自动更新 DNS 解析 到本机 IP 地址，支持 IPv4 和 IPv6，本地（内网）IP 和公网 IP。
 > 代理模式，支持自动创建 DNS 记录。
 
-[![Github Release](https://img.shields.io/github/v/release/NewFuture/DDNS?&logo=github&style=for-the-badge
+[![Github Release](https://img.shields.io/github/v/release/NewFuture/DDNS?&logo=github&style=flatten
 )](https://github.com/NewFuture/DDNS/releases/latest)
-[![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=ddns&logo=pypi&style=for-the-badge)](https://pypi.org/project/ddns/)
-[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=newfuture/ddns&logo=docker&&sort=semver&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns)
+[![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=ddns&logo=pypi&style=flatten)](https://pypi.org/project/ddns/)
+[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=newfuture/ddns&logo=docker&&sort=semver&style=flatten)](https://hub.docker.com/r/newfuture/ddns)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
 [![Publish](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml)
 
