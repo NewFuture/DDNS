@@ -7,7 +7,7 @@
 | Docker      | `newfuture/ddns:${BUILD_VERSION}` 8种架构|
 | Windows     | [64位(x64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x64.exe) / [32位(x86)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x86.exe) / [arm64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-arm64.exe) |
 | Linux |  [64位(x64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-linux-x64) / [arm64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-linux-arm64) |
-| Mac OS X    |  [Apple Silicon (ARM64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-arm64.app) / [Intel x64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64.app) |
+| Mac OS X    |  [Apple Silicon (ARM64)](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-arm64) / [Intel x64](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64) |
 | Python/PIP  | any |
 
 ## Docker (推荐) ![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/newfuture/ddns/${BUILD_VERSION}?style=flat-square)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?logo=docker&style=flat-square)](https://hub.docker.com/r/newfuture/ddns)
@@ -60,10 +60,10 @@ curl -sSL https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/c
 ```sh
 # 命令行下载
 # arm64
-curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-arm64.app -#SLo ddns && chmod +x ddns
+curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-arm64 -#SLo ddns && chmod +x ddns
 
 # intel x64
-curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64.app -#SLo ddns && chmod +x ddns
+curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64 -#SLo ddns && chmod +x ddns
 ```
 
 ## 使用PIP 安装 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns/${BUILD_VERSION}.svg?style=flat-square) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=flat-square)
