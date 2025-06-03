@@ -163,14 +163,15 @@ jobs:
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
-      - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ runner.arch }}
+      - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
         if: runner.os == 'Linux'
-      - run: mv ./dist/ddns ./dist/ddns-mac-${{ runner.arch }}.app
+      - run: mv ./dist/ddns ./dist/ddns-mac-${{ matrix.arch }}
         if: runner.os == 'macOS'
-      - run: mv ./dist/ddns.exe ./dist/ddns-windows-${{ runner.arch }}.exe
+      - run: mv ./dist/ddns.exe ./dist/ddns-windows-${{ matrix.arch }}.exe
         if: runner.os == 'Windows'
-      - name: Upload files
-        run: gh release upload ${{ github.ref_name }} dist/ddns* --clobber
+      - name: Upload binary
+        run: gh release upload ${{ github.ref_name }} dist/ddns*
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -207,9 +208,9 @@ jobs:
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h 
-      - run: mv ./dist/ddns ./dist/ddns-linux-${{ runner.arch }}
-      - name: Upload files
-        run: gh release upload ${{ github.ref_name }} dist/ddns* --clobber
+      - run: sudo mv ./dist/ddns ./dist/ddns-linux-$(echo "${{ runner.arch }}" | tr '[:upper:]' '[:lower:]')
+      - name: Upload binary
+        run: gh release upload ${{ github.ref_name }} dist/ddns*
         env:
           GH_TOKEN: ${{ github.token }}
 
