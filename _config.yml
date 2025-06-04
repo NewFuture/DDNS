@@ -1,4 +1,8 @@
 markdown: kramdown
+
+favicon: /doc/img/ddns.svg
+site_favicon: /doc/img/ddns.svg
+
 kramdown:
   parse_block_html: true
 
