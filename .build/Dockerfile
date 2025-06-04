@@ -1,9 +1,11 @@
 FROM alpine
+
+RUN find /lib /usr/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
+RUN apk add --no-cache python3-dev py3-pip py3-cffi py3-zstandard py3-ordered-set patchelf clang
+RUN python3 -m pip install "https://github.com/Nuitka/Nuitka/archive/main.zip" --break-system-packages
+
 WORKDIR /build
 COPY . .
-RUN find /lib /usr/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
-RUN apk add py3-pip python3-dev patchelf build-base libffi-dev
-RUN pip3 install -U nuitka --break-system-packages
 RUN python3 .build/patch.py
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\
@@ -23,6 +25,6 @@ RUN mkdir docker-bin && cp dist/ddns docker-bin/ && cp .build/entrypoint.sh dock
 
 FROM alpine
 LABEL maintainer="NN708, newfuture"
-WORKDIR /ddns
 COPY --from=0 /build/docker-bin/* /bin/
+WORKDIR /ddns
 ENTRYPOINT [ "/bin/entrypoint.sh" ]
