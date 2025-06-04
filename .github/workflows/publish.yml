@@ -40,6 +40,11 @@ jobs:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
+          flavor: |
+            latest=${{ !contains(github.ref_name, 'a') && !contains(github.ref_name, '-') }}
+          tags: |
+            type=ref,event=tag
+            ${{ contains(github.ref_name, 'beta') && 'type=edge' || '' }}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
@@ -225,13 +230,13 @@ jobs:
     needs: [publish-docker, publish-pypi, publish-binary, publish-linux-general]
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" .github/release.md
 
       - name: Upload files
         run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat --clobber
         env:
           GH_TOKEN: ${{ github.token }}
-          
+
+      - run: sed -i 's#${BUILD_VERSION}#${{ github.ref_name }}#g' .github/release.md
       - name: Generate release notes and append README.md
         env:
           GH_TOKEN: ${{ github.token }}

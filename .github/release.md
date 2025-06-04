@@ -1,4 +1,7 @@
-[![PyPI version](https://img.shields.io/badge/DDNS-${BUILD_VERSION}-1abc9c.svg?style=social)](https://pypi.org/project/ddns/${BUILD_VERSION}/) ![Deploy OK](https://img.shields.io/badge/release-success-brightgreen.svg?style=flat-square)
+
+[![Github Release](https://img.shields.io/badge/${BUILD_VERSION}-success.svg?style=for-the-badge&logo=github)](https://github.com/NewFuture/DDNS/releases/${BUILD_VERSION})
+[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/${BUILD_VERSION}?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns)
+[![PyPI version](https://img.shields.io/pypi/v/ddns/${BUILD_VERSION}?logo=python&style=for-the-badge)](https://pypi.org/project/ddns/${BUILD_VERSION})
 
 ## 版本下载方式一览表
 
@@ -38,7 +41,7 @@ docker --name ddns -v $(pwd)/:/DDNS newfuture/ddns -h
 
 * ### Windows
 
-1. 下载 [`ddns-windows-x64.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x64.exe) 或者 [`ddns-windows-x32.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x32.exe) 或者[`ddns-windows-arm64.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-arm64.exe) 保存为`ddns.exe` 运行
+1. 下载 [`ddns-windows-x64.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x64.exe) 或者 [`ddns-windows-x86.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-x86.exe) 或者[`ddns-windows-arm64.exe`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-windows-arm64.exe) 保存为`ddns.exe` 运行
 2. [可选] 定时任务 下载 [`create-task.bat`](https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/create-task.bat) 于**相同目录**，以管理员权限运行
 
 * ### Linux 系统
@@ -66,7 +69,7 @@ curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-m
 curl https://github.com/NewFuture/DDNS/releases/download/${BUILD_VERSION}/ddns-mac-x64 -#SLo ddns && chmod +x ddns
 ```
 
-## 使用PIP 安装 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns/${BUILD_VERSION}.svg?style=flat-square) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=flat-square)
+## 使用PIP 安装 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns/${BUILD_VERSION}.svg?style=flat-square) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.{BUILD_VERSION}.svg?style=flat-square)
 
 Pypi 安装当前版本或者更新最新版本
 
