@@ -101,7 +101,7 @@ def __load_config(config_path):
     """
     global __config
     try:
-        with open(config_path, 'r', encoding='utf-8') as configfile:
+        with open(config_path, 'r') as configfile:
             __config = loadjson(configfile)
             __config["config_modified_time"] = stat(config_path).st_mtime
             if 'log' in __config:
@@ -182,7 +182,7 @@ def generate_config(config_path):
         }
     }
     try:
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(config_path, 'w') as f:
             dumpjson(configure, f, indent=2, sort_keys=True)
             return True
     except IOError:
