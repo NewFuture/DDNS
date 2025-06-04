@@ -1,5 +1,5 @@
 
-[![Github Release](https://img.shields.io/badge/${BUILD_VERSION}-success.svg?style=for-the-badge&logo=github)](https://github.com/NewFuture/DDNS/releases/${BUILD_VERSION})
+[![Github Release](https://img.shields.io/github/v/tag/newfuture/ddns?include_prereleases&filter=${BUILD_VERSION}&style=for-the-badge&logo=github&label=DDNS&color=success)](https://github.com/NewFuture/DDNS/releases/${BUILD_VERSION})
 [![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/${BUILD_VERSION}?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns)
 [![PyPI version](https://img.shields.io/pypi/v/ddns/${BUILD_VERSION}?logo=python&style=for-the-badge)](https://pypi.org/project/ddns/${BUILD_VERSION})
 
