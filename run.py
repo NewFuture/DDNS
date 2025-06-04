@@ -47,7 +47,7 @@ def get_ip(ip_type, index="default"):
         debug("get_ip(%s, %s)", ip_type, index)
         if index is False:  # disabled
             return False
-        elif isinstance(index, list):  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到找到一个可以正确获取到的IP
+        elif isinstance(index, list):  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到获取到IP
             for i in index:
                 value = get_ip(ip_type, i)
                 if value:
@@ -66,7 +66,7 @@ def get_ip(ip_type, index="default"):
         else:
             value = getattr(ip, index + "_v" + ip_type)()
     except Exception as e:
-        error(e)
+        error("Failed to get %s address: %s", ip_type, e)
     return value
 
 
@@ -81,7 +81,7 @@ def change_dns_record(dns, proxy_list, **kw):
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
-            error(e)
+            error("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
 
 
@@ -136,11 +136,11 @@ def main():
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
     if get_config("config"):
-        info("loaded Config from: %s", path.abspath(get_config('config')))
+        info('loaded Config from: %s', path.abspath(get_config('config')))
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy if isinstance(
-        proxy, list) else proxy.strip('; ').replace(',', ';').split(';')
+        proxy, list) else proxy.strip(';').replace(',', ';').split(';')
 
     cache_config = get_config('cache', True)
     if cache_config is False:
@@ -151,12 +151,12 @@ def main():
         cache = Cache(cache_config)
 
     if cache is False:
-        info("Cache is disabled!")
-    elif get_config("config_modified_time") is None or get_config("config_modified_time") >= cache.time:
-        warning("Cache file is out of dated.")
+        info('Cache is disabled!')
+    elif not get_config('config_modified_time') or get_config('config_modified_time') >= cache.time:
+        warning('Cache file is out of dated.')
         cache.clear()
     else:
-        debug("Cache is empty.")
+        debug('Cache is empty.')
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
 
