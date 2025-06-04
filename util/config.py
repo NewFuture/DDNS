@@ -5,8 +5,6 @@ from json import load as loadjson, dump as dumpjson
 from os import stat, environ, path
 from logging import error, getLevelName
 
-from time import time
-
 import sys
 
 
