@@ -261,12 +261,11 @@ jobs:
           path: dist/ddns
 
   docker:
-    if: github.event_name == 'pull_request'
     needs: [ python ]
     strategy:
       matrix:
-        platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x ]
-    runs-on: ubuntu-latest
+        platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8]
+    runs-on: ubuntu-${{ contains(matrix.platforms,'arm') && '24.04-arm' || 'latest'}}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -309,8 +308,7 @@ jobs:
           print-hash: true
 
   preview-docker:
-    if: github.event_name == 'push'
-    needs: [lint, python]
+    needs: [lint, docker, python]
     runs-on: ubuntu-latest
     timeout-minutes: 120
     environment:
