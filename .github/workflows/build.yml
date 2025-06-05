@@ -270,10 +270,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.platforms }}
-      - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -308,6 +304,7 @@ jobs:
           print-hash: true
 
   preview-docker:
+    if: github.event_name == 'push'
     needs: [lint, docker, python]
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -352,5 +349,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-
-
