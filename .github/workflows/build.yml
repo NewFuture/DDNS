@@ -264,12 +264,13 @@ jobs:
     needs: [ python ]
     strategy:
       matrix:
-        platforms: [ linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8]
+        platforms: [ "linux/386,linux/amd64", "linux/arm/v6,linux/arm/v7,linux/arm64/v8"]
     runs-on: ubuntu-${{ contains(matrix.platforms,'arm') && '24.04-arm' || 'latest'}}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
