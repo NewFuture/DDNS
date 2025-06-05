@@ -37,12 +37,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "2.7","3" ]
+        python-version: [ "2.7","3.6" ,"3.12","3.x"]
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.python-version }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: test help command
         run: python${{ matrix.python-version }} run.py -h
       - name: test config generation
@@ -135,10 +137,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.x
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: 3.12
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -202,7 +204,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ddns-${{ runner.os }}-${{ matrix.arch }}
+          name: ddns-${{ runner.os == 'Linux' && 'ubuntu' || runner.os == 'macOS' && 'mac' || 'windows' }}-${{ matrix.arch }}
           if-no-files-found: error
           path: |
             dist/*.exe
