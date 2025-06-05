@@ -264,19 +264,22 @@ jobs:
     needs: [ python ]
     strategy:
       matrix:
-        platforms: [ "linux/386,linux/amd64", "linux/arm/v6,linux/arm/v7,linux/arm64/v8"]
-    runs-on: ubuntu-${{ contains(matrix.platforms,'arm') && '24.04-arm' || 'latest'}}
+        os: [ ubuntu-latest, ubuntu-24.04-arm ] 
+    runs-on: ${{ matrix.os }}
+    env:
+      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
-          load: true
           file: .build/Dockerfile
           platforms: ${{ matrix.platforms }}
+          push: false
           tags: ddns:test
           
       - name: test help command
