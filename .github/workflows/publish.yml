@@ -40,11 +40,9 @@ jobs:
           images: |
             ghcr.io/newfuture/ddns
             newfuture/ddns
-          flavor: |
-            latest=${{ !contains(github.ref_name, 'a') && !contains(github.ref_name, '-') }}
           tags: |
             type=ref,event=tag
-            ${{ contains(github.ref_name, 'beta') && 'type=edge' || '' }}
+            ${{ (contains(github.ref_name, '-') || contains(github.ref_name, 'a') || contains(github.ref_name, 'c')) && 'edge' || 'latest' }}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
