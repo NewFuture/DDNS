@@ -69,6 +69,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install build
+      - run: sed -i -e 's#"doc/img/ddns.svg"#"https://ddns.newfuture.cc/doc/img/ddns.svg"#' README.md
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/

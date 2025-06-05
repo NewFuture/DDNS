@@ -38,7 +38,7 @@ elif 'BUILD_SOURCEBRANCHNAME' in environ:
 elif 'GITHUB_REF_NAME' in environ:  # github actions
     ref = environ['GITHUB_REF_NAME']
     if ref == 'master' or ref == 'main':  # CI
-        version = '0.0.b' + str(int(time()))
+        version = '4.0.b' + str(int(time()))
     elif ref.startswith('v') or ref.startswith('V'):  # Tag
         version = ref
     else:  # PR
