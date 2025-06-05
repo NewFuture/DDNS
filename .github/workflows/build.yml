@@ -37,23 +37,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "2.7", "3", "3.12", "3.13", "3.14-beta"]
+        version: [ "2.7", "3", "3.12", "3.13", "3.14-dev"]
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.python-version }}
-        if: matrix.python-version == '2.7' || matrix.python-version == '3'
+        if: matrix.version == '2.7' || matrix.version == '3'
       - uses: actions/setup-python@v5
-        if: matrix.python-version != '2.7' && matrix.python-version != '3'
+        if: matrix.version != '2.7' && matrix.version != '3'
         with:
-          python-version: ${{ matrix.python-version }}
+          version: ${{ matrix.version }}
       - name: test help command
-        run: python${{ matrix.python-version == '2.7' && '2' || '3' }} run.py -h
+        run: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }} run.py -h
       - name: test config generation
-        run: python${{ matrix.python-version }} run.py || test -e config.json
+        run: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }} run.py || test -e config.json
       - name: test version
-        run: python${{ matrix.python-version }} run.py --version
+        run: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }} run.py --version
 
   pypi:
     runs-on: ubuntu-latest
