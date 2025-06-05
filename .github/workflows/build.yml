@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-python@v5
         if: matrix.version != '2.7' && matrix.version != '3'
         with:
-          version: ${{ matrix.version }}
+          python-version: ${{ matrix.version }}
       - name: test help command
         run: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }} run.py -h
       - name: test config generation
