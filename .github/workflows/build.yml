@@ -37,18 +37,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "2.7","3" ]
+        version: [ "2.7", "3", "3.12", "3.13", "3.14-dev"]
+    env:
+      PY: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }}
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.python-version }}
+      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.version }}
+        if: matrix.version == '2.7' || matrix.version == '3'
+      - uses: actions/setup-python@v5
+        if: matrix.version != '2.7' && matrix.version != '3'
+        with:
+          python-version: ${{ matrix.version }}
       - name: test help command
-        run: python${{ matrix.python-version }} run.py -h
+        run: ${{env.PY}} run.py -h
       - name: test config generation
-        run: python${{ matrix.python-version }} run.py || test -e config.json
+        run: ${{env.PY}} run.py || test -e config.json
       - name: test version
-        run: python${{ matrix.python-version }} run.py --version
+        run: ${{env.PY}} run.py --version
 
   pypi:
     runs-on: ubuntu-latest
@@ -133,13 +140,15 @@ jobs:
           - os: macos-latest
             arch: arm64
     runs-on: ${{ matrix.os }}
+    env:
+      OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.x
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: 3.12
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -195,7 +204,6 @@ jobs:
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
 
-
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h
 
@@ -203,7 +211,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ddns-${{ runner.os }}-${{ matrix.arch }}
+          name: ddns-${{ env.OS_NAME }}-${{ matrix.arch }}
           if-no-files-found: error
           path: |
             dist/*.exe
