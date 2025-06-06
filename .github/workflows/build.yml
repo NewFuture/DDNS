@@ -303,7 +303,11 @@ jobs:
               platform_tag=$(echo $platform | tr "/" "-") # 将平台标识符转换为有效文件名
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
-              skopeo copy --override-os linux --override-arch $arch --override-variant $variant \
+              variantFlag=""
+              if [ -n "$variant" ]; then
+                variantFlag="--override-variant $variant"
+              fi
+              skopeo copy --override-os linux --override-arch $arch $variantFlag \
                 oci:/oci/oci-image:test docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
             done
       # 测试各个平台的镜像
