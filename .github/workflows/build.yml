@@ -78,7 +78,7 @@ jobs:
         with:
           name: pypi
           path: dist/
-          retention-days: 5
+          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
 
           
   pyinstaller:
@@ -118,7 +118,7 @@ jobs:
         with:
           name: PyInstaller-${{ matrix.os }}
           path: dist/
-          retention-days: 3
+          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
 
   nuitka:
     needs: [ python ]
@@ -218,6 +218,7 @@ jobs:
             dist/*.bin
             dist/*.app
             dist/ddns
+          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
 
   nuitka-linux:
     needs: [ python ]
@@ -259,6 +260,7 @@ jobs:
           name: ddns-linux-${{ contains(matrix.os, 'arm' ) && 'arm64' || 'x64' }}
           if-no-files-found: error
           path: dist/ddns
+          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
 
   docker:
     needs: [ python ]
@@ -285,8 +287,8 @@ jobs:
       
       # 准备测试环境
       - name: Prepare test environment
-        run: mkdir -p oci-image && tar -xf multi-platform-image.tar -C oci-image  
-      # 使用 skopeo 批量提取所有平台镜像
+        run: mkdir -p oci-image && tar -vxf multi-platform-image.tar -C oci-image  
+      # 使用 skopeo 批量提取所有平台镜像，正确处理变体
       - name: Extract platform images with skopeo
         uses: addnab/docker-run-action@v3
         with:
@@ -299,13 +301,15 @@ jobs:
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
               platform_tag=$(echo $platform | tr "/" "-") # 将平台标识符转换为有效文件名
-              # 提取特定平台镜像
-              skopeo copy --override-os linux --override-arch ${platform#*/} \
+              arch=$(echo $platform | cut -d'/' -f2)
+              variant=$(echo $platform | cut -d'/' -f3)
+              skopeo copy --override-os linux --override-arch $arch --override-variant $variant \
                 oci:/oci/oci-image:test docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
             done
       # 测试各个平台的镜像
       - name: Test platform images
         run: |
+          set -e
           # 解析平台列表
           IFS=',' read -ra PLATFORMS <<< "${{ env.platforms }}"
           
@@ -314,15 +318,10 @@ jobs:
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
             platform_tag=$(echo $platform | tr '/' '-')
-            
-            # 加载镜像
             echo "Loading image for $platform..."
             docker load < $platform_tag.tar
-
-            # 运行测试
-            echo "Running $platform help command..."
+            echo "Running test..."
             docker run --platform $platform --rm ddns:$platform_tag -h
-            echo "Running $platform config generation..."
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ddns:$platform_tag || test -e "config.json"
             sudo rm -f config.json
           done
@@ -331,9 +330,10 @@ jobs:
       - name: Upload images
         uses: actions/upload-artifact@v4
         with:
-          name: docker-${{ matrix.os }}
+          name: docker-${{ contains(runner.os,'arm') && 'arm64' || 'x86' }}
           path: "*.tar"
           if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
 
   preview-pypi:
     runs-on: ubuntu-latest
