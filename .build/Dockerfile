@@ -1,4 +1,4 @@
-ENV HOST_VERSION=3.21
+ARG HOST_VERSION=3.21
 FROM alpine:${HOST_VERSION}
 # pick main (not community) from here https://alpinelinux.org/releases/
 
