@@ -278,14 +278,62 @@ jobs:
         with:
           context: .
           file: .build/Dockerfile
-          platforms: ${{ matrix.platforms }}
+          platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
+          outputs: type=oci,dest=./multi-platform-image.tar
+      
+      # 准备测试环境
+      - name: Prepare test environment
+        run: mkdir -p oci-image && tar -xf multi-platform-image.tar -C oci-image  
+      # 使用 skopeo 批量提取所有平台镜像
+      - name: Extract platform images with skopeo
+        uses: addnab/docker-run-action@v3
+        with:
+          image: quay.io/skopeo/stable:latest
+          options: |
+            -v ${{ github.workspace }}/:/oci
+            -e PLATFORMS=${{ env.platforms }}
+          run: |
+            IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
+            for platform in "${PLATFORMS[@]}"; do
+              echo "=== Extracting image for: $platform ==="
+              platform_tag=$(echo $platform | tr "/" "-") # 将平台标识符转换为有效文件名
+              # 提取特定平台镜像
+              skopeo copy --override-os linux --override-arch ${platform#*/} \
+                oci:/oci/oci-image:test docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
+            done
+      # 测试各个平台的镜像
+      - name: Test platform images
+        run: |
+          # 解析平台列表
+          IFS=',' read -ra PLATFORMS <<< "${{ env.platforms }}"
           
-      - name: test help command
-        run: docker run --rm ddns:test -h
-      - name: test config generation
-        run: docker run --rm -v "$(pwd)":/ddns/ ddns:test || test -e config.json
+          # 测试每个平台的镜像
+          for platform in "${PLATFORMS[@]}"; do
+            echo "=== Testing platform: $platform ==="
+            # 将平台标识符转换为有效的文件名
+            platform_tag=$(echo $platform | tr '/' '-')
+            
+            # 加载镜像
+            echo "Loading image for $platform..."
+            docker load < $platform_tag.tar
+
+            # 运行测试
+            echo "Running $platform help command..."
+            docker run --platform $platform --rm ddns:$platform_tag -h
+            echo "Running $platform config generation..."
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ddns:$platform_tag || test -e "config.json"
+            sudo rm -f config.json
+          done
+      
+      # 上传测试结果和镜像
+      - name: Upload images
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-${{ matrix.os }}
+          path: "*.tar"
+          if-no-files-found: error
 
   preview-pypi:
     runs-on: ubuntu-latest
