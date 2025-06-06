@@ -363,7 +363,7 @@ jobs:
     if: github.event_name == 'push'
     needs: [lint, docker, python]
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
@@ -422,7 +422,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: docker-extra
-          file: multi-platform-extra.tar
+          path: multi-platform-extra.tar
           if-no-files-found: error    
       - run: tar -cvf multi-platform-extra.tar -C merged/ .
 
