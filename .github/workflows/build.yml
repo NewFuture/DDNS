@@ -335,7 +335,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docker-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
-          path: "*.tar"
+          path: multi-platform-image.tar
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
 
