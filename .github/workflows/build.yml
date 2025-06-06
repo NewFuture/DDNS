@@ -370,10 +370,22 @@ jobs:
     permissions:
       packages: write
     env:
-      platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
+      platforms: linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-amd
+          path: docker-amd
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-arm
+          path: docker-arm
+      - run: |
+          mkdir -p merged
+          tar -xf docker-amd/multi-platform-image.tar -C merged
+          tar -xf docker-arm/multi-platform-image.tar -C merged
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.platforms }}
@@ -401,7 +413,25 @@ jobs:
           context: .
           file: .build/Dockerfile
           platforms: ${{ env.platforms }}
-          push: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+          outputs: type=oci,dest=./multi-platform-extra.tar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-extra
+          file: multi-platform-extra.tar
+          if-no-files-found: error    
+      - run: tar -cvf multi-platform-extra.tar -C merged/ .
+
+      # 合并 docker job 的产物和当前产物
+      - name: Merge all platform images
+        run: |
+          for img in merged/*.tar; do
+            docker load < "$img"
+          done
+          for tag in ${{ steps.meta.outputs.tags }}; do
+            docker buildx imagetools create --tag $tag $(docker images --format '{{.Repository}}:{{.Tag}}' | grep ddns:)
+          done
