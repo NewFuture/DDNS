@@ -153,7 +153,7 @@ def main():
     if cache is False:
         info('Cache is disabled!')
     elif not get_config('config_modified_time') or get_config('config_modified_time') >= cache.time:
-        warning('Cache file is out of dated.')
+        warning('Cache file is outdated.')
         cache.clear()
     else:
         debug('Cache is empty.')
