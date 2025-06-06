@@ -382,10 +382,6 @@ jobs:
         with:
           name: docker-arm
           path: docker-arm
-      - run: |
-          mkdir -p merged
-          tar -xf docker-amd/multi-platform-image.tar -C merged
-          tar -xf docker-arm/multi-platform-image.tar -C merged
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.platforms }}
@@ -423,15 +419,17 @@ jobs:
         with:
           name: docker-extra
           path: multi-platform-extra.tar
-          if-no-files-found: error    
-      - run: tar -cvf multi-platform-extra.tar -C merged/ .
+          if-no-files-found: error
 
-      # 合并 docker job 的产物和当前产物
       - name: Merge all platform images
         run: |
-          for img in merged/*.tar; do
-            docker load < "$img"
-          done
+          mkdir -p arm-oci && tar -vxf docker-arm/multi-platform-image.tar -C arm-oci
+          mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
+          mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci  
           for tag in ${{ steps.meta.outputs.tags }}; do
-            docker buildx imagetools create --tag $tag $(docker images --format '{{.Repository}}:{{.Tag}}' | grep ddns:)
+            docker buildx imagetools create --tag "$tag" \
+            -f arm-oci/index.json \
+            -f amd-oci/index.json \
+            -f ext-oci/index.json \
+            --annotation "DOCKER_METADATA_OUTPUT_ANNOTATIONS"
           done
