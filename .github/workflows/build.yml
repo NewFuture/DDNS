@@ -469,10 +469,9 @@ jobs:
           mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
           mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci
           docker buildx imagetools create \
-            -t "newfuture/ddns:${{github.ref_name}}" \
+            -t "docker.io/newfuture/ddns:${{github.ref_name}}" \
             -t "ghcr.io/newfuture/ddns:${{github.ref_name}}" \
             -f arm-oci/index.json \
             -f amd-oci/index.json \
             -f ext-oci/index.json \
-            --annotation "$DOCKER_METADATA_OUTPUT_ANNOTATIONS"
-        
+            --annotation "$DOCKER_METADATA_OUTPUT_ANNOTATIONS"  
