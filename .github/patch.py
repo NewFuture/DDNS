@@ -90,42 +90,71 @@ def remove_windows_textiowrapper(pyfile):
         print(f'Removed Windows TextIOWrapper code from {pyfile}')
 
 
+def remove_python2_compatibility(pyfile):
+    """
+    删除指定文件中的 python2 兼容代码，逐行处理
+    """
+    with open(pyfile, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+    new_lines = []
+    i = 0
+    changed = False
+    while i < len(lines):
+        line = lines[i]
+        # 匹配 "try: # python3" 或 "try: # python 3"
+        if re.match(r'^[ \t]*try:[^\n]*python ?3', line):
+            try_block = []
+            except_block = []
+            i += 1
+            # 收集try块内容
+            while i < len(lines) and lines[i].startswith((' ', '\t')):
+                try_block.append(lines[i].lstrip())
+                i += 1
+            # 跳过空行
+            while i < len(lines) and lines[i].strip() == '':
+                i += 1
+            # 检查是否存在except块 (不检查具体错误类型，但必须包含python2或python 2)
+            if i < len(lines) and re.match(r'^[ \t]*except[^\n]*python ?2', lines[i]):
+                i += 1
+                # 收集except块内容
+                except_block = []
+                while i < len(lines) and lines[i].startswith((' ', '\t')):
+                    except_block.append(lines[i])
+                    i += 1
+                # 添加try块内容，except块用空行替代
+                new_lines.extend(['\n'] + try_block + ['\n'] * (len(except_block) + 1))
+                changed = True
+            else:
+                # 没有except块，原样保留
+                new_lines.append(line)
+                new_lines.extend(try_block)
+        else:
+            new_lines.append(line)
+            i += 1
+
+    if changed:
+        with open(pyfile, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        print(f'Removed python2 compatibility from {pyfile}')
+
+
 def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
-    changed_files = 0
-    # 先处理 run.py 的 nuitka-project 版本号
     update_nuitka_version(os.path.join(ROOT, "run.py"))
-    # 非 Windows 平台，移除 TextIOWrapper 兼容代码
     remove_windows_textiowrapper(os.path.join(ROOT, "run.py"))
+
+    changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):
         for fname in filenames:
             if fname.endswith('.py'):
                 fpath = os.path.join(dirpath, fname)
-                with open(fpath, 'r', encoding='utf-8') as f:
-                    content = f.read()
-
-                def repl(match):
-                    try_block = re.match(
-                        r'^[ \t]*try:[^\n]*python 3[^\n]*\n', match.group(0)
-                    ).group(0)
-                    except_block = re.search(
-                        r'^[ \t]*except ImportError:[^\n]*\n((?:[ \t]+from[^\n]*\n|[ \t]+import[^\n]*\n)*)',
-                        match.group(0), re.MULTILINE
-                    )
-                    except_block = except_block.group(
-                        0) if except_block else ''
-                    return dedent_imports_with_blank(match.group(1), try_block, except_block)
-
-                new_content, n = PATTERN.subn(repl, content)
-                if n > 0:
-                    with open(fpath, 'w', encoding='utf-8') as f:
-                        f.write(new_content)
-                    print(f'change: {fpath}')
-                    changed_files += 1
+                remove_python2_compatibility(fpath)
+                changed_files += 1
     print('done')
-    print(f'Total changed files: {changed_files}')
+    print(f'Total processed files: {changed_files}')
 
 
 if __name__ == '__main__':
