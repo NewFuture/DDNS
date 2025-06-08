@@ -4,8 +4,7 @@ ARG HOST_VERSION=3.6
 FROM alpine:${HOST_VERSION} AS builder
 
 RUN apk add --update --no-cache python3-dev py3-pip clang ccache build-base ca-certificates
-RUN ca-certificates --update
-
+RUN update-ca-certificates
 COPY .github/install-patchelf.sh /tmp/install-patchelf.sh
 RUN apk add --update --no-cache patchelf\
     || /tmp/install-patchelf.sh\
