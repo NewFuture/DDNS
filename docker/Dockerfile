@@ -1,14 +1,24 @@
+# ARG HOST_VERSION=3.17 # Default Alpine version, for 
+# ARG --platform=linux/riscv64 
 ARG HOST_VERSION=3.21
-FROM alpine:${HOST_VERSION}
-# pick main (not community) from here https://alpinelinux.org/releases/
+# https://alpinelinux.org/releases/
+# https://hub.docker.com/_/alpine/tags
 
-RUN find /lib /usr/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
-RUN apk add --no-cache python3-dev py3-pip py3-cffi py3-zstandard py3-ordered-set patchelf clang ccache
-RUN python3 -m pip install "https://github.com/Nuitka/Nuitka/archive/main.zip" --break-system-packages
+FROM alpine:${HOST_VERSION} AS base
+RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
+
+FROM python:3.10-alpine${HOST_VERSION} as builder
+# RUN apk add --no-cache python3-dev py3-pip py3-cffi py3-zstandard py3-ordered-set patchelf clang ccache
+RUN apk add --no-cache patchelf clang ccache
+
+ENV NUITKA=https://github.com/Nuitka/Nuitka/archive/main.zip
+RUN python3 -m pip install "${NUITKA}" \
+    || python3 -m pip install "${NUITKA}" --break-system-packages
 
 WORKDIR /build
 COPY . .
-RUN python3 .build/patch.py
+COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
+RUN python3 .github/patch.py
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\
     --output-dir=./dist\
@@ -27,6 +37,6 @@ RUN mkdir docker-bin && cp dist/ddns docker-bin/ && cp .build/entrypoint.sh dock
 
 FROM alpine:${HOST_VERSION}
 LABEL maintainer="NN708, newfuture"
-COPY --from=0 /build/docker-bin/* /bin/
+COPY --from=builder /build/docker-bin/* /bin/
 WORKDIR /ddns
 ENTRYPOINT [ "/bin/entrypoint.sh" ]

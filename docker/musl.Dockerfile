@@ -16,7 +16,7 @@ RUN apk add --update --no-cache dpkg
 
 WORKDIR /build
 COPY . .
-RUN python3 .build/patch.py
+RUN python3 .github/patch.py
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\
     --output-dir=./dist\

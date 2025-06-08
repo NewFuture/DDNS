@@ -152,7 +152,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
-        run:  python3 .build/patch.py
+        run:  python3 .github/patch.py
 
       # Prepare build version and cert
       - name: Replace build version
@@ -248,7 +248,7 @@ jobs:
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
                 python3 -m pip install nuitka
-                cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
+                cd /DDNS &&  python3 .github/patch.py && .build/nuitka.sh
 
       - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
@@ -261,14 +261,18 @@ jobs:
           if-no-files-found: error
           path: dist/ddns
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
-  pack-musl:
+
+  linux-binary:
     needs: [ python ]
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ] 
+        os: [ ubuntu-latest, ubuntu-24.04-arm ]
+        libc: [ musl, glibc ]
     runs-on: ${{ matrix.os }}
     env:
-      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+      # glibc: 基于 debian bulster  linux/arm/v6,linux/arm/v7,linux/arm64/v8
+      # musl: 基于 alpine 3.6  linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8,linux/arm/v6
+      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -278,7 +282,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/musl.Dockerfile
+          file: .build/${{ matrix.libc }}.Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddnsbin
@@ -291,13 +295,13 @@ jobs:
           mkdir -p dist
           for f in output/*/ddns; do
             name=$(basename "$(dirname "$f")")
-            mv "$f" "dist/ddns-musl-$name"
+            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
 
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
-          name: ddns-musl-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
+          name: ddns-${{ matrix.libc }}-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
           path: dist/*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
@@ -319,7 +323,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/Dockerfile
+          file: docker/Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
@@ -447,7 +451,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/Dockerfile
+          file: docker/Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ${{ steps.meta.outputs.tags }}
