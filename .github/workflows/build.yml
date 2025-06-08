@@ -287,7 +287,7 @@ jobs:
 
       # 输出目录结构扁平化
       - name: Flatten output directory structure
-        run: find output -mindepth 2 -type f -exec mv -t output {} +
+        run: find output -mindepth 2 -name 'ddns*' -type f -exec mv -t output {} +
           # find output -mindepth 1 -type d -empty -delete
 
       - name: Upload build result
