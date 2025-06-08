@@ -5,9 +5,9 @@ FROM alpine:${HOST_VERSION} AS builder
 
 RUN apk add --update --no-cache python3-dev py3-pip clang ccache build-base
 
-COPY .github/install_patchelf.sh /tmp/install_patchelf.sh
+COPY .github/install-patchelf.sh /tmp/install-patchelf.sh
 RUN apk add --update --no-cache patchelf\
-    || /tmp/install_patchelf.sh\
+    || /tmp/install-patchelf.sh\
     || pip3 install patchelf
 RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
 
