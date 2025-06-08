@@ -275,21 +275,20 @@ jobs:
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
       - uses: docker/setup-buildx-action@v3
-      - run: |
-          mkdir -p dist
-          for platform in ${{ env.platforms }}; do
-            HOST_ARG="3.6" # Default host argument
-            [ "$platform" != "linux/arm/v7" ] || HOST_ARG="3.9"
-            echo "Building for $platform on alpine:$HOST_ARG"
-            docker build --platform $platform -t ddnsbin -f .build/musl.Dockerfile . \
-            && docker run --platform $platform --rm -v $(pwd)/dist:/dist ddnsbin
-          done
-
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .build/Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddnsbin
+          target: export
+          outputs: type=local,dest=./output
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
           name: ddns-musl-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
-          path: dist
+          path: output/**/ddns*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
           

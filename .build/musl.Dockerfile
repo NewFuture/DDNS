@@ -1,5 +1,5 @@
 ARG HOST_VERSION=3.6
-FROM alpine:${HOST_VERSION}
+FROM alpine:${HOST_VERSION} as builder
 
 RUN apk add --update --no-cache python3-dev py3-pip patchelf clang ccache build-base
 RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
@@ -31,4 +31,5 @@ RUN mkdir /DDNS \
     && cp dist/ddns /bin/ddns \
     && cp dist/ddns /DDNS/ddns-${ARCH_FIXED}
 
-CMD [ "ddns -h", "cp /DDNS/* /dist" ]
+FROM scratch AS export
+COPY --from=builder /DDNS /out

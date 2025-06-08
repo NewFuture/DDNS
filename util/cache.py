@@ -11,10 +11,9 @@ from time import time
 
 from logging import info, debug, warning
 
-try:
+try:  # python 3
     from collections.abc import MutableMapping
-except ImportError:
-    # Python 2 imports
+except ImportError:  # python 2
     from collections import MutableMapping
 
 
