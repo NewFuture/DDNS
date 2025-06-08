@@ -453,19 +453,21 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          outputs: type=oci,dest=./multi-platform-extra.tar
+          outputs: type=oci,dest=multi-platform-extra.tar
 
       - uses: actions/upload-artifact@v4
         with:
           name: docker-extra
           path: multi-platform-extra.tar
           if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
 
       - name: Merge all platform images
         run: |
+          set -ex
           mkdir -p arm-oci && tar -vxf docker-arm/multi-platform-image.tar -C arm-oci
           mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
-          mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci  
+          mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci
           docker buildx imagetools create
             -t "newfuture/ddns:${{github.ref_name}}" \
             -t "ghcr.io/newfuture/ddns:${{github.ref_name}}"
