@@ -53,7 +53,7 @@ jobs:
       - name: test help command
         run: ${{env.PY}} run.py -h
       - name: test config generation
-        run: ${{env.PY}} run.py || test -e config.json
+        run: ${{env.PY}} run.py || test -f config.json
       - name: test version
         run: ${{env.PY}} run.py --version
 
@@ -110,7 +110,7 @@ jobs:
       - name: Package binary
         run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
@@ -204,7 +204,7 @@ jobs:
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
@@ -250,7 +250,7 @@ jobs:
                 python3 -m pip install nuitka
                 cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
