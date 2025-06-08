@@ -1,5 +1,3 @@
-# ARG HOST_VERSION=3.17 # Default Alpine version, for 
-# ARG --platform=linux/riscv64 
 ARG HOST_VERSION=3.21
 # https://alpinelinux.org/releases/
 # https://hub.docker.com/_/alpine/tags
@@ -7,13 +5,12 @@ ARG HOST_VERSION=3.21
 FROM alpine:${HOST_VERSION} AS base
 RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
 
-FROM python:3.10-alpine${HOST_VERSION} as builder
+FROM python:3.10-alpine${HOST_VERSION} AS builder
 # RUN apk add --no-cache python3-dev py3-pip py3-cffi py3-zstandard py3-ordered-set patchelf clang ccache
 RUN apk add --no-cache patchelf clang ccache
 
 ENV NUITKA=https://github.com/Nuitka/Nuitka/archive/main.zip
-RUN python3 -m pip install "${NUITKA}" \
-    || python3 -m pip install "${NUITKA}" --break-system-packages
+RUN python3 -m pip install cffi==1.16.0 "${NUITKA}" --break-system-packages
 
 WORKDIR /build
 COPY . .

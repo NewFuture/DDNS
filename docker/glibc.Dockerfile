@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster as builder
+FROM python:3.10-slim-buster AS builder
 
 # 安装必要的依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装Python依赖
-RUN pip3 install --no-cache-dir nuitka --break-system-packages
+RUN python3 -m pip install "https://github.com/Nuitka/Nuitka/archive/main.zip" --break-system-packages
 
 # 拷贝项目文件
 WORKDIR /app
