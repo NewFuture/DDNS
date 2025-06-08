@@ -8,7 +8,7 @@ RUN update-ca-certificates
 COPY .github/install-patchelf.sh /tmp/install-patchelf.sh
 RUN apk add --update --no-cache patchelf\
     || /tmp/install-patchelf.sh\
-    || pip3 install patchelf
+    || pip3 install patchelf==0.17.2.1
 RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
 
 # 添加可靠的架构检测
