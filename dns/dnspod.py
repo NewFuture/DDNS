@@ -106,10 +106,11 @@ def get_domain_id(domain):
         return get_domain_id.domain_list[domain]
     else:
         try:
-            info = request('Domain.Info', domain=domain)
-        except Exception:
+            d_info = request('Domain.Info', domain=domain)
+        except Exception as e:
+            info("get_domain_id(%s) error: %s", domain, e)
             return
-        did = info.get("domain", {}).get("id")
+        did = d_info.get("domain", {}).get("id")
         if did:
             get_domain_id.domain_list[domain] = did
             return did

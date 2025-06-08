@@ -468,9 +468,9 @@ jobs:
           mkdir -p arm-oci && tar -vxf docker-arm/multi-platform-image.tar -C arm-oci
           mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
           mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci
-          docker buildx imagetools create
+          docker buildx imagetools create \
             -t "newfuture/ddns:${{github.ref_name}}" \
-            -t "ghcr.io/newfuture/ddns:${{github.ref_name}}"
+            -t "ghcr.io/newfuture/ddns:${{github.ref_name}}" \
             -f arm-oci/index.json \
             -f amd-oci/index.json \
             -f ext-oci/index.json \
