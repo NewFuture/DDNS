@@ -29,7 +29,7 @@ esac
 
 echo "🧠 Detected architecture: $ARCH → $FILE"
 echo "⬇️ Downloading $FILE ..."
-curl -LO "${BASE_URL}/${FILE}"
+wget "${BASE_URL}/${FILE}"
 
 echo "📦 Extracting..."
 tar -xzf "${FILE}"
