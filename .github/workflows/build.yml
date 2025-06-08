@@ -278,7 +278,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/Dockerfile
+          file: .build/musl.Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddnsbin

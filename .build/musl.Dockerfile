@@ -1,5 +1,7 @@
 ARG HOST_VERSION=3.6
-FROM alpine:${HOST_VERSION} as builder
+
+# Build a statically linked binary using Nuitka with musl libc
+FROM alpine:${HOST_VERSION} AS builder
 
 RUN apk add --update --no-cache python3-dev py3-pip patchelf clang ccache build-base
 RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
@@ -31,5 +33,12 @@ RUN mkdir /DDNS \
     && cp dist/ddns /bin/ddns \
     && cp dist/ddns /DDNS/ddns-${ARCH_FIXED}
 
+# test the binary
+FROM alpine
+COPY --from=builder /bin/ddns /bin/ddns
+RUN ddns -h
+RUN ddns || test -f config.json
+
+# export the binary
 FROM scratch AS export
 COPY --from=builder /DDNS /out
