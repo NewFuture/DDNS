@@ -289,10 +289,9 @@ jobs:
       - name: Flatten output directory structure
         run: |
           mkdir -p dist
-          for d in output/*/out; do
-            [ -d "$d" ] || continue
-            name=$(basename "$(dirname "$d")")
-            mv "$d/ddns" "dist/ddns-musl-$name"
+          for f in output/*/out/ddns; do
+            name=$(basename "$(dirname "$(dirname "$f")")")
+            mv "$f" "dist/ddns-musl-$name"
           done
 
       - name: Upload build result
