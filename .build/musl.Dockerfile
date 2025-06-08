@@ -32,19 +32,15 @@ RUN python3 -O -m nuitka run.py \
     --noinclude-dlls=liblzma.so.* \
     --linux-icon=doc/img/ddns.svg 
 
-RUN mkdir /DDNS \
-    && ARCH=$(uname -m) \
-    && [ "${ARCH}" != "x86_64" ] || ARCH=$(dpkg --print-architecture) ;\
-    ARCH_FIXED=$(echo ${ARCH} | tr '/' '_') \
-    && cp dist/ddns /bin/ddns \
-    && cp dist/ddns /DDNS/ddns-${ARCH_FIXED}
+RUN cp dist/ddns /bin/ddns \
+    && cp dist/ddns /ddns
 
 # test the binary
 FROM alpine
-COPY --from=builder /bin/ddns /bin/ddns
+COPY --from=builder /ddns /bin/ddns
 RUN ddns -h
 RUN ddns || test -f config.json
 
 # export the binary
 FROM scratch AS export
-COPY --from=builder /DDNS /out
+COPY --from=builder /ddns /ddns
