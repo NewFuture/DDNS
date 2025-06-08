@@ -29,8 +29,7 @@ RUN python3 -O -m nuitka run.py \
     --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}" \
     --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes\
     --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
-    --noinclude-dlls=liblzma.so.* \
-    --linux-icon=doc/img/ddns.svg 
+    --noinclude-dlls=liblzma.so.*
 
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
