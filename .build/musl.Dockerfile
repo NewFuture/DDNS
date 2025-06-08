@@ -3,7 +3,10 @@ ARG HOST_VERSION=3.6
 # Build a statically linked binary using Nuitka with musl libc
 FROM alpine:${HOST_VERSION} AS builder
 
-RUN apk add --update --no-cache python3-dev py3-pip patchelf clang ccache build-base
+RUN apk add --update --no-cache python3-dev py3-pip clang ccache build-base
+
+ADD .github/install_patchelf.sh /tmp/install_patchelf.sh
+RUN apk add --update --no-cache patchelf || /tmp/install_patchelf.sh
 RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
 
 # 添加可靠的架构检测

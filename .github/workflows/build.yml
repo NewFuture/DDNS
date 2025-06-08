@@ -284,11 +284,17 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
+
+      # 输出目录结构扁平化
+      - name: Flatten output directory structure
+        run: find output -mindepth 2 -type f -exec mv -t output {} +
+          # find output -mindepth 1 -type d -empty -delete
+
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
           name: ddns-musl-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
-          path: output/**/ddns*
+          path: output/ddns*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
           
