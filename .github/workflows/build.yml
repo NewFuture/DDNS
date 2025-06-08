@@ -53,7 +53,7 @@ jobs:
       - name: test help command
         run: ${{env.PY}} run.py -h
       - name: test config generation
-        run: ${{env.PY}} run.py || test -e config.json
+        run: ${{env.PY}} run.py || test -f config.json
       - name: test version
         run: ${{env.PY}} run.py --version
 
@@ -110,7 +110,7 @@ jobs:
       - name: Package binary
         run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
@@ -204,7 +204,7 @@ jobs:
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
@@ -250,7 +250,7 @@ jobs:
                 python3 -m pip install nuitka
                 cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
 
-      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
 
       # Upload build result
@@ -261,7 +261,47 @@ jobs:
           if-no-files-found: error
           path: dist/ddns
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
+  pack-musl:
+    needs: [ python ]
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, ubuntu-24.04-arm ] 
+    runs-on: ${{ matrix.os }}
+    env:
+      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .build/musl.Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddnsbin
+          target: export
+          outputs: type=local,dest=./output
+
+      # 输出目录结构扁平化
+      - name: Flatten output directory structure
+        run: |
+          mkdir -p dist
+          for f in output/*/ddns; do
+            name=$(basename "$(dirname "$f")")
+            mv "$f" "dist/ddns-musl-$name"
+          done
+
+      - name: Upload build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddns-musl-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
+          
   docker:
     needs: [ python ]
     strategy:
