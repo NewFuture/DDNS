@@ -282,7 +282,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/${{ matrix.libc }}.Dockerfile
+          file: docker/${{ matrix.libc }}.Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddnsbin
