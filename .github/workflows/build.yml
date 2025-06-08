@@ -292,7 +292,7 @@ jobs:
           for d in output/*/out; do
             [ -d "$d" ] || continue
             name=$(basename "$(dirname "$d")")
-            mv "$d/ddns" "dist/ddns-$name"
+            mv "$d/ddns" "dist/ddns-musl-$name"
           done
 
       - name: Upload build result
