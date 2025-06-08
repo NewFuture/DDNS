@@ -33,8 +33,9 @@ RUN python3 -O -m nuitka run.py \
     --linux-icon=doc/img/ddns.svg 
 
 RUN mkdir /DDNS \
-    && ARCH=$(echo $(uname -m)||dpkg --print-architecture 2>/dev/null) \
-    && ARCH_FIXED=$(echo ${ARCH} | tr '/' '_') \
+    && ARCH=$(uname -m) \
+    && [ "${ARCH}" != "x86_64" ] || ARCH=$(dpkg --print-architecture) ;\
+    ARCH_FIXED=$(echo ${ARCH} | tr '/' '_') \
     && cp dist/ddns /bin/ddns \
     && cp dist/ddns /DDNS/ddns-${ARCH_FIXED}
 
