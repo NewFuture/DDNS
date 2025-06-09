@@ -456,7 +456,7 @@ jobs:
           set -ex
           docker buildx imagetools create \
           --tag ghcr.io/newfuture/ddns:${{ github.ref_name }} \
-          --tag github.io/newfuture/ddns:${{ github.ref_name }} \
+          --tag docker.io/newfuture/ddns:${{ github.ref_name }} \
           $(docker images --format "{{.Repository}}:{{.Tag}}" ddns:*) \
           --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
           --annotation "index,manifest:org.opencontainers.image.description=DDNS docker master CI build (unstable version),集成测试(非稳定版)" \
