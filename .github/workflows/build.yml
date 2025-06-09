@@ -361,7 +361,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
+              tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '-')
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -382,7 +382,7 @@ jobs:
           for platform in "${PLATFORMS[@]}"; do
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
-            tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr '/' '-')
+            tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '-')
             echo "Loading image for $platform..."
             docker load < ddns-oci-${tag}.tar
             echo "Running test..."

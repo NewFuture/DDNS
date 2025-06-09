@@ -3,7 +3,7 @@ FROM python:3.10-slim-buster AS base-builder
 
 # 安装必要的依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    clang \
     ccache \
     patchelf \
     build-essential \
@@ -40,12 +40,12 @@ RUN python -m nuitka \
     --include-module=dns.callback \
     --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
     --product-name=DDNS \
-    --lto=yes \
     --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}" \
     --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes \
     --file-description="DDNS Client 自动更新域名解析到本机IP" \
     --company-name="New Future" \
     --linux-icon=doc/img/ddns.svg \
+    --clang \
     run.py
 
 RUN cp dist/ddns /bin/ddns \
