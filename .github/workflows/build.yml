@@ -315,7 +315,7 @@ jobs:
         exclude:
           # PR 时不构建 QEMU 镜像
           - host: qemu
-            # event: pull_request
+            event: pull_request
 
     runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
@@ -433,9 +433,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: docker-arm
-      # - uses: actions/download-artifact@v4
-      #   with:
-      #     name: docker-qemu
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-qemu
 
       - uses: docker/login-action@v3
         with:
@@ -452,8 +452,7 @@ jobs:
           set -ex
           for f in $(ls ddns-oci-*.tar); do
             docker load -i "$f"
-            tag=${{ github.ref_name || 'test' }}-$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
-            docker push ${{ env.DOCKER_IMG }}:$tag
+            docker push ${{ env.DOCKER_IMG }}:$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
           done
       - name: merge and push images
         run: |
