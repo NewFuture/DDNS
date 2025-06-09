@@ -313,7 +313,7 @@ jobs:
         exclude:
           # PR 时不构建 QEMU 镜像
           - host: qemu
-            pr: pull_request
+            event: pull_request
 
     runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
