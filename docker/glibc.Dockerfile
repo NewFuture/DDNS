@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/*
 
-
 # 安装Python依赖
 ENV NUITKA_VERSION=${NUITKA_VERSION:-main}
 RUN python3 -m pip install --no-cache-dir "https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" --break-system-packages

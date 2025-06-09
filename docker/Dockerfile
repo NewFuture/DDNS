@@ -5,11 +5,10 @@ ARG HOST_VERSION=3.21
 
 FROM python:3.10-alpine${HOST_VERSION} AS base-builder
 # RUN apk add --no-cache python3-dev py3-pip py3-cffi py3-zstandard py3-ordered-set patchelf clang ccache
-RUN apk add --no-cache patchelf clang ccache libffi-dev py3-zstandard py3-ordered-set
+RUN apk add --no-cache patchelf clang ccache libffi-dev build-base zstd-libs
 ENV NUITKA_VERSION=${NUITKA_VERSION:-main}
 RUN python3 -m pip install --no-cache-dir "https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" --break-system-packages
 WORKDIR /app
-
 
 FROM alpine:${HOST_VERSION} AS base
 RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
