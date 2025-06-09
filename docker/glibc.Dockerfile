@@ -1,17 +1,25 @@
-FROM python:3.10-slim-buster AS builder
+# build with debian-slim (glibc 2.28)
+FROM python:3.10-slim-buster AS base-builder
 
 # 安装必要的依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    build-essential \
     ccache \
     patchelf \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/*
+
 
 # 安装Python依赖
-RUN python3 -m pip install "https://github.com/Nuitka/Nuitka/archive/main.zip" --break-system-packages
+ENV NUITKA_VERSION=${NUITKA_VERSION:-main}
+RUN python3 -m pip install --no-cache-dir "https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" --break-system-packages
 
-# 拷贝项目文件
 WORKDIR /app
+
+FROM base-builder AS builder
+# 拷贝项目文件
 COPY . .
 
 RUN python3 .github/patch.py
@@ -55,6 +63,11 @@ RUN ddns -h
 RUN ddns || test -f config.json
 
 FROM ubuntu:24.04
+COPY --from=builder /ddns /bin/ddns
+RUN ddns -h
+RUN ddns || test -f config.json
+
+FROM busybox:glibc
 COPY --from=builder /ddns /bin/ddns
 RUN ddns -h
 RUN ddns || test -f config.json
