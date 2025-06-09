@@ -307,18 +307,17 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            host: amd
+          - host: amd
             platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
-          - os: ubuntu-24.04-arm
-            host: arm
+            os: ubuntu-latest
+          - host: arm
             platforms: linux/arm/v6,linux/arm/v7,linux/arm64/v8
-          - os: ubuntu-latest
-            host: other
+            os: ubuntu-24.04-arm
+          - host: qemu  
             platforms: linux/ppc64le,linux/riscv64,linux/s390x
-        os: matrix.os 
+            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
-    if: github.event_name == 'push' || matrix.host != 'other'
+    if: github.event_name == 'push' || matrix.host != 'qemu'
     env:
       platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 45
@@ -326,7 +325,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
-        if: matrix.platforms == 'other'
+        if: matrix.platforms == 'qemu'
         with:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
@@ -444,7 +443,7 @@ jobs:
           name: docker-arm
       - uses: actions/download-artifact@v4
         with:
-          name: docker-other
+          name: docker-qemu
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
