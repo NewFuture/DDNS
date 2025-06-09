@@ -331,23 +331,13 @@ jobs:
         with:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: |
-            ghcr.io/newfuture/ddns
-            newfuture/ddns
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: .build/Dockerfile
           platforms: ${{ env.platforms }}
           push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
+          tags: ddns:test
           outputs: type=oci,dest=./multi-platform-image.tar
       
       # 准备测试环境
@@ -373,7 +363,7 @@ jobs:
                 variantFlag="--override-variant $variant"
               fi
               skopeo copy --override-os linux --override-arch $arch $variantFlag \
-                oci:/oci/oci-image:${{github.ref_name || 'test' }} docker-archive:/oci/ddns-oci-${platform_tag}.tar:ddns:$platform_tag
+                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${platform_tag}.tar:ddns:$platform_tag
             done
       # 测试各个平台的镜像
       - name: Test platform images
@@ -434,8 +424,6 @@ jobs:
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
     permissions:
       packages: write
-    env:
-      platforms: linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -446,6 +434,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: docker-qemu
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -455,19 +444,21 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+      - uses: setup-buildx-action@v3
       - name: docker load images
         run: |
           set -ex
           for f in $(ls ddns-oci-*.tar); do
             docker load < "$f"
           done
-
       - name: merge and push images
-        run: docker buildx imagetools create \
-          --annotation "index:org.opencontainers.image.url=https://ddns.newfuture.cc" \
-          --annotation "index:org.opencontainers.image.description=DDNS docker master CI build (unstable version),集成测试版本，非稳定版" \
-          --annotation "index:org.opencontainers.image.authors=NewFuture,NN708" \
+        run: |
+          set -ex
+          docker buildx imagetools create \
           --tag ghcr.io/newfuture/ddns:${{ github.ref_name }} \
           --tag github.io/newfuture/ddns:${{ github.ref_name }} \
-          $(docker images --format "{{.Repository}}:{{.Tag}}" ddns:*)
+          $(docker images --format "{{.Repository}}:{{.Tag}}" ddns:*) \
+          --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
+          --annotation "index,manifest:org.opencontainers.image.description=DDNS docker master CI build (unstable version),集成测试(非稳定版)" \
+          --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"
+
