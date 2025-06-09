@@ -17,6 +17,8 @@ permissions:
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
+env:
+  DOCKER_IMG: "ghcr.io/newfuture/ddns"
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -355,7 +357,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              platform_tag=$(echo $platform | tr "/" "-") # 将平台标识符转换为有效文件名
+              platform_tag=$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -363,7 +365,7 @@ jobs:
                 variantFlag="--override-variant $variant"
               fi
               skopeo copy --override-os linux --override-arch $arch $variantFlag \
-                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${platform_tag}.tar:ddns:$platform_tag
+                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${platform_tag}.tar:${{ env.DOCKER_IMG }}:${platform_tag}
             done
       # 测试各个平台的镜像
       - name: Test platform images
@@ -380,8 +382,8 @@ jobs:
             echo "Loading image for $platform..."
             docker load < ddns-oci-${platform_tag}.tar
             echo "Running test..."
-            docker run --platform $platform --rm ddns:$platform_tag -h
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ddns:$platform_tag || test -e "config.json"
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$platform_tag -h
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$platform_tag || test -e "config.json"
             sudo rm -f config.json
           done
       
@@ -445,20 +447,21 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: docker/setup-buildx-action@v3
-      - name: docker load images
+      - name: docker load and push
         run: |
           set -ex
           for f in $(ls ddns-oci-*.tar); do
-            docker load < "$f"
+            docker load -i "$f"
+            docker push ${{ env.DOCKER_IMG }}:$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
           done
       - name: merge and push images
         run: |
           set -ex
           docker buildx imagetools create \
-          --tag ghcr.io/newfuture/ddns:${{ github.ref_name }} \
-          --tag docker.io/newfuture/ddns:${{ github.ref_name }} \
-          $(docker images --format "{{.Repository}}:{{.Tag}}" ddns:*) \
+          --tag ${{ env.DOCKER_IMG }}:${{ github.ref_name }} \
+          --tag newfuture/ddns:${{ github.ref_name }} \
+          $(docker images --format "{{.Repository}}:{{.Tag}}" ${{ env.DOCKER_IMG }}:*) \
           --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
-          --annotation "index,manifest:org.opencontainers.image.description=DDNS docker master CI build (unstable version),集成测试(非稳定版)" \
+          --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \
           --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"
 
