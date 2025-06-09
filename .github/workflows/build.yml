@@ -462,15 +462,22 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
 
-      - name: Merge all platform images
+      - name: Extra all platform images
         run: |
           set -ex
           mkdir -p arm-oci && tar -vxf docker-arm/multi-platform-image.tar -C arm-oci
           mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
           mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci
-          docker buildx imagetools create \
-            -t "docker.io/newfuture/ddns:${{github.ref_name}}" \
+      - name: Push Github Container
+        run: docker buildx imagetools create 
             -t "ghcr.io/newfuture/ddns:${{github.ref_name}}" \
+            -f arm-oci/index.json \
+            -f amd-oci/index.json \
+            -f ext-oci/index.json \
+            --annotation "$DOCKER_METADATA_OUTPUT_ANNOTATIONS"
+      - name: Push to Docker Hub
+        run: docker buildx imagetools create \
+            -t "docker.io/newfuture/ddns:${{github.ref_name}}" \
             -f arm-oci/index.json \
             -f amd-oci/index.json \
             -f ext-oci/index.json \
