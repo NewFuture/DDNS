@@ -357,7 +357,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              platform_tag=$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
+              tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -365,7 +365,7 @@ jobs:
                 variantFlag="--override-variant $variant"
               fi
               skopeo copy --override-os linux --override-arch $arch $variantFlag \
-                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${platform_tag}.tar:${{ env.DOCKER_IMG }}:${platform_tag}
+                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${tag}.tar:${{ env.DOCKER_IMG }}:${tag}
             done
       # 测试各个平台的镜像
       - name: Test platform images
@@ -378,12 +378,12 @@ jobs:
           for platform in "${PLATFORMS[@]}"; do
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
-            platform_tag=$(echo $platform | tr '/' '-')
+            tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr '/' '-')
             echo "Loading image for $platform..."
-            docker load < ddns-oci-${platform_tag}.tar
+            docker load < ddns-oci-${tag}.tar
             echo "Running test..."
-            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$platform_tag -h
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$platform_tag || test -e "config.json"
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
           done
       
@@ -452,7 +452,8 @@ jobs:
           set -ex
           for f in $(ls ddns-oci-*.tar); do
             docker load -i "$f"
-            docker push ${{ env.DOCKER_IMG }}:$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
+            tag=${{ github.ref_name || 'test' }}-$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
+            docker push ${{ env.DOCKER_IMG }}:$tag
           done
       - name: merge and push images
         run: |
