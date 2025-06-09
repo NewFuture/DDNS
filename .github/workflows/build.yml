@@ -322,7 +322,9 @@ jobs:
           file: .build/Dockerfile
           platforms: ${{ env.platforms }}
           push: false
-          tags: ddns:test
+          tags: |
+            "docker.io/newfuture/ddns:${{github.ref_name || 'test' }}" \
+            "ghcr.io/newfuture/ddns:${{github.ref_name || 'test' }}"
           outputs: type=oci,dest=./multi-platform-image.tar
       
       # 准备测试环境
