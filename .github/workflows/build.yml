@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ "2.7", "3", "3.10", "3.12", "3.13", "3.14-dev"]
+        version: [ "2.7", "3", "3.9", "3.10", "3.12", "3.13", "3.14-dev"]
     env:
       PY: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }}
     runs-on: ubuntu-22.04

@@ -4,9 +4,10 @@ FROM python:3.10-slim-buster AS base-builder
 # 安装必要的依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    build-essential \
     ccache \
     patchelf \
+    build-essential \
+    libffi-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/*
