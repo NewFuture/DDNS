@@ -306,28 +306,28 @@ jobs:
     needs: [ python ]
     strategy:
       matrix:
-        include:
-          - host: amd
-            platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
-            os: ubuntu-latest
-          - host: arm
-            platforms: linux/arm/v6,linux/arm/v7,linux/arm64/v8
-            os: ubuntu-24.04-arm
-          - host: qemu  
-            platforms: linux/ppc64le,linux/riscv64,linux/s390x
-            os: ubuntu-latest
+        host: ['amd','arm','qemu']
+        pr: 
+          - ${{github.event_name == 'pull_request'}} 
+
         exclude:
           # PR 时不构建 QEMU 镜像
-          - host: ${{ github.event_name == 'pull_request' && 'qemu' }}
-    runs-on: ${{ matrix.os }}
+          - host: qemu
+            pr: true
+
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
-      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+      platforms: ${{
+        matrix.host == 'amd' && 'linux/386,linux/amd64' ||
+          matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
+          'linux/ppc64le,linux/riscv64,linux/s390x' 
+        }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
-        if: matrix.platforms == 'qemu'
+        if: matrix.host == 'qemu'
         with:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
