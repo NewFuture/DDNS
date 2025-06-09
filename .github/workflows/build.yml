@@ -348,7 +348,7 @@ jobs:
                 variantFlag="--override-variant $variant"
               fi
               skopeo copy --override-os linux --override-arch $arch $variantFlag \
-                oci:/oci/oci-image:test docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
+                oci:/oci/oci-image:${{github.ref_name || 'test' }} docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
             done
       # 测试各个平台的镜像
       - name: Test platform images
