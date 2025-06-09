@@ -17,6 +17,8 @@ permissions:
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
+env:
+  DOCKER_IMG: "ghcr.io/newfuture/ddns"
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -310,15 +312,30 @@ jobs:
     needs: [ python ]
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ] 
-    runs-on: ${{ matrix.os }}
+        host: ['amd','arm','qemu']
+        event: 
+          - ${{github.event_name}} 
+
+        exclude:
+          # PR 时不构建 QEMU 镜像
+          - host: qemu
+            event: pull_request
+
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
-      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 8
+      platforms: ${{
+        matrix.host == 'amd' && 'linux/386,linux/amd64' ||
+          matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
+          'linux/ppc64le,linux/riscv64,linux/s390x' 
+        }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
-
+      - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
+        if: matrix.host == 'qemu'
+        with:
+          platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
@@ -344,7 +361,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              platform_tag=$(echo $platform | tr "/" "-") # 将平台标识符转换为有效文件名
+              tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -352,7 +369,7 @@ jobs:
                 variantFlag="--override-variant $variant"
               fi
               skopeo copy --override-os linux --override-arch $arch $variantFlag \
-                oci:/oci/oci-image:test docker-archive:/oci/$platform_tag.tar:ddns:$platform_tag
+                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${tag}.tar:${{ env.DOCKER_IMG }}:${tag}
             done
       # 测试各个平台的镜像
       - name: Test platform images
@@ -365,12 +382,12 @@ jobs:
           for platform in "${PLATFORMS[@]}"; do
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
-            platform_tag=$(echo $platform | tr '/' '-')
+            tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr '/' '-')
             echo "Loading image for $platform..."
-            docker load < $platform_tag.tar
+            docker load < ddns-oci-${tag}.tar
             echo "Running test..."
-            docker run --platform $platform --rm ddns:$platform_tag -h
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ddns:$platform_tag || test -e "config.json"
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
           done
       
@@ -378,8 +395,8 @@ jobs:
       - name: Upload images
         uses: actions/upload-artifact@v4
         with:
-          name: docker-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
-          path: multi-platform-image.tar
+          name: docker-${{ matrix.host }}
+          path: ddns-oci-*.tar
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
 
@@ -407,29 +424,23 @@ jobs:
     if: github.event_name == 'push'
     needs: [lint, docker, python]
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
     permissions:
       packages: write
-    env:
-      platforms: linux/ppc64le,linux/riscv64,linux/s390x
     steps:
-      - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: actions/download-artifact@v4
         with:
           name: docker-amd
-          path: docker-amd
       - uses: actions/download-artifact@v4
         with:
           name: docker-arm
-          path: docker-arm
-      - uses: docker/setup-qemu-action@v3
+      - uses: actions/download-artifact@v4
         with:
-          platforms: ${{ env.platforms }}
-      - uses: docker/setup-buildx-action@v3
+          name: docker-qemu
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -439,43 +450,21 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: |
-            ghcr.io/newfuture/ddns
-            newfuture/ddns
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: ${{ env.platforms }}
-          push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          outputs: type=oci,dest=multi-platform-extra.tar
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker-extra
-          path: multi-platform-extra.tar
-          if-no-files-found: error
-          retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
-
-      - name: Merge all platform images
+      - uses: docker/setup-buildx-action@v3
+      - name: docker load and push
         run: |
           set -ex
-          mkdir -p arm-oci && tar -vxf docker-arm/multi-platform-image.tar -C arm-oci
-          mkdir -p amd-oci && tar -vxf docker-amd/multi-platform-image.tar -C amd-oci
-          mkdir -p ext-oci && tar -vxf multi-platform-extra.tar -C ext-oci
+          for f in $(ls ddns-oci-*.tar); do
+            docker load -i "$f"
+            docker push ${{ env.DOCKER_IMG }}:$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
+          done
+      - name: merge and push images
+        run: |
+          set -ex
           docker buildx imagetools create \
-            -t "docker.io/newfuture/ddns:${{github.ref_name}}" \
-            -t "ghcr.io/newfuture/ddns:${{github.ref_name}}" \
-            -f arm-oci/index.json \
-            -f amd-oci/index.json \
-            -f ext-oci/index.json \
-            --annotation "$DOCKER_METADATA_OUTPUT_ANNOTATIONS"  
+          --tag ${{ env.DOCKER_IMG }}:${{ github.ref_name }} \
+          --tag newfuture/ddns:${{ github.ref_name }} \
+          $(docker images --format "{{.Repository}}:{{.Tag}}" ${{ env.DOCKER_IMG }}:*) \
+          --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
+          --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \
+          --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"
