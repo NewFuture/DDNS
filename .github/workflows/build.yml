@@ -317,7 +317,7 @@ jobs:
             platforms: linux/ppc64le,linux/riscv64,linux/s390x
             os: ubuntu-latest
     runs-on: ${{ matrix.os }}
-    if: github.event_name == 'push' || matrix.host != 'qemu'
+    if: ${{github.event_name == 'push' || matrix.host != 'qemu'}}
     env:
       platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 45
