@@ -444,7 +444,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: docker load images
         run: |
           set -ex
