@@ -149,7 +149,7 @@ jobs:
       - name: Set up Python 3
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.x' || '3.8' }}
+          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.x' || '3.10' }}
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -255,9 +255,10 @@ jobs:
           mkdir -p dist
           for f in output/*/ddns; do
             name=$(basename "$(dirname "$f")")
-            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
             # test if the binary works in docker with target platform
-            docker run --rm --platform $(echo $name | tr '_' '/') -v "$(pwd)/dist:/dist" alpine:latest sh -c "chmod +x /dist/ddns-${{ matrix.libc }}-$name && /dist/ddns-${{ matrix.libc }}-$name -h"
+            platform=$(echo $name | tr '_' '/')
+            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
 
       - name: Upload build result
