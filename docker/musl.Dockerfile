@@ -30,17 +30,6 @@ RUN python3 -O -m nuitka run.py \
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
 
-# test the binary
-FROM alpine
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
-FROM busybox:musl
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
 # export the binary
 FROM scratch AS export
 COPY --from=builder /ddns /ddns

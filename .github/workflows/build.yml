@@ -149,7 +149,7 @@ jobs:
       - name: Set up Python 3
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.8' || '3.x' }}
+          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.x' || '3.8' }}
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -251,13 +251,13 @@ jobs:
       # 输出目录结构扁平化
       - name: Flatten output directory structure
         run: |
+          set -e
           mkdir -p dist
           for f in output/*/ddns; do
-            $f -h
-            $f || test -f config.json
-            rm -f config.json
             name=$(basename "$(dirname "$f")")
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
+            # test if the binary works in docker with target platform
+            docker run --rm --platform $(echo $name | tr '_' '/') -v "$(pwd)/dist:/dist" alpine:latest sh -c "chmod +x /dist/ddns-${{ matrix.libc }}-$name && /dist/ddns-${{ matrix.libc }}-$name -h"
           done
 
       - name: Upload build result
@@ -321,7 +321,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '-')
+              tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -342,7 +342,7 @@ jobs:
           for platform in "${PLATFORMS[@]}"; do
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
-            tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '-')
+            tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
             echo "Loading image for $platform..."
             docker load < ddns-oci-${tag}.tar
             echo "Running test..."

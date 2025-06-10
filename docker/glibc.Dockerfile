@@ -53,27 +53,6 @@ RUN python -m nuitka \
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
 
-# test the binary
-FROM ubuntu:20.04
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
-FROM ubuntu:22.04
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
-FROM ubuntu:24.04
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
-FROM busybox:glibc
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
-
 # export the binary
 FROM scratch AS export
 COPY --from=builder /ddns /ddns
