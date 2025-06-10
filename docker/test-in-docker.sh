@@ -41,3 +41,5 @@ fi
 
 docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file -h
 docker run --rm -v="$volume:/dist" --platform=$platform $container sh -c "/dist/$file && test -f config.json"
+# delete to avoid being reused
+docker image rm $container

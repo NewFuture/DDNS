@@ -144,7 +144,6 @@ def main():
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
     update_nuitka_version(os.path.join(ROOT, "run.py"))
-    remove_windows_textiowrapper(os.path.join(ROOT, "run.py"))
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):
