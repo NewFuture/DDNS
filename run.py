@@ -12,6 +12,7 @@ from os import path, environ, name as os_name
 from tempfile import gettempdir
 from logging import basicConfig, info, warning, error, debug
 from subprocess import check_output
+from io import TextIOWrapper
 
 import sys
 
