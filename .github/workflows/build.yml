@@ -143,7 +143,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
@@ -275,7 +275,7 @@ jobs:
           
   docker:
     needs: [ python ]
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.host == 'qemu' && 60 || 30 }} 
     strategy:
       matrix:
         host: ['amd','arm','qemu']
