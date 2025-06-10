@@ -163,7 +163,7 @@ def main():
 
 if __name__ == '__main__':
     encoding = sys.stdout.encoding
-    if encoding != None && sys.stdout.encoding.lower() != 'utf-8':
+    if encoding != None and sys.stdout.encoding.lower() != 'utf-8':
         # 兼容windows 和部分ASCII编码的老旧系统
         from io import TextIOWrapper
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
