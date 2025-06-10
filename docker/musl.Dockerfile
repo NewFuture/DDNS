@@ -1,22 +1,18 @@
-ARG HOST_VERSION=3.6
+ARG PYTHON_VERSION=3.8
+ARG NUITKA_VERSION=main
+# build with alpine3.12 (musl-libc 1.1.24)
+FROM python:${PYTHON_VERSION}-alpine3.12 AS base-builder
 
-# Build a statically linked binary using Nuitka with musl libc
-FROM alpine:${HOST_VERSION} AS builder
-
-RUN apk add --update --no-cache python3-dev py3-pip clang ccache build-base ca-certificates wget cmake
+RUN apk add --update --no-cache clang ccache build-base ca-certificates patchelf
 RUN update-ca-certificates
-COPY .github/install-patchelf.sh /tmp/install-patchelf.sh
-RUN apk add --update --no-cache patchelf\
-    || /tmp/install-patchelf.sh\
-    || pip3 install patchelf==0.17.2.1
-RUN python3 -m pip install zstandard  "https://github.com/Nuitka/Nuitka/archive/main.zip"
+ARG NUITKA_VERSION
+RUN python3 -m pip install --no-cache-dir https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip #--break-system-packages
 
-# 添加可靠的架构检测
-RUN apk add --update --no-cache dpkg
+WORKDIR /app
 
-WORKDIR /build
+FROM base-builder AS builder
 COPY . .
-RUN python3 .build/patch.py
+RUN python3 .github/patch.py
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\
     --output-dir=./dist\
@@ -33,12 +29,6 @@ RUN python3 -O -m nuitka run.py \
 
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
-
-# test the binary
-FROM alpine
-COPY --from=builder /ddns /bin/ddns
-RUN ddns -h
-RUN ddns || test -f config.json
 
 # export the binary
 FROM scratch AS export

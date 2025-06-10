@@ -2,7 +2,7 @@
 ---
 
 [<img src="https://ddns.newfuture.cc/doc/img/ddns.svg" height="32px"/>](https://ddns.newfuture.cc)
-[![Github Release](https://img.shields.io/github/v/tag/newfuture/ddns?include_prereleases&filter=${BUILD_VERSION}&style=for-the-badge&logo=github&label=DDNS&color=success)](https://github.com/NewFuture/DDNS/releases/${BUILD_VERSION})[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/${BUILD_VERSION}?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns)[![PyPI version](https://img.shields.io/pypi/v/ddns/${BUILD_VERSION}?logo=python&style=for-the-badge)](https://pypi.org/project/ddns/${BUILD_VERSION})
+[![Github Release](https://img.shields.io/github/v/tag/newfuture/ddns?include_prereleases&filter=${BUILD_VERSION}&style=for-the-badge&logo=github&label=DDNS&color=success)](https://github.com/NewFuture/DDNS/releases/${BUILD_VERSION})[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/${BUILD_VERSION}?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns/tags?name=${BUILD_VERSION})[![PyPI version](https://img.shields.io/pypi/v/ddns/${BUILD_VERSION}?logo=python&style=for-the-badge)](https://pypi.org/project/ddns/${BUILD_VERSION})
 
 ## 各版本下载方式一览表
 
@@ -33,7 +33,7 @@ docker --name ddns -v $(pwd)/:/DDNS newfuture/ddns -h
 支持源:
 
 * Docker官方源: [docker.io/newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
-* Github官方源: [ghcr.io/newfuture/ddns](https://github.com/NewFuture/DDNS/pkgs/container/ddns/426721813?tag=${BUILD_VERSION})
+* Github官方源: [ghcr.io/newfuture/ddns](https://github.com/NewFuture/DDNS/pkgs/container/ddns)
 
 ## 使用二进制文件 ![cross platform](https://img.shields.io/badge/system-Windows_%7C%20Linux_%7C%20MacOS-success.svg?style=social)
 

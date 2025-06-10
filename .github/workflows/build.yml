@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ "2.7", "3", "3.12", "3.13", "3.14-dev"]
+        version: [ "2.7", "3", "3.8", "3.10", "3.12", "3.13", "3.14-dev"]
     env:
       PY: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }}
     runs-on: ubuntu-22.04
@@ -85,9 +85,8 @@ jobs:
           
   pyinstaller:
     strategy:
-      # fail-fast: false
       matrix:
-        os: [windows, macos, ubuntu]
+        os: [macos, ubuntu]
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
@@ -144,7 +143,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
@@ -154,7 +153,7 @@ jobs:
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
-        run:  python3 .build/patch.py
+        run:  python3 .github/patch.py
 
       # Prepare build version and cert
       - name: Replace build version
@@ -222,55 +221,17 @@ jobs:
             dist/ddns
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
 
-  nuitka-linux:
-    needs: [ python ]
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ]
-    runs-on:  ${{ matrix.os }}
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      # Prepare build version and cert
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
-        
-        # https://github.com/Nuitka/Nuitka/issues/2723#issuecomment-1960831891 
-      - name: Run the build process with CentOS Docker
-        uses: addnab/docker-run-action@v3
-        with:
-            image: docker.io/centos:8
-            options: -v ${{ github.workspace }}:/DDNS
-            run: |
-                cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-                dnf install -y epel-release \
-                && dnf repolist \
-                && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
-                python3 -m pip install nuitka
-                cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
-
-      - run: ./dist/ddns || test -f config.json
-      - run: ./dist/ddns -h
-
-      # Upload build result
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ddns-linux-${{ contains(matrix.os, 'arm' ) && 'arm64' || 'x64' }}
-          if-no-files-found: error
-          path: dist/ddns
-          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
-  pack-musl:
+  linux-binary:
     needs: [ python ]
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ] 
-    runs-on: ${{ matrix.os }}
+        host: [ amd, arm ]
+        libc: [ musl, glibc ]
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
-      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+      # glibc: 基于 debian linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8
+      # musl: 基于 alpine  linux/386,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -280,32 +241,41 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/musl.Dockerfile
+          file: docker/${{ matrix.libc }}.Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
+      # 测试构建的二进制文件
+      - name: Test built binaries
+        run: |
+          set -ex
+          for f in output/*/ddns; do
+            platform=$(basename $(dirname "$f") | tr '_' '/')
+            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+          done
 
       # 输出目录结构扁平化
       - name: Flatten output directory structure
         run: |
+          set -e
           mkdir -p dist
           for f in output/*/ddns; do
             name=$(basename "$(dirname "$f")")
-            mv "$f" "dist/ddns-musl-$name"
+            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
-
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
-          name: ddns-musl-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
+          name: ddns-${{ matrix.libc }}-${{ matrix.host}}
           path: dist/*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
           
   docker:
     needs: [ python ]
+    timeout-minutes: 45
     strategy:
       matrix:
         host: ['amd','arm','qemu']
@@ -324,7 +294,6 @@ jobs:
           matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
           'linux/ppc64le,linux/riscv64,linux/s390x' 
         }}
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
@@ -336,7 +305,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/Dockerfile
+          file: docker/Dockerfile
           platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
@@ -357,7 +326,7 @@ jobs:
             IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
             for platform in "${PLATFORMS[@]}"; do
               echo "=== Extracting image for: $platform ==="
-              tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr "/" "-" ) # 将平台标识符转换为有效文件名
+              tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
               arch=$(echo $platform | cut -d'/' -f2)
               variant=$(echo $platform | cut -d'/' -f3)
               variantFlag=""
@@ -378,7 +347,7 @@ jobs:
           for platform in "${PLATFORMS[@]}"; do
             echo "=== Testing platform: $platform ==="
             # 将平台标识符转换为有效的文件名
-            tag=${{ github.ref_name || 'test' }}-$(echo $platform | tr '/' '-')
+            tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
             echo "Loading image for $platform..."
             docker load < ddns-oci-${tag}.tar
             echo "Running test..."
@@ -464,4 +433,3 @@ jobs:
           --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
           --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \
           --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"
-

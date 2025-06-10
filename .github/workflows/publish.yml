@@ -48,7 +48,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: .build/Dockerfile
+          file: docker/Dockerfile
           platforms: ${{ env.platforms }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -116,7 +116,7 @@ jobs:
         shell: bash
 
       - name: remove python2 code
-        run:  python3 .build/patch.py
+        run:  python3 .github/patch.py
 
       - name: Set up on Linux
         if: runner.os == 'Linux'
@@ -207,7 +207,7 @@ jobs:
                 && dnf repolist \
                 && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
                 python3 -m pip install nuitka
-                cd /DDNS &&  python3 .build/patch.py && .build/nuitka.sh
+                cd /DDNS &&  python3 .github/patch.py && .build/nuitka.sh
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -h 
