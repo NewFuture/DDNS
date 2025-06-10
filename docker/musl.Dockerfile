@@ -1,13 +1,11 @@
+ARG PYTHON_VERSION=3.8
+ARG NUITKA_VERSION=main
 # build with alpine3.12 (musl-libc 1.1.24)
-FROM python:3.9-alpine3.12 AS base-builder
+FROM python:${PYTHON_VERSION}-alpine3.12 AS base-builder
 
 RUN apk add --update --no-cache clang ccache build-base ca-certificates patchelf
 RUN update-ca-certificates
-# COPY .github/install-patchelf.sh /tmp/install-patchelf.sh
-# RUN apk add --update --no-cache patchelf\
-#     || /tmp/install-patchelf.sh\
-#     || pip3 install patchelf==0.17.2.1
-ENV NUITKA_VERSION=${NUITKA_VERSION:-main}
+ARG NUITKA_VERSION
 RUN python3 -m pip install --no-cache-dir https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip #--break-system-packages
 
 WORKDIR /app

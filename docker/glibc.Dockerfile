@@ -1,5 +1,7 @@
+ARG PYTHON_VERSION=3.8
+ARG NUITKA_VERSION=main
 # build with debian-slim (glibc 2.28)
-FROM python:3.10-slim-buster AS base-builder
+FROM python:${PYTHON_VERSION}-slim-buster AS base-builder
 
 # 安装必要的依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -13,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/cache/*
 
 # 安装Python依赖
-ENV NUITKA_VERSION=${NUITKA_VERSION:-main}
+ARG NUITKA_VERSION
 RUN python3 -m pip install --no-cache-dir "https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" --break-system-packages
 
 WORKDIR /app

@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ "2.7", "3", "3.9", "3.10", "3.12", "3.13", "3.14-dev"]
+        version: [ "2.7", "3", "3.8", "3.10", "3.12", "3.13", "3.14-dev"]
     env:
       PY: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }}
     runs-on: ubuntu-22.04
@@ -85,9 +85,8 @@ jobs:
           
   pyinstaller:
     strategy:
-      # fail-fast: false
       matrix:
-        os: [windows, macos, ubuntu]
+        os: [macos, ubuntu]
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 8
     steps:
@@ -147,10 +146,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.12
+      - name: Set up Python 3
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.8' || '3.x' }}
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -222,59 +221,17 @@ jobs:
             dist/ddns
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
 
-  nuitka-linux:
-    needs: [ python ]
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ]
-    runs-on:  ${{ matrix.os }}
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      # Prepare build version and cert
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
-        
-        # https://github.com/Nuitka/Nuitka/issues/2723#issuecomment-1960831891 
-      - name: Run the build process with CentOS Docker
-        uses: addnab/docker-run-action@v3
-        with:
-            image: docker.io/centos:8
-            options: -v ${{ github.workspace }}:/DDNS
-            run: |
-                cd /etc/yum.repos.d/ && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-                dnf install -y epel-release \
-                && dnf repolist \
-                && dnf install -y gcc strace patchelf ccache gdb make python3-devel python3-zstandard python3-ordered-set
-                python3 -m pip install nuitka
-                cd /DDNS &&  python3 .github/patch.py && .build/nuitka.sh
-
-      - run: ./dist/ddns || test -f config.json
-      - run: ./dist/ddns -h
-
-      # Upload build result
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ddns-linux-${{ contains(matrix.os, 'arm' ) && 'arm64' || 'x64' }}
-          if-no-files-found: error
-          path: dist/ddns
-          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
-
   linux-binary:
     needs: [ python ]
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-24.04-arm ]
+        host: [ amd, arm ]
         libc: [ musl, glibc ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
-      # glibc: 基于 debian bulster  linux/arm/v6,linux/arm/v7,linux/arm64/v8
-      # musl: 基于 alpine 3.6  linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8,linux/arm/v6
-      platforms: ${{ matrix.os == 'ubuntu-latest' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+      # glibc: 基于 debian linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8
+      # musl: 基于 alpine  linux/386,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -296,6 +253,9 @@ jobs:
         run: |
           mkdir -p dist
           for f in output/*/ddns; do
+            $f -h
+            $f || test -f config.json
+            rm -f config.json
             name=$(basename "$(dirname "$f")")
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
@@ -303,7 +263,7 @@ jobs:
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
-          name: ddns-${{ matrix.libc }}-${{ contains(matrix.os,'arm') && 'arm' || 'amd' }}
+          name: ddns-${{ matrix.libc }}-${{ matrix.host}}
           path: dist/*
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
