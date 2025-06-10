@@ -163,14 +163,7 @@ def main():
 
 if __name__ == '__main__':
     encoding = sys.stdout.encoding
-    if encoding is None or sys.stdout.encoding.lower() != 'utf-8':
-        # 兼容windows 和部分ASCII编码的老旧系统
-        from io import TextIOWrapper
-        if hasattr(sys.stdout, 'buffer'):
-            sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-            sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-        else:
-            sys.stdout = TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
-            sys.stderr = TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
-
+    if (encoding is None or encoding.lower() != 'utf-8') and hasattr(sys.stdout, 'buffer'):
+        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
