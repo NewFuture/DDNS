@@ -30,11 +30,12 @@ else
             platform="linux/arm_cortex-a15_neon-vfpv4"
             ;;
         linux/arm/v6)
-            container="alpine"
+            # v6 不支持直接测试，需要qume仿真
+            echo "::warn::untested platform '$platform' ($libc)"
+            exit 0
             ;;
         *)
-        echo "::error::untested platform '$platform' ($libc)"
-        exit 1
+        container="alpine"
         ;;
     esac
 fi
