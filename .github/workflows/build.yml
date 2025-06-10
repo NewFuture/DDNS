@@ -143,13 +143,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ contains(matrix.os, 'ubuntu') && '3.x' || '3.10' }}
+          python-version: 3.12
           architecture: ${{ matrix.arch }}
 
       - name: remove python2 code
@@ -271,6 +271,7 @@ jobs:
           
   docker:
     needs: [ python ]
+    timeout-minutes: 45
     strategy:
       matrix:
         host: ['amd','arm','qemu']
@@ -289,7 +290,6 @@ jobs:
           matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
           'linux/ppc64le,linux/riscv64,linux/s390x' 
         }}
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
