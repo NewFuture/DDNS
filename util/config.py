@@ -44,28 +44,28 @@ def init_config(description, doc, version):
                             epilog=doc, formatter_class=RawTextHelpFormatter)
     parser.add_argument('-v', '--version',
                         action='version', version=version)
-    parser.add_argument('-c', '--config', help='run with config file [配置文件路径]')
+    parser.add_argument('-c', '--config', help=u'run with config file [配置文件路径]')
 
     # 参数定义
-    parser.add_argument('--dns', help='DNS Provider [DNS服务提供商]', choices=[
+    parser.add_argument('--dns', help=u'DNS Provider [DNS服务提供商]', choices=[
                         'alidns', 'cloudflare', 'dnscom', 'dnspod', 'dnspod_com', 'he', 'huaweidns', 'callback'])
-    parser.add_argument('--id', help='api ID [授权账户]')
-    parser.add_argument('--token', help='api token or Secret key [授权访问凭证或密钥]')
+    parser.add_argument('--id', help=u'api ID [授权账户]')
+    parser.add_argument('--token', help=u'api token or Secret key [授权访问凭证或密钥]')
     parser.add_argument('--index4', nargs='*', action=ExtendAction,
-                        help='list to get ipv4 [IPV4 获取方式]')
+                        help=u'list to get ipv4 [IPV4 获取方式]')
     parser.add_argument('--index6', nargs='*', action=ExtendAction,
-                        help='list to get ipv6 [IPV6获取方式]')
+                        help=u'list to get ipv6 [IPV6获取方式]')
     parser.add_argument('--ipv4', nargs='*', action=ExtendAction,
-                        help='ipv4 domain list [IPV4域名列表]')
+                        help=u'ipv4 domain list [IPV4域名列表]')
     parser.add_argument('--ipv6', nargs='*', action=ExtendAction,
-                        help='ipv6 domain list [IPV6域名列表]')
-    parser.add_argument('--ttl', type=int, help='ttl for DNS [DNS 解析 TTL 时间]')
+                        help=u'ipv6 domain list [IPV6域名列表]')
+    parser.add_argument('--ttl', type=int, help=u'ttl for DNS [DNS 解析 TTL 时间]')
     parser.add_argument('--proxy', nargs='*', action=ExtendAction,
-                        help='https proxy [设置http 代理，多代理逐个尝试直到成功]')
+                        help=u'https proxy [设置http 代理，多代理逐个尝试直到成功]')
     parser.add_argument('--cache',  type=str2bool, nargs='?',
-                        const=True, help='cache flag [启用缓存，可配配置路径或开关]')
+                        const=True, help=u'cache flag [启用缓存，可配配置路径或开关]')
     parser.add_argument('--log.file', metavar='LOG_FILE',
-                        help='log file [日志文件，默认标准输出]')
+                        help=u'log file [日志文件，默认标准输出]')
     parser.add_argument('--log.level', type=log_level,
                         metavar='|'.join(log_levels))
 

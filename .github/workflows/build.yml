@@ -247,6 +247,14 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
+      # 测试构建的二进制文件
+      - name: Test built binaries
+        run: |
+          set -ex
+          for f in output/*/ddns; do
+            platform=$(basename $(dirname "$f") | tr '_' '/')
+            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+          done
 
       # 输出目录结构扁平化
       - name: Flatten output directory structure
@@ -255,12 +263,8 @@ jobs:
           mkdir -p dist
           for f in output/*/ddns; do
             name=$(basename "$(dirname "$f")")
-            # test if the binary works in docker with target platform
-            platform=$(echo $name | tr '_' '/')
-            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
-
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
