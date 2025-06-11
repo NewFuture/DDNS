@@ -60,7 +60,7 @@ def parse_array_string(value, enable_simple_split):
                 return list(parsed_value)
         except (ValueError, SyntaxError):
             # 解析失败时返回原始字符串
-            error('Failed to parse array string: %s', value)
+            error('Failed to parse array string: %s. Exception: %s', value, e)
     elif enable_simple_split and ',' in trimmed:
         # 尝试使用逗号或分号分隔符解析
         return [item.strip() for item in trimmed.split(',') if item.strip()]
@@ -160,21 +160,16 @@ def get_config(key, default=None):
         return getattr(__cli_args, key)
     if key in __config:
         return __config.get(key)
+    # 检查环境变量
     env_name = 'DDNS_' + key.replace('.', '_')  # type:str
-    env_value = None
-
-    if env_name in environ:  # 环境变量
-        env_value = environ.get(env_name)
-    elif env_name.upper() in environ:  # 大写环境变量
-        env_value = environ.get(env_name.upper())
-    elif env_name.lower() in environ:  # 小写环境变量
-        env_value = environ.get(env_name.lower())
+    variations = [env_name, env_name.upper(), env_name.lower()]
+    value = next((environ.get(v) for v in variations if v in environ), None)
 
     # 如果找到环境变量值且参数支持数组，尝试解析为数组
-    if env_value is not None and key in ARRAY_PARAMS:
-        return parse_array_string(env_value, key in SIMPLE_ARRAY_PARAMS)
+    if value is not None and key in ARRAY_PARAMS:
+        return parse_array_string(value, key in SIMPLE_ARRAY_PARAMS)
 
-    return env_value if env_value is not None else default
+    return value if value is not None else default
 
 
 class ExtendAction(Action):
