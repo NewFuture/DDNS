@@ -10,8 +10,10 @@ on:
         description: 'Optional tag name (defaults to branch name)'
         required: false
 
-permissions:
-  contents: read
+# permissions:
+#   contents: read
+#   packages: write
+permissions: write-all
 
 jobs:
   bin-builder:
@@ -101,8 +103,6 @@ jobs:
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/nuitka-builder/
-    permissions:
-      packages: write
     steps:
       - uses: docker/login-action@v3
         with:
@@ -128,8 +128,6 @@ jobs:
     environment:
       name: preview
       url: https://github.com/NewFuture/DDNS/pkgs/container/nuitka-builder/
-    permissions:
-      packages: write
     steps:
       - uses: docker/login-action@v3
         with:
