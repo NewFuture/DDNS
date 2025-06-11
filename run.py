@@ -39,7 +39,7 @@ def is_false(value):
     0 不是 False
     """
     if isinstance(value, str):
-        return value.lower() in ['false', 'none']
+        return value.strip().lower() in ['false', 'none']
     return value is False
 
 
