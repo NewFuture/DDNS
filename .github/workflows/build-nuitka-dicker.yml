@@ -157,7 +157,7 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-            --tag ghcr.io/newfuture/nuitka-builder
+            --tag ghcr.io/newfuture/nuitka-builder \
             --tag ghcr.io/newfuture/nuitka-builder:${{ github.ref_name }} \
             --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }} \
             ghcr.io/newfuture/nuitka-builder:amd \
