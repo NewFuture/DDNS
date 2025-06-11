@@ -109,7 +109,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**命�
   # JSON 数组格式（推荐）
   export DDNS_IPV6='["ipv6.example.com", "v6.example.com"]'
 
-  # pyhton 列表格式
+  # python 列表格式
   export DDNS_IPV6="['ipv6.example.com', 'v6.example.com']"
 
   # 禁用 IPv6 更新

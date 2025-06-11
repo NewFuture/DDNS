@@ -16,8 +16,12 @@
 
 - 兼容和跨平台:
   - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?style=social)](https://hub.docker.com/r/newfuture/ddns)
-  - [PIP 安装 (兼容Python2)](https://pypi.org/project/ddns/) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?logo=pypi&style=social) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social)
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
+  
+- 配置方式:
+  - [命令行参数](#详细配置)
+  - [JSON 配置文件](#详细配置)
+  - [环境变量配置](doc/env.md) 📖
 
 - 域名支持:
   - 多个域名支持
@@ -115,6 +119,8 @@
 1. 命令行参数 `ddns --key=value`（`ddns -h` 查看详情），优先级最高
 2. JSON 配置文件（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
 3. 环境变量 DDNS_ 前缀加上 key 全大写或者全小写，点转下划线（`${ddns_id}` 或 `${DDNS_ID}`，`${DDNS_LOG_LEVEL}`）
+
+> 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/env.md) 了解所有环境变量的详细用法和示例
 
 <details open>
 <summary markdown="span">config.json 配置文件</summary>
