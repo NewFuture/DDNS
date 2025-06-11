@@ -135,7 +135,7 @@ jobs:
             --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }}-${{matrix.type}} \
             ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-amd \
             ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-arm \
-            --annotation "index,manifest:org.opencontainers.image.description={{matrix.type}} Nuitka Builder Image (multi-arch)" 
+            --annotation "index:org.opencontainers.image.description={{matrix.type}} Nuitka Builder Image (multi-arch)" 
 
   merge-docker-builder:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -163,4 +163,4 @@ jobs:
             ghcr.io/newfuture/nuitka-builder:amd \
             ghcr.io/newfuture/nuitka-builder:arm \
             ghcr.io/newfuture/nuitka-builder:qemu \
-           --annotation "index,manifest:org.opencontainers.image.description=Alpine Nuitka Builder Image (multi-arch)"
+           --annotation "index:org.opencontainers.image.description=Alpine Nuitka Builder Image (multi-arch)"
