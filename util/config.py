@@ -58,7 +58,7 @@ def parse_array_string(value, enable_simple_split):
             # 确保解析结果是列表或元组
             if isinstance(parsed_value, (list, tuple)):
                 return list(parsed_value)
-        except (ValueError, SyntaxError):
+        except (ValueError, SyntaxError) as e:
             # 解析失败时返回原始字符串
             error('Failed to parse array string: %s. Exception: %s', value, e)
     elif enable_simple_split and ',' in trimmed:
