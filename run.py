@@ -9,11 +9,12 @@ DDNS
 # nuitka-project: --product-version=0.0.0
 
 from os import path, environ, name as os_name
-import sys
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
 from logging import basicConfig, info, warning, error, debug
+
+import sys
 
 from util import ip
 from util.cache import Cache
@@ -129,7 +130,7 @@ def main():
         filename=get_config('log.file'),
     )
 
-    info("DDNS[ %s ] run: %s %s", __version__, os_name, platform)
+    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
     if get_config("config"):
         info('loaded Config from: %s', path.abspath(get_config('config')))
 
@@ -157,7 +158,7 @@ def main():
 
 
 if __name__ == '__main__':
-    encoding = stdout.encoding
+    encoding = sys.stdout.encoding
     if encoding is not None and encoding.lower() != 'utf-8' and hasattr(stdout, 'buffer'):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
