@@ -16,6 +16,8 @@ log_levels = ['CRITICAL', 'FATAL', 'ERROR',
 
 # 支持数组的参数列表
 ARRAY_PARAMS = ['index4', 'index6', 'ipv4', 'ipv6', 'proxy']
+# 简单数组，支持’,’, ‘;’ 分隔的参数列表
+SIMPLE_ARRAY_PARAMS = ['ipv4', 'ipv6', 'proxy']
 
 
 def str2bool(v):
@@ -39,7 +41,7 @@ def log_level(value):
     return getLevelName(value.upper())
 
 
-def parse_array_string(value):
+def parse_array_string(value, enable_simple_split):
     """
     解析数组字符串
     仅当 trim 之后以 '[' 开头以 ']' 结尾时，才尝试使用 ast.literal_eval 解析
@@ -59,6 +61,9 @@ def parse_array_string(value):
         except (ValueError, SyntaxError):
             # 解析失败时返回原始字符串
             error('Failed to parse array string: %s', value)
+    elif enable_simple_split and ',' in trimmed:
+        # 尝试使用逗号或分号分隔符解析
+        return [item.strip() for item in trimmed.split(',') if item.strip()]
     return value
 
 
@@ -167,7 +172,7 @@ def get_config(key, default=None):
 
     # 如果找到环境变量值且参数支持数组，尝试解析为数组
     if env_value is not None and key in ARRAY_PARAMS:
-        return parse_array_string(env_value)
+        return parse_array_string(env_value, key in SIMPLE_ARRAY_PARAMS)
 
     return env_value if env_value is not None else default
 
