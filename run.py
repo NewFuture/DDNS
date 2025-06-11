@@ -9,12 +9,11 @@ DDNS
 # nuitka-project: --product-version=0.0.0
 
 from os import path, environ, name as os_name
+from sys import stdout, stderr, platform
+from io import TextIOWrapper
+from subprocess import check_output
 from tempfile import gettempdir
 from logging import basicConfig, info, warning, error, debug
-from subprocess import check_output
-from io import TextIOWrapper
-
-import sys
 
 from util import ip
 from util.cache import Cache
@@ -30,12 +29,6 @@ Copyright (c) New Future (MIT License)
 """ % (__version__)
 
 environ["DDNS_VERSION"] = "${BUILD_VERSION}"
-
-if getattr(sys, 'frozen', False):
-    # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
-    environ['SSL_CERT_FILE'] = path.join(
-        getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
-
 
 def get_ip(ip_type, index="default"):
     """
@@ -135,7 +128,7 @@ def main():
         filename=get_config('log.file'),
     )
 
-    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+    info("DDNS[ %s ] run: %s %s", __version__, os_name, platform)
     if get_config("config"):
         info('loaded Config from: %s', path.abspath(get_config('config')))
 
@@ -163,10 +156,9 @@ def main():
 
 
 if __name__ == '__main__':
-    encoding = sys.stdout.encoding
-    if encoding is not None or encoding.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+    encoding = stdout.encoding
+    if encoding is not None and encoding.lower() != 'utf-8' and hasattr(stdout, 'buffer'):
         # 兼容windows 和部分ASCII编码的老旧系统
-        from io import TextIOWrapper
-        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+        stdout = TextIOWrapper(stdout.buffer, encoding='utf-8')
+        stderr = TextIOWrapper(stderr.buffer, encoding='utf-8')
     main()
