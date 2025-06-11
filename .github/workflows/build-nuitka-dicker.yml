@@ -1,6 +1,6 @@
 name: nuitka builder
 
-run-name: Build nuitka(${{ inputs.nuitka }}) docker with python${{ inputs.python }} on ${{github.ref_name}} by @${{ github.actor }}
+run-name: Build nuitka(${{ inputs.nuitka || 'main' }}) docker with python${{ inputs.python || '3.8' }} on ${{github.ref_name}} by @${{ github.actor }}
 
 on:
   push:
@@ -24,7 +24,9 @@ permissions:
   packages: write
 
 env:
-  FULL_TAG: ${{inputs.nuitka}}-py${{inputs.python}}
+  NUITKA_VERSION: ${{ inputs.nuitka || 'main' }}
+  PYTHON_VERSION: ${{ inputs.python || '3.8' }}
+  FULL_TAG: ${{ inputs.nuitka || 'main' }}-py$${{ inputs.python || '3.8' }}
 jobs:
   bin-builder:
     timeout-minutes: 10
@@ -58,8 +60,10 @@ jobs:
           platforms: ${{ env.platforms }}
           target: base-builder
           push: true
-          tags: |
-            ghcr.io/newfuture/nuitka-builder:${{ matrix.type }}-${{ matrix.host }}
+          tags: ghcr.io/newfuture/nuitka-builder:${{ matrix.type }}-${{ matrix.host }}
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            NUITKA_VERSION=${{ env.NUITKA_VERSION }}
 
   docker-builder:
     timeout-minutes: ${{ matrix.host == 'qemu' && 30 || 10 }}
@@ -99,8 +103,10 @@ jobs:
           platforms: ${{ matrix.platforms }}
           target: base-builder
           push: true
-          tags: |
-            ghcr.io/newfuture/nuitka-builder:${{ matrix.host }}
+          tags: ghcr.io/newfuture/nuitka-builder:${{ matrix.host }}
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            NUITKA_VERSION=${{ env.NUITKA_VERSION }}
 
   merge-bin-builder:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
