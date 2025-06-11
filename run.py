@@ -9,7 +9,7 @@ DDNS
 # nuitka-project: --product-version=0.0.0
 
 from os import path, environ, name as os_name
-from sys import stdout, stderr, platform
+import sys
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
@@ -160,6 +160,6 @@ if __name__ == '__main__':
     encoding = stdout.encoding
     if encoding is not None and encoding.lower() != 'utf-8' and hasattr(stdout, 'buffer'):
         # 兼容windows 和部分ASCII编码的老旧系统
-        stdout = TextIOWrapper(stdout.buffer, encoding='utf-8')
-        stderr = TextIOWrapper(stderr.buffer, encoding='utf-8')
+        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
