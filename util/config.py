@@ -4,6 +4,7 @@ from argparse import Action, ArgumentParser, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ, path
 from logging import error, getLevelName
+from ast import literal_eval
 
 import sys
 
@@ -12,6 +13,9 @@ __cli_args = Namespace()
 __config = {}  # type: dict
 log_levels = ['CRITICAL', 'FATAL', 'ERROR',
               'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+
+# 支持数组的参数列表
+ARRAY_PARAMS = ['index4', 'index6', 'ipv4', 'ipv6', 'proxy']
 
 
 def str2bool(v):
@@ -33,6 +37,29 @@ def log_level(value):
     parse string to log level
     """
     return getLevelName(value.upper())
+
+
+def parse_array_string(value):
+    """
+    解析数组字符串
+    仅当 trim 之后以 '[' 开头以 ']' 结尾时，才尝试使用 ast.literal_eval 解析
+    默认返回原始字符串
+    """
+    if not isinstance(value, str):
+        return value
+
+    trimmed = value.strip()
+    if trimmed.startswith('[') and trimmed.endswith(']'):
+        try:
+            # 尝试使用 ast.literal_eval 解析数组
+            parsed_value = literal_eval(trimmed)
+            # 确保解析结果是列表或元组
+            if isinstance(parsed_value, (list, tuple)):
+                return list(parsed_value)
+        except (ValueError, SyntaxError):
+            # 解析失败时返回原始字符串
+            error('Failed to parse array string: %s', value)
+    return value
 
 
 def init_config(description, doc, version):
@@ -129,13 +156,20 @@ def get_config(key, default=None):
     if key in __config:
         return __config.get(key)
     env_name = 'DDNS_' + key.replace('.', '_')  # type:str
+    env_value = None
+
     if env_name in environ:  # 环境变量
-        return environ.get(env_name)
+        env_value = environ.get(env_name)
     elif env_name.upper() in environ:  # 大写环境变量
-        return environ.get(env_name.upper())
+        env_value = environ.get(env_name.upper())
     elif env_name.lower() in environ:  # 小写环境变量
-        return environ.get(env_name.lower())
-    return default
+        env_value = environ.get(env_name.lower())
+
+    # 如果找到环境变量值且参数支持数组，尝试解析为数组
+    if env_value is not None and key in ARRAY_PARAMS:
+        return parse_array_string(env_value)
+
+    return env_value if env_value is not None else default
 
 
 class ExtendAction(Action):

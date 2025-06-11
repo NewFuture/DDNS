@@ -32,6 +32,17 @@ Copyright (c) New Future (MIT License)
 environ["DDNS_VERSION"] = "${BUILD_VERSION}"
 
 
+def is_false(value):
+    """
+    判断值是否为 False
+    字符串 'false', 或者 False, 或者 'none';
+    0 不是 False
+    """
+    if isinstance(value, str):
+        return value.lower() in ['false', 'none']
+    return value is False
+
+
 def get_ip(ip_type, index="default"):
     """
     get IP address
@@ -41,7 +52,7 @@ def get_ip(ip_type, index="default"):
     value = None
     try:
         debug("get_ip(%s, %s)", ip_type, index)
-        if index is False:  # disabled
+        if is_false(index):  # disabled
             return False
         elif isinstance(index, list):  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到获取到IP
             for i in index:

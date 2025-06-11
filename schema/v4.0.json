@@ -6,13 +6,13 @@
   "properties": {
     "$schema": {
       "type": "string",
-      "title": "please use https://ddns.newfuture.cc/schema/v2.8.json",
-      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.8.json",
-      "default": "https://ddns.newfuture.cc/schema/v2.8.json",
+      "title": "please use https://ddns.newfuture.cc/schema/v4.0.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v4.0.json",
+      "default": "https://ddns.newfuture.cc/schema/v4.0.json",
       "enum": [
-        "https://ddns.newfuture.cc/schema/v2.8.json",
-        "http://ddns.newfuture.cc/schema/v2.8.json",
-        "./schema/v2.8.json"
+        "https://ddns.newfuture.cc/schema/v4.0.json",
+        "http://ddns.newfuture.cc/schema/v4.0.json",
+        "./schema/v4.0.json"
       ]
     },
     "id": {
