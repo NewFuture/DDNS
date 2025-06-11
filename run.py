@@ -30,6 +30,7 @@ Copyright (c) New Future (MIT License)
 
 environ["DDNS_VERSION"] = "${BUILD_VERSION}"
 
+
 def get_ip(ip_type, index="default"):
     """
     get IP address
