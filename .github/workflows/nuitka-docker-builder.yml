@@ -117,8 +117,8 @@ jobs:
           docker buildx imagetools create \
             --tag ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-${{ github.event.inputs.tag || github.ref_name }} \
             ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-amd \
-            ghcr-io/newfuture/nuitka-builder:${{matrix.type}}-arm \
-            ghcr-io/newfuture/nuitka-builder:${{matrix.type}}-qemu
+            ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-arm \
+            ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-qemu
 
   merge-docker-builder:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -142,5 +142,5 @@ jobs:
           docker buildx imagetools create \
             --tag ghcr.io/newfuture/nuitka-builder:${{ github.event.inputs.tag || github.ref_name }} \
             ghcr.io/newfuture/nuitka-builder:amd \
-            ghcr-io/newfuture/nuitka-builder:arm \
-            ghcr-io/newfuture/nuitka-builder:qemu
+            ghcr.io/newfuture/nuitka-builder:arm \
+            ghcr.io/newfuture/nuitka-builder:qemu
