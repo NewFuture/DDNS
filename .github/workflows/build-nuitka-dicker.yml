@@ -1,20 +1,30 @@
-name: nuitka docker builder
+name: nuitka builder
+
+run-name: Build nuitka(${{ inputs.nuitka }}) docker with python${{ inputs.python }} on ${{github.ref_name}} by @${{ github.actor }}
 
 on:
   push:
-    tags: [v*]
     branches: ["master", "main"]
+    paths:
+      - 'docker/*'
+      - '.github/workflows/build-nuitka-dicker.yml'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Optional tag name (defaults to branch name)'
+      python:
+        description: 'Python version'
         required: false
+        default: '3.8'
+      nuitka:
+        description: 'Nuitka version'
+        required: false
+        default: 'main'
 
-# permissions:
-#   contents: read
-#   packages: write
-permissions: write-all
+permissions:
+  contents: read
+  packages: write
 
+env:
+  FULL_TAG: ${{inputs.nuitka}}-py${{inputs.python}}
 jobs:
   bin-builder:
     timeout-minutes: 10
@@ -115,10 +125,11 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-            --tag ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-${{ github.event.inputs.tag || github.ref_name }} \
+            --tag ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-${{ github.ref_name }} \
+            --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }}-${{matrix.type}} \
             ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-amd \
             ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-arm \
-            ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-qemu
+            --annotation index,manifest="org.opencontainers.image.description=${{matrix.type}} Nuitka Builder Image (multi-arch)" 
 
   merge-docker-builder:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -140,7 +151,10 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-            --tag ghcr.io/newfuture/nuitka-builder:${{ github.event.inputs.tag || github.ref_name }} \
+            --tag ghcr.io/newfuture/nuitka-builder
+            --tag ghcr.io/newfuture/nuitka-builder:${{ github.ref_name }} \
+            --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }} \
             ghcr.io/newfuture/nuitka-builder:amd \
             ghcr.io/newfuture/nuitka-builder:arm \
-            ghcr.io/newfuture/nuitka-builder:qemu
+            ghcr.io/newfuture/nuitka-builder:qemu \
+           --annotation index,manifest="org.opencontainers.image.description=Alpine Nuitka Builder Image (multi-arch)"
