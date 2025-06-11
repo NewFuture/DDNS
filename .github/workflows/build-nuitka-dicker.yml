@@ -26,7 +26,7 @@ permissions:
 env:
   NUITKA_VERSION: ${{ inputs.nuitka || 'main' }}
   PYTHON_VERSION: ${{ inputs.python || '3.8' }}
-  FULL_TAG: ${{ inputs.nuitka || 'main' }}-py$${{ inputs.python || '3.8' }}
+  FULL_TAG: ${{ inputs.nuitka || 'main' }}-py${{ inputs.python || '3.8' }}
 jobs:
   bin-builder:
     timeout-minutes: 10
