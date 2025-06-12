@@ -24,7 +24,7 @@ permissions:
   packages: write
 
 env:
-  DOCKER_IMAGE: hcr.io/newfuture/nuitka-builder
+  DOCKER_IMAGE: ghcr.io/newfuture/nuitka-builder
   NUITKA_VERSION: ${{ inputs.nuitka || 'main' }}
   PYTHON_VERSION: ${{ inputs.python || '3.8' }}
   FULL_TAG: ${{ inputs.nuitka || 'main' }}-py${{ inputs.python || '3.8' }}
