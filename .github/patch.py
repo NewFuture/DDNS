@@ -44,7 +44,8 @@ def update_nuitka_version(pyfile):
         content = f.read()
 
     # 提取 __version__ 变量
-    version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
+    version_match = re.search(
+        r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
     if not version_match:
         print(f'No __version__ found in {pyfile}')
         return False
@@ -66,28 +67,60 @@ def update_nuitka_version(pyfile):
     return False
 
 
-def remove_windows_textiowrapper(pyfile):
+def add_nuitka_file_description(pyfile):
     """
-    如果当前系统不是 Windows，则删除 run.py 中的 TextIOWrapper 兼容代码块
+    添加 --file-description 配置，使用 __description__ 变量的值
     """
-    if os.name == 'nt':
-        return  # Windows 下不处理
-
     with open(pyfile, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # 匹配并删除 if sys.version_info.major == 3 and os_name == 'nt': ... 代码块
-    pattern = re.compile(
-        r'(?m)^[ \t]*if sys\.version_info\.major == 3 and os_name == [\'"]nt[\'"]:\n'
-        r'(?:[ \t]+from io import TextIOWrapper\n)?'
-        r'(?:[ \t]+sys\.stdout = TextIOWrapper\(sys\.stdout\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
-        r'(?:[ \t]+sys\.stderr = TextIOWrapper\(sys\.stderr\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
-    )
-    new_content, n = pattern.subn('', content)
-    if n > 0:
-        with open(pyfile, 'w', encoding='utf-8') as f:
-            f.write(new_content)
-        print(f'Removed Windows TextIOWrapper code from {pyfile}')
+    # 提取 __description__ 变量的值
+    desc_match = re.search(
+        r'__description__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
+    if not desc_match:
+        print(f'No __description__ found in {pyfile}')
+        return False
+
+    description = desc_match.group(1)
+    if not content.endswith('\n'):
+        content += '\n'
+    description_line = f'# nuitka-project: --file-description="{description}"\n'
+    if description_line not in content:
+        content += description_line
+
+    with open(pyfile, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f'Added file-description to {pyfile}')
+    return True
+
+
+def add_nuitka_include_modules(pyfile):
+    """
+    读取 dns 目录下的所有 Python 模块，并添加到 run.py 末尾
+    """
+    dns_dir = os.path.join(ROOT, 'dns')
+    if not os.path.exists(dns_dir):
+        print(f'DNS directory not found: {dns_dir}')
+        return False
+
+    # 获取所有 Python 模块文件
+    modules = []
+    for filename in os.listdir(dns_dir):
+        if filename.endswith('.py') and filename != '__init__.py':
+            module_name = filename[:-3]  # 去掉 .py 扩展名
+            modules.append(f'dns.{module_name}')
+
+    if not modules:
+        print('No DNS modules found')
+        return False
+
+    # 直接在文件末尾追加配置行
+    with open(pyfile, 'a', encoding='utf-8') as f:
+        for module in sorted(modules):
+            f.write(f'# nuitka-project: --include-module={module}\n')
+
+    print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
+    return True
 
 
 def remove_python2_compatibility(pyfile):
@@ -123,7 +156,8 @@ def remove_python2_compatibility(pyfile):
                     except_block.append(lines[i])
                     i += 1
                 # 添加try块内容，except块用空行替代
-                new_lines.extend(['\n'] + try_block + ['\n'] * (len(except_block) + 1))
+                new_lines.extend(['\n'] + try_block + ['\n']
+                                 * (len(except_block) + 1))
                 changed = True
             else:
                 # 没有except块，原样保留
@@ -143,7 +177,10 @@ def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
-    update_nuitka_version(os.path.join(ROOT, "run.py"))
+    run_py_path = os.path.join(ROOT, "run.py")
+    update_nuitka_version(run_py_path)
+    add_nuitka_file_description(run_py_path)
+    add_nuitka_include_modules(run_py_path)
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):

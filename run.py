@@ -6,8 +6,6 @@ DDNS
 @modified: rufengsuixing
 """
 
-# nuitka-project: --product-version=0.0.0
-
 from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
@@ -21,7 +19,7 @@ from util.cache import Cache
 from util.config import init_config, get_config
 
 __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
-__description__ = "automatically update DNS records to dynamic local IP [自动更新DNS记录指向本地IP]"
+__description__ = "automatically update DNS records to my IP [域名自动指向本机IP]"
 __doc__ = """
 ddns[%s]
 (i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
@@ -127,12 +125,6 @@ def main():
     更新
     """
     init_config(__description__, __doc__, __version__)
-    # Dynamicly import the dns module as configuration
-    dns_provider = str(get_config('dns', 'dnspod').lower())
-    dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
-    dns.Config.ID = get_config('id')
-    dns.Config.TOKEN = get_config('token')
-    dns.Config.TTL = get_config('ttl')
 
     basicConfig(
         level=get_config('log.level'),
@@ -140,8 +132,15 @@ def main():
         datefmt='%m-%d %H:%M:%S',
         filename=get_config('log.file'),
     )
-
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+
+    # Dynamically import the dns module as configuration
+    dns_provider = str(get_config('dns', 'dnspod').lower())
+    dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
+    dns.Config.ID = get_config('id')
+    dns.Config.TOKEN = get_config('token')
+    dns.Config.TTL = get_config('ttl')
+
     if get_config("config"):
         info('loaded Config from: %s', path.abspath(get_config('config')))
 
@@ -169,9 +168,23 @@ def main():
 
 
 if __name__ == '__main__':
-    encoding = sys.stdout.encoding
-    if encoding is not None and encoding.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+    encode = sys.stdout.encoding
+    if encode is not None and encode.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
+
+# Nuitka Project Configuration
+# nuitka-project: --mode=onefile
+# nuitka-project: --output-filename=ddns
+# nuitka-project: --product-name=DDNS
+# nuitka-project: --product-version=0.0.0
+# nuitka-project: --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}"
+# nuitka-project: --no-deployment-flag=self-execution
+# nuitka-project: --company-name="New Future"
+# nuitka-project: --copyright=https://ddns.newfuture.cc
+# nuitka-project: --assume-yes-for-downloads
+# nuitka-project: --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes
+# nuitka-project: --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
+# nuitka-project: --noinclude-dlls=liblzma.*

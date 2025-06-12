@@ -28,31 +28,15 @@ FROM ${BUILDER} AS builder
 # 拷贝项目文件
 COPY . .
 RUN python3 .github/patch.py
-# 构建二进制文件
-RUN python3 -O -m nuitka \
-    --onefile \
-    --output-dir=dist \
-    --output-filename=ddns \
+# 构建二进制文件，glibc arm下编译会报错，
+# collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
+# FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
+RUN apt-get update && apt-get install -y --no-install-recommends clang
+RUN python3 -O -m nuitka run.py \
     --remove-output \
-    --no-deployment-flag=self-execution \
-    --include-module=dns.dnspod \
-    --include-module=dns.alidns \
-    --include-module=dns.dnspod_com \
-    --include-module=dns.dnscom \
-    --include-module=dns.cloudflare \
-    --include-module=dns.he \
-    --include-module=dns.huaweidns \
-    --include-module=dns.callback \
-    --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
-    --product-name=DDNS \
-    --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}" \
-    --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes \
-    --file-description="DDNS Client 自动更新域名解析到本机IP" \
-    --company-name="New Future" \
     --linux-icon=doc/img/ddns.svg \
-    run.py
-RUN cp dist/ddns /bin/ddns \
-    && cp dist/ddns /ddns
+    $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes )
+RUN cp ddns /bin/ddns && cp ddns /ddns
 
 
 # export the binary

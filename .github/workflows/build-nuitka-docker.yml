@@ -24,6 +24,7 @@ permissions:
   packages: write
 
 env:
+  DOCKER_IMAGE: hcr.io/newfuture/nuitka-builder
   NUITKA_VERSION: ${{ inputs.nuitka || 'main' }}
   PYTHON_VERSION: ${{ inputs.python || '3.8' }}
   FULL_TAG: ${{ inputs.nuitka || 'main' }}-py${{ inputs.python || '3.8' }}
@@ -60,7 +61,7 @@ jobs:
           platforms: ${{ env.platforms }}
           target: base-builder
           push: true
-          tags: ghcr.io/newfuture/nuitka-builder:${{ matrix.type }}-${{ matrix.host }}
+          tags: ${{env.DOCKER_IMAGE}}:${{ matrix.type }}-${{ matrix.host }}
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
             NUITKA_VERSION=${{ env.NUITKA_VERSION }}
@@ -103,7 +104,7 @@ jobs:
           platforms: ${{ matrix.platforms }}
           target: base-builder
           push: true
-          tags: ghcr.io/newfuture/nuitka-builder:${{ matrix.host }}
+          tags: ${{env.DOCKER_IMAGE}}:${{ matrix.host }}
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
             NUITKA_VERSION=${{ env.NUITKA_VERSION }}
@@ -131,10 +132,10 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-            --tag ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-${{ github.ref_name }} \
-            --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }}-${{matrix.type}} \
-            ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-amd \
-            ghcr.io/newfuture/nuitka-builder:${{matrix.type}}-arm \
+            --tag ${{env.DOCKER_IMAGE}}:${{matrix.type}}-${{ github.ref_name }} \
+            --tag ${{env.DOCKER_IMAGE}}:${{ env.FULL_TAG }}-${{matrix.type}} \
+            ${{env.DOCKER_IMAGE}}:${{matrix.type}}-amd \
+            ${{env.DOCKER_IMAGE}}:${{matrix.type}}-arm \
             --annotation "index:org.opencontainers.image.description={{matrix.type}} Nuitka Builder Image (multi-arch)" 
 
   merge-docker-builder:
@@ -157,10 +158,10 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-            --tag ghcr.io/newfuture/nuitka-builder \
-            --tag ghcr.io/newfuture/nuitka-builder:${{ github.ref_name }} \
-            --tag ghcr.io/newfuture/nuitka-builder:${{ env.FULL_TAG }} \
-            ghcr.io/newfuture/nuitka-builder:amd \
-            ghcr.io/newfuture/nuitka-builder:arm \
-            ghcr.io/newfuture/nuitka-builder:qemu \
+            --tag ${{env.DOCKER_IMAGE}} \
+            --tag ${{env.DOCKER_IMAGE}}:${{ github.ref_name }} \
+            --tag ${{env.DOCKER_IMAGE}}:${{ env.FULL_TAG }} \
+            ${{env.DOCKER_IMAGE}}:amd \
+            ${{env.DOCKER_IMAGE}}:arm \
+            ${{env.DOCKER_IMAGE}}:qemu \
            --annotation "index:org.opencontainers.image.description=Alpine Nuitka Builder Image (multi-arch)"

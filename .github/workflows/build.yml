@@ -82,47 +82,8 @@ jobs:
           path: dist/
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
 
-          
-  pyinstaller:
-    strategy:
-      matrix:
-        os: [macos, ubuntu]
-    runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python "3.x"
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - name: Install dependencies
-        run: pip install pyinstaller
-
-      # Prepare build version and cert
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
-      - name: Copy cert on ubuntu
-        if: runner.os == 'Linux'
-        run: cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
-
-      - run: python ./run.py -h
-
-      - name: Package binary
-        run: python -O -m PyInstaller --noconfirm --clean .build/ddns.spec
-
-      - run: ./dist/ddns || test -f config.json
-      - run: ./dist/ddns -h
-
-      # Upload build result
-      - uses: actions/upload-artifact@v4
-        with:
-          name: PyInstaller-${{ matrix.os }}
-          path: dist/
-          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
-
   nuitka:
-    needs: [ python ]
+    needs: [ python, lint ]
     strategy:
       matrix:
         include:
@@ -162,9 +123,7 @@ jobs:
         
       - name: Set up on Linux
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update &&  sudo apt-get install -y patchelf
-          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+        run: sudo apt-get install -y --no-install-recommends patchelf
 
       - name: Set up on macOS
         if: runner.os == 'macOS'
@@ -179,31 +138,13 @@ jobs:
           script-name: run.py
           mode: onefile
           output-dir: dist
-          output-file: ddns
-          no-deployment-flag: self-execution
-          include-module: |
-            dns.dnspod
-            dns.alidns
-            dns.dnspod_com
-            dns.dnscom
-            dns.cloudflare
-            dns.he
-            dns.huaweidns
-            dns.callback
-          file-description: "DDNS Client 更新域名解析本机IP-预览版"
-          product-name: DDNS
-          company-name: "New Future"
-          copyright: "https://ddns.newfuture.cc"
-          assume-yes-for-downloads: true
-          lto: auto
-          python-flag: no_site,no_asserts,no_docstrings,isolated,static_hashes
-          nofollow-import-to: tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
-          onefile-tempdir-spec: "{CACHE_DIR}/{PRODUCT}_{VERSION}"
+          lto: yes
+          file-description: "DDNS客户端[测试版 Alpha]"
           windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
           linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
-          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
 
       - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
@@ -247,6 +188,7 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
+          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |
@@ -310,7 +252,8 @@ jobs:
           push: false
           tags: ddns:test
           outputs: type=oci,dest=./multi-platform-image.tar
-      
+          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
+
       # 准备测试环境
       - name: Prepare test environment
         run: mkdir -p oci-image && tar -vxf multi-platform-image.tar -C oci-image  

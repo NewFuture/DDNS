@@ -23,20 +23,9 @@ FROM ${BUILDER} AS builder
 COPY . .
 RUN python3 .github/patch.py
 RUN python3 -O -m nuitka run.py \
-    --mode=onefile\
-    --output-dir=./dist\
-    --no-deployment-flag=self-execution\
-    --output-filename=ddns\
-    --remove-output\
-    --include-module=dns.dnspod --include-module=dns.alidns --include-module=dns.dnspod_com --include-module=dns.dnscom --include-module=dns.cloudflare --include-module=dns.he --include-module=dns.huaweidns --include-module=dns.callback\
-    --product-name=DDNS\
-    --lto=yes \
-    --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}" \
-    --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes\
-    --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
-    --noinclude-dlls=liblzma.so.*
-RUN cp dist/ddns /bin/ddns \
-    && cp dist/ddns /ddns
+    --remove-output \
+    --lto=yes
+RUN cp ddns /bin/ddns && cp ddns /ddns
 
 
 # export the binary
