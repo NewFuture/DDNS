@@ -133,9 +133,7 @@ jobs:
 
       - name: Set up on Linux
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update &&  sudo apt-get install -y patchelf
-          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+        run: sudo apt-get -y --no-install-recommends patchelf
       - name: Set up on macOS
         if: runner.os == 'macOS'
         run: python3 -m pip install imageio
@@ -148,6 +146,7 @@ jobs:
         with:
           nuitka-version: main
           script-name: run.py
+          mode: onefile
           output-dir: dist
           lto: yes
           windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
