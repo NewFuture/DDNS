@@ -120,6 +120,7 @@ def add_nuitka_include_modules(pyfile):
     print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
     return True
 
+
 def remove_python2_compatibility(pyfile):
     """
     删除指定文件中的 python2 兼容代码，逐行处理
