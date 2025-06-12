@@ -50,6 +50,7 @@ RUN python3 -O -m nuitka \
     --file-description="DDNS Client 自动更新域名解析到本机IP" \
     --company-name="New Future" \
     --linux-icon=doc/img/ddns.svg \
+    --lto=true \
     run.py
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
