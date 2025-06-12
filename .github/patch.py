@@ -88,7 +88,7 @@ def add_nuitka_file_description(pyfile):
 
     with open(pyfile, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f'Added file-description to {pyfile}: {description}')
+    print(f'Added file-description to {pyfile}')
     return True
 
 
@@ -119,31 +119,6 @@ def add_nuitka_include_modules(pyfile):
 
     print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
     return True
-
-
-def remove_windows_textiowrapper(pyfile):
-    """
-    如果当前系统不是 Windows，则删除 run.py 中的 TextIOWrapper 兼容代码块
-    """
-    if os.name == 'nt':
-        return  # Windows 下不处理
-
-    with open(pyfile, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    # 匹配并删除 if sys.version_info.major == 3 and os_name == 'nt': ... 代码块
-    pattern = re.compile(
-        r'(?m)^[ \t]*if sys\.version_info\.major == 3 and os_name == [\'"]nt[\'"]:\n'
-        r'(?:[ \t]+from io import TextIOWrapper\n)?'
-        r'(?:[ \t]+sys\.stdout = TextIOWrapper\(sys\.stdout\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
-        r'(?:[ \t]+sys\.stderr = TextIOWrapper\(sys\.stderr\.detach\(\), encoding=[\'"]utf-8[\'"]\)\n)?'
-    )
-    new_content, n = pattern.subn('', content)
-    if n > 0:
-        with open(pyfile, 'w', encoding='utf-8') as f:
-            f.write(new_content)
-        print(f'Removed Windows TextIOWrapper code from {pyfile}')
-
 
 def remove_python2_compatibility(pyfile):
     """
