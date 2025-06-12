@@ -60,6 +60,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
       - name: Attest
         uses: actions/attest-build-provenance@v2
         id: attest
@@ -215,6 +216,7 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
+          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |
