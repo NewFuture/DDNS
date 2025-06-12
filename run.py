@@ -6,8 +6,6 @@ DDNS
 @modified: rufengsuixing
 """
 
-# nuitka-project: --product-version=0.0.0
-
 from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
@@ -170,9 +168,19 @@ def main():
 
 
 if __name__ == '__main__':
-    encoding = sys.stdout.encoding
-    if encoding is not None and encoding.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+    encode = sys.stdout.encoding
+    if encode is not None and encode.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
+
+# Nuitka Project Configuration
+# nuitka-project: --product-name=DDNS
+# nuitka-project: --product-name=DDNS
+# nuitka-project: --product-version=0.0.0
+# nuitka-project: --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}"
+# nuitka-project: --no-deployment-flag=self-execution
+# nuitka-project: --company-name="New Future"
+# nuitka-project: --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes
+

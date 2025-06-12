@@ -31,30 +31,17 @@ RUN python3 .github/patch.py
 # 构建二进制文件，glibc arm下编译会报错，
 # collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
 # FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
-RUN python3 -O -m nuitka \
-    --onefile \
-    --output-dir=dist \
-    --output-filename=ddns \
+RUN apk add clang
+RUN python3 -O -m nuitka run.py \
+    --mode=onefile\    
+    --output-filename=ddns\
+    --output-dir=dist\
     --remove-output \
-    --no-deployment-flag=self-execution \
-    --include-module=dns.dnspod \
-    --include-module=dns.alidns \
-    --include-module=dns.dnspod_com \
-    --include-module=dns.dnscom \
-    --include-module=dns.cloudflare \
-    --include-module=dns.he \
-    --include-module=dns.huaweidns \
-    --include-module=dns.callback \
     --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
-    --product-name=DDNS \
-    --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}" \
-    --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes \
     --file-description="DDNS Client 自动更新域名解析到本机IP" \
-    --company-name="New Future" \
     --linux-icon=doc/img/ddns.svg \
     --lto=yes \
-    $(if [ "$(uname -m)" = "aarch64" ]; then echo "--clang"; fi) \
-    run.py
+    $(if [ "$(uname -m)" = "aarch64" ]; then echo "--clang"; fi)
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
 

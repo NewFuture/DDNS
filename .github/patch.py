@@ -66,6 +66,56 @@ def update_nuitka_version(pyfile):
     return False
 
 
+def add_nuitka_include_modules(pyfile):
+    """
+    读取 dns 目录下的所有 Python 模块，并添加到 run.py 末尾
+    """
+    dns_dir = os.path.join(ROOT, 'dns')
+    if not os.path.exists(dns_dir):
+        print(f'DNS directory not found: {dns_dir}')
+        return False
+
+    # 获取所有 Python 模块文件
+    modules = []
+    for filename in os.listdir(dns_dir):
+        if filename.endswith('.py') and filename != '__init__.py':
+            module_name = filename[:-3]  # 去掉 .py 扩展名
+            modules.append(f'dns.{module_name}')
+    
+    if not modules:
+        print('No DNS modules found')
+        return False
+
+    # 读取 run.py 文件
+    with open(pyfile, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # 生成 nuitka-project 配置行
+    nuitka_lines = []
+    for module in sorted(modules):
+        nuitka_lines.append(f'# nuitka-project: --include-module={module}')
+    
+    # 移除现有的 nuitka-project include-module 配置
+    content = re.sub(
+        r'# nuitka-project:\s*--include-module=dns\.[^\n]*\n',
+        '',
+        content
+    )
+    
+    # 添加新的配置到文件末尾
+    if not content.endswith('\n'):
+        content += '\n'
+    
+    content += '\n'.join(nuitka_lines) + '\n'
+
+    # 写回文件
+    with open(pyfile, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
+    return True
+
+
 def remove_windows_textiowrapper(pyfile):
     """
     如果当前系统不是 Windows，则删除 run.py 中的 TextIOWrapper 兼容代码块
@@ -143,7 +193,9 @@ def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
-    update_nuitka_version(os.path.join(ROOT, "run.py"))
+    run_py_path = os.path.join(ROOT, "run.py")
+    update_nuitka_version(run_py_path)
+    add_nuitka_include_modules(run_py_path)
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):
