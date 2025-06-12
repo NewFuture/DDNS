@@ -123,7 +123,7 @@ jobs:
         
       - name: Set up on Linux
         if: runner.os == 'Linux'
-        run: sudo apt-get -y --no-install-recommends patchelf
+        run: sudo apt-get install -y --no-install-recommends patchelf
 
       - name: Set up on macOS
         if: runner.os == 'macOS'
