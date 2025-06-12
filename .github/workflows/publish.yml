@@ -17,6 +17,8 @@ jobs:
       url: https://hub.docker.com/r/newfuture/ddns
     permissions:
       packages: write
+      id-token: write
+      attestations: write
     env:
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
@@ -49,6 +51,7 @@ jobs:
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
+        id: push
         with:
           context: .
           file: docker/Dockerfile
@@ -57,7 +60,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-      
+      - name: Attest
+        uses: actions/attest-build-provenance@v2
+        id: attest
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true      
 
   publish-pypi:
     runs-on: ubuntu-latest
