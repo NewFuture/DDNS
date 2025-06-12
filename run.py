@@ -183,4 +183,3 @@ if __name__ == '__main__':
 # nuitka-project: --no-deployment-flag=self-execution
 # nuitka-project: --company-name="New Future"
 # nuitka-project: --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes
-

@@ -31,7 +31,7 @@ RUN python3 .github/patch.py
 # 构建二进制文件，glibc arm下编译会报错，
 # collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
 # FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
-RUN apk add clang
+RUN apt-get update && apt-get install -y --no-install-recommends clang
 RUN python3 -O -m nuitka run.py \
     --mode=onefile\    
     --output-filename=ddns\

@@ -44,7 +44,8 @@ def update_nuitka_version(pyfile):
         content = f.read()
 
     # 提取 __version__ 变量
-    version_match = re.search(r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
+    version_match = re.search(
+        r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
     if not version_match:
         print(f'No __version__ found in {pyfile}')
         return False
@@ -81,7 +82,7 @@ def add_nuitka_include_modules(pyfile):
         if filename.endswith('.py') and filename != '__init__.py':
             module_name = filename[:-3]  # 去掉 .py 扩展名
             modules.append(f'dns.{module_name}')
-    
+
     if not modules:
         print('No DNS modules found')
         return False
@@ -94,24 +95,24 @@ def add_nuitka_include_modules(pyfile):
     nuitka_lines = []
     for module in sorted(modules):
         nuitka_lines.append(f'# nuitka-project: --include-module={module}')
-    
+
     # 移除现有的 nuitka-project include-module 配置
     content = re.sub(
         r'# nuitka-project:\s*--include-module=dns\.[^\n]*\n',
         '',
         content
     )
-    
+
     # 添加新的配置到文件末尾
     if not content.endswith('\n'):
         content += '\n'
-    
+
     content += '\n'.join(nuitka_lines) + '\n'
 
     # 写回文件
     with open(pyfile, 'w', encoding='utf-8') as f:
         f.write(content)
-    
+
     print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
     return True
 
@@ -173,7 +174,8 @@ def remove_python2_compatibility(pyfile):
                     except_block.append(lines[i])
                     i += 1
                 # 添加try块内容，except块用空行替代
-                new_lines.extend(['\n'] + try_block + ['\n'] * (len(except_block) + 1))
+                new_lines.extend(['\n'] + try_block + ['\n']
+                                 * (len(except_block) + 1))
                 changed = True
             else:
                 # 没有except块，原样保留
