@@ -42,7 +42,7 @@ jobs:
             ghcr.io/newfuture/ddns
             newfuture/ddns
           flavor: | # exclude alpha, beta, rc
-            latest=${{ !(contains(github.ref_name, 'a') && contains(github.ref_name, 'b') && contains(github.ref_name, 'c')) }}
+            latest=${{ !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'c')) }}
           tags: | # edge for beta and rc
             type=ref,event=tag
             type=edge,enable=${{ contains(github.ref_name, 'b') || contains(github.ref_name, 'c')}} 
