@@ -33,17 +33,10 @@ RUN python3 .github/patch.py
 # FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
 RUN apt-get update && apt-get install -y --no-install-recommends clang
 RUN python3 -O -m nuitka run.py \
-    --mode=onefile\    
-    --output-filename=ddns\
-    --output-dir=dist\
     --remove-output \
-    --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma \
-    --file-description="DDNS Client 自动更新域名解析到本机IP" \
     --linux-icon=doc/img/ddns.svg \
-    --lto=yes \
-    $(if [ "$(uname -m)" = "aarch64" ]; then echo "--clang"; fi)
-RUN cp dist/ddns /bin/ddns \
-    && cp dist/ddns /ddns
+    $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes )
+RUN cp ddns /bin/ddns && cp ddns /ddns
 
 
 # export the binary

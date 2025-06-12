@@ -67,6 +67,31 @@ def update_nuitka_version(pyfile):
     return False
 
 
+def add_nuitka_file_description(pyfile):
+    """
+    添加 --file-description 配置，使用 __description__ 变量的值
+    """
+    with open(pyfile, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # 提取 __description__ 变量的值
+    desc_match = re.search(
+        r'__description__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
+    if not desc_match:
+        print(f'No __description__ found in {pyfile}')
+        return False
+
+    description = desc_match.group(1)
+    if not content.endswith('\n'):
+        content += '\n'
+    content += f'# nuitka-project: --file-description="{description}"\n'
+
+    with open(pyfile, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f'Added file-description to {pyfile}: {description}')
+    return True
+
+
 def add_nuitka_include_modules(pyfile):
     """
     读取 dns 目录下的所有 Python 模块，并添加到 run.py 末尾
@@ -87,31 +112,10 @@ def add_nuitka_include_modules(pyfile):
         print('No DNS modules found')
         return False
 
-    # 读取 run.py 文件
-    with open(pyfile, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    # 生成 nuitka-project 配置行
-    nuitka_lines = []
-    for module in sorted(modules):
-        nuitka_lines.append(f'# nuitka-project: --include-module={module}')
-
-    # 移除现有的 nuitka-project include-module 配置
-    content = re.sub(
-        r'# nuitka-project:\s*--include-module=dns\.[^\n]*\n',
-        '',
-        content
-    )
-
-    # 添加新的配置到文件末尾
-    if not content.endswith('\n'):
-        content += '\n'
-
-    content += '\n'.join(nuitka_lines) + '\n'
-
-    # 写回文件
-    with open(pyfile, 'w', encoding='utf-8') as f:
-        f.write(content)
+    # 直接在文件末尾追加配置行
+    with open(pyfile, 'a', encoding='utf-8') as f:
+        for module in sorted(modules):
+            f.write(f'# nuitka-project: --include-module={module}\n')
 
     print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
     return True
@@ -197,6 +201,7 @@ def main():
     """
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path)
+    add_nuitka_file_description(run_py_path)
     add_nuitka_include_modules(run_py_path)
 
     changed_files = 0
