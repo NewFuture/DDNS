@@ -134,7 +134,7 @@ def main():
     )
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
-    # Dynamicly import the dns module as configuration
+    # Dynamically import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
     dns.Config.ID = get_config('id')

@@ -84,7 +84,9 @@ def add_nuitka_file_description(pyfile):
     description = desc_match.group(1)
     if not content.endswith('\n'):
         content += '\n'
-    content += f'# nuitka-project: --file-description="{description}"\n'
+    description_line = f'# nuitka-project: --file-description="{description}"\n'
+    if description_line not in content:
+        content += description_line
 
     with open(pyfile, 'w', encoding='utf-8') as f:
         f.write(content)
