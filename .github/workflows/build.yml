@@ -83,7 +83,7 @@ jobs:
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
 
   nuitka:
-    needs: [ python ]
+    needs: [ python, lint ]
     strategy:
       matrix:
         include:
@@ -123,9 +123,7 @@ jobs:
         
       - name: Set up on Linux
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update &&  sudo apt-get install -y patchelf
-          cp /etc/ssl/certs/ca-certificates.crt cert.pem && export SSL_CERT_FILE=${PWD}/cert.pem
+        run: sudo apt-get install -y patchelf
 
       - name: Set up on macOS
         if: runner.os == 'macOS'
@@ -139,9 +137,8 @@ jobs:
           nuitka-version: main
           script-name: run.py
           output-dir: dist
-          copyright: "https://ddns.newfuture.cc"
-          assume-yes-for-downloads: true
           lto: yes
+          file-description: "DDNS客户端[测试版 Alpha]"
           windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
           linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
