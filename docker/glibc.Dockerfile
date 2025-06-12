@@ -28,7 +28,9 @@ FROM ${BUILDER} AS builder
 # 拷贝项目文件
 COPY . .
 RUN python3 .github/patch.py
-# 构建二进制文件
+# 构建二进制文件，glibc arm下编译会报错，
+# collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
+# FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
 RUN python3 -O -m nuitka \
     --onefile \
     --output-dir=dist \
@@ -51,6 +53,7 @@ RUN python3 -O -m nuitka \
     --company-name="New Future" \
     --linux-icon=doc/img/ddns.svg \
     --lto=yes \
+    $(if [ "$(uname -m)" = "aarch64" ]; then echo "--clang"; fi) \
     run.py
 RUN cp dist/ddns /bin/ddns \
     && cp dist/ddns /ddns
