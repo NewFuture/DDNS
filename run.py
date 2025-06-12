@@ -127,6 +127,15 @@ def main():
     更新
     """
     init_config(__description__, __doc__, __version__)
+    
+    basicConfig(
+        level=get_config('log.level'),
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%m-%d %H:%M:%S',
+        filename=get_config('log.file'),
+    )
+    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+
     # Dynamicly import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
     dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
@@ -134,14 +143,7 @@ def main():
     dns.Config.TOKEN = get_config('token')
     dns.Config.TTL = get_config('ttl')
 
-    basicConfig(
-        level=get_config('log.level'),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%m-%d %H:%M:%S',
-        filename=get_config('log.file'),
-    )
 
-    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
     if get_config("config"):
         info('loaded Config from: %s', path.abspath(get_config('config')))
 
