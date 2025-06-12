@@ -143,7 +143,7 @@ jobs:
           linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
-          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.svg' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
 
       - run: ./dist/ddns || test -f config.json
       - run: ./dist/ddns -h
