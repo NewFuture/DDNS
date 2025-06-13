@@ -45,9 +45,9 @@ jobs:
             newfuture/ddns
           flavor: | # exclude alpha, beta, rc
             latest=${{ !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'c')) }}
-          tags: | # next for beta and rc
+          tags: | # next for beta and rc or stable (none alpha)
             type=ref,event=tag
-            type=raw,value=next,enable=${{ contains(github.ref_name, 'b') || contains(github.ref_name, 'c')}} 
+            type=raw,value=next,enable=${{ !contains(github.ref_name, 'alpha')}} 
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
