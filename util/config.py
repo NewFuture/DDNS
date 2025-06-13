@@ -169,7 +169,7 @@ def get_config(key, default=None):
     1. 命令行参数
     2. 配置文件
     3. 环境变量
-    """     
+    """
     if hasattr(__cli_args, key) and getattr(__cli_args, key) is not None:
         return getattr(__cli_args, key)
     if key in __config:

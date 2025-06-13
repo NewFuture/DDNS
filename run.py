@@ -10,7 +10,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, info, warning, error, debug,DEBUG,NOTSET
+from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
