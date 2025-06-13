@@ -96,12 +96,22 @@ def init_config(description, doc, version):
                         help='https proxy [设置http 代理，多代理逐个尝试直到成功]')
     parser.add_argument('--cache',  type=str2bool, nargs='?',
                         const=True, help='cache flag [启用缓存，可配配置路径或开关]')
+    parser.add_argument('--debug', action='store_true',
+                        help='debug mode [调试模式，等同log.level=DEBUG]')
     parser.add_argument('--log.file', metavar='LOG_FILE',
                         help='log file [日志文件，默认标准输出]')
     parser.add_argument('--log.level', type=log_level,
                         metavar='|'.join(log_levels))
+    parser.add_argument('--log.format', metavar='LOG_FORMAT',
+                        help='log format [日志格式字符串]')
+    parser.add_argument('--log.datefmt', metavar='DATE_FORMAT',
+                        help='date format [日期格式字符串]')
 
     __cli_args = parser.parse_args()
+    if __cli_args.debug:
+        # 如果启用调试模式，则设置日志级别为 DEBUG
+        setattr(__cli_args, 'log.level', log_level('DEBUG'))
+
     is_configfile_required = not get_config("token") and not get_config("id")
     config_file = get_config("config")
     if not config_file:
@@ -141,6 +151,10 @@ def __load_config(config_path):
                     __config['log.level'] = log_level(__config['log']['level'])
                 if 'file' in __config['log']:
                     __config['log.file'] = __config['log']['file']
+                if 'format' in __config['log']:
+                    __config['log.format'] = __config['log']['format']
+                if 'datefmt' in __config['log']:
+                    __config['log.datefmt'] = __config['log']['datefmt']
             elif 'log.level' in __config:
                 __config['log.level'] = log_level(__config['log.level'])
     except Exception as e:
@@ -155,7 +169,7 @@ def get_config(key, default=None):
     1. 命令行参数
     2. 配置文件
     3. 环境变量
-    """
+    """     
     if hasattr(__cli_args, key) and getattr(__cli_args, key) is not None:
         return getattr(__cli_args, key)
     if key in __config:
@@ -211,8 +225,7 @@ def generate_config(config_path):
         'ttl': None,
         'proxy': None,
         'log': {
-            'level': 'INFO',
-            'file': None
+            'level': 'INFO'
         }
     }
     try:

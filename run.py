@@ -10,7 +10,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, info, warning, error, debug
+from logging import basicConfig, info, warning, error, debug,DEBUG,NOTSET
 
 import sys
 
@@ -126,12 +126,17 @@ def main():
     """
     init_config(__description__, __doc__, __version__)
 
+    log_level = get_config('log.level')
+    log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
+    if log_level == DEBUG or log_level == NOTSET:
+        log_format = '%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s'
     basicConfig(
-        level=get_config('log.level'),
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%m-%d %H:%M:%S',
+        level=log_level,
+        format=log_format,
+        datefmt=get_config('log.datefmt', '%Y-%m-%dT%H:%M:%S'),
         filename=get_config('log.file'),
     )
+
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # Dynamically import the dns module as configuration

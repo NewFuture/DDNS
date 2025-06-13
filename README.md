@@ -148,9 +148,9 @@ python run.py -c /path/to/config.json
 | index6   | string\|int\|array |    No    | `"default"` |   ipv6 获取方式   | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                |
 |  ttl     |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
 |  proxy   |       string\|array       |    No    |     无      | http 代理 `;` 分割 | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                     |
-| ~~debug~~|        bool        |    No    |   `false`   |   是否开启调试    | v4 中弃用，请改用 log.level=DEBUG                                                                           |
+|  debug  |        bool        |    No    |   `false`   |   是否开启调试    | 等同于设置 log.level=DEBUG，仅命令行参数`--debug`有效                                                  |
 |  cache   |    string\|bool    |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                          |
-|  log     | {"level":string,"file":string} | No | `null` | 日志配置（可选） | 日志配置，日志级别和路径（默认命令行），例如：`{ "level": "DEBUG", "file": "dns.log" }`                    |
+|  log     | object | No | `null` | 日志配置（可选） | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                   |
 
 #### index4 和 index6 参数说明
 
@@ -196,7 +196,9 @@ python run.py -c /path/to/config.json
   "proxy": "127.0.0.1:1080;DIRECT",
   "log": {
     "level": "DEBUG",
-    "file": "dns.log"
+    "file": "dns.log",
+    "format": "%(asctime)s %(levelname)s [%(module)s]: %(message)s",
+    "datefmt": "%Y-%m-%dT%H:%M:%S"
   }
 }
 ```

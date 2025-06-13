@@ -192,7 +192,7 @@
       "$id": "/properties/log",
       "type": "object",
       "title": "Log Config",
-      "description": "日志配置，支持自定义日志级别和输出位置。可通过命令行 --log.level, --log.file 或环境变量 DDNS_LOG_LEVEL, DDNS_LOG_FILE 设置。",
+      "description": "日志配置，支持自定义日志级别、输出位置、格式和日期格式。可通过命令行 --log.level, --log.file, --log.format, --log.datefmt 或环境变量 DDNS_LOG_LEVEL, DDNS_LOG_FILE, DDNS_LOG_FORMAT, DDNS_LOG_DATEFMT 设置。",
       "properties": {
         "level": {
           "type": "string",
@@ -205,6 +205,18 @@
           "type": ["string", "null"],
           "title": "Log Output File",
           "description": "日志输出文件路径，留空或为null时输出到控制台"
+        },
+        "format": {
+          "type": ["string", "null"],
+          "title": "Log Format",
+          "description": "日志格式，参考Python logging模块的格式字符串",
+          "default": "%(asctime)s %(levelname)s [%(module)s]: %(message)s"
+        },
+        "datefmt": {
+          "type": ["string", "null"],
+          "title": "Date Format",
+          "description": "日期时间格式，参考Python time.strftime()的格式字符串",
+          "default": "%Y-%m-%dT%H:%M:%S"
         }
       },
       "required": [],

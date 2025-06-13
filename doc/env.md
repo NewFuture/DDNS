@@ -276,6 +276,44 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**命�
   export DDNS_LOG_FILE="./ddns.log"
   ```
 
+#### DDNS_LOG_FORMAT
+
+- **类型**: 字符串
+- **必需**: 否
+- **默认值**: `%(asctime)s %(levelname)s [%(module)s]: %(message)s`
+- **说明**: 日志格式字符串，参考Python logging模块的格式化语法
+- **示例**:
+
+  ```bash
+  # 默认格式（含模块名）
+  export DDNS_LOG_FORMAT="%(asctime)s %(levelname)s [%(module)s]: %(message)s"
+  
+  # 包含文件名和行号（debug模式下默认格式）
+  export DDNS_LOG_FORMAT="%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s"
+  
+  # 简单格式
+  export DDNS_LOG_FORMAT="%(levelname)s: %(message)s"
+  ```
+
+#### DDNS_LOG_DATEFMT
+
+- **类型**: 字符串
+- **必需**: 否
+- **默认值**: `%Y-%m-%dT%H:%M:%S`
+- **说明**: 日期时间格式字符串，参考Python time.strftime()的格式化语法
+- **示例**:
+
+  ```bash
+  # ISO 格式（默认）
+  export DDNS_LOG_DATEFMT="%Y-%m-%dT%H:%M:%S"
+  
+  # 简短格式
+  export DDNS_LOG_DATEFMT="%m-%d %H:%M:%S"
+  
+  # 标准格式
+  export DDNS_LOG_DATEFMT="%Y-%m-%d %H:%M:%S"
+  ```
+
 ## 使用示例
 
 ### 基础配置示例
@@ -307,6 +345,8 @@ docker run -d \
   -e DDNS_INDEX6=public \
   -e DDNS_TTL=600 \
   -e DDNS_LOG_LEVEL=INFO \
+  -e DDNS_LOG_FORMAT="%(asctime)s %(levelname)s [%(module)s]: %(message)s" \
+  -e DDNS_LOG_DATEFMT="%Y-%m-%dT%H:%M:%S" \
   --network host \
   newfuture/ddns
 ```
@@ -335,6 +375,8 @@ export DDNS_CACHE="/home/user/.ddns_cache"
 # 日志配置
 export DDNS_LOG_LEVEL="DEBUG"
 export DDNS_LOG_FILE="/var/log/ddns.log"
+export DDNS_LOG_FORMAT="%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s"
+export DDNS_LOG_DATEFMT="%Y-%m-%d %H:%M:%S"
 
 # TTL 设置
 export DDNS_TTL="300"
