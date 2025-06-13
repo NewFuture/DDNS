@@ -370,8 +370,10 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create \
-          --tag ${{ env.DOCKER_IMG }}:${{ github.ref_name }} \
-          --tag newfuture/ddns:${{ github.ref_name }} \
+          -t ${{ env.DOCKER_IMG }}:${{ github.ref_name }} \
+          -t newfuture/ddns:${{ github.ref_name }} \
+          ${{ github.ref_name=='master' && '-t $DOCKER_IMG:edge' }} \
+          ${{ github.ref_name=='master' && '-t newfuture/ddns:edge' }} \
           $(docker images --format "{{.Repository}}:{{.Tag}}" ${{ env.DOCKER_IMG }}:*) \
           --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
           --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \

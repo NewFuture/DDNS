@@ -45,9 +45,9 @@ jobs:
             newfuture/ddns
           flavor: | # exclude alpha, beta, rc
             latest=${{ !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'c')) }}
-          tags: | # edge for beta and rc
+          tags: | # next for beta and rc
             type=ref,event=tag
-            type=edge,enable=${{ contains(github.ref_name, 'b') || contains(github.ref_name, 'c')}} 
+            type=raw,value=next,enable=${{ contains(github.ref_name, 'b') || contains(github.ref_name, 'c')}} 
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
@@ -60,14 +60,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
-      - name: Attest
-        uses: actions/attest-build-provenance@v2
-        id: attest
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true      
+          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master   
 
   publish-pypi:
     runs-on: ubuntu-latest
