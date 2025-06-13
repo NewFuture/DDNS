@@ -80,7 +80,7 @@ docker run -d \
 
 其中 `/host/config/` 是您本地包含 `config.json` 的目录。Docker 容器内的工作目录是 `/ddns/`，配置文件会被映射到容器内的 `/ddns/config.json`。
 
-xiang `config.json` 的内容可以参考 [JSON 配置文件说明](json.md)。
+详见 `config.json` 的内容可以参考 [JSON 配置文件说明](json.md)。
 
 ## 网络模式
 

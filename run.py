@@ -128,7 +128,7 @@ def main():
 
     log_level = get_config('log.level')
     log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
-    if log_level == DEBUG or log_level == NOTSET:
+    if (log_level == DEBUG or log_level == NOTSET) and not get_config('log.format'):
         log_format = '%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s'
     basicConfig(
         level=log_level,
