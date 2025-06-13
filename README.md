@@ -19,9 +19,9 @@
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - 配置方式:
-  - [命令行参数](#详细配置)
-  - [JSON 配置文件](#详细配置)
-  - [环境变量配置](doc/env.md) 📖
+  - [命令行参数](doc/cli.md)
+  - [JSON 配置文件](doc/json.md)
+  - [环境变量配置](doc/env.md)
 
 - 域名支持:
   - 多个域名支持
@@ -114,11 +114,26 @@
 
 ## 详细配置
 
-所有字段可通过三种方式进行配置
+所有字段可通过三种方式进行配置，优先级为：**命令行参数 > JSON配置文件 > 环境变量**
 
-1. 命令行参数 `ddns --key=value`（`ddns -h` 查看详情），优先级最高
-2. JSON 配置文件（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
+1. [命令行参数](doc/cli.md) `ddns --key=value`（`ddns -h` 查看详情），优先级最高
+2. [JSON 配置文件](doc/json.md)（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
 3. 环境变量 DDNS_ 前缀加上 key 全大写或者全小写，点转下划线（`${ddns_id}` 或 `${DDNS_ID}`，`${DDNS_LOG_LEVEL}`）
+
+### 配置优先级和字段覆盖关系
+
+如果同一个配置项在多个地方设置，将按照以下优先级规则生效：
+
+- **命令行参数**：优先级最高，会覆盖其他所有设置
+- **JSON配置文件**：介于命令行和环境变量之间，会覆盖环境变量中的设置
+- **环境变量**：优先级最低，当其他方式未设置时使用
+
+**特殊情况**：
+- JSON配置中明确设为`null`的值会覆盖环境变量设置
+- `debug`参数只在命令行中有效，JSON配置文件中的同名设置无效
+- 多值参数（如`ipv4`、`ipv6`等）在命令行中使用方式为重复使用参数，如`--ipv4 domain1 --ipv4 domain2`
+
+各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)
 
 > 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/env.md) 了解所有环境变量的详细用法和示例
 
@@ -128,6 +143,7 @@
 - 首次运行会自动生成一个模板配置文件
 - 可以使用 `-c` 使用指定的配置文件（默认读取当前目录的 config.json）
 - 推荐使用 vscode 等支持 JsonSchema 的编辑器编辑配置文件
+- 查看 [JSON配置文件详细文档](doc/json.md) 了解完整的配置选项和示例
 
 ```bash
 ddns -c path/to/config.json
@@ -148,9 +164,9 @@ python run.py -c /path/to/config.json
 | index6   | string\|int\|array |    No    | `"default"` |   ipv6 获取方式   | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                |
 |  ttl     |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
 |  proxy   |       string\|array       |    No    |     无      | http 代理 `;` 分割 | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                     |
-| ~~debug~~|        bool        |    No    |   `false`   |   是否开启调试    | v4 中弃用，请改用 log.level=DEBUG                                                                           |
+|  debug  |        bool        |    No    |   `false`   |   是否开启调试    | 等同于设置 log.level=DEBUG，仅命令行参数`--debug`有效                                                  |
 |  cache   |    string\|bool    |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                          |
-|  log     | {"level":string,"file":string} | No | `null` | 日志配置（可选） | 日志配置，日志级别和路径（默认命令行），例如：`{ "level": "DEBUG", "file": "dns.log" }`                    |
+|  log     | object | No | `null` | 日志配置（可选） | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                   |
 
 #### index4 和 index6 参数说明
 
@@ -196,7 +212,9 @@ python run.py -c /path/to/config.json
   "proxy": "127.0.0.1:1080;DIRECT",
   "log": {
     "level": "DEBUG",
-    "file": "dns.log"
+    "file": "dns.log",
+    "format": "%(asctime)s %(levelname)s [%(module)s]: %(message)s",
+    "datefmt": "%Y-%m-%dT%H:%M:%S"
   }
 }
 ```
