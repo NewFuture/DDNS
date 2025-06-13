@@ -128,7 +128,8 @@ def main():
 
     log_level = get_config('log.level')
     log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
-    if (log_level == DEBUG or log_level == NOTSET) and not get_config('log.format'):
+    # Override log format in debug mode to include filename and line number for detailed debugging
+    if (log_level == DEBUG or log_level == NOTSET) and not log_format:
         log_format = '%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s'
     basicConfig(
         level=log_level,
