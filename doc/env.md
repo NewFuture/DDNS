@@ -6,7 +6,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 
 所有环境变量都以 `DDNS_` 为前缀，后跟参数名（推荐全大写），点号(`.`)替换为下划线(`_`)。
 
-## 环境变量命名规则
+### 环境变量命名规则
 
 | 配置参数 | 环境变量名称 | 示例 |
 |---------|-------------|------|
@@ -14,6 +14,42 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `token` | `DDNS_TOKEN` 或 `ddns_token` | `DDNS_TOKEN=mytokenkey` |
 | `log.level` | `DDNS_LOG_LEVEL` 或 `ddns_log_level` | `DDNS_LOG_LEVEL=DEBUG` |
 | `log.file` | `DDNS_LOG_FILE` 或 `ddns_log_file` | `DDNS_LOG_FILE=/var/log/ddns.log` |
+
+## 环境变量完整参数列表
+
+以下是DDNS支持的所有环境变量参数列表：
+
+| 环境变量 | 类型 | 默认值 | 描述 |
+|---------|------|--------|------|
+| `DDNS_ID` | 字符串 | 无 | API访问ID或用户标识 |
+| `DDNS_TOKEN` | 字符串 | 无 | API授权令牌或密钥 |
+| `DDNS_DNS` | 字符串 | `dnspod` | DNS服务提供商 |
+| `DDNS_IPV4` | 数组/字符串 | 无 | IPv4域名列表 |
+| `DDNS_IPV6` | 数组/字符串 | 无 | IPv6域名列表 |
+| `DDNS_INDEX4` | 数组/字符串/数字 | `default` | IPv4地址获取方式 |
+| `DDNS_INDEX6` | 数组/字符串/数字 | `default` | IPv6地址获取方式 |
+| `DDNS_TTL` | 整数 | 无 | DNS解析TTL时间（秒） |
+| `DDNS_PROXY` | 数组/字符串 | 无 | HTTP代理设置 |
+| `DDNS_CACHE` | 布尔值/字符串 | `true` | 缓存设置 |
+| `DDNS_LOG_LEVEL` | 字符串 | `INFO` | 日志级别 |
+| `DDNS_LOG_FILE` | 字符串 | 无 | 日志文件路径 |
+| `DDNS_LOG_FORMAT` | 字符串 | `%(asctime)s %(levelname)s [%(module)s]: %(message)s` | 日志格式字符串 |
+| `DDNS_LOG_DATEFMT` | 字符串 | `%Y-%m-%dT%H:%M:%S` | 日期时间格式字符串 |
+
+### 参数值示例
+
+| 环境变量 | 可能的值 | 示例 |
+|---------|---------|------|
+| `DDNS_DNS` | dnspod, alidns, cloudflare, dnscom, dnspod_com, he, huaweidns, callback | `export DDNS_DNS="cloudflare"` |
+| `DDNS_IPV4` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV4='["example.com", "www.example.com"]'` |
+| `DDNS_IPV6` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV6="example.com,ipv6.example.com"` |
+| `DDNS_INDEX4` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
+| `DDNS_INDEX6` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX6="public"` |
+| `DDNS_PROXY` | IP:端口, DIRECT, 分号分隔的列表 | `export DDNS_PROXY="127.0.0.1:1080;DIRECT"` |
+| `DDNS_CACHE` | true/false, 文件路径 | `export DDNS_CACHE="/path/to/cache.json"` |
+| `DDNS_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR, CRITICAL | `export DDNS_LOG_LEVEL="DEBUG"` |
+| `DDNS_LOG_FORMAT` | 格式字符串 | `export DDNS_LOG_FORMAT="%(asctime)s: %(message)s"` |
+| `DDNS_LOG_DATEFMT` | 日期格式字符串 | `export DDNS_LOG_DATEFMT="%Y-%m-%d %H:%M:%S"` |
 
 ## 基础配置参数
 

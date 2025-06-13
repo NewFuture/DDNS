@@ -20,11 +20,48 @@ python run.py -h
 
 ## 参数列表
 
-| 短参数 | 长参数    | 描述                     |
-| ------ | --------- | ------------------------ |
-| `-h`   | `--help`  | 显示帮助信息并退出       |
-| `-v`   | `--version` | 显示版本信息并退出     |
-| `-c`   | `--config` | 指定配置文件路径        |
+| 长参数          | 短参数 | 类型            | 描述                                         |
+| --------------- | ------ | --------------- | -------------------------------------------- |
+| `--help`        | `-h`   | 标志            | 显示帮助信息并退出                           |
+| `--version`     | `-v`   | 标志            | 显示版本信息并退出                           |
+| `--config`      | `-c`   | 字符串          | 指定配置文件路径                             |
+| `--dns`         |        | 选择项          | DNS服务提供商                                |
+| `--id`          |        | 字符串          | API 访问 ID 或授权账户                       |
+| `--token`       |        | 字符串          | API 授权令牌或密钥                           |
+| `--ipv4`        |        | 字符串列表      | IPv4 域名列表，多个域名重复使用参数          |
+| `--ipv6`        |        | 字符串列表      | IPv6 域名列表，多个域名重复使用参数          |
+| `--index4`      |        | 字符串/数字列表 | IPv4 地址获取方式，支持多种获取方式          |
+| `--index6`      |        | 字符串/数字列表 | IPv6 地址获取方式，支持多种获取方式          |
+| `--ttl`         |        | 整数            | DNS 解析记录的 TTL 时间（秒）                |
+| `--proxy`       |        | 字符串列表      | HTTP 代理设置，支持多代理重复使用参数        |
+| `--cache`       |        | 布尔/字符串     | 是否启用缓存或自定义缓存路径                 |
+| `--debug`       |        | 标志            | 开启调试模式（等同于 --log.level=DEBUG）     |
+| `--log.file`    |        | 字符串          | 日志文件路径，不指定则输出到控制台           |
+| `--log.level`   |        | 字符串          | 日志级别                                     |
+| `--log.format`  |        | 字符串          | 日志格式字符串                               |
+| `--log.datefmt` |        | 字符串          | 日期时间格式字符串                           |
+
+其中`--debug`和`--help`,`--version`为命令行独有参数。
+
+### 参数值示例
+
+| 参数         | 可能的值                                     | 示例                                    |
+|--------------|----------------------------------------------|----------------------------------------|
+| `--dns`      | dnspod, alidns, cloudflare, 等               | `--dns cloudflare`                     |
+| `--id`       | API ID, 邮箱, Access Key                     | `--id user@example.com`                |
+| `--token`    | API Token, Secret Key                        | `--token abcdef123456`                 |
+| `--ipv4`     | 域名                                         | `--ipv4 example.com --ipv4 sub.example.com` |
+| `--ipv6`     | 域名                                         | `--ipv6 example.com`                   |
+| `--index4`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index4 public`, `--index4 "regex:192\\.168\\..*"` |
+| `--index6`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index6 0`, `--index6 public`         |
+| `--ttl`      | 秒数                                         | `--ttl 600`                            |
+| `--proxy`    | IP:端口, DIRECT                              | `--proxy 127.0.0.1:1080 --proxy DIRECT` |
+| `--cache`    | true, 文件路径                         | `--cache=true`, `--cache=/path/to/cache.json` |
+| `--debug`    | (无值)                                       | `--debug`                              |
+| `--log.file` | 文件路径                                     | `--log.file=/var/log/ddns.log`         |
+| `--log.level`| DEBUG, INFO, WARNING, ERROR, CRITICAL        | `--log.level=DEBUG`                    |
+| `--log.format` | 格式字符串                                 | `--log.format="%(asctime)s: %(message)s"` |
+| `--log.datefmt` | 日期格式字符串                            | `--log.datefmt="%Y-%m-%d %H:%M:%S"`    |
 
 ## DNS服务配置参数
 
