@@ -19,9 +19,9 @@
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - 配置方式:
-  - [命令行参数](#详细配置)
+  - [命令行参数](doc/cli.md)
   - [JSON 配置文件](#详细配置)
-  - [环境变量配置](doc/env.md) 📖
+  - [环境变量配置](doc/env.md)
 
 - 域名支持:
   - 多个域名支持
@@ -116,7 +116,7 @@
 
 所有字段可通过三种方式进行配置
 
-1. 命令行参数 `ddns --key=value`（`ddns -h` 查看详情），优先级最高
+1. [命令行参数](doc/cli.md) `ddns --key=value`（`ddns -h` 查看详情），优先级最高
 2. JSON 配置文件（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
 3. 环境变量 DDNS_ 前缀加上 key 全大写或者全小写，点转下划线（`${ddns_id}` 或 `${DDNS_ID}`，`${DDNS_LOG_LEVEL}`）
 
