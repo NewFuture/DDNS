@@ -17,9 +17,7 @@
 
 ---
 
-## Docker (推荐 Recommended)  
-![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/${BUILD_VERSION}?style=social)
-[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)
+## Docker (推荐 Recommended)  ![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/${BUILD_VERSION}?style=social)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)
 
 ```bash
 # 当前版本 (Current version)
