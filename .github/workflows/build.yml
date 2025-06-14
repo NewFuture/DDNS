@@ -185,8 +185,6 @@ jobs:
           push: false
           tags: ddnsbin
           target: export
-          env:
-            GITHUB_REF_NAME: ${{ github.ref_name }}
           outputs: type=local,dest=./output
           build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
       # 测试构建的二进制文件
@@ -250,8 +248,6 @@ jobs:
           platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
-          env:
-            GITHUB_REF_NAME: ${{ github.ref_name }}
           outputs: type=oci,dest=./multi-platform-image.tar
           build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
 
