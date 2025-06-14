@@ -145,7 +145,7 @@ def main():
     dns_provider = str(get_config('dns', 'dnspod').lower())
     # dns_module = __import__(
     #     '.dns', fromlist=[dns_provider], package=__package__)
-    dns = getattr(__import__('ddns.dns', fromlist=[dns_provider]), dns_provider)
+    dns = getattr(__import__('ddns.provider', fromlist=[dns_provider]), dns_provider)
     # dns = getattr(dns_module, dns_provider)
     dns.Config.ID = get_config('id')
     dns.Config.TOKEN = get_config('token')
