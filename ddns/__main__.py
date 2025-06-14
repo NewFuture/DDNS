@@ -14,11 +14,12 @@ from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
-from util import ip
-from util.cache import Cache
-from util.config import init_config, get_config
+from ddns.util import ip
+from ddns.util.cache import Cache
+from ddns.util.config import init_config, get_config
 
-__version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
+# __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
+__version__ = "0.0.0.0"
 __description__ = "automatically update DNS records to my IP [域名自动指向本机IP]"
 __doc__ = """
 ddns[%s]
@@ -142,7 +143,10 @@ def main():
 
     # Dynamically import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
-    dns = getattr(__import__('dns', fromlist=[dns_provider]), dns_provider)
+    # dns_module = __import__(
+    #     '.dns', fromlist=[dns_provider], package=__package__)
+    dns = getattr(__import__('ddns.dns', fromlist=[dns_provider]), dns_provider)
+    # dns = getattr(dns_module, dns_provider)
     dns.Config.ID = get_config('id')
     dns.Config.TOKEN = get_config('token')
     dns.Config.TTL = get_config('ttl')

@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ddns"
+dynamic = ["version"]
+description = "Dynamic DNS client for multiple providers, supporting IPv4 and IPv6."
+authors = [{ name = "NewFuture", email = "python@newfuture.cc" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=2.7"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "Topic :: Internet",
+  "Topic :: Internet :: Name Service (DNS)",
+  "Topic :: System :: Networking",
+  "Topic :: Software Development",
+  "License :: OSI Approved :: MIT License",
+  'Programming Language :: Python :: 2.7',
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+keywords = ["ddns", "ipv6", "ipv4", "dns", "dnspod", "alidns", "cloudflare"]
+dependencies = []
+
+
+[project.urls]
+Homepage = "https://ddns.newfuture.cc"
+Documentation = "https://ddns.newfuture.cc"
+Repository = "https://github.com/NewFuture/DDNS"
+"Bug Tracker" = "https://github.com/NewFuture/DDNS/issues"
+Source = "https://github.com/NewFuture/DDNS"
+
+[project.scripts]
+ddns = "ddns:main"
+
+# Optional dependencies
+#[project.optional-dependencies]
+#dev = [
+#   "pytest>=6.0",
+#    "pytest-cov",
+#    "black",
+#    "flake8",
+#    "mypy",
+#    "build",
+#    "twine",
+#]
+
+# Setuptools configuration
+[tool.setuptools]
+#package-dir = {"" = "src"}
+platforms = ["any"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = { attr = "ddns.__version__" }
+# description = { attr = "ddns.__description__" }
+
+# Include the run.py module at root level  
+#py-modules = ["ddns"]
+
+# 测试配置
+#[tool.pytest.ini_options]
+#testpaths = ["tests"]
+#python_files = ["test_*.py"]
+#python_classes = ["Test*"]
+#python_functions = ["test_*"]
+#addopts = [
+#    "--strict-markers",
+#    "--strict-config",
+#    "--cov=ddns",
+#    "--cov-report=term-missing",
+#]
+
+# 代码格式化配置
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# 类型检查配置
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
