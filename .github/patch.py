@@ -164,7 +164,7 @@ def extract_version_from_env():
     """
     ref = os.environ.get("GITHUB_REF_NAME")
     if not ref:
-        return "0.0.0.%s" % (time.strftime("%m%d%H%M"))  # 默认版本号
+        return time.strftime("0.%Y.%m%d.%H%M%s")  # 默认版本号
     if ref and ref.startswith("v"):
         return ref[1:]  # 去掉前缀 'v'
     return ref  # 返回原始版本号
