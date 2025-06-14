@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """
 DDNS
@@ -14,19 +13,10 @@ from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
-from ddns.util import ip
-from ddns.util.cache import Cache
-from ddns.util.config import init_config, get_config
-
-# __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
-__version__ = "0.0.0.0"
-__description__ = "automatically update DNS records to my IP [域名自动指向本机IP]"
-__doc__ = """
-ddns[%s]
-(i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
-(?) issues or bugs [问题和帮助]: https://github.com/NewFuture/DDNS/issues
-Copyright (c) New Future (MIT License)
-""" % (__version__)
+from .__init__ import __version__ as version, __description__, __doc__
+from .util import ip
+from .util.cache import Cache
+from .util.config import init_config, get_config
 
 environ["DDNS_VERSION"] = "${BUILD_VERSION}"
 
@@ -125,7 +115,7 @@ def main():
     """
     更新
     """
-    init_config(__description__, __doc__, __version__)
+    init_config(__description__, __doc__, version)
 
     log_level = get_config('log.level')
     log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
@@ -139,7 +129,7 @@ def main():
         filename=get_config('log.file'),
     )
 
-    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+    info("DDNS[ %s ] run: %s %s", version, os_name, sys.platform)
 
     # Dynamically import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())
@@ -184,17 +174,3 @@ if __name__ == '__main__':
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
-
-# Nuitka Project Configuration
-# nuitka-project: --mode=onefile
-# nuitka-project: --output-filename=ddns
-# nuitka-project: --product-name=DDNS
-# nuitka-project: --product-version=0.0.0
-# nuitka-project: --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}"
-# nuitka-project: --no-deployment-flag=self-execution
-# nuitka-project: --company-name="New Future"
-# nuitka-project: --copyright=https://ddns.newfuture.cc
-# nuitka-project: --assume-yes-for-downloads
-# nuitka-project: --python-flag=no_site,no_asserts,no_docstrings,isolated,static_hashes
-# nuitka-project: --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma
-# nuitka-project: --noinclude-dlls=liblzma.*

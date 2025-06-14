@@ -1,6 +1,7 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
+[tool.setuptools_scm]
 
 [project]
 name = "ddns"
@@ -35,7 +36,6 @@ classifiers = [
 keywords = ["ddns", "ipv6", "ipv4", "dns", "dnspod", "alidns", "cloudflare"]
 dependencies = []
 
-
 [project.urls]
 Homepage = "https://ddns.newfuture.cc"
 Documentation = "https://ddns.newfuture.cc"
@@ -44,7 +44,7 @@ Repository = "https://github.com/NewFuture/DDNS"
 Source = "https://github.com/NewFuture/DDNS"
 
 [project.scripts]
-ddns = "ddns:main"
+ddns = "ddns.__main__:main"
 
 # Optional dependencies
 #[project.optional-dependencies]
@@ -52,26 +52,25 @@ ddns = "ddns:main"
 #   "pytest>=6.0",
 #    "pytest-cov",
 #    "black",
-#    "flake8",
-#    "mypy",
-#    "build",
-#    "twine",
+#    "flake8"
 #]
 
 # Setuptools configuration
 [tool.setuptools]
 platforms = ["any"]
 packages = ["ddns"]
+package-dir= {"ddns" = "ddns"}
+py-modules = ["ddns","ddns.provider", "ddns.util"]
 
 #[tool.setuptools.packages.find]
 #where = ["."]
 
-[tool.setuptools.dynamic]
-version = { attr = "ddns.__version__" }
+
+
+# [tool.setuptools.dynamic]
+# version = { attr = "ddns.__version__" }
 # description = { attr = "ddns.__description__" }
 
-# Include the run.py module at root level  
-#py-modules = ["ddns"]
 
 # 测试配置
 #[tool.pytest.ini_options]
@@ -90,7 +89,7 @@ version = { attr = "ddns.__version__" }
 [tool.black]
 line-length = 100
 target-version = ['py38']
-include = '\.pyi?$'
+include = '\.py$'
 extend-exclude = '''
 /(
   # directories
