@@ -6,7 +6,7 @@ http://www.dnspod.com/docs/domains.html
 @author: New Future
 """
 
-from dns.dnspod import *  # noqa: F403
+from .dnspod import *  # noqa: F403
 
 API.SITE = "api.dnspod.com"  # noqa: F405
 API.DEFAULT = "default"  # noqa: F405
