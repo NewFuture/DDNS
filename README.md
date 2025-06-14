@@ -97,6 +97,8 @@
       newfuture/ddns
     ```
 
+  更多详细说明和高级用法请查看 [Docker 使用文档](doc/docker.md)。
+
 ### ② 快速配置
 
 1. 申请 api `token`，填写到对应的 `id` 和 `token` 字段:

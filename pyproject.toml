@@ -60,11 +60,11 @@ ddns = "ddns:main"
 
 # Setuptools configuration
 [tool.setuptools]
-#package-dir = {"" = "src"}
 platforms = ["any"]
+packages = ["ddns"]
 
-[tool.setuptools.packages.find]
-where = ["."]
+#[tool.setuptools.packages.find]
+#where = ["."]
 
 [tool.setuptools.dynamic]
 version = { attr = "ddns.__version__" }
@@ -88,7 +88,7 @@ version = { attr = "ddns.__version__" }
 
 # 代码格式化配置
 [tool.black]
-line-length = 88
+line-length = 100
 target-version = ['py38']
 include = '\.pyi?$'
 extend-exclude = '''
