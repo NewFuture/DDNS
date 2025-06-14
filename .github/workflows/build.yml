@@ -72,7 +72,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
       - run: sed -i -e 's#"doc/img/ddns.svg"#"https://ddns.newfuture.cc/doc/img/ddns.svg"#' README.md
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
 
@@ -176,7 +175,6 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
@@ -187,6 +185,8 @@ jobs:
           push: false
           tags: ddnsbin
           target: export
+          env:
+            GITHUB_REF_NAME: ${{ github.ref_name }}
           outputs: type=local,dest=./output
           build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
       # 测试构建的二进制文件
@@ -238,7 +238,6 @@ jobs:
         }}
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
@@ -251,6 +250,8 @@ jobs:
           platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
+          env:
+            GITHUB_REF_NAME: ${{ github.ref_name }}
           outputs: type=oci,dest=./multi-platform-image.tar
           build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
 
