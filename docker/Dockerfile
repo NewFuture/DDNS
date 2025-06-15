@@ -27,6 +27,7 @@ FROM ${BUILDER} AS builder
 COPY run.py .github/patch.py .
 COPY ddns ddns
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
+ENV GITHUB_REF_NAME
 RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \

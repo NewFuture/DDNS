@@ -22,6 +22,7 @@ WORKDIR /app
 FROM ${BUILDER} AS builder
 COPY run.py .github/patch.py .
 COPY ddns ddns
+ENV GITHUB_REF_NAME
 RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
