@@ -32,7 +32,7 @@ RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes \
     $(cat nuitka_exclude_so.txt)
-RUN mkdir /output && cp ddns /output/
+RUN mkdir /output && cp dist/ddns /output/
 COPY docker/entrypoint.sh /output/
 
 FROM alpine:${HOST_VERSION}

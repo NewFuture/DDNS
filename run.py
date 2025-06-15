@@ -4,7 +4,7 @@
 # Nuitka Project Configuration
 # nuitka-project: --mode=onefile
 # nuitka-project: --output-filename=ddns
-# nuitka-project: ---output-dir=dist
+# nuitka-project: --output-dir=dist
 # nuitka-project: --product-name=DDNS
 # nuitka-project: --product-version=0.0.0
 # nuitka-project: --onefile-tempdir-spec="{TEMP}/{PRODUCT}_{VERSION}"

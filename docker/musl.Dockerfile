@@ -26,7 +26,7 @@ RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes
-RUN cp ddns /bin/ddns && cp ddns /ddns
+RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
 # export the binary

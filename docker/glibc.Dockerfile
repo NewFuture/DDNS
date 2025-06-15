@@ -37,7 +37,7 @@ RUN python3 -O -m nuitka run.py \
     --remove-output \
     --linux-icon=doc/img/ddns.svg \
     $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes )
-RUN cp ddns /bin/ddns && cp ddns /ddns
+RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
 # export the binary

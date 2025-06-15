@@ -115,6 +115,11 @@ def main():
     """
     更新
     """
+    encode = sys.stdout.encoding
+    if encode is not None and encode.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+        # 兼容windows 和部分ASCII编码的老旧系统
+        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     init_config(__description__, __doc__, version)
 
     log_level = get_config('log.level')
@@ -168,9 +173,4 @@ def main():
 
 
 if __name__ == '__main__':
-    encode = sys.stdout.encoding
-    if encode is not None and encode.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
-        # 兼容windows 和部分ASCII编码的老旧系统
-        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     main()
