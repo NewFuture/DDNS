@@ -190,8 +190,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/${{ matrix.libc }}.Dockerfile
@@ -200,7 +198,9 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |
@@ -256,8 +256,6 @@ jobs:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
-        env:
-            GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/Dockerfile
@@ -265,7 +263,9 @@ jobs:
           push: false
           tags: ddns:test
           outputs: type=oci,dest=./multi-platform-image.tar
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+            GITHUB_REF_NAME=${{ github.ref_name }}
 
       # 准备测试环境
       - name: Prepare test environment

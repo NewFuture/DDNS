@@ -51,8 +51,6 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
         id: push
-        env:
-            GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/Dockerfile
@@ -61,7 +59,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master   
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master   
+            GITHUB_REF_NAME=${{ github.ref_name }}
 
   publish-pypi:
     runs-on: ubuntu-latest
@@ -176,8 +176,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/${{ matrix.libc }}.Dockerfile
@@ -186,7 +184,9 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |
