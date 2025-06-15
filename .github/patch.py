@@ -78,7 +78,7 @@ def add_nuitka_include_modules(pyfile):
     """
     读取 dns 目录下的所有 Python 模块，并添加到 run.py 末尾
     """
-    dns_dir = os.path.join(ROOT, "dns")
+    dns_dir = os.path.join(ROOT, "ddns/provider")
     if not os.path.exists(dns_dir):
         print(f"DNS directory not found: {dns_dir}")
         return False
@@ -88,7 +88,7 @@ def add_nuitka_include_modules(pyfile):
     for filename in os.listdir(dns_dir):
         if filename.endswith(".py") and filename != "__init__.py":
             module_name = filename[:-3]  # 去掉 .py 扩展名
-            modules.append(f"dns.{module_name}")
+            modules.append(f"ddns.provider.{module_name}")
 
     if not modules:
         print("No DNS modules found")
