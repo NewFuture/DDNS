@@ -65,7 +65,7 @@ def add_nuitka_file_description(pyfile):
     # 提取 __description__ 变量的值
     desc_match = re.search(r'__description__\s*=\s*[\'"]([^\'"]+)[\'"]', content)
     if not desc_match:
-        print(f"No __description__ found in {pyfile}")
+        print(f"No __description__ found in {init_py_path}")
         return False
     description = desc_match.group(1)
     description_line = f'\n# nuitka-project: --file-description="{description}"\n'
