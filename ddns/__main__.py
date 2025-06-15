@@ -90,25 +90,29 @@ def update_ip(ip_type, cache, dns, proxy_list):
     if not domains:
         return None
     if not isinstance(domains, list):
-        domains = domains.strip('; ').replace(
-            ',', ';').replace(' ', ';').split(';')
-    index_rule = get_config('index' + ip_type, "default")  # 从配置中获取index配置
+        domains = domains.strip('; ').replace(',', ';').replace(' ', ';').split(';')
+
+    index_rule = get_config('index' + ip_type, "default")
     address = get_ip(ip_type, index_rule)
     if not address:
         error('Fail to get %s address!', ipname)
         return False
-    elif cache and (address == cache[ipname]):
+
+    if cache and (address == cache.get(ipname)):
         info('%s address not changed, using cache.', ipname)
         return True
-    record_type = (ip_type == '4') and 'A' or 'AAAA'
-    update_fail = False  # https://github.com/NewFuture/DDNS/issues/16
+
+    record_type = 'A' if ip_type == '4' else 'AAAA'
+    update_success = False
     for domain in domains:
-        domain = domain.lower()  # https://github.com/NewFuture/DDNS/issues/431
+        domain = domain.lower()
         if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type):
-            update_fail = True
-    if cache is not False:
-        # 如果更新失败删除缓存
-        cache[ipname] = update_fail and address
+            update_success = True
+
+    if isinstance(cache, dict):
+        cache[ipname] = update_success and address
+
+    return update_success
 
 
 def main():
