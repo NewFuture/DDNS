@@ -20,12 +20,15 @@ WORKDIR /app
 
 
 FROM ${BUILDER} AS builder
-COPY . .
-RUN python3 .github/patch.py
+COPY run.py .github/patch.py .
+COPY ddns ddns
+ARG GITHUB_REF_NAME
+ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
+RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes
-RUN cp ddns /bin/ddns && cp ddns /ddns
+RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
 # export the binary

@@ -58,6 +58,23 @@ jobs:
         run: ${{env.PY}} run.py || test -f config.json
       - name: test version
         run: ${{env.PY}} run.py --version
+      - name: test run module
+        run:  ${{env.PY}} -m "ddns" -h
+
+      - name: test patch
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 .github/patch.py
+      - name: test help
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py -h
+      - name: test run
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py || test -f config.json
+      - name: test version
+        run: ${{env.PY}} run.py --version
+      - name: test run module
+        if:  ${{ matrix.version != '2.7' }}
+        run:  ${{env.PY}} -m "ddns" -h
 
   pypi:
     runs-on: ubuntu-latest
@@ -70,9 +87,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build
-      - run: sed -i -e 's#"doc/img/ddns.svg"#"https://ddns.newfuture.cc/doc/img/ddns.svg"#' README.md
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
+          pip install build setuptools-scm
+      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
 
@@ -116,11 +132,6 @@ jobs:
       - name: remove python2 code
         run:  python3 .github/patch.py
 
-      # Prepare build version and cert
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
-        
       - name: Set up on Linux
         if: runner.os == 'Linux'
         run: sudo apt-get install -y --no-install-recommends patchelf
@@ -176,7 +187,6 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
@@ -188,7 +198,9 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |
@@ -238,7 +250,6 @@ jobs:
         }}
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
@@ -252,7 +263,9 @@ jobs:
           push: false
           tags: ddns:test
           outputs: type=oci,dest=./multi-platform-image.tar
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+            GITHUB_REF_NAME=${{ github.ref_name }}
 
       # 准备测试环境
       - name: Prepare test environment

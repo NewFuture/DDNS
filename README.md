@@ -1,4 +1,4 @@
-# [<img src="doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
 
 > 自动更新 DNS 解析 到本机 IP 地址，支持 IPv4 和 IPv6，本地（内网）IP 和公网 IP。
 > 代理模式，支持自动创建 DNS 记录。
@@ -19,9 +19,9 @@
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - 配置方式:
-  - [命令行参数](doc/cli.md)
-  - [JSON 配置文件](doc/json.md)
-  - [环境变量配置](doc/env.md)
+  - [命令行参数](/doc/cli.md)
+  - [JSON 配置文件](/doc/json.md)
+  - [环境变量配置](/doc/env.md)
 
 - 域名支持:
   - 多个域名支持
@@ -96,6 +96,8 @@
       --network host \
       newfuture/ddns
     ```
+
+  更多详细说明和高级用法请查看 [Docker 使用文档](doc/docker.md)。
 
 ### ② 快速配置
 

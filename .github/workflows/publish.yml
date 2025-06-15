@@ -23,7 +23,6 @@ jobs:
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.platforms }}
@@ -60,7 +59,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:master   
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master   
+            GITHUB_REF_NAME=${{ github.ref_name }}
 
   publish-pypi:
     runs-on: ubuntu-latest
@@ -73,14 +74,14 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build
+          pip install build setuptools-scm
+      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -116,10 +117,6 @@ jobs:
         with:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
-
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
 
       - name: remove python2 code
         run:  python3 .github/patch.py
@@ -176,7 +173,6 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
@@ -188,7 +184,9 @@ jobs:
           tags: ddnsbin
           target: export
           outputs: type=local,dest=./output
-          build-args: BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
       # 测试构建的二进制文件
       - name: Test built binaries
         run: |

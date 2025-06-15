@@ -26,17 +26,20 @@ WORKDIR /app
 
 FROM ${BUILDER} AS builder
 # 拷贝项目文件
-COPY . .
-RUN python3 .github/patch.py
+COPY run.py .github/patch.py doc/img/ddns.svg .
+COPY ddns ddns
+ARG GITHUB_REF_NAME
+ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
+RUN python3 patch.py
 # 构建二进制文件，glibc arm下编译会报错，
 # collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
 # FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
 RUN apt-get update && apt-get install -y --no-install-recommends clang
 RUN python3 -O -m nuitka run.py \
     --remove-output \
-    --linux-icon=doc/img/ddns.svg \
+    --linux-icon=ddns.svg \
     $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes )
-RUN cp ddns /bin/ddns && cp ddns /ddns
+RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
 # export the binary
