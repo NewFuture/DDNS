@@ -28,7 +28,7 @@ FROM ${BUILDER} AS builder
 # 拷贝项目文件
 COPY run.py .github/patch.py doc/img/ddns.svg .
 COPY ddns ddns
-ENV GITHUB_REF_NAME
+ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
 # 构建二进制文件，glibc arm下编译会报错，
 # collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
