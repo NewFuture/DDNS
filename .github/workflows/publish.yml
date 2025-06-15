@@ -23,7 +23,6 @@ jobs:
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.platforms }}
@@ -52,6 +51,8 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - uses: docker/build-push-action@v6
         id: push
+        env:
+            GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/Dockerfile
@@ -73,14 +74,14 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build
+          pip install build setuptools-scm
+      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -116,10 +117,6 @@ jobs:
         with:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
-
-      - name: Replace build version
-        run: sed -i.tmp -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py && rm run.py.tmp
-        shell: bash
 
       - name: remove python2 code
         run:  python3 .github/patch.py
@@ -176,10 +173,11 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - run: sed -i -e "s#\${BUILD_VERSION}#${{ github.ref_name }}#" -e "s/\${BUILD_DATE}/$(date --iso-8601=seconds)/" run.py
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         with:
           context: .
           file: docker/${{ matrix.libc }}.Dockerfile
