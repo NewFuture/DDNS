@@ -67,7 +67,8 @@ def add_nuitka_file_description(pyfile):
     if not desc_match:
         print(f"No __description__ found in {pyfile}")
         return False
-
+    description = desc_match.group(1)
+    description_line = f'\n# nuitka-project: --file-description="{description}"\n'
     with open(pyfile, "a", encoding="utf-8") as f:
         f.write(description_line)
     return True
