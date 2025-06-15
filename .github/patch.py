@@ -5,6 +5,8 @@ import re
 import time
 
 ROOT = "."
+init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
+
 # 匹配 try-except 块，去除导入前缩进，保证import顶格，删除的行用空行代替
 PATTERN = re.compile(
     r"^[ \t]*try:[^\n]*python 3[^\n]*\n"  # try: # python 3
@@ -57,7 +59,7 @@ def add_nuitka_file_description(pyfile):
     """
     添加 --file-description 配置，使用 __description__ 变量的值
     """
-    with open(pyfile, "r", encoding="utf-8") as f:
+    with open(init_py_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # 提取 __description__ 变量的值
@@ -66,16 +68,8 @@ def add_nuitka_file_description(pyfile):
         print(f"No __description__ found in {pyfile}")
         return False
 
-    description = desc_match.group(1)
-    if not content.endswith("\n"):
-        content += "\n"
-    description_line = f'# nuitka-project: --file-description="{description}"\n'
-    if description_line not in content:
-        content += description_line
-
-    with open(pyfile, "w", encoding="utf-8") as f:
-        f.write(content)
-    print(f"Added file-description to {pyfile}")
+    with open(pyfile, "a", encoding="utf-8") as f:
+        f.write(description_line)
     return True
 
 
@@ -164,7 +158,7 @@ def extract_version_from_env():
     """
     ref = os.environ.get("GITHUB_REF_NAME")
     if not ref:
-        return time.strftime("0.%Y.%m%d.%H%M%s")  # 默认版本号
+        return time.strftime("0.0.%m%d.%H%M")  # 默认版本号
     if ref and ref.startswith("v"):
         return ref[1:]  # 去掉前缀 'v'
     return ref  # 返回原始版本号
@@ -181,7 +175,7 @@ def main():
     add_nuitka_include_modules(run_py_path)
 
     # 修改__init__.py 中的 __version__
-    init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
+
     replace_version_in_init(version, init_py_path)
 
     changed_files = 0

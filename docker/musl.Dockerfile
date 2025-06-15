@@ -20,8 +20,9 @@ WORKDIR /app
 
 
 FROM ${BUILDER} AS builder
-COPY . .
-RUN python3 .github/patch.py
+COPY run.py .github/patch.py .
+COPY ddns ddns
+RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes

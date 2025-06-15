@@ -58,6 +58,23 @@ jobs:
         run: ${{env.PY}} run.py || test -f config.json
       - name: test version
         run: ${{env.PY}} run.py --version
+      - name: test run module
+        run:  ${{env.PY}} -m "ddns" -h
+
+      - name: test patch
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 .github/patch.py
+      - name: test help
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py -h
+      - name: test run
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py || test -f config.json
+      - name: test version
+        run: ${{env.PY}} run.py --version
+      - name: test run module
+        if:  ${{ matrix.version != '2.7' }}
+        run:  ${{env.PY}} -m "ddns" -h
 
   pypi:
     runs-on: ubuntu-latest

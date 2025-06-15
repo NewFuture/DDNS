@@ -24,9 +24,10 @@ FROM alpine:${HOST_VERSION} AS base
 RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{print "--noinclude-dlls="$0}' > nuitka_exclude_so.txt
 
 FROM ${BUILDER} AS builder
-COPY . .
+COPY run.py .github/patch.py .
+COPY ddns ddns
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
-RUN python3 .github/patch.py
+RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes \
