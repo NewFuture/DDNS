@@ -82,6 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 64
           fetch-tags: true
       - uses: actions/setup-python@v5
         with:
