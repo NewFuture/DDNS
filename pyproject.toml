@@ -1,6 +1,7 @@
 
 [build-system] #remove for python2
 #requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
+requires=[]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
