@@ -343,6 +343,7 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           print-hash: true
+          verbose: true
 
   preview-docker:
     if: github.event_name == 'push'
