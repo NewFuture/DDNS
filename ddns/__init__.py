@@ -3,10 +3,10 @@
 ddns Package
 """
 
-
-# __version__ = "${BUILD_VERSION}@${BUILD_DATE}"  # CI 时会被Tag替换
-__version__ = "0.0.0"
 __description__ = "automatically update DNS records to my IP [域名自动指向本机IP]"
+
+# 二进制 编译时，版本会被替换
+__version__ = "4.0.0"
 
 __doc__ = """
 ddns[%s]

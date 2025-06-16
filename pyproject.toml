@@ -1,7 +1,6 @@
 [build-system]
 requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
-
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
 
@@ -11,7 +10,7 @@ dynamic = ["version"]
 description = "Dynamic DNS client for multiple providers, supporting IPv4 and IPv6."
 authors = [{ name = "NewFuture", email = "python@newfuture.cc" }]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=2.7"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -23,7 +22,6 @@ classifiers = [
   "Topic :: Internet :: Name Service (DNS)",
   "Topic :: System :: Networking",
   "Topic :: Software Development",
-  "License :: OSI Approved :: MIT License",
   'Programming Language :: Python :: 2.7',
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.6",
@@ -60,7 +58,7 @@ ddns = "ddns.__main__:main"
 # Setuptools configuration
 [tool.setuptools]
 platforms = ["any"]
-packages = ["ddns"]
+packages = ["ddns", "ddns.provider", "ddns.util"]
 package-dir= {"ddns" = "ddns"}
 py-modules = ["ddns","ddns.provider", "ddns.util"]
 
