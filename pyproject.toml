@@ -1,6 +1,8 @@
-[build-system]
-requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
-build-backend = "setuptools.build_meta"
+
+#[build-system] #remove for python2
+#requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
+#build-backend = "setuptools.build_meta"
+
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
 
@@ -47,13 +49,14 @@ Source = "https://github.com/NewFuture/DDNS"
 ddns = "ddns.__main__:main"
 
 # Optional dependencies
-#[project.optional-dependencies]
-#dev = [
+[project.optional-dependencies]
+dev = [
 #   "pytest>=6.0",
 #    "pytest-cov",
-#    "black",
-#    "flake8"
-#]
+    "black",
+    "flake8",
+    "setuptools_scm"
+]
 
 # Setuptools configuration
 [tool.setuptools]
