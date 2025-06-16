@@ -1,7 +1,7 @@
 
-#[build-system] #remove for python2
+[build-system] #remove for python2
 #requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
-#build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
