@@ -3,7 +3,6 @@
 import sys
 import os
 import re
-import time
 import datetime
 import subprocess
 
@@ -155,6 +154,7 @@ def remove_python2_compatibility(pyfile):
             f.writelines(new_lines)
         print(f"Removed python2 compatibility from {pyfile}")
 
+
 def get_git_ref():
     try:
         return subprocess.check_output(
@@ -163,6 +163,7 @@ def get_git_ref():
         ).decode().strip()
     except subprocess.CalledProcessError:
         return None
+
 
 def get_latest_tag():
     try:
@@ -173,12 +174,14 @@ def get_latest_tag():
     except subprocess.CalledProcessError:
         return None
 
+
 def normalize_tag(tag: str) -> str:
     v = tag.lower().lstrip("v")
     v = re.sub(r"-beta(\d*)", r"b\1", v)
     v = re.sub(r"-alpha(\d*)", r"a\1", v)
     v = re.sub(r"-rc(\d*)", r"rc\1", v)
     return v
+
 
 def generate_version() -> str:
     ref = get_git_ref()
@@ -195,13 +198,15 @@ def generate_version() -> str:
 
     return f"{base}.dev{today}"
 
+
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
-    with open(pyfile,'rw') as f:
+    with open(pyfile, 'w') as f:
         text = f.read()
         text = text.replace("${BUILD_VERSION}", version)
         text = text.replace("${BUILD_DATE}", date_str)
         f.write(text)
         print(f"✅ Updated {pyfile}: version={version}, date={date_str}")
+
 
 def main():
     """
@@ -209,7 +214,7 @@ def main():
     """
     if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
         print(f'unknown arguments: {sys.argv}')
-        exit(1) 
+        exit(1)
     version = generate_version()
     date_str = datetime.datetime.utcnow().isoformat() + "Z"
     print(f"📦 Version: {version}")
@@ -235,8 +240,6 @@ def main():
                 changed_files += 1
     print("done")
     print(f"Total processed files: {changed_files}")
-
-
 
 if __name__ == "__main__":
     main()
