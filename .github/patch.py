@@ -6,7 +6,6 @@ import re
 import time
 import datetime
 import subprocess
-from pathlib import Path
 
 ROOT = "."
 init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
@@ -196,12 +195,13 @@ def generate_version() -> str:
 
     return f"{base}.dev{today}"
 
-def replace_version_and_date(file: Path, version: str, date_str: str):
-    text = file.read_text(encoding="utf-8")
-    text = text.replace("${BUILD_VERSION}", version)
-    text = text.replace("${BUILD_DATE}", date_str)
-    file.write_text(text, encoding="utf-8")
-    print(f"✅ Updated {file}: version={version}, date={date_str}")
+def replace_version_and_date(pyfile: str, version: str, date_str: str):
+    with open(pyfile,'rw') as f:
+        text = f.read()
+        text = text.replace("${BUILD_VERSION}", version)
+        text = text.replace("${BUILD_DATE}", date_str)
+        f.write(text)
+        print(f"✅ Updated {pyfile}: version={version}, date={date_str}")
 
 def main():
     """
