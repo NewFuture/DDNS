@@ -1,11 +1,9 @@
 
-[build-system] #remove for python2
+#[build-system] #remove for python2
 #requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
-requires=[]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools_scm]
-local_scheme = "no-local-version"
+#build-backend = "setuptools.build_meta"
+#[tool.setuptools_scm]
+#local_scheme = "no-local-version"
 
 [project]
 name = "ddns"
@@ -71,8 +69,8 @@ py-modules = ["ddns","ddns.provider", "ddns.util"]
 
 
 
-# [tool.setuptools.dynamic]
-# version = { attr = "ddns.__version__" }
+[tool.setuptools.dynamic]
+version = { attr = "ddns.__version__" }
 # description = { attr = "ddns.__description__" }
 
 
