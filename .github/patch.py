@@ -208,7 +208,7 @@ def main():
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
     if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
-        print(f'unkown arguments: {sys.argv}')
+        print(f'unknown arguments: {sys.argv}')
         exit(1) 
     version = generate_version()
     date_str = datetime.datetime.utcnow().isoformat() + "Z"
@@ -221,8 +221,8 @@ def main():
         # python version only
         exit(0)
     
-    update_nuitka_version(run_py_path, version)
     run_py_path = os.path.join(ROOT, "run.py")
+    update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
     add_nuitka_include_modules(run_py_path)
 
