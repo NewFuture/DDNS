@@ -200,12 +200,16 @@ def generate_version() -> str:
 
 
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
-    with open(pyfile, 'w') as f:
+    with open(pyfile, 'r') as f:
         text = f.read()
         text = text.replace("${BUILD_VERSION}", version)
         text = text.replace("${BUILD_DATE}", date_str)
-        f.write(text)
-        print(f"✅ Updated {pyfile}: version={version}, date={date_str}")
+    if text is not None:
+        with open(pyfile, 'w') as f:
+            f.write(text)
+            print(f"✅ Updated {pyfile}: version={version}, date={date_str}")
+    else:
+        exit(1)
 
 
 def main():
@@ -225,7 +229,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
         # python version only
         exit(0)
-    
+
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
@@ -240,6 +244,7 @@ def main():
                 changed_files += 1
     print("done")
     print(f"Total processed files: {changed_files}")
+
 
 if __name__ == "__main__":
     main()
