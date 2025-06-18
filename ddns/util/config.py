@@ -104,8 +104,8 @@ def init_config(description, doc, version, date):
     )
     sysinfo = get_system_info_str()
     pyinfo = get_python_info_str()
-    versionStr="{} ({}) + {}\n{}".format(version, date, pyinfo, sysinfo)
-    parser.add_argument("-v", "--version", action="version", version=version)
+    versionStr = "{} ({}) + {}\n{}".format(version, date, pyinfo, sysinfo)
+    parser.add_argument("-v", "--version", action="version", version=versionStr)
     parser.add_argument(
         "-c", "--config", metavar="FILE", help="load config file [配置文件路径]"
     )
