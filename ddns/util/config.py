@@ -87,8 +87,8 @@ def get_system_info_str():
 
 def get_python_info_str():
     version = platform.python_version()
-    branch, date = platform.python_build()
-    return "Python-{} {} ({})".format(version, branch, date)
+    branch, py_build_date = platform.python_build()
+    return "Python-{} {} ({})".format(version, branch, py_build_date)
 
 
 def init_config(description, doc, version, date):
