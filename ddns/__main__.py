@@ -13,12 +13,12 @@ from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
-from .__init__ import __version__ as version, __description__, __doc__
+from .__init__ import __version__, __description__, __doc__, build_date
 from .util import ip
 from .util.cache import Cache
 from .util.config import init_config, get_config
 
-environ["DDNS_VERSION"] = "${BUILD_VERSION}"
+environ["DDNS_VERSION"] = __version__
 
 
 def is_false(value):
@@ -124,7 +124,7 @@ def main():
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-    init_config(__description__, __doc__, version)
+    init_config(__description__, __doc__, __version__, build_date)
 
     log_level = get_config('log.level')
     log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
@@ -138,7 +138,7 @@ def main():
         filename=get_config('log.file'),
     )
 
-    info("DDNS[ %s ] run: %s %s", version, os_name, sys.platform)
+    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # Dynamically import the dns module as configuration
     dns_provider = str(get_config('dns', 'dnspod').lower())

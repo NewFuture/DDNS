@@ -6,6 +6,7 @@ from os import stat, environ, path
 from logging import error, getLevelName
 from ast import literal_eval
 
+import platform
 import sys
 
 
@@ -75,7 +76,22 @@ def parse_array_string(value, enable_simple_split):
     return value
 
 
-def init_config(description, doc, version):
+def get_system_info_str():
+    system = platform.system()
+    release = platform.release()
+    machine = platform.machine()
+    arch = platform.architecture()[0]  # '64bit' or '32bit'
+
+    return "{}-{} {} ({})".format(system, release, machine, arch)
+
+
+def get_python_info_str():
+    version = platform.python_version()
+    branch, py_build_date = platform.python_build()
+    return "Python-{} {} ({})".format(version, branch, py_build_date)
+
+
+def init_config(description, doc, version, date):
     """
     配置
     """
@@ -83,7 +99,10 @@ def init_config(description, doc, version):
     parser = ArgumentParser(
         description=description, epilog=doc, formatter_class=RawTextHelpFormatter
     )
-    parser.add_argument("-v", "--version", action="version", version=version)
+    sysinfo = get_system_info_str()
+    pyinfo = get_python_info_str()
+    version_str = "v{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
+    parser.add_argument("-v", "--version", action="version", version=version_str)
     parser.add_argument(
         "-c", "--config", metavar="FILE", help="load config file [配置文件路径]"
     )

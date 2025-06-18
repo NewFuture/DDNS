@@ -54,7 +54,7 @@ dev = [
 #    "pytest-cov",
     "black",
     "flake8",
-    "setuptools_scm"
+#    "setuptools_scm"
 ]
 
 # Setuptools configuration
