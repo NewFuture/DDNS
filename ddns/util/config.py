@@ -102,7 +102,7 @@ def init_config(description, doc, version, date):
     parser = ArgumentParser(
         description=description, epilog=doc, formatter_class=RawTextHelpFormatter
     )
-    sysinfo = get_system_info()
+    sysinfo = get_system_info_str()
     pyinfo = get_python_info_str()
     versionStr="{} ({}) + {}\n{}".format(version, date, pyinfo, sysinfo)
     parser.add_argument("-v", "--version", action="version", version=version)
