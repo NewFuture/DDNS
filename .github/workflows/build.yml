@@ -87,6 +87,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+      - name: Install dependencies
+        run: pip install build
       - run: python3 .github/patch.py version
       - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package

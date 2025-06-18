@@ -25,12 +25,15 @@ if path.isfile('dist/ddns') or path.isfile('dist/ddns.exe') or path.isfile('dist
     rmtree('dist/')
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+def get_readme():
+    with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+        content = f.read()
+    # 相当于 sed -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g'
+    return re.sub(r'([("\'])/doc/', r'\1https://ddns.newfuture.cc/doc/', content)
+
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
-
 setup(
     # This is the name of your project. The first time you publish this
     # package, this name will be registered for you. It will determine how
@@ -67,7 +70,7 @@ setup(
     #
     # This field corresponds to the "Description" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#description-optional
-    long_description=long_description,  # Optional
+    long_description=get_readme(),  # Optional
 
     # Denotes that our long_description is in Markdown; valid values are
     # text/plain, text/x-rst, and text/markdown
@@ -118,7 +121,7 @@ setup(
         'Topic :: Software Development',
 
         # Pick your license as you wish
-        'License :: OSI Approved :: MIT License',
+        # 'License :: OSI Approved :: MIT License',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
