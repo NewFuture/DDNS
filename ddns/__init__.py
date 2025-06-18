@@ -12,10 +12,8 @@ __version__ = "${BUILD_VERSION}"
 build_date = "${BUILD_DATE}"
 
 __doc__ = """
-ddns[%s]
+ddns[{}@{}]
 (i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
-(?) issues or bugs [问题和帮助]: https://github.com/NewFuture/DDNS/issues
+(?) issues or bugs [问题和反馈]: https://github.com/NewFuture/DDNS/issues
 Copyright (c) New Future (MIT License)
-""" % (
-    __version__
-)
+""".format(__version__, build_date)

@@ -82,16 +82,13 @@ def get_system_info_str():
     machine = platform.machine()
     arch = platform.architecture()[0]  # '64bit' or '32bit'
 
-    libc_name, libc_ver = platform.libc_ver()
-    libc = "{} {}".format(libc_name, libc_ver) if libc_name else "unknown"
-
-    return "{}-{} {} {} (libc: {})".format(system, release, machine, arch, libc)
+    return "{}-{} {} ({})".format(system, release, machine, arch)
 
 
 def get_python_info_str():
     version = platform.python_version()
     build = platform.python_build()
-    return "python {} (build: {})".format(version, " ".join(build))
+    return "Python {} (build: {})".format(version, " ".join(build))
 
 
 def init_config(description, doc, version, date):
@@ -104,7 +101,7 @@ def init_config(description, doc, version, date):
     )
     sysinfo = get_system_info_str()
     pyinfo = get_python_info_str()
-    versionStr = "{} ({}) + {}\n{}".format(version, date, pyinfo, sysinfo)
+    versionStr = "{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
     parser.add_argument("-v", "--version", action="version", version=versionStr)
     parser.add_argument(
         "-c", "--config", metavar="FILE", help="load config file [配置文件路径]"

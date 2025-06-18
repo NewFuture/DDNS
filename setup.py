@@ -141,7 +141,7 @@ setup(
     # the `py_modules` argument instead as follows, which will expect a file
     # called `my_module.py` to exist:
     #
-    py_modules=["ddns","ddns.provider", "ddns.util"],
+    py_modules=["ddns", "ddns.provider", "ddns.util"],
     #
     packages=["ddns", "ddns.provider", "ddns.util"],  # Required
 
@@ -212,7 +212,7 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        'Homepage' : "https://ddns.newfuture.cc",
+        'Homepage': "https://ddns.newfuture.cc",
         'Bug Reports': 'https://github.com/NewFuture/DDNS/issues',
         'Source': 'https://github.com/NewFuture/DDNS',
     },

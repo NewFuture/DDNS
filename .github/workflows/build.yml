@@ -159,8 +159,9 @@ jobs:
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
 
-      - run: ./dist/ddns || test -f config.json
+      - run: ./dist/ddns -v
       - run: ./dist/ddns -h
+      - run: ./dist/ddns || test -f config.json
 
       # Upload build result
       - name: Upload Artifacts
@@ -309,6 +310,7 @@ jobs:
             echo "Loading image for $platform..."
             docker load < ddns-oci-${tag}.tar
             echo "Running test..."
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -v
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
