@@ -16,6 +16,7 @@ from io import open
 # Always prefer setuptools over distutils
 from setuptools import setup
 from ddns import __description__, __version__
+import re
 
 here = path.abspath(path.dirname(__file__))
 
