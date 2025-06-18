@@ -5,6 +5,8 @@ import os
 import re
 import datetime
 import subprocess
+import urllib
+import json
 
 ROOT = "."
 init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
@@ -155,24 +157,19 @@ def remove_python2_compatibility(pyfile):
         print(f"Removed python2 compatibility from {pyfile}")
 
 
-def get_git_ref():
-    try:
-        return subprocess.check_output(
-            ["git", "symbolic-ref", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL
-        ).decode().strip()
-    except subprocess.CalledProcessError:
-        return None
-
+def get_ref():
+    return os.environ.get('GITHUB_REF_NAME')
 
 def get_latest_tag():
+    url = "https://api.github.com/repos/NewFuture/DDNS/tags?per_page=1"
     try:
-        return subprocess.check_output(
-            ["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*"],
-            stderr=subprocess.DEVNULL
-        ).decode().strip()
-    except subprocess.CalledProcessError:
-        return None
+        with urllib.request.urlopen(url) as response:
+            data = json.load(response)
+            if data and isinstance(data, list):
+                return data[0]['name']  # 获取第一个 tag 的 name
+    except Exception as e:
+        print("Error fetching tag:", e)
+    return None
 
 
 def normalize_tag(tag: str) -> str:
@@ -182,21 +179,25 @@ def normalize_tag(tag: str) -> str:
     v = re.sub(r"-rc(\d*)", r"rc\1", v)
     return v
 
+def ten_minute_bucket_id():
+    epoch_minutes = int(time.time() // 60)         # 当前时间（分钟级）
+    bucket = epoch_minutes // 10                   # 每10分钟为一个 bucket
+    return bucket % 65536                          # 限制在 0~65535 (2**16)
 
-def generate_version() -> str:
-    ref = get_git_ref()
-    tag = get_latest_tag()
-    today = datetime.datetime.utcnow().strftime("%m%d")
 
-    if ref and re.match(r"^v\d+\.\d+\.\d+", ref):
+def generate_version():
+    ref = get_ref()
+    if ref and re.match(r"^v\d+\.\d+", ref):
         return normalize_tag(ref)
 
-    if tag:
-        base = normalize_tag(tag)
-    else:
-        base = "0.0.0"
-
-    return f"{base}.dev{today}"
+    base = "4.0.0"
+    suffix=ten_minute_bucket_id()
+    if ref == "master" or ref == "main" :
+        tag = get_latest_tag()
+        if tag:
+            base = normalize_tag(tag)
+    
+    return f"{base}.dev{}"
 
 
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
