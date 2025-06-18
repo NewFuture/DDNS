@@ -88,10 +88,11 @@ jobs:
         with:
           python-version: "3.x"
       - name: Install dependencies
-        run: pip install setuptools
+        run: pip install build
       - run: python3 .github/patch.py version
+      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
-        run: python setup.py sdist bdist_wheel
+        run: python -m build --sdist --wheel --outdir dist/
 
       - uses: actions/upload-artifact@v4
         with:
