@@ -25,9 +25,10 @@ if path.isfile('dist/ddns') or path.isfile('dist/ddns.exe') or path.isfile('dist
     from shutil import rmtree
     rmtree('dist/')
 
-
-# Get the long description from the README file
 def get_readme():
+    """
+    Get the long description from the README file
+    """
     with open(path.join(here, 'README.md'), encoding='utf-8') as f:
         content = f.read()
     # 相当于 sed -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g'
