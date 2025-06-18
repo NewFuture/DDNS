@@ -199,12 +199,12 @@ def generate_version():
 
 
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
-    with open(pyfile, 'r') as f:
+    with open(pyfile, 'r', encoding="utf-8") as f:
         text = f.read()
         text = text.replace("${BUILD_VERSION}", version)
         text = text.replace("${BUILD_DATE}", date_str)
     if text is not None:
-        with open(pyfile, 'w') as f:
+        with open(pyfile, 'w', encoding="utf-8") as f:
             f.write(text)
             print(f"Updated {pyfile}: version={version}, date={date_str}")
     else:
