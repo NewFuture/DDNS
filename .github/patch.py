@@ -227,7 +227,7 @@ def main():
 
     # 修改__init__.py 中的 __version__
     replace_version_and_date(init_py_path, version, date_str)
-    if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
+    if len(sys.argv) > 1 and sys.argv[1].lower() == 'version':
         # python version only
         exit(0)
 
