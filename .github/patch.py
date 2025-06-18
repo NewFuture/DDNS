@@ -4,7 +4,6 @@ import sys
 import os
 import re
 import datetime
-import subprocess
 import urllib
 import time
 import json
@@ -158,9 +157,6 @@ def remove_python2_compatibility(pyfile):
         print(f"Removed python2 compatibility from {pyfile}")
 
 
-def get_ref():
-    return os.environ.get('GITHUB_REF_NAME')
-
 def get_latest_tag():
     url = "https://api.github.com/repos/NewFuture/DDNS/tags?per_page=1"
     try:
@@ -180,6 +176,7 @@ def normalize_tag(tag: str) -> str:
     v = re.sub(r"-rc(\d*)", r"rc\1", v)
     return v
 
+
 def ten_minute_bucket_id():
     epoch_minutes = int(time.time() // 60)         # 当前时间（分钟级）
     bucket = epoch_minutes // 10                   # 每10分钟为一个 bucket
@@ -187,17 +184,17 @@ def ten_minute_bucket_id():
 
 
 def generate_version():
-    ref = get_ref()
-    if ref and re.match(r"^v\d+\.\d+", ref):
+    ref = os.environ.get('GITHUB_REF_NAME', '')
+    if re.match(r"^v\d+\.\d+", ref):
         return normalize_tag(ref)
 
     base = "4.0.0"
-    suffix=ten_minute_bucket_id()
-    if ref == "master" or ref == "main" :
+    suffix = ten_minute_bucket_id()
+    if ref == "master" or ref == "main":
         tag = get_latest_tag()
         if tag:
             base = normalize_tag(tag)
-    
+
     return f"{base}.dev{suffix}"
 
 
