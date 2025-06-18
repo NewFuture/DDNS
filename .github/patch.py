@@ -197,7 +197,7 @@ def generate_version():
         if tag:
             base = normalize_tag(tag)
     
-    return f"{base}.dev{}"
+    return f"{base}.dev{suffix}"
 
 
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
