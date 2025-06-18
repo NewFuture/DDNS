@@ -25,6 +25,7 @@ if path.isfile('dist/ddns') or path.isfile('dist/ddns.exe') or path.isfile('dist
     from shutil import rmtree
     rmtree('dist/')
 
+
 # Get the long description from the README file
 def get_readme():
     with open(path.join(here, 'README.md'), encoding='utf-8') as f:
