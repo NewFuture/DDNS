@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
+import sys
 import os
 import re
+import urllib.request
 import time
+import json
+from datetime import datetime, timezone
 
 ROOT = "."
 init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
@@ -153,31 +157,82 @@ def remove_python2_compatibility(pyfile):
         print(f"Removed python2 compatibility from {pyfile}")
 
 
-def extract_version_from_env():
-    """
-    从环境变量中提取版本号
-    """
-    ref = os.environ.get("GITHUB_REF_NAME")
-    if not ref:
-        return time.strftime("0.0.%m%d.%H%M")  # 默认版本号
-    if ref and ref.startswith("v"):
-        return ref[1:]  # 去掉前缀 'v'
-    return ref  # 返回原始版本号
+def get_latest_tag():
+    url = "https://api.github.com/repos/NewFuture/DDNS/tags?per_page=1"
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = json.load(response)
+            if data and isinstance(data, list):
+                return data[0]['name']  # 获取第一个 tag 的 name
+    except Exception as e:
+        print("Error fetching tag:", e)
+    return None
+
+
+def normalize_tag(tag: str) -> str:
+    v = tag.lower().lstrip("v")
+    v = re.sub(r"-beta(\d*)", r"b\1", v)
+    v = re.sub(r"-alpha(\d*)", r"a\1", v)
+    v = re.sub(r"-rc(\d*)", r"rc\1", v)
+    return v
+
+
+def ten_minute_bucket_id():
+    epoch_minutes = int(time.time() // 60)         # 当前时间（分钟级）
+    bucket = epoch_minutes // 10                   # 每10分钟为一个 bucket
+    return bucket % 65536                          # 限制在 0~65535 (2**16)
+
+
+def generate_version():
+    ref = os.environ.get('GITHUB_REF_NAME', '')
+    if re.match(r"^v\d+\.\d+", ref):
+        return normalize_tag(ref)
+
+    base = "4.0.0"
+    suffix = ten_minute_bucket_id()
+    if ref == "master" or ref == "main":
+        tag = get_latest_tag()
+        if tag:
+            base = normalize_tag(tag)
+
+    return f"{base}.dev{suffix}"
+
+
+def replace_version_and_date(pyfile: str, version: str, date_str: str):
+    with open(pyfile, 'r', encoding="utf-8") as f:
+        text = f.read()
+        text = text.replace("${BUILD_VERSION}", version)
+        text = text.replace("${BUILD_DATE}", date_str)
+    if text is not None:
+        with open(pyfile, 'w', encoding="utf-8") as f:
+            f.write(text)
+            print(f"Updated {pyfile}: version={version}, date={date_str}")
+    else:
+        exit(1)
 
 
 def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
+    if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
+        print(f'unknown arguments: {sys.argv}')
+        exit(1)
+    version = generate_version()
+    date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    print(f"Version: {version}")
+    print(f"Date: {date_str}")
+
+    # 修改__init__.py 中的 __version__
+    replace_version_and_date(init_py_path, version, date_str)
+    if len(sys.argv) > 1 and sys.argv[1].lower() == 'version':
+        # python version only
+        exit(0)
+
     run_py_path = os.path.join(ROOT, "run.py")
-    version = extract_version_from_env()
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
     add_nuitka_include_modules(run_py_path)
-
-    # 修改__init__.py 中的 __version__
-
-    replace_version_in_init(version, init_py_path)
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):
@@ -188,22 +243,6 @@ def main():
                 changed_files += 1
     print("done")
     print(f"Total processed files: {changed_files}")
-
-
-def replace_version_in_init(version, init_py_path):
-    """
-    替换 ddns/__init__.py 中的 __version__ 变量
-    """
-    version_str = f'v{version}@{time.strftime("%Y-%m-%dT%H:%M:%S")}'
-    with open(init_py_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    new_content = re.sub(
-        r'__version__\s*=\s*[\'"]([^\'"]+)[\'"]', f'__version__ = "{version_str}"', content
-    )
-    if new_content != content:
-        with open(init_py_path, "w", encoding="utf-8") as f:
-            f.write(new_content)
-        print(f"Updated __version__ in {init_py_path} to {version_str}")
 
 
 if __name__ == "__main__":
