@@ -3,10 +3,10 @@
 import sys
 import os
 import re
-import datetime
-import urllib
+import urllib.reques
 import time
 import json
+from datetime import datetime, timezone
 
 ROOT = "."
 init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
@@ -206,7 +206,7 @@ def replace_version_and_date(pyfile: str, version: str, date_str: str):
     if text is not None:
         with open(pyfile, 'w') as f:
             f.write(text)
-            print(f"✅ Updated {pyfile}: version={version}, date={date_str}")
+            print(f"Updated {pyfile}: version={version}, date={date_str}")
     else:
         exit(1)
 
@@ -219,9 +219,9 @@ def main():
         print(f'unknown arguments: {sys.argv}')
         exit(1)
     version = generate_version()
-    date_str = datetime.datetime.utcnow().isoformat() + "Z"
-    print(f"📦 Version: {version}")
-    print(f"🕒 Date: {date_str}")
+    date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    print(f"Version: {version}")
+    print(f"Date: {date_str}")
 
     # 修改__init__.py 中的 __version__
     replace_version_and_date(init_py_path, version, date_str)
