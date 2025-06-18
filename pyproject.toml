@@ -12,7 +12,7 @@ description = "Dynamic DNS client for multiple providers, supporting IPv4 and IP
 authors = [{ name = "NewFuture", email = "python@newfuture.cc" }]
 readme = "README.md"
 license = "MIT"
-#requires-python = ">=2.7"
+requires-python = ">=2.6"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
