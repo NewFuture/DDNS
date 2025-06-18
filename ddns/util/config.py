@@ -87,8 +87,8 @@ def get_system_info_str():
 
 def get_python_info_str():
     version = platform.python_version()
-    build = platform.python_build()
-    return "Python {} (build: {})".format(version, " ".join(build))
+    branch, date = platform.python_build()
+    return "Python-{} {} ({})".format(version, branch, date)
 
 
 def init_config(description, doc, version, date):
@@ -101,7 +101,7 @@ def init_config(description, doc, version, date):
     )
     sysinfo = get_system_info_str()
     pyinfo = get_python_info_str()
-    versionStr = "{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
+    versionStr = "v{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
     parser.add_argument("-v", "--version", action="version", version=versionStr)
     parser.add_argument(
         "-c", "--config", metavar="FILE", help="load config file [配置文件路径]"
