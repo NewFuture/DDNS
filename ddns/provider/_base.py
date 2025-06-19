@@ -9,6 +9,7 @@ This module defines the abstract base class that all DNS provider API classes sh
 ensuring a unified interface for easy extension and adaptation to multiple providers.
 """
 from abc import ABC, abstractmethod, abstractproperty
+from json import jsondecode
 import logging
 try:  # python 3
     from http.client import HTTPSConnection
@@ -19,12 +20,6 @@ except ImportError:  # python 2
     
 __author__ = 'New Future'
 __all__ = ["BaseProvider"]
-
-class ProviderOption:
-    ID = None
-    TOKEN = None
-    PROXY = None
-    TTL = None
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -41,28 +36,43 @@ class BaseProvider(ABC):
     API = ''
     ContentType = TYPE_FORM
 
-    def __init__(self, option):
+    def __init__(self, auth_id, auth_token, **options): # type: (string, string, **Any) -> None
         """
         初始化，传入配置参数（如API密钥、域名等）
         Initialize with configuration parameters (e.g., API keys, domain info).
-        :param config: dict类型，包含API认证信息、域名等
-                       dict, contains API credentials, domain, etc.
+        :param auth_id: string, 认证ID
+        :param auth_token: string, 认证Key/Token
+        :param options: dict, 其它信息
         """
-        self.option = option
+        self.auth_id = auth_id  # type: string
+        self.auth_token = auth_token  # type: string
+        self.options = options
+        self._zone_map={} # type: dict[str, str]
+        self.proxy = None # type: str
 
-    @abstractmethod
-    def get_domain_info(self, domain):
+    def set_proxy(self, proxy_str):
+        self.proxy = proxy_str
+        return self
+        
+    def get_zone_id(self, domain):
+        # type: (string) -> str
         """
-        获取域名信息（如主域名、zone_id等）
-        Get domain information (e.g., main domain, zone_id, etc.)
+        获取域名zone_id
+        Get domain zone_id
         :param domain: 需要操作的完整域名
                        The full domain name to operate on.
-        :return: 域名相关信息（如主域名、zone_id等），具体结构由子类定义
-                 Domain info (such as main domain, zone_id, etc.), defined by subclass.
+        :return: zoneid.
         """
+        if hasattr(self._zone_map, domain):
+            return self._zone_map.get(domain)
+        zone_id = self._query_zone_id(domain)
+        if zone_id:
+            setattrself._zone_map[domain]=zone_id
+        return zone_id
+
 
     @abstractmethod
-    def get_records(self, domain, record_type=None):
+    def get_records(self, zoneId, sub, record_type=None):
         """
         查询DNS记录
         Query DNS records.
@@ -73,9 +83,10 @@ class BaseProvider(ABC):
         :return: 记录列表，结构由子类定义
                  List of records, structure defined by subclass.
         """
+        pass
 
-    @abstractmethod
-    def update_record(self, domain, value, record_type="A"):
+    def update_record(self, domain, value, record_type="A", ttl=None, **extra):
+        
         """
         更新DNS记录（如IP变更）
         Update DNS record (e.g., IP change).
@@ -88,15 +99,63 @@ class BaseProvider(ABC):
         :return: 操作结果，结构由子类定义
                  Operation result, structure defined by subclass.
         """
+        logging.info("start update %s(%s) => %s", domain, record_type, value)
+        sub, main = self._split_custom_domain(domain)
+        zone_id = None  # type: str
+        if sub is not None:
+            zone_id = self.get_zone_id(main)
+        else:
+            zone_id, sub = self._split_zone_and_sub(domain)
+        return self.update_or_create_by_zone_id(zone_id,sub,value,record_type,ttl, ...extra)
 
-    def https(self, method, url, _headers=None, _proxy=None, **params):
+    def _split_zone_and_sub(self, domain):
+        domain_split = domain.split('.')
+        zone_id = None
+        index = 2
+        # ddns.example.com => example.com; ddns.example.eu.org => example.eu.org
+        while (not zoneid) and (index <= len(domain_slice)):
+            main = '.'.join(domain_slice[-index:])
+            zone_id = self.get_zone_id(main)
+            index += 1
+        if zone_id:
+            sub = ".".join(domain_split[:-index]) or '@'
+            logging.info("zone_id: %s, sub: %s", zone_id, sub)
+            return zone_id, sub
+        return None,None
+
+
+    @abstractmethod
+    def update_or_create_by_zone_id(self,zone_id,sub,value,record_type,ttl,extra):
+        pass
+    
+    @abstractmethod
+    def _query_zone_id(self, domain):
+        # type: (str) -> str
+        pass
+
+
+    def _split_custom_domain(self, domain):
+        # type: (str) -> (str, str)
+        """
+        将形如 'sub~main.com' 或 'sub+main.com' 的域名拆分为 (子域, 主域)。
+        若没有分隔符，则返回 (None, domain)
+        """
+        for sep in ('~', '+'):
+            if sep in domain:
+                sub, main = domain.split(sep, 1)
+                return sub, main
+        return None, domain
+
+
+    def _https(self, method, url, _headers=None, **params):
+        # type: (str, str, Dict[str, str], **Dict[str, Any]) -> Any
         """
         发送请求数据
         """
         method = method.upper()
         logging.info("[%s]%s : %s", method, url, params)
-        if _proxy:
-            conn = HTTPSConnection(_proxy)
+        if self.proxy:
+            conn = HTTPSConnection(self.proxy)
             conn.set_tunnel(self.API, 443)
         else:
             conn = HTTPSConnection(self.API)
@@ -123,13 +182,13 @@ class BaseProvider(ABC):
         conn.close()
 
         if response.status < 200 or response.status >= 300:
-            logging.warning('%s : error[%d]:%s', action, response.status, response.reason)
+            logging.warning('%s : error[%d]:%s', url, response.status, response.reason)
             logging.info(res)
             raise Exception(res)
         try:
             data = jsondecode(res)
-            logging.debug('%s : result:%s', action, data)
+            logging.debug('response:%s', data)
             return data
         except Exception as e:
-            logging.exception(e)
-            raise
+            logging.error('fail to decode %s', e)
+            raise e
