@@ -15,7 +15,7 @@
 ## Features
 
 - 兼容和跨平台:
-  - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20mips64le-blue?style=social)](https://hub.docker.com/r/newfuture/ddns)
+  - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20riscv64-blue?style=social)](https://hub.docker.com/r/newfuture/ddns)
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - 配置方式:
