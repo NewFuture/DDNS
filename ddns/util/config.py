@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 from argparse import Action, ArgumentParser, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
@@ -8,18 +7,17 @@ from ast import literal_eval
 
 import platform
 import sys
-import re
 
 
 __cli_args = Namespace()
 __config = {}  # type: dict
 log_levels = [
-    "CRITICAL", #50
-    "ERROR", #40
-    "WARNING", #30
-    "INFO", #20
-    "DEBUG", #10
-    "NOTSET", #0
+    "CRITICAL",  # 50
+    "ERROR",  # 40
+    "WARNING",  # 30
+    "INFO",  # 20
+    "DEBUG",  # 10
+    "NOTSET",  # 0
 ]
 
 # 支持数组的参数列表
@@ -45,6 +43,7 @@ def str2bool(v):
 def log_level(value):
     """
     parse string to log level
+    or getattr(logging, value.upper())
     """
     return getLevelName(value.upper())
 
@@ -71,6 +70,7 @@ def parse_array_string(value, enable_simple_split):
             error("Failed to parse array string: %s. Exception: %s", value, e)
     elif enable_simple_split:
         # 尝试使用逗号或分号分隔符解析
+        sep = None
         if ',' in trimmed:
             sep = ','
         elif ';' in trimmed:
