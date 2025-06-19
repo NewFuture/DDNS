@@ -81,16 +81,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 64
-          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install dependencies
         run: pip install build
       - run: python3 .github/patch.py version
-      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+      - name: Replace url in Readme
+        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
 
@@ -131,8 +129,7 @@ jobs:
           python-version: 3.12
           architecture: ${{ matrix.arch }}
 
-      - name: remove python2 code
-        run:  python3 .github/patch.py
+      - run:  python3 .github/patch.py
 
       - name: Set up on Linux
         if: runner.os == 'Linux'

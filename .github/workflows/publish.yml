@@ -78,10 +78,10 @@ jobs:
         with:
           python-version: "3.x"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build setuptools-scm
-      - run: sed -i -E 's#([("])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+        run: pip install build
+      - run: python3 .github/patch.py version
+      - name: Replace url in Readme
+        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -118,8 +118,7 @@ jobs:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
 
-      - name: remove python2 code
-        run:  python3 .github/patch.py
+      - run:  python3 .github/patch.py
 
       - name: Set up on Linux
         if: runner.os == 'Linux'
@@ -146,6 +145,7 @@ jobs:
           macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
 
       - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -v
       - run: ./dist/ddns -h
 
       - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
