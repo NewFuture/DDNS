@@ -1,9 +1,8 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 from argparse import Action, ArgumentParser, Namespace, RawTextHelpFormatter
 from json import load as loadjson, dump as dumpjson
 from os import stat, environ, path
-from logging import error, getLevelName
+from logging import critical, error, getLevelName
 from ast import literal_eval
 
 import platform
@@ -13,14 +12,12 @@ import sys
 __cli_args = Namespace()
 __config = {}  # type: dict
 log_levels = [
-    "CRITICAL",
-    "FATAL",
-    "ERROR",
-    "WARN",
-    "WARNING",
-    "INFO",
-    "DEBUG",
-    "NOTSET",
+    "CRITICAL",  # 50
+    "ERROR",  # 40
+    "WARNING",  # 30
+    "INFO",  # 20
+    "DEBUG",  # 10
+    "NOTSET",  # 0
 ]
 
 # 支持数组的参数列表
@@ -46,6 +43,7 @@ def str2bool(v):
 def log_level(value):
     """
     parse string to log level
+    or getattr(logging, value.upper())
     """
     return getLevelName(value.upper())
 
@@ -70,9 +68,15 @@ def parse_array_string(value, enable_simple_split):
         except (ValueError, SyntaxError) as e:
             # 解析失败时返回原始字符串
             error("Failed to parse array string: %s. Exception: %s", value, e)
-    elif enable_simple_split and "," in trimmed:
+    elif enable_simple_split:
         # 尝试使用逗号或分号分隔符解析
-        return [item.strip() for item in trimmed.split(",") if item.strip()]
+        sep = None
+        if ',' in trimmed:
+            sep = ','
+        elif ';' in trimmed:
+            sep = ';'
+        if sep:
+            return [item.strip() for item in trimmed.split(sep) if item.strip()]
     return value
 
 
@@ -239,7 +243,7 @@ def __load_config(config_path):
             elif "log.level" in __config:
                 __config["log.level"] = log_level(__config["log.level"])
     except Exception as e:
-        error("Failed to load config file `%s`: %s", config_path, e)
+        critical("Failed to load config file `%s`: %s", config_path, e)
         raise
         # 重新抛出异常
 
@@ -306,8 +310,8 @@ def generate_config(config_path):
             dumpjson(configure, f, indent=2, sort_keys=True)
             return True
     except IOError:
-        error("Cannot open config file to write: `%s`!", config_path)
+        critical("Cannot open config file to write: `%s`!", config_path)
         return False
     except Exception as e:
-        error("Failed to write config file `%s`: %s", config_path, e)
+        critical("Failed to write config file `%s`: %s", config_path, e)
         return False

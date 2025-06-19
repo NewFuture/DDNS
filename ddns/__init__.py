@@ -12,7 +12,7 @@ __version__ = "${BUILD_VERSION}"
 build_date = "${BUILD_DATE}"
 
 __doc__ = """
-ddns[{}@{}]
+ddns [v{}@{}]
 (i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
 (?) issues or bugs [问题和反馈]: https://github.com/NewFuture/DDNS/issues
 Copyright (c) New Future (MIT License)
