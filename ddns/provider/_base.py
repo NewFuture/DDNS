@@ -59,11 +59,12 @@ try:  # python 3
 except ImportError:  # python 2
     from httplib import HTTPSConnection
     from urllib import urlencode
-    
+
 __author__ = 'New Future'
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
+
 
 class BaseProvider(object):
     """
@@ -102,7 +103,7 @@ class BaseProvider(object):
         self.options = options
         self._zone_map = {}  # type: dict[str, str]
         self.proxy = None  # type: str
-        
+
     def get_zone_id(self, domain):
         # type: (str) -> str | None
         """
