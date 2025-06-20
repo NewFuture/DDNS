@@ -49,10 +49,6 @@ class BaseProvider(ABC):
         self.options = options
         self._zone_map={} # type: dict[str, str]
         self.proxy = None # type: str
-
-    def set_proxy(self, proxy_str):
-        self.proxy = proxy_str
-        return self
         
     def get_zone_id(self, domain):
         # type: (string) -> str
@@ -70,9 +66,21 @@ class BaseProvider(ABC):
             setattrself._zone_map[domain]=zone_id
         return zone_id
 
+    @abstractmethod
+    def _create_record_with_zone_id(self,zone_id,sub,value,record_type,ttl=None, line=None, extra=None):
+        pass
 
     @abstractmethod
-    def get_records(self, zoneId, sub, record_type=None):
+    def _update_record_with_zone_id(self,zone_id,record_id ,value,record_type,ttl=None,line=None,extra=None):
+        pass
+    
+    @abstractmethod
+    def _query_zone_id(self, domain):
+        # type: (str) -> str
+        pass
+
+    @abstractmethod
+    def _query_record_id(self, zoneId, sub, record_type, line=None):
         """
         查询DNS记录
         Query DNS records.
@@ -85,7 +93,7 @@ class BaseProvider(ABC):
         """
         pass
 
-    def update_record(self, domain, value, record_type="A", ttl=None, **extra):
+    def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         
         """
         更新DNS记录（如IP变更）
@@ -99,14 +107,24 @@ class BaseProvider(ABC):
         :return: 操作结果，结构由子类定义
                  Operation result, structure defined by subclass.
         """
+        domain = domain.lower()
         logging.info("start update %s(%s) => %s", domain, record_type, value)
+
         sub, main = self._split_custom_domain(domain)
         zone_id = None  # type: str
         if sub is not None:
             zone_id = self.get_zone_id(main)
         else:
             zone_id, sub = self._split_zone_and_sub(domain)
-        return self.update_or_create_by_zone_id(zone_id,sub,value,record_type,ttl, ...extra)
+        record_id = self._query_record_id(zone_id,sub)
+        if record_id:
+           return self._update_record_with_zone_id(zone_id=zone_id,record_id=record_id, record_type=record_type, value=value,ttl=ttl,line=line, extra=extra)
+        else:
+           return self._create_record_with_zone_id(zone_id=zone_id,sub=sub, record_type=record_type, value=value,ttl=ttl,line=line, extra=extra)
+        
+    def set_proxy(self, proxy_str):
+        self.proxy = proxy_str
+        return self
 
     def _split_zone_and_sub(self, domain):
         domain_split = domain.split('.')
@@ -122,16 +140,6 @@ class BaseProvider(ABC):
             logging.info("zone_id: %s, sub: %s", zone_id, sub)
             return zone_id, sub
         return None,None
-
-
-    @abstractmethod
-    def update_or_create_by_zone_id(self,zone_id,sub,value,record_type,ttl,extra):
-        pass
-    
-    @abstractmethod
-    def _query_zone_id(self, domain):
-        # type: (str) -> str
-        pass
 
 
     def _split_custom_domain(self, domain):
