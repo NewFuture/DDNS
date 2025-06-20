@@ -1,7 +1,8 @@
 # coding=utf-8
-
+# flake8: noqa: F401
 from ._base import BaseProvider
 from .dnspod import DnspodProvider
+
 
 def get_provider_class(provider_name):
     # type: (str) -> type[BaseProvider]

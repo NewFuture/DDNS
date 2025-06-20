@@ -5,8 +5,9 @@ DNSPOD API
 @author: New Future
 """
 
-from ._base import BaseProvider,TYPE_FORM
+from ._base import BaseProvider, TYPE_FORM
 import os
+
 
 class DnspodProvider(BaseProvider):
     """

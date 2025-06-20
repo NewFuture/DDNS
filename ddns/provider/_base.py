@@ -50,7 +50,7 @@ Defines a unified interface to support extension and adaptation across providers
 @author: New Future
 """
 
-from abc import ABCMeta, abstractmethod, ABC
+from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 import logging
 try:  # python 3
@@ -65,7 +65,7 @@ __author__ = 'New Future'
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
 
-class BaseProvider(ABC):
+class BaseProvider(object):
     """
     DNS服务商接口的抽象基类
 
@@ -100,8 +100,8 @@ class BaseProvider(ABC):
         self.auth_id = auth_id  # type: str
         self.auth_token = auth_token  # type: str
         self.options = options
-        self._zone_map={} # type: dict[str, str]
-        self.proxy = None # type: str
+        self._zone_map = {}  # type: dict[str, str]
+        self.proxy = None  # type: str
         
     def get_zone_id(self, domain):
         # type: (str) -> str | None

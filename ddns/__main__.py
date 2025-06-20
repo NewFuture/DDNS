@@ -13,11 +13,11 @@ from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
-from .provider import get_provider_class, BaseProvider
 from .__init__ import __version__, __description__, __doc__, build_date
 from .util import ip
 from .util.cache import Cache
 from .util.config import init_config, get_config
+from .provider import get_provider_class
 
 environ["DDNS_VERSION"] = __version__
 
