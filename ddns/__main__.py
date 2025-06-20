@@ -13,6 +13,7 @@ from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
 
 import sys
 
+from .provider import get_provider_class, BaseProvider
 from .__init__ import __version__, __description__, __doc__, build_date
 from .util import ip
 from .util.cache import Cache
@@ -67,21 +68,22 @@ def get_ip(ip_type, index="default"):
 
 
 def change_dns_record(dns, proxy_list, **kw):
+    # type: (BaseProvider, list, **dict) -> bool
     for proxy in proxy_list:
         if not proxy or (proxy.upper() in ['DIRECT', 'NONE']):
-            dns.Config.PROXY = None
+            dns.set_proxy(None)
         else:
-            dns.Config.PROXY = proxy
+            dns.set_proxy(proxy)
         record_type, domain = kw['record_type'], kw['domain']
-        info("%s(%s) ==> %s [via %s]", domain, record_type, kw['ip'], proxy)
+        info("%s(%s) => %s [via %s]", domain, record_type, kw['ip'], proxy)
         try:
-            return dns.update_record(domain, kw['ip'], record_type=record_type)
+            return dns.set_record(domain, kw['ip'], record_type=record_type, ttl=kw['ttl'])
         except Exception as e:
             error("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
 
 
-def update_ip(ip_type, cache, dns, proxy_list):
+def update_ip(ip_type, cache, dns, ttl, proxy_list):
     """
     更新IP
     """
@@ -106,7 +108,7 @@ def update_ip(ip_type, cache, dns, proxy_list):
     update_success = False
     for domain in domains:
         domain = domain.lower()
-        if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type):
+        if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
             update_success = True
 
     if isinstance(cache, dict):
@@ -140,15 +142,10 @@ def main():
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
-    # Dynamically import the dns module as configuration
-    dns_provider = str(get_config('dns', 'dnspod').lower())
-    # dns_module = __import__(
-    #     '.dns', fromlist=[dns_provider], package=__package__)
-    dns = getattr(__import__('ddns.provider', fromlist=[dns_provider]), dns_provider)
-    # dns = getattr(dns_module, dns_provider)
-    dns.Config.ID = get_config('id')
-    dns.Config.TOKEN = get_config('token')
-    dns.Config.TTL = get_config('ttl')
+    # dns provider class
+    provider_class = get_provider_class(get_config('dns', 'dnspod'))
+    debug('Using DNS provider: %s', provider_class.__name__)
+    dns = provider_class(get_config('id'), get_config('token'))
 
     if get_config("config"):
         info('loaded Config from: %s', path.abspath(get_config('config')))
@@ -172,8 +169,9 @@ def main():
         cache.clear()
     else:
         debug('Cache is empty.')
-    update_ip('4', cache, dns, proxy_list)
-    update_ip('6', cache, dns, proxy_list)
+    ttl = get_config('ttl')
+    update_ip('4', cache, dns, ttl, proxy_list)
+    update_ip('6', cache, dns, ttl, proxy_list)
 
 
 if __name__ == '__main__':

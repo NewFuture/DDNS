@@ -1,12 +1,10 @@
 # coding=utf-8
-
 """
 BaseDNSProvider 抽象基类
 定义所有 DNS 服务商 API 类应继承的抽象基类，统一接口，便于扩展适配多服务商。
 
 Abstract base class for DNS provider APIs.
 Defines a unified interface to support extension and adaptation across providers.
-
 
 ┌──────────────────────────────────────────────────┐
 │        用户调用 set_record(domain, value...)      │
@@ -29,8 +27,8 @@ Defines a unified interface to support extension and adaptation across providers
       zone_id ←──────────────┬─── sub
                              ▼
         ┌─────────────────────────────────────┐
-        │ 查询 record_id:                     │
-        │ _query_record_id(zone_id, sub, ...) │
+        │ 查询 record:                        │
+        │   _query_record(zone_id, sub, ...)  │
         └─────────────────────────────────────┘
                           │
             ┌─────────────┴────────────────┐
@@ -49,6 +47,7 @@ Defines a unified interface to support extension and adaptation across providers
         ┌───────────────────────────────┐
         │         返回操作结果           │
         └───────────────────────────────┘
+@author: New Future
 """
 
 from abc import ABCMeta, abstractmethod, ABC
@@ -62,7 +61,6 @@ except ImportError:  # python 2
     from urllib import urlencode
     
 __author__ = 'New Future'
-__all__ = ["BaseProvider"]
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -99,14 +97,14 @@ class BaseProvider(ABC):
             auth_token (str): 密钥 / Authentication Token
             options (dict): 其它参数，如代理、调试等 / Additional options
         """
-        self.auth_id = auth_id  # type: string
-        self.auth_token = auth_token  # type: string
+        self.auth_id = auth_id  # type: str
+        self.auth_token = auth_token  # type: str
         self.options = options
         self._zone_map={} # type: dict[str, str]
         self.proxy = None # type: str
         
     def get_zone_id(self, domain):
-        # type: (str) -> str or None
+        # type: (str) -> str | None
         """
         查询指定域名对应的 zone_id
 
@@ -116,7 +114,7 @@ class BaseProvider(ABC):
             domain (str): 主域名 / main name
 
         Returns:
-            str or None: 区域 ID / Zone identifier
+            str | None: 区域 ID / Zone identifier
         """
         if domain in self._zone_map:
             return self._zone_map[domain]
@@ -127,7 +125,7 @@ class BaseProvider(ABC):
 
     @abstractmethod
     def _query_zone_id(self, domain):
-        # type: (str) -> str or None
+        # type: (str) -> str | None
         """
         查询主域名的 zone ID
 
@@ -135,13 +133,13 @@ class BaseProvider(ABC):
             domain (str): 主域名
 
         Returns:
-            str or None: Zone ID
+            str | None: Zone ID
         """
         return domain
 
     @abstractmethod
-    def _query_record_id(self, zone_id, sub, record_type, line=None):
-        # type: (str, str, str, str or None) -> str or None
+    def _query_record(self, zone_id, sub, record_type, line=None):
+        # type: (str, str, str, str | None) -> dict | None
         """
         查询 DNS 记录 ID
 
@@ -149,16 +147,16 @@ class BaseProvider(ABC):
             zone_id (str): 区域 ID
             sub (str): 子域名
             record_type (str): 记录类型，例如 A、AAAA
-            line (str or None): 线路选项，可选
+            line (str | None): 线路选项，可选
 
         Returns:
-            str or None: 记录 ID
+            str | None: 记录 ID
         """
         return sub
 
     @abstractmethod
     def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int or None, str or None, dict or None) -> Any
+        # type: (str, str, str, str, int | None, str | None, dict | None) -> any
         """
         创建新 DNS 记录
 
@@ -167,9 +165,9 @@ class BaseProvider(ABC):
             sub (str): 子域名
             value (str): 记录值
             record_type (str): 类型，如 A
-            ttl (int or None): TTL 可选
-            line (str or None): 线路选项
-            extra (dict or None): 额外字段
+            ttl (int | None): TTL 可选
+            line (str | None): 线路选项
+            extra (dict | None): 额外字段
 
         Returns:
             Any: 操作结果
@@ -177,19 +175,19 @@ class BaseProvider(ABC):
         pass
 
     @abstractmethod
-    def _update_record(self, zone_id, record_id, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int or None, str or None, dict or None) -> Any
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, dict, str, str, int | None, str | None, dict | None) -> any
         """
         更新已有 DNS 记录
 
         Args:
             zone_id (str): 区域 ID
-            record_id (str): 要更新的记录 ID
+            old_record (dict): 旧记录信息
             value (str): 新的记录值
             record_type (str): 类型
-            ttl (int or None): TTL
-            line (str or None): 线路
-            extra (dict or None): 额外参数
+            ttl (int | None): TTL
+            line (str | None): 线路
+            extra (dict | None): 额外参数
 
         Returns:
             Any: 操作结果
@@ -197,7 +195,7 @@ class BaseProvider(ABC):
         pass
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, int or None, str or None, **dict) -> Any
+        # type: (str, str, str, int | None, str | None, **dict) -> any
         """
         设置 DNS 记录（创建或更新）
 
@@ -207,8 +205,8 @@ class BaseProvider(ABC):
             domain (str): 完整域名
             value (str): 新记录值
             record_type (str): 记录类型
-            ttl (int or None): TTL 值，可选
-            line (str or None): 线路信息
+            ttl (int | None): TTL 值，可选
+            line (str | None): 线路信息
             extra (dict): 额外参数
 
         Returns:
@@ -226,9 +224,9 @@ class BaseProvider(ABC):
         if not zone_id or not sub:
             raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
 
-        record_id = self._query_record_id(zone_id, sub, record_type, line)
-        if record_id:
-            return self._update_record(zone_id, record_id, value, record_type, ttl, line, extra)
+        record = self._query_record(zone_id, sub, record_type, line)
+        if record:
+            return self._update_record(zone_id, record, value, record_type, ttl, line, extra)
         else:
             return self._create_record(zone_id, sub, value, record_type, ttl, line, extra)
 
@@ -249,7 +247,7 @@ class BaseProvider(ABC):
         return self
 
     def _split_zone_and_sub(self, domain):
-        # type: (str) -> (str or None, str or None)
+        # type: (str) -> tuple[str | None, str | None]
         """
         从完整域名拆分主域名和子域名
 
@@ -273,7 +271,7 @@ class BaseProvider(ABC):
         return None, None
 
     def _split_custom_domain(self, domain):
-        # type: (str) -> (str or None, str)
+        # type: (str) -> tuple[str | None, str]
         """
         拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
 
@@ -289,7 +287,7 @@ class BaseProvider(ABC):
         return None, domain
 
     def _https(self, method, url, _headers=None, **params):
-        # type: (str, str, dict, **dict) -> Any
+        # type: (str, str, dict, **dict) -> any
         """
         发送 HTTPS 请求
 

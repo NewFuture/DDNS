@@ -1,8 +1,9 @@
 {
     "recommendations": [
         "ms-python.flake8",
-        "ms-python.autopep8",
         "ms-python.python",
         "github.vscode-github-actions",
+        "ms-python.mypy-type-checker",
+        "ms-python.black-formatter",
     ]
 }
