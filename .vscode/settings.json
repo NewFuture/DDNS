@@ -1,6 +1,21 @@
 {
     "python.analysis.autoFormatStrings": true,
-    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.supportAllPythonDocuments": true,
+    "python.analysis.generateWithTypeAnnotation": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.indexing": true,
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "addMissingImports": true,
+        "addMissingOptionalParameters": true,
+        "addMissingReturn": true,
+        "addMissingParameters": true,
+        "addMissingTypeHints": true,
+        "addMissingFunctionOverloads": true,
+        "addMissingFunctionOverloadsWithReturnType": true
+    },
     "python.analysis.fixAll": [
         "source.convertImportFormat",
     ],

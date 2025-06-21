@@ -47,7 +47,7 @@ Defines a unified interface to support extension and adaptation across providers
         ┌───────────────────────────────┐
         │         返回操作结果           │
         └───────────────────────────────┘
-@author: New Future
+@author: NewFuture
 """
 
 from os import environ
@@ -61,8 +61,6 @@ try:  # python 3
 except ImportError:  # python 2
     from httplib import HTTPSConnection  # type: ignore
     from urllib import urlencode  # type: ignore
-
-__author__ = 'New Future'
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -84,7 +82,7 @@ class BaseProvider(object):
     __metaclass__ = ABCMeta
 
     # API endpoint domain (to be defined in subclass)
-    API = ''
+    API = ""
     # 默认 Content-Type
     ContentType = TYPE_FORM
     # 版本
@@ -160,8 +158,8 @@ class BaseProvider(object):
         raise NotImplementedError("This _query_record should be implemented by subclasses")
 
     @abstractmethod
-    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int | str | None, str | None, dict | None) -> bool
+    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra={}):
+        # type: (str, str, str, str, int | str | None, str | None, dict) -> bool
         """
         创建新 DNS 记录
 
@@ -180,8 +178,8 @@ class BaseProvider(object):
         raise NotImplementedError("This _create_record should be implemented by subclasses")
 
     @abstractmethod
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
+        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """
         更新已有 DNS 记录
 
@@ -262,15 +260,15 @@ class BaseProvider(object):
         Returns:
             (zone_id, sub): 元组
         """
-        domain_split = domain.split('.')
+        domain_split = domain.split(".")
         zone_id = None
         index = 2
         while not zone_id and index <= len(domain_split):
-            main = '.'.join(domain_split[-index:])
+            main = ".".join(domain_split[-index:])
             zone_id = self.get_zone_id(main)
             index += 1
         if zone_id:
-            sub = '.'.join(domain_split[:-index + 1]) or '@'
+            sub = ".".join(domain_split[: -index + 1]) or "@"
             logging.info("zone_id: %s, sub: %s", zone_id, sub)
             return zone_id, sub
         return None, None
@@ -285,7 +283,7 @@ class BaseProvider(object):
         Returns:
             (sub, main): 子域 + 主域
         """
-        for sep in ('~', '+'):
+        for sep in ("~", "+"):
             if sep in domain:
                 sub, main = domain.split(sep, 1)
                 return sub, main
@@ -314,14 +312,14 @@ class BaseProvider(object):
         else:
             conn = HTTPSConnection(self.API)
 
-        if method in ['GET', 'DELETE'] and params:
-            url += '?' + urlencode(params)
+        if method in ["GET", "DELETE"] and params:
+            url += "?" + urlencode(params)
             logging.debug("url: %s", url)
             params = None  # type: ignore
 
         body = None
         if params:
-            _headers['content-type'] = self.ContentType
+            _headers["content-type"] = self.ContentType
             if self.ContentType == TYPE_FORM:
                 body = urlencode(params)
             else:
@@ -330,18 +328,18 @@ class BaseProvider(object):
 
         conn.request(method, url, body, _headers)
         response = conn.getresponse()
-        res = response.read().decode('utf-8')
+        res = response.read().decode("utf-8")
         conn.close()
 
         if response.status < 200 or response.status >= 300:
-            logging.warning('%s : error[%d]: %s', url, response.status, response.reason)
+            logging.warning("%s : error[%d]: %s", url, response.status, response.reason)
             logging.info(res)
             raise Exception(res)
 
         try:
             data = jsondecode(res)
-            logging.debug('response: %s', data)
+            logging.debug("response: %s", data)
             return data
         except Exception as e:
-            logging.error('fail to decode response: %s', e)
+            logging.error("fail to decode response: %s", e)
             raise

@@ -89,7 +89,7 @@ version = { attr = "ddns.__version__" }
 # 代码格式化配置
 [tool.black]
 line-length = 100
-target-version = ['py27', 'py38', 'py311']
+target-version = ['py38', 'py310', 'py311']
 include = '\.py$'
 extend-exclude = '''
 /(
