@@ -50,15 +50,17 @@ Defines a unified interface to support extension and adaptation across providers
 @author: New Future
 """
 
+from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 import logging
+
 try:  # python 3
     from http.client import HTTPSConnection
     from urllib.parse import urlencode
 except ImportError:  # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
+    from httplib import HTTPSConnection  # type: ignore
+    from urllib import urlencode  # type: ignore
 
 __author__ = 'New Future'
 
@@ -85,9 +87,11 @@ class BaseProvider(object):
     API = ''
     # 默认 Content-Type
     ContentType = TYPE_FORM
+    # 版本
+    Version = environ.get("DDNS_VERSION", "0.0.0")
 
     def __init__(self, auth_id, auth_token, **options):
-        # type: (str, str, **any) -> None
+        # type: (str, str, **object) -> None
         """
         初始化服务商对象
 
@@ -102,7 +106,7 @@ class BaseProvider(object):
         self.auth_token = auth_token  # type: str
         self.options = options
         self._zone_map = {}  # type: dict[str, str]
-        self.proxy = None  # type: str
+        self.proxy = None  # type: str | None
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None
@@ -153,11 +157,11 @@ class BaseProvider(object):
         Returns:
             str | None: 记录 ID
         """
-        return sub
+        raise NotImplementedError("This _query_record should be implemented by subclasses")
 
     @abstractmethod
     def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int | None, str | None, dict | None) -> any
+        # type: (str, str, str, str, int | str | None, str | None, dict | None) -> bool
         """
         创建新 DNS 记录
 
@@ -173,11 +177,11 @@ class BaseProvider(object):
         Returns:
             Any: 操作结果
         """
-        pass
+        raise NotImplementedError("This _create_record should be implemented by subclasses")
 
     @abstractmethod
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | None, str | None, dict | None) -> any
+        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         """
         更新已有 DNS 记录
 
@@ -196,7 +200,7 @@ class BaseProvider(object):
         pass
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, int | None, str | None, **dict) -> any
+        # type: (str, str, str, str | int | None, str | None, **dict) -> bool
         """
         设置 DNS 记录（创建或更新）
 
@@ -232,7 +236,7 @@ class BaseProvider(object):
             return self._create_record(zone_id, sub, value, record_type, ttl, line, extra)
 
     def set_proxy(self, proxy_str):
-        # type: (str) -> BaseProvider
+        # type: (str | None) -> BaseProvider
         """
         设置代理服务器
 
@@ -287,8 +291,8 @@ class BaseProvider(object):
                 return sub, main
         return None, domain
 
-    def _https(self, method, url, _headers=None, **params):
-        # type: (str, str, dict, **dict) -> any
+    def _https(self, method, url, _headers={}, **params):
+        # type: (str, str, dict[str,str], **(str|int|bytes|bool|None)) -> Any
         """
         发送 HTTPS 请求
 
@@ -313,12 +317,10 @@ class BaseProvider(object):
         if method in ['GET', 'DELETE'] and params:
             url += '?' + urlencode(params)
             logging.debug("url: %s", url)
-            params = None
+            params = None  # type: ignore
 
         body = None
         if params:
-            if _headers is None:
-                _headers = {}
             _headers['content-type'] = self.ContentType
             if self.ContentType == TYPE_FORM:
                 body = urlencode(params)

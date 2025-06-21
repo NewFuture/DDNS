@@ -5,8 +5,8 @@ DNSPOD API
 @author: New Future
 """
 
+import logging
 from ._base import BaseProvider, TYPE_FORM
-import os
 
 
 class DnspodProvider(BaseProvider):
@@ -17,8 +17,8 @@ class DnspodProvider(BaseProvider):
     API = "dnsapi.cn"
     ContentType = TYPE_FORM
 
-    def _request(self, action, param=None, **params):
-        # type: (str, dict | None, **dict) -> dict
+    def _request(self, action, **params):
+        # type: (str, **(str | int | bytes | bool | None)) -> dict
         """
         发送请求数据
 
@@ -31,8 +31,8 @@ class DnspodProvider(BaseProvider):
         Returns:
             dict: 响应数据/Response data
         """
-        if param:
-            params.update(param)
+        # if param:
+        #     params.update(param)
         # 过滤掉None参数
         params = {k: v for k, v in params.items() if v is not None}
         params.update({
@@ -40,14 +40,14 @@ class DnspodProvider(BaseProvider):
             "format": "json",
             "length": "3000"
         })
-        ddns_version = os.environ.get("DDNS_VERSION", "0.0.0")
+
         headers = {
-            "User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(ddns_version)
+            "User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)
         }
         return self._https("POST", "/{0}".format(action), headers, **params)
 
     def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int | None, str | None, dict | None) -> dict | None
+        # type: (str, str, str, str, int | str | None, str | None, dict | None) -> bool
         params = {
             "domain_id": zone_id,
             "sub_domain": sub,
@@ -56,14 +56,22 @@ class DnspodProvider(BaseProvider):
             "record_line": line or "默认",
         }
         if ttl:
-            params["ttl"] = ttl
+            params["ttl"] = ttl  # type: ignore[assignment]
         if extra:
             params.update(extra)
         res = self._request("Record.Create", **params)
-        return res.get("record")
+        record = res.get("record")
+        if record:
+            # 记录创建成功
+            logging.info("Record created: %s", record)
+            return True
+        else:
+            # 记录创建失败
+            logging.error("Failed to create record: %s", res)
+        return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | None, str | None, dict | None) -> dict | None
+        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         params = {
             "domain_id": zone_id,
             "record_id": old_record.get("id"),
@@ -75,9 +83,9 @@ class DnspodProvider(BaseProvider):
             params["ttl"] = ttl
         if extra:
             params.update(extra)
-        record_line = (line or old_record.get("line")).replace("Default", "default").encode("utf-8")
+        record_line = (line or old_record.get("line") or "默认").replace("Default", "default").encode("utf-8")
         res = self._request("Record.Modify", record_line=record_line, **params)
-        return res.get("record")
+        return res.get("record") is not None
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None

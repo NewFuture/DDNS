@@ -17,7 +17,7 @@ from .__init__ import __version__, __description__, __doc__, build_date
 from .util import ip
 from .util.cache import Cache
 from .util.config import init_config, get_config
-from .provider import get_provider_class
+from .provider import get_provider_class, BaseProvider  # noqa: F401
 
 environ["DDNS_VERSION"] = __version__
 
@@ -68,7 +68,7 @@ def get_ip(ip_type, index="default"):
 
 
 def change_dns_record(dns, proxy_list, **kw):
-    # type: (BaseProvider, list, **dict) -> bool
+    # type: (BaseProvider, list, **(str)) -> bool
     for proxy in proxy_list:
         if not proxy or (proxy.upper() in ['DIRECT', 'NONE']):
             dns.set_proxy(None)
@@ -84,6 +84,7 @@ def change_dns_record(dns, proxy_list, **kw):
 
 
 def update_ip(ip_type, cache, dns, ttl, proxy_list):
+    # type: (str, Cache | None, BaseProvider, str, list[str]) -> bool | None
     """
     更新IP
     """
@@ -94,7 +95,7 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
     if not isinstance(domains, list):
         domains = domains.strip('; ').replace(',', ';').replace(' ', ';').split(';')
 
-    index_rule = get_config('index' + ip_type, "default")
+    index_rule = get_config('index' + ip_type, "default")  # type: str # type: ignore
     address = get_ip(ip_type, index_rule)
     if not address:
         error('Fail to get %s address!', ipname)
@@ -128,27 +129,31 @@ def main():
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     init_config(__description__, __doc__, __version__, build_date)
 
-    log_level = get_config('log.level')
-    log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
+    log_level = get_config('log.level')  # type: int | str # type: ignore
+    log_format = get_config(
+        'log.format',
+        '%(asctime)s %(levelname)s [%(module)s]: %(message)s'
+    )  # type: str # type: ignore
     # Override log format in debug mode to include filename and line number for detailed debugging
     if (log_level == DEBUG or log_level == NOTSET) and not log_format:
         log_format = '%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s'
     basicConfig(
         level=log_level,
         format=log_format,
-        datefmt=get_config('log.datefmt', '%Y-%m-%dT%H:%M:%S'),
-        filename=get_config('log.file'),
+        datefmt=get_config('log.datefmt', '%Y-%m-%dT%H:%M:%S'),  # type: ignore
+        filename=get_config('log.file'),  # type: ignore
     )
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # dns provider class
-    provider_class = get_provider_class(get_config('dns', 'dnspod'))
+    dns_name = get_config('dns', 'dnspod')  # type: str # type: ignore
+    provider_class = get_provider_class(dns_name)
     debug('Using DNS provider: %s', provider_class.__name__)
-    dns = provider_class(get_config('id'), get_config('token'))
+    dns = provider_class(get_config('id'), get_config('token'))  # type: ignore
 
     if get_config("config"):
-        info('loaded Config from: %s', path.abspath(get_config('config')))
+        info('loaded Config from: %s', path.abspath(get_config('config')))  # type: ignore
 
     proxy = get_config('proxy') or 'DIRECT'
     proxy_list = proxy if isinstance(
@@ -156,20 +161,20 @@ def main():
 
     cache_config = get_config('cache', True)
     if cache_config is False:
-        cache = cache_config
+        cache = None
     elif cache_config is True:
         cache = Cache(path.join(gettempdir(), 'ddns.cache'))
     else:
         cache = Cache(cache_config)
 
-    if cache is False:
+    if cache is None:
         info('Cache is disabled!')
-    elif not get_config('config_modified_time') or get_config('config_modified_time') >= cache.time:
+    elif get_config('config_modified_time', float("inf")) >= cache.time:  # type: ignore
         warning('Cache file is outdated.')
         cache.clear()
     else:
         debug('Cache is empty.')
-    ttl = get_config('ttl')
+    ttl = get_config('ttl')  # type: str # type: ignore
     update_ip('4', cache, dns, ttl, proxy_list)
     update_ip('6', cache, dns, ttl, proxy_list)
 
