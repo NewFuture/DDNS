@@ -1,15 +1,17 @@
 # coding=utf-8
 """
-DNSPOD API
-DNSPOD 接口解析操作库
+DNSPOD Global (国际版) API
 http://www.dnspod.com/docs/domains.html
-@author: New Future
+@author: NewFuture
 """
 
-from .dnspod import *  # noqa: F403
+from .dnspod import DnspodProvider  # noqa: F401
 
-API.SITE = "api.dnspod.com"  # noqa: F405
-API.DEFAULT = "default"  # noqa: F405
 
-# https://github.com/NewFuture/DDNS/issues/286
-# API.TOKEN_PARAM = "user_token"  # noqa: F405
+class DnspodComProvider(DnspodProvider):
+    """
+    DNSPOD.com Provider (国际版)
+    This class extends the DnspodProvider to use the global DNSPOD API.
+    """
+
+    API = "api.dnspod.com"  # noqa: F405
