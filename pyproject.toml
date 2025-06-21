@@ -88,7 +88,7 @@ version = { attr = "ddns.__version__" }
 
 # 代码格式化配置
 [tool.black]
-line-length = 100
+line-length = 118
 target-version = ['py38', 'py310', 'py311']
 include = '\.py$'
 extend-exclude = '''
@@ -106,11 +106,18 @@ extend-exclude = '''
 '''
 
 # 类型检查配置
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = false
-warn_unused_configs = true
-disallow_untyped_defs = true
+[tool.pyright]
+typeCheckingMode = "standard"
+autoImportCompletions = true
+autoFormatStrings = true
+completeFunctionParens = true
+supportAllPythonDocuments = true
+importFormat = "relative"
+generateWithTypeAnnotation = true
+diagnosticMode = "workspace"
+indexing = true
+useLibraryCodeForTypes = true
+
 
 [tool.flake8]
 max-line-length = 100

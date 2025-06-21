@@ -141,31 +141,33 @@ class BaseProvider(object):
         return domain
 
     @abstractmethod
-    def _query_record(self, zone_id, sub, record_type, line=None):
-        # type: (str, str, str, str | None) -> dict | None
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
+        # type: (str, str, str, str, str | None, dict) -> Any
         """
         查询 DNS 记录 ID
 
         Args:
             zone_id (str): 区域 ID
-            sub (str): 子域名
+            sub_domain (str): 子域名
+            main_domain (str): 主域名
             record_type (str): 记录类型，例如 A、AAAA
             line (str | None): 线路选项，可选
-
+            extra (dict): 额外参数
         Returns:
-            str | None: 记录 ID
+            Any | None: 记录
         """
         raise NotImplementedError("This _query_record should be implemented by subclasses")
 
     @abstractmethod
-    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, str, str, str, int | str | None, str | None, dict) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         """
         创建新 DNS 记录
 
         Args:
             zone_id (str): 区域 ID
-            sub (str): 子域名
+            sub_domain (str): 子域名
+            main_domain (str): 主域名
             value (str): 记录值
             record_type (str): 类型，如 A
             ttl (int | None): TTL 可选
@@ -227,11 +229,24 @@ class BaseProvider(object):
         if not zone_id or not sub:
             raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
 
-        record = self._query_record(zone_id, sub, record_type, line)
+        record = self._query_record(
+            zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
+        )
         if record:
-            return self._update_record(zone_id, record, value, record_type, ttl, line, extra)
+            return self._update_record(
+                zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
+            )
         else:
-            return self._create_record(zone_id, sub, value, record_type, ttl, line, extra)
+            return self._create_record(
+                zone_id,
+                sub_domain=sub,
+                main_domain=main,
+                value=value,
+                record_type=record_type,
+                ttl=ttl,
+                line=line,
+                extra=extra,
+            )
 
     def set_proxy(self, proxy_str):
         # type: (str | None) -> BaseProvider

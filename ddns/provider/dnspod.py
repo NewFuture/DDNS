@@ -45,14 +45,21 @@ class DnspodProvider(BaseProvider):
         )
 
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
-        return self._https("POST", "/" + action, headers, **params)
+        data = self._https("POST", "/" + action, headers, **params)
+        if data and data.get("status", {}).get("code") == "1":
+            # 请求成功
+            return data
+        else:
+            # 请求失败
+            logging.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
+            return data
 
-    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, str, str, str, int | str | None, str | None, dict) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         res = self._request(
             "Record.Create",
             domain_id=zone_id,
-            sub_domain=sub,
+            sub_domain=sub_domain,
             value=value,
             record_type=record_type,
             record_line=line or "默认",
@@ -96,8 +103,8 @@ class DnspodProvider(BaseProvider):
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
-    def _query_record(self, zone_id, sub, record_type, line=None):
-        # type: (str, str, str, str | None) -> dict | None
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
+        # type: (str, str, str, str, str | None, dict) -> dict | None
         """
         查询记录 list 然后逐个查找
         """
@@ -108,9 +115,11 @@ class DnspodProvider(BaseProvider):
         )
         records = res.get("records", [])
         for record in records:
-            if record.get("name") == sub and record.get("type") == record_type:
+            if record.get("name") == sub_domain and record.get("type") == record_type:
                 record_line = record.get("line", "")
                 if line is None or record_line == line or record_line == "默认":
                     return record
-        logging.warning("No record found for [%s] with sub %s + type %s (line: %s)", zone_id, sub, record_type, line)
+        logging.warning(
+            "No record found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
+        )
         return None

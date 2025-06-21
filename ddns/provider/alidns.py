@@ -69,42 +69,44 @@ class AlidnsProvider(BaseProvider):
         res = self._request("GetMainDomainName", InputString=domain)
         return res.get("DomainName")
 
-    def _query_record(self, zone_id, sub, record_type, line=None):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords
         """
         data = self._request(
             "DescribeDomainRecords",
             DomainName=zone_id,
-            RRKeyWord=sub,
+            RRKeyWord=sub_domain,
             Type=record_type,
             Line=line,
             PageSize=500,
+            Lang=extra.get("Lang"),  # 默认中文
+            Status=extra.get("Status"),  # 默认查询启用状态的记录
         )
         records = data.get("DomainRecords", {}).get("Record", [])
         if not records:
             logging.warning(
                 "No records found for [%s] with sub %s + type %s (line: %s)",
                 zone_id,
-                sub,
+                sub_domain,
                 record_type,
                 line,
             )
         elif not isinstance(records, list):
             logging.error("Invalid records format: %s", records)
         else:
-            return next((r for r in records if r.get("RR") == sub), None)
+            return next((r for r in records if r.get("RR") == sub_domain), None)
 
         return None
 
-    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra={}):
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord
         """
         data = self._request(
             "AddDomainRecord",
             DomainName=zone_id,
-            RR=sub,
+            RR=sub_domain,
             Value=value,
             Type=record_type,
             TTL=ttl,
@@ -117,9 +119,7 @@ class AlidnsProvider(BaseProvider):
         logging.error("Failed to create record: %s", data)
         return False
 
-    def _update_record(
-        self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}
-    ):
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-updatedomainrecord
         """
