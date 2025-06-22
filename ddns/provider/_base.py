@@ -54,13 +54,12 @@ from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 import logging
-import stat
 
 try:  # python 3
-    from http.client import HTTPSConnection
+    from http.client import HTTPSConnection, HTTPConnection
     from urllib.parse import urlencode, quote
 except ImportError:  # python 2
-    from httplib import HTTPSConnection  # type: ignore[no-redef,import-untyped]
+    from httplib import HTTPSConnection, HTTPConnection  # type: ignore[no-redef,import-untyped]
     from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
 
 TYPE_FORM = "application/x-www-form-urlencoded"
@@ -88,6 +87,8 @@ class BaseProvider(object):
     ContentType = TYPE_FORM
     # Decode Response as JSON by default
     DecodeResponse = True
+    # 是否使用 HTTPS 连接
+    UseHttps = True
 
     # 版本
     Version = environ.get("DDNS_VERSION", "0.0.0")
@@ -294,10 +295,25 @@ class BaseProvider(object):
             return zone_id, sub
         return None, None
 
+    @staticmethod
+    def _make_connection(api_host, use_https, proxy=None):
+        """
+        创建 HTTP/HTTPS 连接对象。
+        Create HTTP/HTTPS connection object.
+        """
+        ConnectionClass = HTTPSConnection if use_https else HTTPConnection
+        port = 443 if use_https else 80
+        if proxy:
+            conn = ConnectionClass(proxy)
+            conn.set_tunnel(api_host, port)
+        else:
+            conn = ConnectionClass(api_host, port)
+        return conn
+
     def _https(self, method, url, params=None, body=None, queries=None, headers={}):
         # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]) -> Any
         """
-        发送 HTTPS 请求
+        发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
         Args:
             method (str): 请求方法，如 GET、POST
@@ -305,19 +321,13 @@ class BaseProvider(object):
             params (dict[str, Any] | None): 请求参数,自动处理 query string 或者body
             body (dict[str, Any] | str | None): 请求体内容
             queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
-            _headers (dict): 头部，可选
+            headers (dict): 头部，可选
 
         Returns:
             Any: 解析后的响应内容
         """
         method = method.upper()
         logging.info("[%s] %s : %s", method, url, queries)
-
-        if self.proxy:
-            conn = HTTPSConnection(self.proxy)
-            conn.set_tunnel(self.API, 443)
-        else:
-            conn = HTTPSConnection(self.API)
 
         # 自动处理参数
         if params:
@@ -349,6 +359,7 @@ class BaseProvider(object):
                 bodyData = jsonencode(body)
             logging.debug("body: %s", bodyData)
 
+        conn = self._make_connection(self.API, self.UseHttps, self.proxy)
         conn.request(method, url, bodyData, headers)
         response = conn.getresponse()
         res = response.read().decode("utf-8")
