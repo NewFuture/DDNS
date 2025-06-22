@@ -3,115 +3,88 @@
 Custom Callback API
 自定义回调接口解析操作库
 
-@author: 老周部落
+@author: 老周部落, NewFuture
 """
 
+import logging
 from json import loads as jsondecode
-from logging import debug, info, warning
 from time import time
+from ._base import TYPE_FORM, TYPE_JSON, BaseProvider
 
 try:  # python 3
-    from http.client import HTTPSConnection, HTTPConnection
-    from urllib.parse import urlencode, urlparse, parse_qsl
+    from urllib.parse import urlparse, parse_qsl
 except ImportError:  # python 2
-    from httplib import HTTPSConnection, HTTPConnection
-    from urlparse import urlparse, parse_qsl
-    from urllib import urlencode
-
-__author__ = '老周部落'
+    from urlparse import urlparse, parse_qsl  # type: ignore[no-redef,import]
 
 
-class Config:
-    ID = None  # 自定义回调 URL
-    TOKEN = None  # 使用 JSON 编码的 POST 参数
-    PROXY = None   # 代理设置
-    TTL = None
-
-
-def request(method, action, param=None, **params):
+class CallbackProvider(BaseProvider):
     """
-    发送请求数据
+    通用自定义回调 Provider，支持 GET/POST 任意接口。
+    Generic custom callback provider, supports GET/POST arbitrary API.
     """
-    if param:
-        params.update(param)
 
-    URLObj = urlparse(Config.ID)
-    params = dict((k, params[k]) for k in params if params[k] is not None)
-    info("%s/%s : %s", URLObj.netloc, action, params)
+    DecodeResponse = False  # Callback response is not JSON, it's a custom response
 
-    if Config.PROXY:
-        if URLObj.netloc == "http":
-            conn = HTTPConnection(Config.PROXY)
+    @staticmethod
+    def _replace_params(params, domain, record_type, ip, ttl=None, line=None, extra=None):
+        # type: (dict, str, str, str, int | None, str | None, dict | None) -> dict
+        """
+        替换参数中的特殊变量为实际值
+        Replace special variables in params with actual values
+        """
+        if extra is None:
+            extra = {}
+        extra.update(
+            {
+                "__DOMAIN__": domain,
+                "__RECORDTYPE__": record_type,
+                "__TTL__": ttl,
+                "__IP__": ip,
+                "__TIMESTAMP__": time(),
+                "__LINE__": line,
+            }
+        )
+        for k, v in params.items():
+            if isinstance(v, str) and v in extra:
+                params[k] = extra[v]
+        return params
+
+    def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
+        """
+        发送自定义回调请求，支持 GET/POST
+        Send custom callback request, support GET/POST
+        """
+        logging.info("start update %s(%s) => %s", domain, record_type, value)
+        url = self.auth_id  # 直接用 auth_id 作为 url
+        token = self.auth_token
+        if not token:
+            # GET 方式，URL query 透传
+            method = "GET"
+            self.ContentType = TYPE_FORM  # 设置 Content-Type 为 FORM
+            query = dict(parse_qsl(urlparse(url).query))
+            params = self._replace_params(query, domain, record_type, value, ttl)
         else:
-            conn = HTTPSConnection(Config.PROXY)
-        conn.set_tunnel(URLObj.netloc, URLObj.port)
-    else:
-        if URLObj.netloc == "http":
-            conn = HTTPConnection(URLObj.netloc, URLObj.port)
+            # POST 方式，token 作为 POST 参数
+            method = "POST"
+            self.ContentType = TYPE_JSON  # 设置 Content-Type 为 JSON
+            params = self._replace_params(jsondecode(token), domain, record_type, value, ttl)
+        # 动态设置 API
+
+        URL = urlparse(url)
+        if URL.port:
+            self.API = "{}:{}".format(URL.hostname, URL.port)
         else:
-            conn = HTTPSConnection(URLObj.netloc, URLObj.port)
-
-    headers = {}
-
-    if method == "GET":
-        if params:
-            action += '?' + urlencode(params)
-        params = ""
-    else:
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-    params = urlencode(params)
-
-    conn.request(method, action, params, headers)
-    response = conn.getresponse()
-    res = response.read().decode('utf8')
-    conn.close()
-    if response.status < 200 or response.status >= 300:
-        warning('%s : error[%d]:%s', action, response.status, res)
-        raise Exception(res)
-    else:
-        debug('%s : result:%s', action, res)
-        return res
-
-
-def replace_params(domain, record_type, ip, params):
-    """
-    替换定义常量为实际值
-    """
-    dict = {"__DOMAIN__": domain, "__RECORDTYPE__": record_type,
-            "__TTL__": Config.TTL, "__TIMESTAMP__": time(), "__IP__": ip}
-    for key, value in params.items():
-        if dict.get(value):
-            params[key] = dict.get(value)
-    return params
-
-
-def update_record(domain, value, record_type="A"):
-    """
-    更新记录
-    """
-    info(">>>>>%s(%s)", domain, record_type)
-
-    result = {}
-
-    if not Config.TOKEN:  # 此处使用 TOKEN 参数透传 POST 参数所用的 JSON
-        method = "GET"
-        URLObj = urlparse(Config.ID)
-        path = URLObj.path
-        query = dict(parse_qsl(URLObj.query))
-        params = replace_params(domain, record_type, value, query)
-    else:
-        method = "POST"
-        URLObj = urlparse(Config.ID)
-        path = URLObj.path
-        params = replace_params(domain, record_type,
-                                value, jsondecode(Config.TOKEN))
-
-    res = request(method, path, params)
-
-    if res:
-        result = "Callback Request Success!\n" + res
-    else:
-        result = "Callback Request Fail!\n"
-
-    return result
+            self.API = URL.hostname
+        self.UseHttps = URL.scheme == "https"
+        path = URL.path
+        try:
+            res = self._https(method, path, params)
+        except Exception as e:
+            logging.error("Callback error: %s", e)
+            return False
+        if res:
+            logging.info("Callback result: %s", res)
+            return True
+        else:
+            logging.warning("Callback No Response")
+            return False
