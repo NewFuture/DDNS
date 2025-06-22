@@ -13,11 +13,6 @@ from datetime import datetime
 
 from ._base import BaseProvider, TYPE_FORM
 
-try:  # python 3
-    from urllib.parse import urlencode, quote_plus, quote
-except ImportError:  # python 2
-    from urllib import urlencode, quote_plus, quote  # type: ignore[no-redef,import-untyped]
-
 
 class AlidnsProvider(BaseProvider):
     API = "alidns.aliyuncs.com"
@@ -45,10 +40,12 @@ class AlidnsProvider(BaseProvider):
                 "SignatureVersion": "1.0",
             }
         )
-        query = urlencode(sorted(params.items()))
+        query = self._encode(sorted(params.items()))
         query = query.replace("+", "%20")
         logging.debug("query: %s", query)
-        sign = "POST&" + quote_plus("/") + "&" + quote(query, safe="")
+        # sign = "POST&" + quote_plus("/") + "&" + quote(query, safe="")
+        sign = "POST&%2F&" + self._quote(query, safe="")
+
         logging.debug("sign: %s", sign)
         sign = hmac((self.auth_token + "&").encode("utf-8"), sign.encode("utf-8"), sha1).digest()
         sign = b64encode(sign).strip().decode()

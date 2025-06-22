@@ -12,11 +12,6 @@ from hashlib import md5
 
 from ._base import BaseProvider, TYPE_FORM
 
-try:  # Python 3
-    from urllib.parse import urlencode
-except ImportError:  # Python 2
-    from urllib import urlencode  # type: ignore[no-redef,import-untyped]
-
 
 class DnscomProvider(BaseProvider):
     """
@@ -38,7 +33,7 @@ class DnscomProvider(BaseProvider):
                 "timestamp": mktime(datetime.now().timetuple()),
             }
         )
-        query = urlencode(sorted(params.items()))
+        query = self._encode(sorted(params.items()))
         sign = md5((query + self.auth_token).encode("utf-8")).hexdigest()
         params["hash"] = sign
         return params

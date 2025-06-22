@@ -57,10 +57,10 @@ import logging
 
 try:  # python 3
     from http.client import HTTPSConnection
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, quote
 except ImportError:  # python 2
-    from httplib import HTTPSConnection  # type: ignore
-    from urllib import urlencode  # type: ignore
+    from httplib import HTTPSConnection  # type: ignore[no-redef,import-untyped]
+    from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -328,7 +328,7 @@ class BaseProvider(object):
             conn = HTTPSConnection(self.API)
 
         if method in ["GET", "DELETE"] and params:
-            url += "?" + urlencode(params)
+            url += "?" + self._encode(params)
             logging.debug("url: %s", url)
             params = None  # type: ignore
 
@@ -336,7 +336,7 @@ class BaseProvider(object):
         if params:
             _headers["content-type"] = self.ContentType
             if self.ContentType == TYPE_FORM:
-                body = urlencode(params)
+                body = self._encode(params)
             else:
                 body = jsonencode(params)
             logging.debug("encoded: %s", body)
@@ -358,3 +358,31 @@ class BaseProvider(object):
         except Exception as e:
             logging.error("fail to decode response: %s", e)
             raise
+
+    @staticmethod
+    def _encode(params):
+        # type: (dict|list) -> str
+        """
+        编码参数为 URL 查询字符串
+
+        Args:
+            params (dict|list): 参数字典或列表
+
+        Returns:
+            str: 编码后的查询字符串
+        """
+        return urlencode(params, doseq=True) if params else ""
+
+    @staticmethod
+    def _quote(data, safe="/", encoding=None, errors=None):
+        # type: (str, str, str|None, str|None) -> str
+        """
+        对字符串进行 URL 编码
+
+        Args:
+            data (str): 待编码字符串
+
+        Returns:
+            str: 编码后的字符串
+        """
+        return quote(data, safe=safe, encoding=encoding, errors=errors)
