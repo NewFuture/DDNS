@@ -57,7 +57,7 @@ class AlidnsProvider(BaseProvider):
         params = {k: v for k, v in params.items() if v is not None}
         params["Action"] = action
         params = self._signature(params)
-        return self._https("POST", "/", {}, **params)
+        return self._https("POST", "/", body=params)
 
     def _query_zone_id(self, domain):
         """

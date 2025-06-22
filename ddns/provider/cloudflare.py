@@ -24,7 +24,7 @@ class CloudflareProvider(BaseProvider):
             headers["Authorization"] = "Bearer " + self.auth_token
 
         params = {k: v for k, v in params.items() if v is not None}  # 过滤掉None参数
-        data = self._https(method, "/client/v4/zones" + action, headers, **params)
+        data = self._https(method, "/client/v4/zones" + action, headers=headers, params=params)
         if data and data.get("success"):
             return data.get("result")  # 返回结果或原始数据
         else:
@@ -74,6 +74,7 @@ class CloudflareProvider(BaseProvider):
         https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/
         """
         domain = sub_domain + "." + main_domain
+        extra["comment"] = extra.get("comment", self.Remark)  # 添加注释
         data = self._request(
             "POST", "/{}/dns_records".format(zone_id), name=domain, type=record_type, content=value, ttl=ttl, **extra
         )
@@ -88,6 +89,7 @@ class CloudflareProvider(BaseProvider):
         """
         https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/
         """
+        extra["comment"] = old_record.get("comment", extra.get("comment", self.Remark))  # 注释
         extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态
         extra["tags"] = old_record.get("tags", extra.get("tags"))  # 保持原有的标签
         extra["settings"] = old_record.get("settings", extra.get("settings"))  # 保持原有的设置

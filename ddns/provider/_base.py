@@ -87,6 +87,8 @@ class BaseProvider(object):
     ContentType = TYPE_FORM
     # 版本
     Version = environ.get("DDNS_VERSION", "0.0.0")
+    # Description
+    Remark = "Managed By [DDNS](https://ddns.newfuture.cc)"
 
     def __init__(self, auth_id, auth_token, **options):
         # type: (str, str, **object) -> None
@@ -304,22 +306,24 @@ class BaseProvider(object):
                 return sub, main
         return None, domain
 
-    def _https(self, method, url, _headers={}, **params):
-        # type: (str, str, dict[str,str], **(str|int|bytes|bool|None)) -> Any
+    def _https(self, method, url, params=None, body=None, queries=None, headers={}):
+        # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]) -> Any
         """
         发送 HTTPS 请求
 
         Args:
             method (str): 请求方法，如 GET、POST
             url (str): 请求路径
+            params (dict[str, Any] | None): 请求参数,自动处理 query string 或者body
+            body (dict[str, Any] | str | None): 请求体内容
+            queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
             _headers (dict): 头部，可选
-            params (dict): 请求参数
 
         Returns:
             Any: 解析后的响应内容
         """
         method = method.upper()
-        logging.info("[%s] %s : %s", method, url, params)
+        logging.info("[%s] %s : %s", method, url, queries)
 
         if self.proxy:
             conn = HTTPSConnection(self.proxy)
@@ -327,21 +331,37 @@ class BaseProvider(object):
         else:
             conn = HTTPSConnection(self.API)
 
-        if method in ["GET", "DELETE"] and params:
-            url += "?" + self._encode(params)
-            logging.debug("url: %s", url)
-            params = None  # type: ignore
-
-        body = None
+        # 自动处理参数
         if params:
-            _headers["content-type"] = self.ContentType
-            if self.ContentType == TYPE_FORM:
-                body = self._encode(params)
+            if method in ("GET", "DELETE"):
+                # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
+                queries = {**(queries or {}), **params}
+            elif body is None:
+                body = params
             else:
-                body = jsonencode(params)
-            logging.debug("encoded: %s", body)
+                logging.error("params should not be used with body for %s method", method)
 
-        conn.request(method, url, body, _headers)
+        if queries:
+            # if method in ["GET", "DELETE"] and params:
+            url += "?" + self._encode(queries)
+            logging.debug("url: %s", url)
+
+        bodyData = None  # type: str | None
+        if body:
+            if "content-type" not in headers:
+                headers["content-type"] = self.ContentType
+            if isinstance(body, str):
+                # 如果 body 已经是字符串，则不需要再次编码
+                bodyData = body
+            elif self.ContentType == TYPE_FORM:
+                # 如果是表单类型，则编码为 URL 查询字符串
+                bodyData = self._encode(body)
+            else:
+                # 如果是 JSON 类型，则编码为 JSON 字符串
+                bodyData = jsonencode(body)
+            logging.debug("body: %s", bodyData)
+
+        conn.request(method, url, bodyData, headers)
         response = conn.getresponse()
         res = response.read().decode("utf-8")
         conn.close()

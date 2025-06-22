@@ -40,7 +40,7 @@ class DnscomProvider(BaseProvider):
 
     def _request(self, action, **params):
         params = self._signature(params)
-        data = self._https("POST", "/api/{}/".format(action), **params)
+        data = self._https("POST", "/api/{}/".format(action), body=params)
         if data is None or not isinstance(data, dict):
             raise Exception("response data is none")
         if data.get("code", 0) != 0:
@@ -76,6 +76,7 @@ class DnscomProvider(BaseProvider):
         """
         https://www.51dns.com/document/api/4/12.html
         """
+        extra["remark"] = extra.get("remark", self.Remark)
         res = self._request(
             "record/create",
             domainID=zone_id,
@@ -96,6 +97,7 @@ class DnscomProvider(BaseProvider):
         """
         https://www.51dns.com/document/api/4/45.html
         """
+        extra["remark"] = old_record.get("remark", extra.get("remark", self.Remark))
         res = self._request(
             "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
         )

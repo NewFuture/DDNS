@@ -42,7 +42,7 @@ class DnspodProvider(BaseProvider):
         )
 
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
-        data = self._https("POST", "/" + action, headers, **params)
+        data = self._https("POST", "/" + action, headers=headers, body=params)
         if data and data.get("status", {}).get("code") == "1":
             # 请求成功
             return data
