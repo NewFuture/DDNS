@@ -120,4 +120,4 @@ useLibraryCodeForTypes = true
 
 
 [tool.flake8]
-max-line-length = 100
+max-line-length = 118
