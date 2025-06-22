@@ -49,9 +49,7 @@ class CloudflareProvider(BaseProvider):
         https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/
         """
         # cloudflare的域名查询需要完整域名
-        name = sub_domain + "." + main_domain
-        if "." not in main_domain:
-            name = sub_domain  # 如果没有主域名，直接使用子域名
+        name = self._join_domain(sub_domain, main_domain)
         query = {"name.exact": name}
         data = self._request(
             "GET",
@@ -73,10 +71,10 @@ class CloudflareProvider(BaseProvider):
         """
         https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/
         """
-        domain = sub_domain + "." + main_domain
+        name = self._join_domain(sub_domain, main_domain)
         extra["comment"] = extra.get("comment", self.Remark)  # 添加注释
         data = self._request(
-            "POST", "/{}/dns_records".format(zone_id), name=domain, type=record_type, content=value, ttl=ttl, **extra
+            "POST", "/{}/dns_records".format(zone_id), name=name, type=record_type, content=value, ttl=ttl, **extra
         )
         if data:
             logging.info("Record created: %s", data)

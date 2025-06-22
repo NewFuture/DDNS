@@ -54,6 +54,7 @@ from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 import logging
+import stat
 
 try:  # python 3
     from http.client import HTTPSConnection
@@ -83,12 +84,15 @@ class BaseProvider(object):
 
     # API endpoint domain (to be defined in subclass)
     API = ""
-    # 默认 Content-Type
+    # Content-Type for requests (to be defined in subclass)
     ContentType = TYPE_FORM
+    # Decode Response as JSON by default
+    DecodeResponse = True
+
     # 版本
     Version = environ.get("DDNS_VERSION", "0.0.0")
     # Description
-    Remark = "Managed By [DDNS](https://ddns.newfuture.cc)"
+    Remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(Version)
 
     def __init__(self, auth_id, auth_token, **options):
         # type: (str, str, **object) -> None
@@ -371,13 +375,40 @@ class BaseProvider(object):
             logging.info(res)
             raise Exception(res)
 
+        if not self.DecodeResponse:
+            # 如果不需要解码响应，则直接返回原始字符串
+            logging.debug("response: %s", res)
+            return res
         try:
             data = jsondecode(res)
             logging.debug("response: %s", data)
             return data
         except Exception as e:
             logging.error("fail to decode response: %s", e)
-            raise
+            raise e
+
+    @staticmethod
+    def _join_domain(sub, main):
+        # type: (str | None, str) -> str
+        """
+        合并子域名和主域名为完整域名
+
+        Args:
+            sub (str | None): 子域名
+            main (str): 主域名
+
+        Returns:
+            str: 完整域名
+        """
+        sub = sub and sub.strip(".").strip().lower()
+        main = main and main.strip(".").strip().lower()
+        if not sub or sub == "@":
+            if not main:
+                raise ValueError("Both sub and main cannot be empty")
+            return main
+        if not main:
+            return sub
+        return "{}.{}".format(sub, main)
 
     @staticmethod
     def _encode(params):

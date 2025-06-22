@@ -100,7 +100,7 @@ class HuaweiDNSProvider(BaseProvider):
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64004.html
         v2 https://support.huaweicloud.com/api-dns/ListRecordSetsByZone.html
         """
-        domain = sub_domain + "." + main_domain + "."
+        domain = self._join_domain(sub_domain, main_domain) + "."
         data = self._request(
             "GET",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -119,7 +119,7 @@ class HuaweiDNSProvider(BaseProvider):
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64001.html
         v2 https://support.huaweicloud.com/api-dns/CreateRecordSet.html
         """
-        domain = sub_domain + "." + main_domain + "."
+        domain = self._join_domain(sub_domain, main_domain) + "."
         extra["description"] = extra.get("description", self.Remark)
         res = self._request(
             "POST",
