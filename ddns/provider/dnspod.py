@@ -65,7 +65,7 @@ class DnspodProvider(BaseProvider):
             record_type=record_type,
             record_line=line or self.DefaultLine,
             ttl=ttl,
-            **extra,
+            **extra
         )
         record = res and res.get("record")
         if record:
@@ -89,7 +89,7 @@ class DnspodProvider(BaseProvider):
             value=value,
             sub_domain=old_record.get("name"),
             record_line=record_line,
-            **extra,
+            **extra
         )
         record = res and res.get("record")
         if record:
