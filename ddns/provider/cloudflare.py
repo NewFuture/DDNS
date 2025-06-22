@@ -56,10 +56,10 @@ class CloudflareProvider(BaseProvider):
         data = self._request(
             "GET",
             "/{}/dns_records".format(zone_id),
-            **query,
             type=record_type,
             proxied=extra.pop("proxied", None),
-            per_page=500000
+            per_page=500000,
+            **query
         )
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
         logging.debug("Record queried: %s", record)
