@@ -294,22 +294,6 @@ class BaseProvider(object):
             return zone_id, sub
         return None, None
 
-    def _split_custom_domain(self, domain):
-        # type: (str) -> tuple[str | None, str]
-        """
-        拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
-
-        如 sub~example.com => ('sub', 'example.com')
-
-        Returns:
-            (sub, main): 子域 + 主域
-        """
-        for sep in ("~", "+"):
-            if sep in domain:
-                sub, main = domain.split(sep, 1)
-                return sub, main
-        return None, domain
-
     def _https(self, method, url, params=None, body=None, queries=None, headers={}):
         # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]) -> Any
         """
@@ -386,6 +370,23 @@ class BaseProvider(object):
         except Exception as e:
             logging.error("fail to decode response: %s", e)
             raise e
+
+    @staticmethod
+    def _split_custom_domain(domain):
+        # type: (str) -> tuple[str | None, str]
+        """
+        拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
+
+        如 sub~example.com => ('sub', 'example.com')
+
+        Returns:
+            (sub, main): 子域 + 主域
+        """
+        for sep in ("~", "+"):
+            if sep in domain:
+                sub, main = domain.split(sep, 1)
+                return sub, main
+        return None, domain
 
     @staticmethod
     def _join_domain(sub, main):
