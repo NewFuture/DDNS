@@ -41,7 +41,7 @@ class AlidnsProvider(BaseProvider):
                 "AccessKeyId": self.auth_id,
                 "Timestamp": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "SignatureMethod": "HMAC-SHA1",
-                "SignatureNonce": hex(now.__hash__())[4:],
+                "SignatureNonce": hex(now.__hash__())[2:],
                 "SignatureVersion": "1.0",
             }
         )

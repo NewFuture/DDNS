@@ -17,6 +17,7 @@ class DnspodProvider(BaseProvider):
 
     API = "dnsapi.cn"
     ContentType = TYPE_FORM
+    DefaultLine = "默认"
 
     def _request(self, action, **params):
         # type: (str, **(str | int | bytes | bool | None)) -> dict
@@ -62,7 +63,7 @@ class DnspodProvider(BaseProvider):
             sub_domain=sub_domain,
             value=value,
             record_type=record_type,
-            record_line=line or "默认",
+            record_line=line or self.DefaultLine,
             ttl=ttl,
             **extra,
         )
@@ -78,7 +79,9 @@ class DnspodProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
         # type: (str, dict, str, str, int | str | None, str | None, dict ) -> bool
-        record_line = (line or old_record.get("line") or "默认").replace("Default", "default").encode("utf-8")
+        record_line = (
+            (line or old_record.get("line") or self.DefaultLine).replace("Default", "default").encode("utf-8")
+        )
         res = self._request(
             "Record.Modify",
             domain_id=zone_id,
