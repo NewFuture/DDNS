@@ -2,6 +2,10 @@
 # flake8: noqa: F401
 from ._base import BaseProvider
 from .dnspod import DnspodProvider
+from .dnspod_com import DnspodComProvider
+from .cloudflare import CloudflareProvider
+from .alidns import AlidnsProvider
+from .dnscom import DnscomProvider
 
 
 def get_provider_class(provider_name):

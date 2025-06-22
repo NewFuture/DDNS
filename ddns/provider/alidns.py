@@ -81,16 +81,12 @@ class AlidnsProvider(BaseProvider):
             Line=line,
             PageSize=500,
             Lang=extra.get("Lang"),  # 默认中文
-            Status=extra.get("Status"),  # 默认查询启用状态的记录
+            Status=extra.get("Status"),  # 默认全部状态
         )
         records = data.get("DomainRecords", {}).get("Record", [])
         if not records:
             logging.warning(
-                "No records found for [%s] with sub %s + type %s (line: %s)",
-                zone_id,
-                sub_domain,
-                record_type,
-                line,
+                "No records found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
             )
         elif not isinstance(records, list):
             logging.error("Invalid records format: %s", records)
@@ -111,7 +107,7 @@ class AlidnsProvider(BaseProvider):
             Type=record_type,
             TTL=ttl,
             Line=line,
-            **extra,
+            **extra
         )
         if data and data.get("RecordId"):
             logging.info("Record created: %s", data)
@@ -131,7 +127,7 @@ class AlidnsProvider(BaseProvider):
             Type=record_type,
             TTL=ttl,
             Line=line or old_record.get("Line"),
-            **extra,
+            **extra
         )
         if data and data.get("RecordId"):
             logging.info("Record updated: %s", data)

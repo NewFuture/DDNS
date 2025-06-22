@@ -89,7 +89,7 @@ class DnscomProvider(BaseProvider):
             type=record_type,
             TTL=ttl,
             viewID=line,
-            **extra,
+            **extra
         )
         if res and res.get("recordID"):
             logging.info("Record created: %s", res)
@@ -102,12 +102,7 @@ class DnscomProvider(BaseProvider):
         https://www.51dns.com/document/api/4/45.html
         """
         res = self._request(
-            "record/modify",
-            domainID=zone_id,
-            recordID=old_record.get("recordID"),
-            newvalue=value,
-            newTTL=ttl,
-            # **extra,
+            "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
         )
         if res:
             logging.info("Record updated: %s", res)

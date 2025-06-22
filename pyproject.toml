@@ -89,7 +89,8 @@ version = { attr = "ddns.__version__" }
 # 代码格式化配置
 [tool.black]
 line-length = 118
-target-version = ['py38', 'py310', 'py311']
+# py34删除尾部空格兼容py2
+target-version = ['py34', 'py38', 'py311']
 include = '\.py$'
 extend-exclude = '''
 /(
@@ -117,7 +118,3 @@ generateWithTypeAnnotation = true
 diagnosticMode = "workspace"
 indexing = true
 useLibraryCodeForTypes = true
-
-
-[tool.flake8]
-max-line-length = 118

@@ -38,11 +38,7 @@ class DnspodProvider(BaseProvider):
         # 过滤掉None参数
         params = {k: v for k, v in params.items() if v is not None}
         params.update(
-            {
-                "login_token": "{0},{1}".format(self.auth_id, self.auth_token),
-                "format": "json",
-                "length": "3000",
-            }
+            {"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json", "length": "3000"}
         )
 
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
@@ -112,10 +108,7 @@ class DnspodProvider(BaseProvider):
         查询记录 list 然后逐个查找
         """
 
-        res = self._request(
-            "Record.List",
-            domain_id=zone_id,
-        )
+        res = self._request("Record.List", domain_id=zone_id)
         records = res.get("records", [])
         for record in records:
             if record.get("name") == sub_domain and record.get("type") == record_type:

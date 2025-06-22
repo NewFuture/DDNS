@@ -24,12 +24,7 @@ class CloudflareProvider(BaseProvider):
             headers["Authorization"] = "Bearer " + self.auth_token
 
         params = {k: v for k, v in params.items() if v is not None}  # 过滤掉None参数
-        data = self._https(
-            method,
-            "/client/v4/zones" + action,
-            headers,
-            **params,
-        )
+        data = self._https(method, "/client/v4/zones" + action, headers, **params)
         if data and data.get("success"):
             return data.get("result")  # 返回结果或原始数据
         else:
@@ -64,7 +59,7 @@ class CloudflareProvider(BaseProvider):
             **query,
             type=record_type,
             proxied=extra.pop("proxied", None),
-            per_page=500000,
+            per_page=500000
         )
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
         logging.debug("Record queried: %s", record)
@@ -103,7 +98,7 @@ class CloudflareProvider(BaseProvider):
             name=old_record.get("name"),
             content=value,
             ttl=ttl,
-            **extra,
+            **extra
         )
         logging.debug("Record updated: %s", data)
         if data:
