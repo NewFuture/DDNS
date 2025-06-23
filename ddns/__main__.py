@@ -133,7 +133,7 @@ def main():
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
         log_format = '%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s'
-    elif log_level >= INFO:
+    elif log_level > INFO:
         log_format = '%(asctime)s %(levelname)s: %(message)s'
     else:
         log_format = '%(asctime)s %(levelname)s [%(module)s]: %(message)s'
