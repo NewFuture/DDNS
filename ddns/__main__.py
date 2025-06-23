@@ -129,7 +129,7 @@ def main():
     log_level = get_config('log.level')
     log_format = get_config('log.format')
     if log_format:
-        pass
+        # No additional action needed if log_format is already set
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
         log_format = '%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s'
