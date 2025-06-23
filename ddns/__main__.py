@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 """
 DDNS
-@author: New Future
-@modified: rufengsuixing
+@author: NewFuture, rufengsuixing
 """
 
 from os import path, environ, name as os_name
@@ -29,7 +28,7 @@ def is_false(value):
     0 不是 False
     """
     if isinstance(value, str):
-        return value.strip().lower() in ['false', 'none']
+        return value.strip().lower() in ["false", "none"]
     return value is False
 
 
@@ -51,14 +50,13 @@ def get_ip(ip_type, index="default"):
                     break
         elif str(index).isdigit():  # 数字 local eth
             value = getattr(ip, "local_v" + ip_type)(index)
-        elif index.startswith('cmd:'):  # cmd
-            value = str(check_output(index[4:]).strip().decode('utf-8'))
-        elif index.startswith('shell:'):  # shell
-            value = str(check_output(
-                index[6:], shell=True).strip().decode('utf-8'))
-        elif index.startswith('url:'):  # 自定义 url
+        elif index.startswith("cmd:"):  # cmd
+            value = str(check_output(index[4:]).strip().decode("utf-8"))
+        elif index.startswith("shell:"):  # shell
+            value = str(check_output(index[6:], shell=True).strip().decode("utf-8"))
+        elif index.startswith("url:"):  # 自定义 url
             value = getattr(ip, "public_v" + ip_type)(index[4:])
-        elif index.startswith('regex:'):  # 正则 regex
+        elif index.startswith("regex:"):  # 正则 regex
             value = getattr(ip, "regex_v" + ip_type)(index[6:])
         else:
             value = getattr(ip, index + "_v" + ip_type)()
@@ -70,14 +68,14 @@ def get_ip(ip_type, index="default"):
 def change_dns_record(dns, proxy_list, **kw):
     # type: (BaseProvider, list, **(str)) -> bool
     for proxy in proxy_list:
-        if not proxy or (proxy.upper() in ['DIRECT', 'NONE']):
+        if not proxy or (proxy.upper() in ["DIRECT", "NONE"]):
             dns.set_proxy(None)
         else:
             dns.set_proxy(proxy)
-        record_type, domain = kw['record_type'], kw['domain']
-        info("%s(%s) => %s [via %s]", domain, record_type, kw['ip'], proxy)
+        record_type, domain = kw["record_type"], kw["domain"]
+        info("%s(%s) => %s [via %s]", domain, record_type, kw["ip"], proxy)
         try:
-            return dns.set_record(domain, kw['ip'], record_type=record_type, ttl=kw['ttl'])
+            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"])
         except Exception as e:
             error("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
@@ -88,24 +86,24 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
     """
     更新IP
     """
-    ipname = 'ipv' + ip_type
+    ipname = "ipv" + ip_type
     domains = get_config(ipname)
     if not domains:
         return None
     if not isinstance(domains, list):
-        domains = domains.strip('; ').replace(',', ';').replace(' ', ';').split(';')
+        domains = domains.strip("; ").replace(",", ";").replace(" ", ";").split(";")
 
-    index_rule = get_config('index' + ip_type, "default")  # type: str # type: ignore
+    index_rule = get_config("index" + ip_type, "default")  # type: str # type: ignore
     address = get_ip(ip_type, index_rule)
     if not address:
-        error('Fail to get %s address!', ipname)
+        error("Fail to get %s address!", ipname)
         return False
 
     if cache and (address == cache.get(ipname)):
-        info('%s address not changed, using cache.', ipname)
+        info("%s address not changed, using cache.", ipname)
         return True
 
-    record_type = 'A' if ip_type == '4' else 'AAAA'
+    record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
     for domain in domains:
         domain = domain.lower()
@@ -123,65 +121,64 @@ def main():
     更新
     """
     encode = sys.stdout.encoding
-    if encode is not None and encode.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+    if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
         # 兼容windows 和部分ASCII编码的老旧系统
-        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+        sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     init_config(__description__, __doc__, __version__, build_date)
 
-    log_level = get_config('log.level')
-    log_format = get_config('log.format')
+    log_level = get_config("log.level")
+    log_format = get_config("log.format")
     if log_format:
         # A custom log format is already set; no further action is required.
         pass
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
-        log_format = '%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s'
+        log_format = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
     elif log_level > INFO:
-        log_format = '%(asctime)s %(levelname)s: %(message)s'
+        log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
-        log_format = '%(asctime)s %(levelname)s [%(module)s]: %(message)s'
+        log_format = "%(asctime)s %(levelname)s [%(module)s]: %(message)s"
     basicConfig(
         level=log_level,
         format=log_format,
-        datefmt=get_config('log.datefmt', '%Y-%m-%dT%H:%M:%S'),  # type: ignore
-        filename=get_config('log.file'),  # type: ignore
+        datefmt=get_config("log.datefmt", "%Y-%m-%dT%H:%M:%S"),  # type: ignore
+        filename=get_config("log.file"),  # type: ignore
     )
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # dns provider class
-    dns_name = get_config('dns', 'dnspod')  # type: str # type: ignore
+    dns_name = get_config("dns", "dnspod")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
-    debug('Using DNS provider: %s', provider_class.__name__)
-    dns = provider_class(get_config('id'), get_config('token'))  # type: ignore
+    debug("Using DNS provider: %s", provider_class.__name__)
+    dns = provider_class(get_config("id"), get_config("token"))  # type: ignore
 
     if get_config("config"):
-        info('loaded Config from: %s', path.abspath(get_config('config')))  # type: ignore
+        info("loaded Config from: %s", path.abspath(get_config("config")))  # type: ignore
 
-    proxy = get_config('proxy') or 'DIRECT'
-    proxy_list = proxy if isinstance(
-        proxy, list) else proxy.strip(';').replace(',', ';').split(';')
+    proxy = get_config("proxy") or "DIRECT"
+    proxy_list = proxy if isinstance(proxy, list) else proxy.strip(";").replace(",", ";").split(";")
 
-    cache_config = get_config('cache', True)
+    cache_config = get_config("cache", True)
     if cache_config is False:
         cache = None
     elif cache_config is True:
-        cache = Cache(path.join(gettempdir(), 'ddns.cache'))
+        cache = Cache(path.join(gettempdir(), "ddns.cache"))
     else:
         cache = Cache(cache_config)
 
     if cache is None:
-        info('Cache is disabled!')
-    elif get_config('config_modified_time', float("inf")) >= cache.time:  # type: ignore
-        warning('Cache file is outdated.')
+        info("Cache is disabled!")
+    elif get_config("config_modified_time", float("inf")) >= cache.time:  # type: ignore
+        warning("Cache file is outdated.")
         cache.clear()
     else:
-        debug('Cache is empty.')
-    ttl = get_config('ttl')  # type: str # type: ignore
-    update_ip('4', cache, dns, ttl, proxy_list)
-    update_ip('6', cache, dns, ttl, proxy_list)
+        debug("Cache is empty.")
+    ttl = get_config("ttl")  # type: str # type: ignore
+    update_ip("4", cache, dns, ttl, proxy_list)
+    update_ip("6", cache, dns, ttl, proxy_list)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
