@@ -57,10 +57,11 @@ import logging
 
 try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection
-    from urllib.parse import urlencode, quote
+    from urllib.parse import quote, urlencode, urlparse
 except ImportError:  # python 2
     from httplib import HTTPSConnection, HTTPConnection  # type: ignore[no-redef,import-untyped]
     from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
+    from urlparse import urlparse  # type: ignore[no-redef,import-untyped]
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -82,13 +83,11 @@ class BaseProvider(object):
     __metaclass__ = ABCMeta
 
     # API endpoint domain (to be defined in subclass)
-    API = ""
+    API = ""  # https://api.example.com
     # Content-Type for requests (to be defined in subclass)
     ContentType = TYPE_FORM
     # Decode Response as JSON by default
     DecodeResponse = True
-    # 是否使用 HTTPS 连接
-    UseHttps = True
 
     # 版本
     Version = environ.get("DDNS_VERSION", "0.0.0")
@@ -296,21 +295,32 @@ class BaseProvider(object):
         return None, None
 
     @staticmethod
-    def _make_connection(api_host, use_https, proxy=None):
+    def _send_request(url, method="GET", body=None, headers=None, proxy=None):
+        # type: (str, str, str | None, dict[str, str] | None, str | None) -> str
         """
         创建 HTTP/HTTPS 连接对象。
         Create HTTP/HTTPS connection object.
         """
-        ConnectionClass = HTTPSConnection if use_https else HTTPConnection
-        port = 443 if use_https else 80
+        url_obj = urlparse(url)
+        isHttps = url_obj.scheme == "https"
+        hostname = url_obj.hostname  # type: str # type: ignore[assignment]
+        ConnectionClass = HTTPSConnection if isHttps else HTTPConnection
         if proxy:
             conn = ConnectionClass(proxy)
-            conn.set_tunnel(api_host, port)
+            conn.set_tunnel(hostname, url_obj.port)
         else:
-            conn = ConnectionClass(api_host, port)
-        return conn
+            conn = ConnectionClass(hostname, url_obj.port)
+        conn.request(method, url_obj.path, body, headers=headers or {})
+        response = conn.getresponse()
+        res = response.read().decode("utf-8")
+        conn.close()
+        if not (response.status >= 200 and response.status < 300):
+            logging.warning("%s : error[%d]: %s", url, response.status, response.reason)
+            logging.info(res)
+            raise Exception(res)
+        return res
 
-    def _https(self, method, url, params=None, body=None, queries=None, headers={}):
+    def _http(self, method, url, params=None, body=None, queries=None, headers={}):  # noqa: C901
         # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
@@ -327,24 +337,32 @@ class BaseProvider(object):
             Any: 解析后的响应内容
         """
         method = method.upper()
-        logging.info("[%s] %s : %s", method, url, queries)
+        logging.info("[%s] %s : %s %s", method, url, queries, params)
 
         # 自动处理参数
         if params:
             if method in ("GET", "DELETE"):
                 # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
-                queries = {**(queries or {}), **params}
+                if queries:
+                    queries.update(params)
+                else:
+                    queries = params
             elif body is None:
                 body = params
             else:
                 logging.error("params should not be used with body for %s method", method)
 
-        if queries:
-            # if method in ["GET", "DELETE"] and params:
-            url += "?" + self._encode(queries)
-            logging.debug("url: %s", url)
+        # 拼接URL
+        if queries and len(queries) > 0:
+            url += ("&" if "?" in url else "?") + self._encode(queries)
+        if not url.startswith("http://") and not url.startswith("https://"):
+            if not url.startswith("/") and self.API.endswith("/"):
+                url = "/" + url
+            url = "{}{}".format(self.API, url)
+        logging.debug("url: %s", url)
 
-        bodyData = None  # type: str | None
+        # 主体
+        bodyData = None
         if body:
             if "content-type" not in headers:
                 headers["content-type"] = self.ContentType
@@ -352,24 +370,12 @@ class BaseProvider(object):
                 # 如果 body 已经是字符串，则不需要再次编码
                 bodyData = body
             elif self.ContentType == TYPE_FORM:
-                # 如果是表单类型，则编码为 URL 查询字符串
                 bodyData = self._encode(body)
             else:
-                # 如果是 JSON 类型，则编码为 JSON 字符串
                 bodyData = jsonencode(body)
             logging.debug("body: %s", bodyData)
 
-        conn = self._make_connection(self.API, self.UseHttps, self.proxy)
-        conn.request(method, url, bodyData, headers)
-        response = conn.getresponse()
-        res = response.read().decode("utf-8")
-        conn.close()
-
-        if response.status < 200 or response.status >= 300:
-            logging.warning("%s : error[%d]: %s", url, response.status, response.reason)
-            logging.info(res)
-            raise Exception(res)
-
+        res = self._send_request(method=method, url=url, body=bodyData, headers=headers, proxy=self.proxy)
         if not self.DecodeResponse:
             # 如果不需要解码响应，则直接返回原始字符串
             logging.debug("response: %s", res)

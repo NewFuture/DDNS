@@ -19,7 +19,7 @@ class DnscomProvider(BaseProvider):
     https://www.51dns.com/document/api/index.html
     """
 
-    API = "www.51dns.com"
+    API = "https://www.51dns.com"
     ContentType = TYPE_FORM
 
     def _signature(self, params):
@@ -40,7 +40,7 @@ class DnscomProvider(BaseProvider):
 
     def _request(self, action, **params):
         params = self._signature(params)
-        data = self._https("POST", "/api/{}/".format(action), body=params)
+        data = self._http("POST", "/api/{}/".format(action), body=params)
         if data is None or not isinstance(data, dict):
             raise Exception("response data is none")
         if data.get("code", 0) != 0:

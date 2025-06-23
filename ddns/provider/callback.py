@@ -68,17 +68,9 @@ class CallbackProvider(BaseProvider):
             method = "POST"
             self.ContentType = TYPE_JSON  # 设置 Content-Type 为 JSON
             params = self._replace_params(jsondecode(token), domain, record_type, value, ttl)
-        # 动态设置 API
 
-        URL = urlparse(url)
-        if URL.port:
-            self.API = "{}:{}".format(URL.hostname, URL.port)
-        else:
-            self.API = URL.hostname
-        self.UseHttps = URL.scheme == "https"
-        path = URL.path
         try:
-            res = self._https(method, path, params)
+            res = self._http(method, url, params)
         except Exception as e:
             logging.error("Callback error: %s", e)
             return False

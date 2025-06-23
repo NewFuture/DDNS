@@ -9,7 +9,7 @@ from ._base import BaseProvider, TYPE_JSON
 
 
 class CloudflareProvider(BaseProvider):
-    API = "api.cloudflare.com"
+    API = "https://api.cloudflare.com"
     ContentType = TYPE_JSON
 
     def _request(self, method, action, **params):
@@ -24,7 +24,7 @@ class CloudflareProvider(BaseProvider):
             headers["Authorization"] = "Bearer " + self.auth_token
 
         params = {k: v for k, v in params.items() if v is not None}  # 过滤掉None参数
-        data = self._https(method, "/client/v4/zones" + action, headers=headers, params=params)
+        data = self._http(method, "/client/v4/zones" + action, headers=headers, params=params)
         if data and data.get("success"):
             return data.get("result")  # 返回结果或原始数据
         else:

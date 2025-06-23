@@ -10,7 +10,7 @@ from ._base import BaseProvider, TYPE_FORM
 
 
 class HeProvider(BaseProvider):
-    API = "dyn.dns.he.net"
+    API = "https://dyn.dns.he.net"
     ContentType = TYPE_FORM
     DecodeResponse = False  # he.net response is plain text, not JSON
 
@@ -18,7 +18,7 @@ class HeProvider(BaseProvider):
         params.update({"password": "***"})
         logging.debug("%s: %s", self.API, params)
         params["password"] = self.auth_token  # Use auth_token as password
-        res = self._https("POST", "/nic/update", body=params)
+        res = self._http("POST", "/nic/update", body=params)
         if not res:
             raise Exception("empty response")
         elif res[:5] == "nochg" or res[:4] == "good":  # No change or success

@@ -17,7 +17,7 @@ from ._base import BaseProvider, TYPE_JSON
 
 
 class HuaweiDNSProvider(BaseProvider):
-    API = "dns.myhuaweicloud.com"
+    API = "https://dns.myhuaweicloud.com"
     ContentType = TYPE_JSON
     Algorithm = "SDK-HMAC-SHA256"
     Version = "v2.1"  # API version, used in request path
@@ -81,7 +81,7 @@ class HuaweiDNSProvider(BaseProvider):
         )
         headers["Authorization"] = auth_header
         logging.debug("Request headers: %s", headers)
-        data = self._https(method, path + "?" + query, headers=headers, body=body)
+        data = self._http(method, path + "?" + query, headers=headers, body=body)
         return data
 
     def _query_zone_id(self, domain):

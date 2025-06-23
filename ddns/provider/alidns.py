@@ -15,7 +15,7 @@ from ._base import BaseProvider, TYPE_FORM
 
 
 class AlidnsProvider(BaseProvider):
-    API = "alidns.aliyuncs.com"
+    API = "https://alidns.aliyuncs.com"
     ContentType = TYPE_FORM
 
     def _signature(self, params):
@@ -57,7 +57,7 @@ class AlidnsProvider(BaseProvider):
         params = {k: v for k, v in params.items() if v is not None}
         params["Action"] = action
         params = self._signature(params)
-        return self._https("POST", "/", body=params)
+        return self._http("POST", "/", body=params)
 
     def _query_zone_id(self, domain):
         """
