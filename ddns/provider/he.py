@@ -14,36 +14,23 @@ class HeProvider(BaseProvider):
     ContentType = TYPE_FORM
     DecodeResponse = False  # he.net response is plain text, not JSON
 
-    def _request(self, **params):
-        params.update({"password": "***"})
-        logging.debug("%s: %s", self.API, params)
-        params["password"] = self.auth_token  # Use auth_token as password
+    def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
+        """
+        更新或创建 DNS 记录，仅支持 A/AAAA 类型。
+        Update or create DNS record, only supports A/AAAA type.
+        """
+        logging.info("start update %s(%s) => %s", domain, record_type, value)
+        params = {
+            "hostname": domain,  # he.net requires full domain name
+            "myip": value,  # IP address to update
+            "password": self.auth_token,  # Use auth_token as password
+        }
+        logging.debug("HE Params: %s", params)
         res = self._http("POST", "/nic/update", body=params)
         if not res:
             raise Exception("empty response")
         elif res[:5] == "nochg" or res[:4] == "good":  # No change or success
             return res
         else:
+            logging.error("HE API error: %s", res)
             raise Exception(res)
-
-    def _query_zone_id(self, domain):
-        return domain
-
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
-        """
-        he.net 动态 DNS 不支持查询记录，直接返回。
-        he.net dynamic DNS does not support querying records, always return.
-        """
-        return {"name": self._join_domain(sub_domain, main_domain)}
-
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
-        return self._request(hostname=self._join_domain(sub_domain, main_domain), myip=value)
-
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
-        """
-        更新或创建 DNS 记录，仅支持 A/AAAA 类型。
-        Update or create DNS record, only supports A/AAAA type.
-        https://dns.he.net/docs.html
-        """
-        domain = old_record.get("name") or (zone_id)
-        return self._request(hostname=domain, myip=value)

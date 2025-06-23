@@ -127,14 +127,14 @@ def main():
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     init_config(__description__, __doc__, __version__, build_date)
 
-    log_level = get_config("log.level")
-    log_format = get_config("log.format")
+    log_level = get_config("log.level")  # type: int # type: ignore
+    log_format = get_config("log.format")  # type: str | None # type: ignore
     if log_format:
         # A custom log format is already set; no further action is required.
         pass
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
-        log_format = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
+        log_format = "%(asctime)s %(levelname)s [%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
     elif log_level > INFO:
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:

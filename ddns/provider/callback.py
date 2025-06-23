@@ -25,30 +25,6 @@ class CallbackProvider(BaseProvider):
 
     DecodeResponse = False  # Callback response is not JSON, it's a custom response
 
-    @staticmethod
-    def _replace_params(params, domain, record_type, ip, ttl=None, line=None, extra=None):
-        # type: (dict, str, str, str, int | None, str | None, dict | None) -> dict
-        """
-        替换参数中的特殊变量为实际值
-        Replace special variables in params with actual values
-        """
-        if extra is None:
-            extra = {}
-        extra.update(
-            {
-                "__DOMAIN__": domain,
-                "__RECORDTYPE__": record_type,
-                "__TTL__": ttl,
-                "__IP__": ip,
-                "__TIMESTAMP__": time(),
-                "__LINE__": line,
-            }
-        )
-        for k, v in params.items():
-            if isinstance(v, str) and v in extra:
-                params[k] = extra[v]
-        return params
-
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
         发送自定义回调请求，支持 GET/POST
@@ -80,3 +56,26 @@ class CallbackProvider(BaseProvider):
         else:
             logging.warning("Callback No Response")
             return False
+
+    def _replace_params(self, params, domain, record_type, ip, ttl=None, line=None, extra=None):
+        # type: (dict, str, str, str, int | None, str | None, dict | None) -> dict
+        """
+        替换参数中的特殊变量为实际值
+        Replace special variables in params with actual values
+        """
+        if extra is None:
+            extra = {}
+        extra.update(
+            {
+                "__DOMAIN__": domain,
+                "__RECORDTYPE__": record_type,
+                "__TTL__": ttl,
+                "__IP__": ip,
+                "__TIMESTAMP__": time(),
+                "__LINE__": line,
+            }
+        )
+        for k, v in params.items():
+            if isinstance(v, str) and v in extra:
+                params[k] = extra[v]
+        return params
