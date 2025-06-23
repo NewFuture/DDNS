@@ -9,7 +9,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, info, warning, error, debug, DEBUG, NOTSET
+from logging import basicConfig, info, warning, error, debug, INFO
 
 import sys
 
@@ -127,10 +127,17 @@ def main():
     init_config(__description__, __doc__, __version__, build_date)
 
     log_level = get_config('log.level')
-    log_format = get_config('log.format', '%(asctime)s %(levelname)s [%(module)s]: %(message)s')
-    # Override log format in debug mode to include filename and line number for detailed debugging
-    if (log_level == DEBUG or log_level == NOTSET) and not log_format:
-        log_format = '%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s'
+    log_format = get_config('log.format')
+    if log_format:
+        # A custom log format is already set; no further action is required.
+        pass
+    elif log_level < INFO:
+        # Override log format in debug mode to include filename and line number for detailed debugging
+        log_format = '%(asctime)s %(levelname)s [%(module)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s'
+    elif log_level > INFO:
+        log_format = '%(asctime)s %(levelname)s: %(message)s'
+    else:
+        log_format = '%(asctime)s %(levelname)s [%(module)s]: %(message)s'
     basicConfig(
         level=log_level,
         format=log_format,
