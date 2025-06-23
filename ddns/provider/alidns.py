@@ -66,10 +66,11 @@ class AlidnsProvider(BaseProvider):
         res = self._request("GetMainDomainName", InputString=domain)
         return res.get("DomainName")
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords
         """
+        extra = extra or {}
         data = self._request(
             "DescribeDomainRecords",
             DomainName=zone_id,
@@ -92,10 +93,11 @@ class AlidnsProvider(BaseProvider):
 
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord
         """
+        extra = extra or {}
         data = self._request(
             "AddDomainRecord",
             DomainName=zone_id,
@@ -112,10 +114,11 @@ class AlidnsProvider(BaseProvider):
         logging.error("Failed to create record: %s", data)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         """
         https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-updatedomainrecord
         """
+        extra = extra or {}
         data = self._request(
             "UpdateDomainRecord",
             RecordId=old_record.get("RecordId"),

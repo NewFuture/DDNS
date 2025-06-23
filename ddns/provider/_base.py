@@ -147,8 +147,8 @@ class BaseProvider(object):
         return domain
 
     @abstractmethod
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
-        # type: (str, str, str, str, str | None, dict) -> Any
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+        # type: (str, str, str, str, str | None, dict | None) -> Any
         """
         查询 DNS 记录 ID
 
@@ -165,8 +165,8 @@ class BaseProvider(object):
         raise NotImplementedError("This _query_record should be implemented by subclasses")
 
     @abstractmethod
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
         """
         创建新 DNS 记录
 
@@ -186,8 +186,8 @@ class BaseProvider(object):
         raise NotImplementedError("This _create_record should be implemented by subclasses")
 
     @abstractmethod
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         """
         更新已有 DNS 记录
 
@@ -320,8 +320,8 @@ class BaseProvider(object):
             raise Exception(res)
         return res
 
-    def _http(self, method, url, params=None, body=None, queries=None, headers={}):  # noqa: C901
-        # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]) -> Any
+    def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
+        # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -364,6 +364,7 @@ class BaseProvider(object):
         # 主体
         bodyData = None
         if body:
+            headers = headers or {}
             if "content-type" not in headers:
                 headers["content-type"] = self.ContentType
             if isinstance(body, str):

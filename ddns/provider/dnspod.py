@@ -19,8 +19,8 @@ class DnspodProvider(BaseProvider):
     ContentType = TYPE_FORM
     DefaultLine = "默认"
 
-    def _request(self, action, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
+    def _request(self, action, extra=None, **params):
+        # type: (str, dict | None, **(str | int | bytes | bool | None)) -> dict
         """
         发送请求数据
 
@@ -36,6 +36,8 @@ class DnspodProvider(BaseProvider):
         # if param:
         #     params.update(param)
         # 过滤掉None参数
+        if extra:
+            params.update(extra)
         params = {k: v for k, v in params.items() if v is not None}
         params.update(
             {"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json", "length": "3000"}
@@ -51,17 +53,17 @@ class DnspodProvider(BaseProvider):
             logging.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
             return data
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
         res = self._request(
             "Record.Create",
+            extra=extra,
             domain_id=zone_id,
             sub_domain=sub_domain,
             value=value,
             record_type=record_type,
             record_line=line or self.DefaultLine,
             ttl=ttl,
-            **extra
         )
         record = res and res.get("record")
         if record:
@@ -73,8 +75,8 @@ class DnspodProvider(BaseProvider):
             logging.error("Failed to create record: %s", res)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra={}):
-        # type: (str, dict, str, str, int | str | None, str | None, dict ) -> bool
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         record_line = (
             (line or old_record.get("line") or self.DefaultLine).replace("Default", "default").encode("utf-8")
         )
@@ -85,7 +87,7 @@ class DnspodProvider(BaseProvider):
             value=value,
             sub_domain=old_record.get("name"),
             record_line=record_line,
-            **extra
+            extra=extra,
         )
         record = res and res.get("record")
         if record:
@@ -102,8 +104,8 @@ class DnspodProvider(BaseProvider):
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra={}):
-        # type: (str, str, str, str, str | None, dict) -> dict | None
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+        # type: (str, str, str, str, str | None, dict | None) -> dict | None
         """
         查询记录 list 然后逐个查找
         """

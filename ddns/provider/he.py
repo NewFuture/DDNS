@@ -16,8 +16,8 @@ class HeProvider(BaseProvider):
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
-        更新或创建 DNS 记录，仅支持 A/AAAA 类型。
-        Update or create DNS record, only supports A/AAAA type.
+        使用 POST API 更新或创建 DNS 记录。
+        Update or create DNS record with POST API.
         """
         logging.info("start update %s(%s) => %s", domain, record_type, value)
         params = {
