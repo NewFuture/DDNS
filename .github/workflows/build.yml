@@ -144,7 +144,7 @@ jobs:
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
         with:
-          nuitka-version: ${{ runner.os == 'Windows' && '2.7.9' || 'main' }}
+          nuitka-version: ${{ runner.os == 'Windows' && '2.7.8' || 'main' }}
           script-name: run.py
           mode: onefile
           output-dir: dist
