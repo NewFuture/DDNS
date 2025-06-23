@@ -33,8 +33,6 @@ class DnspodProvider(BaseProvider):
         Returns:
             dict: 响应数据/Response data
         """
-        # if param:
-        #     params.update(param)
         # 过滤掉None参数
         if extra:
             params.update(extra)
