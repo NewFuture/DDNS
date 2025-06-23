@@ -129,7 +129,7 @@ def main():
     log_level = get_config('log.level')
     log_format = get_config('log.format')
     if log_format:
-        # No additional action needed if log_format is already set
+        # A custom log format is already set; no further action is required.
         pass
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
