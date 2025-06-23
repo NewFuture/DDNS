@@ -9,7 +9,6 @@ https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
 import logging
 from hashlib import sha256
 from hmac import new as hmac
-from binascii import hexlify
 from json import dumps as jsonencode
 from datetime import datetime
 
@@ -20,7 +19,6 @@ class HuaweiDNSProvider(BaseProvider):
     API = "https://dns.myhuaweicloud.com"
     ContentType = TYPE_JSON
     Algorithm = "SDK-HMAC-SHA256"
-    Version = "v2.1"  # API version, used in request path
 
     def _sign_headers(self, headers, signed_headers):
         a = []
@@ -40,7 +38,6 @@ class HuaweiDNSProvider(BaseProvider):
         return sha.hexdigest()
 
     def _request(self, method, path, **params):
-        path = self.Version + path  # Add API version to the path
         params = {k: v for k, v in params.items() if v is not None}  # Filter out None parameters
         if method.upper() == "GET" or method.upper() == "DELETE":
             params = sorted(params.items())
@@ -71,8 +68,7 @@ class HuaweiDNSProvider(BaseProvider):
 
         str_to_sign = "%s\n%s\n%s" % (self.Algorithm, headers["X-Sdk-Date"], hashed_canonical_request)
         secret = self.auth_token
-        signature = hmac(secret.encode("utf-8"), str_to_sign.encode("utf-8"), digestmod=sha256).digest()
-        signature = hexlify(signature).decode()
+        signature = hmac(secret.encode("utf-8"), str_to_sign.encode("utf-8"), digestmod=sha256).hexdigest()
         auth_header = "%s Access=%s, SignedHeaders=%s, Signature=%s" % (
             self.Algorithm,
             self.auth_id,
