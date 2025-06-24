@@ -6,13 +6,11 @@ https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
 @author: cybmp3, NewFuture
 """
 
-import logging
+from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
 from json import dumps as jsonencode
 from datetime import datetime
-
-from ._base import BaseProvider, TYPE_JSON
 
 
 class HuaweiDNSProvider(BaseProvider):
@@ -50,7 +48,7 @@ class HuaweiDNSProvider(BaseProvider):
         date_now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         headers = {
             "content-type": self.ContentType,
-            "host": self.API.split('://', 1)[1].strip('/'),
+            "host": self.API.split("://", 1)[1].strip("/"),
             "x-sdk-date": date_now,
         }
         sign_headers = [k.lower() for k in headers]
@@ -79,7 +77,7 @@ class HuaweiDNSProvider(BaseProvider):
             signature,
         )
         headers["Authorization"] = auth_header
-        logging.debug("Request headers: %s", headers)
+        self.logger.debug("Request headers: %s", headers)
         data = self._http(method, path + "?" + query, headers=headers, body=body)
         return data
 
@@ -132,9 +130,9 @@ class HuaweiDNSProvider(BaseProvider):
             **extra
         )
         if res and res.get("id"):
-            logging.info("Record created: %s", res)
+            self.logger.info("Record created: %s", res)
             return True
-        logging.warning("Failed to create record: %s", res)
+        self.logger.warning("Failed to create record: %s", res)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -154,7 +152,7 @@ class HuaweiDNSProvider(BaseProvider):
             **extra
         )
         if res and res.get("id"):
-            logging.info("Record updated: %s", res)
+            self.logger.info("Record updated: %s", res)
             return True
-        logging.warning("Failed to update record: %s", res)
+        self.logger.warning("Failed to update record: %s", res)
         return False

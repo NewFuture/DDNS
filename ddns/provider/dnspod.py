@@ -5,7 +5,6 @@ DNSPOD API
 @author: NewFuture
 """
 
-import logging
 from ._base import BaseProvider, TYPE_FORM
 
 
@@ -48,7 +47,7 @@ class DnspodProvider(BaseProvider):
             return data
         else:
             # 请求失败
-            logging.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
+            self.logger.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
             return data
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
@@ -66,11 +65,11 @@ class DnspodProvider(BaseProvider):
         record = res and res.get("record")
         if record:
             # 记录创建成功
-            logging.info("Record created: %s", record)
+            self.logger.info("Record created: %s", record)
             return True
         else:
             # 记录创建失败
-            logging.error("Failed to create record: %s", res)
+            self.logger.error("Failed to create record: %s", res)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -90,11 +89,11 @@ class DnspodProvider(BaseProvider):
         record = res and res.get("record")
         if record:
             # 记录更新成功
-            logging.debug("Record updated: %s", record)
+            self.logger.debug("Record updated: %s", record)
             return True
         else:
             # 记录更新失败
-            logging.error("Failed to update record: %s", res)
+            self.logger.error("Failed to update record: %s", res)
             return False
 
     def _query_zone_id(self, domain):
@@ -115,7 +114,7 @@ class DnspodProvider(BaseProvider):
                 record_line = record.get("line", "")
                 if line is None or record_line == line or record_line == "默认":
                     return record
-        logging.warning(
+        self.logger.warning(
             "No record found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
         )
         return None

@@ -149,7 +149,7 @@ def main():
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # dns provider class
-    dns_name = get_config("dns", "dnspod")  # type: str # type: ignore
+    dns_name = get_config("dns", "print")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
     debug("Using DNS provider: %s", provider_class.__name__)
     dns = provider_class(get_config("id"), get_config("token"))  # type: ignore

@@ -6,10 +6,9 @@ Custom Callback API
 @author: 老周部落, NewFuture
 """
 
-import logging
+from ._base import TYPE_FORM, TYPE_JSON, BaseProvider
 from json import loads as jsondecode
 from time import time
-from ._base import TYPE_FORM, TYPE_JSON, BaseProvider
 
 try:  # python 3
     from urllib.parse import urlparse, parse_qsl
@@ -30,7 +29,7 @@ class CallbackProvider(BaseProvider):
         发送自定义回调请求，支持 GET/POST
         Send custom callback request, support GET/POST
         """
-        logging.info("start update %s(%s) => %s", domain, record_type, value)
+        self.logger.info("start update %s(%s) => %s", domain, record_type, value)
         url = self.auth_id  # 直接用 auth_id 作为 url
         token = self.auth_token
         headers = {}
@@ -50,13 +49,13 @@ class CallbackProvider(BaseProvider):
         try:
             res = self._http(method, url, params=params, headers=headers)
         except Exception as e:
-            logging.error("Callback error: %s", e)
+            self.logger.error("Callback error: %s", e)
             return False
         if res:
-            logging.info("Callback result: %s", res)
+            self.logger.info("Callback result: %s", res)
             return True
         else:
-            logging.warning("Callback No Response")
+            self.logger.warning("Callback No Response")
             return False
 
     def _replace_params(self, params, domain, record_type, ip, ttl=None, line=None, extra=None):

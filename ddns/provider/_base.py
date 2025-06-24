@@ -109,8 +109,10 @@ class BaseProvider(object):
         self.auth_id = auth_id  # type: str
         self.auth_token = auth_token  # type: str
         self.options = options
-        self._zone_map = {}  # type: dict[str, str]
+        self.logger = logging.getLogger()
         self.proxy = None  # type: str | None
+        self._zone_map = {}  # type: dict[str, str]
+        self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None
@@ -224,7 +226,7 @@ class BaseProvider(object):
             Any: 执行结果
         """
         domain = domain.lower()
-        logging.info("start update %s(%s) => %s", domain, record_type, value)
+        self.logger.info("start update %s(%s) => %s", domain, record_type, value)
 
         sub, main = self._split_custom_domain(domain)
         if sub:
@@ -290,12 +292,11 @@ class BaseProvider(object):
             index += 1
         if zone_id:
             sub = ".".join(domain_split[: -index + 1]) or "@"
-            logging.info("zone_id: %s, sub: %s", zone_id, sub)
+            self.logger.info("zone_id: %s, sub: %s", zone_id, sub)
             return zone_id, sub
         return None, None
 
-    @staticmethod
-    def _send_request(url, method="GET", body=None, headers=None, proxy=None):
+    def _send_request(self, url, method="GET", body=None, headers=None, proxy=None):
         # type: (str, str, str | None, dict[str, str] | None, str | None) -> str
         """
         创建 HTTP/HTTPS 连接对象。
@@ -315,8 +316,8 @@ class BaseProvider(object):
         res = response.read().decode("utf-8")
         conn.close()
         if not (response.status >= 200 and response.status < 300):
-            logging.warning("%s : error[%d]: %s", url, response.status, response.reason)
-            logging.info(res)
+            self.logger.warning("%s : error[%d]: %s", url, response.status, response.reason)
+            self.logger.info(res)
             raise HTTPException(res)
         return res
 
@@ -337,7 +338,7 @@ class BaseProvider(object):
             Any: 解析后的响应内容
         """
         method = method.upper()
-        logging.info("[%s] %s : %s %s", method, url, queries, params)
+        self.logger.info("[%s] %s : %s %s", method, url, queries, params)
 
         # 自动处理参数
         if params:
@@ -350,7 +351,7 @@ class BaseProvider(object):
             elif body is None:
                 body = params
             else:
-                logging.error("params should not be used with body for %s method", method)
+                self.logger.error("params should not be used with body for %s method", method)
 
         # 拼接URL
         if queries and len(queries) > 0:
@@ -359,7 +360,7 @@ class BaseProvider(object):
             if not url.startswith("/") and self.API.endswith("/"):
                 url = "/" + url
             url = "{}{}".format(self.API, url)
-        logging.debug("url: %s", url)
+        self.logger.debug("url: %s", url)
 
         # 主体
         bodyData = None
@@ -374,19 +375,19 @@ class BaseProvider(object):
                 bodyData = self._encode(body)
             else:
                 bodyData = jsonencode(body)
-            logging.debug("body: %s", bodyData)
+            self.logger.debug("body: %s", bodyData)
 
         res = self._send_request(method=method, url=url, body=bodyData, headers=headers, proxy=self.proxy)
         if not self.DecodeResponse:
             # 如果不需要解码响应，则直接返回原始字符串
-            logging.debug("response: %s", res)
+            self.logger.debug("response: %s", res)
             return res
         try:
             data = jsondecode(res)
-            logging.debug("response: %s", data)
+            self.logger.debug("response: %s", data)
             return data
         except Exception as e:
-            logging.error("fail to decode response: %s", e)
+            self.logger.error("fail to decode response: %s", e)
             raise e
 
     @staticmethod

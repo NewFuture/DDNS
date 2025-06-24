@@ -4,7 +4,6 @@ CloudFlare API
 @author: TongYifan, NewFuture
 """
 
-import logging
 from ._base import BaseProvider, TYPE_JSON
 
 
@@ -28,7 +27,7 @@ class CloudflareProvider(BaseProvider):
         if data and data.get("success"):
             return data.get("result")  # 返回结果或原始数据
         else:
-            logging.warning("Cloudflare API error: %s", data.get("errors", "Unknown error"))
+            self.logger.warning("Cloudflare API error: %s", data.get("errors", "Unknown error"))
         return data
 
     def _query_zone_id(self, domain):
@@ -38,7 +37,7 @@ class CloudflareProvider(BaseProvider):
         params = {"name.exact": domain, "per_page": 50}
         zones = self._request("GET", "", **params)
         zone = next((z for z in zones if domain == z.get("name", "")), None)
-        logging.debug("Queried zone: %s", zone)
+        self.logger.debug("Queried zone: %s", zone)
         if zone:
             return zone["id"]
         return None
@@ -55,10 +54,10 @@ class CloudflareProvider(BaseProvider):
             query["proxied"] = extra.get("proxied", None)  # 代理状态
         data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=100000, **query)
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
-        logging.debug("Record queried: %s", record)
+        self.logger.debug("Record queried: %s", record)
         if record:
             return record
-        logging.warning("Failed to query record: %s", data)
+        self.logger.warning("Failed to query record: %s", data)
         return None
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
@@ -73,9 +72,9 @@ class CloudflareProvider(BaseProvider):
             "POST", "/{}/dns_records".format(zone_id), name=name, type=record_type, content=value, ttl=ttl, **extra
         )
         if data:
-            logging.info("Record created: %s", data)
+            self.logger.info("Record created: %s", data)
             return True
-        logging.error("Failed to create record: %s", data)
+        self.logger.error("Failed to create record: %s", data)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -97,7 +96,7 @@ class CloudflareProvider(BaseProvider):
             ttl=ttl,
             **extra
         )
-        logging.debug("Record updated: %s", data)
+        self.logger.debug("Record updated: %s", data)
         if data:
             return True
         return False

@@ -5,12 +5,9 @@ www.51dns.com (原dns.com)
 @author: Bigjin<i@bigjin.com>, NewFuture
 """
 
-from time import mktime
-from datetime import datetime
-import logging
-from hashlib import md5
-
 from ._base import BaseProvider, TYPE_FORM
+from time import time
+from hashlib import md5
 
 
 class DnscomProvider(BaseProvider):
@@ -30,7 +27,7 @@ class DnscomProvider(BaseProvider):
         params.update(
             {
                 "apiKey": self.auth_id,
-                "timestamp": mktime(datetime.now().timetuple()),
+                "timestamp": int(time()),  # 时间戳
             }
         )
         query = self._encode(sorted(params.items()))
@@ -52,7 +49,7 @@ class DnscomProvider(BaseProvider):
         https://www.51dns.com/document/api/74/31.html
         """
         res = self._request("domain/getsingle", domainID=domain)
-        logging.debug("Queried domain: %s", res)
+        self.logger.debug("Queried domain: %s", res)
         if res:
             return res.get("domainID")
         return None
@@ -89,9 +86,9 @@ class DnscomProvider(BaseProvider):
             **extra
         )
         if res and res.get("recordID"):
-            logging.info("Record created: %s", res)
+            self.logger.info("Record created: %s", res)
             return True
-        logging.error("Failed to create record: %s", res)
+        self.logger.error("Failed to create record: %s", res)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -104,7 +101,7 @@ class DnscomProvider(BaseProvider):
             "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
         )
         if res:
-            logging.info("Record updated: %s", res)
+            self.logger.info("Record updated: %s", res)
             return True
-        logging.error("Failed to update record: %s", res)
+        self.logger.error("Failed to update record: %s", res)
         return False

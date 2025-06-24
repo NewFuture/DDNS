@@ -5,13 +5,11 @@ AliDNS API
 @author: NewFuture
 """
 
-import logging
+from ._base import BaseProvider, TYPE_FORM
 from hashlib import sha1
 from hmac import new as hmac
 from base64 import b64encode
 from datetime import datetime
-
-from ._base import BaseProvider, TYPE_FORM
 
 
 class AlidnsProvider(BaseProvider):
@@ -42,11 +40,11 @@ class AlidnsProvider(BaseProvider):
         )
         query = self._encode(sorted(params.items()))
         query = query.replace("+", "%20")
-        logging.debug("query: %s", query)
+        self.logger.debug("query: %s", query)
         # sign = "POST&" + quote_plus("/") + "&" + quote(query, safe="")
         sign = "POST&%2F&" + self._quote(query, safe="")
 
-        logging.debug("sign: %s", sign)
+        self.logger.debug("sign: %s", sign)
         sign = hmac((self.auth_token + "&").encode("utf-8"), sign.encode("utf-8"), sha1).digest()
         sign = b64encode(sign).strip().decode()
         params["Signature"] = sign
@@ -83,11 +81,11 @@ class AlidnsProvider(BaseProvider):
         )
         records = data.get("DomainRecords", {}).get("Record", [])
         if not records:
-            logging.warning(
+            self.logger.warning(
                 "No records found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
             )
         elif not isinstance(records, list):
-            logging.error("Invalid records format: %s", records)
+            self.logger.error("Invalid records format: %s", records)
         else:
             return next((r for r in records if r.get("RR") == sub_domain), None)
 
@@ -109,9 +107,9 @@ class AlidnsProvider(BaseProvider):
             **extra
         )
         if data and data.get("RecordId"):
-            logging.info("Record created: %s", data)
+            self.logger.info("Record created: %s", data)
             return True
-        logging.error("Failed to create record: %s", data)
+        self.logger.error("Failed to create record: %s", data)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -130,7 +128,7 @@ class AlidnsProvider(BaseProvider):
             **extra
         )
         if data and data.get("RecordId"):
-            logging.info("Record updated: %s", data)
+            self.logger.info("Record updated: %s", data)
             return True
-        logging.error("Failed to update record: %s", data)
+        self.logger.error("Failed to update record: %s", data)
         return False
