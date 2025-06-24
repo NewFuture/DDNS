@@ -8,7 +8,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, info, error, debug, INFO
+from logging import basicConfig, getLogger, info, error, debug, INFO
 
 import sys
 
@@ -134,7 +134,7 @@ def main():
         pass
     elif log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
-        log_format = "%(asctime)s %(levelname)s [%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
+        log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
     elif log_level > INFO:
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
@@ -145,6 +145,8 @@ def main():
         datefmt=get_config("log.datefmt", "%Y-%m-%dT%H:%M:%S"),  # type: ignore
         filename=get_config("log.file"),  # type: ignore
     )
+    logger = getLogger()
+    logger.name = "ddns"
 
     info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
@@ -159,13 +161,13 @@ def main():
     proxy = get_config("proxy") or "DIRECT"
     proxy_list = proxy if isinstance(proxy, list) else proxy.strip(";").replace(",", ";").split(";")
 
-    cache_config = get_config("cache", True)
+    cache_config = get_config("cache", True)  # type: bool | str  # type: ignore
     if cache_config is False:
         cache = None
     elif cache_config is True:
-        cache = Cache(path.join(gettempdir(), "ddns.cache"))
+        cache = Cache(path.join(gettempdir(), "ddns.cache"), logger)
     else:
-        cache = Cache(cache_config)
+        cache = Cache(cache_config, logger)
 
     if cache is None:
         info("Cache is disabled!")

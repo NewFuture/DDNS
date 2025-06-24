@@ -53,7 +53,7 @@ Defines a unified interface to support extension and adaptation across providers
 from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
-import logging
+from logging import Logger
 
 try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection, HTTPException
@@ -83,9 +83,9 @@ class BaseProvider(object):
     __metaclass__ = ABCMeta
 
     # API endpoint domain (to be defined in subclass)
-    API = ""  # https://api.example.com
+    API = ""  # type: str # https://exampledns.com
     # Content-Type for requests (to be defined in subclass)
-    ContentType = TYPE_FORM
+    ContentType = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
     # Decode Response as JSON by default
     DecodeResponse = True
 
@@ -94,8 +94,8 @@ class BaseProvider(object):
     # Description
     Remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(Version)
 
-    def __init__(self, auth_id, auth_token, **options):
-        # type: (str, str, **object) -> None
+    def __init__(self, auth_id, auth_token, logger=None, **options):
+        # type: (str, str, Logger | None, **object) -> None
         """
         初始化服务商对象
 
@@ -109,7 +109,8 @@ class BaseProvider(object):
         self.auth_id = auth_id  # type: str
         self.auth_token = auth_token  # type: str
         self.options = options
-        self.logger = logging.getLogger()
+        name = self.__class__.__name__
+        self.logger = logger.getChild(name) if logger else Logger(name)
         self.proxy = None  # type: str | None
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)

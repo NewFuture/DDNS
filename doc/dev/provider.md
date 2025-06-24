@@ -94,7 +94,7 @@ class MyProvider(BaseProvider):
 
 非标准实现可参考:
     - [`provider/he.py`](/ddns/provider/he.py): 简单更新记录
-    - [`provider/print.py`](/ddns/provider/print.py): 打印IP地址到控制台
+    - [`provider/denig.py`](/ddns/provider/denig.py): 打印IP地址到控制台
 
 ```python
 #coding=utf-8
