@@ -56,10 +56,10 @@ from json import loads as jsondecode, dumps as jsonencode
 import logging
 
 try:  # python 3
-    from http.client import HTTPSConnection, HTTPConnection
+    from http.client import HTTPSConnection, HTTPConnection, HTTPException
     from urllib.parse import quote, urlencode, urlparse
 except ImportError:  # python 2
-    from httplib import HTTPSConnection, HTTPConnection  # type: ignore[no-redef,import-untyped]
+    from httplib import HTTPSConnection, HTTPConnection, HTTPException  # type: ignore[no-redef,import-untyped]
     from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
     from urlparse import urlparse  # type: ignore[no-redef,import-untyped]
 
@@ -317,7 +317,7 @@ class BaseProvider(object):
         if not (response.status >= 200 and response.status < 300):
             logging.warning("%s : error[%d]: %s", url, response.status, response.reason)
             logging.info(res)
-            raise Exception(res)
+            raise HTTPException(res)
         return res
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901

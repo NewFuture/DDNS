@@ -22,14 +22,14 @@ class HuaweiDNSProvider(BaseProvider):
 
     def _sign_headers(self, headers, signed_headers):
         a = []
-        __headers = {}
+        _headers = {}
         for key in headers:
             key_encoded = key.lower()
             value = headers[key]
             value_encoded = value.strip()
-            __headers[key_encoded] = value_encoded
+            _headers[key_encoded] = value_encoded
         for key in signed_headers:
-            a.append(key + ":" + __headers[key])
+            a.append(key + ":" + _headers[key])
         return "\n".join(a) + "\n"
 
     def _hex_encode_sha256(self, data):
@@ -47,9 +47,12 @@ class HuaweiDNSProvider(BaseProvider):
             query = ""
             body = jsonencode(params)
 
-        headers = {"content-type": self.ContentType}
-        headers["X-Sdk-Date"] = datetime.strftime(datetime.utcnow(), "%Y%m%dT%H%M%SZ")
-        headers["host"] = self.API
+        date_now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        headers = {
+            "content-type": self.ContentType,
+            "host": self.API.split('://', 1)[1].strip('/'),
+            "x-sdk-date": date_now,
+        }
         sign_headers = [k.lower() for k in headers]
         sign_headers.sort()
 
@@ -66,7 +69,7 @@ class HuaweiDNSProvider(BaseProvider):
         )
         hashed_canonical_request = self._hex_encode_sha256(canonical_request.encode("utf-8"))
 
-        str_to_sign = "%s\n%s\n%s" % (self.Algorithm, headers["X-Sdk-Date"], hashed_canonical_request)
+        str_to_sign = "%s\n%s\n%s" % (self.Algorithm, date_now, hashed_canonical_request)
         secret = self.auth_token
         signature = hmac(secret.encode("utf-8"), str_to_sign.encode("utf-8"), digestmod=sha256).hexdigest()
         auth_header = "%s Access=%s, SignedHeaders=%s, Signature=%s" % (

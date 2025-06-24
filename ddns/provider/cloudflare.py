@@ -53,7 +53,7 @@ class CloudflareProvider(BaseProvider):
         query = {"name.exact": name}  # type: dict[str, str|None]
         if extra:
             query["proxied"] = extra.get("proxied", None)  # 代理状态
-        data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=500000, **query)
+        data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=100000, **query)
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
         logging.debug("Record queried: %s", record)
         if record:

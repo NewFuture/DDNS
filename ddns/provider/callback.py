@@ -33,20 +33,22 @@ class CallbackProvider(BaseProvider):
         logging.info("start update %s(%s) => %s", domain, record_type, value)
         url = self.auth_id  # 直接用 auth_id 作为 url
         token = self.auth_token
+        headers = {}
         if not token:
-            # GET 方式，URL query 透传
+            # GET 方式，URL query 传参
             method = "GET"
-            self.ContentType = TYPE_FORM  # 设置 Content-Type 为 FORM
+            headers["content-type"] = TYPE_FORM
             query = dict(parse_qsl(urlparse(url).query))
             params = self._replace_params(query, domain, record_type, value, ttl)
         else:
             # POST 方式，token 作为 POST 参数
             method = "POST"
-            self.ContentType = TYPE_JSON  # 设置 Content-Type 为 JSON
-            params = self._replace_params(jsondecode(token), domain, record_type, value, ttl)
+            headers["content-type"] = TYPE_JSON
+            params = token if isinstance(token, dict) else jsondecode(token)
+            params = self._replace_params(params, domain, record_type, value, ttl)
 
         try:
-            res = self._http(method, url, params)
+            res = self._http(method, url, params=params, headers=headers)
         except Exception as e:
             logging.error("Callback error: %s", e)
             return False
