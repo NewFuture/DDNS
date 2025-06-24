@@ -57,52 +57,54 @@
 
 推荐 Docker 版，兼容性最佳，体积小，性能优化。
 
+- #### Docker（需要安装 Docker）
+
+  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
+
+  <details>
+  <summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
+
+    - 命令行cli
+
+      ```sh
+      docker run newfuture/ddns -h
+      ```
+
+    - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
+    
+      ```sh
+      docker run -d -v /host/config/:/ddns/ --network host newfuture/ddns
+      ```
+
+    - 使用环境变量：
+
+      ```sh
+      docker run -d \
+        -e DDNS_DNS=dnspod \
+        -e DDNS_ID=12345 \
+        -e DDNS_TOKEN=mytokenkey \
+        -e DDNS_IPV4=ddns.newfuture.cc \
+        --network host \
+        newfuture/ddns
+      ```
+
+  </details>
+
 - #### pip 安装（需要 pip 或 easy_install）
 
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
-  2. 运行: `ddns -h` 或者 `pip -m ddns`
+  2. 运行: `ddns -h` 或者 `python -m ddns`
 
 - #### 二进制版（单文件，无需 python）
 
-> 前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
+  前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### 源码运行（无任何依赖，需 python 环境）
 
   1. clone 或者 [下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip) 并解压
   2. 运行 `python run.py` 或者 `python -m ddns`
 
-- #### Docker（需要安装 Docker）
 
-  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
-
-<details>
-<summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
-
-  - 命令行cli
-
-    ```sh
-    docker run newfuture/ddns -h
-    ```
-
-  - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
-  
-    ```sh
-    docker run -d -v /host/config/:/ddns/ --network host newfuture/ddns
-    ```
-
-  - 使用环境变量：
-
-    ```sh
-    docker run -d \
-      -e DDNS_DNS=dnspod \
-      -e DDNS_ID=12345 \
-      -e DDNS_TOKEN=mytokenkey \
-      -e DDNS_IPV4=ddns.newfuture.cc \
-      --network host \
-      newfuture/ddns
-    ```
-
-</details>
 
 ### ② 快速配置
 
