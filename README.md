@@ -60,20 +60,35 @@
 - #### pip 安装（需要 pip 或 easy_install）
 
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
-  2. 运行: `ddns`
+  2. 运行: `ddns -h` 或者 `pip -m ddns`
 
 - #### 二进制版（单文件，无需 python）
 
-  - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
-  - Linux（仅 Ubuntu 测试） [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-  - Mac OSX [ddns-mac](https://github.com/NewFuture/DDNS/releases/latest)
+> 前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### 源码运行（无任何依赖，需 python 环境）
 
   1. clone 或者 [下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip) 并解压
-  2. 运行 ./run.py（windows 双击 `run.bat` 或者运行 `python run.py`）
+  2. 运行 `python run.py` 或者 `python -m ddns`
 
 - #### Docker（需要安装 Docker）
+
+  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
+
+<details>
+<summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
+
+  - 命令行cli
+
+    ```sh
+    docker run newfuture/ddns -h
+    ```
+
+  - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
+  
+    ```sh
+    docker run -d -v /host/config/:/ddns/ --network host newfuture/ddns
+    ```
 
   - 使用环境变量：
 
@@ -83,31 +98,21 @@
       -e DDNS_ID=12345 \
       -e DDNS_TOKEN=mytokenkey \
       -e DDNS_IPV4=ddns.newfuture.cc \
-      -e DDNS_IPV6=ddns.newfuture.cc \
       --network host \
       newfuture/ddns
     ```
 
-  - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
-
-    ```sh
-    docker run -d \
-      -v /local/config/path/:/ddns/ \
-      --network host \
-      newfuture/ddns
-    ```
-
-  更多详细说明和高级用法请查看 [Docker 使用文档](doc/docker.md)。
+</details>
 
 ### ② 快速配置
 
 1. 申请 api `token`，填写到对应的 `id` 和 `token` 字段:
 
-   - [DNSPOD(国内版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
+   - [DNSPOD(中国版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
    - [阿里云 accesskey](https://help.aliyun.com/document_detail/87745.htm)
    - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
    - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
-   - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，需要列出 Zone 权限）
+   - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
    - [HE.net DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
    - [华为 APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
    - 自定义回调的参数填写方式请查看下方的自定义回调配置说明
@@ -130,7 +135,7 @@
 - **JSON配置文件**：介于命令行和环境变量之间，会覆盖环境变量中的设置
 - **环境变量**：优先级最低，当其他方式未设置时使用
 
-**特殊情况**：
+**高级用法**：
 - JSON配置中明确设为`null`的值会覆盖环境变量设置
 - `debug`参数只在命令行中有效，JSON配置文件中的同名设置无效
 - 多值参数（如`ipv4`、`ipv6`等）在命令行中使用方式为重复使用参数，如`--ipv4 domain1 --ipv4 domain2`
@@ -149,8 +154,8 @@
 
 ```bash
 ddns -c path/to/config.json
-# 或者源码运行
-python run.py -c /path/to/config.json
+# 或者python运行
+python -m ddns -c /path/to/config.json
 ```
 
 #### 配置参数表
