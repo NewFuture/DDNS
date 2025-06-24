@@ -8,7 +8,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, info, warning, error, debug, INFO
+from logging import basicConfig, info, error, debug, INFO
 
 import sys
 
@@ -151,7 +151,6 @@ def main():
     # dns provider class
     dns_name = get_config("dns", "print")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
-    debug("Using DNS provider: %s", provider_class.__name__)
     dns = provider_class(get_config("id"), get_config("token"))  # type: ignore
 
     if get_config("config"):
@@ -171,7 +170,7 @@ def main():
     if cache is None:
         info("Cache is disabled!")
     elif get_config("config_modified_time", float("inf")) >= cache.time:  # type: ignore
-        warning("Cache file is outdated.")
+        info("Cache file is outdated.")
         cache.clear()
     else:
         debug("Cache is empty.")

@@ -15,87 +15,119 @@ ddns/
 
 ## 🚀 快速开始
 
-### 1. 创建新类并继承 `BaseProvider`
+支持两种实现
 
-```python
-# providers/myprovider.py
+1. 标准DNS: 自动查询是否存在，自动创建，修改DNS记录
+2. 非标准DNS: 只能特定操作，不支持查询和创建
 
-from ._base import BaseProvider, TYPE_JSON, TYPE_FORM
-
-class MyProvider(BaseProvider):
-    # 设置 API 域名
-    API = 'api.exampledns.com'
-    # 设置 Content-Type
-    ContentType = TYPE_FORM  # 或 TYPE_JSON
-
-    def _query_zone_id(self, domain):
-        # 调用 API 查询 zone_id
-        return "zone123"
-
-    def _query_record_id(self, zone_id, sub, record_type, line=None):
-        # 查询记录 ID，如果存在则返回，否则返回 None
-        return "record456"
-
-    def _create_record(self, zone_id, sub, value, record_type, ttl=None, line=None, extra=None):
-        # 创建 DNS 记录的 API 调用逻辑
-        return {"status": "created"}
-
-    def _update_record(self, zone_id, record_id, value, record_type, ttl=None, line=None, extra=None):
-        # 更新 DNS 记录的 API 调用逻辑
-        res = self._https("POST", "/v1/record/update", key="value")
-        return {"status": "updated"}
-```
-
-> 所有请求都通过 `_https(method, url, _headers=None, **params)` 方法发送， 以实现代理和ssl的自动配置和切换。
->
-> 如需要,可再封装一层API请求方法。
-
----
-
-## ✏️ 必须实现的抽象方法
-
-每个子类都必须实现以下方法：
+### 1. 标准DNS每个子类都必须实现以下方法：
 
 | 方法 | 说明 |
 |------|------|
-| `_update_record(zone_id, record_id, value, record_type, ...)` | 更新记录 |
-| `_create_record(zone_id, sub, value, record_type, ...)` | 创建记录 |
-| `_query_record_id(zone_id, sub, record_type, line=None)` | 查询 DNS 记录的 ID |
-| `_query_zone_id(domain)` | 根据域名查询所属 zone 区域 ID |
+| `_query_zone_id(domain)` | **查询主域名的Id** (zone_id) |
+| `_query_record(zone_id, sub_domain, main_domain, record_type, line=None, extra=None)` | **查询当前 DNS 记录** |
+| `_create_record(zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None)` | 创建记录 |
+| `_update_record(zone_id, old_record, value, record_type, ttl=None, line=None, extra=None)` | **更新记录** |
+
+### 2. 非标准DNS
+
+每个子类只需实现以下方法：
+| 方法 | 说明 |
+|------|------|
+| `set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):` | 更新记录 |
+
+
+## 🔧 例子
+
+### 标准DNS Provider
+
+标准实现可参考
+   - [`providers/dnspod.py`](/ddns/provider/dnspod.py): POST 表单数据，无签名
+   - [`provider/cloudflare.py`](/ddns/provider/cloudflare.py): RESTful JSON，无签名
+   - [`provider/alidns.py`](/ddns/provider/alidns.py): POST 表单+sha256参数签名
+   - [`provider/huaweidns.py`](/ddns/provider/huaweidns.py): RESTful JSON，参数header签名
+
+> provider/myprovider.py
+```python
+#coding=utf-8
+"""
+自定义 DNS 服务商示例
+@author: YourGithubUsername
+"""
+from ._base import BaseProvider, TYPE_JSON
+class MyProvider(BaseProvider):
+    API = 'https://api.exampledns.com'
+    ContentType = TYPE_JSON  # 或 TYPE_FORM
+
+    def _request(self, action, **params):
+        # type: (str, **(str | int | bytes | bool | None)) -> dict
+        """
+        [可选]推荐，请求认证和参数封装，添加公共请求头和身份验证信息。
+        """
+
+    def _query_zone_id(self, domain):
+        # type: (str) -> str
+        """
+        查询主域名的Id（zone_id），返回字符串类型的 zone_id。
+        """
+
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+        # type: (str, str, str, int | None, str | None, dict | None) -> Any
+        """
+        查询当前 DNS 记录，返回记录信息。
+        """
+
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
+        """
+        创建 DNS 记录，返回是否成功的布尔值。
+        """
+
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
+        """
+        更新 DNS 记录，返回是否成功的布尔值。
+        """
+```
+
+### 非标准DNS Provider
+
+非标准实现可参考:
+    - [`provider/he.py`](/ddns/provider/he.py): 简单更新记录
+    - [`provider/print.py`](/ddns/provider/print.py): 打印IP地址到控制台
+
+```python
+#coding=utf-8
+"""
+自定义非标准 DNS 服务商示例
+@author: YourGithubUsername
+"""
+from ._base import BaseProvider
+class MyProvider(BaseProvider):
+
+    def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
+        # type: (str, str, str, int | None, str | None, dict | None) -> bool
+        """
+        更新 DNS 记录，返回是否成功的布尔值。
+        """
+        # 实现更新逻辑
+        pass
+```
 
 ---
 
 ## ✅ 推荐实现细节
 
-### 设置 API 域名
-```python
-API = "api.example.com"
-```
-
-### 设置 Content-Type（默认表单，可选 JSON）
-```python
-ContentType = TYPE_JSON  # 或 TYPE_FORM
-```
-
-### 使用内置 HTTPS 请求工具
-
-```python
-self._https("POST", "/v1/record/create", _headers={"Authorization": "Token ..."}, key="value"...)
-```
-
-
-## 🧪 调试建议
-
-- 使用 `logging` 打印 debug 信息
-- 推荐开启详细日志级别：
-
+- 推荐在 `_request` 方法中封装请求逻辑，处理认证、参数封装、公共请求头等。
+- 调用方法中使用 `self.logger` 记录日志，便于调试和排查问题。
+- 务必通过 `self._http(...)` 方法发送，自动处理代理、编码、异常和日志。
+- 支持 `Remark` (备注) 字段的，在创建或者更新时候，同步Remark。
+- 内置 `set_record(domain, value, ...)` 方法，标准DNS无需重复实现。
 
 ---
 
-## 📚 参考示例
+## 🧪 调试建议
 
-你可以参考以下示例作：
+- 使用 `self.logger.info/debug/warning/error` 打印日志。
+- 推荐在开发和测试时设置日志级别为 DEBUG
 
-- `Dnspod`: post form 数据，无签名
-- `Cloudflare`：restful json 格式，无签名
-- `AliDNS`：post form 参数签名
