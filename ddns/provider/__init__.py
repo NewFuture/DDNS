@@ -22,7 +22,7 @@ def get_provider_class(provider_name):
     mapping = {
         # dnspod.cn
         "dnspod": DnspodProvider,
-        "dnspod_cn": DnspodComProvider,  # 兼容旧的dnspod_cn
+        "dnspod_cn": DnspodProvider,  # 兼容旧的dnspod_cn
         # dnspod.com
         "dnspod_com": DnspodComProvider,
         "dnspod_global": DnspodComProvider,  # 兼容旧的dnspod_global
