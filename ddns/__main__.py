@@ -127,7 +127,7 @@ def main():
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     init_config(__description__, __doc__, __version__, build_date)
 
-    log_level = get_config("log.level")  # type: int # type: ignore
+    log_level = get_config("log.level", INFO)  # type: int # type: ignore
     log_format = get_config("log.format")  # type: str | None # type: ignore
     if log_format:
         # A custom log format is already set; no further action is required.
