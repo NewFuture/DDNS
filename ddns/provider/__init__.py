@@ -8,7 +8,7 @@ from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
-from .print import PrintProvider
+from .debug import DebugProvider
 
 
 def get_provider_class(provider_name):
@@ -47,8 +47,8 @@ def get_provider_class(provider_name):
         "callback": CallbackProvider,
         "webhook": CallbackProvider,  # 兼容
         "http": CallbackProvider,  # 兼容
-        # print
-        "print": PrintProvider,
-        "debug": PrintProvider,  # 兼容debug
+        # debug
+        "print": DebugProvider,
+        "debug": DebugProvider,  # 兼容print
     }
     return mapping.get(provider_name)  # type: ignore[return-value]

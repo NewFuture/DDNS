@@ -283,7 +283,7 @@ def generate_config(config_path):
         "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
         "id": "YOUR ID or EMAIL for DNS Provider",
         "token": "YOUR TOKEN or KEY for DNS Provider",
-        "dns": "print",  # DNS Provider, default is print
+        "dns": "debug",  # DNS Provider, default is print
         "ipv4": ["newfuture.cc", "ddns.newfuture.cc"],
         "ipv6": ["newfuture.cc", "ipv6.ddns.newfuture.cc"],
         "index4": "default",

@@ -7,7 +7,7 @@ PrintProvider
 from ._base import BaseProvider
 
 
-class PrintProvider(BaseProvider):
+class DebugProvider(BaseProvider):
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         self.logger.debug("PrintProvider: %s(%s) => %s", domain, record_type, value)
