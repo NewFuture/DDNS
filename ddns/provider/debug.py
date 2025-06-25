@@ -9,6 +9,12 @@ from ._base import BaseProvider
 
 class DebugProvider(BaseProvider):
 
+    def _validate(self):
+        """
+        无需任何验证
+        """
+        pass
+
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         self.logger.debug("PrintProvider: %s(%s) => %s", domain, record_type, value)
         ip_type = "IPv4" if record_type == "A" else "IPv6" if record_type == "AAAA" else ""

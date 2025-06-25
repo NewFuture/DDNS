@@ -13,6 +13,9 @@ class HeProvider(BaseProvider):
     ContentType = TYPE_FORM
     DecodeResponse = False  # he.net response is plain text, not JSON
 
+    def _validate(self):
+        pass
+
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
         使用 POST API 更新或创建 DNS 记录。

@@ -10,11 +10,6 @@ from ._base import TYPE_JSON, BaseProvider
 from json import loads as jsondecode
 from time import time
 
-try:  # python 3
-    from urllib.parse import urlparse
-except ImportError:  # python 2
-    from urlparse import urlparse  # type: ignore[no-redef,import]
-
 
 class CallbackProvider(BaseProvider):
     """
@@ -32,24 +27,30 @@ class CallbackProvider(BaseProvider):
         """
         self.logger.info("start update %s(%s) => %s", domain, record_type, value)
         url = self.auth_id  # 直接用 auth_id 作为 url
-        token = self.auth_token
-        headers = {}
+        token = self.auth_token  # auth_token 作为 POST 参数
+        extra.update(
+            {
+                "__DOMAIN__": domain,
+                "__RECORDTYPE__": record_type,
+                "__TTL__": ttl,
+                "__IP__": value,
+                "__TIMESTAMP__": time(),
+                "__LINE__": line,
+            }
+        )
         if not token:
             # GET 方式，URL query 传参
             method = "GET"
-            query = urlparse(url).query
-            params = self._replace_params(query, domain, record_type, value, ttl)
+            url = self._replace_vars(url, extra)
+            res = self._http(method, url)
         else:
             # POST 方式，token 作为 POST 参数
             method = "POST"
             params = token if isinstance(token, dict) else jsondecode(token)
-            params = self._replace_params(params, domain, record_type, value, ttl)
-
-        try:
-            res = self._http(method, url, params=params, headers=headers)
-        except Exception as e:
-            self.logger.error("Callback error: %s", e)
-            return False
+            for k, v in params.items():
+                if isinstance(v, str):
+                    params[k] = self._replace_vars(v, extra)
+            res = self._http(method, url, params=params)
         if res:
             self.logger.info("Callback result: %s", res)
             return True
@@ -57,30 +58,16 @@ class CallbackProvider(BaseProvider):
             self.logger.warning("Callback No Response")
             return False
 
-    def _replace_params(self, params, domain, record_type, ip, ttl=None, line=None, extra=None):
-        # type: (dict|str, str, str, str, int | None, str | None, dict | None) -> dict
+    def _replace_vars(self, str, mapping):
+        # type: (str, dict) -> str
         """
-        替换参数中的特殊变量为实际值
-        Replace special variables in params with actual values
+        替换字符串中的变量为实际值
+        Replace variables in string with actual values
         """
-        if extra is None:
-            extra = {}
-        extra.update(
-            {
-                "__DOMAIN__": domain,
-                "__RECORDTYPE__": record_type,
-                "__TTL__": ttl,
-                "__IP__": ip,
-                "__TIMESTAMP__": time(),
-                "__LINE__": line,
-            }
-        )
-        if isinstance(params, str):
-            for rk, rv in extra.items():
-                params = params.replace(rk, rv)
-        else:
-            for k, v in params.items():
-                if isinstance(v, str):
-                    for rk, rv in extra.items():
-                        params[k] = v.replace(rk, rv)
-        return params
+        for k, v in mapping.items():
+            str = str.replace(k, v)
+        return str
+
+    def _validate(self):
+        if not self.auth_id:
+            raise ValueError("id must be configured")

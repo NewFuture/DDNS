@@ -114,6 +114,7 @@ class BaseProvider(object):
         self.proxy = None  # type: str | None
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
+        self._validate()  # 验证身份认证信息
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None
@@ -273,6 +274,20 @@ class BaseProvider(object):
         self.proxy = proxy_str
         return self
 
+    def _validate(self):
+        # type: () -> None
+        """
+        验证身份认证信息是否填写
+
+        Validate authentication credentials.
+        """
+        if not self.auth_id:
+            raise ValueError("id must be configured")
+        if not self.auth_token:
+            raise ValueError("token must be configured")
+        if not self.API:
+            raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
+
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None]
         """
@@ -324,7 +339,7 @@ class BaseProvider(object):
         return res
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
-        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,str]|None) -> Any
+        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -343,18 +358,26 @@ class BaseProvider(object):
         self.logger.info("[%s] %s : %s %s", method, url, queries, params)
 
         # 自动处理参数
+        query_str = ""
         if params:
             if method in ("GET", "DELETE"):
                 # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
-                queries = queries.update(params) if queries else params
+                if not isinstance(params, str):
+                    # 如果 params 已经是字符串，则直接使用
+                    queries = queries.update(params) if queries else params
+                elif queries is None:
+                    query_str = params
+                else:
+                    self.logger.error("params should not be used with queries for %s method", method)
             elif body is None:
                 body = params
             else:
                 self.logger.error("params should not be used with body for %s method", method)
+        query_str = query_str or self._encode(queries)
 
         # 拼接URL
-        if queries and len(queries) > 0:
-            url += ("&" if "?" in url else "?") + self._encode(queries)
+        if query_str:
+            url += ("&" if "?" in url else "?") + query_str
         if not url.startswith("http://") and not url.startswith("https://"):
             if not url.startswith("/") and self.API.endswith("/"):
                 url = "/" + url
@@ -431,7 +454,7 @@ class BaseProvider(object):
 
     @staticmethod
     def _encode(params):
-        # type: (dict|list|str) -> str
+        # type: (dict|list|str|None) -> str
         """
         编码参数为 URL 查询字符串
 
