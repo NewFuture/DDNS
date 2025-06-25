@@ -6,7 +6,7 @@ Custom Callback API
 @author: 老周部落, NewFuture
 """
 
-from ._base import TYPE_FORM, TYPE_JSON, BaseProvider
+from ._base import TYPE_JSON, BaseProvider
 from json import loads as jsondecode
 from time import time
 
@@ -22,6 +22,7 @@ class CallbackProvider(BaseProvider):
     Generic custom callback provider, supports GET/POST arbitrary API.
     """
 
+    ContentType = TYPE_JSON
     DecodeResponse = False  # Callback response is not JSON, it's a custom response
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
@@ -36,13 +37,11 @@ class CallbackProvider(BaseProvider):
         if not token:
             # GET 方式，URL query 传参
             method = "GET"
-            headers["content-type"] = TYPE_FORM
-            query = dict(parse_qsl(urlparse(url).query))
+            query = urlparse(url).query
             params = self._replace_params(query, domain, record_type, value, ttl)
         else:
             # POST 方式，token 作为 POST 参数
             method = "POST"
-            headers["content-type"] = TYPE_JSON
             params = token if isinstance(token, dict) else jsondecode(token)
             params = self._replace_params(params, domain, record_type, value, ttl)
 
@@ -59,7 +58,7 @@ class CallbackProvider(BaseProvider):
             return False
 
     def _replace_params(self, params, domain, record_type, ip, ttl=None, line=None, extra=None):
-        # type: (dict, str, str, str, int | None, str | None, dict | None) -> dict
+        # type: (dict|str, str, str, str, int | None, str | None, dict | None) -> dict
         """
         替换参数中的特殊变量为实际值
         Replace special variables in params with actual values
@@ -76,7 +75,12 @@ class CallbackProvider(BaseProvider):
                 "__LINE__": line,
             }
         )
-        for k, v in params.items():
-            if isinstance(v, str) and v in extra:
-                params[k] = extra[v]
+        if isinstance(params, str):
+            for rk, rv in extra.items():
+                params = params.replace(rk, rv)
+        else:
+            for k, v in params.items():
+                if isinstance(v, str):
+                    for rk, rv in extra.items():
+                        params[k] = v.replace(rk, rv)
         return params

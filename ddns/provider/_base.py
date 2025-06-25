@@ -297,8 +297,8 @@ class BaseProvider(object):
             return zone_id, sub
         return None, None
 
-    def _send_request(self, url, method="GET", body=None, headers=None, proxy=None):
-        # type: (str, str, str | None, dict[str, str] | None, str | None) -> str
+    def _send_request(self, url, method="GET", body=None, headers=None):
+        # type: (str, str, str | None, dict[str, str] | None) -> str
         """
         创建 HTTP/HTTPS 连接对象。
         Create HTTP/HTTPS connection object.
@@ -307,12 +307,13 @@ class BaseProvider(object):
         isHttps = url_obj.scheme == "https"
         hostname = url_obj.hostname  # type: str # type: ignore[assignment]
         ConnectionClass = HTTPSConnection if isHttps else HTTPConnection
-        if proxy:
-            conn = ConnectionClass(proxy)
+        if self.proxy:
+            conn = ConnectionClass(self.proxy)
             conn.set_tunnel(hostname, url_obj.port)
         else:
             conn = ConnectionClass(hostname, url_obj.port)
-        conn.request(method, url_obj.path, body, headers=headers or {})
+        url = "{}?{}".format(url_obj.path, url_obj.query) if url_obj.query else url_obj.path
+        conn.request(method, url, body, headers=headers or {})
         response = conn.getresponse()
         res = response.read().decode("utf-8")
         conn.close()
@@ -323,7 +324,7 @@ class BaseProvider(object):
         return res
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
-        # type: (str, str, dict[str,Any]|None, dict[str,Any]|str|None, dict[str,Any]|None, dict[str,str]|None) -> Any
+        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,str]|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -345,10 +346,7 @@ class BaseProvider(object):
         if params:
             if method in ("GET", "DELETE"):
                 # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
-                if queries:
-                    queries.update(params)
-                else:
-                    queries = params
+                queries = queries.update(params) if queries else params
             elif body is None:
                 body = params
             else:
@@ -378,7 +376,7 @@ class BaseProvider(object):
                 bodyData = jsonencode(body)
             self.logger.debug("body: %s", bodyData)
 
-        res = self._send_request(method=method, url=url, body=bodyData, headers=headers, proxy=self.proxy)
+        res = self._send_request(method=method, url=url, body=bodyData, headers=headers)
         if not self.DecodeResponse:
             # 如果不需要解码响应，则直接返回原始字符串
             self.logger.debug("response: %s", res)
@@ -433,7 +431,7 @@ class BaseProvider(object):
 
     @staticmethod
     def _encode(params):
-        # type: (dict|list) -> str
+        # type: (dict|list|str) -> str
         """
         编码参数为 URL 查询字符串
 
@@ -443,7 +441,9 @@ class BaseProvider(object):
         Returns:
             str: 编码后的查询字符串
         """
-        return urlencode(params, doseq=True) if params else ""
+        if not params or isinstance(params, str):
+            return ""
+        return urlencode(params, doseq=True)
 
     @staticmethod
     def _quote(data, safe="/", encoding=None, errors=None):
