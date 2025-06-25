@@ -34,7 +34,6 @@ jobs:
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - name: check complexity and length # the GitHub editor is 127 chars wide
         run: flake8 . --count --max-complexity=12 --max-line-length=127 --statistics
-
   python:
     strategy:
       fail-fast: false
@@ -60,6 +59,9 @@ jobs:
         run: ${{env.PY}} run.py --version
       - name: test run module
         run:  ${{env.PY}} -m "ddns" -h
+      
+      - name: run unit tests
+        run: ${{env.PY}} -m unittest discover tests -v
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
