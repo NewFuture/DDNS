@@ -353,9 +353,7 @@ class BaseProvider(object):
             params (dict[str, Any] | None): 请求参数,自动处理 query string 或者body
             body (dict[str, Any] | str | None): 请求体内容
             queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
-            headers (dict): 头部，可选
-
-        Returns:
+            headers (dict): 头部，可选        Returns:
             Any: 解析后的响应内容
         """
         method = method.upper()
@@ -385,9 +383,8 @@ class BaseProvider(object):
             if not url.startswith("/") and self.API.endswith("/"):
                 url = "/" + url
             url = "{}{}".format(self.API, url)
-        self.logger.info("%s %s", method, url)
-
-        # 主体
+        # 对URL进行打码处理后输出日志
+        self.logger.info("%s %s", method, self._mask_sensitive_data(url))  # 主体
         bodyData = None
         if body:
             headers = headers or {}
@@ -400,7 +397,8 @@ class BaseProvider(object):
                 bodyData = self._encode(body)
             else:
                 bodyData = jsonencode(body)
-            self.logger.debug("body: %s", bodyData)
+            # 对body进行打码处理后输出日志
+            self.logger.debug("body: %s", self._mask_sensitive_data(bodyData))
 
         res = self._send_request(method=method, url=url, body=bodyData, headers=headers)
         if not self.DecodeResponse:
@@ -462,9 +460,7 @@ class BaseProvider(object):
         编码参数为 URL 查询字符串
 
         Args:
-            params (dict|list): 参数字典或列表
-
-        Returns:
+            params (dict|list): 参数字典或列表        Returns:
             str: 编码后的查询字符串
         """
         if not params or isinstance(params, str):
@@ -484,3 +480,21 @@ class BaseProvider(object):
             str: 编码后的字符串
         """
         return quote(data, safe=safe, encoding=encoding, errors=errors)
+
+    def _mask_sensitive_data(self, data):
+        # type: (str | None) -> str
+        """
+        对敏感数据进行打码处理，用于日志输出
+
+        Args:
+            data (str | dict | None): 需要处理的数据
+            is_url (bool): 是否为URL数据        Returns:
+            str: 打码后的字符串
+        """
+        if not data or not self.auth_token:
+            return data  # type: ignore[return-value]
+
+        token_masked = "***"
+        if self.auth_token and len(self.auth_token) > 4:
+            token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:]
+        return data.replace(self.auth_token, token_masked)
