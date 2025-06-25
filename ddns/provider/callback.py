@@ -11,9 +11,9 @@ from json import loads as jsondecode
 from time import time
 
 try:  # python 3
-    from urllib.parse import urlparse, parse_qsl
+    from urllib.parse import urlparse
 except ImportError:  # python 2
-    from urlparse import urlparse, parse_qsl  # type: ignore[no-redef,import]
+    from urlparse import urlparse  # type: ignore[no-redef,import]
 
 
 class CallbackProvider(BaseProvider):
