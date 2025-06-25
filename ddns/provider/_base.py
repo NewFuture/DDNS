@@ -468,8 +468,8 @@ class BaseProvider(object):
         return urlencode(params, doseq=True)
 
     @staticmethod
-    def _quote(data, safe="/", encoding=None, errors=None):
-        # type: (str, str, str|None, str|None) -> str
+    def _quote(data, safe="/", errors=None):
+        # type: (str, str, str|None) -> str
         """
         对字符串进行 URL 编码
 
@@ -479,7 +479,7 @@ class BaseProvider(object):
         Returns:
             str: 编码后的字符串
         """
-        return quote(data, safe=safe, encoding=encoding, errors=errors)
+        return quote(data, safe=safe, errors=errors)
 
     def _mask_sensitive_data(self, data):
         # type: (str | None) -> str
