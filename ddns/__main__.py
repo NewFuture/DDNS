@@ -8,7 +8,7 @@ from os import path, environ, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, getLogger, info, error, debug, INFO
+from logging import basicConfig, getLogger, info, error, debug, warning, INFO
 
 import sys
 
@@ -73,7 +73,6 @@ def change_dns_record(dns, proxy_list, **kw):
         else:
             dns.set_proxy(proxy)
         record_type, domain = kw["record_type"], kw["domain"]
-        info("%s(%s) => %s [via %s]", domain, record_type, kw["ip"], proxy)
         try:
             return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"])
         except Exception as e:
@@ -108,6 +107,7 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
     for domain in domains:
         domain = domain.lower()
         if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
+            warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
             update_success = True
 
     if isinstance(cache, dict):
@@ -138,7 +138,7 @@ def main():
     elif log_level > INFO:
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
-        log_format = "%(asctime)s %(levelname)s [%(module)s]: %(message)s"
+        log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
     basicConfig(
         level=log_level,
         format=log_format,
@@ -148,12 +148,12 @@ def main():
     logger = getLogger()
     logger.name = "ddns"
 
-    info("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
+    debug("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # dns provider class
     dns_name = get_config("dns", "debug")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
-    dns = provider_class(get_config("id"), get_config("token"))  # type: ignore
+    dns = provider_class(get_config("id"), get_config("token"), logger=logger)  # type: ignore
 
     if get_config("config"):
         info("loaded Config from: %s", path.abspath(get_config("config")))  # type: ignore

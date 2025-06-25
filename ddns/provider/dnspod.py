@@ -52,6 +52,9 @@ class DnspodProvider(BaseProvider):
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
+        """
+        https://docs.dnspod.cn/api/add-record/
+        """
         res = self._request(
             "Record.Create",
             extra=extra,
@@ -74,6 +77,9 @@ class DnspodProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
+        """
+        https://docs.dnspod.cn/api/modify-records/
+        """
         record_line = (
             (line or old_record.get("line") or self.DefaultLine).replace("Default", "default").encode("utf-8")
         )
@@ -81,8 +87,9 @@ class DnspodProvider(BaseProvider):
             "Record.Modify",
             domain_id=zone_id,
             record_id=old_record.get("id"),
-            value=value,
             sub_domain=old_record.get("name"),
+            record_type=record_type,
+            value=value,
             record_line=record_line,
             extra=extra,
         )
@@ -98,12 +105,17 @@ class DnspodProvider(BaseProvider):
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
+        """
+        https://docs.dnspod.cn/api/domain-info/
+        查询域名 ID
+        """
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, str, str | None, dict | None) -> dict | None
         """
+        https://docs.dnspod.cn/api/record-list/
         查询记录 list 然后逐个查找
         """
 

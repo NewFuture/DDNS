@@ -228,25 +228,28 @@ class BaseProvider(object):
             Any: 执行结果
         """
         domain = domain.lower()
-        self.logger.info("start update %s(%s) => %s", domain, record_type, value)
+        self.logger.info("%s => %s(%s)", domain, value, record_type)
 
         sub, main = self._split_custom_domain(domain)
         if sub:
             zone_id = self.get_zone_id(main)
         else:
-            zone_id, sub = self._split_zone_and_sub(domain)
-
-        if not zone_id or not sub:
+            zone_id, sub, main = self._split_zone_and_sub(domain)
+        self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
+        if not zone_id or sub is None:
+            self.logger.critical("查询 zone_id 或 subdomain失败: %s", domain)
             raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
 
         record = self._query_record(
             zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
         )
         if record:
+            self.logger.info("Found existing record:\n  %s", record)
             return self._update_record(
                 zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
             )
         else:
+            self.logger.warning("No existing record found, creating new one")
             return self._create_record(
                 zone_id,
                 sub_domain=sub,
@@ -289,7 +292,7 @@ class BaseProvider(object):
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def _split_zone_and_sub(self, domain):
-        # type: (str) -> tuple[str | None, str | None]
+        # type: (str) -> tuple[str | None, str | None, str ]
         """
         从完整域名拆分主域名和子域名
 
@@ -302,15 +305,16 @@ class BaseProvider(object):
         domain_split = domain.split(".")
         zone_id = None
         index = 2
+        main = ""
         while not zone_id and index <= len(domain_split):
             main = ".".join(domain_split[-index:])
             zone_id = self.get_zone_id(main)
             index += 1
         if zone_id:
             sub = ".".join(domain_split[: -index + 1]) or "@"
-            self.logger.info("zone_id: %s, sub: %s", zone_id, sub)
-            return zone_id, sub
-        return None, None
+            self.logger.debug("zone_id: %s, sub: %s", zone_id, sub)
+            return zone_id, sub, main
+        return None, None, main
 
     def _send_request(self, url, method="GET", body=None, headers=None):
         # type: (str, str, str | None, dict[str, str] | None) -> str
@@ -355,7 +359,6 @@ class BaseProvider(object):
             Any: 解析后的响应内容
         """
         method = method.upper()
-        self.logger.info("[%s] %s : %s %s", method, url, queries, params)
 
         # 自动处理参数
         query_str = ""
@@ -382,7 +385,7 @@ class BaseProvider(object):
             if not url.startswith("/") and self.API.endswith("/"):
                 url = "/" + url
             url = "{}{}".format(self.API, url)
-        self.logger.debug("url: %s", url)
+        self.logger.info("%s %s", method, url)
 
         # 主体
         bodyData = None
@@ -406,7 +409,7 @@ class BaseProvider(object):
             return res
         try:
             data = jsondecode(res)
-            self.logger.debug("response: %s", data)
+            self.logger.debug("response: \n%s", data)
             return data
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)

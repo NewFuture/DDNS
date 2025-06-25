@@ -184,6 +184,8 @@ def init_config(description, doc, version, date):
     if is_debug:
         # 如果启用调试模式，则强制设置日志级别为 DEBUG
         setattr(__cli_args, "log.level", log_level("DEBUG"))
+        if not hasattr(__cli_args, "cache"):
+            setattr(__cli_args, "cache", False)  # 禁用缓存
 
     config_required = not get_config("token") and not get_config("id")
     config_file = get_config("config")  # type: str | None # type: ignore
