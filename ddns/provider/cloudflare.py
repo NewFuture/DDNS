@@ -4,7 +4,6 @@ CloudFlare API
 @author: TongYifan, NewFuture
 """
 
-from venv import logger
 from ._base import BaseProvider, TYPE_JSON
 
 
@@ -18,7 +17,7 @@ class CloudflareProvider(BaseProvider):
         if self.auth_id:
             # must be email for Cloudflare API v4
             if "@" not in self.auth_id:
-                logger.critical("ID 必须为空或有效的邮箱地址")
+                self.logger.critical("ID 必须为空或有效的邮箱地址")
                 raise ValueError("ID must be a valid email or Empty for Cloudflare API v4")
 
     def _request(self, method, action, **params):
