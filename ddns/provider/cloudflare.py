@@ -12,7 +12,7 @@ class CloudflareProvider(BaseProvider):
     API = "https://api.cloudflare.com"
     ContentType = TYPE_JSON
 
-    def _validate(self) -> None:
+    def _validate(self):
         if not self.auth_token:
             raise ValueError("token must be configured")
         if self.auth_id:
