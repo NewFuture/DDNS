@@ -130,7 +130,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
         # Verify logger.debug was called with correct parameters
         provider.logger.debug.assert_called_once_with(
-            "PrintProvider: %s(%s) => %s", "example.com", "A", "192.168.1.1"
+            "DebugProvider: %s(%s) => %s", "example.com", "A", "192.168.1.1"
         )
 
     @patch("sys.stdout", new_callable=StringIO)
