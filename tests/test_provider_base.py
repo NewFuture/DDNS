@@ -9,13 +9,13 @@ from test_base import BaseProviderTestCase, unittest
 from ddns.provider._base import BaseProvider
 
 
-class TestProvider(BaseProvider):
+class _TestProvider(BaseProvider):
     """测试用的具体Provider实现"""
 
     API = "https://api.example.com"
 
     def __init__(self, auth_id="test_id", auth_token="test_token_123456789", **options):
-        super(TestProvider, self).__init__(auth_id, auth_token, **options)
+        super(_TestProvider, self).__init__(auth_id, auth_token, **options)
         self._test_zone_data = {"example.com": "zone123", "test.com": "zone456"}
         self._test_records = {}
 
@@ -42,11 +42,11 @@ class TestBaseProvider(BaseProviderTestCase):
     def setUp(self):
         """测试初始化"""
         super(TestBaseProvider, self).setUp()
-        self.provider = TestProvider()
+        self.provider = _TestProvider()
 
     def test_init_success(self):
         """测试正常初始化"""
-        provider = TestProvider("test_id", "test_token")
+        provider = _TestProvider("test_id", "test_token")
         self.assertEqual(provider.auth_id, "test_id")
         self.assertEqual(provider.auth_token, "test_token")
         self.assertIsNotNone(provider.logger)
@@ -56,13 +56,13 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_validate_missing_id(self):
         """测试缺少auth_id的验证"""
         with self.assertRaises(ValueError) as cm:
-            TestProvider("", "token")
+            _TestProvider("", "token")
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_missing_token(self):
         """测试缺少auth_token的验证"""
         with self.assertRaises(ValueError) as cm:
-            TestProvider("id", "")
+            _TestProvider("id", "")
         self.assertIn("token must be configured", str(cm.exception))
 
     def test_get_zone_id_from_cache(self):

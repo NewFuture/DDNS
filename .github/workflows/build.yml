@@ -60,6 +60,9 @@ jobs:
       - name: test run module
         run:  ${{env.PY}} -m "ddns" -h
       
+      - name: install mock for Python 2.7
+        if:  ${{ matrix.version == '2.7' }}
+        run:  ${{env.PY}} -m pip install mock==3.0.5
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
 
