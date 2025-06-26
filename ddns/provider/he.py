@@ -21,7 +21,7 @@ class HeProvider(SimpleProvider):
         使用 POST API 更新或创建 DNS 记录。
         Update or create DNS record with POST API.
         """
-        self.logger.info("start update %s(%s) => %s", domain, record_type, value)
+        self.logger.info("%s => %s(%s)", domain, value, record_type)
         params = {
             "hostname": domain,  # he.net requires full domain name
             "myip": value,  # IP address to update

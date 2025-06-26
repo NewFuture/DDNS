@@ -17,6 +17,7 @@ class CallbackProvider(SimpleProvider):
     Generic custom callback provider, supports GET/POST arbitrary API.
     """
 
+    API = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
     ContentType = TYPE_JSON
     DecodeResponse = False  # Callback response is not JSON, it's a custom response
 
@@ -25,7 +26,7 @@ class CallbackProvider(SimpleProvider):
         发送自定义回调请求，支持 GET/POST
         Send custom callback request, support GET/POST
         """
-        self.logger.info("start update %s(%s) => %s", domain, record_type, value)
+        self.logger.info("%s => %s(%s)", domain, value, record_type)
         url = self.auth_id  # 直接用 auth_id 作为 url
         token = self.auth_token  # auth_token 作为 POST 参数
         extra.update(
@@ -67,6 +68,6 @@ class CallbackProvider(SimpleProvider):
         return string
 
     def _validate(self):
-        if not self.auth_id or '://' not in self.auth_id:
+        if not self.auth_id or "://" not in self.auth_id:
             self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
             raise ValueError("id must be configured with URL")

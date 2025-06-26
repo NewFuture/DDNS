@@ -233,7 +233,7 @@ class TestHeProvider(BaseProviderTestCase):
             provider.set_record("example.com", "192.168.1.1", "A")
 
         # Verify logger.info was called with correct parameters
-        provider.logger.info.assert_called_once_with("start update %s(%s) => %s", "example.com", "A", "192.168.1.1")
+        provider.logger.info.assert_called_once_with("%s => %s(%s)", "example.com", "192.168.1.1", "A")
 
     def test_set_record_logger_debug_called(self):
         """Test that logger.debug is called with parameters"""
