@@ -1,5 +1,5 @@
 # coding=utf-8
-from ._base import BaseProvider  # noqa: F401
+from ._base import SimpleProvider  # noqa: F401
 from .alidns import AlidnsProvider
 from .callback import CallbackProvider
 from .cloudflare import CloudflareProvider
@@ -12,7 +12,7 @@ from .debug import DebugProvider
 
 
 def get_provider_class(provider_name):
-    # type: (str) -> type[BaseProvider]
+    # type: (str) -> type[SimpleProvider]
     """
     获取指定的DNS提供商类
 

@@ -16,7 +16,7 @@ from .__init__ import __version__, __description__, __doc__, build_date
 from .util import ip
 from .util.cache import Cache
 from .util.config import init_config, get_config
-from .provider import get_provider_class, BaseProvider  # noqa: F401
+from .provider import get_provider_class, SimpleProvider  # noqa: F401
 
 environ["DDNS_VERSION"] = __version__
 
@@ -27,7 +27,7 @@ def is_false(value):
     字符串 'false', 或者 False, 或者 'none';
     0 不是 False
     """
-    if isinstance(value, str):
+    if hasattr(value, "strip"): # 字符串
         return value.strip().lower() in ["false", "none"]
     return value is False
 
@@ -66,7 +66,7 @@ def get_ip(ip_type, index="default"):
 
 
 def change_dns_record(dns, proxy_list, **kw):
-    # type: (BaseProvider, list, **(str)) -> bool
+    # type: (SimpleProvider, list, **(str)) -> bool
     for proxy in proxy_list:
         if not proxy or (proxy.upper() in ["DIRECT", "NONE"]):
             dns.set_proxy(None)
@@ -81,7 +81,7 @@ def change_dns_record(dns, proxy_list, **kw):
 
 
 def update_ip(ip_type, cache, dns, ttl, proxy_list):
-    # type: (str, Cache | None, BaseProvider, str, list[str]) -> bool | None
+    # type: (str, Cache | None, SimpleProvider, str, list[str]) -> bool | None
     """
     更新IP
     """

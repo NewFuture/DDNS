@@ -5,10 +5,10 @@ https://dns.he.net/docs.html
 @author: NN708, NewFuture
 """
 
-from ._base import BaseProvider, TYPE_FORM
+from ._base import SimpleProvider, TYPE_FORM
 
 
-class HeProvider(BaseProvider):
+class HeProvider(SimpleProvider):
     API = "https://dyn.dns.he.net"
     ContentType = TYPE_FORM
     DecodeResponse = False  # he.net response is plain text, not JSON
@@ -36,15 +36,3 @@ class HeProvider(BaseProvider):
         else:
             self.logger.error("HE API error: %s", res)
             raise Exception(res)
-
-    def _query_zone_id(self, domain):
-        return domain
-
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        pass
-
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        return self.set_record(self._join_domain(sub_domain, main_domain), value, record_type)
-
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        return self.set_record(zone_id, value, record_type)

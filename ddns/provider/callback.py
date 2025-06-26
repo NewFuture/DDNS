@@ -6,12 +6,12 @@ Custom Callback API
 @author: 老周部落, NewFuture
 """
 
-from ._base import TYPE_JSON, BaseProvider
+from ._base import TYPE_JSON, SimpleProvider
 from json import loads as jsondecode
 from time import time
 
 
-class CallbackProvider(BaseProvider):
+class CallbackProvider(SimpleProvider):
     """
     通用自定义回调 Provider，支持 GET/POST 任意接口。
     Generic custom callback provider, supports GET/POST arbitrary API.
@@ -70,15 +70,3 @@ class CallbackProvider(BaseProvider):
         if not self.auth_id or '://' not in self.auth_id:
             self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
             raise ValueError("id must be configured with URL")
-
-    def _query_zone_id(self, domain):
-        return domain
-
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        pass
-
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        return self.set_record(self._join_domain(sub_domain, main_domain), value, record_type)
-
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        return self.set_record(zone_id, value, record_type)

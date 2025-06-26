@@ -4,10 +4,10 @@ DebugProvider
 仅打印出 IP 地址，不进行任何实际 DNS 更新
 """
 
-from ._base import BaseProvider
+from ._base import SimpleProvider
 
 
-class DebugProvider(BaseProvider):
+class DebugProvider(SimpleProvider):
 
     def _validate(self):
         """

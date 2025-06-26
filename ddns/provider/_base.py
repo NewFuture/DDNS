@@ -67,11 +67,11 @@ TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
 
 
-class BaseProvider(object):
+class BaseProvider(SimpleProvider):
     """
-    DNS服务商接口的抽象基类
+    标准DNS服务商接口的抽象基类
 
-    Abstract base class for all DNS provider APIs.
+    Abstract base class for all standard DNS provider APIs.
     Subclasses must implement the abstract methods to support various providers.
 
     * _query_zone_id()
@@ -80,41 +80,57 @@ class BaseProvider(object):
     * _create_record()
     """
 
-    __metaclass__ = ABCMeta
-
-    # API endpoint domain (to be defined in subclass)
-    API = ""  # type: str # https://exampledns.com
-    # Content-Type for requests (to be defined in subclass)
-    ContentType = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
-    # Decode Response as JSON by default
-    DecodeResponse = True
-
-    # 版本
-    Version = environ.get("DDNS_VERSION", "0.0.0")
-    # Description
-    Remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(Version)
-
-    def __init__(self, auth_id, auth_token, logger=None, **options):
-        # type: (str, str, Logger | None, **object) -> None
+    def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
+        # type: (str, str, str, str | int | None, str | None, **dict) -> bool
         """
-        初始化服务商对象
+        设置 DNS 记录（创建或更新）
 
-        Initialize provider instance.
+        Set or update DNS record.
 
         Args:
-            auth_id (str): 身份认证 ID / Authentication ID
-            auth_token (str): 密钥 / Authentication Token
-            options (dict): 其它参数，如代理、调试等 / Additional options
+            domain (str): 完整域名
+            value (str): 新记录值
+            record_type (str): 记录类型
+            ttl (int | None): TTL 值，可选
+            line (str | None): 线路信息
+            extra (dict): 额外参数
+
+        Returns:
+            Any: 执行结果
         """
-        self.auth_id = auth_id  # type: str
-        self.auth_token = auth_token  # type: str
-        self.options = options
-        name = self.__class__.__name__
-        self.logger = logger.getChild(name) if logger else Logger(name)
-        self.proxy = None  # type: str | None
-        self._zone_map = {}  # type: dict[str, str]
-        self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
-        self._validate()  # 验证身份认证信息
+        domain = domain.lower()
+        self.logger.info("%s => %s(%s)", domain, value, record_type)
+
+        sub, main = self._split_custom_domain(domain)
+        if sub:
+            zone_id = self.get_zone_id(main)
+        else:
+            zone_id, sub, main = self._split_zone_and_sub(domain)
+        self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
+        if not zone_id or sub is None:
+            self.logger.critical("查询 zone_id 或 subdomain失败: %s", domain)
+            raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
+
+        record = self._query_record(
+            zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
+        )
+        if record:
+            self.logger.info("Found existing record:\n  %s", record)
+            return self._update_record(
+                zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
+            )
+        else:
+            self.logger.warning("No existing record found, creating new one")
+            return self._create_record(
+                zone_id,
+                sub_domain=sub,
+                main_domain=main,
+                value=value,
+                record_type=record_type,
+                ttl=ttl,
+                line=line,
+                extra=extra,
+            )
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None
@@ -209,6 +225,137 @@ class BaseProvider(object):
         """
         pass
 
+    def _split_zone_and_sub(self, domain):
+        # type: (str) -> tuple[str | None, str | None, str ]
+        """
+        从完整域名拆分主域名和子域名
+
+        Args:
+            domain (str): 完整域名
+
+        Returns:
+            (zone_id, sub): 元组
+        """
+        domain_split = domain.split(".")
+        zone_id = None
+        index = 2
+        main = ""
+        while not zone_id and index <= len(domain_split):
+            main = ".".join(domain_split[-index:])
+            zone_id = self.get_zone_id(main)
+            index += 1
+        if zone_id:
+            sub = ".".join(domain_split[: -index + 1]) or "@"
+            self.logger.debug("zone_id: %s, sub: %s", zone_id, sub)
+            return zone_id, sub, main
+        return None, None, main
+
+    @staticmethod
+    def _split_custom_domain(domain):
+        # type: (str) -> tuple[str | None, str]
+        """
+        拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
+
+        如 sub~example.com => ('sub', 'example.com')
+
+        Returns:
+            (sub, main): 子域 + 主域
+        """
+        for sep in ("~", "+"):
+            if sep in domain:
+                sub, main = domain.split(sep, 1)
+                return sub, main
+        return None, domain
+
+    @staticmethod
+    def _join_domain(sub, main):
+        # type: (str | None, str) -> str
+        """
+        合并子域名和主域名为完整域名
+
+        Args:
+            sub (str | None): 子域名
+            main (str): 主域名
+
+        Returns:
+            str: 完整域名
+        """
+        sub = sub and sub.strip(".").strip().lower()
+        main = main and main.strip(".").strip().lower()
+        if not sub or sub == "@":
+            if not main:
+                raise ValueError("Both sub and main cannot be empty")
+            return main
+        if not main:
+            return sub
+        return "{}.{}".format(sub, main)
+
+    def _mask_sensitive_data(self, data):
+        # type: (str | None) -> str
+        """
+        对敏感数据进行打码处理，用于日志输出
+
+        Args:
+            data (str | dict | None): 需要处理的数据
+            is_url (bool): 是否为URL数据        Returns:
+            str: 打码后的字符串
+        """
+        if not data or not self.auth_token:
+            return data  # type: ignore[return-value]
+
+        token_masked = "***"
+        if self.auth_token and len(self.auth_token) > 4:
+            token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:]
+        return data.replace(self.auth_token, token_masked)
+
+
+class SimpleProvider(object):
+    """
+    简单DNS服务商接口的抽象基类, 必须实现 `set_record` 方法。
+
+    Abstract base class for all simple DNS provider APIs.
+    Subclasses must implement `set_record`.
+
+    * set_record(domain, value, record_type="A", ttl=None, line=None, **extra)
+    """
+
+    __metaclass__ = ABCMeta
+
+    # API endpoint domain (to be defined in subclass)
+    API = ""  # type: str # https://exampledns.com
+    # Content-Type for requests (to be defined in subclass)
+    ContentType = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
+    # Decode Response as JSON by default
+    DecodeResponse = True
+
+    # 版本
+    Version = environ.get("DDNS_VERSION", "0.0.0")
+    # Description
+    Remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(Version)
+
+    def __init__(self, auth_id, auth_token, logger=None, **options):
+        # type: (str, str, Logger | None, **object) -> None
+        """
+        初始化服务商对象
+
+        Initialize provider instance.
+
+        Args:
+            auth_id (str): 身份认证 ID / Authentication ID
+            auth_token (str): 密钥 / Authentication Token
+            options (dict): 其它参数，如代理、调试等 / Additional options
+        """
+        self.auth_id = auth_id  # type: str
+        self.auth_token = auth_token  # type: str
+        self.options = options
+        name = self.__class__.__name__
+        self.logger = logger.getChild(name) if logger else Logger(name)
+        self.proxy = None  # type: str | None
+        self._zone_map = {}  # type: dict[str, str]
+        self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
+        self._validate()  # 验证身份认证信息
+
+    @abstractmethod
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         # type: (str, str, str, str | int | None, str | None, **dict) -> bool
         """
@@ -227,39 +374,7 @@ class BaseProvider(object):
         Returns:
             Any: 执行结果
         """
-        domain = domain.lower()
-        self.logger.info("%s => %s(%s)", domain, value, record_type)
-
-        sub, main = self._split_custom_domain(domain)
-        if sub:
-            zone_id = self.get_zone_id(main)
-        else:
-            zone_id, sub, main = self._split_zone_and_sub(domain)
-        self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
-        if not zone_id or sub is None:
-            self.logger.critical("查询 zone_id 或 subdomain失败: %s", domain)
-            raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
-
-        record = self._query_record(
-            zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
-        )
-        if record:
-            self.logger.info("Found existing record:\n  %s", record)
-            return self._update_record(
-                zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
-            )
-        else:
-            self.logger.warning("No existing record found, creating new one")
-            return self._create_record(
-                zone_id,
-                sub_domain=sub,
-                main_domain=main,
-                value=value,
-                record_type=record_type,
-                ttl=ttl,
-                line=line,
-                extra=extra,
-            )
+        raise NotImplementedError("This set_record should be implemented by subclasses")
 
     def set_proxy(self, proxy_str):
         # type: (str | None) -> BaseProvider
@@ -290,31 +405,6 @@ class BaseProvider(object):
             raise ValueError("token must be configured")
         if not self.API:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
-
-    def _split_zone_and_sub(self, domain):
-        # type: (str) -> tuple[str | None, str | None, str ]
-        """
-        从完整域名拆分主域名和子域名
-
-        Args:
-            domain (str): 完整域名
-
-        Returns:
-            (zone_id, sub): 元组
-        """
-        domain_split = domain.split(".")
-        zone_id = None
-        index = 2
-        main = ""
-        while not zone_id and index <= len(domain_split):
-            main = ".".join(domain_split[-index:])
-            zone_id = self.get_zone_id(main)
-            index += 1
-        if zone_id:
-            sub = ".".join(domain_split[: -index + 1]) or "@"
-            self.logger.debug("zone_id: %s, sub: %s", zone_id, sub)
-            return zone_id, sub, main
-        return None, None, main
 
     def _send_request(self, url, method="GET", body=None, headers=None):
         # type: (str, str, str | None, dict[str, str] | None) -> str
@@ -412,46 +502,6 @@ class BaseProvider(object):
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)
             raise e
-
-    @staticmethod
-    def _split_custom_domain(domain):
-        # type: (str) -> tuple[str | None, str]
-        """
-        拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
-
-        如 sub~example.com => ('sub', 'example.com')
-
-        Returns:
-            (sub, main): 子域 + 主域
-        """
-        for sep in ("~", "+"):
-            if sep in domain:
-                sub, main = domain.split(sep, 1)
-                return sub, main
-        return None, domain
-
-    @staticmethod
-    def _join_domain(sub, main):
-        # type: (str | None, str) -> str
-        """
-        合并子域名和主域名为完整域名
-
-        Args:
-            sub (str | None): 子域名
-            main (str): 主域名
-
-        Returns:
-            str: 完整域名
-        """
-        sub = sub and sub.strip(".").strip().lower()
-        main = main and main.strip(".").strip().lower()
-        if not sub or sub == "@":
-            if not main:
-                raise ValueError("Both sub and main cannot be empty")
-            return main
-        if not main:
-            return sub
-        return "{}.{}".format(sub, main)
 
     @staticmethod
     def _encode(params):
