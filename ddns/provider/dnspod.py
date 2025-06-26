@@ -41,11 +41,9 @@ class DnspodProvider(BaseProvider):
 
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
         data = self._http("POST", "/" + action, headers=headers, body=params)
-        if data and data.get("status", {}).get("code") == "1":
-            # 请求成功
+        if data and data.get("status", {}).get("code") == "1":  # 请求成功
             return data
-        else:
-            # 请求失败
+        else:  # 请求失败
             self.logger.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
             return data
 
@@ -63,21 +61,17 @@ class DnspodProvider(BaseProvider):
             ttl=ttl,
         )
         record = res and res.get("record")
-        if record:
-            # 记录创建成功
+        if record:  # 记录创建成功
             self.logger.info("Record created: %s", record)
             return True
-        else:
-            # 记录创建失败
+        else:  # 记录创建失败
             self.logger.error("Failed to create record: %s", res)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         """https://docs.dnspod.cn/api/modify-records/"""
-        record_line = (
-            (line or old_record.get("line") or self.DefaultLine).replace("Default", "default").encode("utf-8")
-        )
+        record_line = (line or old_record.get("line") or self.DefaultLine).replace("Default", "default")
         res = self._request(
             "Record.Modify",
             domain_id=zone_id,
@@ -89,12 +83,10 @@ class DnspodProvider(BaseProvider):
             extra=extra,
         )
         record = res and res.get("record")
-        if record:
-            # 记录更新成功
+        if record:  # 记录更新成功
             self.logger.debug("Record updated: %s", record)
             return True
-        else:
-            # 记录更新失败
+        else:  # 记录更新失败
             self.logger.error("Failed to update record: %s", res)
             return False
 
@@ -104,15 +96,13 @@ class DnspodProvider(BaseProvider):
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, sub, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, str, str | None, dict | None) -> dict | None
         """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
-        res = self._request("Record.List", domain_id=zone_id, length="3000")
+        res = self._request("Record.List", domain_id=zone_id, sub_domain=sub, record_type=record_type, length="3000")
         records = res.get("records", [])
         for record in records:
-            if record.get("name") == sub_domain and record.get("type") == record_type:
-                record_line = record.get("line", "")
-                if line is None or record_line == line or record_line == "默认":
-                    return record
-        self.logger.warning("No record found for [%s] with %s<%s>(line: %s)", zone_id, sub_domain, record_type, line)
+            if line is None or record.get("line", "") == line:
+                return record
+        self.logger.warning("No record found for [%s] with %s<%s>(line: %s)", zone_id, sub, record_type, line)
         return None
