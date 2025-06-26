@@ -68,7 +68,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         """Test _request method with GET method"""
         # Mock datetime to get consistent results
         mock_now = datetime(2023, 1, 1, 12, 0, 0)
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.utcnow.return_value = mock_now
 
         provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
 
@@ -85,7 +85,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         """Test _request method with POST method"""
         # Mock datetime to get consistent results
         mock_now = datetime(2023, 1, 1, 12, 0, 0)
-        mock_datetime.now.return_value = mock_now
+        mock_datetime.utcnow.return_value = mock_now
 
         provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
 
@@ -99,8 +99,13 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
             mock_http.assert_called_once()
             self.assertEqual(result, {"id": "record123"})
 
-    def test_request_filters_none_params(self):
+    @patch("ddns.provider.huaweidns.datetime")
+    def test_request_filters_none_params(self, mock_datetime):
         """Test _request method filters out None parameters"""
+        # Mock datetime to avoid deprecation warning
+        mock_now = datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.utcnow.return_value = mock_now
+
         provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
 
         with patch.object(provider, "_http") as mock_http:

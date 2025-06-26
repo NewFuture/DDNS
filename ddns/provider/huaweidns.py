@@ -10,7 +10,7 @@ from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
 from json import dumps as jsonencode
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 class HuaweiDNSProvider(BaseProvider):
@@ -45,7 +45,7 @@ class HuaweiDNSProvider(BaseProvider):
             query = ""
             body = jsonencode(params)
 
-        date_now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        date_now = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         headers = {
             "content-type": self.ContentType,
             "host": self.API.split("://", 1)[1].strip("/"),
