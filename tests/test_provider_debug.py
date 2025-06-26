@@ -5,17 +5,14 @@ Unit tests for DebugProvider
 @author: Testing Suite
 """
 
-try:
-    from io import StringIO
-except ImportError:
-    # Python 2.7 compatibility
-    try:
-        from StringIO import StringIO  # type: ignore
-    except ImportError:
-        StringIO = None
-
+import sys
 from test_base import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.debug import DebugProvider
+
+if sys.version_info[0] < 3:
+    from StringIO import StringIO  # 对应 bytes 
+else:
+    from io import StringIO         # 对应 unicode, py2.7中也存在
 
 
 class TestDebugProvider(BaseProviderTestCase):
