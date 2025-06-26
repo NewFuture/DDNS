@@ -5,13 +5,8 @@ BaseProvider 单元测试
 支持 Python 2.7 和 Python 3
 """
 
-import sys
-import os
-import unittest
+from test_base import BaseProviderTestCase, unittest
 from ddns.provider._base import BaseProvider
-
-# 添加项目路径到系统路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestProvider(BaseProvider):
@@ -41,11 +36,12 @@ class TestProvider(BaseProvider):
         return True
 
 
-class TestBaseProvider(unittest.TestCase):
+class TestBaseProvider(BaseProviderTestCase):
     """BaseProvider 测试类"""
 
     def setUp(self):
         """测试初始化"""
+        super(TestBaseProvider, self).setUp()
         self.provider = TestProvider()
 
     def test_init_success(self):

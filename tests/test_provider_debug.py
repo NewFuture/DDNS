@@ -5,30 +5,25 @@ Unit tests for DebugProvider
 @author: Testing Suite
 """
 
-import unittest
-import sys
-import os
-from io import StringIO
-
-from ddns.provider.debug import DebugProvider
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 try:
-    from unittest.mock import patch, MagicMock
+    from io import StringIO
 except ImportError:
     # Python 2.7 compatibility
-    from mock import patch, MagicMock  # type: ignore
+    try:
+        from StringIO import StringIO  # type: ignore
+    except ImportError:
+        StringIO = None
+
+from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from ddns.provider.debug import DebugProvider
 
 
-class TestDebugProvider(unittest.TestCase):
+class TestDebugProvider(BaseProviderTestCase):
     """Test cases for DebugProvider"""
 
     def setUp(self):
         """Set up test fixtures"""
-        self.auth_id = "test_id"
-        self.auth_token = "test_token"
+        super(TestDebugProvider, self).setUp()
 
     def test_init_with_basic_config(self):
         """Test DebugProvider initialization with basic configuration"""

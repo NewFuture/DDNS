@@ -5,26 +5,16 @@ Unit tests for CallbackProvider
 @author: Testing Suite
 """
 
-import unittest
-import sys
-import os
+from test_base import BaseProviderTestCase, unittest, patch
 from ddns.provider.callback import CallbackProvider
 
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    # Python 2.7 compatibility
-    from mock import patch  # type: ignore
-
-
-class TestCallbackProvider(unittest.TestCase):
+class TestCallbackProvider(BaseProviderTestCase):
     """Test cases for CallbackProvider"""
 
     def setUp(self):
         """Set up test fixtures"""
+        super(TestCallbackProvider, self).setUp()
         self.auth_id = "https://example.com/callback?domain=__DOMAIN__&ip=__IP__"
         self.auth_token = ""  # Use empty string instead of None for auth_token
 

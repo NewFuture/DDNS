@@ -5,27 +5,17 @@ Unit tests for HeProvider (Hurricane Electric)
 @author: Testing Suite
 """
 
-import unittest
-import sys
-import os
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:
-    # Python 2.7 compatibility
-    from mock import patch, MagicMock
-
+from test_base import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.he import HeProvider
 
 
-class TestHeProvider(unittest.TestCase):
+class TestHeProvider(BaseProviderTestCase):
     """Test cases for HeProvider"""
 
     def setUp(self):
         """Set up test fixtures"""
+        super(TestHeProvider, self).setUp()
+        # Override default auth values for HE provider
         self.auth_id = "test_id"
         self.auth_token = "test_password"
 
@@ -277,7 +267,7 @@ class TestHeProvider(unittest.TestCase):
         provider.logger.error.assert_called_once_with("HE API error: %s", "badauth")
 
 
-class TestHeProviderIntegration(unittest.TestCase):
+class TestHeProviderIntegration(BaseProviderTestCase):
     """Integration tests for HeProvider"""
 
     def test_full_workflow_ipv4_success(self):
