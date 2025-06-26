@@ -542,20 +542,3 @@ class BaseProvider(SimpleProvider):
             return sub
         return "{}.{}".format(sub, main)
 
-    def _mask_sensitive_data(self, data):
-        # type: (str | None) -> str
-        """
-        对敏感数据进行打码处理，用于日志输出
-
-        Args:
-            data (str | dict | None): 需要处理的数据
-            is_url (bool): 是否为URL数据        Returns:
-            str: 打码后的字符串
-        """
-        if not data or not self.auth_token:
-            return data  # type: ignore[return-value]
-
-        token_masked = "***"
-        if self.auth_token and len(self.auth_token) > 4:
-            token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:]
-        return data.replace(self.auth_token, token_masked)
