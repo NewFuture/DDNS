@@ -68,7 +68,7 @@ class CallbackProvider(BaseProvider):
 
     def _validate(self):
         if not self.auth_id or '://' in self.auth_id:
-            self.logger.critial("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
+            self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
             raise ValueError("id must be configured with URL")
 
     def _query_zone_id(self, domain):
