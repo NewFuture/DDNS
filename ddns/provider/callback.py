@@ -46,7 +46,7 @@ class CallbackProvider(BaseProvider):
             # POST 方式，token 作为 POST 参数
             params = token if isinstance(token, dict) else jsondecode(token)
             for k, v in params.items():
-                if isinstance(v, str):
+                if hasattr(v, "replace"):  # 判断是否支持字符串替换, 兼容py2,py3
                     params[k] = self._replace_vars(v, extra)
             res = self._http("POST", url, body=params)
         if res:
@@ -67,7 +67,7 @@ class CallbackProvider(BaseProvider):
         return string
 
     def _validate(self):
-        if not self.auth_id or not '://' in self.auth_id:
+        if not self.auth_id or '://' not in self.auth_id:
             self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
             raise ValueError("id must be configured with URL")
 
