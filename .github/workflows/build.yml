@@ -100,6 +100,8 @@ jobs:
         run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
+      - name: run unit tests
+        run: python3 -m unittest discover tests -v
 
       - uses: actions/upload-artifact@v4
         with:
@@ -149,6 +151,8 @@ jobs:
         run: python3 -m pip install imageio
    
       - run: python3 ./run.py -h
+      - name: run unit tests
+        run: python3 -m unittest discover tests -v
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
