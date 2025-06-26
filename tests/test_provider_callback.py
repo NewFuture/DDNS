@@ -8,6 +8,7 @@ Unit tests for CallbackProvider
 import unittest
 import sys
 import os
+from ddns.provider.callback import CallbackProvider
 
 # Add the parent directory to the path so we can import the ddns module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,9 +17,7 @@ try:
     from unittest.mock import patch
 except ImportError:
     # Python 2.7 compatibility
-    from mock import patch
-
-from ddns.provider.callback import CallbackProvider
+    from mock import patch  # type: ignore
 
 
 class TestCallbackProvider(unittest.TestCase):
@@ -166,7 +165,7 @@ class TestCallbackProvider(unittest.TestCase):
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
         # Verify the result
-        self.assertTrue(result)        # Verify _http was called with correct parameters
+        self.assertTrue(result)  # Verify _http was called with correct parameters
         mock_http.assert_called_once()
         args, kwargs = mock_http.call_args
         self.assertEqual(args[0], "POST")  # method
@@ -194,7 +193,7 @@ class TestCallbackProvider(unittest.TestCase):
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
         # Verify the result
-        self.assertTrue(result)        # Verify _http was called with correct parameters
+        self.assertTrue(result)  # Verify _http was called with correct parameters
         mock_http.assert_called_once()
         args, kwargs = mock_http.call_args
         self.assertEqual(args[0], "POST")  # method
@@ -215,20 +214,20 @@ class TestCallbackProvider(unittest.TestCase):
         """Test set_record method with mixed type values in POST parameters"""
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
-        
+
         auth_token = {"api_key": 12345, "domain": "__DOMAIN__", "timeout": 30, "enabled": True}
         provider = CallbackProvider(self.auth_id, auth_token)  # type: ignore
-        
+
         result = provider.set_record("example.com", "192.168.1.1")
-        
+
         # Verify the result
         self.assertTrue(result)
-        
+
         # Verify _http was called with correct parameters
         mock_http.assert_called_once()
         args, kwargs = mock_http.call_args
         self.assertEqual(args[0], "POST")  # method
-        
+
         # Check that non-string values were not processed, but string values were replaced
         params = kwargs["body"]
         self.assertEqual(params["api_key"], 12345)  # unchanged (not a string)
