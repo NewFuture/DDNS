@@ -11,8 +11,12 @@ This document explains how to run tests for the DDNS project. **unittest** is th
 # 运行所有测试（推荐）/ Run all tests (recommended)
 python -m unittest discover tests -v
 
+# 运行基础测试文件 / Run base test file
+python tests/test_base.py -v  
+
 # 运行特定测试文件 / Run specific test file
 python -m unittest tests.test_provider_he -v
+python -m unittest tests.test_provider_dnspod -v
 
 # 运行特定测试类 / Run specific test class
 python -m unittest tests.test_provider_he.TestHeProvider -v
@@ -99,16 +103,6 @@ Tests are designed to work with both Python 2.7 and Python 3.x:
 - 异常处理兼容性 / Exception handling compatibility  
 - print语句/函数兼容性 / Print statement/function compatibility
 
-## 持续集成 / Continuous Integration
-
-测试在以下环境自动运行：
-
-Tests run automatically on:
-- GitHub Actions多个Python版本 / GitHub Actions for multiple Python versions
-- 所有支持的Python版本（2.7, 3.6-3.13）/ All supported Python versions (2.7, 3.6-3.13)
-- unittest和pytest框架（如果可用）/ Both unittest and pytest frameworks (where available)
-
-## 故障排除 / Troubleshooting
 
 ### 常见问题 / Common Issues
 
@@ -116,29 +110,6 @@ Tests run automatically on:
 2. **找不到Mock / Mock not found**: 为Python 2.7安装`mock`包：`pip install mock` / Install `mock` package for Python 2.7: `pip install mock==3.0.5`
 3. **找不到pytest / pytest not found**: 安装pytest：`pip install pytest` / Install pytest: `pip install pytest`
 
-### 调试测试失败 / Debug Test Failures
-```bash
-# 运行更详细的输出 / Run with more verbose output
-python -m unittest discover tests -v
+**注意**: 项目已通过修改 `tests/__init__.py` 解决了模块导入路径问题，现在所有运行方式都能正常工作。
 
-# 运行单个失败的测试 / Run single failing test
-python -m unittest tests.test_provider_he.TestHeProvider.failing_test -v
-
-# 添加print语句或使用pdb调试 / Add print statements or use pdb for debugging
-```
-
-## 测试覆盖目标 / Test Coverage Goals
-
-当前测试覆盖包括：
-
-Current test coverage includes:
-- ✅ SimpleProvider核心功能 / SimpleProvider core functionality
-- ✅ BaseProvider核心功能 / BaseProvider core functionality  
-- ✅ 所有提供商实现（callback, debug, he）/ All provider implementations (callback, debug, he)
-- ✅ 错误处理和边界情况 / Error handling and edge cases
-- ✅ Python 2/3兼容性 / Python 2/3 compatibility
-- ✅ 日志记录和敏感数据屏蔽 / Logging and sensitive data masking
-
-目标：为所有提供商实现保持>90%的代码覆盖率。
-
-Target: Maintain >90% code coverage for all provider implementations.
+**Note**: The project has resolved module import path issues by modifying `tests/__init__.py`, and now all running methods work correctly.

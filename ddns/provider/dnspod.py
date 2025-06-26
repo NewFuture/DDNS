@@ -35,10 +35,7 @@ class DnspodProvider(BaseProvider):
         if extra:
             params.update(extra)
         params = {k: v for k, v in params.items() if v is not None}
-        params.update(
-            {"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json"}
-        )
-
+        params.update({"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json"})
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
         data = self._http("POST", "/" + action, headers=headers, body=params)
         if data and data.get("status", {}).get("code") == "1":  # 请求成功
@@ -96,13 +93,19 @@ class DnspodProvider(BaseProvider):
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
-    def _query_record(self, zone_id, sub, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, str, str | None, dict | None) -> dict | None
         """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
-        res = self._request("Record.List", domain_id=zone_id, sub_domain=sub, record_type=record_type, length="3000")
+        res = self._request(
+            "Record.List", domain_id=zone_id, sub_domain=sub_domain, record_type=record_type, line=line
+        )
+        # length="3000"
         records = res.get("records", [])
-        for record in records:
-            if line is None or record.get("line", "") == line:
-                return record
-        self.logger.warning("No record found for [%s] with %s<%s>(line: %s)", zone_id, sub, record_type, line)
-        return None
+        n = len(records)
+        if not n:
+            self.logger.warning("No record found for [%s] %s<%s>(line: %s)", zone_id, sub_domain, record_type, line)
+            return None
+        if n > 1:
+            self.logger.warning("%d records found for %s<%s>(%s):\n %s", n, sub_domain, record_type, line, records)
+            return next((r for r in records if r.get("name") == sub_domain), None)
+        return records[0]
