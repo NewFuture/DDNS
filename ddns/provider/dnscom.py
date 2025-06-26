@@ -20,9 +20,7 @@ class DnscomProvider(BaseProvider):
     ContentType = TYPE_FORM
 
     def _signature(self, params):
-        """
-        https://www.51dns.com/document/api/70/72.html
-        """
+        """https://www.51dns.com/document/api/70/72.html"""
         params = {k: v for k, v in params.items() if v is not None}
         params.update(
             {
@@ -45,9 +43,7 @@ class DnscomProvider(BaseProvider):
         return data.get("data")
 
     def _query_zone_id(self, domain):
-        """
-        https://www.51dns.com/document/api/74/31.html
-        """
+        """https://www.51dns.com/document/api/74/31.html"""
         res = self._request("domain/getsingle", domainID=domain)
         self.logger.debug("Queried domain: %s", res)
         if res:
@@ -55,9 +51,7 @@ class DnscomProvider(BaseProvider):
         return None
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        """
-        https://www.51dns.com/document/api/4/47.html
-        """
+        """https://www.51dns.com/document/api/4/47.html"""
         records = self._request("record/list", domainID=zone_id, host=sub_domain, pageSize=500)
         records = records.get("data", []) if records else []
         for record in records:
@@ -70,9 +64,7 @@ class DnscomProvider(BaseProvider):
         return None
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        """
-        https://www.51dns.com/document/api/4/12.html
-        """
+        """https://www.51dns.com/document/api/4/12.html"""
         extra = extra or {}
         extra["remark"] = extra.get("remark", self.Remark)
         res = self._request(
@@ -92,9 +84,7 @@ class DnscomProvider(BaseProvider):
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        """
-        https://www.51dns.com/document/api/4/45.html
-        """
+        """https://www.51dns.com/document/api/4/45.html"""
         extra = extra or {}
         extra["remark"] = old_record.get("remark", extra.get("remark", self.Remark))
         res = self._request(

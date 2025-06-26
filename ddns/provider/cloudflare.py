@@ -21,9 +21,7 @@ class CloudflareProvider(BaseProvider):
                 raise ValueError("ID must be a valid email or Empty for Cloudflare API v4")
 
     def _request(self, method, action, **params):
-        """
-        发送请求数据
-        """
+        """ 发送请求数据 """
         headers = {}
         if self.auth_id:
             headers["X-Auth-Email"] = self.auth_id
@@ -40,9 +38,7 @@ class CloudflareProvider(BaseProvider):
         return data
 
     def _query_zone_id(self, domain):
-        """
-        https://developers.cloudflare.com/api/resources/zones/methods/list/
-        """
+        """https://developers.cloudflare.com/api/resources/zones/methods/list/"""
         params = {"name.exact": domain, "per_page": 50}
         zones = self._request("GET", "", **params)
         zone = next((z for z in zones if domain == z.get("name", "")), None)
@@ -53,9 +49,7 @@ class CloudflareProvider(BaseProvider):
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, str, str | None, dict | None) -> dict | None
-        """
-        https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/
-        """
+        """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/"""
         # cloudflare的域名查询需要完整域名
         name = self._join_domain(sub_domain, main_domain)
         query = {"name.exact": name}  # type: dict[str, str|None]
@@ -71,9 +65,7 @@ class CloudflareProvider(BaseProvider):
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
-        """
-        https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/
-        """
+        """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/"""
         name = self._join_domain(sub_domain, main_domain)
         extra = extra or {}
         extra["comment"] = extra.get("comment", self.Remark)  # 添加注释
@@ -88,9 +80,7 @@ class CloudflareProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
-        """
-        https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/
-        """
+        """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/"""
         extra = extra or {}
         extra["comment"] = old_record.get("comment", extra.get("comment", self.Remark))  # 注释
         extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态

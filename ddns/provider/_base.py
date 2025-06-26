@@ -142,7 +142,7 @@ class SimpleProvider(object):
         raise NotImplementedError("This set_record should be implemented by subclasses")
 
     def set_proxy(self, proxy_str):
-        # type: (str | None) -> BaseProvider
+        # type: (str | None) -> SimpleProvider
         """
         设置代理服务器
 
@@ -152,7 +152,7 @@ class SimpleProvider(object):
             proxy_str (str): 代理地址
 
         Returns:
-            BaseProvider: 自身
+            Self: 自身
         """
         self.proxy = proxy_str
         return self
@@ -541,4 +541,3 @@ class BaseProvider(SimpleProvider):
         if not main:
             return sub
         return "{}.{}".format(sub, main)
-

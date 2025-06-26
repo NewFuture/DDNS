@@ -24,10 +24,9 @@ class DnspodProvider(BaseProvider):
         发送请求数据
 
         Send request to DNSPod API.
-
         Args:
             action (str): API 动作/Action
-            param (dict|None): 额外参数/Extra params
+            extra (dict|None): 额外参数/Extra params
             params (dict): 其它参数/Other params
         Returns:
             dict: 响应数据/Response data
@@ -37,7 +36,7 @@ class DnspodProvider(BaseProvider):
             params.update(extra)
         params = {k: v for k, v in params.items() if v is not None}
         params.update(
-            {"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json", "length": "3000"}
+            {"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json"}
         )
 
         headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
@@ -52,9 +51,7 @@ class DnspodProvider(BaseProvider):
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
-        """
-        https://docs.dnspod.cn/api/add-record/
-        """
+        """https://docs.dnspod.cn/api/add-record/"""
         res = self._request(
             "Record.Create",
             extra=extra,
@@ -77,9 +74,7 @@ class DnspodProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
-        """
-        https://docs.dnspod.cn/api/modify-records/
-        """
+        """https://docs.dnspod.cn/api/modify-records/"""
         record_line = (
             (line or old_record.get("line") or self.DefaultLine).replace("Default", "default").encode("utf-8")
         )
@@ -105,28 +100,19 @@ class DnspodProvider(BaseProvider):
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
-        """
-        https://docs.dnspod.cn/api/domain-info/
-        查询域名 ID
-        """
+        """查询域名信息 https://docs.dnspod.cn/api/domain-info/"""
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, str, str | None, dict | None) -> dict | None
-        """
-        https://docs.dnspod.cn/api/record-list/
-        查询记录 list 然后逐个查找
-        """
-
-        res = self._request("Record.List", domain_id=zone_id)
+        """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
+        res = self._request("Record.List", domain_id=zone_id, length="3000")
         records = res.get("records", [])
         for record in records:
             if record.get("name") == sub_domain and record.get("type") == record_type:
                 record_line = record.get("line", "")
                 if line is None or record_line == line or record_line == "默认":
                     return record
-        self.logger.warning(
-            "No record found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
-        )
+        self.logger.warning("No record found for [%s] with %s<%s>(line: %s)", zone_id, sub_domain, record_type, line)
         return None

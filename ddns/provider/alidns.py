@@ -58,16 +58,12 @@ class AlidnsProvider(BaseProvider):
         return self._http("POST", "/", body=params)
 
     def _query_zone_id(self, domain):
-        """
-        https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-getmaindomainname
-        """
+        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-getmaindomainname"""
         res = self._request("GetMainDomainName", InputString=domain)
         return res.get("DomainName")
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        """
-        https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords
-        """
+        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords"""
         extra = extra or {}
         data = self._request(
             "DescribeDomainRecords",
@@ -82,7 +78,7 @@ class AlidnsProvider(BaseProvider):
         records = data.get("DomainRecords", {}).get("Record", [])
         if not records:
             self.logger.warning(
-                "No records found for [%s] with sub %s + type %s (line: %s)", zone_id, sub_domain, record_type, line
+                "No records found for [%s] with %s <%s> (line: %s)", zone_id, sub_domain, record_type, line
             )
         elif not isinstance(records, list):
             self.logger.error("Invalid records format: %s", records)
@@ -92,9 +88,7 @@ class AlidnsProvider(BaseProvider):
         return None
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        """
-        https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord
-        """
+        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord"""
         extra = extra or {}
         data = self._request(
             "AddDomainRecord",
@@ -113,9 +107,7 @@ class AlidnsProvider(BaseProvider):
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        """
-        https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-updatedomainrecord
-        """
+        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-updatedomainrecord"""
         extra = extra or {}
         data = self._request(
             "UpdateDomainRecord",

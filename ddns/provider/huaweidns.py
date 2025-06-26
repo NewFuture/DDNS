@@ -82,9 +82,7 @@ class HuaweiDNSProvider(BaseProvider):
         return data
 
     def _query_zone_id(self, domain):
-        """
-        https://support.huaweicloud.com/api-dns/dns_api_62003.html
-        """
+        """https://support.huaweicloud.com/api-dns/dns_api_62003.html"""
         domain = domain + "." if not domain.endswith(".") else domain
         data = self._request("GET", "/v2/zones", search_mode="equal", limit=500, name=domain)
         zones = data.get("zones", [])
@@ -136,10 +134,7 @@ class HuaweiDNSProvider(BaseProvider):
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        """
-        https://support.huaweicloud.com/api-dns/UpdateRecordSet.html
-        无 line 参数
-        """
+        """https://support.huaweicloud.com/api-dns/UpdateRecordSet.html (无 line 参数)"""
         extra = extra or {}
         extra["description"] = extra.get("description", self.Remark)
         res = self._request(
