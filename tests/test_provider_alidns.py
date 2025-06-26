@@ -2,7 +2,7 @@
 """
 Unit tests for AlidnsProvider
 
-@author: Testing Suite
+@author: Github Copilot
 """
 
 from test_base import BaseProviderTestCase, unittest, patch
@@ -37,7 +37,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         """Test _signature method generates correct signature"""
         # Mock datetime to get consistent results
         mock_now = datetime(2023, 1, 1, 12, 0, 0)
-        mock_datetime.utcnow.return_value = mock_now
+        mock_datetime.now.return_value = mock_now
 
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 

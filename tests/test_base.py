@@ -2,7 +2,7 @@
 """
 Base test utilities and common imports for all provider tests
 
-@author: Testing Suite
+@author: Github Copilot
 """
 
 import unittest
