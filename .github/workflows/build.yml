@@ -62,7 +62,11 @@ jobs:
       
       - name: install mock for Python 2.7
         if:  ${{ matrix.version == '2.7' }}
-        run:  pip2 install mock==3.0.5
+        run: |
+          curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+          sudo python2 get-pip.py
+          python2 -m pip install mock==3.0.5
+        working-directory: /workspace
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
 
