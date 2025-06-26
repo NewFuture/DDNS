@@ -66,7 +66,7 @@ jobs:
           curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
           sudo python2 get-pip.py
           python2 -m pip install mock==3.0.5
-        working-directory: /workspace
+        working-directory: /tmp
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
 
