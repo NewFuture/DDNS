@@ -84,8 +84,7 @@ def get_system_info_str():
     system = platform.system()
     release = platform.release()
     machine = platform.machine()
-    arch = platform.architecture()  # '64bit' or '32bit'
-
+    arch = platform.architecture()
     return "{}-{} {} {}".format(system, release, machine, arch)
 
 

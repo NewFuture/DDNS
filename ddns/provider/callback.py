@@ -38,19 +38,17 @@ class CallbackProvider(BaseProvider):
                 "__LINE__": line,
             }
         )
+        url = self._replace_vars(url, extra)
         if not token:
             # GET 方式，URL query 传参
-            method = "GET"
-            url = self._replace_vars(url, extra)
-            res = self._http(method, url)
+            res = self._http("GET", url)
         else:
             # POST 方式，token 作为 POST 参数
-            method = "POST"
             params = token if isinstance(token, dict) else jsondecode(token)
             for k, v in params.items():
                 if isinstance(v, str):
                     params[k] = self._replace_vars(v, extra)
-            res = self._http(method, url, params=params)
+            res = self._http("POST", url, body=params)
         if res:
             self.logger.info("Callback result: %s", res)
             return True
@@ -58,15 +56,15 @@ class CallbackProvider(BaseProvider):
             self.logger.warning("Callback No Response")
             return False
 
-    def _replace_vars(self, str, mapping):
+    def _replace_vars(self, string, mapping):
         # type: (str, dict) -> str
         """
         替换字符串中的变量为实际值
         Replace variables in string with actual values
         """
         for k, v in mapping.items():
-            str = str.replace(k, v)
-        return str
+            string = string.replace(k, str(v))
+        return string
 
     def _validate(self):
         if not self.auth_id:
