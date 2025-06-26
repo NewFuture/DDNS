@@ -48,6 +48,7 @@ tests/
 ├── __init__.py                 # 测试包初始化 / Makes tests a package
 ├── test_base.py               # 共享测试工具和基类 / Shared test utilities and base classes
 ├── test_provider_base.py      # BaseProvider测试 / Tests for BaseProvider
+├── test_provider_simple.py    # SimpleProvider测试 / Tests for SimpleProvider
 ├── test_provider_callback.py  # CallbackProvider测试 / Tests for CallbackProvider  
 ├── test_provider_debug.py     # DebugProvider测试 / Tests for DebugProvider
 ├── test_provider_he.py        # HeProvider测试 / Tests for HeProvider
@@ -131,6 +132,7 @@ python -m unittest tests.test_provider_he.TestHeProvider.failing_test -v
 当前测试覆盖包括：
 
 Current test coverage includes:
+- ✅ SimpleProvider核心功能 / SimpleProvider core functionality
 - ✅ BaseProvider核心功能 / BaseProvider core functionality  
 - ✅ 所有提供商实现（callback, debug, he）/ All provider implementations (callback, debug, he)
 - ✅ 错误处理和边界情况 / Error handling and edge cases
