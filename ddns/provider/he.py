@@ -36,3 +36,15 @@ class HeProvider(BaseProvider):
         else:
             self.logger.error("HE API error: %s", res)
             raise Exception(res)
+
+    def _query_zone_id(self, domain):
+        pass
+
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        return False
+
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        return False
+
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+        pass
