@@ -122,7 +122,7 @@ class SimpleProvider(object):
 
     @abstractmethod
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, str | int | None, str | None, **dict) -> bool
+        # type: (str, str, str, str | int | None, str | None, **Any) -> bool
         """
         设置 DNS 记录（创建或更新）
 
@@ -333,7 +333,7 @@ class BaseProvider(SimpleProvider):
     """
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, str | int | None, str | None, **dict) -> bool
+        # type: (str, str, str, str | int | None, str | None, **Any) -> bool
         """
         设置 DNS 记录（创建或更新）
 
