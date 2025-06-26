@@ -27,7 +27,7 @@ def is_false(value):
     字符串 'false', 或者 False, 或者 'none';
     0 不是 False
     """
-    if hasattr(value, "strip"): # 字符串
+    if hasattr(value, "strip"):  # 字符串
         return value.strip().lower() in ["false", "none"]
     return value is False
 

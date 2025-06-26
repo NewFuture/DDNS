@@ -10,7 +10,7 @@
 Abstract base class for DNS provider APIs.
 Defines a unified interface to support extension and adaptation across providers.
 * _query_zone_id
-* _query_record 
+* _query_record
 * _update_record
 * _create_record
 ┌──────────────────────────────────────────────────┐
@@ -218,7 +218,7 @@ class SimpleProvider(object):
         if params:
             if method in ("GET", "DELETE"):
                 # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
-                if not isinstance(params, str):
+                if isinstance(params, dict):
                     # 如果 params 已经是字符串，则直接使用
                     queries = queries.update(params) if queries else params
                 elif queries is None:
@@ -245,7 +245,7 @@ class SimpleProvider(object):
             headers = headers or {}
             if "content-type" not in headers:
                 headers["content-type"] = self.ContentType
-            if isinstance(body, str):
+            if isinstance(body, str) or isinstance(body, bytes):
                 # 如果 body 已经是字符串，则不需要再次编码
                 bodyData = body
             elif self.ContentType == TYPE_FORM:
@@ -275,11 +275,14 @@ class SimpleProvider(object):
         编码参数为 URL 查询字符串
 
         Args:
-            params (dict|list): 参数字典或列表        Returns:
+            params (dict|list): 参数字典或列表
+        Returns:
             str: 编码后的查询字符串
         """
-        if not params or isinstance(params, str):
+        if not params:
             return ""
+        elif isinstance(params, str) or isinstance(params, bytes):
+            return params
         return urlencode(params, doseq=True)
 
     @staticmethod
@@ -303,7 +306,8 @@ class SimpleProvider(object):
 
         Args:
             data (str | dict | None): 需要处理的数据
-            is_url (bool): 是否为URL数据        Returns:
+            is_url (bool): 是否为URL数据
+        Returns:
             str: 打码后的字符串
         """
         if not data or not self.auth_token:

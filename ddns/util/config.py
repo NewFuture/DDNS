@@ -54,7 +54,7 @@ def parse_array_string(value, enable_simple_split):
     仅当 trim 之后以 '[' 开头以 ']' 结尾时，才尝试使用 ast.literal_eval 解析
     默认返回原始字符串
     """
-    if not hasattr(value, "strip"): # 非字符串
+    if not hasattr(value, "strip"):  # 非字符串
         return value
 
     trimmed = value.strip()
