@@ -62,7 +62,7 @@ jobs:
       
       - name: install mock for Python 2.7
         if:  ${{ matrix.version == '2.7' }}
-        run:  pip install mock==3.0.5
+        run:  pip2 install mock==3.0.5
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
 
