@@ -15,6 +15,12 @@ class DebugProvider(SimpleProvider):
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         self.logger.debug("DebugProvider: %s(%s) => %s", domain, record_type, value)
-        ip_type = "IPv4" if record_type == "A" else "IPv6" if record_type == "AAAA" else record_type
-        print("[{}] {}".format(ip_type, value))
+        rtype = u"IPv4" if record_type == u"A" else u"IPv6" if record_type == u"AAAA" else record_type
+        print("[{}] {}".format(rtype, value))  # unicode 兼容python2
         return True
+
+
+def set_record(domain, value, record_type="A", ttl=None, line=None, **extra):
+    ip_type = u"IPv4" if record_type == u"A" else u"IPv6" if record_type == u"AAAA" else record_type
+    print("[{}] {}".format(ip_type, value))
+    return True
