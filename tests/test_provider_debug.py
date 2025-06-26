@@ -73,7 +73,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_other_type(self, mock_stdout):
-        """Test set_record method with other record types (CNAME, MX, etc.)"""
+        """Test set_record method with other record types (CNAME, etc.)"""
         provider = DebugProvider(self.auth_id, self.auth_token)
 
         result = provider.set_record("example.com", "target.example.com", "CNAME")
@@ -83,7 +83,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
         # Check that the correct output was printed (empty IP type for non-IP records)
         output = mock_stdout.getvalue()
-        self.assertIn("[] target.example.com", output)
+        self.assertIn("[CNAME] target.example.com", output)
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_mx_type(self, mock_stdout):
@@ -97,7 +97,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
         # Check that the correct output was printed
         output = mock_stdout.getvalue()
-        self.assertIn("[] mail.example.com", output)
+        self.assertIn("[MX] mail.example.com", output)
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_with_all_parameters(self, mock_stdout):
@@ -152,7 +152,7 @@ class TestDebugProvider(BaseProviderTestCase):
         output = mock_stdout.getvalue()
         self.assertIn("[IPv4] 192.168.1.1", output)
         self.assertIn("[IPv6] 2001:db8::1", output)
-        self.assertIn("[] target.example.com", output)
+        self.assertIn("[CNAME] target.example.com", output)
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_empty_values(self, mock_stdout):
@@ -180,7 +180,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
         # Check that the correct output was printed (None record_type results in empty IP type)
         output = mock_stdout.getvalue()
-        self.assertIn("[] 192.168.1.1", output)
+        self.assertIn("[None] 192.168.1.1", output)
 
 
 class TestDebugProviderIntegration(unittest.TestCase):
@@ -217,7 +217,7 @@ class TestDebugProviderIntegration(unittest.TestCase):
 
             self.assertTrue(result)
             output = mock_stdout.getvalue()
-            self.assertIn("[] test.com", output)
+            self.assertIn("[CNAME] test.com", output)
 
 
 if __name__ == "__main__":
