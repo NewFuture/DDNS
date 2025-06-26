@@ -38,13 +38,13 @@ class HeProvider(BaseProvider):
             raise Exception(res)
 
     def _query_zone_id(self, domain):
-        pass
-
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        return False
-
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        return False
+        return domain
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
         pass
+
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        return self.set_record(self._join_domain(sub_domain, main_domain), value, record_type)
+
+    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+        return self.set_record(zone_id, value, record_type)
