@@ -56,9 +56,9 @@ class TencentCloudProvider(BaseProvider):
         signed_headers_list = []
         canonical_headers = ""
         for key in sorted(headers.keys()):
-            if key.lower() in ["content-type", "host"]:
-                signed_headers_list.append(key.lower())
-                canonical_headers += "{}:{}\n".format(key.lower(), headers[key])
+            if key in ["content-type", "host"]:
+                signed_headers_list.append(key)
+                canonical_headers += "{}:{}\n".format(key, headers[key])
 
         signed_headers = ";".join(signed_headers_list)
         hashed_request_payload = sha256(payload.encode("utf-8")).hexdigest()
@@ -97,7 +97,7 @@ class TencentCloudProvider(BaseProvider):
 
         return authorization
 
-    def _request(self, action, params=None):
+    def _request(self, action, **params):
         """
         发送腾讯云 API 请求
 
@@ -112,17 +112,17 @@ class TencentCloudProvider(BaseProvider):
         """
 
         timestamp = int(time())
-        # 构建请求头
+        # 构建请求头,小写
         headers = {
             "content-type": self.ContentType,
             "host": self.API.split("://", 1)[1].strip("/"),
-            "X-TC-Action": action,
-            "X-TC-Version": self.version,
-            "X-TC-Timestamp": int(timestamp),
+            "x-tc-action": action,
+            "x-tc-version": self.version,
+            "x-tc-timestamp": int(timestamp),
         }
 
         # 构建请求体
-        payload = self._encode(params or {}) if params else "{}"
+        payload = self._encode(params)
 
         # 生成签名
         authorization = self._sign_tc3("POST", "/", "", headers, payload, timestamp)
@@ -151,28 +151,19 @@ class TencentCloudProvider(BaseProvider):
             return None
 
     def _query_zone_id(self, domain):
-        """查询域名的 zone_id (domain id)"""
-        # 腾讯云 DNSPod 中，domain 就是域名本身，不需要额外的 zone_id
-        # 但为了兼容基类接口，我们返回域名作为 zone_id
+        """查询域名的 zone_id (domain id) https://cloud.tencent.com/document/api/1427/56173"""
         return domain
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        """
-        查询 DNS 记录
-
-        API 文档: https://cloud.tencent.com/document/api/1427/56166
-        """
-        params = {"Domain": main_domain, "RecordType": record_type.upper()}
+        """查询 DNS 记录列表 https://cloud.tencent.com/document/api/1427/56166"""
+        params = {"DomainId": zone_id, "RecordType": record_type, "RecordLine": line}
 
         # 添加子域名筛选
         if sub_domain and sub_domain != "@":
             params["Subdomain"] = sub_domain
 
-        # 添加线路筛选
-        if line:
-            params["RecordLine"] = line
 
-        response = self._request("DescribeRecordList", params)
+        response = self._request("DescribeRecordList", **params)
         if not response or "RecordList" not in response:
             self.logger.debug("No records found or query failed")
             return None

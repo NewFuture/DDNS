@@ -12,6 +12,7 @@ from hmac import new as hmac
 from json import dumps as jsonencode
 from time import strftime
 
+
 class HuaweiDNSProvider(BaseProvider):
     API = "https://dns.myhuaweicloud.com"
     ContentType = TYPE_JSON
