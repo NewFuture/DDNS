@@ -9,6 +9,7 @@ from ._base import BaseProvider, TYPE_FORM
 from hashlib import sha1
 from hmac import new as hmac
 from base64 import b64encode
+from time import time, strftime
 
 
 class AlidnsProvider(BaseProvider):
@@ -25,15 +26,14 @@ class AlidnsProvider(BaseProvider):
         :param params: 请求参数/Request parameters
         :return: 签名后的参数/Signed parameters
         """
-        now = self.now()
         params.update(
             {
                 "Format": "json",
                 "Version": "2015-01-09",
                 "AccessKeyId": self.auth_id,
-                "Timestamp": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "SignatureMethod": "HMAC-SHA1",
-                "SignatureNonce": hex(now.__hash__())[2:],
+                "SignatureNonce": hex(hash(time()))[2:],
                 "SignatureVersion": "1.0",
             }
         )

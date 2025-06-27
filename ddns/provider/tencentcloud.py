@@ -6,10 +6,10 @@ Tencent Cloud DNSPod API
 @author: NewFuture
 """
 
-import hashlib
-import hmac
-
 from ._base import BaseProvider, TYPE_JSON
+from hashlib import sha256
+from hmac import new as hmac
+from time import time, strftime
 
 
 class TencentCloudProvider(BaseProvider):
@@ -75,7 +75,7 @@ class TencentCloudProvider(BaseProvider):
         )
 
         # Step 2: 构建待签名字符串
-        date = "2021-03-23"  # 服务版本日期，不是当前时间
+        date = strftime("%Y%m%d")  # 日期
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
         hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
 
@@ -110,15 +110,15 @@ class TencentCloudProvider(BaseProvider):
         Returns:
             dict: API 响应结果
         """
-        timestamp = int(self.now().timestamp())
 
+        timestamp = int(time())
         # 构建请求头
         headers = {
-            "Content-Type": "application/json",
-            "Host": "dnspod.tencentcloudapi.com",
+            "content-type": self.ContentType,
+            "host": self.API.split("://", 1)[1].strip("/"),
             "X-TC-Action": action,
             "X-TC-Version": self.version,
-            "X-TC-Timestamp": str(timestamp),
+            "X-TC-Timestamp": int(timestamp),
         }
 
         # 构建请求体
