@@ -21,7 +21,7 @@ class CloudflareProvider(BaseProvider):
                 raise ValueError("ID must be a valid email or Empty for Cloudflare API v4")
 
     def _request(self, method, action, **params):
-        """ 发送请求数据 """
+        """发送请求数据"""
         headers = {}
         if self.auth_id:
             headers["X-Auth-Email"] = self.auth_id
@@ -47,15 +47,15 @@ class CloudflareProvider(BaseProvider):
             return zone["id"]
         return None
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        # type: (str, str, str, str, str | None, dict | None) -> dict | None
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+        # type: (str, str, str, str, str | None, dict) -> dict | None
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/"""
         # cloudflare的域名查询需要完整域名
         name = self._join_domain(sub_domain, main_domain)
         query = {"name.exact": name}  # type: dict[str, str|None]
         if extra:
             query["proxied"] = extra.get("proxied", None)  # 代理状态
-        data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=100000, **query)
+        data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=10000, **query)
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
         self.logger.debug("Record queried: %s", record)
         if record:
@@ -63,11 +63,10 @@ class CloudflareProvider(BaseProvider):
         self.logger.warning("Failed to query record: %s", data)
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict ) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/"""
         name = self._join_domain(sub_domain, main_domain)
-        extra = extra or {}
         extra["comment"] = extra.get("comment", self.Remark)  # 添加注释
         data = self._request(
             "POST", "/{}/dns_records".format(zone_id), name=name, type=record_type, content=value, ttl=ttl, **extra
@@ -78,11 +77,10 @@ class CloudflareProvider(BaseProvider):
         self.logger.error("Failed to create record: %s", data)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/"""
-        extra = extra or {}
-        extra["comment"] = old_record.get("comment", extra.get("comment", self.Remark))  # 注释
+        extra["comment"] = extra.get("comment", self.Remark)  # 注释
         extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态
         extra["tags"] = old_record.get("tags", extra.get("tags"))  # 保持原有的标签
         extra["settings"] = old_record.get("settings", extra.get("settings"))  # 保持原有的设置

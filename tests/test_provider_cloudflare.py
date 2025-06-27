@@ -169,12 +169,13 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"},
             ]
 
-            result = provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
+            result = provider._query_record(
+                "zone123", "www", "example.com", "A", None, {}
+            )  # type: dict # type: ignore
 
             mock_join.assert_called_once_with("www", "example.com")
-            mock_request.assert_called_once_with(
-                "GET", "/zone123/dns_records", type="A", per_page=100000, **{"name.exact": "www.example.com"}
-            )
+            params = {"name.exact": "www.example.com"}
+            mock_request.assert_called_once_with("GET", "/zone123/dns_records", type="A", per_page=10000, **params)
             self.assertEqual(result["id"], "rec123")
             self.assertEqual(result["name"], "www.example.com")
 
@@ -189,7 +190,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"}
             ]
 
-            result = provider._query_record("zone123", "www", "example.com", "A")
+            result = provider._query_record("zone123", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -209,7 +210,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 "GET",
                 "/zone123/dns_records",
                 type="A",
-                per_page=100000,
+                per_page=10000,
                 **{"name.exact": "www.example.com", "proxied": True}
             )
 
@@ -222,7 +223,9 @@ class TestCloudflareProvider(BaseProviderTestCase):
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123", "name": "www.example.com"}
 
-            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300)
+            result = provider._create_record(
+                "zone123", "www", "example.com", "1.2.3.4", "A", 300, None, {}
+            )  # type: dict # type: ignore
 
             mock_join.assert_called_once_with("www", "example.com")
             mock_request.assert_called_once_with(
@@ -245,7 +248,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
             mock_join.return_value = "www.example.com"
             mock_request.return_value = None  # API request failed
 
-            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A")
+            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
             self.assertFalse(result)
 
@@ -290,7 +293,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123", "content": "5.6.7.8"}
 
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600)
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, None, {})
 
             mock_request.assert_called_once_with(
                 "PUT",
@@ -299,7 +302,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Old comment",
+                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark since extra is empty
                 proxied=False,
                 tags=["tag1"],
                 settings={"ttl": 300},
@@ -315,7 +318,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = None  # API request failed
 
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A")
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", None, None, {})
 
             self.assertFalse(result)
 
@@ -338,7 +341,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Old comment",  # old_record.get("comment", extra.get("comment"))
+                comment="New comment",  # extra.get("comment", self.Remark)
                 proxied=False,  # old_record.get("proxied", extra.get("proxied"))
                 priority=20,  # From extra
                 tags=None,
@@ -347,7 +350,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
             self.assertTrue(result)
 
     def test_update_record_preserves_old_values(self):
-        """Test _update_record method preserves old record values when extra is empty"""
+        """Test _update_record method preserves proxied/tags/settings from old record, uses default comment"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
         old_record = {
@@ -363,7 +366,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
             mock_request.return_value = {"id": "rec123"}
 
             # No extra parameters provided
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600)
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, None, {})
 
             mock_request.assert_called_once_with(
                 "PUT",
@@ -372,7 +375,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Preserve this",  # Preserved from old record
+                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark
                 proxied=True,  # Preserved from old record
                 tags=["important"],  # Preserved from old record
                 settings={"ttl": 300},  # Preserved from old record

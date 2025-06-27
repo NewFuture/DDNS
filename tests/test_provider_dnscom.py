@@ -31,12 +31,12 @@ class TestDnscomProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://www.51dns.com")
 
-    @patch.object(DnscomProvider, "now")
+    @patch("ddns.provider.dnscom.time")
     @patch("ddns.provider.dnscom.md5")
-    def test_signature_generation(self, mock_md5, mock_now):
+    def test_signature_generation(self, mock_md5, mock_time):
         """Test _signature method generates correct signature"""
-        # Mock now and hash
-        mock_now.return_value.timestamp.return_value = 1640995200  # Fixed timestamp
+        # Mock time and hash
+        mock_time.return_value = 1640995200  # Fixed timestamp
         mock_hash = mock_md5.return_value
         mock_hash.hexdigest.return_value = "test_hash_value"
 
@@ -56,11 +56,9 @@ class TestDnscomProvider(BaseProviderTestCase):
         """Test _signature method filters out None parameters"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "now") as mock_now, patch("ddns.provider.dnscom.md5") as mock_md5:
-            # Mock the now() method to return a fixed datetime
-            from datetime import datetime
-
-            mock_now.return_value = datetime.fromtimestamp(1640995200)
+        with patch("ddns.provider.dnscom.time") as mock_time, patch("ddns.provider.dnscom.md5") as mock_md5:
+            # Mock time to return a fixed timestamp
+            mock_time.return_value = 1640995200
             mock_hash = mock_md5.return_value
             mock_hash.hexdigest.return_value = "test_hash"
 
@@ -154,11 +152,13 @@ class TestDnscomProvider(BaseProviderTestCase):
                 ]
             }
 
-            result = provider._query_record("example.com", "www", "example.com", "A")  # type: dict # type: ignore
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             mock_request.assert_called_once_with("record/list", domainID="example.com", host="www", pageSize=500)
-            self.assertEqual(result["recordID"], "123")
-            self.assertEqual(result["record"], "www")
+            self.assertIsNotNone(result)
+            if result:  # Type narrowing
+                self.assertEqual(result["recordID"], "123")
+                self.assertEqual(result["record"], "www")
 
     def test_query_record_with_line(self):
         """Test _query_record method with line parameter"""
@@ -172,12 +172,12 @@ class TestDnscomProvider(BaseProviderTestCase):
                 ]
             }
 
-            result = provider._query_record(
-                "example.com", "www", "example.com", "A", "2"
-            )  # type: dict # type: ignore
+            result = provider._query_record("example.com", "www", "example.com", "A", "2", {})
 
-            self.assertEqual(result["recordID"], "456")
-            self.assertEqual(result["viewID"], "2")
+            self.assertIsNotNone(result)
+            if result:  # Type narrowing
+                self.assertEqual(result["recordID"], "456")
+                self.assertEqual(result["viewID"], "2")
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
@@ -188,7 +188,7 @@ class TestDnscomProvider(BaseProviderTestCase):
                 "data": [{"record": "mail", "type": "A", "recordID": "456", "value": "5.6.7.8"}]
             }
 
-            result = provider._query_record("example.com", "www", "example.com", "A")
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -199,7 +199,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = None
 
-            result = provider._query_record("example.com", "www", "example.com", "A")
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -210,7 +210,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"recordID": "123456"}
 
-            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "1")
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "1", {})
 
             mock_request.assert_called_once_with(
                 "record/create",
@@ -254,7 +254,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"error": "Domain not found"}
 
-            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A")
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
             self.assertFalse(result)
 
@@ -267,7 +267,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"success": True}
 
-            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600)
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, None, {})
 
             mock_request.assert_called_once_with(
                 "record/modify", domainID="example.com", recordID="123456", newvalue="5.6.7.8", newTTL=600
@@ -300,7 +300,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = None
 
-            result = provider._update_record("example.com", old_record, "5.6.7.8", "A")
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
 
             self.assertFalse(result)
 

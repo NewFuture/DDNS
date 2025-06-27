@@ -44,8 +44,8 @@ class DnspodProvider(BaseProvider):
             self.logger.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
             return data
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         """https://docs.dnspod.cn/api/add-record/"""
         res = self._request(
             "Record.Create",
@@ -65,8 +65,8 @@ class DnspodProvider(BaseProvider):
             self.logger.error("Failed to create record: %s", res)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """https://docs.dnspod.cn/api/modify-records/"""
         record_line = (line or old_record.get("line") or self.DefaultLine).replace("Default", "default")
         res = self._request(
@@ -93,8 +93,8 @@ class DnspodProvider(BaseProvider):
         res = self._request("Domain.Info", domain=domain)
         return res.get("domain", {}).get("id")
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        # type: (str, str, str, str, str | None, dict | None) -> dict | None
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+        # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
         res = self._request(
             "Record.List", domain_id=zone_id, sub_domain=sub_domain, record_type=record_type, line=line

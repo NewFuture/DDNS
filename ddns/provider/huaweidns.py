@@ -90,7 +90,7 @@ class HuaweiDNSProvider(BaseProvider):
         zoneid = zone and zone["id"]
         return zoneid
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
         """
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64004.html
         v2 https://support.huaweicloud.com/api-dns/ListRecordSetsByZone.html
@@ -109,13 +109,12 @@ class HuaweiDNSProvider(BaseProvider):
         record = next((r for r in records if r.get("name") == domain and r.get("type") == record_type), None)
         return record
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
         """
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64001.html
         v2 https://support.huaweicloud.com/api-dns/CreateRecordSet.html
         """
         domain = self._join_domain(sub_domain, main_domain) + "."
-        extra = extra or {}
         extra["description"] = extra.get("description", self.Remark)
         res = self._request(
             "POST",
@@ -133,9 +132,8 @@ class HuaweiDNSProvider(BaseProvider):
         self.logger.warning("Failed to create record: %s", res)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """https://support.huaweicloud.com/api-dns/UpdateRecordSet.html (无 line 参数)"""
-        extra = extra or {}
         extra["description"] = extra.get("description", self.Remark)
         res = self._request(
             "PUT",

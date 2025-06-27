@@ -5,7 +5,6 @@ Tencent Cloud DNSPod API
 
 @author: NewFuture
 """
-
 from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
@@ -129,39 +128,33 @@ class TencentCloudProvider(BaseProvider):
         headers["Authorization"] = authorization
 
         # 发送请求
-        try:
-            response = self._http("POST", "/", body=payload, headers=headers)
+        response = self._http("POST", "/", body=payload, headers=headers)
 
-            if response and "Response" in response:
-                if "Error" in response["Response"]:
-                    error = response["Response"]["Error"]
-                    self.logger.error(
-                        "TencentCloud API error: %s - %s",
-                        error.get("Code", "Unknown"),
-                        error.get("Message", "Unknown error"),
-                    )
-                    return None
-                return response["Response"]
+        if response and "Response" in response:
+            if "Error" in response["Response"]:
+                error = response["Response"]["Error"]
+                self.logger.error(
+                    "TencentCloud API error: %s - %s",
+                    error.get("Code", "Unknown"),
+                    error.get("Message", "Unknown error"),
+                )
+                return None
+            return response["Response"]
 
-            self.logger.warning("Unexpected response format: %s", response)
-            return None
-
-        except Exception as e:
-            self.logger.error("Request failed: %s", e)
-            return None
+        self.logger.warning("Unexpected response format: %s", response)
+        return None
 
     def _query_zone_id(self, domain):
         """查询域名的 zone_id (domain id) https://cloud.tencent.com/document/api/1427/56173"""
         return domain
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
         """查询 DNS 记录列表 https://cloud.tencent.com/document/api/1427/56166"""
         params = {"DomainId": zone_id, "RecordType": record_type, "RecordLine": line}
 
         # 添加子域名筛选
         if sub_domain and sub_domain != "@":
             params["Subdomain"] = sub_domain
-
 
         response = self._request("DescribeRecordList", **params)
         if not response or "RecordList" not in response:
@@ -183,91 +176,41 @@ class TencentCloudProvider(BaseProvider):
         self.logger.debug("No matching record found")
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        """
-        创建 DNS 记录
-
-        API 文档: https://cloud.tencent.com/document/api/1427/56180
-        """
-        params = {
-            "Domain": main_domain,
-            "RecordType": record_type.upper(),
-            "RecordLine": line or "默认",
-            "Value": value,
-        }
-
-        # 添加子域名
-        if sub_domain and sub_domain != "@":
-            params["SubDomain"] = sub_domain
-
-        # 添加 TTL
-        if ttl:
-            params["TTL"] = int(ttl)
-
-        # 添加备注
-        params["Remark"] = self.Remark
-
-        # 处理额外参数
-        if extra:
-            if "mx" in extra:
-                params["MX"] = int(extra["mx"])
-            if "weight" in extra:
-                params["Weight"] = int(extra["weight"])
-
-        response = self._request("CreateRecord", params)
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+        """创建 DNS 记录 https://cloud.tencent.com/document/api/1427/56180"""
+        extra["Remark"] = extra.get("Remark", self.Remark)
+        response = self._request(
+            "CreateRecord",
+            Domain=main_domain,
+            DomainId=zone_id,
+            SubDomain=sub_domain,
+            RecordType=record_type,
+            Value=value,
+            RecordLine=line or "默认",
+            TTL=int(ttl) if ttl else None,
+            **extra
+        )
         if response and "RecordId" in response:
             self.logger.info("Record created successfully with ID: %s", response["RecordId"])
             return True
-
-        self.logger.error("Failed to create record")
+        self.logger.error("Failed to create record:\n%s", response)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        """
-        更新 DNS 记录
-
-        API 文档: https://cloud.tencent.com/document/api/1427/56157
-        """
-        record_id = old_record.get("RecordId")
-        if not record_id:
-            self.logger.error("No RecordId found in old record")
-            return False
-
-        params = {
-            "Domain": zone_id,  # zone_id 就是域名
-            "RecordId": record_id,
-            "RecordType": record_type.upper(),
-            "RecordLine": line or old_record.get("Line", "默认"),
-            "Value": value,
-        }
-
-        # 保持原有的子域名
-        if old_record.get("Name") and old_record.get("Name") != "@":
-            params["SubDomain"] = old_record["Name"]
-
-        # 添加 TTL
-        if ttl:
-            params["TTL"] = int(ttl)
-        elif old_record.get("TTL"):
-            params["TTL"] = old_record["TTL"]
-
-        # 保持原有的 MX 和权重设置
-        if old_record.get("MX"):
-            params["MX"] = old_record["MX"]
-        if old_record.get("Weight"):
-            params["Weight"] = old_record["Weight"]
-
-        # 处理额外参数
-        if extra:
-            if "mx" in extra:
-                params["MX"] = int(extra["mx"])
-            if "weight" in extra:
-                params["Weight"] = int(extra["weight"])
-
-        # 保持原有备注或使用新备注
-        params["Remark"] = old_record.get("Remark", self.Remark)
-
-        response = self._request("ModifyRecord", params)
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+        """更新 DNS 记录: https://cloud.tencent.com/document/api/1427/56157"""
+        extra["Remark"] = extra.get("Remark", self.Remark)
+        response = self._request(
+            "ModifyRecord",
+            # Domain=old_record.get("Domain"),
+            DomainId=old_record.get("DomainId"),
+            SubName=old_record.get("Name"),
+            RecordId=old_record.get("RecordId"),
+            RecordType=record_type,
+            RecordLine=old_record.get("Line", line or "默认"),
+            Value=value,
+            TTL=int(ttl) if ttl else None,
+            **extra
+        )
         if response and "RecordId" in response:
             self.logger.info("Record updated successfully")
             return True

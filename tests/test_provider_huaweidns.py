@@ -7,7 +7,6 @@ Unit tests for HuaweiDNSProvider
 
 from test_base import BaseProviderTestCase, unittest, patch
 from ddns.provider.huaweidns import HuaweiDNSProvider
-from datetime import datetime
 
 
 class TestHuaweiDNSProvider(BaseProviderTestCase):
@@ -20,14 +19,14 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         self.auth_token = "test_secret_key"
         self.provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
 
-        # Mock now() method for all tests
-        self.now_patcher = patch.object(self.provider, "now")
-        self.mock_now = self.now_patcher.start()
-        self.mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        # Mock strftime for all tests
+        self.strftime_patcher = patch("ddns.provider.huaweidns.strftime")
+        self.mock_strftime = self.strftime_patcher.start()
+        self.mock_strftime.return_value = "20230101T120000Z"
 
     def tearDown(self):
         """Clean up test fixtures"""
-        self.now_patcher.stop()
+        self.strftime_patcher.stop()
         super(TestHuaweiDNSProvider, self).tearDown()
 
     def test_class_constants(self):
@@ -146,7 +145,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 ]
             }
 
-            result = self.provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
+            result = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
 
             mock_request.assert_called_once_with(
                 "GET",
@@ -157,15 +156,17 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 line_id=None,
                 search_mode="equal",
             )
-            self.assertEqual(result["id"], "rec123")
-            self.assertEqual(result["name"], "www.example.com.")
+            self.assertIsNotNone(result)
+            if result:  # Type narrowing
+                self.assertEqual(result["id"], "rec123")
+                self.assertEqual(result["name"], "www.example.com.")
 
     def test_query_record_with_line(self):
         """Test _query_record method with line parameter"""
         with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"recordsets": []}
 
-            self.provider._query_record("zone123", "www", "example.com", "A", "line1")
+            self.provider._query_record("zone123", "www", "example.com", "A", "line1", {})
 
             mock_request.assert_called_once_with(
                 "GET",
@@ -184,7 +185,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 "recordsets": [{"id": "rec456", "name": "mail.example.com.", "type": "A", "records": ["5.6.7.8"]}]
             }
 
-            result = self.provider._query_record("zone123", "www", "example.com", "A")
+            result = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -193,7 +194,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123456"}
 
-            result = self.provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, "line1")
+            result = self.provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, "line1", {})
 
             mock_request.assert_called_once_with(
                 "POST",
@@ -235,7 +236,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"error": "Zone not found"}
 
-            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A")
+            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
             self.assertFalse(result)
 
@@ -248,7 +249,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123"}
 
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600)
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, None, {})
 
             mock_request.assert_called_once_with(
                 "PUT",
@@ -270,7 +271,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123"}
 
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", None)
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", None, None, {})
 
             mock_request.assert_called_once_with(
                 "PUT",
@@ -316,7 +317,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"error": "Record not found"}
 
-            result = provider._update_record("zone123", old_record, "5.6.7.8", "A")
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", None, None, {})
 
             self.assertFalse(result)
 

@@ -152,9 +152,10 @@ class TestBaseProvider(BaseProviderTestCase):
         result = self.provider.set_record("www~example.com", "1.2.3.4", "A")
         self.assertTrue(result)
         # 验证记录是否被创建
-        record = self.provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
+        record = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
         self.assertIsNotNone(record)
-        self.assertEqual(record["value"], "1.2.3.4")
+        if record:  # Type narrowing for mypy
+            self.assertEqual(record["value"], "1.2.3.4")
 
     def test_set_record_update_existing(self):
         """测试更新现有记录"""
@@ -163,8 +164,9 @@ class TestBaseProvider(BaseProviderTestCase):
         # 再更新它
         result = self.provider.set_record("www~example.com", "9.8.7.6", "A")
         self.assertTrue(result)
-        record = self.provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
-        self.assertEqual(record["value"], "9.8.7.6")
+        record = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
+        if record:  # Type narrowing for mypy
+            self.assertEqual(record["value"], "9.8.7.6")
 
     def test_set_record_invalid_domain(self):
         """测试无效域名"""

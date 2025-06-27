@@ -127,7 +127,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         """Test _query_record method with single record found"""
         mock_request.return_value = {"records": [{"id": "123", "name": "www", "value": "192.168.1.1", "type": "A"}]}
 
-        record = self.provider._query_record("zone123", "www", "example.com", "A")
+        record = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
 
         self.assertIsNotNone(record)
         if record:
@@ -150,7 +150,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Mock logger
         self.provider.logger = MagicMock()
 
-        record = self.provider._query_record("zone123", "www", "example.com", "A")
+        record = self.provider._query_record("zone123", "www", "example.com", "A", None, {})
 
         self.assertIsNotNone(record)
         self.assertEqual(record["name"], "www")  # type: ignore[unreachable]
@@ -165,7 +165,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Mock logger
         self.provider.logger = MagicMock()
 
-        record = self.provider._query_record("zone123", "notfound", "example.com", "A")
+        record = self.provider._query_record("zone123", "notfound", "example.com", "A", None, {})
 
         self.assertIsNone(record)
         self.provider.logger.warning.assert_called_once()
@@ -179,14 +179,14 @@ class TestDnspodProvider(BaseProviderTestCase):
         self.provider.logger = MagicMock()
 
         result = self.provider._create_record(
-            "zone123", "www", "example.com", "192.168.1.1", "A", ttl=600, line="电信"
+            "zone123", "www", "example.com", "192.168.1.1", "A", ttl=600, line="电信", extra={}
         )
 
         self.assertTrue(result)
         self.provider.logger.info.assert_called_once()
         mock_request.assert_called_once_with(
             "Record.Create",
-            extra=None,
+            extra={},
             domain_id="zone123",
             sub_domain="www",
             value="192.168.1.1",
@@ -200,7 +200,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         """Test _create_record method with default line"""
         mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.1"}}
 
-        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A")
+        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", None, None, {})
 
         self.assertTrue(result)
         # Should use DefaultLine when line is not specified
@@ -215,7 +215,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Mock logger
         self.provider.logger = MagicMock()
 
-        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A")
+        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", None, None, {})
 
         self.assertFalse(result)
         self.provider.logger.error.assert_called_once()
@@ -226,7 +226,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.1"}}
 
         extra = {"weight": 10}
-        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", extra=extra)
+        result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", None, None, extra)
 
         self.assertTrue(result)
         mock_request.assert_called_once_with(
@@ -250,7 +250,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Mock logger
         self.provider.logger = MagicMock()
 
-        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", ttl=300)
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", 300, None, {})
 
         self.assertTrue(result)
         self.provider.logger.debug.assert_called_once()
@@ -262,7 +262,7 @@ class TestDnspodProvider(BaseProviderTestCase):
             record_type="A",
             value="192.168.1.2",
             record_line="电信",
-            extra=None,
+            extra={},
         )
 
     @patch("ddns.provider.dnspod.DnspodProvider._request")
@@ -275,7 +275,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Mock logger
         self.provider.logger = MagicMock()
 
-        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A")
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, {})
 
         self.assertFalse(result)
         self.provider.logger.error.assert_called_once()
@@ -287,7 +287,7 @@ class TestDnspodProvider(BaseProviderTestCase):
 
         old_record = {"id": "12345", "name": "www", "line": "Default"}
 
-        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A")
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, {})
 
         self.assertTrue(result)
         # Should convert "Default" to "default"
@@ -301,7 +301,7 @@ class TestDnspodProvider(BaseProviderTestCase):
 
         old_record = {"id": "12345", "name": "www"}  # No line specified
 
-        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A")
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, {})
 
         self.assertTrue(result)
         # Should use DefaultLine when old record has no line
@@ -316,7 +316,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         old_record = {"id": "12345", "name": "www", "line": "电信"}
         extra = {"weight": 20}
 
-        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", extra=extra)
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, extra)
 
         self.assertTrue(result)
         call_args = mock_request.call_args[1]
@@ -338,7 +338,7 @@ class TestDnspodProvider(BaseProviderTestCase):
             mock_request.return_value = {"status": {"code": "1"}}  # No record field
             self.provider.logger = MagicMock()
 
-            result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A")
+            result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", None, None, {})
 
             self.assertFalse(result)
             self.provider.logger.error.assert_called_once()
@@ -350,7 +350,7 @@ class TestDnspodProvider(BaseProviderTestCase):
             old_record = {"id": "12345", "name": "www"}
             self.provider.logger = MagicMock()
 
-            result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A")
+            result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, {})
 
             self.assertFalse(result)
             self.provider.logger.error.assert_called_once()

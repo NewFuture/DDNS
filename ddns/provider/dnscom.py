@@ -50,7 +50,7 @@ class DnscomProvider(BaseProvider):
             return res.get("domainID")
         return None
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
         """https://www.51dns.com/document/api/4/47.html"""
         records = self._request("record/list", domainID=zone_id, host=sub_domain, pageSize=500)
         records = records.get("data", []) if records else []
@@ -63,9 +63,8 @@ class DnscomProvider(BaseProvider):
                 return record
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/12.html"""
-        extra = extra or {}
         extra["remark"] = extra.get("remark", self.Remark)
         res = self._request(
             "record/create",
@@ -83,10 +82,9 @@ class DnscomProvider(BaseProvider):
         self.logger.error("Failed to create record: %s", res)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/45.html"""
-        extra = extra or {}
-        extra["remark"] = old_record.get("remark", extra.get("remark", self.Remark))
+        extra["remark"] = extra.get("remark", self.Remark)
         res = self._request(
             "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
         )

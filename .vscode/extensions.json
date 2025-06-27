@@ -5,5 +5,8 @@
         "ms-python.flake8",
         "ms-python.vscode-pylance",
         "ms-python.black-formatter",
+        "github.vscode-pull-request-github",
+        "ms-vscode.vscode-websearchforcopilot",
+        "ms-azuretools.vscode-containers",
     ]
 }

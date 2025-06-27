@@ -7,7 +7,6 @@ Unit tests for AlidnsProvider
 
 from test_base import BaseProviderTestCase, unittest, patch
 from ddns.provider.alidns import AlidnsProvider
-from datetime import datetime
 
 
 class TestAlidnsProvider(BaseProviderTestCase):
@@ -32,11 +31,13 @@ class TestAlidnsProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://alidns.aliyuncs.com")
 
-    @patch.object(AlidnsProvider, "now")
-    def test_signature_generation(self, mock_now):
+    @patch("ddns.provider.alidns.strftime")
+    @patch("ddns.provider.alidns.time")
+    def test_signature_generation(self, mock_time, mock_strftime):
         """Test _signature method generates correct signature"""
-        # Mock now() to get consistent results
-        mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        # Mock time functions to get consistent results
+        mock_time.return_value = 1672574400.0  # 2023-01-01 12:00:00 UTC
+        mock_strftime.return_value = "2023-01-01T12:00:00Z"
 
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
@@ -122,7 +123,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
                 }
             }
 
-            result = provider._query_record("example.com", "www", "example.com", "A")  # type: dict # type: ignore
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             mock_request.assert_called_once_with(
                 "DescribeDomainRecords",
@@ -134,8 +135,10 @@ class TestAlidnsProvider(BaseProviderTestCase):
                 Lang=None,
                 Status=None,
             )
-            self.assertEqual(result["RecordId"], "123")
-            self.assertEqual(result["RR"], "www")
+            self.assertIsNotNone(result)
+            if result:  # Type narrowing for mypy
+                self.assertEqual(result["RecordId"], "123")
+                self.assertEqual(result["RR"], "www")
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
@@ -146,7 +149,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
                 "DomainRecords": {"Record": [{"RR": "mail", "RecordId": "456", "Value": "5.6.7.8", "Type": "A"}]}
             }
 
-            result = provider._query_record("example.com", "www", "example.com", "A")
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -157,7 +160,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"DomainRecords": {"Record": []}}
 
-            result = provider._query_record("example.com", "www", "example.com", "A")
+            result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
             self.assertIsNone(result)
 
@@ -189,7 +192,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
 
-            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "default")
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "default", {})
 
             mock_request.assert_called_once_with(
                 "AddDomainRecord",
@@ -209,7 +212,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"Error": "Invalid domain"}
 
-            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A")
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
             self.assertFalse(result)
 
@@ -247,7 +250,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
 
-            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, "unicom")
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, "unicom", {})
 
             mock_request.assert_called_once_with(
                 "UpdateDomainRecord", RecordId="123456", Value="5.6.7.8", RR="www", Type="A", TTL=600, Line="unicom"
@@ -263,7 +266,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
 
-            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None)
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
 
             mock_request.assert_called_once_with(
                 "UpdateDomainRecord",
@@ -285,7 +288,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"Error": "Record not found"}
 
-            result = provider._update_record("example.com", old_record, "5.6.7.8", "A")
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
 
             self.assertFalse(result)
 
