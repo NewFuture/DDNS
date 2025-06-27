@@ -32,12 +32,11 @@ class TestAlidnsProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://alidns.aliyuncs.com")
 
-    @patch("ddns.provider.alidns.datetime")
-    def test_signature_generation(self, mock_datetime):
+    @patch.object(AlidnsProvider, "now")
+    def test_signature_generation(self, mock_now):
         """Test _signature method generates correct signature"""
-        # Mock datetime to get consistent results
-        mock_now = datetime(2023, 1, 1, 12, 0, 0)
-        mock_datetime.utcnow.return_value = mock_now
+        # Mock now() to get consistent results
+        mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
 
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 

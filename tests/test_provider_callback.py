@@ -120,11 +120,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         expected = "Port: 8080, TTL: 300"
         self.assertEqual(result, expected)
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_get_method(self, mock_http, mock_time):
+    def test_set_record_get_method(self, mock_http, mock_now):
         """Test set_record method using GET method (no token)"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
         provider = CallbackProvider(self.auth_id, None)  # type: ignore
@@ -142,11 +142,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         self.assertIn("example.com", url)
         self.assertIn("192.168.1.1", url)
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_post_method_dict_token(self, mock_http, mock_time):
+    def test_set_record_post_method_dict_token(self, mock_http, mock_now):
         """Test set_record method using POST method with dict token"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
         auth_token = {"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}
@@ -170,11 +170,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         self.assertEqual(params["domain"], "example.com")
         self.assertEqual(params["ip"], "192.168.1.1")
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_post_method_json_token(self, mock_http, mock_time):
+    def test_set_record_post_method_json_token(self, mock_http, mock_now):
         """Test set_record method using POST method with JSON string token"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
         auth_token = '{"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
@@ -198,11 +198,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         self.assertEqual(params["domain"], "example.com")
         self.assertEqual(params["ip"], "192.168.1.1")
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_post_method_mixed_types(self, mock_http, mock_time):
+    def test_set_record_post_method_mixed_types(self, mock_http, mock_now):
         """Test set_record method with mixed type values in POST parameters"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
         auth_token = {"api_key": 12345, "domain": "__DOMAIN__", "timeout": 30, "enabled": True}
@@ -225,11 +225,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         self.assertEqual(params["timeout"], 30)  # unchanged (not a string)
         self.assertEqual(params["enabled"], True)  # unchanged (not a string)
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_http_failure(self, mock_http, mock_time):
+    def test_set_record_http_failure(self, mock_http, mock_now):
         """Test set_record method when HTTP request fails"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = None  # Simulate failure
 
         provider = CallbackProvider(self.auth_id, None)  # type: ignore
@@ -239,11 +239,11 @@ class TestCallbackProvider(BaseProviderTestCase):
         # Verify the result is False on failure
         self.assertFalse(result)
 
-    @patch("ddns.provider.callback.time")
+    @patch.object(CallbackProvider, "now")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_http_empty_response(self, mock_http, mock_time):
+    def test_set_record_http_empty_response(self, mock_http, mock_now):
         """Test set_record method with empty HTTP response"""
-        mock_time.return_value = 1634567890.123
+        mock_now.return_value.timestamp.return_value = 1634567890.123
         mock_http.return_value = ""  # Empty response
 
         provider = CallbackProvider(self.auth_id, None)  # type: ignore

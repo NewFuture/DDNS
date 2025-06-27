@@ -31,12 +31,12 @@ class TestDnscomProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://www.51dns.com")
 
-    @patch("ddns.provider.dnscom.time")
+    @patch.object(DnscomProvider, "now")
     @patch("ddns.provider.dnscom.md5")
-    def test_signature_generation(self, mock_md5, mock_time):
+    def test_signature_generation(self, mock_md5, mock_now):
         """Test _signature method generates correct signature"""
-        # Mock time and hash
-        mock_time.return_value = 1640995200  # Fixed timestamp
+        # Mock now and hash
+        mock_now.return_value.timestamp.return_value = 1640995200  # Fixed timestamp
         mock_hash = mock_md5.return_value
         mock_hash.hexdigest.return_value = "test_hash_value"
 
@@ -56,9 +56,11 @@ class TestDnscomProvider(BaseProviderTestCase):
         """Test _signature method filters out None parameters"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider.dnscom.time") as mock_time, patch("ddns.provider.dnscom.md5") as mock_md5:
+        with patch.object(provider, "now") as mock_now, patch("ddns.provider.dnscom.md5") as mock_md5:
+            # Mock the now() method to return a fixed datetime
+            from datetime import datetime
 
-            mock_time.return_value = 1640995200
+            mock_now.return_value = datetime.fromtimestamp(1640995200)
             mock_hash = mock_md5.return_value
             mock_hash.hexdigest.return_value = "test_hash"
 

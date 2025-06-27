@@ -6,7 +6,6 @@ www.51dns.com (原dns.com)
 """
 
 from ._base import BaseProvider, TYPE_FORM
-from time import time
 from hashlib import md5
 
 
@@ -25,7 +24,7 @@ class DnscomProvider(BaseProvider):
         params.update(
             {
                 "apiKey": self.auth_id,
-                "timestamp": int(time()),  # 时间戳
+                "timestamp": int(self.now().timestamp()),  # 时间戳
             }
         )
         query = self._encode(sorted(params.items()))

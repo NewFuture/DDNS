@@ -8,7 +8,6 @@ Custom Callback API
 
 from ._base import TYPE_JSON, SimpleProvider
 from json import loads as jsondecode
-from time import time
 
 
 class CallbackProvider(SimpleProvider):
@@ -35,7 +34,7 @@ class CallbackProvider(SimpleProvider):
                 "__RECORDTYPE__": record_type,
                 "__TTL__": ttl,
                 "__IP__": value,
-                "__TIMESTAMP__": time(),
+                "__TIMESTAMP__": self.now().timestamp(),
                 "__LINE__": line,
             }
         )

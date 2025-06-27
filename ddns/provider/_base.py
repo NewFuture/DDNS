@@ -61,6 +61,7 @@ from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger
+from datetime import datetime
 
 try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection, HTTPException
@@ -119,6 +120,19 @@ class SimpleProvider(object):
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
         self._validate()  # 验证身份认证信息
+
+    @staticmethod
+    def now():
+        # type: () -> datetime
+        """
+        获取当前 UTC 时间
+
+        Get current UTC datetime.
+
+        Returns:
+            datetime: 当前 UTC 时间
+        """
+        return datetime.utcnow()
 
     @abstractmethod
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):

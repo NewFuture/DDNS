@@ -9,7 +9,6 @@ from ._base import BaseProvider, TYPE_FORM
 from hashlib import sha1
 from hmac import new as hmac
 from base64 import b64encode
-from datetime import datetime
 
 
 class AlidnsProvider(BaseProvider):
@@ -26,7 +25,7 @@ class AlidnsProvider(BaseProvider):
         :param params: 请求参数/Request parameters
         :return: 签名后的参数/Signed parameters
         """
-        now = datetime.utcnow()
+        now = self.now()
         params.update(
             {
                 "Format": "json",

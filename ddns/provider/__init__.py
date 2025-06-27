@@ -8,6 +8,7 @@ from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
+from .tencentcloud import TencentCloudProvider
 from .debug import DebugProvider
 
 
@@ -27,6 +28,10 @@ def get_provider_class(provider_name):
         # dnspod.com
         "dnspod_com": DnspodComProvider,
         "dnspod_global": DnspodComProvider,  # 兼容旧的dnspod_global
+        # tencent cloud dnspod
+        "tencentcloud": TencentCloudProvider,
+        "tencent": TencentCloudProvider,  # 兼容tencent
+        "qcloud": TencentCloudProvider,  # 兼容qcloud
         # cloudflare
         "cloudflare": CloudflareProvider,
         # aliyun alidns
