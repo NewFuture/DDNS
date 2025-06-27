@@ -61,7 +61,7 @@ class TencentCloudProvider(BaseProvider):
                 canonical_headers += "{}:{}\n".format(key.lower(), headers[key])
 
         signed_headers = ";".join(signed_headers_list)
-        hashed_request_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        hashed_request_payload = sha256(payload.encode("utf-8")).hexdigest()
 
         canonical_request = "\n".join(
             [
@@ -77,18 +77,18 @@ class TencentCloudProvider(BaseProvider):
         # Step 2: 构建待签名字符串
         date = strftime("%Y%m%d")  # 日期
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
-        hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
+        hashed_canonical_request = sha256(canonical_request.encode("utf-8")).hexdigest()
 
         string_to_sign = "\n".join([algorithm, str(timestamp), credential_scope, hashed_canonical_request])
 
         # Step 3: 计算签名
         def _sign(key, msg):
-            return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+            return hmac(key, msg.encode("utf-8"), sha256).digest()
 
         secret_date = _sign(("TC3" + self.auth_token).encode("utf-8"), date)
         secret_service = _sign(secret_date, self.service)
         secret_signing = _sign(secret_service, "tc3_request")
-        signature = hmac.new(secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+        signature = hmac(secret_signing, string_to_sign.encode("utf-8"), sha256).hexdigest()
 
         # Step 4: 构建 Authorization 头部
         authorization = "{} Credential={}/{}, SignedHeaders={}, Signature={}".format(
