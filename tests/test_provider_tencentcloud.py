@@ -15,7 +15,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
     def setUp(self):
         """Set up test fixtures"""
-        super().setUp()
+        super(TestTencentCloudProvider, self).setUp()
         self.provider = TencentCloudProvider(self.auth_id, self.auth_token)
         self.logger = self.mock_logger(self.provider)
 
@@ -340,10 +340,6 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
 class TestTencentCloudProviderIntegration(BaseProviderTestCase):
     """Integration tests for TencentCloudProvider"""
-
-    def setUp(self):
-        """Set up integration test fixtures"""
-        super().setUp()
 
     @patch.object(TencentCloudProvider, "_request")
     def test_full_domain_resolution_flow(self, mock_request):

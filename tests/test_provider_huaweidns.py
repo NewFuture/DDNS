@@ -18,6 +18,17 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         super(TestHuaweiDNSProvider, self).setUp()
         self.auth_id = "test_access_key"
         self.auth_token = "test_secret_key"
+        self.provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+
+        # Mock now() method for all tests
+        self.now_patcher = patch.object(self.provider, "now")
+        self.mock_now = self.now_patcher.start()
+        self.mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+
+    def tearDown(self):
+        """Clean up test fixtures"""
+        self.now_patcher.stop()
+        super(TestHuaweiDNSProvider, self).tearDown()
 
     def test_class_constants(self):
         """Test HuaweiDNSProvider class constants"""
@@ -28,17 +39,14 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test HuaweiDNSProvider initialization with basic configuration"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://dns.myhuaweicloud.com")
+        self.assertEqual(self.provider.auth_id, self.auth_id)
+        self.assertEqual(self.provider.auth_token, self.auth_token)
+        self.assertEqual(self.provider.API, "https://dns.myhuaweicloud.com")
 
     def test_hex_encode_sha256(self):
         """Test _hex_encode_sha256 method"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
         test_data = b"test data"
-        result = provider._hex_encode_sha256(test_data)
+        result = self.provider._hex_encode_sha256(test_data)
 
         # Should return a 64-character hex string (SHA256)
         self.assertEqual(len(result), 64)
@@ -49,8 +57,6 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_sign_headers(self):
         """Test _sign_headers method"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
         headers = {
             "Content-Type": "application/json",
             "Host": "dns.myhuaweicloud.com",
@@ -58,35 +64,27 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         }
         signed_headers = ["content-type", "host", "x-sdk-date"]
 
-        result = provider._sign_headers(headers, signed_headers)
+        result = self.provider._sign_headers(headers, signed_headers)
 
         expected = "content-type:application/json\nhost:dns.myhuaweicloud.com\nx-sdk-date:20230101T000000Z\n"
         self.assertEqual(result, expected)
 
     def test_request_get_method(self):
         """Test _request method with GET method"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "now") as mock_now, patch.object(provider, "_http") as mock_http:
-            # Mock the now() method to return a fixed datetime
-            mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        with patch.object(self.provider, "_http") as mock_http:
             mock_http.return_value = {"zones": []}
 
-            result = provider._request("GET", "/v2/zones", name="example.com", limit=500)
+            result = self.provider._request("GET", "/v2/zones", name="example.com", limit=500)
 
             mock_http.assert_called_once()
             self.assertEqual(result, {"zones": []})
 
     def test_request_post_method(self):
         """Test _request method with POST method"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "now") as mock_now, patch.object(provider, "_http") as mock_http:
-            # Mock the now() method to return a fixed datetime
-            mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        with patch.object(self.provider, "_http") as mock_http:
             mock_http.return_value = {"id": "record123"}
 
-            result = provider._request(
+            result = self.provider._request(
                 "POST", "/v2.1/zones/zone123/recordsets", name="www.example.com", type="A", records=["1.2.3.4"]
             )
 
@@ -95,28 +93,22 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_request_filters_none_params(self):
         """Test _request method filters out None parameters"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "now") as mock_now, patch.object(provider, "_http") as mock_http:
-            # Mock the now() method to return a fixed datetime
-            mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        with patch.object(self.provider, "_http") as mock_http:
             mock_http.return_value = {"zones": []}
 
-            provider._request("GET", "/v2/zones", name="example.com", limit=None, type=None)
+            self.provider._request("GET", "/v2/zones", name="example.com", limit=None, type=None)
 
             # Verify that _http was called (None params should be filtered)
             mock_http.assert_called_once()
 
     def test_query_zone_id_success(self):
         """Test _query_zone_id method with successful response"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {
                 "zones": [{"id": "zone123", "name": "example.com."}, {"id": "zone456", "name": "another.com."}]
             }
 
-            result = provider._query_zone_id("example.com")
+            result = self.provider._query_zone_id("example.com")
 
             mock_request.assert_called_once_with(
                 "GET", "/v2/zones", search_mode="equal", limit=500, name="example.com."
@@ -125,12 +117,10 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_query_zone_id_with_trailing_dot(self):
         """Test _query_zone_id method with domain already having trailing dot"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"zones": [{"id": "zone123", "name": "example.com."}]}
 
-            result = provider._query_zone_id("example.com.")
+            result = self.provider._query_zone_id("example.com.")
 
             mock_request.assert_called_once_with(
                 "GET", "/v2/zones", search_mode="equal", limit=500, name="example.com."
@@ -139,20 +129,16 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_query_zone_id_not_found(self):
         """Test _query_zone_id method when domain is not found"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"zones": []}
 
-            result = provider._query_zone_id("notfound.com")
+            result = self.provider._query_zone_id("notfound.com")
 
             self.assertIsNone(result)
 
     def test_query_record_success(self):
         """Test _query_record method with successful response"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {
                 "recordsets": [
                     {"id": "rec123", "name": "www.example.com.", "type": "A", "records": ["1.2.3.4"]},
@@ -160,7 +146,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 ]
             }
 
-            result = provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
+            result = self.provider._query_record("zone123", "www", "example.com", "A")  # type: dict # type: ignore
 
             mock_request.assert_called_once_with(
                 "GET",
@@ -176,12 +162,10 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_query_record_with_line(self):
         """Test _query_record method with line parameter"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"recordsets": []}
 
-            provider._query_record("zone123", "www", "example.com", "A", "line1")
+            self.provider._query_record("zone123", "www", "example.com", "A", "line1")
 
             mock_request.assert_called_once_with(
                 "GET",
@@ -195,25 +179,21 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {
                 "recordsets": [{"id": "rec456", "name": "mail.example.com.", "type": "A", "records": ["5.6.7.8"]}]
             }
 
-            result = provider._query_record("zone123", "www", "example.com", "A")
+            result = self.provider._query_record("zone123", "www", "example.com", "A")
 
             self.assertIsNone(result)
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123456"}
 
-            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, "line1")
+            result = self.provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, "line1")
 
             mock_request.assert_called_once_with(
                 "POST",
@@ -223,19 +203,17 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 records=["1.2.3.4"],
                 ttl=300,
                 line="line1",
-                description=provider.Remark,
+                description=self.provider.Remark,
             )
             self.assertTrue(result)
 
     def test_create_record_with_extra_params(self):
         """Test _create_record method with extra parameters"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
-
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123456"}
 
             extra = {"description": "Custom description", "tags": ["tag1", "tag2"]}
-            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, None, extra)
+            result = self.provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, None, extra)
 
             mock_request.assert_called_once_with(
                 "POST",
