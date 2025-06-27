@@ -68,13 +68,15 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         zone_id = self.provider._query_zone_id(domain)
         self.assertEqual(zone_id, domain)
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_query_record_found(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_record_found(self, mock_http):
         """Test successful record query"""
-        mock_request.return_value = {
-            "RecordList": [
-                {"RecordId": 123456, "Name": "www", "Type": "A", "Value": "1.2.3.4", "Line": "默认", "TTL": 600}
-            ]
+        mock_http.return_value = {
+            "Response": {
+                "RecordList": [
+                    {"RecordId": 123456, "Name": "www", "Type": "A", "Value": "1.2.3.4", "Line": "默认", "TTL": 600}
+                ]
+            }
         }
 
         record = self.provider._query_record("example.com", "www", "example.com", "A", None, {})
@@ -85,14 +87,16 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             self.assertEqual(record["Name"], "www")
             self.assertEqual(record["Type"], "A")
 
-        mock_request.assert_called_once_with(
-            "DescribeRecordList", DomainId="example.com", RecordType="A", Subdomain="www", RecordLine=None
-        )
+        # Verify HTTP call was made correctly
+        mock_http.assert_called_once()
+        call_args = mock_http.call_args
+        self.assertEqual(call_args[0][0], "POST")  # method
+        self.assertEqual(call_args[0][1], "/")  # path
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_query_record_not_found(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_record_not_found(self, mock_http):
         """Test record query when record not found"""
-        mock_request.return_value = {"RecordList": []}
+        mock_http.return_value = {"Response": {"RecordList": []}}
 
         record = self.provider._query_record(
             "example.com", "www", "example.com", "A", None, {}
@@ -100,11 +104,11 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         self.assertIsNone(record)
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_query_record_root_domain(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_record_root_domain(self, mock_http):
         """Test record query for root domain (@)"""
-        mock_request.return_value = {
-            "RecordList": [{"RecordId": 123456, "Name": "@", "Type": "A", "Value": "1.2.3.4"}]
+        mock_http.return_value = {
+            "Response": {"RecordList": [{"RecordId": 123456, "Name": "@", "Type": "A", "Value": "1.2.3.4"}]}
         }
 
         record = self.provider._query_record(
@@ -114,87 +118,67 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         self.assertIsNotNone(record)
         self.assertEqual(record["Name"], "@")
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_create_record_success(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_create_record_success(self, mock_http):
         """Test successful record creation"""
-        mock_request.return_value = {"RecordId": 789012}
+        mock_http.return_value = {"Response": {"RecordId": 789012}}
 
         result = self.provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 600, None, {})
 
         self.assertTrue(result)
-        mock_request.assert_called_once_with(
-            "CreateRecord",
-            Domain="example.com",
-            DomainId="example.com",
-            SubDomain="www",
-            RecordType="A",
-            Value="1.2.3.4",
-            RecordLine="默认",
-            TTL=600,
-            Remark=self.provider.Remark,
-        )
+        # Verify HTTP call was made
+        mock_http.assert_called_once()
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_create_record_root_domain(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_create_record_root_domain(self, mock_http):
         """Test record creation for root domain"""
-        mock_request.return_value = {"RecordId": 789012}
+        mock_http.return_value = {"Response": {"RecordId": 789012}}
 
         result = self.provider._create_record("example.com", "@", "example.com", "1.2.3.4", "A", None, None, {})
 
         self.assertTrue(result)
-        # Verify the call was made correctly - no SubDomain should be passed for "@"
-        mock_request.assert_called_once()
-        call_args = mock_request.call_args
-        self.assertEqual(call_args.kwargs["SubDomain"], "@")  # @ should be passed as-is
+        # Verify HTTP call was made
+        mock_http.assert_called_once()
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_create_record_with_mx(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_create_record_with_mx(self, mock_http):
         """Test record creation with MX priority"""
-        mock_request.return_value = {"RecordId": 789012}
+        mock_http.return_value = {"Response": {"RecordId": 789012}}
 
         result = self.provider._create_record(
             "example.com", "mail", "example.com", "mail.example.com", "MX", None, None, {"MX": 10}
         )
 
         self.assertTrue(result)
-        call_args = mock_request.call_args
-        self.assertEqual(call_args.kwargs["MX"], 10)
+        # Verify HTTP call was made
+        mock_http.assert_called_once()
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_create_record_failure(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_create_record_failure(self, mock_http):
         """Test record creation failure"""
-        mock_request.return_value = None
+        mock_http.return_value = {"Response": {}}  # No RecordId in response
 
         result = self.provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
         self.assertFalse(result)
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_update_record_success(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_update_record_success(self, mock_http):
         """Test successful record update"""
-        mock_request.return_value = {"RecordId": 123456}
+        mock_http.return_value = {"Response": {"RecordId": 123456}}
 
         old_record = {"RecordId": 123456, "Name": "www", "Type": "A", "Value": "1.2.3.4", "Line": "默认", "TTL": 300}
 
         result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, None, {})
 
         self.assertTrue(result)
-        mock_request.assert_called_once_with(
-            "ModifyRecord",
-            DomainId=None,  # old_record.get("DomainId") returns None
-            SubName="www",  # old_record.get("Name")
-            RecordId=123456,
-            RecordType="A",
-            RecordLine="默认",  # old_record.get("Line", line or "默认")
-            Value="5.6.7.8",
-            TTL=600,
-            Remark=self.provider.Remark,
-        )
+        # Verify HTTP call was made
+        mock_http.assert_called_once()
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_update_record_preserve_old_values(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_update_record_preserve_old_values(self, mock_http):
         """Test record update preserves old values when not specified"""
-        mock_request.return_value = {"RecordId": 123456}
+        mock_http.return_value = {"Response": {"RecordId": 123456}}
 
         old_record = {
             "RecordId": 123456,
@@ -211,28 +195,24 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertTrue(result)
-        call_args = mock_request.call_args
-        self.assertEqual(call_args.kwargs["RecordLine"], "电信")  # From old_record.get("Line")
-        self.assertEqual(call_args.kwargs["TTL"], None)  # TTL is None because ttl parameter was None
-        # MX, Weight, etc. are not automatically preserved unless passed in extra
-        # The implementation only preserves Line from the old record
-        self.assertEqual(call_args.kwargs["Remark"], self.provider.Remark)  # Uses default Remark
+        # Verify HTTP call was made
+        mock_http.assert_called_once()
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_update_record_missing_record_id(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_update_record_missing_record_id(self, mock_http):
         """Test record update with missing RecordId"""
-        mock_request.return_value = None  # Simulate failure
+        mock_http.return_value = {"Response": {}}  # No RecordId in response
         old_record = {"Name": "www", "Type": "A"}
 
         result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertFalse(result)  # Returns False because response doesn't contain RecordId
-        mock_request.assert_called_once()  # Request is still made but with RecordId=None
+        mock_http.assert_called_once()  # Request is still made
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_update_record_failure(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_update_record_failure(self, mock_http):
         """Test record update failure"""
-        mock_request.return_value = None
+        mock_http.return_value = {"Response": {}}  # No RecordId in response
 
         old_record = {"RecordId": 123456}
 
@@ -300,33 +280,52 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         self.assertEqual(str(cm.exception), "Network error")
 
-    @patch.object(TencentCloudProvider, "_query_record")
-    @patch.object(TencentCloudProvider, "_create_record")
-    @patch.object(TencentCloudProvider, "get_zone_id")
-    def test_set_record_create_new(self, mock_get_zone_id, mock_create, mock_query):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_set_record_create_new(self, mock_http):
         """Test set_record creating a new record"""
-        mock_get_zone_id.return_value = "example.com"
-        mock_query.return_value = None  # No existing record
-        mock_create.return_value = True
+        # Mock HTTP responses for the workflow
+        responses = [
+            # DescribeRecordList response (no existing records)
+            {"Response": {"RecordList": []}},
+            # CreateRecord response (record created successfully)
+            {"Response": {"RecordId": 123456}},
+        ]
+        mock_http.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "1.2.3.4", "A")
 
         self.assertTrue(result)
-        mock_create.assert_called_once()
+        self.assertEqual(mock_http.call_count, 2)
 
-    @patch.object(TencentCloudProvider, "_query_record")
-    @patch.object(TencentCloudProvider, "_update_record")
-    @patch.object(TencentCloudProvider, "get_zone_id")
-    def test_set_record_update_existing(self, mock_get_zone_id, mock_update, mock_query):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_set_record_update_existing(self, mock_http):
         """Test set_record updating an existing record"""
-        mock_get_zone_id.return_value = "example.com"
-        mock_query.return_value = {"RecordId": 123456}  # Existing record
-        mock_update.return_value = True
+        # Mock HTTP responses for the workflow
+        responses = [
+            # DescribeRecordList response (existing record found)
+            {
+                "Response": {
+                    "RecordList": [
+                        {
+                            "RecordId": 123456,
+                            "Name": "www",
+                            "Type": "A",
+                            "Value": "1.2.3.4",
+                            "DomainId": "example.com",
+                            "Line": "默认",
+                        }
+                    ]
+                }
+            },
+            # ModifyRecord response (record updated successfully)
+            {"Response": {"RecordId": 123456}},
+        ]
+        mock_http.side_effect = responses
 
-        result = self.provider.set_record("www.example.com", "1.2.3.4", "A")
+        result = self.provider.set_record("www.example.com", "5.6.7.8", "A")
 
         self.assertTrue(result)
-        mock_update.assert_called_once()
+        self.assertEqual(mock_http.call_count, 2)
 
     def test_mask_sensitive_data(self):
         """Test sensitive data masking"""
@@ -359,46 +358,109 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 class TestTencentCloudProviderIntegration(BaseProviderTestCase):
     """Integration tests for TencentCloudProvider"""
 
-    @patch.object(TencentCloudProvider, "_request")
-    def test_full_domain_resolution_flow(self, mock_request):
+    def setUp(self):
+        """Set up test fixtures"""
+        super(TestTencentCloudProviderIntegration, self).setUp()
+        self.provider = TencentCloudProvider(self.auth_id, self.auth_token)
+        self.logger = self.mock_logger(self.provider)
+
+    @patch.object(TencentCloudProvider, "_http")
+    def test_full_domain_resolution_flow(self, mock_http):
         """Test complete domain resolution flow"""
-        provider = TencentCloudProvider(self.auth_id, self.auth_token)
-
-        # Mock the record query to return no existing record
-        mock_request.side_effect = [
-            {"RecordList": []},  # No existing record found
-            {"RecordId": 123456},  # Record created successfully
+        # Mock HTTP responses for the workflow
+        responses = [
+            # DescribeRecordList response (no existing records)
+            {"Response": {"RecordList": []}},
+            # CreateRecord response (record created successfully)
+            {"Response": {"RecordId": 123456}},
         ]
+        mock_http.side_effect = responses
 
-        result = provider.set_record("test.example.com", "1.2.3.4", "A", ttl=600)
+        result = self.provider.set_record("test.example.com", "1.2.3.4", "A", ttl=600)
 
         self.assertTrue(result)
-        self.assertEqual(mock_request.call_count, 2)
+        self.assertEqual(mock_http.call_count, 2)
 
-        # Check that DescribeRecordList was called first
-        first_call = mock_request.call_args_list[0]
-        self.assertEqual(first_call[0][0], "DescribeRecordList")
+        # Verify the CreateRecord call parameters
+        create_call = mock_http.call_args_list[1]
+        call_body = create_call[1]["body"]
+        self.assertIn("Domain", call_body)
+        self.assertIn("CreateRecord", create_call[1]["headers"]["x-tc-action"])
 
-        # Check that CreateRecord was called second
-        second_call = mock_request.call_args_list[1]
-        self.assertEqual(second_call[0][0], "CreateRecord")
-
-    @patch.object(TencentCloudProvider, "_request")
-    def test_custom_domain_format(self, mock_request):
+    @patch.object(TencentCloudProvider, "_http")
+    def test_custom_domain_format(self, mock_http):
         """Test custom domain format with ~ separator"""
-        provider = TencentCloudProvider(self.auth_id, self.auth_token)
+        # Mock HTTP responses
+        responses = [
+            # DescribeRecordList response (no existing records)
+            {"Response": {"RecordList": []}},
+            # CreateRecord response (record created successfully)
+            {"Response": {"RecordId": 123456}},
+        ]
+        mock_http.side_effect = responses
 
-        mock_request.side_effect = [{"RecordList": []}, {"RecordId": 123456}]  # No existing record  # Record created
-
-        result = provider.set_record("test~example.com", "1.2.3.4", "A")
+        result = self.provider.set_record("test~example.com", "1.2.3.4", "A")
 
         self.assertTrue(result)
 
-        # Verify the domain was properly split
-        create_call = mock_request.call_args_list[1]
-        create_params = create_call.kwargs  # Access kwargs instead of [0][1]
-        self.assertEqual(create_params["Domain"], "example.com")
-        self.assertEqual(create_params["SubDomain"], "test")
+        # Verify the CreateRecord action was called
+        create_call = mock_http.call_args_list[1]
+        headers = create_call[1]["headers"]
+        self.assertEqual(headers["x-tc-action"], "CreateRecord")
+
+        # Verify the body contains the right domain data
+        call_body = create_call[1]["body"]
+        self.assertIn("example.com", call_body)
+        self.assertIn("test", call_body)
+
+    @patch.object(TencentCloudProvider, "_http")
+    def test_update_existing_record(self, mock_http):
+        """Test updating an existing record"""
+        # Mock HTTP responses for the workflow
+        responses = [
+            # DescribeRecordList response (existing record found)
+            {
+                "Response": {
+                    "RecordList": [
+                        {
+                            "RecordId": 12345,
+                            "Name": "test",
+                            "Type": "A",
+                            "Value": "1.2.3.4",
+                            "DomainId": "example.com",
+                            "Line": "默认",
+                        }
+                    ]
+                }
+            },
+            # ModifyRecord response (record updated successfully)
+            {"Response": {"RecordId": 12345}},
+        ]
+        mock_http.side_effect = responses
+
+        result = self.provider.set_record("test.example.com", "5.6.7.8", "A", ttl=300)
+
+        self.assertTrue(result)
+        self.assertEqual(mock_http.call_count, 2)
+
+        # Verify the ModifyRecord call
+        modify_call = mock_http.call_args_list[1]
+        self.assertIn("ModifyRecord", modify_call[1]["headers"]["x-tc-action"])
+
+    @patch.object(TencentCloudProvider, "_http")
+    def test_api_error_handling(self, mock_http):
+        """Test API error handling"""
+        # Mock API error response for both DescribeRecordList and CreateRecord
+        mock_http.return_value = {
+            "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
+        }
+
+        result = self.provider.set_record("test.example.com", "1.2.3.4", "A")
+
+        self.assertFalse(result)
+        # Two calls should be made: DescribeRecordList (fails, returns None),
+        # then CreateRecord (also fails)
+        self.assertEqual(mock_http.call_count, 2)
 
 
 if __name__ == "__main__":

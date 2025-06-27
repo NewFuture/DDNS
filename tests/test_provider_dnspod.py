@@ -103,20 +103,23 @@ class TestDnspodProvider(BaseProviderTestCase):
         self.assertEqual(body["extra_param"], "extra_value")
         self.assertEqual(body["normal_param"], "normal_value")
 
-    @patch("ddns.provider.dnspod.DnspodProvider._request")
-    def test_query_zone_id_success(self, mock_request):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_query_zone_id_success(self, mock_http):
         """Test _query_zone_id method with successful response"""
-        mock_request.return_value = {"domain": {"id": "12345", "name": "example.com"}}
+        mock_http.return_value = {"domain": {"id": "12345", "name": "example.com"}}
 
         zone_id = self.provider._query_zone_id("example.com")
 
         self.assertEqual(zone_id, "12345")
-        mock_request.assert_called_once_with("Domain.Info", domain="example.com")
+        mock_http.assert_called_once()
+        # Verify the action was correct
+        call_args = mock_http.call_args
+        self.assertEqual(call_args[0][1], "/Domain.Info")
 
-    @patch("ddns.provider.dnspod.DnspodProvider._request")
-    def test_query_zone_id_not_found(self, mock_request):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_query_zone_id_not_found(self, mock_http):
         """Test _query_zone_id method when domain is not found"""
-        mock_request.return_value = {}
+        mock_http.return_value = {}
 
         zone_id = self.provider._query_zone_id("notfound.com")
 
@@ -363,127 +366,121 @@ class TestDnspodProviderIntegration(BaseProviderTestCase):
         """测试初始化"""
         super(TestDnspodProviderIntegration, self).setUp()
         self.provider = DnspodProvider(self.auth_id, self.auth_token)
+        self.provider.logger = MagicMock()
 
-    @patch("ddns.provider.dnspod.DnspodProvider._query_zone_id")
-    @patch("ddns.provider.dnspod.DnspodProvider._query_record")
-    @patch("ddns.provider.dnspod.DnspodProvider._create_record")
-    def test_full_workflow_create_record(self, mock_create, mock_query_record, mock_query_zone):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_create_record(self, mock_http):
         """Test complete workflow for creating a new record"""
-        # Setup mocks
-        mock_query_zone.return_value = "zone123"
-        mock_query_record.return_value = None  # No existing record
-        mock_create.return_value = True
-
-        # Mock logger
-        self.provider.logger = MagicMock()
+        # Mock HTTP responses for the workflow
+        responses = [
+            # Domain.Info response
+            {"status": {"code": "1"}, "domain": {"id": "zone123"}},
+            # Record.List response (no existing records)
+            {"status": {"code": "1"}, "records": []},
+            # Record.Create response
+            {"status": {"code": "1"}, "record": {"id": "rec123", "name": "www", "value": "192.168.1.1"}},
+        ]
+        mock_http.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "192.168.1.1")
 
         self.assertTrue(result)
-        mock_query_zone.assert_called_once_with("example.com")
-        mock_query_record.assert_called_once()
-        mock_create.assert_called_once()
+        self.assertEqual(mock_http.call_count, 3)
 
-    @patch("ddns.provider.dnspod.DnspodProvider._query_zone_id")
-    @patch("ddns.provider.dnspod.DnspodProvider._query_record")
-    @patch("ddns.provider.dnspod.DnspodProvider._update_record")
-    def test_full_workflow_update_record(self, mock_update, mock_query_record, mock_query_zone):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_update_record(self, mock_http):
         """Test complete workflow for updating an existing record"""
-        # Setup mocks
-        mock_query_zone.return_value = "zone123"
-        existing_record = {"id": "12345", "name": "www", "value": "192.168.1.100"}
-        mock_query_record.return_value = existing_record
-        mock_update.return_value = True
-
-        # Mock logger
-        self.provider.logger = MagicMock()
+        # Mock HTTP responses for the workflow
+        responses = [
+            # Domain.Info response
+            {"status": {"code": "1"}, "domain": {"id": "zone123"}},
+            # Record.List response (existing record found)
+            {
+                "status": {"code": "1"},
+                "records": [{"id": "rec123", "name": "www", "value": "192.168.1.100", "line": "默认"}],
+            },
+            # Record.Modify response
+            {"status": {"code": "1"}, "record": {"id": "rec123", "name": "www", "value": "192.168.1.1"}},
+        ]
+        mock_http.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "192.168.1.1")
 
         self.assertTrue(result)
-        mock_query_zone.assert_called_once_with("example.com")
-        mock_query_record.assert_called_once()
-        mock_update.assert_called_once()
+        self.assertEqual(mock_http.call_count, 3)
 
-    @patch("ddns.provider.dnspod.DnspodProvider._query_zone_id")
-    def test_full_workflow_zone_not_found(self, mock_query_zone):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_zone_not_found(self, mock_http):
         """Test complete workflow when zone is not found"""
-        mock_query_zone.return_value = None
-
-        # Mock logger
-        self.provider.logger = MagicMock()
+        # Domain.Info response - no domain found
+        mock_http.return_value = {"status": {"code": "0", "message": "Domain not found"}}
 
         # Should raise ValueError when zone not found
         with self.assertRaises(ValueError):
             self.provider.set_record("www.notfound.com", "192.168.1.1")
 
-    @patch("ddns.provider.dnspod.DnspodProvider._query_zone_id")
-    @patch("ddns.provider.dnspod.DnspodProvider._query_record")
-    @patch("ddns.provider.dnspod.DnspodProvider._create_record")
-    def test_full_workflow_create_failure(self, mock_create, mock_query_record, mock_query_zone):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_create_failure(self, mock_http):
         """Test complete workflow when record creation fails"""
-        # Setup mocks
-        mock_query_zone.return_value = "zone123"
-        mock_query_record.return_value = None  # No existing record
-        mock_create.return_value = False  # Creation fails
-
-        # Mock logger
-        self.provider.logger = MagicMock()
+        responses = [
+            # Domain.Info response
+            {"status": {"code": "1"}, "domain": {"id": "zone123"}},
+            # Record.List response (no existing records)
+            {"status": {"code": "1"}, "records": []},
+            # Record.Create response (failure)
+            {"status": {"code": "0", "message": "Create failed"}},
+        ]
+        mock_http.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "192.168.1.1")
 
         self.assertFalse(result)
-        mock_query_zone.assert_called_once_with("example.com")
-        mock_query_record.assert_called_once()
-        mock_create.assert_called_once()
+        self.assertEqual(mock_http.call_count, 3)
 
-    @patch("ddns.provider.dnspod.DnspodProvider._query_zone_id")
-    @patch("ddns.provider.dnspod.DnspodProvider._query_record")
-    @patch("ddns.provider.dnspod.DnspodProvider._update_record")
-    def test_full_workflow_update_failure(self, mock_update, mock_query_record, mock_query_zone):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_update_failure(self, mock_http):
         """Test complete workflow when record update fails"""
-        # Setup mocks
-        mock_query_zone.return_value = "zone123"
-        existing_record = {"id": "12345", "name": "www", "value": "192.168.1.100"}
-        mock_query_record.return_value = existing_record
-        mock_update.return_value = False  # Update fails
-
-        # Mock logger
-        self.provider.logger = MagicMock()
+        responses = [
+            # Domain.Info response
+            {"status": {"code": "1"}, "domain": {"id": "zone123"}},
+            # Record.List response (existing record found)
+            {
+                "status": {"code": "1"},
+                "records": [{"id": "rec123", "name": "www", "value": "192.168.1.100", "line": "默认"}],
+            },
+            # Record.Modify response (failure)
+            {"status": {"code": "0", "message": "Update failed"}},
+        ]
+        mock_http.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "192.168.1.1")
 
         self.assertFalse(result)
-        mock_query_zone.assert_called_once_with("example.com")
-        mock_query_record.assert_called_once()
-        mock_update.assert_called_once()
+        self.assertEqual(mock_http.call_count, 3)
 
-    def test_full_workflow_with_options(self):
+    @patch("ddns.provider.dnspod.DnspodProvider._http")
+    def test_full_workflow_with_options(self, mock_http):
         """Test complete workflow with additional options like ttl and line"""
-        with patch("ddns.provider.dnspod.DnspodProvider._query_zone_id") as mock_zone, patch(
-            "ddns.provider.dnspod.DnspodProvider._query_record"
-        ) as mock_query, patch("ddns.provider.dnspod.DnspodProvider._create_record") as mock_create:
+        responses = [
+            # Domain.Info response
+            {"status": {"code": "1"}, "domain": {"id": "zone123"}},
+            # Record.List response (no existing records)
+            {"status": {"code": "1"}, "records": []},
+            # Record.Create response
+            {"status": {"code": "1"}, "record": {"id": "rec123", "name": "www", "value": "192.168.1.1"}},
+        ]
+        mock_http.side_effect = responses
 
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = None
-            mock_create.return_value = True
-            self.provider.logger = MagicMock()
+        result = self.provider.set_record("www.example.com", "192.168.1.1", record_type="A", ttl=300, line="电信")
 
-            result = self.provider.set_record("www.example.com", "192.168.1.1", record_type="A", ttl=300, line="电信")
+        self.assertTrue(result)
+        self.assertEqual(mock_http.call_count, 3)
 
-            self.assertTrue(result)
-            # Verify that the ttl and line parameters are passed through
-            # Note: BaseProvider.set_record passes extra={} by default
-            mock_create.assert_called_once_with(
-                "zone123",
-                sub_domain="www",
-                main_domain="example.com",
-                value="192.168.1.1",
-                record_type="A",
-                ttl=300,
-                line="电信",
-                extra={},
-            )
+        # Verify the Record.Create call includes the custom options
+        create_call = mock_http.call_args_list[2]
+        body = create_call[1]["body"]
+        self.assertEqual(body["ttl"], 300)
+        self.assertEqual(body["record_line"], "电信")
 
 
 if __name__ == "__main__":

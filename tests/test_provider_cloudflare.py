@@ -384,7 +384,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
 
 class TestCloudflareProviderIntegration(BaseProviderTestCase):
-    """Integration test cases for CloudflareProvider"""
+    """Integration test cases for CloudflareProvider - testing with minimal mocking"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -396,65 +396,72 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
         """Test complete workflow for creating a new record"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        # Mock only the HTTP layer to simulate API responses
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API responses in order: zone query, record query, record creation
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [],  # _query_record response (no existing record)
+                {"id": "rec123", "name": "www.example.com"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300)
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "zone123", sub_domain="www", main_domain="example.com", record_type="A", line=None, extra={}
+            # Verify the actual API calls made
+            self.assertEqual(mock_request.call_count, 3)
+            mock_request.assert_any_call("GET", "", **{"name.exact": "example.com", "per_page": 50})
+            mock_request.assert_any_call(
+                "GET", "/zone123/dns_records", type="A", per_page=10000, **{"name.exact": "www.example.com"}
             )
-            mock_create.assert_called_once_with(
-                "zone123",
-                sub_domain="www",
-                main_domain="example.com",
-                value="1.2.3.4",
-                record_type="A",
+            mock_request.assert_any_call(
+                "POST",
+                "/zone123/dns_records",
+                name="www.example.com",
+                type="A",
+                content="1.2.3.4",
                 ttl=300,
-                line=None,
-                extra={},
+                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"id": "rec123", "name": "www.example.com", "content": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = existing_record
-            mock_update.return_value = True
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API responses
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [  # _query_record response (existing record found)
+                    {"id": "rec123", "name": "www.example.com", "type": "A", "content": "5.6.7.8", "proxied": False}
+                ],
+                {"id": "rec123", "content": "1.2.3.4"},  # _update_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300)
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "zone123", sub_domain="www", main_domain="example.com", record_type="A", line=None, extra={}
-            )
-            mock_update.assert_called_once_with(
-                "zone123", old_record=existing_record, value="1.2.3.4", record_type="A", ttl=300, line=None, extra={}
+            # Verify the update call was made
+            mock_request.assert_any_call(
+                "PUT",
+                "/zone123/dns_records/rec123",
+                type="A",
+                name="www.example.com",
+                content="1.2.3.4",
+                ttl=300,
+                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                proxied=False,
+                tags=None,
+                settings=None,
             )
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone:
-            mock_zone.return_value = None
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API returning empty array for zone query
+            mock_request.return_value = []
 
             with self.assertRaises(ValueError) as cm:
                 provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
@@ -465,14 +472,13 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record creation fails"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = False  # Creation fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, no existing record, creation fails
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [],  # _query_record response (no existing record)
+                None,  # _create_record fails (API returns None)
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
@@ -482,16 +488,15 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record update fails"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"id": "rec123", "name": "www.example.com", "content": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = existing_record
-            mock_update.return_value = False  # Update fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, existing record found, update fails
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [  # _query_record response (existing record found)
+                    {"id": "rec123", "name": "www.example.com", "type": "A", "content": "5.6.7.8"}
+                ],
+                None,  # _update_record fails (API returns None)
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
@@ -501,42 +506,41 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
         """Test complete workflow with proxy and other Cloudflare-specific options"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate successful creation with custom options
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [],  # _query_record response (no existing record)
+                {"id": "rec123", "name": "www.example.com"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, None, proxied=True, priority=10)
 
             self.assertTrue(result)
             # Verify that extra parameters are passed through correctly
-            mock_create.assert_called_once_with(
-                "zone123",
-                sub_domain="www",
-                main_domain="example.com",
-                value="1.2.3.4",
-                record_type="A",
+            mock_request.assert_any_call(
+                "POST",
+                "/zone123/dns_records",
+                name="www.example.com",
+                type="A",
+                content="1.2.3.4",
                 ttl=300,
-                line=None,
-                extra={"proxied": True, "priority": 10},
+                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                proxied=True,
+                priority=10,
             )
 
     def test_full_workflow_bearer_token_auth(self):
         """Test complete workflow using Bearer token authentication"""
         provider = CloudflareProvider("", self.auth_token)  # No email, Bearer token only
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "zone123"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate successful workflow
+            mock_request.side_effect = [
+                [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
+                [],  # _query_record response (no existing record)
+                {"id": "rec123", "name": "www.example.com"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 

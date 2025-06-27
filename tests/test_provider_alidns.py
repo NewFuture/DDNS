@@ -319,7 +319,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
 
 class TestAlidnsProviderIntegration(BaseProviderTestCase):
-    """Integration test cases for AlidnsProvider"""
+    """Integration test cases for AlidnsProvider - testing with minimal mocking"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -331,71 +331,74 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow for creating a new record"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        # Mock only the HTTP layer to simulate API responses
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate zone query response
+            mock_request.side_effect = [
+                {"DomainName": "example.com"},  # _query_zone_id response
+                {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
+                {"RecordId": "123456"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "example.com", sub_domain="www", main_domain="example.com", record_type="A", line="default", extra={}
+            # Verify the actual API calls made
+            self.assertEqual(mock_request.call_count, 3)
+            mock_request.assert_any_call("GetMainDomainName", InputString="example.com")
+            mock_request.assert_any_call(
+                "DescribeDomainRecords",
+                DomainName="example.com",
+                RRKeyWord="www",
+                Type="A",
+                Line="default",
+                PageSize=500,
+                Lang=None,
+                Status=None,
             )
-            mock_create.assert_called_once_with(
-                "example.com",
-                sub_domain="www",
-                main_domain="example.com",
-                value="1.2.3.4",
-                record_type="A",
-                ttl=300,
-                line="default",
-                extra={},
+            mock_request.assert_any_call(
+                "AddDomainRecord",
+                DomainName="example.com",
+                RR="www",
+                Value="1.2.3.4",
+                Type="A",
+                TTL=300,
+                Line="default",
             )
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"RecordId": "123456", "RR": "www", "Value": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = existing_record
-            mock_update.return_value = True
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API responses
+            mock_request.side_effect = [
+                {"DomainName": "example.com"},  # _query_zone_id response
+                {  # _query_record response (existing record found)
+                    "DomainRecords": {
+                        "Record": [
+                            {"RecordId": "123456", "RR": "www", "Value": "5.6.7.8", "Type": "A", "Line": "default"}
+                        ]
+                    }
+                },
+                {"RecordId": "123456"},  # _update_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "example.com", sub_domain="www", main_domain="example.com", record_type="A", line="default", extra={}
-            )
-            mock_update.assert_called_once_with(
-                "example.com",
-                old_record=existing_record,
-                value="1.2.3.4",
-                record_type="A",
-                ttl=300,
-                line="default",
-                extra={},
+            # Verify the update call was made
+            mock_request.assert_any_call(
+                "UpdateDomainRecord", RecordId="123456", Value="1.2.3.4", RR="www", Type="A", TTL=300, Line="default"
             )
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone:
-            mock_zone.return_value = None
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API returning empty/null response for zone query
+            mock_request.return_value = {}
 
             with self.assertRaises(ValueError) as cm:
                 provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
@@ -406,14 +409,13 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record creation fails"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = False  # Creation fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, no existing record, creation fails
+            mock_request.side_effect = [
+                {"DomainName": "example.com"},  # _query_zone_id response
+                {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
+                {"Error": "API error", "Code": "InvalidParameter"},  # _create_record fails
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
@@ -423,16 +425,19 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record update fails"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"RecordId": "123456", "RR": "www", "Value": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = existing_record
-            mock_update.return_value = False  # Update fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, existing record found, update fails
+            mock_request.side_effect = [
+                {"DomainName": "example.com"},  # _query_zone_id response
+                {  # _query_record response (existing record found)
+                    "DomainRecords": {
+                        "Record": [
+                            {"RecordId": "123456", "RR": "www", "Value": "5.6.7.8", "Type": "A", "Line": "default"}
+                        ]
+                    }
+                },
+                {"Error": "API error", "Code": "InvalidParameter"},  # _update_record fails
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
@@ -442,28 +447,26 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow with additional options like ttl and line"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate successful creation with custom options
+            mock_request.side_effect = [
+                {"DomainName": "example.com"},  # _query_zone_id response
+                {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
+                {"RecordId": "123456"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 600, "unicom")
 
             self.assertTrue(result)
             # Verify that extra parameters are passed through correctly
-            mock_create.assert_called_once_with(
-                "example.com",
-                sub_domain="www",
-                main_domain="example.com",
-                value="1.2.3.4",
-                record_type="A",
-                ttl=600,
-                line="unicom",
-                extra={},
+            mock_request.assert_any_call(
+                "AddDomainRecord",
+                DomainName="example.com",
+                RR="www",
+                Value="1.2.3.4",
+                Type="A",
+                TTL=600,
+                Line="unicom",
             )
 
 

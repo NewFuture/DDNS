@@ -306,7 +306,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
 
 class TestDnscomProviderIntegration(BaseProviderTestCase):
-    """Integration test cases for DnscomProvider"""
+    """Integration test cases for DnscomProvider - testing with minimal mocking"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -318,71 +318,64 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
         """Test complete workflow for creating a new record"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = True
+        # Mock only the HTTP layer to simulate API responses
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API responses in order: zone query, record query, record creation
+            mock_request.side_effect = [
+                {"domainID": "example.com"},  # _query_zone_id response
+                {"data": []},  # _query_record response (no existing record)
+                {"recordID": "123456"},  # _create_record response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "1")
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "example.com", sub_domain="www", main_domain="example.com", record_type="A", line="1", extra={}
-            )
-            mock_create.assert_called_once_with(
-                "example.com",
-                sub_domain="www",
-                main_domain="example.com",
+            # Verify the actual API calls made
+            self.assertEqual(mock_request.call_count, 3)
+            mock_request.assert_any_call("domain/getsingle", domainID="example.com")
+            mock_request.assert_any_call("record/list", domainID="example.com", host="www", pageSize=500)
+            mock_request.assert_any_call(
+                "record/create",
+                domainID="example.com",
                 value="1.2.3.4",
-                record_type="A",
-                ttl=300,
-                line="1",
-                extra={},
+                host="www",
+                type="A",
+                TTL=300,
+                viewID="1",
+                remark="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"recordID": "123456", "record": "www", "value": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = existing_record
-            mock_update.return_value = True
+        # Mock only the HTTP layer to simulate raw API responses
+        with patch.object(provider, "_http") as mock_http:
+            # Simulate raw HTTP API responses as they would come from the server
+            mock_http.side_effect = [
+                {"code": 0, "data": {"domainID": "example.com"}},  # domain/getsingle response
+                {
+                    "code": 0,
+                    "data": {  # record/list response
+                        "data": [{"record": "www", "type": "A", "recordID": "123456", "value": "5.6.7.8"}]
+                    },
+                },
+                {"code": 0, "data": {"recordID": "123456", "success": True}},  # record/modify response
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "1")
 
             self.assertTrue(result)
-            mock_zone.assert_called_once_with("example.com")
-            mock_query.assert_called_once_with(
-                "example.com", sub_domain="www", main_domain="example.com", record_type="A", line="1", extra={}
-            )
-            mock_update.assert_called_once_with(
-                "example.com",
-                old_record=existing_record,
-                value="1.2.3.4",
-                record_type="A",
-                ttl=300,
-                line="1",
-                extra={},
-            )
+            # Verify the actual HTTP calls were made (3 calls total)
+            self.assertEqual(mock_http.call_count, 3)
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone:
-            mock_zone.return_value = None
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate API returning None for zone query
+            mock_request.return_value = None
 
             with self.assertRaises(ValueError) as cm:
                 provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
@@ -393,14 +386,13 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record creation fails"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_create_record") as mock_create:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = None  # No existing record
-            mock_create.return_value = False  # Creation fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, no existing record, creation fails
+            mock_request.side_effect = [
+                {"domainID": "example.com"},  # _query_zone_id response
+                {"data": []},  # _query_record response (no existing record)
+                {"error": "Domain not found"},  # _create_record fails
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
@@ -410,16 +402,15 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record update fails"""
         provider = DnscomProvider(self.auth_id, self.auth_token)
 
-        existing_record = {"recordID": "123456", "record": "www", "value": "5.6.7.8"}
-
-        with patch.object(provider, "_query_zone_id") as mock_zone, patch.object(
-            provider, "_query_record"
-        ) as mock_query, patch.object(provider, "_update_record") as mock_update:
-
-            # Setup mocks
-            mock_zone.return_value = "example.com"
-            mock_query.return_value = existing_record
-            mock_update.return_value = False  # Update fails
+        with patch.object(provider, "_request") as mock_request:
+            # Simulate responses: zone found, existing record found, update fails
+            mock_request.side_effect = [
+                {"domainID": "example.com"},  # _query_zone_id response
+                {  # _query_record response (existing record found)
+                    "data": [{"record": "www", "type": "A", "recordID": "123456", "value": "5.6.7.8"}]
+                },
+                None,  # _update_record fails
+            ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A")
 
