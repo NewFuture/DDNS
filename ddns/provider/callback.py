@@ -28,6 +28,7 @@ class CallbackProvider(SimpleProvider):
         self.logger.info("%s => %s(%s)", domain, value, record_type)
         url = self.auth_id  # 直接用 auth_id 作为 url
         token = self.auth_token  # auth_token 作为 POST 参数
+        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
         extra.update(
             {
                 "__DOMAIN__": domain,
@@ -39,16 +40,16 @@ class CallbackProvider(SimpleProvider):
             }
         )
         url = self._replace_vars(url, extra)
-        if not token:
-            # GET 方式，URL query 传参
-            res = self._http("GET", url)
-        else:
+        method, params = "GET", None
+        if token:
+            # 如果有 token，使用 POST 方法
+            method = "POST"
             # POST 方式，token 作为 POST 参数
             params = token if isinstance(token, dict) else jsondecode(token)
             for k, v in params.items():
                 if hasattr(v, "replace"):  # 判断是否支持字符串替换, 兼容py2,py3
                     params[k] = self._replace_vars(v, extra)
-            res = self._http("POST", url, body=params)
+        res = self._http(method, url, body=params, headers=headers)
         if res:
             self.logger.info("Callback result: %s", res)
             return True
@@ -67,6 +68,8 @@ class CallbackProvider(SimpleProvider):
         return string
 
     def _validate(self):
+        # CallbackProvider uses auth_id as URL, not as regular ID
         if not self.auth_id or "://" not in self.auth_id:
             self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
             raise ValueError("id must be configured with URL")
+        # CallbackProvider doesn't need auth_token validation (it can be empty)

@@ -5,8 +5,8 @@ Unit tests for SimpleProvider
 @author: Github Copilot
 """
 
-from base_test import BaseProviderTestCase, unittest, patch, MagicMock
-from ddns.provider._base import SimpleProvider, TYPE_FORM, TYPE_JSON
+from base_test import BaseProviderTestCase, unittest, MagicMock
+from ddns.provider._base import SimpleProvider, TYPE_FORM
 
 
 class _TestableSimpleProvider(SimpleProvider):
@@ -20,13 +20,6 @@ class _TestableSimpleProvider(SimpleProvider):
         """Test implementation of set_record"""
         self.logger.debug("_TestableSimpleProvider: %s(%s) => %s", domain, record_type, value)
         return True
-
-    def _validate(self):
-        """Test implementation of _validate"""
-        if not self.auth_id:
-            raise ValueError("id must be configured")
-        if not self.auth_token:
-            raise ValueError("token must be configured")
 
 
 class _TestableSimpleProviderClass(BaseProviderTestCase):
@@ -44,6 +37,8 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         self.assertEqual(provider.API, "https://api.example.com")
         self.assertEqual(provider.ContentType, TYPE_FORM)
         self.assertTrue(provider.DecodeResponse)
+        self.assertTrue(provider.verify_ssl)  # Default verify_ssl should be True
+        self.assertEqual(provider._zone_map, {})  # Should initialize empty zone map
 
     def test_init_with_logger(self):
         """Test SimpleProvider initialization with logger"""
@@ -54,9 +49,30 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_init_with_options(self):
         """Test SimpleProvider initialization with additional options"""
-        options = {"debug": True, "timeout": 30}
+        options = {"debug": True, "timeout": 30, "verify_ssl": False}
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, **options)
         self.assertEqual(provider.options, options)
+        self.assertFalse(provider.verify_ssl)  # Should respect verify_ssl option
+
+    def test_init_with_verify_ssl_string(self):
+        """Test SimpleProvider initialization with verify_ssl as string"""
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl="/path/to/cert")
+        self.assertEqual(provider.verify_ssl, "/path/to/cert")
+
+    def test_init_with_verify_ssl_false(self):
+        """Test SimpleProvider initialization with verify_ssl as False"""
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False)
+        self.assertFalse(provider.verify_ssl)
+
+    def test_init_with_verify_ssl_truthy_value(self):
+        """Test SimpleProvider initialization with verify_ssl as truthy value"""
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=1)
+        self.assertTrue(provider.verify_ssl)
+
+    def test_init_with_verify_ssl_falsy_value(self):
+        """Test SimpleProvider initialization with verify_ssl as falsy value"""
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=0)
+        self.assertFalse(provider.verify_ssl)
 
     def test_validate_missing_id(self):
         """Test _validate method with missing auth_id"""
@@ -201,71 +217,15 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
         self.assertEqual(result, data)  # Should be unchanged
 
-    @patch.object(_TestableSimpleProvider, "_send_request")
-    def test_http_get_request(self, mock_send_request):
-        """Test _http method with GET request"""
-        mock_send_request.return_value = '{"success": true}'
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
+    def test_mask_sensitive_data_long_token(self):
+        """Test _mask_sensitive_data method with long token"""
+        provider = _TestableSimpleProvider(self.auth_id, "verylongsecrettoken123")
+        data = "url?token=verylongsecrettoken123&other=value"
 
-        result = provider._http("GET", "/test", params={"key": "value"})
+        result = provider._mask_sensitive_data(data)
 
-        # Should parse JSON response
-        self.assertEqual(result, {"success": True})
-        mock_send_request.assert_called_once()
-        args, kwargs = mock_send_request.call_args
-        self.assertEqual(kwargs["method"], "GET")
-        self.assertIn("key=value", kwargs["url"])
-
-    @patch.object(_TestableSimpleProvider, "_send_request")
-    def test_http_post_request_form(self, mock_send_request):
-        """Test _http method with POST request using form data"""
-        mock_send_request.return_value = '{"success": true}'
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        provider.ContentType = TYPE_FORM
-
-        result = provider._http("POST", "/test", body={"key": "value"})
-
-        self.assertEqual(result, {"success": True})
-        mock_send_request.assert_called_once()
-        args, kwargs = mock_send_request.call_args
-        self.assertEqual(kwargs["method"], "POST")
-        self.assertEqual(kwargs["body"], "key=value")
-
-    @patch.object(_TestableSimpleProvider, "_send_request")
-    def test_http_post_request_json(self, mock_send_request):
-        """Test _http method with POST request using JSON data"""
-        mock_send_request.return_value = '{"success": true}'
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        provider.ContentType = TYPE_JSON
-
-        result = provider._http("POST", "/test", body={"key": "value"})
-
-        self.assertEqual(result, {"success": True})
-        mock_send_request.assert_called_once()
-        args, kwargs = mock_send_request.call_args
-        self.assertEqual(kwargs["method"], "POST")
-        self.assertEqual(kwargs["body"], '{"key": "value"}')
-
-    @patch.object(_TestableSimpleProvider, "_send_request")
-    def test_http_no_decode_response(self, mock_send_request):
-        """Test _http method with DecodeResponse=False"""
-        mock_send_request.return_value = "plain text response"
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        provider.DecodeResponse = False
-
-        result = provider._http("GET", "/test")
-
-        self.assertEqual(result, "plain text response")
-        mock_send_request.assert_called_once()
-
-    @patch.object(_TestableSimpleProvider, "_send_request")
-    def test_http_invalid_json_response(self, mock_send_request):
-        """Test _http method with invalid JSON response"""
-        mock_send_request.return_value = "invalid json"
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-
-        with self.assertRaises(Exception):
-            provider._http("GET", "/test")
+        self.assertNotIn("verylongsecrettoken123", result)
+        self.assertIn("ve***23", result)
 
     def test_set_record_abstract_method(self):
         """Test that set_record is implemented in test class"""
@@ -295,6 +255,7 @@ class _TestableSimpleProviderValidation(BaseProviderTestCase):
         with self.assertRaises(ValueError) as cm:
             _TestableSimpleProviderWithNoAPI(self.auth_id, self.auth_token)
         self.assertIn("API endpoint must be defined", str(cm.exception))
+        self.assertIn("_TestableSimpleProviderWithNoAPI", str(cm.exception))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ This document explains how to run tests for the DDNS project. **unittest** is th
 ## 快速开始 / Quick Start
 
 ### 默认方法 unittest / Default Method (unittest)
+
 ```bash
 # 运行所有测试（推荐）/ Run all tests (recommended)
 python -m unittest discover tests -v
@@ -26,9 +27,11 @@ python -m unittest tests.test_provider_he.TestHeProvider.test_init_with_basic_co
 ```
 
 ### 可选：使用 pytest / Optional: Using pytest (Advanced Users)
+
 如果你偏好pytest的特性，需要先安装：
 
 If you prefer pytest features, install it first:
+
 ```bash
 # 或者直接安装 / or directly: 
 pip install pytest
@@ -57,10 +60,10 @@ tests/
 
 The project supports both unittest (default) and pytest testing frameworks:
 
-
 ## 编写测试 / Writing Tests
 
 ### 使用基础测试类 / Using the Base Test Class
+
 所有提供商测试都应该继承`BaseProviderTestCase`：
 
 All provider tests should inherit from `BaseProviderTestCase`:
@@ -80,6 +83,7 @@ class TestYourProvider(BaseProviderTestCase):
 ```
 
 ### 测试命名约定 / Test Naming Convention
+
 - 测试文件 / Test files: `test_provider_*.py`
 - 测试类 / Test classes: `Test*Provider`  
 - 测试方法 / Test methods: `test_*`
@@ -94,7 +98,6 @@ Tests are designed to work with both Python 2.7 and Python 3.x:
 - 字符串类型兼容性 / String type compatibility
 - 异常处理兼容性 / Exception handling compatibility  
 - print语句/函数兼容性 / Print statement/function compatibility
-
 
 ### 常见问题 / Common Issues
 

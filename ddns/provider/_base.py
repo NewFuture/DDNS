@@ -61,14 +61,12 @@ from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger
+from ..util.http import send_http_request
 
 try:  # python 3
-    from http.client import HTTPSConnection, HTTPConnection, HTTPException
-    from urllib.parse import quote, urlencode, urlparse
+    from urllib.parse import quote, urlencode
 except ImportError:  # python 2
-    from httplib import HTTPSConnection, HTTPConnection, HTTPException  # type: ignore[no-redef,import-untyped]
     from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
-    from urlparse import urlparse  # type: ignore[no-redef,import-untyped]
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -116,13 +114,18 @@ class SimpleProvider(object):
         name = self.__class__.__name__
         self.logger = logger.getChild(name) if logger else Logger(name)
         self.proxy = None  # type: str | None
+        verify_ssl_option = options.get("verify_ssl", True)
+        if isinstance(verify_ssl_option, (bool, str)):
+            self.verify_ssl = verify_ssl_option  # type: bool | str
+        else:
+            self.verify_ssl = bool(verify_ssl_option)  # type: bool | str
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
         self._validate()  # 验证身份认证信息
 
     @abstractmethod
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, str | int | None, str | None, **Any) -> bool
+        # type: (str, str, str, str | int | None, str | None, **object) -> bool
         """
         设置 DNS 记录（创建或更新）
 
@@ -171,34 +174,7 @@ class SimpleProvider(object):
         if not self.API:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
-    def _send_request(self, url, method="GET", body=None, headers=None):
-        # type: (str, str, str | bytes | None, dict[str, str] | None) -> str
-        """
-        创建 HTTP/HTTPS 连接对象。
-        Create HTTP/HTTPS connection object.
-        """
-        url_obj = urlparse(url)
-        isHttps = url_obj.scheme == "https"
-        hostname = url_obj.hostname  # type: str # type: ignore[assignment]
-        ConnectionClass = HTTPSConnection if isHttps else HTTPConnection
-        if self.proxy:
-            conn = ConnectionClass(self.proxy)
-            conn.set_tunnel(hostname, url_obj.port)
-        else:
-            conn = ConnectionClass(hostname, url_obj.port)
-        url = "{}?{}".format(url_obj.path, url_obj.query) if url_obj.query else url_obj.path
-        conn.request(method, url, body, headers=headers or {})
-        response = conn.getresponse()
-        res = response.read().decode("utf-8")
-        conn.close()
-        if not (response.status >= 200 and response.status < 300):
-            self.logger.warning("%s : error[%d]: %s", url, response.status, response.reason)
-            self.logger.info(res)
-            raise HTTPException(res)
-        return res
-
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
-        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -255,7 +231,15 @@ class SimpleProvider(object):
             # 对body进行打码处理后输出日志
             self.logger.debug("body: %s", self._mask_sensitive_data(bodyData))
 
-        res = self._send_request(method=method, url=url, body=bodyData, headers=headers)
+        res = send_http_request(
+            url=url,
+            method=method,
+            body=bodyData,
+            headers=headers,
+            proxy=self.proxy,
+            max_redirects=5,
+            verify_ssl=self.verify_ssl,
+        )
         if not self.DecodeResponse:
             # 如果不需要解码响应，则直接返回原始字符串
             self.logger.debug("response: %s", res)
@@ -333,7 +317,7 @@ class BaseProvider(SimpleProvider):
     """
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, str | int | None, str | None, **Any) -> bool
+        # type: (str, str, str, str | int | None, str | None, **object) -> bool
         """
         设置 DNS 记录（创建或更新）
 
@@ -420,7 +404,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
-        # type: (str, str, str, str, str | None, dict) -> Any
+        # type: (str, str, str, str, str | None, object) -> object
         """
         查询 DNS 记录 ID
 
@@ -438,7 +422,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
+        # type: (str, str, str, str, str, int | str | None, str | None, object) -> bool
         """
         创建新 DNS 记录
 
@@ -459,7 +443,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
+        # type: (str, object, str, str, int | str | None, str | None, object) -> bool
         """
         更新已有 DNS 记录
 

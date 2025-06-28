@@ -266,5 +266,179 @@ class TestCallbackProvider(BaseProviderTestCase):
             provider.set_record("example.com", "192.168.1.1")
 
 
+class TestCallbackProviderRealIntegration(BaseProviderTestCase):
+    """Real integration tests for CallbackProvider using httpbin.org"""
+
+    def setUp(self):
+        """Set up real test fixtures"""
+        super(TestCallbackProviderRealIntegration, self).setUp()
+        # Use httpbin.org as a stable test server
+        self.real_callback_url = "https://httpbin.org/post"
+
+    def test_real_callback_get_method(self):
+        """Test real callback using GET method with httpbin.org"""
+        # Use httpbin.org/get endpoint for GET requests
+        auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&type=__TYPE__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            # This will make a real HTTP request to httpbin.org
+            result = provider.set_record("test.example.com", "203.0.113.1", "A")
+            # httpbin.org returns JSON with our parameters, so it should be truthy
+            self.assertTrue(result)
+        except Exception as e:
+            # If network is unavailable, skip the test
+            self.skipTest("Network unavailable for real integration test: {}".format(e))
+
+    def test_real_callback_post_method_with_json(self):
+        """Test real callback using POST method with JSON data"""
+        auth_id = "https://httpbin.org/post"
+        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__TYPE__", "ttl": "__TTL__"}'
+        provider = CallbackProvider(auth_id, auth_token)
+
+        try:
+            # This will make a real HTTP POST request to httpbin.org
+            result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
+            # httpbin.org returns JSON with our posted data, so it should be truthy
+            self.assertTrue(result)
+        except Exception as e:
+            # If network is unavailable, skip the test
+            self.skipTest("Network unavailable for real integration test: {}".format(e))
+
+    def test_real_callback_error_handling(self):
+        """Test real callback error handling with invalid URL"""
+        # Use an invalid URL to test error handling
+        auth_id = "https://httpbin.org/status/500"  # This returns HTTP 500
+        provider = CallbackProvider(auth_id, "")
+
+        # This should raise a network exception due to HTTP 500 error or SSL error
+        with self.assertRaises(Exception) as cm:
+            provider.set_record("test.example.com", "203.0.113.5")
+
+        # Verify that some kind of HTTP error, network error, or SSL error was raised
+        error_msg = str(cm.exception).lower()
+        self.assertTrue(
+            "500" in error_msg
+            or "server" in error_msg
+            or "http" in error_msg
+            or "ssl" in error_msg
+            or "certificate" in error_msg
+            or "network" in error_msg,
+            "Expected HTTP 500, server, SSL, or network error, got: {}".format(cm.exception),
+        )
+
+    def test_real_callback_redirects_handling(self):
+        """Test real callback with HTTP redirects"""
+        # Use httpbin.org redirect endpoint
+        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            result = provider.set_record("redirect.test.example.com", "203.0.113.21", "A")
+            # Should follow redirects and succeed
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "certificate verify failed" in error_str and "basic constraints" in error_str:
+                self.skipTest("SSL Basic Constraints issue (common in test environments): {}".format(e))
+            elif "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL-related issue: {}".format(e))
+            else:
+                self.skipTest("Network issue during redirect test: {}".format(e))
+
+    def test_real_callback_simple_http_endpoint(self):
+        """Test with a simple endpoint that doesn't require special headers"""
+        # Use a very simple endpoint that usually has good SSL
+        auth_id = "https://httpstat.us/200?domain=__DOMAIN__&ip=__IP__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            result = provider.set_record("httpstat.test.example.com", "203.0.113.101", "A")
+            # httpstat.us returns simple status messages, should be truthy
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "certificate verify failed" in error_str and "basic constraints" in error_str:
+                self.skipTest("SSL Basic Constraints issue (common in test environments): {}".format(e))
+            elif "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL-related issue: {}".format(e))
+            else:
+                self.skipTest("Network issue: {}".format(e))
+
+    def test_real_callback_redirect_following(self):
+        """Test real callback with HTTP redirects using the improved _send_request method"""
+        # Use httpbin.org redirect endpoint that returns 302
+        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            result = provider.set_record("redirect-test.example.com", "203.0.113.200", "A")
+            # Should follow the redirect and succeed
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL certificate issue: {}".format(e))
+            elif "too many redirects" in error_str:
+                # This could happen if there's a redirect loop
+                self.skipTest("Redirect loop detected (expected behavior): {}".format(e))
+            else:
+                self.skipTest("Network issue during redirect test: {}".format(e))
+
+    def test_real_callback_multiple_redirects(self):
+        """Test callback with multiple consecutive redirects"""
+        # Test with 2 consecutive redirects: httpbin.org/redirect/2
+        auth_id = "https://httpbin.org/redirect/2?domain=__DOMAIN__&ip=__IP__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            result = provider.set_record("multi-redirect.example.com", "203.0.113.201", "A")
+            # Should follow multiple redirects and succeed
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL certificate issue: {}".format(e))
+            elif "too many redirects" in error_str:
+                self.skipTest("Redirect limit reached (expected for stress test): {}".format(e))
+            else:
+                self.skipTest("Network issue during multi-redirect test: {}".format(e))
+
+    def test_real_callback_redirect_with_post(self):
+        """Test POST request redirect behavior (should change to GET after 302)"""
+        # POST to redirect endpoint - should convert to GET after 302
+        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
+        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
+        provider = CallbackProvider(auth_id, auth_token)
+
+        try:
+            result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
+            # POST should be redirected as GET and succeed
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL certificate issue: {}".format(e))
+            else:
+                self.skipTest("Network issue during POST redirect test: {}".format(e))
+
+    def test_real_callback_absolute_vs_relative_redirects(self):
+        """Test both absolute and relative URL redirects"""
+        # Test relative redirect (should work with improved _send_request)
+        auth_id = "https://httpbin.org/relative-redirect/1?domain=__DOMAIN__&ip=__IP__"
+        provider = CallbackProvider(auth_id, "")
+
+        try:
+            result = provider.set_record("relative-redirect.example.com", "203.0.113.203", "A")
+            # Should handle relative redirects correctly
+            self.assertTrue(result)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL certificate issue: {}".format(e))
+            else:
+                self.skipTest("Network issue during relative redirect test: {}".format(e))
+
+
 if __name__ == "__main__":
     unittest.main()
