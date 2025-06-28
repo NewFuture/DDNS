@@ -15,8 +15,8 @@ from time import strftime
 
 class HuaweiDNSProvider(BaseProvider):
     API = "https://dns.myhuaweicloud.com"
-    ContentType = TYPE_JSON
-    Algorithm = "SDK-HMAC-SHA256"
+    content_type = TYPE_JSON
+    algorithm = "SDK-HMAC-SHA256"
 
     def _sign_headers(self, headers, signed_headers):
         a = []
@@ -47,7 +47,7 @@ class HuaweiDNSProvider(BaseProvider):
 
         date_now = strftime("%Y%m%dT%H%M%SZ")
         headers = {
-            "content-type": self.ContentType,
+            "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
             "x-sdk-date": date_now,
         }
@@ -67,11 +67,11 @@ class HuaweiDNSProvider(BaseProvider):
         )
         hashed_canonical_request = self._hex_encode_sha256(canonical_request.encode("utf-8"))
 
-        str_to_sign = "%s\n%s\n%s" % (self.Algorithm, date_now, hashed_canonical_request)
+        str_to_sign = "%s\n%s\n%s" % (self.algorithm, date_now, hashed_canonical_request)
         secret = self.auth_token
         signature = hmac(secret.encode("utf-8"), str_to_sign.encode("utf-8"), digestmod=sha256).hexdigest()
         auth_header = "%s Access=%s, SignedHeaders=%s, Signature=%s" % (
-            self.Algorithm,
+            self.algorithm,
             self.auth_id,
             ";".join(sign_headers),
             signature,
@@ -115,7 +115,7 @@ class HuaweiDNSProvider(BaseProvider):
         v2 https://support.huaweicloud.com/api-dns/CreateRecordSet.html
         """
         domain = self._join_domain(sub_domain, main_domain) + "."
-        extra["description"] = extra.get("description", self.Remark)
+        extra["description"] = extra.get("description", self.remark)
         res = self._request(
             "POST",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -134,7 +134,7 @@ class HuaweiDNSProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """https://support.huaweicloud.com/api-dns/UpdateRecordSet.html (无 line 参数)"""
-        extra["description"] = extra.get("description", self.Remark)
+        extra["description"] = extra.get("description", self.remark)
         res = self._request(
             "PUT",
             "/v2.1/zones/" + zone_id + "/recordsets/" + old_record["id"],

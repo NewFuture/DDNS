@@ -9,7 +9,7 @@ from ._base import BaseProvider, TYPE_JSON
 
 class CloudflareProvider(BaseProvider):
     API = "https://api.cloudflare.com"
-    ContentType = TYPE_JSON
+    content_type = TYPE_JSON
 
     def _validate(self):
         if not self.auth_token:
@@ -67,7 +67,7 @@ class CloudflareProvider(BaseProvider):
         # type: (str, str, str, str, str, int | str | None, str | None, dict ) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/"""
         name = self._join_domain(sub_domain, main_domain)
-        extra["comment"] = extra.get("comment", self.Remark)  # 添加注释
+        extra["comment"] = extra.get("comment", self.remark)  # 添加注释
         data = self._request(
             "POST", "/{}/dns_records".format(zone_id), name=name, type=record_type, content=value, ttl=ttl, **extra
         )
@@ -80,7 +80,7 @@ class CloudflareProvider(BaseProvider):
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/"""
-        extra["comment"] = extra.get("comment", self.Remark)  # 注释
+        extra["comment"] = extra.get("comment", self.remark)  # 注释
         extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态
         extra["tags"] = old_record.get("tags", extra.get("tags"))  # 保持原有的标签
         extra["settings"] = old_record.get("settings", extra.get("settings"))  # 保持原有的设置

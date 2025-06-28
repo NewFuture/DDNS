@@ -31,7 +31,7 @@ class TestDnspodProvider(BaseProviderTestCase):
         # ContentType should be TYPE_FORM
         from ddns.provider._base import TYPE_FORM
 
-        self.assertEqual(DnspodProvider.ContentType, TYPE_FORM)
+        self.assertEqual(DnspodProvider.content_type, TYPE_FORM)
 
     @patch("ddns.provider.dnspod.DnspodProvider._http")
     def test_request_success(self, mock_http):

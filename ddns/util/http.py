@@ -187,7 +187,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, max_redi
     if not (200 <= status < 300):
         logger.warning("%s : error[%d]: %s", url, status, response.reason)
         logger.info(res)
-        raise HTTPException(res)
+        raise HTTPException("HTTP Error {}: {}\n{}".format(status, response.reason, res))
 
     return res
 

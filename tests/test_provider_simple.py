@@ -13,8 +13,6 @@ class _TestableSimpleProvider(SimpleProvider):
     """Test implementation of SimpleProvider for testing purposes"""
 
     API = "https://api.example.com"
-    ContentType = TYPE_FORM
-    DecodeResponse = True
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """Test implementation of set_record"""
@@ -35,9 +33,9 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://api.example.com")
-        self.assertEqual(provider.ContentType, TYPE_FORM)
-        self.assertTrue(provider.DecodeResponse)
-        self.assertTrue(provider.verify_ssl)  # Default verify_ssl should be True
+        self.assertEqual(provider.content_type, TYPE_FORM)
+        self.assertTrue(provider.decode_response)
+        self.assertEqual(provider.verify_ssl, "auto")  # Default verify_ssl should be "auto"
         self.assertEqual(provider._zone_map, {})  # Should initialize empty zone map
 
     def test_init_with_logger(self):
@@ -49,10 +47,10 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_init_with_options(self):
         """Test SimpleProvider initialization with additional options"""
-        options = {"debug": True, "timeout": 30, "verify_ssl": False}
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, **options)
+        options = {"debug": True, "timeout": 30}
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False, **options)
         self.assertEqual(provider.options, options)
-        self.assertFalse(provider.verify_ssl)  # Should respect verify_ssl option
+        self.assertFalse(provider.verify_ssl)  # Should respect verify_ssl parameter
 
     def test_init_with_verify_ssl_string(self):
         """Test SimpleProvider initialization with verify_ssl as string"""
@@ -66,13 +64,13 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_init_with_verify_ssl_truthy_value(self):
         """Test SimpleProvider initialization with verify_ssl as truthy value"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=1)
-        self.assertTrue(provider.verify_ssl)
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=1)  # type: ignore
+        self.assertEqual(provider.verify_ssl, 1)  # Should preserve the exact value
 
     def test_init_with_verify_ssl_falsy_value(self):
         """Test SimpleProvider initialization with verify_ssl as falsy value"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=0)
-        self.assertFalse(provider.verify_ssl)
+        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=0)  # type: ignore
+        self.assertEqual(provider.verify_ssl, 0)  # Should preserve the exact value
 
     def test_validate_missing_id(self):
         """Test _validate method with missing auth_id"""

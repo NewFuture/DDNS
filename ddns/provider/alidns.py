@@ -14,7 +14,7 @@ from time import time, strftime
 
 class AlidnsProvider(BaseProvider):
     API = "https://alidns.aliyuncs.com"
-    ContentType = TYPE_FORM
+    content_type = TYPE_FORM
 
     def _signature(self, params):
         # type: (dict[str, Any]) -> dict[str, Any]

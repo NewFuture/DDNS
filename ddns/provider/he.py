@@ -10,8 +10,8 @@ from ._base import SimpleProvider, TYPE_FORM
 
 class HeProvider(SimpleProvider):
     API = "https://dyn.dns.he.net"
-    ContentType = TYPE_FORM
-    DecodeResponse = False  # he.net response is plain text, not JSON
+    content_type = TYPE_FORM
+    decode_response = False  # he.net response is plain text, not JSON
 
     def _validate(self):
         pass

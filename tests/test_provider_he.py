@@ -25,17 +25,17 @@ class TestHeProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://dyn.dns.he.net")
-        self.assertFalse(provider.DecodeResponse)
+        self.assertFalse(provider.decode_response)
 
     def test_class_constants(self):
         """Test HeProvider class constants"""
         provider = HeProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.API, "https://dyn.dns.he.net")
-        self.assertFalse(provider.DecodeResponse)
+        self.assertFalse(provider.decode_response)
         # ContentType should be form-encoded
         from ddns.provider._base import TYPE_FORM
 
-        self.assertEqual(provider.ContentType, TYPE_FORM)
+        self.assertEqual(provider.content_type, TYPE_FORM)
 
     def test_validate_always_passes(self):
         """Test _validate method always passes (no validation required)"""

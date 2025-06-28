@@ -32,9 +32,9 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
     def test_class_constants(self):
         """Test HuaweiDNSProvider class constants"""
         self.assertEqual(HuaweiDNSProvider.API, "https://dns.myhuaweicloud.com")
-        self.assertEqual(HuaweiDNSProvider.ContentType, "application/json")
-        self.assertTrue(HuaweiDNSProvider.DecodeResponse)
-        self.assertEqual(HuaweiDNSProvider.Algorithm, "SDK-HMAC-SHA256")
+        self.assertEqual(HuaweiDNSProvider.content_type, "application/json")
+        self.assertTrue(HuaweiDNSProvider.decode_response)
+        self.assertEqual(HuaweiDNSProvider.algorithm, "SDK-HMAC-SHA256")
 
     def test_init_with_basic_config(self):
         """Test HuaweiDNSProvider initialization with basic configuration"""
@@ -204,7 +204,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 records=["1.2.3.4"],
                 ttl=300,
                 line="line1",
-                description=self.provider.Remark,
+                description=self.provider.remark,
             )
             self.assertTrue(result)
 
@@ -258,7 +258,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 type="A",
                 records=["5.6.7.8"],
                 ttl=600,
-                description=provider.Remark,
+                description=provider.remark,
             )
             self.assertTrue(result)
 
@@ -280,7 +280,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
                 type="A",
                 records=["5.6.7.8"],
                 ttl=300,
-                description=provider.Remark,
+                description=provider.remark,
             )
             self.assertTrue(result)
 

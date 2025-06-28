@@ -15,7 +15,7 @@ class DnspodProvider(BaseProvider):
     """
 
     API = "https://dnsapi.cn"
-    ContentType = TYPE_FORM
+    content_type = TYPE_FORM
     DefaultLine = "默认"
 
     def _request(self, action, extra=None, **params):
@@ -36,7 +36,7 @@ class DnspodProvider(BaseProvider):
             params.update(extra)
         params = {k: v for k, v in params.items() if v is not None}
         params.update({"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json"})
-        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
+        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.version)}
         data = self._http("POST", "/" + action, headers=headers, body=params)
         if data and data.get("status", {}).get("code") == "1":  # 请求成功
             return data

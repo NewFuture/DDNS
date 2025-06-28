@@ -21,8 +21,8 @@ class TestCloudflareProvider(BaseProviderTestCase):
     def test_class_constants(self):
         """Test CloudflareProvider class constants"""
         self.assertEqual(CloudflareProvider.API, "https://api.cloudflare.com")
-        self.assertEqual(CloudflareProvider.ContentType, "application/json")
-        self.assertTrue(CloudflareProvider.DecodeResponse)
+        self.assertEqual(CloudflareProvider.content_type, "application/json")
+        self.assertTrue(CloudflareProvider.decode_response)
 
     def test_init_with_basic_config(self):
         """Test CloudflareProvider initialization with basic configuration"""
@@ -235,7 +235,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 type="A",
                 content="1.2.3.4",
                 ttl=300,
-                comment=provider.Remark,
+                comment=provider.remark,
             )
             self.assertTrue(result)
 
@@ -341,7 +341,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="New comment",  # extra.get("comment", self.Remark)
+                comment="New comment",  # extra.get("comment", self.remark)
                 proxied=False,  # old_record.get("proxied", extra.get("proxied"))
                 priority=20,  # From extra
                 tags=None,

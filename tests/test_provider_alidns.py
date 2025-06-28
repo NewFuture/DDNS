@@ -21,8 +21,8 @@ class TestAlidnsProvider(BaseProviderTestCase):
     def test_class_constants(self):
         """Test AlidnsProvider class constants"""
         self.assertEqual(AlidnsProvider.API, "https://alidns.aliyuncs.com")
-        self.assertEqual(AlidnsProvider.ContentType, "application/x-www-form-urlencoded")
-        self.assertTrue(AlidnsProvider.DecodeResponse)
+        self.assertEqual(AlidnsProvider.content_type, "application/x-www-form-urlencoded")
+        self.assertTrue(AlidnsProvider.decode_response)
 
     def test_init_with_basic_config(self):
         """Test AlidnsProvider initialization with basic configuration"""

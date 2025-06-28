@@ -21,11 +21,11 @@ class TencentCloudProvider(BaseProvider):
     """
 
     API = "https://dnspod.tencentcloudapi.com"
-    ContentType = TYPE_JSON
+    content_type = TYPE_JSON
 
     # 腾讯云 DNSPod API 配置
     service = "dnspod"
-    version = "2021-03-23"
+    version_date = "2021-03-23"
 
     def _sign_tc3(self, method, uri, query, headers, payload, timestamp):
         """
@@ -113,10 +113,10 @@ class TencentCloudProvider(BaseProvider):
         timestamp = int(time())
         # 构建请求头,小写
         headers = {
-            "content-type": self.ContentType,
+            "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
             "x-tc-action": action,
-            "x-tc-version": self.version,
+            "x-tc-version": self.version_date,
             "x-tc-timestamp": int(timestamp),
         }
 
@@ -178,7 +178,7 @@ class TencentCloudProvider(BaseProvider):
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
         """创建 DNS 记录 https://cloud.tencent.com/document/api/1427/56180"""
-        extra["Remark"] = extra.get("Remark", self.Remark)
+        extra["Remark"] = extra.get("Remark", self.remark)
         response = self._request(
             "CreateRecord",
             Domain=main_domain,
@@ -198,7 +198,7 @@ class TencentCloudProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """更新 DNS 记录: https://cloud.tencent.com/document/api/1427/56157"""
-        extra["Remark"] = extra.get("Remark", self.Remark)
+        extra["Remark"] = extra.get("Remark", self.remark)
         response = self._request(
             "ModifyRecord",
             # Domain=old_record.get("Domain"),

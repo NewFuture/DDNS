@@ -7,9 +7,9 @@ Test ddns.util.http module
 import unittest
 from unittest.mock import Mock, patch
 import ssl
-from http.client import HTTPException
 
 from ddns.util.http import (
+    HTTPException,
     send_http_request,
     _create_connection,
     _load_system_ca_certs,
@@ -291,7 +291,7 @@ class TestSendHttpRequest(unittest.TestCase):
         with self.assertRaises(HTTPException) as context:
             send_http_request("GET", "http://example.com/notfound")
 
-        self.assertEqual(str(context.exception), '{"error": "Not found"}')
+        self.assertEqual(str(context.exception), 'HTTP Error 404: Not Found\n{"error": "Not found"}')
         mock_close.assert_called_once_with(mock_conn)
 
     def test_too_many_redirects(self):

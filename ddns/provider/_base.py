@@ -87,17 +87,19 @@ class SimpleProvider(object):
     # API endpoint domain (to be defined in subclass)
     API = ""  # type: str # https://exampledns.com
     # Content-Type for requests (to be defined in subclass)
-    ContentType = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
+    content_type = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
     # Decode Response as JSON by default
-    DecodeResponse = True
+    decode_response = True
+    # 是否验证 SSL 证书，默认为 True
+    verify_ssl = "auto"  # type: bool | str
 
     # 版本
-    Version = environ.get("DDNS_VERSION", "0.0.0")
+    version = environ.get("DDNS_VERSION", "0.0.0")
     # Description
-    Remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(Version)
+    remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(version)
 
-    def __init__(self, auth_id, auth_token, logger=None, **options):
-        # type: (str, str, Logger | None, **object) -> None
+    def __init__(self, auth_id, auth_token, logger=None, verify_ssl=None, **options):
+        # type: (str, str, Logger | None, bool|str| None, **object) -> None
         """
         初始化服务商对象
 
@@ -114,11 +116,8 @@ class SimpleProvider(object):
         name = self.__class__.__name__
         self.logger = logger.getChild(name) if logger else Logger(name)
         self.proxy = None  # type: str | None
-        verify_ssl_option = options.get("verify_ssl", True)
-        if isinstance(verify_ssl_option, (bool, str)):
-            self.verify_ssl = verify_ssl_option  # type: bool | str
-        else:
-            self.verify_ssl = bool(verify_ssl_option)  # type: bool | str
+        if verify_ssl is not None:
+            self.verify_ssl = verify_ssl
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
         self._validate()  # 验证身份认证信息
@@ -175,6 +174,7 @@ class SimpleProvider(object):
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
+        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -207,6 +207,11 @@ class SimpleProvider(object):
                 self.logger.error("params should not be used with body for %s method", method)
         query_str = query_str or self._encode(queries)
 
+        # headers
+        headers = headers or {}
+        if "accept" not in headers and "Accept" not in headers:
+            headers["accept"] = TYPE_JSON
+
         # 拼接URL
         if query_str:
             url += ("&" if "?" in url else "?") + query_str
@@ -218,13 +223,12 @@ class SimpleProvider(object):
         self.logger.info("%s %s", method, self._mask_sensitive_data(url))  # 主体
         bodyData = None
         if body:
-            headers = headers or {}
             if "content-type" not in headers:
-                headers["content-type"] = self.ContentType
+                headers["content-type"] = self.content_type
             if isinstance(body, str) or isinstance(body, bytes):
                 # 如果 body 已经是字符串，则不需要再次编码
                 bodyData = body
-            elif self.ContentType == TYPE_FORM:
+            elif self.content_type == TYPE_FORM:
                 bodyData = self._encode(body)
             else:
                 bodyData = jsonencode(body)
@@ -240,7 +244,7 @@ class SimpleProvider(object):
             max_redirects=5,
             verify_ssl=self.verify_ssl,
         )
-        if not self.DecodeResponse:
+        if not self.decode_response:
             # 如果不需要解码响应，则直接返回原始字符串
             self.logger.debug("response: %s", res)
             return res
@@ -317,7 +321,7 @@ class BaseProvider(SimpleProvider):
     """
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        # type: (str, str, str, str | int | None, str | None, **object) -> bool
+        # type: (str, str, str, str | int | None, str | None, **Any) -> bool
         """
         设置 DNS 记录（创建或更新）
 
@@ -404,7 +408,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
-        # type: (str, str, str, str, str | None, object) -> object
+        # type: (str, str, str, str, str | None, dict) -> Any
         """
         查询 DNS 记录 ID
 
@@ -422,7 +426,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
-        # type: (str, str, str, str, str, int | str | None, str | None, object) -> bool
+        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         """
         创建新 DNS 记录
 
@@ -443,7 +447,7 @@ class BaseProvider(SimpleProvider):
 
     @abstractmethod
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        # type: (str, object, str, str, int | str | None, str | None, object) -> bool
+        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """
         更新已有 DNS 记录
 

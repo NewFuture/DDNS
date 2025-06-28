@@ -17,7 +17,7 @@ class DnscomProvider(BaseProvider):
     """
 
     API = "https://www.51dns.com"
-    ContentType = TYPE_FORM
+    content_type = TYPE_FORM
 
     def _signature(self, params):
         """https://www.51dns.com/document/api/70/72.html"""
@@ -65,7 +65,7 @@ class DnscomProvider(BaseProvider):
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/12.html"""
-        extra["remark"] = extra.get("remark", self.Remark)
+        extra["remark"] = extra.get("remark", self.remark)
         res = self._request(
             "record/create",
             domainID=zone_id,
@@ -84,7 +84,7 @@ class DnscomProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/45.html"""
-        extra["remark"] = extra.get("remark", self.Remark)
+        extra["remark"] = extra.get("remark", self.remark)
         res = self._request(
             "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
         )

@@ -17,8 +17,8 @@ class CallbackProvider(SimpleProvider):
     """
 
     API = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
-    ContentType = TYPE_JSON
-    DecodeResponse = False  # Callback response is not JSON, it's a custom response
+    content_type = TYPE_JSON
+    decode_response = False  # Callback response is not JSON, it's a custom response
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
@@ -28,7 +28,7 @@ class CallbackProvider(SimpleProvider):
         self.logger.info("%s => %s(%s)", domain, value, record_type)
         url = self.auth_id  # 直接用 auth_id 作为 url
         token = self.auth_token  # auth_token 作为 POST 参数
-        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.Version)}
+        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.version)}
         extra.update(
             {
                 "__DOMAIN__": domain,

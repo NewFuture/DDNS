@@ -21,8 +21,8 @@ class TestDnscomProvider(BaseProviderTestCase):
     def test_class_constants(self):
         """Test DnscomProvider class constants"""
         self.assertEqual(DnscomProvider.API, "https://www.51dns.com")
-        self.assertEqual(DnscomProvider.ContentType, "application/x-www-form-urlencoded")
-        self.assertTrue(DnscomProvider.DecodeResponse)
+        self.assertEqual(DnscomProvider.content_type, "application/x-www-form-urlencoded")
+        self.assertTrue(DnscomProvider.decode_response)
 
     def test_init_with_basic_config(self):
         """Test DnscomProvider initialization with basic configuration"""
@@ -220,7 +220,7 @@ class TestDnscomProvider(BaseProviderTestCase):
                 type="A",
                 TTL=300,
                 viewID="1",
-                remark=provider.Remark,
+                remark=provider.remark,
             )
             self.assertTrue(result)
 
