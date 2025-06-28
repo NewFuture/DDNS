@@ -12,7 +12,7 @@ This document explains how to run tests for the DDNS project. **unittest** is th
 python -m unittest discover tests -v
 
 # 运行基础测试文件 / Run base test file
-python tests/test_base.py -v  
+python tests/base_test.py -v  
 
 # 运行特定测试文件 / Run specific test file
 python -m unittest tests.test_provider_he -v
@@ -46,7 +46,7 @@ pytest tests/test_provider_he.py -v
 ```
 tests/
 ├── __init__.py         # 测试包初始化 / Makes tests a package
-├── test_base.py        # 共享测试工具和基类 / Shared test utilities and base classes
+├── base_test.py        # 共享测试工具和基类 / Shared test utilities and base classes
 ├── test_provider_*.py  # 各个提供商的测试文件 / Tests for each provider  
 └── README.md           # 本测试指南 / This testing guide
 ```
@@ -66,7 +66,7 @@ The project supports both unittest (default) and pytest testing frameworks:
 All provider tests should inherit from `BaseProviderTestCase`:
 
 ```python
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.your_provider import YourProvider
 
 class TestYourProvider(BaseProviderTestCase):

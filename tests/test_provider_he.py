@@ -5,7 +5,7 @@ Unit tests for HeProvider (Hurricane Electric)
 @author: Github Copilot
 """
 
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.he import HeProvider
 
 

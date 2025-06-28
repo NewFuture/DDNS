@@ -6,7 +6,7 @@ Unit tests for TencentCloudProvider
 @author: NewFuture
 """
 
-from test_base import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, unittest, patch
 from ddns.provider.tencentcloud import TencentCloudProvider
 
 

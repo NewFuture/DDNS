@@ -10,7 +10,7 @@ ddns/
 │   ├── _base.py         # 抽象基类 SimpleProvider 和 BaseProvider
 │   └── myprovider.py    # 你的新服务商实现
 tests/
-├── test_base.py         # 共享测试工具和基类
+├── base_test.py         # 共享测试工具和基类
 ├── test_provider_*.py   # 各个Provider的单元测试文件
 └── README.md            # 测试指南
 ```
@@ -206,7 +206,7 @@ else:
 
 ```python
 # tests/test_provider_myprovider.py
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.myprovider import MyProvider
 
 class TestMyProvider(BaseProviderTestCase):
@@ -245,7 +245,7 @@ ddns/
 │   ├── myprovider.py         # 你的Provider实现
 │   └── __init__.py           # 导入和注册
 tests/
-├── test_base.py              # 共享测试基类
+├── base_test.py              # 共享测试基类
 ├── test_provider_myprovider.py  # 你的Provider测试
 └── README.md                 # 测试指南
 ```

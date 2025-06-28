@@ -5,7 +5,7 @@ Unit tests for DnspodComProvider
 @author: Github Copilot
 """
 
-from test_base import BaseProviderTestCase, unittest
+from base_test import BaseProviderTestCase, unittest
 from ddns.provider.dnspod_com import DnspodComProvider
 
 

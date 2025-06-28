@@ -5,7 +5,7 @@ Unit tests for SimpleProvider
 @author: Github Copilot
 """
 
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider._base import SimpleProvider, TYPE_FORM, TYPE_JSON
 
 

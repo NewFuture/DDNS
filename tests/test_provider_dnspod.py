@@ -4,7 +4,7 @@ DNSPod Provider 单元测试
 支持 Python 2.7 和 Python 3
 """
 
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.dnspod import DnspodProvider
 
 

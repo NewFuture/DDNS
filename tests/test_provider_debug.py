@@ -6,7 +6,7 @@ Unit tests for DebugProvider
 """
 
 import sys
-from test_base import BaseProviderTestCase, unittest, patch, MagicMock
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.debug import DebugProvider
 
 if sys.version_info[0] < 3:

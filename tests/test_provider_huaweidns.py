@@ -5,7 +5,7 @@ Unit tests for HuaweiDNSProvider
 @author: Github Copilot
 """
 
-from test_base import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, unittest, patch
 from ddns.provider.huaweidns import HuaweiDNSProvider
 
 
