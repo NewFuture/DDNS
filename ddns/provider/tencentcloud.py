@@ -9,6 +9,7 @@ from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
 from time import time, strftime
+from json import dumps as jsonencode
 
 
 class TencentCloudProvider(BaseProvider):
@@ -74,7 +75,7 @@ class TencentCloudProvider(BaseProvider):
         )
 
         # Step 2: 构建待签名字符串
-        date = strftime("%Y%m%d")  # 日期
+        date = strftime("%Y-%m-%d")  # 日期
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
         hashed_canonical_request = sha256(canonical_request.encode("utf-8")).hexdigest()
 
@@ -97,6 +98,7 @@ class TencentCloudProvider(BaseProvider):
         return authorization
 
     def _request(self, action, **params):
+        # type: (str, **(str | int | bytes | bool | None)) -> dict | None
         """
         发送腾讯云 API 请求
 
@@ -109,7 +111,7 @@ class TencentCloudProvider(BaseProvider):
         Returns:
             dict: API 响应结果
         """
-
+        params = {k: v for k, v in params.items() if v is not None}
         timestamp = int(time())
         # 构建请求头,小写
         headers = {
@@ -121,7 +123,7 @@ class TencentCloudProvider(BaseProvider):
         }
 
         # 构建请求体
-        payload = self._encode(params)
+        payload = jsonencode(params)
 
         # 生成签名
         authorization = self._sign_tc3("POST", "/", "", headers, payload, timestamp)
@@ -145,18 +147,37 @@ class TencentCloudProvider(BaseProvider):
         return None
 
     def _query_zone_id(self, domain):
+        # type: (str) -> str | None
         """查询域名的 zone_id (domain id) https://cloud.tencent.com/document/api/1427/56173"""
-        return domain
+        # 使用 DescribeDomain API 查询指定域名的信息
+        response = self._request("DescribeDomain", Domain=domain)
+
+        if not response or "DomainInfo" not in response:
+            self.logger.debug("Domain info not found or query failed for: %s", domain)
+            return None
+
+        domain_id = response.get("DomainInfo", {}).get("DomainId")
+
+        if domain_id is not None:
+            self.logger.debug("Found domain %s with ID: %s", domain, domain_id)
+            return str(domain_id)
+
+        self.logger.debug("Domain ID not found in response for: %s", domain)
+        return None
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+        # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询 DNS 记录列表 https://cloud.tencent.com/document/api/1427/56166"""
-        params = {"DomainId": zone_id, "RecordType": record_type, "RecordLine": line}
 
-        # 添加子域名筛选
-        if sub_domain and sub_domain != "@":
-            params["Subdomain"] = sub_domain
-
-        response = self._request("DescribeRecordList", **params)
+        response = self._request(
+            "DescribeRecordList",
+            DomainId=int(zone_id),
+            Subdomain=sub_domain,
+            Domain=main_domain,
+            RecordType=record_type,
+            RecordLine=line,
+            **extra
+        )
         if not response or "RecordList" not in response:
             self.logger.debug("No records found or query failed")
             return None
@@ -182,7 +203,7 @@ class TencentCloudProvider(BaseProvider):
         response = self._request(
             "CreateRecord",
             Domain=main_domain,
-            DomainId=zone_id,
+            DomainId=int(zone_id),
             SubDomain=sub_domain,
             RecordType=record_type,
             Value=value,
@@ -201,9 +222,9 @@ class TencentCloudProvider(BaseProvider):
         extra["Remark"] = extra.get("Remark", self.remark)
         response = self._request(
             "ModifyRecord",
-            # Domain=old_record.get("Domain"),
-            DomainId=old_record.get("DomainId"),
-            SubName=old_record.get("Name"),
+            Domain=old_record.get("Domain", ""),
+            DomainId=old_record.get("DomainId", int(zone_id)),
+            SubDomain=old_record.get("Name"),
             RecordId=old_record.get("RecordId"),
             RecordType=record_type,
             RecordLine=old_record.get("Line", line or "默认"),

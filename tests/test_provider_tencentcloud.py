@@ -62,11 +62,45 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         self.assertIn("Signature=", authorization)
         self.assertIn(self.auth_id, authorization)
 
-    def test_query_zone_id(self):
-        """Test query zone ID (returns domain itself)"""
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_zone_id_success(self, mock_http):
+        """Test successful zone ID query"""
         domain = "example.com"
+        expected_domain_id = 12345678
+
+        mock_http.return_value = {
+            "Response": {"DomainInfo": {"Domain": domain, "DomainId": expected_domain_id, "Status": "enable"}}
+        }
+
         zone_id = self.provider._query_zone_id(domain)
-        self.assertEqual(zone_id, domain)
+        self.assertEqual(zone_id, str(expected_domain_id))
+
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_zone_id_not_found(self, mock_http):
+        """Test zone ID query when domain not found"""
+        domain = "nonexistent.com"
+
+        mock_http.return_value = {
+            "Response": {
+                "Error": {
+                    "Code": "InvalidParameterValue.DomainNotExists",
+                    "Message": "当前域名有误，请返回重新操作。",
+                }
+            }
+        }
+
+        zone_id = self.provider._query_zone_id(domain)
+        self.assertIsNone(zone_id)
+
+    @patch.object(TencentCloudProvider, "_http")
+    def test_query_zone_id_invalid_response(self, mock_http):
+        """Test zone ID query with invalid response format"""
+        domain = "example.com"
+
+        mock_http.return_value = {"Response": {}}
+
+        zone_id = self.provider._query_zone_id(domain)
+        self.assertIsNone(zone_id)
 
     @patch.object(TencentCloudProvider, "_http")
     def test_query_record_found(self, mock_http):
@@ -285,6 +319,8 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test set_record creating a new record"""
         # Mock HTTP responses for the workflow
         responses = [
+            # DescribeDomain response (get domain ID)
+            {"Response": {"DomainInfo": {"Domain": "example.com", "DomainId": 12345678}}},
             # DescribeRecordList response (no existing records)
             {"Response": {"RecordList": []}},
             # CreateRecord response (record created successfully)
@@ -295,13 +331,15 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         result = self.provider.set_record("www.example.com", "1.2.3.4", "A")
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 2)
+        self.assertEqual(mock_http.call_count, 3)
 
     @patch.object(TencentCloudProvider, "_http")
     def test_set_record_update_existing(self, mock_http):
         """Test set_record updating an existing record"""
         # Mock HTTP responses for the workflow
         responses = [
+            # DescribeDomain response (get domain ID)
+            {"Response": {"DomainInfo": {"Domain": "example.com", "DomainId": 12345678}}},
             # DescribeRecordList response (existing record found)
             {
                 "Response": {
@@ -311,7 +349,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
                             "Name": "www",
                             "Type": "A",
                             "Value": "1.2.3.4",
-                            "DomainId": "example.com",
+                            "DomainId": 12345678,
                             "Line": "默认",
                         }
                     ]
@@ -325,7 +363,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         result = self.provider.set_record("www.example.com", "5.6.7.8", "A")
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 2)
+        self.assertEqual(mock_http.call_count, 3)
 
     def test_mask_sensitive_data(self):
         """Test sensitive data masking"""
@@ -369,6 +407,8 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         """Test complete domain resolution flow"""
         # Mock HTTP responses for the workflow
         responses = [
+            # DescribeDomain response (get domain ID)
+            {"Response": {"DomainInfo": {"Domain": "example.com", "DomainId": 12345678}}},
             # DescribeRecordList response (no existing records)
             {"Response": {"RecordList": []}},
             # CreateRecord response (record created successfully)
@@ -379,12 +419,12 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         result = self.provider.set_record("test.example.com", "1.2.3.4", "A", ttl=600)
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 2)
+        self.assertEqual(mock_http.call_count, 3)
 
         # Verify the CreateRecord call parameters
-        create_call = mock_http.call_args_list[1]
+        create_call = mock_http.call_args_list[2]
         call_body = create_call[1]["body"]
-        self.assertIn("Domain", call_body)
+        self.assertIn("DomainId", call_body)
         self.assertIn("CreateRecord", create_call[1]["headers"]["x-tc-action"])
 
     @patch.object(TencentCloudProvider, "_http")
@@ -392,6 +432,8 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         """Test custom domain format with ~ separator"""
         # Mock HTTP responses
         responses = [
+            # DescribeDomain response (get domain ID)
+            {"Response": {"DomainInfo": {"Domain": "example.com", "DomainId": 12345678}}},
             # DescribeRecordList response (no existing records)
             {"Response": {"RecordList": []}},
             # CreateRecord response (record created successfully)
@@ -404,13 +446,13 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         self.assertTrue(result)
 
         # Verify the CreateRecord action was called
-        create_call = mock_http.call_args_list[1]
+        create_call = mock_http.call_args_list[2]
         headers = create_call[1]["headers"]
         self.assertEqual(headers["x-tc-action"], "CreateRecord")
 
         # Verify the body contains the right domain data
         call_body = create_call[1]["body"]
-        self.assertIn("example.com", call_body)
+        self.assertIn("12345678", call_body)  # DomainId instead of domain name
         self.assertIn("test", call_body)
 
     @patch.object(TencentCloudProvider, "_http")
@@ -418,6 +460,8 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         """Test updating an existing record"""
         # Mock HTTP responses for the workflow
         responses = [
+            # DescribeDomain response (get domain ID)
+            {"Response": {"DomainInfo": {"Domain": "example.com", "DomainId": 12345678}}},
             # DescribeRecordList response (existing record found)
             {
                 "Response": {
@@ -427,7 +471,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
                             "Name": "test",
                             "Type": "A",
                             "Value": "1.2.3.4",
-                            "DomainId": "example.com",
+                            "DomainId": 12345678,
                             "Line": "默认",
                         }
                     ]
@@ -441,16 +485,16 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         result = self.provider.set_record("test.example.com", "5.6.7.8", "A", ttl=300)
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 2)
+        self.assertEqual(mock_http.call_count, 3)
 
         # Verify the ModifyRecord call
-        modify_call = mock_http.call_args_list[1]
+        modify_call = mock_http.call_args_list[2]
         self.assertIn("ModifyRecord", modify_call[1]["headers"]["x-tc-action"])
 
     @patch.object(TencentCloudProvider, "_http")
     def test_api_error_handling(self, mock_http):
         """Test API error handling"""
-        # Mock API error response for both DescribeRecordList and CreateRecord
+        # Mock API error response for DescribeDomain
         mock_http.return_value = {
             "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
         }
@@ -458,9 +502,8 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         result = self.provider.set_record("test.example.com", "1.2.3.4", "A")
 
         self.assertFalse(result)
-        # Two calls should be made: DescribeRecordList (fails, returns None),
-        # then CreateRecord (also fails)
-        self.assertEqual(mock_http.call_count, 2)
+        # Only one call should be made: DescribeDomain (fails immediately)
+        self.assertEqual(mock_http.call_count, 1)
 
 
 if __name__ == "__main__":
