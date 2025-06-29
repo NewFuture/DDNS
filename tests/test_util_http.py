@@ -4,9 +4,54 @@
 Test ddns.util.http module
 """
 
+from __future__ import unicode_literals
 import unittest
 import ssl
+import sys
 from base_test import MagicMock, patch
+
+# Python 2/3 compatibility
+if sys.version_info[0] == 2:
+
+    def to_bytes(s, encoding="utf-8"):
+        """Convert string to bytes in Python 2/3 compatible way"""
+        if isinstance(s, unicode):  # noqa: F821
+            return s.encode(encoding)
+        return s
+
+    def to_unicode(s, encoding="utf-8"):
+        """Convert string to unicode in Python 2/3 compatible way"""
+        if isinstance(s, str):
+            return s.decode(encoding)
+        return s
+
+    def byte_string(s):
+        """Create byte string compatible with Python 2/3"""
+        if isinstance(s, unicode):  # noqa: F821
+            return s.encode("utf-8")
+        return s
+
+else:
+
+    def to_bytes(s, encoding="utf-8"):
+        """Convert string to bytes in Python 2/3 compatible way"""
+        if isinstance(s, str):
+            return s.encode(encoding)
+        return s
+
+    def to_unicode(s, encoding="utf-8"):
+        """Convert string to unicode in Python 2/3 compatible way"""
+        if isinstance(s, bytes):
+            return s.decode(encoding)
+        return s
+
+    def byte_string(s):
+        """Create byte string compatible with Python 2/3"""
+        if isinstance(s, str):
+            return s.encode("utf-8")
+        return s
+
+
 from ddns.util.http import (
     HTTPException,
     send_http_request,
@@ -242,55 +287,55 @@ class TestDecodeResponseBody(unittest.TestCase):
 
     def test_utf8_decoding(self):
         """测试UTF-8解码"""
-        raw_body = "中文测试".encode("utf-8")
+        raw_body = to_bytes("中文测试", "utf-8")
         result = _decode_response_body(raw_body, "text/html; charset=utf-8")
         self.assertEqual(result, "中文测试")
 
     def test_gbk_decoding(self):
         """测试GBK解码"""
-        raw_body = "中文测试".encode("gbk")
+        raw_body = to_bytes("中文测试", "gbk")
         result = _decode_response_body(raw_body, "text/html; charset=gbk")
         self.assertEqual(result, "中文测试")
 
     def test_gb2312_alias(self):
         """测试GB2312别名映射到GBK"""
-        raw_body = "中文测试".encode("gbk")
+        raw_body = to_bytes("中文测试", "gbk")
         result = _decode_response_body(raw_body, "text/html; charset=gb2312")
         self.assertEqual(result, "中文测试")
 
     def test_iso_8859_1_alias(self):
         """测试ISO-8859-1别名映射到latin-1"""
-        raw_body = "test".encode("latin-1")
+        raw_body = to_bytes("test", "latin-1")
         result = _decode_response_body(raw_body, "text/html; charset=iso-8859-1")
         self.assertEqual(result, "test")
 
     def test_no_charset_fallback_to_utf8(self):
         """测试没有charset时默认使用UTF-8"""
-        raw_body = "test".encode("utf-8")
+        raw_body = to_bytes("test", "utf-8")
         result = _decode_response_body(raw_body, "text/html")
         self.assertEqual(result, "test")
 
     def test_no_content_type(self):
         """测试没有Content-Type时使用UTF-8"""
-        raw_body = "test".encode("utf-8")
+        raw_body = to_bytes("test", "utf-8")
         result = _decode_response_body(raw_body, None)
         self.assertEqual(result, "test")
 
     def test_empty_body(self):
         """测试空响应体"""
-        result = _decode_response_body(b"", "text/html")
+        result = _decode_response_body(byte_string(""), "text/html")
         self.assertEqual(result, "")
 
     def test_invalid_encoding_fallback(self):
         """测试无效编码时的后备机制"""
-        raw_body = "中文测试".encode("utf-8")
+        raw_body = to_bytes("中文测试", "utf-8")
         # 指定一个无效的编码
         result = _decode_response_body(raw_body, "text/html; charset=invalid-encoding")
         self.assertEqual(result, "中文测试")  # 应该回退到UTF-8
 
     def test_malformed_charset(self):
         """测试格式错误的charset"""
-        raw_body = "test".encode("utf-8")
+        raw_body = to_bytes("test", "utf-8")
         result = _decode_response_body(raw_body, "text/html; charset=")
         self.assertEqual(result, "test")
 
@@ -308,7 +353,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "OK"
         mock_response.getheader.return_value = "application/json; charset=utf-8"
         mock_response.getheaders.return_value = [("Content-Type", "application/json; charset=utf-8")]
-        mock_response.read.return_value = b'{"success": true}'
+        mock_response.read.return_value = byte_string('{"success": true}')
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
@@ -335,7 +380,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "OK"
         mock_response.getheader.return_value = "application/json"
         mock_response.getheaders.return_value = [("Content-Type", "application/json")]
-        mock_response.read.return_value = b'{"secure": true}'
+        mock_response.read.return_value = byte_string('{"secure": true}')
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
@@ -356,7 +401,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "Created"
         mock_response.getheader.return_value = "application/json"
         mock_response.getheaders.return_value = [("Content-Type", "application/json")]
-        mock_response.read.return_value = b'{"created": true}'
+        mock_response.read.return_value = byte_string('{"created": true}')
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
@@ -380,7 +425,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "OK"
         mock_response.getheader.return_value = None
         mock_response.getheaders.return_value = []
-        mock_response.read.return_value = b'{"query": true}'
+        mock_response.read.return_value = byte_string('{"query": true}')
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
@@ -400,7 +445,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "Not Found"
         mock_response.getheader.return_value = None
         mock_response.getheaders.return_value = []
-        mock_response.read.return_value = b'{"error": "Not found"}'
+        mock_response.read.return_value = byte_string('{"error": "Not found"}')
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
@@ -436,7 +481,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response.reason = "OK"
         mock_response.getheader.return_value = None
         mock_response.getheaders.return_value = []
-        mock_response.read.return_value = b'{"fallback": true}'
+        mock_response.read.return_value = byte_string('{"fallback": true}')
         mock_conn2.getresponse.return_value = mock_response
 
         mock_create.side_effect = [mock_conn1, mock_conn2]
@@ -465,7 +510,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response2.reason = "OK"
         mock_response2.getheader.return_value = None
         mock_response2.getheaders.return_value = []
-        mock_response2.read.return_value = b'{"redirected": true}'
+        mock_response2.read.return_value = byte_string('{"redirected": true}')
         mock_conn2.getresponse.return_value = mock_response2
 
         mock_create.side_effect = [mock_conn1, mock_conn2]
@@ -496,7 +541,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response2.reason = "OK"
         mock_response2.getheader.return_value = None
         mock_response2.getheaders.return_value = []
-        mock_response2.read.return_value = b'{"relative": true}'
+        mock_response2.read.return_value = byte_string('{"relative": true}')
         mock_conn2.getresponse.return_value = mock_response2
 
         mock_create.side_effect = [mock_conn1, mock_conn2]
@@ -526,7 +571,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response2.reason = "OK"
         mock_response2.getheader.return_value = None
         mock_response2.getheaders.return_value = []
-        mock_response2.read.return_value = b'{"method_changed": true}'
+        mock_response2.read.return_value = byte_string('{"method_changed": true}')
         mock_conn2.getresponse.return_value = mock_response2
 
         mock_create.side_effect = [mock_conn1, mock_conn2]
@@ -557,7 +602,7 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response2.reason = "OK"
         mock_response2.getheader.return_value = None
         mock_response2.getheaders.return_value = []
-        mock_response2.read.return_value = b'{"empty_location": true}'
+        mock_response2.read.return_value = byte_string('{"empty_location": true}')
         mock_conn2.getresponse.return_value = mock_response2
 
         mock_create.side_effect = [mock_conn1, mock_conn2]

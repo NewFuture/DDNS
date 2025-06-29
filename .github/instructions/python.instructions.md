@@ -77,8 +77,9 @@ It's based on SimpleProvider but requires more methods to be implemented.
   - Use should or one-line docstrings for private methods and functions.
 - Use inline comments to explain complex logic or important decisions.
 
-## shell cmd in agent
+## Run command in terminal
 
-- call as less as possible.
+- call terminal as less as possible.
 - when you need to call shell cmd, avoid using `&&` or `||` in Windows.
 - avoid using `cd` in shell commands.
+- avoid using `python compile` to check syntax errors, preferred to call the editor's Python Extensions.
