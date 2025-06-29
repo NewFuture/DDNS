@@ -8,7 +8,7 @@ Tencent Cloud DNSPod API
 from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
-from time import time, strftime
+from time import time, strftime, gmtime
 from json import dumps as jsonencode
 
 
@@ -75,7 +75,7 @@ class TencentCloudProvider(BaseProvider):
         )
 
         # Step 2: 构建待签名字符串
-        date = strftime("%Y-%m-%d")  # 日期
+        date = strftime("%Y-%m-%d", gmtime())  # 日期
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
         hashed_canonical_request = sha256(canonical_request.encode("utf-8")).hexdigest()
 
@@ -117,9 +117,9 @@ class TencentCloudProvider(BaseProvider):
         headers = {
             "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
-            "x-tc-action": action,
-            "x-tc-version": self.version_date,
-            "x-tc-timestamp": int(timestamp),
+            "X-TC-Action": action,
+            "X-TC-Version": self.version_date,
+            "X-TC-Timestamp": str(timestamp),
         }
 
         # 构建请求体
@@ -127,7 +127,7 @@ class TencentCloudProvider(BaseProvider):
 
         # 生成签名
         authorization = self._sign_tc3("POST", "/", "", headers, payload, timestamp)
-        headers["Authorization"] = authorization
+        headers["authorization"] = authorization
 
         # 发送请求
         response = self._http("POST", "/", body=payload, headers=headers)

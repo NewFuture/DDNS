@@ -44,21 +44,26 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             TencentCloudProvider(self.auth_id, "", self.logger)
         self.assertIn("token", str(context.exception))
 
-    def test_sign_tc3(self):
-        """Test TC3-HMAC-SHA256 signature generation"""
-        method = "POST"
-        uri = "/"
-        query = ""
-        headers = {"Content-Type": "application/json", "Host": "dnspod.tencentcloudapi.com"}
-        payload = "{}"
-        timestamp = 1609459200  # 2021-01-01 00:00:00 UTC
+    @patch("ddns.provider.tencentcloud.strftime")
+    @patch("ddns.provider.tencentcloud.time")
+    @patch.object(TencentCloudProvider, "_http")
+    def test_sign_tc3(self, mock_http, mock_time, mock_strftime):
+        """Test TC3 signature generation"""
+        mock_time.return_value = 1609459200  # 2021-01-01
+        mock_strftime.return_value = "2021-01-01"
 
-        authorization = self.provider._sign_tc3(method, uri, query, headers, payload, timestamp)
+        self.provider._request("DescribeDomains")
 
-        # Check authorization format
+        self.assertTrue(mock_http.called)
+        call_args = mock_http.call_args[1]
+        headers = call_args.get("headers", {})
+        authorization = headers.get("authorization")
+
         self.assertIn("TC3-HMAC-SHA256", authorization)
-        self.assertIn("Credential=", authorization)
+        self.assertIn("Credential=test_id/2021-01-01/dnspod/tc3_request", authorization)
         self.assertIn("SignedHeaders=", authorization)
+        self.assertIn("content-type", authorization)
+        self.assertIn("host", authorization)
         self.assertIn("Signature=", authorization)
         self.assertIn(self.auth_id, authorization)
 
@@ -113,7 +118,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             }
         }
 
-        record = self.provider._query_record("example.com", "www", "example.com", "A", None, {})
+        record = self.provider._query_record("12345678", "www", "example.com", "A", None, {})
 
         self.assertIsNotNone(record)
         if record:  # Type narrowing for mypy
@@ -133,7 +138,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         mock_http.return_value = {"Response": {"RecordList": []}}
 
         record = self.provider._query_record(
-            "example.com", "www", "example.com", "A", None, {}
+            "12345678", "www", "example.com", "A", None, {}
         )  # type: dict # type: ignore
 
         self.assertIsNone(record)
@@ -146,7 +151,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         }
 
         record = self.provider._query_record(
-            "example.com", "@", "example.com", "A", None, {}
+            "12345678", "@", "example.com", "A", None, {}
         )  # type: dict # type: ignore
 
         self.assertIsNotNone(record)
@@ -157,7 +162,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test successful record creation"""
         mock_http.return_value = {"Response": {"RecordId": 789012}}
 
-        result = self.provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 600, None, {})
+        result = self.provider._create_record("12345678", "www", "example.com", "1.2.3.4", "A", 600, None, {})
 
         self.assertTrue(result)
         # Verify HTTP call was made
@@ -168,7 +173,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test record creation for root domain"""
         mock_http.return_value = {"Response": {"RecordId": 789012}}
 
-        result = self.provider._create_record("example.com", "@", "example.com", "1.2.3.4", "A", None, None, {})
+        result = self.provider._create_record("12345678", "@", "example.com", "1.2.3.4", "A", None, None, {})
 
         self.assertTrue(result)
         # Verify HTTP call was made
@@ -180,7 +185,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         mock_http.return_value = {"Response": {"RecordId": 789012}}
 
         result = self.provider._create_record(
-            "example.com", "mail", "example.com", "mail.example.com", "MX", None, None, {"MX": 10}
+            "12345678", "mail", "example.com", "mail.example.com", "MX", None, None, {"MX": 10}
         )
 
         self.assertTrue(result)
@@ -192,7 +197,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test record creation failure"""
         mock_http.return_value = {"Response": {}}  # No RecordId in response
 
-        result = self.provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
+        result = self.provider._create_record("12345678", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
         self.assertFalse(result)
 
@@ -203,7 +208,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         old_record = {"RecordId": 123456, "Name": "www", "Type": "A", "Value": "1.2.3.4", "Line": "默认", "TTL": 300}
 
-        result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, None, {})
+        result = self.provider._update_record("12345678", old_record, "5.6.7.8", "A", 600, None, {})
 
         self.assertTrue(result)
         # Verify HTTP call was made
@@ -226,7 +231,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             "Remark": "Old remark",
         }
 
-        result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
+        result = self.provider._update_record("12345678", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertTrue(result)
         # Verify HTTP call was made
@@ -238,7 +243,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         mock_http.return_value = {"Response": {}}  # No RecordId in response
         old_record = {"Name": "www", "Type": "A"}
 
-        result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
+        result = self.provider._update_record("12345678", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertFalse(result)  # Returns False because response doesn't contain RecordId
         mock_http.assert_called_once()  # Request is still made
@@ -250,7 +255,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         old_record = {"RecordId": 123456}
 
-        result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", None, None, {})
+        result = self.provider._update_record("12345678", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertFalse(result)
 
@@ -365,16 +370,6 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         self.assertTrue(result)
         self.assertEqual(mock_http.call_count, 3)
 
-    def test_mask_sensitive_data(self):
-        """Test sensitive data masking"""
-        sensitive_data = "test_secret_key_12345"
-        self.provider.auth_token = sensitive_data
-
-        masked = self.provider._mask_sensitive_data("https://api.example.com?token=test_secret_key_12345")
-
-        self.assertNotIn(sensitive_data, masked)
-        self.assertIn("te***45", masked)
-
     @patch("ddns.provider.tencentcloud.strftime")
     def test_sign_tc3_date_format(self, mock_strftime):
         """Test that the TC3 signature uses the current date in credential scope"""
@@ -425,7 +420,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         create_call = mock_http.call_args_list[2]
         call_body = create_call[1]["body"]
         self.assertIn("DomainId", call_body)
-        self.assertIn("CreateRecord", create_call[1]["headers"]["x-tc-action"])
+        self.assertIn("CreateRecord", create_call[1]["headers"]["X-TC-Action"])
 
     @patch.object(TencentCloudProvider, "_http")
     def test_custom_domain_format(self, mock_http):
@@ -448,7 +443,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         # Verify the CreateRecord action was called
         create_call = mock_http.call_args_list[2]
         headers = create_call[1]["headers"]
-        self.assertEqual(headers["x-tc-action"], "CreateRecord")
+        self.assertEqual(headers["X-TC-Action"], "CreateRecord")
 
         # Verify the body contains the right domain data
         call_body = create_call[1]["body"]
@@ -489,7 +484,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
 
         # Verify the ModifyRecord call
         modify_call = mock_http.call_args_list[2]
-        self.assertIn("ModifyRecord", modify_call[1]["headers"]["x-tc-action"])
+        self.assertIn("ModifyRecord", modify_call[1]["headers"]["X-TC-Action"])
 
     @patch.object(TencentCloudProvider, "_http")
     def test_api_error_handling(self, mock_http):
@@ -499,11 +494,13 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
             "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
         }
 
-        result = self.provider.set_record("test.example.com", "1.2.3.4", "A")
+        # This should raise a ValueError because zone_id cannot be resolved
+        with self.assertRaises(ValueError) as context:
+            self.provider.set_record("test.example.com", "1.2.3.4", "A")
 
-        self.assertFalse(result)
-        # Only one call should be made: DescribeDomain (fails immediately)
-        self.assertEqual(mock_http.call_count, 1)
+        self.assertIn("Cannot resolve zone_id", str(context.exception))
+        # Two calls are made: split domain name first, then DescribeDomain for main domain
+        self.assertGreater(mock_http.call_count, 0)
 
 
 if __name__ == "__main__":

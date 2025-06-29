@@ -60,8 +60,7 @@ Defines a unified interface to support extension and adaptation across providers
 from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
-from logging import Logger, getLogger  # noqa: F401 # type: ignore[no-redef]
-
+from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
 from ..util.http import send_http_request
 
 try:  # python 3
@@ -89,6 +88,8 @@ class SimpleProvider(object):
     API = ""  # type: str # https://exampledns.com
     # Content-Type for requests (to be defined in subclass)
     content_type = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
+    # 默认 accept 头部, 空则不设置
+    accept = TYPE_JSON  # type: str | None
     # Decode Response as JSON by default
     decode_response = True
     # 是否验证 SSL 证书，默认为 True
@@ -217,13 +218,8 @@ class SimpleProvider(object):
         # 记录请求日志
         self.logger.info("%s %s", method, self._mask_sensitive_data(url))
 
-        # 处理headers
-        headers = headers or {}
-        if "accept" not in headers and "Accept" not in headers:
-            headers["accept"] = TYPE_JSON
-
         # 处理请求体
-        body_data = None
+        body_data, headers = None, headers or {}
         if body:
             if "content-type" not in headers:
                 headers["content-type"] = self.content_type
@@ -233,7 +229,13 @@ class SimpleProvider(object):
                 body_data = self._encode(body)
             else:
                 body_data = jsonencode(body)
-            self.logger.debug("body: %s", self._mask_sensitive_data(body_data))
+            self.logger.debug("body:\n%s", self._mask_sensitive_data(body_data))
+
+        # 处理headers
+        if self.accept and "accept" not in headers and "Accept" not in headers:
+            headers["accept"] = self.accept
+        if len(headers) > 2:
+            self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         response = send_http_request(
             url=url,
@@ -314,7 +316,9 @@ class SimpleProvider(object):
         token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:] if len(self.auth_token) > 4 else "***"
         if isinstance(data, bytes):
             return data.replace(self.auth_token.encode(), token_masked.encode())
-        return data.replace(self.auth_token, token_masked)
+        if isinstance(data, str):
+            return data.replace(self.auth_token, token_masked)
+        return data
 
 
 class BaseProvider(SimpleProvider):
