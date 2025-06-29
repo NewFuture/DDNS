@@ -60,7 +60,8 @@ Defines a unified interface to support extension and adaptation across providers
 from os import environ
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
-from logging import Logger
+from logging import Logger, getLogger  # noqa: F401 # type: ignore[no-redef]
+
 from ..util.http import send_http_request
 
 try:  # python 3
@@ -114,12 +115,12 @@ class SimpleProvider(object):
         self.auth_token = auth_token  # type: str
         self.options = options
         name = self.__class__.__name__
-        self.logger = logger.getChild(name) if logger else Logger(name)
+        self.logger = (logger or getLogger()).getChild(name)
         self.proxy = None  # type: str | None
         if verify_ssl is not None:
             self.verify_ssl = verify_ssl
         self._zone_map = {}  # type: dict[str, str]
-        self.logger.debug("%s initialized with auth_id: %s", self.__class__.__name__, auth_id)
+        self.logger.debug("%s initialized with: %s", self.__class__.__name__, auth_id)
         self._validate()  # 验证身份认证信息
 
     @abstractmethod
@@ -173,7 +174,7 @@ class SimpleProvider(object):
         if not self.API:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
-    def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
+    def _http(self, method, url, params=None, body=None, queries=None, headers=None):
         # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
@@ -184,92 +185,102 @@ class SimpleProvider(object):
             params (dict[str, Any] | None): 请求参数,自动处理 query string 或者body
             body (dict[str, Any] | str | None): 请求体内容
             queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
-            headers (dict): 头部，可选        Returns:
-            Any: 解析后的响应内容
+            headers (dict): 头部，可选
+        Returns:
+            Any: 解析后的响应内容, None 请求失败或响应不是200-299状态码
         """
         method = method.upper()
 
-        # 自动处理参数
-        query_str = ""
+        # 简化参数处理逻辑
+        query_params = queries or {}
         if params:
             if method in ("GET", "DELETE"):
-                # 如果是 GET 或 DELETE 方法，参数放在查询字符串中
                 if isinstance(params, dict):
-                    # 如果 params 已经是字符串，则直接使用
-                    queries = queries.update(params) if queries else params
-                elif queries is None:
-                    query_str = params
+                    query_params.update(params)
                 else:
-                    self.logger.error("params should not be used with queries for %s method", method)
+                    # params是字符串，直接作为查询字符串
+                    url += ("&" if "?" in url else "?") + str(params)
+                    params = None
             elif body is None:
                 body = params
-            else:
-                self.logger.error("params should not be used with body for %s method", method)
-        query_str = query_str or self._encode(queries)
 
-        # headers
+        # 构建查询字符串
+        if len(query_params) > 0:
+            url += ("&" if "?" in url else "?") + self._encode(query_params)
+
+        # 构建完整URL
+        if not url.startswith("http://") and not url.startswith("https://"):
+            if not url.startswith("/") and self.API.endswith("/"):
+                url = "/" + url
+            url = self.API + url
+
+        # 记录请求日志
+        self.logger.info("%s %s", method, self._mask_sensitive_data(url))
+
+        # 处理headers
         headers = headers or {}
         if "accept" not in headers and "Accept" not in headers:
             headers["accept"] = TYPE_JSON
 
-        # 拼接URL
-        if query_str:
-            url += ("&" if "?" in url else "?") + query_str
-        if not url.startswith("http://") and not url.startswith("https://"):
-            if not url.startswith("/") and self.API.endswith("/"):
-                url = "/" + url
-            url = "{}{}".format(self.API, url)
-        # 对URL进行打码处理后输出日志
-        self.logger.info("%s %s", method, self._mask_sensitive_data(url))  # 主体
-        bodyData = None
+        # 处理请求体
+        body_data = None
         if body:
             if "content-type" not in headers:
                 headers["content-type"] = self.content_type
-            if isinstance(body, str) or isinstance(body, bytes):
-                # 如果 body 已经是字符串，则不需要再次编码
-                bodyData = body
+            if isinstance(body, (str, bytes)):
+                body_data = body
             elif self.content_type == TYPE_FORM:
-                bodyData = self._encode(body)
+                body_data = self._encode(body)
             else:
-                bodyData = jsonencode(body)
-            # 对body进行打码处理后输出日志
-            self.logger.debug("body: %s", self._mask_sensitive_data(bodyData))
+                body_data = jsonencode(body)
+            self.logger.debug("body: %s", self._mask_sensitive_data(body_data))
 
-        res = send_http_request(
+        response = send_http_request(
             url=url,
             method=method,
-            body=bodyData,
+            body=body_data,
             headers=headers,
             proxy=self.proxy,
             max_redirects=5,
             verify_ssl=self.verify_ssl,
         )
+
+        # 处理响应
+        res = response.body
+        if not (200 <= response.status < 300):
+            self.logger.warning(
+                "%s : error[%d]: %s", self._mask_sensitive_data(url), response.status, response.reason
+            )
+            self.logger.info("response: %s", res)
+            return None
+
         if not self.decode_response:
-            # 如果不需要解码响应，则直接返回原始字符串
-            self.logger.debug("response: %s", res)
+            self.logger.debug("response:\n%s", res)
             return res
+
         try:
             data = jsondecode(res)
-            self.logger.debug("response: \n%s", data)
+            self.logger.debug("response:\n%s", data)
             return data
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)
-            raise e
+            self.logger.debug("response:\n%s", res)
+            return None
 
     @staticmethod
     def _encode(params):
-        # type: (dict|list|str|None) -> str
+        # type: (dict|list|str|bytes|None) -> str
         """
         编码参数为 URL 查询字符串
 
         Args:
-            params (dict|list): 参数字典或列表
+            params (dict|list|str|bytes|None): 参数字典、列表或字符串
         Returns:
             str: 编码后的查询字符串
         """
         if not params:
             return ""
-        elif isinstance(params, str) or isinstance(params, bytes):
+        elif isinstance(params, (str, bytes)):
             return params  # type: ignore[return-value]
         return urlencode(params, doseq=True)
 
@@ -288,23 +299,22 @@ class SimpleProvider(object):
         return quote(data, safe=safe)
 
     def _mask_sensitive_data(self, data):
-        # type: (str | bytes | None) -> str | bytes
+        # type: (str | bytes | None) -> str | bytes | None
         """
         对敏感数据进行打码处理，用于日志输出
 
         Args:
-            data (str | dict | None): 需要处理的数据
-            is_url (bool): 是否为URL数据
+            data (str | bytes | None): 需要处理的数据
         Returns:
-            str: 打码后的字符串
+            str | bytes | None: 打码后的字符串
         """
         if not data or not self.auth_token:
-            return data  # type: ignore[return-value]
+            return data
 
-        token_masked = "***"
-        if self.auth_token and len(self.auth_token) > 4:
-            token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:]
-        return data.replace(self.auth_token, token_masked)  # type: ignore[return-value]
+        token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:] if len(self.auth_token) > 4 else "***"
+        if isinstance(data, bytes):
+            return data.replace(self.auth_token.encode(), token_masked.encode())
+        return data.replace(self.auth_token, token_masked)
 
 
 class BaseProvider(SimpleProvider):
@@ -336,26 +346,33 @@ class BaseProvider(SimpleProvider):
             extra (dict): 额外参数
 
         Returns:
-            Any: 执行结果
+            bool: 执行结果
         """
         domain = domain.lower()
         self.logger.info("%s => %s(%s)", domain, value, record_type)
 
+        # 优化域名解析逻辑
         sub, main = self._split_custom_domain(domain)
-        if sub:
+        if sub is not None:
+            # 使用自定义分隔符格式
             zone_id = self.get_zone_id(main)
         else:
+            # 自动分析域名
             zone_id, sub, main = self._split_zone_and_sub(domain)
+
         self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
         if not zone_id or sub is None:
             self.logger.critical("查询 zone_id 或 subdomain失败: %s", domain)
             raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
 
+        # 查询现有记录
         record = self._query_record(
             zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
         )
+
+        # 更新或创建记录
         if record:
-            self.logger.info("Found existing record:\n  %s", record)
+            self.logger.info("Found existing record: %s", record)
             return self._update_record(
                 zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
             )
@@ -461,9 +478,9 @@ class BaseProvider(SimpleProvider):
             extra (dict | None): 额外参数
 
         Returns:
-            Any: 操作结果
+            bool: 操作结果
         """
-        pass
+        raise NotImplementedError("This _update_record should be implemented by subclasses")
 
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str ]

@@ -243,10 +243,10 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     @patch("ddns.provider.callback.time")
     @patch.object(CallbackProvider, "_http")
-    def test_set_record_http_empty_response(self, mock_http, mock_time):
-        """Test set_record method with empty HTTP response"""
+    def test_set_record_http_none_response(self, mock_http, mock_time):
+        """Test set_record method with None HTTP response"""
         mock_time.return_value = 1634567890.123
-        mock_http.return_value = ""  # Empty response
+        mock_http.return_value = None  # None response
 
         provider = CallbackProvider(self.auth_id, None)  # type: ignore
 
@@ -277,63 +277,61 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         # Use httpbin.org as a stable test server
         self.real_callback_url = "https://httpbin.org/post"
 
-    def _setup_provider_with_debug_logger(self, provider):
-        """Helper method to setup provider with debug-enabled mock logger"""
+    def _setup_provider_with_mock_logger(self, provider):
+        """Helper method to setup provider with a mock logger."""
         mock_logger = self.mock_logger(provider)
-        # Ensure the logger is configured to capture debug calls
-        mock_logger.isEnabledFor = lambda level: True
-        mock_logger.level = logging.DEBUG
+        # Ensure the logger is configured to capture info calls
+        mock_logger.setLevel(logging.INFO)
         return mock_logger
+
+    def _assert_callback_result_logged(self, mock_logger, *expected_strings):
+        """
+        Helper to assert that 'Callback result: %s' was logged with expected content.
+        """
+        info_calls = mock_logger.info.call_args_list
+        response_logged = False
+        for call in info_calls:
+            if len(call[0]) >= 2 and call[0][0] == "Callback result: %s":
+                response_content = str(call[0][1])
+                if all(expected in response_content for expected in expected_strings):
+                    response_logged = True
+                    break
+        self.assertTrue(
+            response_logged,
+            "Expected logger.info to log 'Callback result' containing: {}".format(", ".join(expected_strings)),
+        )
 
     def test_real_callback_get_method(self):
         """Test real callback using GET method with httpbin.org and verify logger calls"""
         # Use httpbin.org/get endpoint for GET requests
-        auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&type=__TYPE__"
+        auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
         provider = CallbackProvider(auth_id, "")
 
-        # Setup provider with debug-enabled mock logger
-        mock_logger = self._setup_provider_with_debug_logger(provider)
+        # Setup provider with mock logger
+        mock_logger = self._setup_provider_with_mock_logger(provider)
 
-        result = provider.set_record("test.example.com", "203.0.113.1", "A")
+        result = provider.set_record("test.example.com", "111.111.111.111", "A")
         # httpbin.org returns JSON with our parameters, so it should be truthy
         self.assertTrue(result)
 
-        # Verify that logger.debug was called with response containing domain and IP
-        debug_calls = mock_logger.debug.call_args_list
-        response_logged = False
-        for call in debug_calls:
-            if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                response_content = str(call[0][1])
-                if "test.example.com" in response_content and "203.0.113.1" in response_content:
-                    response_logged = True
-                    break
-
-        self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
+        # Verify that logger.info was called with response containing domain and IP
+        self._assert_callback_result_logged(mock_logger, "test.example.com", "111.111.111.111")
 
     def test_real_callback_post_method_with_json(self):
         """Test real callback using POST method with JSON data and verify logger calls"""
         auth_id = "https://httpbin.org/post"
-        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__TYPE__", "ttl": "__TTL__"}'
+        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
         provider = CallbackProvider(auth_id, auth_token)
 
-        # Setup provider with debug-enabled mock logger
-        mock_logger = self._setup_provider_with_debug_logger(provider)
+        # Setup provider with mock logger
+        mock_logger = self._setup_provider_with_mock_logger(provider)
 
         result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
         # httpbin.org returns JSON with our posted data, so it should be truthy
         self.assertTrue(result)
 
-        # Verify that logger.debug was called with response containing domain and IP
-        debug_calls = mock_logger.debug.call_args_list
-        response_logged = False
-        for call in debug_calls:
-            if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                response_content = str(call[0][1])
-                if "test.example.com" in response_content and "203.0.113.2" in response_content:
-                    response_logged = True
-                    break
-
-        self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
+        # Verify that logger.info was called with response containing domain and IP
+        self._assert_callback_result_logged(mock_logger, "test.example.com", "203.0.113.2")
 
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
@@ -341,21 +339,8 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         auth_id = "https://httpbin.org/status/500"  # This returns HTTP 500
         provider = CallbackProvider(auth_id, "")
 
-        # This should raise a network exception due to HTTP 500 error or SSL error
-        with self.assertRaises(Exception) as cm:
-            provider.set_record("test.example.com", "203.0.113.5")
-
-        # Verify that some kind of HTTP error, network error, or SSL error was raised
-        error_msg = str(cm.exception).lower()
-        self.assertTrue(
-            "500" in error_msg
-            or "server" in error_msg
-            or "http" in error_msg
-            or "ssl" in error_msg
-            or "certificate" in error_msg
-            or "network" in error_msg,
-            "Expected HTTP 500, server, SSL, or network error, got: {}".format(cm.exception),
-        )
+        result = provider.set_record("test.example.com", "203.0.113.5")
+        self.assertFalse(result)
 
     def test_real_callback_redirects_handling(self):
         """Test real callback with HTTP redirects and verify logger calls"""
@@ -364,24 +349,15 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         provider = CallbackProvider(auth_id, "")
 
         try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+            # Setup provider with mock logger
+            mock_logger = self._setup_provider_with_mock_logger(provider)
 
             result = provider.set_record("redirect.test.example.com", "203.0.113.21", "A")
             # Should follow redirects and succeed
             self.assertTrue(result)
 
-            # Verify that logger.debug was called with response containing domain and IP
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                    response_content = str(call[0][1])
-                    if "redirect.test.example.com" in response_content and "203.0.113.21" in response_content:
-                        response_logged = True
-                        break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
+            # Verify that logger.info was called with response containing domain and IP
+            self._assert_callback_result_logged(mock_logger, "redirect.test.example.com", "203.0.113.21")
 
         except Exception as e:
             error_str = str(e).lower()
@@ -393,35 +369,17 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_simple_http_endpoint(self):
         """Test with a simple endpoint that doesn't require special headers and verify logger calls"""
         # Use a very simple endpoint that usually has good SSL
-        auth_id = "https://httpstat.us/200?domain=__DOMAIN__&ip=__IP__"
+        auth_id = "http://httpstat.us/200?domain=__DOMAIN__&ip=__IP__"
         provider = CallbackProvider(auth_id, "")
+        # Setup provider with mock logger
+        mock_logger = self._setup_provider_with_mock_logger(provider)
 
-        try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+        result = provider.set_record("httpstat.test.example.com", "111.111.111.111", "A")
+        # httpstat.us returns simple status messages, should be truthy
+        self.assertTrue(result)
 
-            result = provider.set_record("httpstat.test.example.com", "203.0.113.101", "A")
-            # httpstat.us returns simple status messages, should be truthy
-            self.assertTrue(result)
-
-            # Verify that logger.debug was called with response containing domain and IP
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %%s":
-                    response_content = str(call[0][1])
-                    if "httpstat.test.example.com" in response_content and "203.0.113.101" in response_content:
-                        response_logged = True
-                        break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
-
-        except Exception as e:
-            error_str = str(e).lower()
-            if "certificate verify failed" in error_str and "basic constraints" in error_str:
-                self.skipTest("SSL Basic Constraints issue (common in test environments): {}".format(e))
-            elif "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL-related issue: {}".format(e))
+        # Verify that logger.info was called with the successful result
+        self._assert_callback_result_logged(mock_logger, "200", "OK")
 
     def test_real_callback_redirect_following(self):
         """Test real callback with HTTP redirects using the improved _send_request method and verify logger calls"""
@@ -429,33 +387,14 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
         provider = CallbackProvider(auth_id, "")
 
-        try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+        # Setup provider with mock logger
+        mock_logger = self._setup_provider_with_mock_logger(provider)
 
-            result = provider.set_record("redirect-test.example.com", "203.0.113.200", "A")
-            # Should follow the redirect and succeed
-            self.assertTrue(result)
+        result = provider.set_record("redirect.follow.test.com", "203.0.113.30", "A")
+        self.assertTrue(result)
 
-            # Verify that logger.debug was called with response containing domain and IP
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                    response_content = str(call[0][1])
-                    if "redirect-test.example.com" in response_content and "203.0.113.200" in response_content:
-                        response_logged = True
-                        break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
-
-        except Exception as e:
-            error_str = str(e).lower()
-            if "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL certificate issue: {}".format(e))
-            elif "too many redirects" in error_str:
-                # This could happen if there's a redirect loop
-                self.skipTest("Redirect loop detected (expected behavior): {}".format(e))
+        # Verify that logger.info was called with the final response after redirection
+        self._assert_callback_result_logged(mock_logger, "redirect.follow.test.com", "203.0.113.30")
 
     def test_real_callback_multiple_redirects(self):
         """Test callback with multiple consecutive redirects and verify logger calls"""
@@ -464,24 +403,15 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         provider = CallbackProvider(auth_id, "")
 
         try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+            # Setup provider with mock logger
+            mock_logger = self._setup_provider_with_mock_logger(provider)
 
             result = provider.set_record("multi-redirect.example.com", "203.0.113.201", "A")
             # Should follow multiple redirects and succeed
             self.assertTrue(result)
 
-            # Verify that logger.debug was called with response containing domain and IP
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                    response_content = str(call[0][1])
-                    if "multi-redirect.example.com" in response_content and "203.0.113.201" in response_content:
-                        response_logged = True
-                        break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
+            # Verify that logger.info was called with response containing domain and IP
+            self._assert_callback_result_logged(mock_logger, "multi-redirect.example.com", "203.0.113.201")
 
         except Exception as e:
             error_str = str(e).lower()
@@ -496,23 +426,15 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         provider = CallbackProvider(auth_id, auth_token)
 
         try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+            # Setup provider with mock logger
+            mock_logger = self._setup_provider_with_mock_logger(provider)
 
             result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
             # POST should be redirected as GET and succeed
             self.assertTrue(result)
 
-            # Verify that logger.debug was called with response (domain/IP may be lost in POST->GET redirect)
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                    # For POST->GET redirects, the original POST data is lost, so just verify response was logged
-                    response_logged = True
-                    break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response from redirect")
+            # Verify that logger.info was called with response (domain/IP may be lost in POST->GET redirect)
+            self._assert_callback_result_logged(mock_logger)
 
         except ssl.SSLError as e:
             error_str = str(e).lower()
@@ -526,24 +448,15 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         provider = CallbackProvider(auth_id, "")
 
         try:
-            # Setup provider with debug-enabled mock logger
-            mock_logger = self._setup_provider_with_debug_logger(provider)
+            # Setup provider with mock logger
+            mock_logger = self._setup_provider_with_mock_logger(provider)
 
             result = provider.set_record("relative-redirect.example.com", "203.0.113.203", "A")
             # Should handle relative redirects correctly
             self.assertTrue(result)
 
-            # Verify that logger.debug was called with response containing domain and IP
-            debug_calls = mock_logger.debug.call_args_list
-            response_logged = False
-            for call in debug_calls:
-                if len(call[0]) >= 2 and call[0][0] == "response: %s":
-                    response_content = str(call[0][1])
-                    if "relative-redirect.example.com" in response_content and "203.0.113.203" in response_content:
-                        response_logged = True
-                        break
-
-            self.assertTrue(response_logged, "Expected logger.debug to log response containing domain and IP")
+            # Verify that logger.info was called with response containing domain and IP
+            self._assert_callback_result_logged(mock_logger, "relative-redirect.example.com", "203.0.113.203")
 
         except Exception as e:
             error_str = str(e).lower()

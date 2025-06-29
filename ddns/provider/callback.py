@@ -49,13 +49,17 @@ class CallbackProvider(SimpleProvider):
             for k, v in params.items():
                 if hasattr(v, "replace"):  # 判断是否支持字符串替换, 兼容py2,py3
                     params[k] = self._replace_vars(v, extra)
-        res = self._http(method, url, body=params, headers=headers)
-        if res:
-            self.logger.info("Callback result: %s", res)
-            return True
-        else:
-            self.logger.warning("Callback No Response")
-            return False
+
+        try:
+            res = self._http(method, url, body=params, headers=headers)
+            if res is not None:
+                self.logger.info("Callback result: %s", res)
+                return True
+            else:
+                self.logger.warning("Callback received empty response.")
+        except Exception as e:
+            self.logger.error("Callback failed: %s", e)
+        return False
 
     def _replace_vars(self, string, mapping):
         # type: (str, dict) -> str

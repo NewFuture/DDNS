@@ -10,11 +10,52 @@ from base_test import MagicMock, patch
 from ddns.util.http import (
     HTTPException,
     send_http_request,
+    HttpResponse,
     _create_connection,
     _load_system_ca_certs,
     _close_connection,
     _build_redirect_url,
+    _decode_response_body,
 )
+
+
+class TestHttpResponse(unittest.TestCase):
+    """测试 HttpResponse 类"""
+
+    def test_init(self):
+        """测试初始化HttpResponse对象"""
+        headers = [("Content-Type", "application/json"), ("Content-Length", "100")]
+        response = HttpResponse(200, "OK", headers, '{"test": true}')
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.reason, "OK")
+        self.assertEqual(response.headers, headers)
+        self.assertEqual(response.body, '{"test": true}')
+
+    def test_get_header_case_insensitive(self):
+        """测试get_header方法不区分大小写"""
+        headers = [("Content-Type", "application/json"), ("Content-Length", "100")]
+        response = HttpResponse(200, "OK", headers, "test")
+
+        self.assertEqual(response.get_header("content-type"), "application/json")
+        self.assertEqual(response.get_header("Content-Type"), "application/json")
+        self.assertEqual(response.get_header("CONTENT-TYPE"), "application/json")
+        self.assertEqual(response.get_header("content-length"), "100")
+
+    def test_get_header_not_found(self):
+        """测试get_header方法找不到头部时的默认值"""
+        headers = [("Content-Type", "application/json")]
+        response = HttpResponse(200, "OK", headers, "test")
+
+        self.assertIsNone(response.get_header("Authorization"))
+        self.assertEqual(response.get_header("Authorization", "default"), "default")
+
+    def test_get_header_first_match(self):
+        """测试get_header方法返回第一个匹配的头部"""
+        headers = [("Set-Cookie", "session=abc"), ("Set-Cookie", "token=xyz")]
+        response = HttpResponse(200, "OK", headers, "test")
+
+        self.assertEqual(response.get_header("Set-Cookie"), "session=abc")
 
 
 class TestCreateConnection(unittest.TestCase):
@@ -196,6 +237,64 @@ class TestBuildRedirectUrl(unittest.TestCase):
         self.assertEqual(result, "http://example.com/newfile.html")
 
 
+class TestDecodeResponseBody(unittest.TestCase):
+    """测试 _decode_response_body 函数"""
+
+    def test_utf8_decoding(self):
+        """测试UTF-8解码"""
+        raw_body = "中文测试".encode("utf-8")
+        result = _decode_response_body(raw_body, "text/html; charset=utf-8")
+        self.assertEqual(result, "中文测试")
+
+    def test_gbk_decoding(self):
+        """测试GBK解码"""
+        raw_body = "中文测试".encode("gbk")
+        result = _decode_response_body(raw_body, "text/html; charset=gbk")
+        self.assertEqual(result, "中文测试")
+
+    def test_gb2312_alias(self):
+        """测试GB2312别名映射到GBK"""
+        raw_body = "中文测试".encode("gbk")
+        result = _decode_response_body(raw_body, "text/html; charset=gb2312")
+        self.assertEqual(result, "中文测试")
+
+    def test_iso_8859_1_alias(self):
+        """测试ISO-8859-1别名映射到latin-1"""
+        raw_body = "test".encode("latin-1")
+        result = _decode_response_body(raw_body, "text/html; charset=iso-8859-1")
+        self.assertEqual(result, "test")
+
+    def test_no_charset_fallback_to_utf8(self):
+        """测试没有charset时默认使用UTF-8"""
+        raw_body = "test".encode("utf-8")
+        result = _decode_response_body(raw_body, "text/html")
+        self.assertEqual(result, "test")
+
+    def test_no_content_type(self):
+        """测试没有Content-Type时使用UTF-8"""
+        raw_body = "test".encode("utf-8")
+        result = _decode_response_body(raw_body, None)
+        self.assertEqual(result, "test")
+
+    def test_empty_body(self):
+        """测试空响应体"""
+        result = _decode_response_body(b"", "text/html")
+        self.assertEqual(result, "")
+
+    def test_invalid_encoding_fallback(self):
+        """测试无效编码时的后备机制"""
+        raw_body = "中文测试".encode("utf-8")
+        # 指定一个无效的编码
+        result = _decode_response_body(raw_body, "text/html; charset=invalid-encoding")
+        self.assertEqual(result, "中文测试")  # 应该回退到UTF-8
+
+    def test_malformed_charset(self):
+        """测试格式错误的charset"""
+        raw_body = "test".encode("utf-8")
+        result = _decode_response_body(raw_body, "text/html; charset=")
+        self.assertEqual(result, "test")
+
+
 class TestSendHttpRequest(unittest.TestCase):
     """测试 send_http_request 函数"""
 
@@ -206,13 +305,22 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 200
+        mock_response.reason = "OK"
+        mock_response.getheader.return_value = "application/json; charset=utf-8"
+        mock_response.getheaders.return_value = [("Content-Type", "application/json; charset=utf-8")]
         mock_response.read.return_value = b'{"success": true}'
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
         result = send_http_request("GET", "http://example.com/api")
 
-        self.assertEqual(result, '{"success": true}')
+        # 验证返回的是HttpResponse对象
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.status, 200)
+        self.assertEqual(result.reason, "OK")
+        self.assertEqual(result.body, '{"success": true}')
+        self.assertEqual(result.headers, [("Content-Type", "application/json; charset=utf-8")])
+
         mock_create.assert_called_once_with("example.com", None, False, None, True)
         mock_conn.request.assert_called_once_with("GET", "/api", None, {})
         mock_close.assert_called_once_with(mock_conn)
@@ -224,13 +332,18 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 200
+        mock_response.reason = "OK"
+        mock_response.getheader.return_value = "application/json"
+        mock_response.getheaders.return_value = [("Content-Type", "application/json")]
         mock_response.read.return_value = b'{"secure": true}'
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
         result = send_http_request("GET", "https://secure.example.com/api")
 
-        self.assertEqual(result, '{"secure": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.status, 200)
+        self.assertEqual(result.body, '{"secure": true}')
         mock_create.assert_called_once_with("secure.example.com", None, True, None, True)
 
     @patch("ddns.util.http._create_connection")
@@ -240,6 +353,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 201
+        mock_response.reason = "Created"
+        mock_response.getheader.return_value = "application/json"
+        mock_response.getheaders.return_value = [("Content-Type", "application/json")]
         mock_response.read.return_value = b'{"created": true}'
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
@@ -249,7 +365,9 @@ class TestSendHttpRequest(unittest.TestCase):
 
         result = send_http_request("POST", "http://example.com/api", body=body, headers=headers)
 
-        self.assertEqual(result, '{"created": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.status, 201)
+        self.assertEqual(result.body, '{"created": true}')
         mock_conn.request.assert_called_once_with("POST", "/api", body, headers)
 
     @patch("ddns.util.http._create_connection")
@@ -259,13 +377,17 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 200
+        mock_response.reason = "OK"
+        mock_response.getheader.return_value = None
+        mock_response.getheaders.return_value = []
         mock_response.read.return_value = b'{"query": true}'
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
         result = send_http_request("GET", "http://example.com/api?param1=value1&param2=value2")
 
-        self.assertEqual(result, '{"query": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"query": true}')
         mock_conn.request.assert_called_once_with("GET", "/api?param1=value1&param2=value2", None, {})
 
     @patch("ddns.util.http._create_connection")
@@ -276,14 +398,19 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status = 404
         mock_response.reason = "Not Found"
+        mock_response.getheader.return_value = None
+        mock_response.getheaders.return_value = []
         mock_response.read.return_value = b'{"error": "Not found"}'
         mock_conn.getresponse.return_value = mock_response
         mock_create.return_value = mock_conn
 
-        with self.assertRaises(HTTPException) as context:
-            send_http_request("GET", "http://example.com/notfound")
+        result = send_http_request("GET", "http://example.com/notfound")
 
-        self.assertEqual(str(context.exception), 'HTTP Error 404: Not Found\n{"error": "Not found"}')
+        # 验证返回的是HttpResponse对象，不抛出异常
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.status, 404)
+        self.assertEqual(result.reason, "Not Found")
+        self.assertEqual(result.body, '{"error": "Not found"}')
         mock_close.assert_called_once_with(mock_conn)
 
     def test_too_many_redirects(self):
@@ -306,6 +433,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn2 = MagicMock()
         mock_response = MagicMock()
         mock_response.status = 200
+        mock_response.reason = "OK"
+        mock_response.getheader.return_value = None
+        mock_response.getheaders.return_value = []
         mock_response.read.return_value = b'{"fallback": true}'
         mock_conn2.getresponse.return_value = mock_response
 
@@ -313,7 +443,8 @@ class TestSendHttpRequest(unittest.TestCase):
 
         result = send_http_request("GET", "https://bad-ssl.example.com/api", verify_ssl="auto")
 
-        self.assertEqual(result, '{"fallback": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"fallback": true}')
         mock_logger.warning.assert_called_once()
 
     @patch("ddns.util.http._create_connection")
@@ -331,6 +462,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn2 = MagicMock()
         mock_response2 = MagicMock()
         mock_response2.status = 200
+        mock_response2.reason = "OK"
+        mock_response2.getheader.return_value = None
+        mock_response2.getheaders.return_value = []
         mock_response2.read.return_value = b'{"redirected": true}'
         mock_conn2.getresponse.return_value = mock_response2
 
@@ -338,7 +472,8 @@ class TestSendHttpRequest(unittest.TestCase):
 
         result = send_http_request("GET", "http://old.example.com/api")
 
-        self.assertEqual(result, '{"redirected": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"redirected": true}')
         # 验证第二次调用使用了新的主机名
         second_call_args = mock_create.call_args_list[1][0]
         self.assertEqual(second_call_args[0], "new.example.com")
@@ -358,6 +493,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn2 = MagicMock()
         mock_response2 = MagicMock()
         mock_response2.status = 200
+        mock_response2.reason = "OK"
+        mock_response2.getheader.return_value = None
+        mock_response2.getheaders.return_value = []
         mock_response2.read.return_value = b'{"relative": true}'
         mock_conn2.getresponse.return_value = mock_response2
 
@@ -365,7 +503,8 @@ class TestSendHttpRequest(unittest.TestCase):
 
         result = send_http_request("GET", "http://example.com/oldpath")
 
-        self.assertEqual(result, '{"relative": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"relative": true}')
         # 验证第二次请求使用了正确的路径
         mock_conn2.request.assert_called_once_with("GET", "/newpath", None, {})
 
@@ -384,6 +523,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn2 = MagicMock()
         mock_response2 = MagicMock()
         mock_response2.status = 200
+        mock_response2.reason = "OK"
+        mock_response2.getheader.return_value = None
+        mock_response2.getheaders.return_value = []
         mock_response2.read.return_value = b'{"method_changed": true}'
         mock_conn2.getresponse.return_value = mock_response2
 
@@ -391,7 +533,8 @@ class TestSendHttpRequest(unittest.TestCase):
 
         result = send_http_request("POST", "http://example.com/submit", body="data")
 
-        self.assertEqual(result, '{"method_changed": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"method_changed": true}')
         # 验证第二次请求变为GET且没有body
         mock_conn2.request.assert_called_once_with("GET", "/result", None, {})
 
@@ -411,6 +554,9 @@ class TestSendHttpRequest(unittest.TestCase):
         mock_conn2 = MagicMock()
         mock_response2 = MagicMock()
         mock_response2.status = 200
+        mock_response2.reason = "OK"
+        mock_response2.getheader.return_value = None
+        mock_response2.getheaders.return_value = []
         mock_response2.read.return_value = b'{"empty_location": true}'
         mock_conn2.getresponse.return_value = mock_response2
 
@@ -419,7 +565,8 @@ class TestSendHttpRequest(unittest.TestCase):
         result = send_http_request("GET", "http://example.com/api")
 
         mock_logger.warning.assert_called_once()
-        self.assertEqual(result, '{"empty_location": true}')
+        self.assertIsInstance(result, HttpResponse)
+        self.assertEqual(result.body, '{"empty_location": true}')
 
 
 if __name__ == "__main__":
