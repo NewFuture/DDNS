@@ -1,57 +1,107 @@
-# DDNS Docker 使用文档
+# DDNS Docker
 
-本文档详细说明如何使用 Docker 方式运行 DDNS 工具，包括基本用法、高级配置、多种网络模式以及常见问题解决方案。
-可移植性最佳。
+- 基本特性
+    -   基于 Alpine Linux，最终编译后的镜像体积小（< 7MB）
+    -   支持多种硬件架构（amd64、arm64、arm/v7、arm/v6、ppc64le、s390x、386、mips64le）
+    -   内置定时任务，默认每 5 分钟自动更新一次
+    -   无需外部依赖，开箱即用, 性能优化，资源占用低
+-   配置方式:
+    -   [CLI 命令行参数](cli.md)
+    -   [JSON 配置文件](json.md)
+    -   [Env 环境变量](env.md)
 
-## 基本介绍
+> Features：
+>
+> -   Docker compatible, cross-platform, lightweight image (<7MB), multi-arch support
+> -   Built-in scheduler (auto update every 5 min)
+> -   No external dependencies, optimized performance, low resource usage
+> -   Multiple configuration methods: CLI, JSON file, environment variables
 
-DDNS 官方提供了优化过的 Docker 镜像，具有以下特点：
-
-- 基于 Alpine Linux，最终编译后的镜像体积小（< 7MB）
-- 支持多种硬件架构（amd64、arm64、arm/v7、arm/v6、ppc64le、s390x、386、mips64le）
-- 内置定时任务，默认每 5 分钟自动更新一次
-- 无需外部依赖，开箱即用
-- 性能优化，资源占用低
-
-## 快速开始
+## 镜像说明
 
 ### 镜像版本
 
-DDNS Docker 镜像特殊版本：
+DDNS 镜像版本(Docker Tag)：
 
-- `latest` 最新稳定版(默认)
-- `next` 下一个版本（最新beta版）
-- `edge` 最新开发版（不稳定）, 同步master分支
+-   `latest`: 最新稳定版(Default stable release )
+-   `next`: 下一个版本(Next beta version)
+-   `edge` 最新开发版,不稳定(Latest dev build, unstable, master branch)
 
 ```bash
 docker pull newfuture/ddns:latest
+docker pull newfuture/ddns:next
 ```
 
 您也可以指定特定版本，例如：
 
 ```bash
-docker pull newfuture/ddns:v2.8.0
+docker pull newfuture/ddns:v4.0.0
 ```
 
-### 基本运行方式
+### 镜像源 (image sources)
+
+镜像会同步发布到以下源：
+
+-   [Docker Hub](https://hub.docker.com/r/newfuture/ddns): `docker.io/newfuture/ddns`
+-   [GitHub Packages](https://github.com/newfuture/DDNS/pkgs/container/ddns): `ghcr.io/newfuture/ddns`
+
+supports `docker pull ghcr.io/newfuture/ddns`
+
+## 运行方式 docker run
 
 DDNS Docker 镜像支持三种配置方式：命令行，环境变量和配置文件。
 
-当设置了命令行参数时，容器将直接运行 DDNS 程序，而不会启用定时任务。
-如果您需要定时任务，请使用环境变量或配置文件方式。
+-   当设置了命令行参数时，容器将**直接运行单次执行 DDNS 程序，而不会启用定时任务**。
+-   如果您需要定时任务，请使用环境变量或配置文件方式。
 
-#### 使用命令行参数
+> DDNS Docker image supports three configuration methods: command line, environment variables, and config file.
+>
+> -   If command line arguments are set, the container runs DDNS directly (no scheduler).
+>     -   See [CLI docs](cli.md) for details.
+>     -   This mode is suitable for one-time runs or debugging.
+> -   For scheduled updates, use environment variables or config file.
+>     -   See [Environment Variable Docs](env.md) for all supported variables.
+>     -   Mount your local config directory to `/ddns/` in the container. See [JSON Config Docs](json.md) for details.
+
+**注意** (docker run 时的注意事项):
+
+-   使用了 `-v` 挂载配置文件或目录，确保容器内的 `/ddns/` 目录包含有效的配置文件（如 `config.json`），否则 DDNS 将无法正常工作。
+-   使用了 `--network host`，请确保您的 Docker 守护进程已正确配置以支持此模式。
+-   使用 `-d` 参数可以让容器在后台运行, 使用前请确保您了解 Docker 的基本操作。
+-   使用 `-e DDNS_XXX=YYY` 参数可以设置环境变量，容器内的 DDNS 程序会自动读取这些变量。
+
+### 使用命令行参数 CLI
 
 可以参考[命令行参数说明](cli.md)获取详细的参数列表。
-此时 `docker run --name=ddns --network=host newfuture/ddns` 就相当于 `ddns` 命令行，不会执行定时任务。
+此时 `docker run -v /local/config/:/ddns/  --name=ddns --network=host newfuture/ddns` 就相当于 `ddns` 命令行，不会执行定时任务。
 
-此方式适合需要一次性运行或调试的场景。
+此方式适合需要一次性运行或调试的场景, 参数与 DDNS 命令行参数一致。
 
 ```bash
-docker run --name=ddns --network=host newfuture/ddns -h
+# 查看ddns命令行参数 等价于 ddns -h
+docker run --rm newfuture/ddns -h
+# 加上ddns的 --debug 参数可以启用调试模式（或者 --log.level=debug）
+docker run --rm --network=host newfuture/ddns --debug --dns=dnspod --id=12345 --token=mytokenkey --ipv4=www.example.com --ipv4=ipv4.example.com --index4 public
+# 容器内调试
+docker run -it newfuture/ddns sh
 ```
 
-#### 使用环境变量
+### 使用配置文件 JSON
+
+Docker 容器内的工作目录是 `/ddns/`，默认配置文件会被映射到容器内的 `/ddns/config.json`。
+
+```bash
+docker run -d -v /host/config/:/ddns/ newfuture/ddns
+```
+
+其中 `/host/config/` 是您本地包含 `config.json` 的目录。
+详见 `config.json` 的内容可以参考 [JSON 配置文件说明](json.md)。
+
+### 使用环境变量 ENV
+
+环境变量和命令行参数类似, 加上 DDNS 前缀，推荐全大写。数组类型需要使用 JSON 格式或者单引号包裹。
+
+当然也可以使用 `--env-file` 参数来加载环境变量文件。
 
 ```bash
 docker run -d \
@@ -59,8 +109,7 @@ docker run -d \
   -e DDNS_ID=12345 \
   -e DDNS_TOKEN=mytokenkey \
   -e DDNS_IPV4=example.com,www.example.com \
-  -e DDNS_INDEX4=['public',0] \
-  -e DDNS_IPV6=example.com,ipv6.example.com \
+  -e DDNS_INDEX4=['public',0]
   --network host \
   --name ddns \
   newfuture/ddns
@@ -68,27 +117,20 @@ docker run -d \
 
 想要了解所有支持的环境变量，请参考[环境变量配置说明](env.md)。
 
-#### 使用配置文件
 
-```bash
-docker run -d \
-  -v /host/config/:/ddns/ \
-  --network host \
-  --name ddns \
-  newfuture/ddns
-```
+## 网络模式 Network
 
-其中 `/host/config/` 是您本地包含 `config.json` 的目录。Docker 容器内的工作目录是 `/ddns/`，配置文件会被映射到容器内的 `/ddns/config.json`。
+> **Network Modes:**
+>
+> -   `host`: Container uses host network, recommended for correct IP detection
+> -   `bridge` (default): Container has its own IP, use `public` mode to get public IP
 
-详见 `config.json` 的内容可以参考 [JSON 配置文件说明](json.md)。
 
-## 网络模式
-
-### host 网络模式（推荐）
+### host 网络模式
 
 使用 `--network host` 可让容器直接使用宿主机的网络，这样 DDNS 可以正确获取宿主机的 IP 地址。
 
-对于Public 或者 url 通常不需要设置 host
+对于 Public 或者 url 通常不需要设置 host
 
 ```bash
 docker run -d \
@@ -102,50 +144,9 @@ docker run -d \
 
 ### bridge 网络模式（默认）
 
-如果您不想使用 host 网络模式，也可以使用默认的 bridge 模式，但需要注意此时容器获取的是内部 IP，您需要使用 `public` 模式获取公网 IP：
-
-```bash
-docker run -d \
-  -e DDNS_DNS=dnspod \
-  -e DDNS_ID=12345 \
-  -e DDNS_TOKEN=mytokenkey \
-  -e DDNS_IPV4=example.com \
-  -e DDNS_INDEX4=public \
-  newfuture/ddns
-```
+如果您不想使用 host 网络模式，也可以使用默认的 bridge 模式，但需要注意此时容器具有 IP，您需要使用 `public` 模式获取公网 IP：
 
 ## 高级配置
-
-### 自定义定时更新频率
-
-默认情况下，容器每 5 分钟执行一次 DDNS 更新。您可以通过挂载自定义的 crontab 文件来修改定时策略：
-
-```bash
-# 创建自定义 crontab 文件
-echo "*/10 * * * * cd /ddns && /bin/ddns" > mycron
-# 挂载自定义 crontab 文件
-docker run -d \
-  -v /path/to/config/:/ddns/ \
-  -v $(pwd)/mycron:/etc/crontabs/root \
-  --network host \
-  newfuture/ddns
-```
-
-### 一次性运行（不启用定时任务）
-
-如果您只想执行一次更新而不启用定时任务，可以直接传递参数给容器：
-
-```bash
-docker run --rm \
-  -e DDNS_DNS=dnspod \
-  -e DDNS_ID=12345 \
-  -e DDNS_TOKEN=mytokenkey \
-  -e DDNS_IPV4=example.com \
-  --network host \
-  newfuture/ddns --debug
-```
-
-这里 `--debug` 是传递给 DDNS 程序的参数，启用调试模式。任何以 `-` 开头的参数都会被传递给 DDNS 程序。
 
 ### 多域名配置
 
@@ -157,31 +158,41 @@ docker run -d \
   -e DDNS_ID=12345 \
   -e DDNS_TOKEN=mytokenkey \
   -e DDNS_IPV4='["example.com", "www.example.com", "sub.example.com"]' \
-  -e DDNS_IPV6='["example.com", "ipv6.example.com"]' \
   --network host \
   newfuture/ddns
 ```
 
-### 启用IPv6支持
+命令行参数方式配置多域名：
 
-要在Docker容器中使用IPv6，需要确保Docker守护程序配置了IPv6支持：
+```bash
+docker run --rm --network host newfuture/ddns \
+  --dns dnspod \
+  --id 12345 \
+  --token mytokenkey \
+  --ipv4 ipv4.example.com \
+  --ipv4 www.example.com
+```
+
+### 启用 IPv6 支持
+
+要在 Docker 容器中使用 IPv6，需要确保 Docker 守护程序配置了 IPv6 支持：
 
 1. 编辑 `/etc/docker/daemon.json`：
 
 ```json
 {
-  "ipv6": true,
-  "fixed-cidr-v6": "fd00::/80"
+    "ipv6": true,
+    "fixed-cidr-v6": "fd00::/80"
 }
 ```
 
-2. 重启Docker服务：
+2. 重启 Docker 服务：
 
 ```bash
 sudo systemctl restart docker
 ```
 
-3. 启动容器时启用IPv6：
+3. 启动容器时启用 IPv6：
 
 ```bash
 docker run -d \
@@ -200,33 +211,32 @@ docker run -d \
 ### 基本环境变量配置
 
 ```yaml
-version: '3'
+version: "3"
 services:
-  ddns:
-    image: newfuture/ddns:latest
-    restart: always
-    network_mode: host
-    environment:
-      - DDNS_DNS=dnspod
-      - DDNS_ID=12345
-      - DDNS_TOKEN=mytokenkey
-      - DDNS_IPV4=example.com,www.example.com
-      - DDNS_IPV6=example.com,ipv6.example.com
-      - DDNS_TTL=600
-      - DDNS_LOG_LEVEL=INFO
+    ddns:
+        image: newfuture/ddns:latest
+        restart: always
+        network_mode: host
+        environment:
+            - DDNS_DNS=dnspod
+            - DDNS_ID=12345
+            - DDNS_TOKEN=mytokenkey
+            - DDNS_IPV4=example.com,www.example.com
+            - DDNS_INDEX4=['public','url:https://api.ipify.org']
+            - DDNS_LOG_LEVEL=WARNING
 ```
 
 ### 使用配置文件
 
 ```yaml
-version: '3'
+version: "3"
 services:
-  ddns:
-    image: newfuture/ddns:latest
-    restart: always
-    network_mode: host
-    volumes:
-      - ./config:/ddns
+    ddns:
+        image: newfuture/ddns:latest
+        restart: always
+        network_mode: host
+        volumes:
+            - ./config:/ddns
 ```
 
 运行 Docker Compose：
@@ -238,6 +248,8 @@ docker-compose up -d
 ## 使用自定义镜像
 
 如果您需要在容器中添加其他工具或自定义环境，可以基于官方镜像创建自己的 Dockerfile：
+
+> You can extend the official image with your own tools/scripts via Dockerfile.
 
 ```dockerfile
 FROM newfuture/ddns:latest
@@ -253,34 +265,27 @@ RUN chmod +x /bin/custom-script.sh
 # ENTRYPOINT ["/bin/custom-script.sh"]
 ```
 
-## 容器日志查看
-
-查看容器输出日志：
-
-```bash
-docker logs ddns
-```
-
-实时跟踪日志：
-
-```bash
-docker logs -f ddns
-```
-
 ## 排障和常见问题
 
-### 容器无法获取正确的IP地址
+> **Troubleshooting & FAQ:**
+>
+> -   Can't get correct IP: use `--network host` or set `DDNS_INDEX4=public`
+> -   No scheduled updates: check logs, container status, or run update manually
+> -   Container exits immediately: run with `-it` for debugging, check config
+> -   Network issues: check connectivity, set HTTP proxy if needed
 
-**问题**: DDNS无法正确获取主机IP
+### 容器无法获取正确的 IP 地址
+
+**问题**: DDNS 无法正确获取主机 IP
 
 **解决方案**:
 
 1. 使用 `--network host` 网络模式
-2. 或者设置 `-e DDNS_INDEX4=public` 强制使用公网API获取IP
+2. 或者设置 `-e DDNS_INDEX4=public` 强制使用公网 API 获取 IP
 
 ### 未收到定时任务更新
 
-**问题**: 容器运行但不自动更新DNS
+**问题**: 容器运行但不自动更新 DNS
 
 **解决方案**:
 
@@ -299,58 +304,17 @@ docker logs -f ddns
 
 ### 网络连接问题
 
-**问题**: 容器无法连接到DNS服务商API
+**问题**: 容器无法连接到 DNS 服务商 API
 
 **解决方案**:
 
 1. 检查网络连接 `docker exec ddns ping api.dnspod.cn`
-2. 配置HTTP代理 `-e DDNS_PROXY=http://proxy:port`
-
-## 高级主题
-
-### 持久化数据
-
-为了保存DDNS的缓存数据，避免频繁API调用，可以挂载缓存目录：
-
-```bash
-docker run -d \
-  -e DDNS_DNS=dnspod \
-  -e DDNS_ID=12345 \
-  -e DDNS_TOKEN=mytokenkey \
-  -e DDNS_IPV4=example.com \
-  -e DDNS_CACHE=/ddns/cache.json \
-  -v /path/to/cache:/ddns \
-  --network host \
-  newfuture/ddns
-```
-
-### 容器健康检查
-
-Docker Compose配置添加健康检查：
-
-```yaml
-version: '3'
-services:
-  ddns:
-    image: newfuture/ddns:latest
-    restart: always
-    network_mode: host
-    environment:
-      - DDNS_DNS=dnspod
-      - DDNS_ID=12345
-      - DDNS_TOKEN=mytokenkey
-      - DDNS_IPV4=example.com
-    healthcheck:
-      test: ["CMD", "pgrep", "crond"]
-      interval: 5m
-      timeout: 10s
-      retries: 3
-```
+2. 配置 HTTP 代理 `-e DDNS_PROXY=http://proxy:port`
 
 ## 更多资源
 
-- [DDNS GitHub 主页](https://github.com/NewFuture/DDNS)
-- [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
-- [环境变量配置详情](env.md)
-- [JSON 配置文件详情](json.md)
-- [命令行参数详情](cli.md)
+-   [DDNS GitHub 主页](https://github.com/NewFuture/DDNS)
+-   [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
+-   [环境变量配置详情](env.md)
+-   [JSON 配置文件详情](json.md)
+-   [命令行参数详情](cli.md)
