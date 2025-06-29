@@ -331,9 +331,12 @@ class TestDnspodProvider(BaseProviderTestCase):
             mock_http.return_value = None
             self.provider.logger = MagicMock()
 
-            # This should raise AttributeError due to data.get() on None
-            with self.assertRaises(AttributeError):
-                self.provider._request("Test.Action")
+            # Should return None and log a warning
+            result = self.provider._request("Test.Action")
+
+            self.assertIsNone(result)
+            # Verify warning was logged
+            self.provider.logger.warning.assert_called_once()
 
     def test_create_record_with_no_record_in_response(self):
         """Test _create_record method when response has no record field"""
@@ -481,6 +484,39 @@ class TestDnspodProviderIntegration(BaseProviderTestCase):
         body = create_call[1]["body"]
         self.assertEqual(body["ttl"], 300)
         self.assertEqual(body["record_line"], "电信")
+
+
+class TestDnspodProviderRealRequest(BaseProviderTestCase):
+    """DNSPod Provider 真实请求测试类"""
+
+    def test_auth_failure_real_request(self):
+        """Test authentication failure with real API request"""
+        # 使用无效的认证信息创建 provider
+        invalid_provider = DnspodProvider("invalid_id", "invalid_token")
+
+        # Mock logger to capture error logs
+        invalid_provider.logger = MagicMock()
+
+        # 尝试查询域名信息，应该返回认证失败
+        result = invalid_provider._query_zone_id("example.com")
+
+        # 认证失败时应该返回 None
+        self.assertIsNone(result)
+
+        # 验证错误日志被记录
+        # 应该有两次警告调用：一次来自 _base.py 的 HTTP 错误，一次来自 dnspod.py 的 API 错误
+        self.assertGreaterEqual(invalid_provider.logger.warning.call_count, 1)
+
+        # 检查日志内容包含认证相关的错误信息
+        warning_calls = invalid_provider.logger.warning.call_args_list
+        logged_messages = [str(call) for call in warning_calls]
+
+        # 至少有一个日志应该包含错误相关信息
+        has_auth_error = any(
+            "error" in msg.lower() or "unauthorized" in msg.lower() or "dnspod api error" in msg.lower()
+            for msg in logged_messages
+        )
+        self.assertTrue(has_auth_error, "Expected authentication error in logs: {0}".format(logged_messages))
 
 
 if __name__ == "__main__":

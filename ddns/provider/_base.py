@@ -175,7 +175,7 @@ class SimpleProvider(object):
         if not self.API:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
-    def _http(self, method, url, params=None, body=None, queries=None, headers=None):
+    def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
         # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。

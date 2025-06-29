@@ -6,7 +6,7 @@ Unit tests for TencentCloudProvider
 @author: NewFuture
 """
 
-from base_test import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, unittest, patch, MagicMock
 from ddns.provider.tencentcloud import TencentCloudProvider
 
 
@@ -501,6 +501,45 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
         self.assertIn("Cannot resolve zone_id", str(context.exception))
         # Two calls are made: split domain name first, then DescribeDomain for main domain
         self.assertGreater(mock_http.call_count, 0)
+
+
+class TestTencentCloudProviderRealRequest(BaseProviderTestCase):
+    """TencentCloud Provider 真实请求测试类"""
+
+    def setUp(self):
+        """Set up test fixtures"""
+        super(TestTencentCloudProviderRealRequest, self).setUp()
+
+    def test_auth_failure_real_request(self):
+        """Test authentication failure with real API request"""
+        # 使用无效的认证信息创建 provider
+        invalid_provider = TencentCloudProvider("invalid_id", "invalid_token")
+
+        # Mock logger to capture error logs
+        invalid_provider.logger = MagicMock()
+
+        # 尝试查询域名信息，应该返回认证失败
+        result = invalid_provider._query_zone_id("example.com")
+
+        # 认证失败时应该返回 None (因为 API 会返回错误)
+        self.assertIsNone(result)
+
+        # 验证错误日志被记录
+        # 应该有错误日志调用，因为 API 返回认证错误
+        self.assertGreaterEqual(invalid_provider.logger.error.call_count, 1)
+
+        # 检查日志内容包含认证相关的错误信息
+        error_calls = invalid_provider.logger.error.call_args_list
+        logged_messages = [str(call) for call in error_calls]
+
+        # 至少有一个日志应该包含腾讯云 API 错误信息
+        has_auth_error = any(
+            "tencentcloud api error" in msg.lower() or "authfailure" in msg.lower() or "unauthorized" in msg.lower()
+            for msg in logged_messages
+        )
+        self.assertTrue(
+            has_auth_error, "Expected TencentCloud authentication error in logs: {0}".format(logged_messages)
+        )
 
 
 if __name__ == "__main__":

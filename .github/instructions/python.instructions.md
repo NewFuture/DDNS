@@ -16,6 +16,8 @@ The code should be compatible with both Python 2.7 and Python 3.x versions.
 
 Python 3.x is preferred, but if Python 2.7 compatibility is required, use the `six` library for compatibility.
 
+- DO NOT use f-strings, as they are not supported in Python 2.7.
+
 ## Domain Knowledge
 
 - The code is part of a Dynamic DNS (DDNS) project, which updates DNS records dynamically.
@@ -74,3 +76,9 @@ It's based on SimpleProvider but requires more methods to be implemented.
   - Use Google-style docstrings for consistency for public APIs or methods.
   - Use should or one-line docstrings for private methods and functions.
 - Use inline comments to explain complex logic or important decisions.
+
+## shell cmd in agent
+
+- call as less as possible.
+- when you need to call shell cmd, avoid using `&&` or `||` in Windows.
+- avoid using `cd` in shell commands.

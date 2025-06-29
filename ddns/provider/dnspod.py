@@ -41,7 +41,10 @@ class DnspodProvider(BaseProvider):
         if data and data.get("status", {}).get("code") == "1":  # 请求成功
             return data
         else:  # 请求失败
-            self.logger.warning("DNSPod API error: %s, ", data.get("status", {}).get("message", "Unknown error"))
+            error_msg = "Unknown error"
+            if data and isinstance(data, dict):
+                error_msg = data.get("status", {}).get("message", "Unknown error")
+            self.logger.warning("DNSPod API error: %s", error_msg)
             return data
 
     def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
@@ -91,7 +94,9 @@ class DnspodProvider(BaseProvider):
         # type: (str) -> str | None
         """查询域名信息 https://docs.dnspod.cn/api/domain-info/"""
         res = self._request("Domain.Info", domain=domain)
-        return res.get("domain", {}).get("id")
+        if res and isinstance(res, dict):
+            return res.get("domain", {}).get("id")
+        return None
 
     def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
