@@ -5,7 +5,7 @@ name: Build
 
 on:
   push:
-    branches: ["master", "main", "abc"]
+    branches: ["master", "main"]
   pull_request:
     branches: ["master", "main", "abc"]
 
