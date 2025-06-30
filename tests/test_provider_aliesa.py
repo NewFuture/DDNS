@@ -49,7 +49,7 @@ class TestAliESAProvider(BaseProviderTestCase):
         self.assertEqual(signed_params["Version"], "2024-09-10")
         self.assertEqual(signed_params["AccessKeyId"], self.auth_id)
         self.assertEqual(signed_params["Timestamp"], "2023-01-01T12:00:00Z")
-        self.assertEqual(signed_params["SignatureMethod"], "HMAC-SHA1")
+        self.assertEqual(signed_params["SignatureMethod"], "ACS3-HMAC-SHA256")
         self.assertEqual(signed_params["SignatureVersion"], "1.0")
         self.assertIn("Signature", signed_params)
         self.assertIn("SignatureNonce", signed_params)

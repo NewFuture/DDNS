@@ -6,7 +6,7 @@ AliESA API
 """
 
 from ._base import BaseProvider, TYPE_FORM
-from hashlib import sha1
+from hashlib import sha256
 from hmac import new as hmac
 from base64 import b64encode
 from time import time, strftime
@@ -19,9 +19,9 @@ class AliESAProvider(BaseProvider):
     def _signature(self, params):
         # type: (dict[str, Any]) -> dict[str, Any]
         """
-        签名请求参数 (v2 RPC)
-        https://help.aliyun.com/zh/sdk/product-overview/rpc-mechanism
-        Sign the request parameters for AliESA API.
+        签名请求参数 (v3)
+        https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature
+        Sign the request parameters for AliESA API using v3 signature.
         :param params: 请求参数/Request parameters
         :return: 签名后的参数/Signed parameters
         """
@@ -31,7 +31,7 @@ class AliESAProvider(BaseProvider):
                 "Version": "2024-09-10",
                 "AccessKeyId": self.auth_id,
                 "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "SignatureMethod": "HMAC-SHA1",
+                "SignatureMethod": "ACS3-HMAC-SHA256",
                 "SignatureNonce": hex(hash(time()))[2:],
                 "SignatureVersion": "1.0",
             }
@@ -39,11 +39,17 @@ class AliESAProvider(BaseProvider):
         query = self._encode(sorted(params.items()))
         query = query.replace("+", "%20")
         self.logger.debug("query: %s", query)
-        # sign = "POST&" + quote_plus("/") + "&" + quote(query, safe="")
-        sign = "POST&%2F&" + self._quote(query, safe="")
-
-        self.logger.debug("sign: %s", sign)
-        sign = hmac((self.auth_token + "&").encode("utf-8"), sign.encode("utf-8"), sha1).digest()
+        
+        # v3 signature: Build canonical request
+        canonical_request = "POST\n/\n\n\n\n" + sha256(query.encode("utf-8")).hexdigest()
+        self.logger.debug("canonical_request: %s", canonical_request)
+        
+        # v3 signature: Build string to sign
+        string_to_sign = "ACS3-HMAC-SHA256\n" + canonical_request
+        self.logger.debug("string_to_sign: %s", string_to_sign)
+        
+        # v3 signature: Calculate signature using SHA256
+        sign = hmac(self.auth_token.encode("utf-8"), string_to_sign.encode("utf-8"), sha256).digest()
         sign = b64encode(sign).strip().decode()
         params["Signature"] = sign
         return params
