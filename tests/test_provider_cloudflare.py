@@ -2,7 +2,7 @@
 """
 Unit tests for CloudflareProvider
 
-@author: Github Copilot
+@author: GitHub Copilot
 """
 
 from base_test import BaseProviderTestCase, unittest, patch
