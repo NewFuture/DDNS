@@ -1,6 +1,7 @@
 # coding=utf-8
 from ._base import SimpleProvider  # noqa: F401
 from .alidns import AlidnsProvider
+from .aliesa import AliESAProvider
 from .callback import CallbackProvider
 from .cloudflare import CloudflareProvider
 from .dnscom import DnscomProvider
@@ -37,6 +38,9 @@ def get_provider_class(provider_name):
         # aliyun alidns
         "alidns": AlidnsProvider,
         "aliyun": AlidnsProvider,  # 兼容aliyun
+        # aliyun esa
+        "aliesa": AliESAProvider,
+        "esa": AliESAProvider,  # 兼容esa
         # dns.com
         "dnscom": DnscomProvider,
         "51dns": DnscomProvider,  # 兼容旧的51dns
