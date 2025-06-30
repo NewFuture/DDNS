@@ -494,11 +494,9 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
             "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
         }
 
-        # This should raise a ValueError because zone_id cannot be resolved
-        with self.assertRaises(ValueError) as context:
-            self.provider.set_record("test.example.com", "1.2.3.4", "A")
-
-        self.assertIn("Cannot resolve zone_id", str(context.exception))
+        # This should return False because zone_id cannot be resolved
+        result = self.provider.set_record("test.example.com", "1.2.3.4", "A")
+        self.assertFalse(result)
         # Two calls are made: split domain name first, then DescribeDomain for main domain
         self.assertGreater(mock_http.call_count, 0)
 

@@ -50,27 +50,27 @@ class DnscomProvider(BaseProvider):
             return res.get("domainID")
         return None
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         """https://www.51dns.com/document/api/4/47.html"""
-        records = self._request("record/list", domainID=zone_id, host=sub_domain, pageSize=500)
+        records = self._request("record/list", domainID=zone_id, host=subdomain, pageSize=500)
         records = records.get("data", []) if records else []
         for record in records:
             if (
-                record.get("record") == sub_domain
+                record.get("record") == subdomain
                 and record.get("type") == record_type
                 and (line is None or record.get("viewID") == line)
             ):
                 return record
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/12.html"""
         extra["remark"] = extra.get("remark", self.remark)
         res = self._request(
             "record/create",
             domainID=zone_id,
             value=value,
-            host=sub_domain,
+            host=subdomain,
             type=record_type,
             TTL=ttl,
             viewID=line,

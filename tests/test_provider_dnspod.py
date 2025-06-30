@@ -418,9 +418,9 @@ class TestDnspodProviderIntegration(BaseProviderTestCase):
         # Domain.Info response - no domain found
         mock_http.return_value = {"status": {"code": "0", "message": "Domain not found"}}
 
-        # Should raise ValueError when zone not found
-        with self.assertRaises(ValueError):
-            self.provider.set_record("www.notfound.com", "192.168.1.1")
+        # Should return False when zone not found
+        result = self.provider.set_record("www.notfound.com", "192.168.1.1")
+        self.assertFalse(result)
 
     @patch("ddns.provider.dnspod.DnspodProvider._http")
     def test_full_workflow_create_failure(self, mock_http):
@@ -494,29 +494,12 @@ class TestDnspodProviderRealRequest(BaseProviderTestCase):
         # 使用无效的认证信息创建 provider
         invalid_provider = DnspodProvider("invalid_id", "invalid_token")
 
-        # Mock logger to capture error logs
-        invalid_provider.logger = MagicMock()
+        # 尝试查询域名信息，应该抛出认证失败异常
+        with self.assertRaises(RuntimeError) as cm:
+            invalid_provider._query_zone_id("example.com")
 
-        # 尝试查询域名信息，应该返回认证失败
-        result = invalid_provider._query_zone_id("example.com")
-
-        # 认证失败时应该返回 None
-        self.assertIsNone(result)
-
-        # 验证错误日志被记录
-        # 应该有两次警告调用：一次来自 _base.py 的 HTTP 错误，一次来自 dnspod.py 的 API 错误
-        self.assertGreaterEqual(invalid_provider.logger.warning.call_count, 1)
-
-        # 检查日志内容包含认证相关的错误信息
-        warning_calls = invalid_provider.logger.warning.call_args_list
-        logged_messages = [str(call) for call in warning_calls]
-
-        # 至少有一个日志应该包含错误相关信息
-        has_auth_error = any(
-            "error" in msg.lower() or "unauthorized" in msg.lower() or "dnspod api error" in msg.lower()
-            for msg in logged_messages
-        )
-        self.assertTrue(has_auth_error, "Expected authentication error in logs: {0}".format(logged_messages))
+        # 验证异常信息包含认证失败
+        self.assertIn("认证失败 (401)", str(cm.exception))
 
 
 if __name__ == "__main__":

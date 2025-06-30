@@ -408,10 +408,8 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
             # Simulate API returning empty zones array
             mock_request.return_value = {"zones": []}
 
-            with self.assertRaises(ValueError) as cm:
-                provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
-
-            self.assertIn("Cannot resolve zone_id", str(cm.exception))
+            result = provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
+            self.assertFalse(result)
 
     def test_full_workflow_create_failure(self):
         """Test complete workflow when record creation fails"""

@@ -26,12 +26,14 @@ DDNS 提供两种抽象基类，根据DNS服务商的API特性选择合适的基
 适用于只提供简单更新接口，不支持查询现有记录的DNS服务商。
 
 **必须实现的方法：**
+
 | 方法 | 说明 | 是否必须 |
 |------|------|----------|
 | `set_record(domain, value, record_type="A", ttl=None, line=None, **extra)` | **更新或创建DNS记录** | ✅ 必须 |
 | `_validate()` | **验证认证信息** | ❌ 可选（有默认实现） |
 
 **适用场景：**
+
 - 只提供更新接口的DNS服务商（如HE.net）
 - 不需要查询现有记录的简单场景
 - 调试和测试用途
@@ -46,18 +48,20 @@ DDNS 提供两种抽象基类，根据DNS服务商的API特性选择合适的基
 | 方法 | 说明 | 是否必须 |
 |------|------|----------|
 | `_query_zone_id(domain)` | **查询主域名的Id** (zone_id) | ✅ 必须 |
-| `_query_record(zone_id, sub_domain, main_domain, record_type, line=None, extra=None)` | **查询当前 DNS 记录** | ✅ 必须 |
-| `_create_record(zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None)` | **创建新记录** | ✅ 必须 |
+| `_query_record(zone_id, subdomain, main_domain, record_type, line=None, extra=None)` | **查询当前 DNS 记录** | ✅ 必须 |
+| `_create_record(zone_id, subdomain, main_domain, value, record_type, ttl=None, line=None, extra=None)` | **创建新记录** | ✅ 必须 |
 | `_update_record(zone_id, old_record, value, record_type, ttl=None, line=None, extra=None)` | **更新现有记录** | ✅ 必须 |
 | `_validate()` | **验证认证信息** | ❌ 可选（有默认id和token必填） |
 
 **内置功能：**
+
 - ✅ SimpleProvider的所有功能
 - 🎯 自动记录管理（查询→创建/更新的完整流程）
 - 💾 缓存机制
 - 📝 详细的操作日志和错误处理
 
 **适用场景：**
+
 - 提供完整REST API的DNS服务商（如Cloudflare、阿里云DNS）
 - 需要查询现有记录状态的场景
 - 支持精确的记录管理和状态跟踪
@@ -67,11 +71,13 @@ DDNS 提供两种抽象基类，根据DNS服务商的API特性选择合适的基
 ### SimpleProvider 示例
 
 适用于简单DNS服务商，参考现有实现：
+
 - [`provider/he.py`](/ddns/provider/he.py): Hurricane Electric DNS更新
 - [`provider/debug.py`](/ddns/provider/debug.py): 调试用途，打印IP地址
 - [`provider/callback.py`](/ddns/provider/callback.py): 回调/Webhook类型DNS更新
 
 > provider/mysimpleprovider.py
+
 ```python
 # coding=utf-8
 """
@@ -101,16 +107,17 @@ class MySimpleProvider(SimpleProvider):
         # logic to update DNS record
 ```
 
-
 ### BaseProvider 示例
 
 适用于标准DNS服务商，参考现有实现：
+
 - [`provider/dnspod.py`](/ddns/provider/dnspod.py): POST 表单数据，无签名
 - [`provider/cloudflare.py`](/ddns/provider/cloudflare.py): RESTful JSON，无签名
 - [`provider/alidns.py`](/ddns/provider/alidns.py): POST 表单+sha256参数签名
 - [`provider/huaweidns.py`](/ddns/provider/huaweidns.py): RESTful JSON，参数header签名
 
 > provider/myprovider.py
+
 ```python
 # coding=utf-8
 """
@@ -137,12 +144,12 @@ class MyProvider(BaseProvider):
         """查询主域名的Zone ID"""
         # 精确查找 或者 list匹配
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line=None, extra=None):
         # type: (str, str, str, int | None, str | None, dict | None) -> Any
         """查询现有DNS记录"""
 
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
         """创建新的DNS记录"""
 
@@ -168,8 +175,8 @@ class MyProvider(BaseProvider):
 
 ### 通用开发建议
 
-
 #### 🌐 HTTP请求处理
+
 ```python
 # 使用内置的_http方法，自动处理代理、编码、日志
 response = self._http("POST", path, params=params, headers=headers)
@@ -177,6 +184,7 @@ response = self._http("POST", path, params=params, headers=headers)
 ```
 
 #### 🔒 格式验证
+
 ```python
 def _validate(self):
     """认证信息验证示例"""
@@ -187,6 +195,7 @@ def _validate(self):
 ```
 
 #### 📝 日志记录
+
 ```python
 if result:
     self.logger.info("DNS record got: %s", result.get("id"))
@@ -253,19 +262,21 @@ tests/
 ### 📖 参考实现
 
 **SimpleProvider 参考：**
+
 - [`provider/he.py`](/ddns/provider/he.py) - Hurricane Electric (简单表单提交)
 - [`provider/debug.py`](/ddns/provider/debug.py) - 调试工具 (仅打印信息)
 - [`provider/callback.py`](/ddns/provider/callback.py) - 回调/Webhook模式
 
 **BaseProvider 参考：**
+
 - [`provider/cloudflare.py`](/ddns/provider/cloudflare.py) - RESTful JSON API
 - [`provider/alidns.py`](/ddns/provider/alidns.py) - POST+签名认证
 - [`provider/dnspod.py`](/ddns/provider/dnspod.py) - POST表单数据提交
 
 ### 🛠️ 开发工具推荐
 
-* 本地开发环境：VSCode
-* 在线代码编辑器：GitHub Codespaces 或 github.dev
+- 本地开发环境：VSCode
+- 在线代码编辑器：GitHub Codespaces 或 github.dev
 
 ### 🎯 常见问题解决
 

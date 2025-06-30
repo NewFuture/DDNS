@@ -40,7 +40,6 @@ class AlidnsProvider(BaseProvider):
         query = self._encode(sorted(params.items()))
         query = query.replace("+", "%20")
         self.logger.debug("query: %s", query)
-        # sign = "POST&" + quote_plus("/") + "&" + quote(query, safe="")
         sign = "POST&%2F&" + self._quote(query, safe="")
 
         self.logger.debug("sign: %s", sign)
@@ -61,12 +60,12 @@ class AlidnsProvider(BaseProvider):
         res = self._request("GetMainDomainName", InputString=domain)
         return res.get("DomainName")
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords"""
         data = self._request(
             "DescribeDomainRecords",
             DomainName=zone_id,
-            RRKeyWord=sub_domain,
+            RRKeyWord=subdomain,
             Type=record_type,
             Line=line,
             PageSize=500,
@@ -76,21 +75,21 @@ class AlidnsProvider(BaseProvider):
         records = data.get("DomainRecords", {}).get("Record", [])
         if not records:
             self.logger.warning(
-                "No records found for [%s] with %s <%s> (line: %s)", zone_id, sub_domain, record_type, line
+                "No records found for [%s] with %s <%s> (line: %s)", zone_id, subdomain, record_type, line
             )
         elif not isinstance(records, list):
             self.logger.error("Invalid records format: %s", records)
         else:
-            return next((r for r in records if r.get("RR") == sub_domain), None)
+            return next((r for r in records if r.get("RR") == subdomain), None)
 
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord"""
         data = self._request(
             "AddDomainRecord",
             DomainName=zone_id,
-            RR=sub_domain,
+            RR=subdomain,
             Value=value,
             Type=record_type,
             TTL=ttl,

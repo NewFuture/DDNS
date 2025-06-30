@@ -1,7 +1,6 @@
 # coding=utf-8
 """
 Hurricane Electric (he.net) API
-https://dns.he.net/docs.html
 @author: NN708, NewFuture
 """
 
@@ -11,15 +10,19 @@ from ._base import SimpleProvider, TYPE_FORM
 class HeProvider(SimpleProvider):
     API = "https://dyn.dns.he.net"
     content_type = TYPE_FORM
+    accept = None  # he.net does not require a specific Accept header
     decode_response = False  # he.net response is plain text, not JSON
 
     def _validate(self):
-        pass
+        if self.auth_id:
+            raise ValueError("Hurricane Electric (he.net) does not use `id`, use `token(password)` only.")
+        if not self.auth_token:
+            raise ValueError("Hurricane Electric (he.net) requires `token(password)`.")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
-        使用 POST API 更新或创建 DNS 记录。
-        Update or create DNS record with POST API.
+        使用 POST API 更新或创建 DNS 记录。Update or create DNS record with POST API.
+        https://dns.he.net/docs.html
         """
         self.logger.info("%s => %s(%s)", domain, value, record_type)
         params = {
@@ -27,12 +30,13 @@ class HeProvider(SimpleProvider):
             "myip": value,  # IP address to update
             "password": self.auth_token,  # Use auth_token as password
         }
-        self.logger.debug("HE Params: %s", params)
-        res = self._http("POST", "/nic/update", body=params)
-        if not res:
-            raise Exception("empty response")
-        elif res[:5] == "nochg" or res[:4] == "good":  # No change or success
-            return res
-        else:
-            self.logger.error("HE API error: %s", res)
-            raise Exception(res)
+        try:
+            res = self._http("POST", "/nic/update", body=params)
+            if res and res[:5] == "nochg" or res[:4] == "good":  # No change or success
+                self.logger.info("HE API response: %s", res)
+                return True
+            else:
+                self.logger.error("HE API error: %s", res)
+        except Exception as e:
+            self.logger.error("Error updating record for %s: %s", domain, e)
+        return False

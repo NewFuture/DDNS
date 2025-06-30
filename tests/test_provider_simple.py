@@ -173,7 +173,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         provider = _TestableSimpleProvider(self.auth_id, "secret123")
         data = "url?token=secret123&other=value"
 
-        result = provider._mask_sensitive_data(data)
+        result = provider._mask_sensitive_data(data)  # type: str # type: ignore
 
         self.assertNotIn("secret123", result)
         self.assertIn("se***23", result)
@@ -183,7 +183,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         provider = _TestableSimpleProvider(self.auth_id, "abc")
         data = "url?token=abc&other=value"
 
-        result = provider._mask_sensitive_data(data)
+        result = provider._mask_sensitive_data(data)  # type: str # type: ignore
 
         self.assertNotIn("abc", result)
         self.assertIn("***", result)
@@ -220,10 +220,60 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         provider = _TestableSimpleProvider(self.auth_id, "verylongsecrettoken123")
         data = "url?token=verylongsecrettoken123&other=value"
 
-        result = provider._mask_sensitive_data(data)
-
+        result = provider._mask_sensitive_data(data)  # type: str # type: ignore
         self.assertNotIn("verylongsecrettoken123", result)
         self.assertIn("ve***23", result)
+
+    def test_mask_sensitive_data_url_encoded(self):
+        """Test _mask_sensitive_data method with URL encoded sensitive data"""
+        from ddns.provider._base import quote
+
+        provider = _TestableSimpleProvider("user@example.com", "secret_token_123")
+
+        # 测试URL编码的token
+        token_encoded = quote("secret_token_123", safe="")
+        id_encoded = quote("user@example.com", safe="")
+        data = "url?token={}&id={}&other=value".format(token_encoded, id_encoded)
+
+        result = provider._mask_sensitive_data(data)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, str)
+
+        # Cast result to str for type checking
+        result_str = str(result)
+
+        # 验证原始敏感token信息不泄露
+        self.assertNotIn("secret_token_123", result_str)
+        # 验证URL编码的敏感token信息也不泄露
+        self.assertNotIn(token_encoded, result_str)
+        # 验证包含打码信息
+        self.assertIn("se***23", result_str)
+
+        # auth_id 不再被打码，应该保持原样（URL编码形式）
+        self.assertIn(id_encoded, result_str)  # user%40example.com
+
+    def test_mask_sensitive_data_bytes_url_encoded(self):
+        """Test _mask_sensitive_data method with bytes containing URL encoded data"""
+        from ddns.provider._base import quote
+
+        provider = _TestableSimpleProvider("test@example.com", "token123")
+
+        # 测试字节数据包含URL编码的敏感信息
+        token_encoded = quote("token123", safe="")
+        data = "url?token={}&data=something".format(token_encoded).encode()
+
+        result = provider._mask_sensitive_data(data)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, bytes)
+
+        # Cast result to bytes for type checking
+        result_bytes = bytes(result) if isinstance(result, bytes) else result.encode() if result else b""
+
+        # 验证原始和URL编码的token都不泄露
+        self.assertNotIn(b"token123", result_bytes)
+        self.assertNotIn(token_encoded.encode(), result_bytes)
+        # 验证包含打码信息
+        self.assertIn(b"to***23", result_bytes)
 
     def test_set_record_abstract_method(self):
         """Test that set_record is implemented in test class"""

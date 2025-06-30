@@ -22,13 +22,13 @@ class _TestProvider(BaseProvider):
     def _query_zone_id(self, domain):
         return self._test_zone_data.get(domain)
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line=None, extra=None):
-        key = "{}-{}-{}".format(zone_id, sub_domain, record_type)
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line=None, extra=None):
+        key = "{}-{}-{}".format(zone_id, subdomain, record_type)
         return self._test_records.get(key)
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        key = "{}-{}-{}".format(zone_id, sub_domain, record_type)
-        self._test_records[key] = {"id": "rec123", "name": sub_domain, "value": value, "type": record_type}
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl=None, line=None, extra=None):
+        key = "{}-{}-{}".format(zone_id, subdomain, record_type)
+        self._test_records[key] = {"id": "rec123", "name": subdomain, "value": value, "type": record_type}
         return True
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
@@ -170,9 +170,8 @@ class TestBaseProvider(BaseProviderTestCase):
 
     def test_set_record_invalid_domain(self):
         """测试无效域名"""
-        with self.assertRaises(ValueError) as cm:
-            self.provider.set_record("invalid.notfound", "1.2.3.4", "A")
-        self.assertIn("Cannot resolve zone_id or subdomain", str(cm.exception))
+        result = self.provider.set_record("invalid.notfound", "1.2.3.4", "A")
+        self.assertFalse(result)
 
 
 if __name__ == "__main__":

@@ -90,12 +90,12 @@ class HuaweiDNSProvider(BaseProvider):
         zoneid = zone and zone["id"]
         return zoneid
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         """
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64004.html
         v2 https://support.huaweicloud.com/api-dns/ListRecordSetsByZone.html
         """
-        domain = self._join_domain(sub_domain, main_domain) + "."
+        domain = self._join_domain(subdomain, main_domain) + "."
         data = self._request(
             "GET",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -109,12 +109,12 @@ class HuaweiDNSProvider(BaseProvider):
         record = next((r for r in records if r.get("name") == domain and r.get("type") == record_type), None)
         return record
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64001.html
         v2 https://support.huaweicloud.com/api-dns/CreateRecordSet.html
         """
-        domain = self._join_domain(sub_domain, main_domain) + "."
+        domain = self._join_domain(subdomain, main_domain) + "."
         extra["description"] = extra.get("description", self.remark)
         res = self._request(
             "POST",

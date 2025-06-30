@@ -165,14 +165,14 @@ class TencentCloudProvider(BaseProvider):
         self.logger.debug("Domain ID not found in response for: %s", domain)
         return None
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询 DNS 记录列表 https://cloud.tencent.com/document/api/1427/56166"""
 
         response = self._request(
             "DescribeRecordList",
             DomainId=int(zone_id),
-            Subdomain=sub_domain,
+            Subdomain=subdomain,
             Domain=main_domain,
             RecordType=record_type,
             RecordLine=line,
@@ -184,11 +184,11 @@ class TencentCloudProvider(BaseProvider):
 
         records = response["RecordList"]
         if not records:
-            self.logger.debug("No records found for subdomain: %s", sub_domain)
+            self.logger.debug("No records found for subdomain: %s", subdomain)
             return None
 
         # 查找匹配的记录
-        target_name = sub_domain if sub_domain and sub_domain != "@" else "@"
+        target_name = subdomain if subdomain and subdomain != "@" else "@"
         for record in records:
             if record.get("Name") == target_name and record.get("Type") == record_type.upper():
                 self.logger.debug("Found existing record: %s", record)
@@ -197,14 +197,14 @@ class TencentCloudProvider(BaseProvider):
         self.logger.debug("No matching record found")
         return None
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """创建 DNS 记录 https://cloud.tencent.com/document/api/1427/56180"""
         extra["Remark"] = extra.get("Remark", self.remark)
         response = self._request(
             "CreateRecord",
             Domain=main_domain,
             DomainId=int(zone_id),
-            SubDomain=sub_domain,
+            SubDomain=subdomain,
             RecordType=record_type,
             Value=value,
             RecordLine=line or "默认",

@@ -187,8 +187,12 @@ class SimpleProvider(object):
             body (dict[str, Any] | str | None): 请求体内容
             queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
             headers (dict): 头部，可选
+
         Returns:
-            Any: 解析后的响应内容, None 请求失败或响应不是200-299状态码
+            Any: 解析后的响应内容
+
+        Raises:
+            RuntimeError: 当响应状态码为400/401或5xx(服务器错误)时抛出异常
         """
         method = method.upper()
 
@@ -248,26 +252,34 @@ class SimpleProvider(object):
         )
 
         # 处理响应
-        res = response.body
-        if not (200 <= response.status < 300):
-            self.logger.warning(
-                "%s : error[%d]: %s", self._mask_sensitive_data(url), response.status, response.reason
-            )
-            self.logger.info("response: %s", res)
-            return None
+        status_code = response.status
+        if not (200 <= status_code < 300):
+            self.logger.warning("response status: %s %s", status_code, response.reason)
 
+        res = response.body
+        # 针对客户端错误、认证/授权错误和服务器错误直接抛出异常
+        if status_code >= 400:
+            self.logger.error("HTTP error: %s", res)
+            if status_code == 400:
+                raise RuntimeError("请求参数错误 (400): " + response.reason)
+            elif status_code == 401:
+                raise RuntimeError("认证失败 (401): " + response.reason)
+            elif status_code == 403:
+                raise RuntimeError("权限不足 (403): " + response.reason)
+            elif status_code >= 500:
+                raise RuntimeError("服务器错误 ({}): {}".format(status_code, response.reason))
+            else:
+                raise RuntimeError("HTTP错误 ({}): {}".format(status_code, response.reason))
+
+        self.logger.debug("response:\n%s", res)
         if not self.decode_response:
-            self.logger.debug("response:\n%s", res)
             return res
 
         try:
-            data = jsondecode(res)
-            self.logger.debug("response:\n%s", data)
-            return data
+            return jsondecode(res)
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)
-            self.logger.debug("response:\n%s", res)
-            return None
+        return res
 
     @staticmethod
     def _encode(params):
@@ -303,7 +315,7 @@ class SimpleProvider(object):
     def _mask_sensitive_data(self, data):
         # type: (str | bytes | None) -> str | bytes | None
         """
-        对敏感数据进行打码处理，用于日志输出
+        对敏感数据进行打码处理，用于日志输出，支持URL编码的敏感信息
 
         Args:
             data (str | bytes | None): 需要处理的数据
@@ -313,11 +325,16 @@ class SimpleProvider(object):
         if not data or not self.auth_token:
             return data
 
+        # 生成打码后的token
         token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:] if len(self.auth_token) > 4 else "***"
-        if isinstance(data, bytes):
-            return data.replace(self.auth_token.encode(), token_masked.encode())
-        if isinstance(data, str):
-            return data.replace(self.auth_token, token_masked)
+        token_encoded = quote(self.auth_token, safe="")
+
+        if isinstance(data, bytes):  # 处理字节数据
+            return data.replace(self.auth_token.encode(), token_masked.encode()).replace(
+                token_encoded.encode(), token_masked.encode()
+            )
+        if hasattr(data, "replace"):  # 处理字符串数据
+            return data.replace(self.auth_token, token_masked).replace(token_encoded, token_masked)
         return data
 
 
@@ -357,41 +374,32 @@ class BaseProvider(SimpleProvider):
 
         # 优化域名解析逻辑
         sub, main = self._split_custom_domain(domain)
-        if sub is not None:
-            # 使用自定义分隔符格式
-            zone_id = self.get_zone_id(main)
-        else:
-            # 自动分析域名
-            zone_id, sub, main = self._split_zone_and_sub(domain)
+        try:
+            if sub is not None:
+                # 使用自定义分隔符格式
+                zone_id = self.get_zone_id(main)
+            else:
+                # 自动分析域名
+                zone_id, sub, main = self._split_zone_and_sub(domain)
 
-        self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
-        if not zone_id or sub is None:
-            self.logger.critical("查询 zone_id 或 subdomain失败: %s", domain)
-            raise ValueError("Cannot resolve zone_id or subdomain for " + domain)
+            self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
+            if not zone_id or sub is None:
+                self.logger.critical("找不到 zone_id 或 subdomain: %s", domain)
+                return False
 
-        # 查询现有记录
-        record = self._query_record(
-            zone_id, sub_domain=sub, main_domain=main, record_type=record_type, line=line, extra=extra
-        )
+            # 查询现有记录
+            record = self._query_record(zone_id, sub, main, record_type=record_type, line=line, extra=extra)
 
-        # 更新或创建记录
-        if record:
-            self.logger.info("Found existing record: %s", record)
-            return self._update_record(
-                zone_id, old_record=record, value=value, record_type=record_type, ttl=ttl, line=line, extra=extra
-            )
-        else:
-            self.logger.warning("No existing record found, creating new one")
-            return self._create_record(
-                zone_id,
-                sub_domain=sub,
-                main_domain=main,
-                value=value,
-                record_type=record_type,
-                ttl=ttl,
-                line=line,
-                extra=extra,
-            )
+            # 更新或创建记录
+            if record:
+                self.logger.info("Found existing record: %s", record)
+                return self._update_record(zone_id, record, value, record_type, ttl=ttl, line=line, extra=extra)
+            else:
+                self.logger.warning("No existing record found, creating new one")
+                return self._create_record(zone_id, sub, main, value, record_type, ttl=ttl, line=line, extra=extra)
+        except Exception as e:
+            self.logger.exception("Error setting record for %s: %s", domain, e)
+            return False
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None
@@ -428,14 +436,14 @@ class BaseProvider(SimpleProvider):
         return domain
 
     @abstractmethod
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> Any
         """
         查询 DNS 记录 ID
 
         Args:
             zone_id (str): 区域 ID
-            sub_domain (str): 子域名
+            subdomain (str): 子域名
             main_domain (str): 主域名
             record_type (str): 记录类型，例如 A、AAAA
             line (str | None): 线路选项，可选
@@ -446,14 +454,14 @@ class BaseProvider(SimpleProvider):
         raise NotImplementedError("This _query_record should be implemented by subclasses")
 
     @abstractmethod
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         """
         创建新 DNS 记录
 
         Args:
             zone_id (str): 区域 ID
-            sub_domain (str): 子域名
+            subdomain (str): 子域名
             main_domain (str): 主域名
             value (str): 记录值
             record_type (str): 类型，如 A

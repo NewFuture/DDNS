@@ -16,6 +16,7 @@ class DnspodProvider(BaseProvider):
 
     API = "https://dnsapi.cn"
     content_type = TYPE_FORM
+
     DefaultLine = "默认"
 
     def _request(self, action, extra=None, **params):
@@ -47,14 +48,14 @@ class DnspodProvider(BaseProvider):
             self.logger.warning("DNSPod API error: %s", error_msg)
             return data
 
-    def _create_record(self, zone_id, sub_domain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
         """https://docs.dnspod.cn/api/add-record/"""
         res = self._request(
             "Record.Create",
             extra=extra,
             domain_id=zone_id,
-            sub_domain=sub_domain,
+            sub_domain=subdomain,
             value=value,
             record_type=record_type,
             record_line=line or self.DefaultLine,
@@ -98,19 +99,19 @@ class DnspodProvider(BaseProvider):
             return res.get("domain", {}).get("id")
         return None
 
-    def _query_record(self, zone_id, sub_domain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
         res = self._request(
-            "Record.List", domain_id=zone_id, sub_domain=sub_domain, record_type=record_type, line=line
+            "Record.List", domain_id=zone_id, sub_domain=subdomain, record_type=record_type, line=line
         )
         # length="3000"
         records = res.get("records", [])
         n = len(records)
         if not n:
-            self.logger.warning("No record found for [%s] %s<%s>(line: %s)", zone_id, sub_domain, record_type, line)
+            self.logger.warning("No record found for [%s] %s<%s>(line: %s)", zone_id, subdomain, record_type, line)
             return None
         if n > 1:
-            self.logger.warning("%d records found for %s<%s>(%s):\n %s", n, sub_domain, record_type, line, records)
-            return next((r for r in records if r.get("name") == sub_domain), None)
+            self.logger.warning("%d records found for %s<%s>(%s):\n %s", n, subdomain, record_type, line, records)
+            return next((r for r in records if r.get("name") == subdomain), None)
         return records[0]

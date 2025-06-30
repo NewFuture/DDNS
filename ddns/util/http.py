@@ -75,10 +75,10 @@ def _create_connection(hostname, port, is_https, proxy, verify_ssl):
             # 禁用SSL验证
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
-        elif hasattr(verify_ssl, "lower") and verify_ssl.lower() not in ("auto", "true"):
+        elif hasattr(verify_ssl, "lower") and verify_ssl.lower() not in ("auto", "true"):  # type: ignore[union-attr]
             # 使用自定义CA证书 lower 判断 str/unicode 兼容 python2
             try:
-                ssl_context.load_verify_locations(verify_ssl)
+                ssl_context.load_verify_locations(verify_ssl)  # type: ignore[arg-type]
             except Exception as e:
                 logger.error("Failed to load CA certificate from %s: %s", verify_ssl, e)
         else:
