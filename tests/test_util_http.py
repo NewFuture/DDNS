@@ -9,6 +9,16 @@ import unittest
 import ssl
 import sys
 from base_test import MagicMock, patch
+from ddns.util.http import (
+    HTTPException,
+    send_http_request,
+    HttpResponse,
+    _create_connection,
+    _load_system_ca_certs,
+    _close_connection,
+    _build_redirect_url,
+    _decode_response_body,
+)
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:  # python 2
@@ -35,18 +45,6 @@ def byte_string(s):
     if isinstance(s, text_type):
         return s.encode("utf-8")
     return s
-
-
-from ddns.util.http import (
-    HTTPException,
-    send_http_request,
-    HttpResponse,
-    _create_connection,
-    _load_system_ca_certs,
-    _close_connection,
-    _build_redirect_url,
-    _decode_response_body,
-)
 
 
 class TestHttpResponse(unittest.TestCase):
@@ -160,7 +158,7 @@ class TestCreateConnection(unittest.TestCase):
 
     @patch("ddns.util.http.HTTPSConnection")
     @patch("ddns.util.http.logger")
-    def test_create_https_connection_custom_ca_failure(self, mock_logger, mock_ssl_context, mock_https_conn):
+    def test_create_https_connection_custom_ca_failure(self, mock_logger, mock_https_conn):
         """测试创建HTTPS连接 - 自定义CA证书失败"""
         mock_conn = MagicMock()
         mock_https_conn.return_value = mock_conn

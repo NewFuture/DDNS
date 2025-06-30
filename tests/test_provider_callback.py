@@ -369,7 +369,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_simple_http_endpoint(self):
         """Test with a simple endpoint that doesn't require special headers and verify logger calls"""
         # Use a very simple endpoint that usually has good SSL
-        auth_id = "http://httpstat.us/200?domain=__DOMAIN__&ip=__IP__"
+        auth_id = "http://httpbin.org/get?domain=__DOMAIN__&ip=__IP__"
         provider = CallbackProvider(auth_id, "")
         # Setup provider with mock logger
         mock_logger = self._setup_provider_with_mock_logger(provider)
@@ -379,7 +379,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         self.assertTrue(result)
 
         # Verify that logger.info was called with the successful result
-        self._assert_callback_result_logged(mock_logger, "200", "OK")
+        self._assert_callback_result_logged(mock_logger, "httpstat.test.example.com", "111.111.111.111")
 
     def test_real_callback_redirect_following(self):
         """Test real callback with HTTP redirects using the improved _send_request method and verify logger calls"""
