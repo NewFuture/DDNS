@@ -9,7 +9,7 @@ from ._base import BaseProvider, TYPE_FORM
 from hashlib import sha1
 from hmac import new as hmac
 from base64 import b64encode
-from time import time, strftime
+from time import time, strftime, gmtime
 
 
 class AlidnsProvider(BaseProvider):
@@ -31,7 +31,7 @@ class AlidnsProvider(BaseProvider):
                 "Format": "json",
                 "Version": "2015-01-09",
                 "AccessKeyId": self.auth_id,
-                "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
                 "SignatureMethod": "HMAC-SHA1",
                 "SignatureNonce": hex(hash(time()))[2:],
                 "SignatureVersion": "1.0",

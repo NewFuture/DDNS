@@ -5,9 +5,9 @@ name: Build
 
 on:
   push:
-    branches: ["master", "main"]
+    branches: ["master", "main", "abc"]
   pull_request:
-    branches: ["master", "main"]
+    branches: ["master", "main", "abc"]
 
 permissions:
   contents: read
@@ -69,6 +69,8 @@ jobs:
         working-directory: /tmp
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}

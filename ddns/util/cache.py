@@ -8,7 +8,7 @@ cache module
 from os import path, stat
 from pickle import dump, load
 from time import time
-from logging import Logger  # noqa: F401
+from logging import getLogger, Logger  # noqa: F401
 
 
 class Cache(dict):
@@ -23,7 +23,7 @@ class Cache(dict):
         self.__sync = sync
         self.__time = time()
         self.__changed = False
-        self.__logger = logger.getChild("Cache") if logger else Logger("Cache")
+        self.__logger = (logger or getLogger()).getChild("Cache")
         self.load()
 
     @property

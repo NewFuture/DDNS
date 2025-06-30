@@ -11,45 +11,30 @@ import sys
 from base_test import MagicMock, patch
 
 # Python 2/3 compatibility
-if sys.version_info[0] == 2:
-
-    def to_bytes(s, encoding="utf-8"):
-        """Convert string to bytes in Python 2/3 compatible way"""
-        if isinstance(s, unicode):  # noqa: F821
-            return s.encode(encoding)
-        return s
-
-    def to_unicode(s, encoding="utf-8"):
-        """Convert string to unicode in Python 2/3 compatible way"""
-        if isinstance(s, str):
-            return s.decode(encoding)
-        return s
-
-    def byte_string(s):
-        """Create byte string compatible with Python 2/3"""
-        if isinstance(s, unicode):  # noqa: F821
-            return s.encode("utf-8")
-        return s
-
+if sys.version_info[0] == 2:  # python 2
+    text_type = unicode  # noqa: F821
+    binary_type = str
 else:
+    text_type = str
+    binary_type = bytes
 
-    def to_bytes(s, encoding="utf-8"):
-        """Convert string to bytes in Python 2/3 compatible way"""
-        if isinstance(s, str):
-            return s.encode(encoding)
-        return s
 
-    def to_unicode(s, encoding="utf-8"):
-        """Convert string to unicode in Python 2/3 compatible way"""
-        if isinstance(s, bytes):
-            return s.decode(encoding)
-        return s
+def to_bytes(s, encoding="utf-8"):
+    if isinstance(s, text_type):
+        return s.encode(encoding)
+    return s
 
-    def byte_string(s):
-        """Create byte string compatible with Python 2/3"""
-        if isinstance(s, str):
-            return s.encode("utf-8")
-        return s
+
+def to_unicode(s, encoding="utf-8"):
+    if isinstance(s, binary_type):
+        return s.decode(encoding)
+    return s
+
+
+def byte_string(s):
+    if isinstance(s, text_type):
+        return s.encode("utf-8")
+    return s
 
 
 from ddns.util.http import (
@@ -174,13 +159,9 @@ class TestCreateConnection(unittest.TestCase):
         mock_context.load_verify_locations.assert_called_once_with("/path/to/ca.pem")
 
     @patch("ddns.util.http.HTTPSConnection")
-    @patch("ddns.util.http.ssl.create_default_context")
     @patch("ddns.util.http.logger")
     def test_create_https_connection_custom_ca_failure(self, mock_logger, mock_ssl_context, mock_https_conn):
         """测试创建HTTPS连接 - 自定义CA证书失败"""
-        mock_context = MagicMock()
-        mock_ssl_context.return_value = mock_context
-        mock_context.load_verify_locations.side_effect = Exception("File not found")
         mock_conn = MagicMock()
         mock_https_conn.return_value = mock_conn
 

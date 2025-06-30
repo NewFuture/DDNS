@@ -10,7 +10,7 @@ from ._base import BaseProvider, TYPE_JSON
 from hashlib import sha256
 from hmac import new as hmac
 from json import dumps as jsonencode
-from time import strftime
+from time import strftime, gmtime
 
 
 class HuaweiDNSProvider(BaseProvider):
@@ -45,11 +45,11 @@ class HuaweiDNSProvider(BaseProvider):
             query = ""
             body = jsonencode(params)
 
-        date_now = strftime("%Y%m%dT%H%M%SZ")
+        date_now = strftime("%Y%m%dT%H%M%SZ", gmtime())
         headers = {
             "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
-            "x-sdk-date": date_now,
+            "X-Sdk-Date": date_now,
         }
         sign_headers = [k.lower() for k in headers]
         sign_headers.sort()
