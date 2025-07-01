@@ -42,7 +42,7 @@ class Cache(dict):
 
         self.__logger.debug("load cache data from %s", file)
         if path.isfile(file):
-            with open(self.__filename, "rb") as data:
+            with open(file, "rb") as data:
                 try:
                     self.__data = load(data)
                     self.__time = stat(file).st_mtime
@@ -88,9 +88,12 @@ class Cache(dict):
         :exc:`ValueError` will be raised.
         """
         self.sync()
-        del self.__data
-        del self.__filename
-        del self.__time
+        if hasattr(self, '_Cache__data'):
+            del self.__data
+        if hasattr(self, '_Cache__filename'):
+            del self.__filename
+        if hasattr(self, '_Cache__time'):
+            del self.__time
         self.__sync = False
 
     def __update(self):
