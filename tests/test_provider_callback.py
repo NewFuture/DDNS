@@ -2,7 +2,7 @@
 """
 Unit tests for CallbackProvider
 
-@author: Github Copilot
+@author: GitHub Copilot
 """
 
 import ssl
