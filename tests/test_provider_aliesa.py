@@ -419,5 +419,230 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
         mock_create.assert_called_once()
 
 
+class TestAliesaProviderAPIResponse(BaseProviderTestCase):
+    """Test AliesaProvider API response handling based on official documentation"""
+
+    def setUp(self):
+        """Setup test provider with mock credentials"""
+        super().setUp()
+        self.provider = AliesaProvider(
+            auth_id="test_access_key",
+            auth_token="test_secret_key"
+        )
+
+    @patch.object(AliesaProvider, '_request')
+    def test_list_sites_multiple_sites(self, mock_request):
+        """Test ListSites API response with multiple sites (following official docs)"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "Sites": [
+                {"SiteId": 12345, "SiteName": "example.com", "Status": "activated"},
+                {"SiteId": 12346, "SiteName": "test.com", "Status": "activated"},
+                {"SiteId": 12347, "SiteName": "demo.com", "Status": "pending"}
+            ]
+        }
+        
+        zone_id = self.provider._query_zone_id("example.com")
+        
+        self.assertEqual(zone_id, "12345")
+        mock_request.assert_called_once_with("ListSites", SiteName="example.com", PageSize=500)
+
+    @patch.object(AliesaProvider, '_request')
+    def test_list_sites_no_matching_site(self, mock_request):
+        """Test ListSites API when no site matches the domain name"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "Sites": [
+                {"SiteId": 12346, "SiteName": "other.com", "Status": "activated"}
+            ]
+        }
+        
+        zone_id = self.provider._query_zone_id("example.com")
+        
+        self.assertIsNone(zone_id)
+
+    @patch.object(AliesaProvider, '_request')
+    def test_list_records_multiple_matching_records(self, mock_request):
+        """Test ListRecords API with multiple matching records"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "Records": [
+                {
+                    "RecordId": "123456",
+                    "RecordName": "www.example.com",
+                    "Type": "A",
+                    "Value": "192.168.1.100",
+                    "TTL": 300,
+                    "Status": "activated"
+                },
+                {
+                    "RecordId": "123457",
+                    "RecordName": "www.example.com",
+                    "Type": "A",
+                    "Value": "192.168.1.101",
+                    "TTL": 600,
+                    "Status": "activated"
+                }
+            ]
+        }
+        
+        result = self.provider._query_record("12345", "www", "example.com", "A", None, {})
+        
+        # Should return the first matching record
+        self.assertEqual(result["RecordId"], "123456")
+        self.assertEqual(result["Value"], "192.168.1.100")
+
+    @patch.object(AliesaProvider, '_request')
+    def test_create_record_with_all_parameters(self, mock_request):
+        """Test CreateRecord API with all optional parameters"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "RecordId": "123456"
+        }
+        
+        result = self.provider._create_record(
+            "12345", "www", "example.com", "192.168.1.100", "A", 600, None,
+            {"Comment": "Test record creation"}
+        )
+        
+        self.assertTrue(result)
+        mock_request.assert_called_once_with(
+            "CreateRecord",
+            SiteId=12345,
+            RecordName="www.example.com",
+            Type="A",
+            Value="192.168.1.100",
+            TTL=600,
+            Remark="Test record creation"
+        )
+
+    @patch.object(AliesaProvider, '_request')
+    def test_create_record_minimal_parameters(self, mock_request):
+        """Test CreateRecord API with minimal required parameters"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "RecordId": "123456"
+        }
+        
+        result = self.provider._create_record(
+            "12345", "@", "example.com", "192.168.1.100", "A", None, None, {}
+        )
+        
+        self.assertTrue(result)
+        mock_request.assert_called_once_with(
+            "CreateRecord",
+            SiteId=12345,
+            RecordName="example.com",
+            Type="A",
+            Value="192.168.1.100"
+        )
+
+    @patch.object(AliesaProvider, '_request')
+    def test_update_record_all_fields_changed(self, mock_request):
+        """Test UpdateRecord API when all fields are changed"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "RecordId": "123456"
+        }
+        
+        old_record = {
+            "RecordId": "123456",
+            "RecordName": "www.example.com",
+            "Type": "A",
+            "Value": "192.168.1.1",
+            "TTL": 300
+        }
+        
+        result = self.provider._update_record(
+            "12345", old_record, "192.168.1.100", "A", 600, None,
+            {"Comment": "Updated via DDNS"}
+        )
+        
+        self.assertTrue(result)
+        mock_request.assert_called_once_with(
+            "UpdateRecord",
+            SiteId=12345,
+            RecordId="123456",
+            Type="A",
+            Value="192.168.1.100",
+            TTL=600,
+            Remark="Updated via DDNS"
+        )
+
+    @patch.object(AliesaProvider, '_request')
+    def test_api_error_response_handling(self, mock_request):
+        """Test handling of API error responses following ESA documentation"""
+        mock_request.return_value = {
+            "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
+            "Code": "InvalidParameter.SiteId",
+            "Message": "The specified site ID does not exist."
+        }
+        
+        # Test with CreateRecord error
+        result = self.provider._create_record(
+            "99999", "www", "example.com", "192.168.1.100", "A", 300, None, {}
+        )
+        
+        self.assertFalse(result)
+
+    @patch.object(AliesaProvider, '_request')
+    def test_api_empty_response_handling(self, mock_request):
+        """Test handling of empty API responses"""
+        mock_request.return_value = {}
+        
+        # Test with empty CreateRecord response
+        result = self.provider._create_record(
+            "12345", "www", "example.com", "192.168.1.100", "A", 300, None, {}
+        )
+        
+        self.assertFalse(result)
+
+    @patch.object(AliesaProvider, '_request')
+    def test_different_record_types(self, mock_request):
+        """Test support for different DNS record types (A, AAAA, CNAME, etc.)"""
+        test_cases = [
+            ("A", "192.168.1.100"),
+            ("AAAA", "2001:db8::1"),
+            ("CNAME", "target.example.com"),
+            ("MX", "10 mail.example.com"),
+            ("TXT", "v=spf1 include:_spf.google.com ~all")
+        ]
+        
+        for record_type, value in test_cases:
+            with self.subTest(record_type=record_type):
+                mock_request.return_value = {"RecordId": "123456"}
+                
+                result = self.provider._create_record(
+                    "12345", "test", "example.com", value, record_type, 300, None, {}
+                )
+                
+                self.assertTrue(result)
+                mock_request.assert_called_with(
+                    "CreateRecord",
+                    SiteId=12345,
+                    RecordName="test.example.com",
+                    Type=record_type,
+                    Value=value,
+                    TTL=300
+                )
+
+    def test_domain_parsing_edge_cases(self):
+        """Test domain parsing for various edge cases following ESA domain format specs"""
+        test_cases = [
+            # (input_domain, expected_site_id, expected_subdomain, expected_main_domain)
+            ("example.com#12345", "12345", "@", "example.com"),
+            ("www.example.com#12345", "12345", "www", "example.com"),
+            ("api.v2.example.com#12345", "12345", "api.v2", "example.com"),
+            ("sub+example.com#12345", "12345", "sub", "example.com"),
+            ("_dmarc.example.com#12345", "12345", "_dmarc", "example.com"),
+            ("*.example.com#12345", "12345", "*", "example.com"),
+        ]
+        
+        for input_domain, expected_site_id, expected_subdomain, expected_main_domain in test_cases:
+            with self.subTest(domain=input_domain):
+                result = self.provider._split_zone_and_sub(input_domain)
+                self.assertEqual(result, (expected_site_id, expected_subdomain, expected_main_domain))
+
+
 if __name__ == '__main__':
     unittest.main()
