@@ -42,32 +42,6 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         self.assertEqual(self.provider.auth_token, self.auth_token)
         self.assertEqual(self.provider.API, "https://dns.myhuaweicloud.com")
 
-    def test_hex_encode_sha256(self):
-        """Test _hex_encode_sha256 method"""
-        test_data = b"test data"
-        result = self.provider._hex_encode_sha256(test_data)
-
-        # Should return a 64-character hex string (SHA256)
-        self.assertEqual(len(result), 64)
-        self.assertIsInstance(result, str)
-        # SHA256 of "test data"
-        expected_hash = "916f0027a575074ce72a331777c3478d6513f786a591bd892da1a577bf2335f9"
-        self.assertEqual(result, expected_hash)
-
-    def test_sign_headers(self):
-        """Test _sign_headers method"""
-        headers = {
-            "Content-Type": "application/json",
-            "Host": "dns.myhuaweicloud.com",
-            "X-Sdk-Date": "20230101T000000Z",
-        }
-        signed_headers = ["content-type", "host", "x-sdk-date"]
-
-        result = self.provider._sign_headers(headers, signed_headers)
-
-        expected = "content-type:application/json\nhost:dns.myhuaweicloud.com\nx-sdk-date:20230101T000000Z\n"
-        self.assertEqual(result, expected)
-
     def test_request_get_method(self):
         """Test _request method with GET method"""
         with patch.object(self.provider, "_http") as mock_http:

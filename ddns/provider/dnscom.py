@@ -21,7 +21,7 @@ class DnscomProvider(BaseProvider):
 
     def _validate(self):
         self.logger.warning(
-            "DNS.COM provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "DNS.COM 缺少充分的真实环境测试，请及时在 GitHub Issues 中反馈: %s",
             "https://github.com/NewFuture/DDNS/issues",
         )
         super(DnscomProvider, self)._validate()

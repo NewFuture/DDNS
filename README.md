@@ -38,14 +38,16 @@
   - 多代理自动切换
 - 服务商支持:
   - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
-  - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md))
+  - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md)) ⚡
   - [DNS.COM](https://www.dns.com/) (@loftor-git)
   - [DNSPOD 国际版](https://www.dnspod.com/)
   - [CloudFlare](https://www.cloudflare.com/) (@tongyifan)
   - [HE.net](https://dns.he.net/) (@NN708) (不支持自动创建记录)
-  - [华为云](https://huaweicloud.com/) (@cybmp3)
-  - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md))
+  - [华为云](https://huaweicloud.com/) (@cybmp3) ⚡
+  - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md)) ⚡
   - 自定义回调 API ([配置指南](doc/providers/callback.md))
+  
+  > ⚡ 标记的服务商使用高级 HMAC-SHA256 签名认证，提供企业级安全保障
 - 其他:
   - 可设置定时任务
   - TTL 配置支持

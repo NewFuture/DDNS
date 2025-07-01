@@ -31,34 +31,6 @@ class TestAlidnsProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://alidns.aliyuncs.com")
 
-    def test_signature_v3_generation(self):
-        """Test _signature_v3 method generates correct v3 signature format"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
-
-        # Test headers for v3 signature
-        headers = {
-            "host": "alidns.aliyuncs.com",
-            "content-type": "application/x-www-form-urlencoded",
-            "x-acs-action": "TestAction",
-            "x-acs-content-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "x-acs-date": "2023-01-01T12:00:00Z",
-            "x-acs-signature-nonce": "23456789",
-            "x-acs-version": "2015-01-09",
-        }
-
-        body_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        authorization = provider._signature_v3("POST", "/", headers, body_hash=body_hash)
-
-        # Verify v3 authorization header format - only test the structure, not exact values
-        self.assertTrue(authorization.startswith("ACS3-HMAC-SHA256 Credential="))
-        self.assertIn("Credential={}".format(self.auth_id), authorization)
-        self.assertIn("SignedHeaders=", authorization)
-        self.assertIn("Signature=", authorization)
-        # Verify all headers are included in signed headers
-        self.assertIn("content-type", authorization)
-        self.assertIn("host", authorization)
-        self.assertIn("x-acs-action", authorization)
-
     def test_request_basic(self):
         """Test _request method with basic parameters"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)

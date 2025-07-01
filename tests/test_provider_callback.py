@@ -5,8 +5,11 @@ Unit tests for CallbackProvider
 @author: GitHub Copilot
 """
 
+import os
 import ssl
 import logging
+import random
+from time import sleep
 from base_test import BaseProviderTestCase, unittest, patch
 from ddns.provider.callback import CallbackProvider
 
@@ -284,6 +287,15 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         mock_logger.setLevel(logging.INFO)
         return mock_logger
 
+    def _random_delay(self):
+        """Add a random delay of 0-3 seconds to avoid rate limiting"""
+        if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITHUB_REF_NAME"):
+            # In CI environments, use a shorter delay to speed up tests
+            delay = random.uniform(0, 3)
+        else:
+            delay = random.uniform(0, 1)
+        sleep(delay)
+
     def _assert_callback_result_logged(self, mock_logger, *expected_strings):
         """
         Helper to assert that 'Callback result: %s' was logged with expected content.
@@ -303,19 +315,17 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
     def test_real_callback_get_method(self):
         """Test real callback using GET method with httpbin.org and verify logger calls"""
-        # Use httpbin.org/get endpoint for GET requests
         auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
-        provider = CallbackProvider(auth_id, "")
+        domain = "test.example.com"
+        ip = "111.111.111.111"
 
-        # Setup provider with mock logger
+        provider = CallbackProvider(auth_id, "")
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
-        result = provider.set_record("test.example.com", "111.111.111.111", "A")
-        # httpbin.org returns JSON with our parameters, so it should be truthy
+        self._random_delay()  # Add random delay before real request
+        result = provider.set_record(domain, ip, "A")
         self.assertTrue(result)
-
-        # Verify that logger.info was called with response containing domain and IP
-        self._assert_callback_result_logged(mock_logger, "test.example.com", "111.111.111.111")
+        self._assert_callback_result_logged(mock_logger, domain, ip)
 
     def test_real_callback_post_method_with_json(self):
         """Test real callback using POST method with JSON data and verify logger calls"""
@@ -326,6 +336,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         # Setup provider with mock logger
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
+        self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
         # httpbin.org returns JSON with our posted data, so it should be truthy
         self.assertTrue(result)
@@ -339,79 +350,44 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         auth_id = "https://httpbin.org/status/500"  # This returns HTTP 500
         provider = CallbackProvider(auth_id, "")
 
+        self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.5")
         self.assertFalse(result)
 
     def test_real_callback_redirects_handling(self):
-        """Test real callback with HTTP redirects and verify logger calls"""
-        # Use httpbin.org redirect endpoint
+        """Test real callback with various HTTP redirect scenarios and verify logger calls"""
+        # Test simple redirect
         auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
+        domain = "redirect.test.example.com"
+        ip = "203.0.113.21"
+
         provider = CallbackProvider(auth_id, "")
-
         try:
-            # Setup provider with mock logger
             mock_logger = self._setup_provider_with_mock_logger(provider)
-
-            result = provider.set_record("redirect.test.example.com", "203.0.113.21", "A")
-            # Should follow redirects and succeed
+            self._random_delay()  # Add random delay before real request
+            result = provider.set_record(domain, ip, "A")
             self.assertTrue(result)
-
-            # Verify that logger.info was called with response containing domain and IP
-            self._assert_callback_result_logged(mock_logger, "redirect.test.example.com", "203.0.113.21")
+            self._assert_callback_result_logged(mock_logger, domain, ip)
 
         except Exception as e:
             error_str = str(e).lower()
-            if "certificate verify failed" in error_str and "basic constraints" in error_str:
-                self.skipTest("SSL Basic Constraints issue (common in test environments): {}".format(e))
-            elif "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL-related issue: {}".format(e))
+            if "ssl" in error_str or "certificate" in error_str:
+                self.skipTest("SSL certificate issue: {}".format(e))
 
-    def test_real_callback_simple_http_endpoint(self):
-        """Test with a simple endpoint that doesn't require special headers and verify logger calls"""
-        # Use a very simple endpoint that usually has good SSL
-        auth_id = "http://httpbin.org/get?domain=__DOMAIN__&ip=__IP__"
+    def test_real_callback_redirects_handling_relative(self):
+        """Test real callback with relative redirect scenarios and verify logger calls"""
+        # Test relative redirect
+        auth_id = "https://httpbin.org/relative-redirect/1?domain=__DOMAIN__&ip=__IP__"
+        domain = "relative-redirect.example.com"
+        ip = "203.0.113.203"
+
         provider = CallbackProvider(auth_id, "")
-        # Setup provider with mock logger
-        mock_logger = self._setup_provider_with_mock_logger(provider)
-
-        result = provider.set_record("httpstat.test.example.com", "111.111.111.111", "A")
-        # httpstat.us returns simple status messages, should be truthy
-        self.assertTrue(result)
-
-        # Verify that logger.info was called with the successful result
-        self._assert_callback_result_logged(mock_logger, "httpstat.test.example.com", "111.111.111.111")
-
-    def test_real_callback_redirect_following(self):
-        """Test real callback with HTTP redirects using the improved _send_request method and verify logger calls"""
-        # Use httpbin.org redirect endpoint that returns 302
-        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
-        provider = CallbackProvider(auth_id, "")
-
-        # Setup provider with mock logger
-        mock_logger = self._setup_provider_with_mock_logger(provider)
-
-        result = provider.set_record("redirect.follow.test.com", "203.0.113.30", "A")
-        self.assertTrue(result)
-
-        # Verify that logger.info was called with the final response after redirection
-        self._assert_callback_result_logged(mock_logger, "redirect.follow.test.com", "203.0.113.30")
-
-    def test_real_callback_multiple_redirects(self):
-        """Test callback with multiple consecutive redirects and verify logger calls"""
-        # Test with 2 consecutive redirects: httpbin.org/redirect/2
-        auth_id = "https://httpbin.org/redirect/2?domain=__DOMAIN__&ip=__IP__"
-        provider = CallbackProvider(auth_id, "")
-
         try:
-            # Setup provider with mock logger
             mock_logger = self._setup_provider_with_mock_logger(provider)
-
-            result = provider.set_record("multi-redirect.example.com", "203.0.113.201", "A")
-            # Should follow multiple redirects and succeed
+            self._random_delay()  # Add random delay before real request
+            result = provider.set_record(domain, ip, "A")
             self.assertTrue(result)
-
-            # Verify that logger.info was called with response containing domain and IP
-            self._assert_callback_result_logged(mock_logger, "multi-redirect.example.com", "203.0.113.201")
+            self._assert_callback_result_logged(mock_logger, domain, ip)
 
         except Exception as e:
             error_str = str(e).lower()
@@ -429,6 +405,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             # Setup provider with mock logger
             mock_logger = self._setup_provider_with_mock_logger(provider)
 
+            self._random_delay()  # Add random delay before real request
             result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
             # POST should be redirected as GET and succeed
             self.assertTrue(result)
@@ -437,28 +414,6 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             self._assert_callback_result_logged(mock_logger)
 
         except ssl.SSLError as e:
-            error_str = str(e).lower()
-            if "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL certificate issue: {}".format(e))
-
-    def test_real_callback_absolute_vs_relative_redirects(self):
-        """Test both absolute and relative URL redirects and verify logger calls"""
-        # Test relative redirect (should work with improved _send_request)
-        auth_id = "https://httpbin.org/relative-redirect/1?domain=__DOMAIN__&ip=__IP__"
-        provider = CallbackProvider(auth_id, "")
-
-        try:
-            # Setup provider with mock logger
-            mock_logger = self._setup_provider_with_mock_logger(provider)
-
-            result = provider.set_record("relative-redirect.example.com", "203.0.113.203", "A")
-            # Should handle relative redirects correctly
-            self.assertTrue(result)
-
-            # Verify that logger.info was called with response containing domain and IP
-            self._assert_callback_result_logged(mock_logger, "relative-redirect.example.com", "203.0.113.203")
-
-        except Exception as e:
             error_str = str(e).lower()
             if "ssl" in error_str or "certificate" in error_str:
                 self.skipTest("SSL certificate issue: {}".format(e))

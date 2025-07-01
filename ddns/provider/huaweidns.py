@@ -2,13 +2,10 @@
 """
 HuaweiDNS API
 华为DNS解析操作库
-https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
-@author: cybmp3, NewFuture
+@author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON
-from hashlib import sha256
-from hmac import new as hmac
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash
 from json import dumps as jsonencode
 from time import strftime, gmtime
 
@@ -20,29 +17,18 @@ class HuaweiDNSProvider(BaseProvider):
 
     def _validate(self):
         self.logger.warning(
-            "华为云 DNS provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "华为云 DNS 缺少充分的真实环境测试，请及时在 GitHub Issues 中反馈: %s",
             "https://github.com/NewFuture/DDNS/issues",
         )
         super(HuaweiDNSProvider, self)._validate()
 
-    def _sign_headers(self, headers, signed_headers):
-        a = []
-        _headers = {}
-        for key in headers:
-            key_encoded = key.lower()
-            value = headers[key]
-            value_encoded = value.strip()
-            _headers[key_encoded] = value_encoded
-        for key in signed_headers:
-            a.append(key + ":" + _headers[key])
-        return "\n".join(a) + "\n"
-
-    def _hex_encode_sha256(self, data):
-        sha = sha256()
-        sha.update(data)
-        return sha.hexdigest()
-
     def _request(self, method, path, **params):
+        """
+        https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
+        https://support.huaweicloud.com/devg-apisign/api-sign-algorithm-002.html
+        https://support.huaweicloud.com/devg-apisign/api-sign-algorithm-003.html
+        https://support.huaweicloud.com/devg-apisign/api-sign-algorithm-004.html
+        """
         # type: (str, str, **Any) -> dict
         params = {k: v for k, v in params.items() if v is not None}
         if method.upper() == "GET" or method.upper() == "DELETE":
@@ -52,40 +38,36 @@ class HuaweiDNSProvider(BaseProvider):
             query = ""
             body = jsonencode(params)
 
-        date_now = strftime("%Y%m%dT%H%M%SZ", gmtime())
+        now = strftime("%Y%m%dT%H%M%SZ", gmtime())
         headers = {
             "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
-            "X-Sdk-Date": date_now,
+            "X-Sdk-Date": now,
         }
-        sign_headers = [k.lower() for k in headers]
-        sign_headers.sort()
 
-        hex_encode = self._hex_encode_sha256(body.encode("utf-8"))
-        canonical_headers = self._sign_headers(headers, sign_headers)
-        sign_path = path if path[-1] == "/" else path + "/"
-        canonical_request = "%s\n%s\n%s\n%s\n%s\n%s" % (
-            method.upper(),
-            sign_path,
-            query,
-            canonical_headers,
-            ";".join(sign_headers),
-            hex_encode,
-        )
-        hashed_canonical_request = self._hex_encode_sha256(canonical_request.encode("utf-8"))
-
-        str_to_sign = "%s\n%s\n%s" % (self.algorithm, date_now, hashed_canonical_request)
-        secret = self.auth_token
-        signature = hmac(secret.encode("utf-8"), str_to_sign.encode("utf-8"), digestmod=sha256).hexdigest()
-        auth_header = "%s Access=%s, SignedHeaders=%s, Signature=%s" % (
+        # 使用通用签名函数
+        body_hash = sha256_hash(body)
+        # 华为云需要在签名时使用带尾斜杠的路径
+        sign_path = path if path.endswith("/") else path + "/"
+        authorization_format = "%s Access=%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (
             self.algorithm,
             self.auth_id,
-            ";".join(sign_headers),
-            signature,
         )
-        headers["Authorization"] = auth_header
-        self.logger.debug("Request headers: %s", headers)
-        data = self._http(method, path + "?" + query, headers=headers, body=body)
+        authorization = hmac_sha256_authorization(
+            secret_key=self.auth_token,
+            method=method,
+            path=sign_path,
+            query=query,
+            headers=headers,
+            body_hash=body_hash,
+            signing_string_format=self.algorithm + "\n" + now + "\n{HashedCanonicalRequest}",
+            authorization_format=authorization_format,
+        )
+        headers["Authorization"] = authorization
+
+        # 使用原始路径发送实际请求
+        path = "{}?{}".format(path, query) if query else path
+        data = self._http(method, path, headers=headers, body=body)
         return data
 
     def _query_zone_id(self, domain):
@@ -140,8 +122,10 @@ class HuaweiDNSProvider(BaseProvider):
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        """https://support.huaweicloud.com/api-dns/UpdateRecordSet.html (无 line 参数)"""
+        """https://support.huaweicloud.com/api-dns/UpdateRecordSets.html"""
         extra["description"] = extra.get("description", self.remark)
+        # Note: The v2.1 update API does not support the line parameter in the request body
+        # The line parameter is returned in the response but cannot be modified
         res = self._request(
             "PUT",
             "/v2.1/zones/" + zone_id + "/recordsets/" + old_record["id"],
