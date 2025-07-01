@@ -244,7 +244,7 @@ class TestHmacSha256Authorization(unittest.TestCase):
             "headers": {"Host": "api.test.com", "Content-Type": "application/json", "Date": "20231201T120000Z"},
             "body_hash": sha256_hash('{"test": "data"}'),
             "authorization_format": "REPRO {SignedHeaders} {Signature}",
-            "signing_string_template": "REPRO\n{HashedCanonicalRequest}",
+            "signing_string_format": "REPRO\n{HashedCanonicalRequest}",
         }
 
         # 多次调用应该产生相同的结果
@@ -275,7 +275,7 @@ class TestHmacSha256Authorization(unittest.TestCase):
             "headers": {"Host": "example.com"},
             "body_hash": sha256_hash(""),
             "authorization_format": "TYPE {Signature}",
-            "signing_string_template": "{HashedCanonicalRequest}",
+            "signing_string_format": "{HashedCanonicalRequest}",
         }
 
         # 字符串密钥

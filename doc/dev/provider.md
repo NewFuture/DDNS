@@ -7,12 +7,15 @@
 ```text
 ddns/
 ├── provider/
-│   ├── _base.py         # 抽象基类 SimpleProvider 和 BaseProvider
+│   ├── _base.py         # 抽象基类 SimpleProvider 和 BaseProvider，签名认证函数
 │   └── myprovider.py    # 你的新服务商实现
 tests/
 ├── base_test.py         # 共享测试工具和基类
 ├── test_provider_*.py   # 各个Provider的单元测试文件
+├── test_module_*.py     # 其他测试
 └── README.md            # 测试指南
+doc/dev/
+└── provider.md          # Provider开发指南 (本文档)
 ```
 
 ---
@@ -124,7 +127,7 @@ class MySimpleProvider(SimpleProvider):
 自定义标准 DNS 服务商示例
 @author: YourGithubUsername
 """
-from ._base import BaseProvider, TYPE_JSON
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash
 
 class MyProvider(BaseProvider):
     """
@@ -133,11 +136,6 @@ class MyProvider(BaseProvider):
     """
     API = 'https://api.exampledns.com'
     ContentType = TYPE_JSON  # 或 TYPE_FORM
-
-    def _request(self, action, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
-        """[推荐]封装通用请求逻辑，处理认证和公共参数"""
-
 
     def _query_zone_id(self, domain):
         # type: (str) -> str
@@ -156,6 +154,21 @@ class MyProvider(BaseProvider):
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
         # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
         """更新现有DNS记录"""
+
+    
+    def _request(self, action, **params):
+        # type: (str, **(str | int | bytes | bool | None)) -> dict
+        """[推荐]封装通用请求逻辑，处理认证和公共参数"""
+        # 构建请求参数
+        request_params = {
+            "Action": action,
+            "Version": "2023-01-01",
+            "AccessKeyId": self.auth_id,
+            **{k: v for k, v in params.items() if v is not None}
+        }
+
+        res = self._http("POST", "/", params=request_params, headers=headers)
+        return res.get("data", {})
 ```
 
 ---
@@ -273,6 +286,157 @@ tests/
 - [`provider/alidns.py`](/ddns/provider/alidns.py) - POST+签名认证
 - [`provider/dnspod.py`](/ddns/provider/dnspod.py) - POST表单数据提交
 
+---
+
+## 🔐 云服务商认证签名算法
+
+对于需要签名认证的云服务商（如阿里云、华为云、腾讯云等），DDNS 提供了通用的 HMAC-SHA256 签名认证函数。
+
+### 签名认证工具函数
+
+#### `hmac_sha256_authorization()` - 通用签名生成器
+
+通用的云服务商API认证签名生成函数，支持阿里云、华为云、腾讯云等多种云服务商。
+使用HMAC-SHA256算法生成符合各云服务商规范的Authorization头部。
+所有云服务商的差异通过模板参数传递，实现完全的服务商无关性。
+
+```python
+from ddns.provider._base import hmac_sha256_authorization, sha256_hash
+
+# 通用签名函数调用示例
+authorization = hmac_sha256_authorization(
+    secret_key=secret_key,                    # 签名密钥（已派生处理）
+    method="POST",                            # HTTP方法
+    path="/v1/domains/records",               # API路径
+    query="limit=20&offset=0",                # 查询字符串
+    headers=request_headers,                  # 请求头部字典
+    body_hash=sha256_hash(request_body),      # 请求体哈希
+    signing_string_format=signing_template,   # 待签名字符串模板
+    authorization_format=auth_template        # Authorization头部模板
+)
+```
+
+**函数参数说明：**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `secret_key` | `str \| bytes` | 签名密钥，已经过密钥派生处理 |
+| `method` | `str` | HTTP请求方法 (GET, POST, etc.) |
+| `path` | `str` | API请求路径 |
+| `query` | `str` | URL查询字符串 |
+| `headers` | `dict[str, str]` | HTTP请求头部 |
+| `body_hash` | `str` | 请求体的SHA256哈希值 |
+| `signing_string_format` | `str` | 待签名字符串模板，包含 `{HashedCanonicalRequest}` 占位符 |
+| `authorization_format` | `str` | Authorization头部模板，包含 `{SignedHeaders}`, `{Signature}` 占位符 |
+
+**模板变量：**
+
+- `{HashedCanonicalRequest}` - 规范请求的SHA256哈希值
+- `{SignedHeaders}` - 按字母顺序排列的签名头部列表
+- `{Signature}` - 最终的HMAC-SHA256签名值
+
+### 各云服务商签名实现示例
+
+#### 阿里云 (ACS3-HMAC-SHA256)
+
+```python
+def _request(self, action, **params):
+    # 构建请求头部
+    headers = {
+        "host": "alidns.aliyuncs.com",
+        "x-acs-action": action,
+        "x-acs-content-sha256": sha256_hash(body),
+        "x-acs-date": timestamp,
+        "x-acs-signature-nonce": nonce,
+        "x-acs-version": "2015-01-09"
+    }
+    
+    # 阿里云签名模板
+    auth_template = (
+        "ACS3-HMAC-SHA256 Credential={access_key},"
+        "SignedHeaders={{SignedHeaders}},Signature={{Signature}}"
+    )
+    signing_template = "ACS3-HMAC-SHA256\n{timestamp}\n{{HashedCanonicalRequest}}"
+    
+    # 生成签名
+    authorization = hmac_sha256_authorization(
+        secret_key=self.auth_token,
+        method="POST",
+        path="/",
+        query=query_string,
+        headers=headers,
+        body_hash=sha256_hash(body),
+        signing_string_format=signing_template,
+        authorization_format=auth_template
+    )
+    
+    headers["authorization"] = authorization
+    return self._http("POST", "/", body=body, headers=headers)
+```
+
+#### 腾讯云 (TC3-HMAC-SHA256)
+
+```python
+def _request(self, action, **params):
+    # 腾讯云需要派生密钥
+    derived_key = self._derive_signing_key(date, service, self.auth_token)
+    
+    # 构建请求头部
+    headers = {
+        "content-type": "application/json",
+        "host": "dnspod.tencentcloudapi.com",
+        "x-tc-action": action,
+        "x-tc-timestamp": timestamp,
+        "x-tc-version": "2021-03-23"
+    }
+    
+    # 腾讯云签名模板
+    auth_template = (
+        "TC3-HMAC-SHA256 Credential={secret_id}/{date}/{service}/tc3_request, "
+        "SignedHeaders={{SignedHeaders}}, Signature={{Signature}}"
+    )
+    signing_template = "TC3-HMAC-SHA256\n{timestamp}\n{date}/{service}/tc3_request\n{{HashedCanonicalRequest}}"
+    
+    # 生成签名
+    authorization = hmac_sha256_authorization(
+        secret_key=derived_key,  # 注意：使用派生密钥
+        method="POST",
+        path="/",
+        query="",
+        headers=headers,
+        body_hash=sha256_hash(body),
+        signing_string_format=signing_template,
+        authorization_format=auth_template
+    )
+    
+    headers["authorization"] = authorization
+    return self._http("POST", "/", body=body, headers=headers)
+```
+
+### 辅助工具函数
+
+#### `sha256_hash()` - SHA256哈希计算
+
+```python
+from ddns.provider._base import sha256_hash
+
+# 计算字符串的SHA256哈希
+hash_value = sha256_hash("request body content")
+# 计算字节数据的SHA256哈希  
+hash_value = sha256_hash(b"binary data")
+```
+
+#### `hmac_sha256_digest()` - HMAC-SHA256字节签名
+
+```python
+from ddns.provider._base import hmac_sha256_digest
+
+# 生成HMAC-SHA256字节签名
+signature_bytes = hmac_sha256_digest("secret_key", "message_to_sign")
+```
+
+---
+
 ### 🛠️ 开发工具推荐
 
 - 本地开发环境：VSCode
@@ -296,4 +460,4 @@ tests/
 - [ ] 测试了各种边界情况和错误场景
 - [ ] 更新了相关文档
 
-**Happy Coding! 🚀**
+## Happy Coding! 🚀
