@@ -15,7 +15,7 @@ class HeProvider(SimpleProvider):
 
     def _validate(self):
         self.logger.warning(
-            "HE.net provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "HE.net 缺少充分的真实环境测试，请及时在 GitHub Issues 中反馈: %s",
             "https://github.com/NewFuture/DDNS/issues",
         )
         if self.auth_id:

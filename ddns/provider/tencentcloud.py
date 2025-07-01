@@ -5,9 +5,7 @@ Tencent Cloud DNSPod API
 
 @author: NewFuture
 """
-from ._base import BaseProvider, TYPE_JSON
-from hashlib import sha256
-from hmac import new as hmac
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, hmac_sha256_digest
 from time import time, strftime, gmtime
 from json import dumps as jsonencode
 
@@ -28,75 +26,6 @@ class TencentCloudProvider(BaseProvider):
     service = "dnspod"
     version_date = "2021-03-23"
 
-    def _sign_tc3(self, method, uri, query, headers, payload, timestamp):
-        """
-        腾讯云 API 3.0 签名算法 (TC3-HMAC-SHA256)
-
-        API 文档: https://cloud.tencent.com/document/api/1427/56189
-
-        Args:
-            method (str): HTTP 方法
-            uri (str): URI 路径
-            query (str): 查询字符串
-            headers (dict): 请求头
-            payload (str): 请求体
-            timestamp (int): 时间戳
-
-        Returns:
-            str: Authorization 头部值
-        """
-        algorithm = "TC3-HMAC-SHA256"
-
-        # Step 1: 构建规范请求串
-        http_request_method = method.upper()
-        canonical_uri = uri
-        canonical_querystring = query or ""
-
-        # 构建规范头部
-        signed_headers_list = []
-        canonical_headers = ""
-        for key in sorted(headers.keys()):
-            if key in ["content-type", "host"]:
-                signed_headers_list.append(key)
-                canonical_headers += "{}:{}\n".format(key, headers[key])
-
-        signed_headers = ";".join(signed_headers_list)
-        hashed_request_payload = sha256(payload.encode("utf-8")).hexdigest()
-
-        canonical_request = "\n".join(
-            [
-                http_request_method,
-                canonical_uri,
-                canonical_querystring,
-                canonical_headers,
-                signed_headers,
-                hashed_request_payload,
-            ]
-        )
-
-        # Step 2: 构建待签名字符串
-        date = strftime("%Y-%m-%d", gmtime())  # 日期
-        credential_scope = "{}/{}/tc3_request".format(date, self.service)
-        hashed_canonical_request = sha256(canonical_request.encode("utf-8")).hexdigest()
-
-        string_to_sign = "\n".join([algorithm, str(timestamp), credential_scope, hashed_canonical_request])
-
-        # Step 3: 计算签名
-        def _sign(key, msg):
-            return hmac(key, msg.encode("utf-8"), sha256).digest()
-
-        secret_date = _sign(("TC3" + self.auth_token).encode("utf-8"), date)
-        secret_service = _sign(secret_date, self.service)
-        secret_signing = _sign(secret_service, "tc3_request")
-        signature = hmac(secret_signing, string_to_sign.encode("utf-8"), sha256).hexdigest()
-
-        # Step 4: 构建 Authorization 头部
-        authorization = "{} Credential={}/{}, SignedHeaders={}, Signature={}".format(
-            algorithm, self.auth_id, credential_scope, signed_headers, signature
-        )
-
-        return authorization
-
     def _request(self, action, **params):
         # type: (str, **(str | int | bytes | bool | None)) -> dict | None
         """
@@ -111,27 +40,53 @@ class TencentCloudProvider(BaseProvider):
         Returns:
             dict: API 响应结果
         """
+        # 构建请求体
         params = {k: v for k, v in params.items() if v is not None}
-        timestamp = int(time())
-        # 构建请求头,小写
+        body = jsonencode(params)
+
+        # 构建请求头,小写 腾讯云只签名特定头部
         headers = {
             "content-type": self.content_type,
             "host": self.API.split("://", 1)[1].strip("/"),
-            "X-TC-Action": action,
-            "X-TC-Version": self.version_date,
-            "X-TC-Timestamp": str(timestamp),
         }
 
-        # 构建请求体
-        payload = jsonencode(params)
+        # 腾讯云特殊的密钥派生过程
+        date = strftime("%Y-%m-%d", gmtime())
+        credential_scope = "{}/{}/tc3_request".format(date, self.service)
 
-        # 生成签名
-        authorization = self._sign_tc3("POST", "/", "", headers, payload, timestamp)
-        headers["authorization"] = authorization
+        # 派生签名密钥
+        secret_date = hmac_sha256_digest("TC3" + self.auth_token, date)
+        secret_service = hmac_sha256_digest(secret_date, self.service)
+        signing_key = hmac_sha256_digest(secret_service, "tc3_request")
 
-        # 发送请求
-        response = self._http("POST", "/", body=payload, headers=headers)
+        # 预处理模板字符串
+        auth_format = "TC3-HMAC-SHA256 Credential=%s/%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (
+            self.auth_id,
+            credential_scope,
+        )
+        timestamp = str(int(time()))
+        sign_template = "\n".join(["TC3-HMAC-SHA256", timestamp, credential_scope, "{HashedCanonicalRequest}"])
+        authorization = hmac_sha256_authorization(
+            secret_key=signing_key,
+            method="POST",
+            path="/",
+            query="",
+            headers=headers,
+            body_hash=sha256_hash(body),
+            signing_string_format=sign_template,
+            authorization_format=auth_format,
+        )
+        # X-TC 更新签名之后方可添加
+        headers.update(
+            {
+                "X-TC-Action": action,
+                "X-TC-Version": self.version_date,
+                "X-TC-Timestamp": timestamp,
+                "authorization": authorization,
+            }
+        )
 
+        response = self._http("POST", "/", body=body, headers=headers)
         if response and "Response" in response:
             if "Error" in response["Response"]:
                 error = response["Response"]["Error"]

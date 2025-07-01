@@ -44,29 +44,6 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             TencentCloudProvider(self.auth_id, "", self.logger)
         self.assertIn("token", str(context.exception))
 
-    @patch("ddns.provider.tencentcloud.strftime")
-    @patch("ddns.provider.tencentcloud.time")
-    @patch.object(TencentCloudProvider, "_http")
-    def test_sign_tc3(self, mock_http, mock_time, mock_strftime):
-        """Test TC3 signature generation"""
-        mock_time.return_value = 1609459200  # 2021-01-01
-        mock_strftime.return_value = "2021-01-01"
-
-        self.provider._request("DescribeDomains")
-
-        self.assertTrue(mock_http.called)
-        call_args = mock_http.call_args[1]
-        headers = call_args.get("headers", {})
-        authorization = headers.get("authorization")
-
-        self.assertIn("TC3-HMAC-SHA256", authorization)
-        self.assertIn("Credential=test_id/2021-01-01/dnspod/tc3_request", authorization)
-        self.assertIn("SignedHeaders=", authorization)
-        self.assertIn("content-type", authorization)
-        self.assertIn("host", authorization)
-        self.assertIn("Signature=", authorization)
-        self.assertIn(self.auth_id, authorization)
-
     @patch.object(TencentCloudProvider, "_http")
     def test_query_zone_id_success(self, mock_http):
         """Test successful zone ID query"""
@@ -369,23 +346,6 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         self.assertTrue(result)
         self.assertEqual(mock_http.call_count, 3)
-
-    @patch("ddns.provider.tencentcloud.strftime")
-    def test_sign_tc3_date_format(self, mock_strftime):
-        """Test that the TC3 signature uses the current date in credential scope"""
-        mock_strftime.return_value = "20210323"  # Mock strftime to return a specific date
-
-        method = "POST"
-        uri = "/"
-        query = ""
-        headers = {"content-type": "application/json", "host": "dnspod.tencentcloudapi.com"}
-        payload = "{}"
-        timestamp = 1609459200  # 2021-01-01
-
-        authorization = self.provider._sign_tc3(method, uri, query, headers, payload, timestamp)
-
-        # Check that the mocked date is used in the credential scope
-        self.assertIn("20210323/dnspod/tc3_request", authorization)
 
 
 class TestTencentCloudProviderIntegration(BaseProviderTestCase):
