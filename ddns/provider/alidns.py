@@ -19,13 +19,11 @@ class AlidnsProvider(BaseProvider):
         # type: (str, **(str | int | bytes | bool | None)) -> dict
         """Aliyun v3 https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature"""
         params = {k: v for k, v in params.items() if v is not None}
-        # 从API URL中提取host
-        host = self.API.replace("https://", "").replace("http://", "").strip("/")
         body_content = self._encode(params) if len(params) > 0 else ""
         content_hash = sha256_hash(body_content)
         # 构造请求头部
         headers = {
-            "host": host,
+            "host": self.API.split("://", 1)[1].strip("/"),
             "content-type": self.content_type,
             "x-acs-action": action,
             "x-acs-content-sha256": content_hash,
