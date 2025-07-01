@@ -2,7 +2,7 @@
 """
 Unit tests for DebugProvider
 
-@author: Github Copilot
+@author: GitHub Copilot
 """
 
 import sys
