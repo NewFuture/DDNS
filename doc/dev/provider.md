@@ -426,13 +426,16 @@ hash_value = sha256_hash("request body content")
 hash_value = sha256_hash(b"binary data")
 ```
 
-#### `hmac_sha256_digest()` - HMAC-SHA256字节签名
+#### `hmac_sha256()` - HMAC-SHA256签名对象
 
 ```python
-from ddns.provider._base import hmac_sha256_digest
+from ddns.provider._base import hmac_sha256
 
 # 生成HMAC-SHA256字节签名
-signature_bytes = hmac_sha256_digest("secret_key", "message_to_sign")
+# 获取 HMAC 对象，可调用 .digest() 获取字节或 .hexdigest() 获取十六进制字符串
+hmac_obj = hmac_sha256("secret_key", "message_to_sign")
+signature_bytes = hmac_obj.digest()        # 字节格式
+signature_hex = hmac_obj.hexdigest()       # 十六进制字符串格式
 ```
 
 ---

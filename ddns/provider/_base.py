@@ -59,7 +59,7 @@ Defines a unified interface to support extension and adaptation across providers
 
 from abc import ABCMeta, abstractmethod
 from hashlib import sha256
-from hmac import new as hmac
+from hmac import HMAC
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
 from os import environ
@@ -74,25 +74,26 @@ TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
 
 
-def hmac_sha256_digest(key, message):
-    # type: (str | bytes, str | bytes) -> bytes
+def hmac_sha256(key, message):
+    # type: (str | bytes, str | bytes) -> HMAC
     """
-    计算 HMAC-SHA256 签名 (字节)
+    计算 HMAC-SHA256 签名对象
 
-    Compute HMAC-SHA256 signature (bytes).
+    Compute HMAC-SHA256 signature object.
 
     Args:
         key (str | bytes): 签名密钥 / Signing key
         message (str | bytes): 待签名消息 / Message to sign
 
     Returns:
-        bytes: 签名字节 / Signature bytes
+        HMAC: HMAC签名对象，可调用.digest()获取字节或.hexdigest()获取十六进制字符串
+              HMAC signature object, call .digest() for bytes or .hexdigest() for hex string
     """
-    if isinstance(key, str):
-        key = key.encode("utf-8")
-    if isinstance(message, str):
-        message = message.encode("utf-8")
-    return hmac(key, message, sha256).digest()
+    if hasattr(key, "encode"):
+        key = key.encode("utf-8")  # type: ignore[no-redef]
+    if hasattr(message, "encode"):
+        message = message.encode("utf-8")  # type: ignore[no-redef]
+    return HMAC(key, message, sha256)  # type: ignore[no-redef]
 
 
 def sha256_hash(data):
@@ -108,9 +109,9 @@ def sha256_hash(data):
     Returns:
         str: 十六进制哈希字符串 / Hexadecimal hash string
     """
-    if isinstance(data, str):
-        data = data.encode("utf-8")
-    return sha256(data).hexdigest()
+    if hasattr(data, "encode"):
+        data = data.encode("utf-8")  # type: ignore[no-redef]
+    return sha256(data).hexdigest()  # type: ignore[no-redef]
 
 
 def hmac_sha256_authorization(
@@ -129,9 +130,7 @@ def hmac_sha256_authorization(
 
     Universal cloud provider authentication signature generator using HMAC-SHA256.
 
-    通用的云服务商API认证签名生成函数，支持阿里云、华为云、腾讯云等多种云服务商。
-    使用HMAC-SHA256算法生成符合各云服务商规范的Authorization头部。
-    所有云服务商的差异通过模板参数传递，实现完全的服务商无关性。
+    通用的云服务商API认证签名生成函数，使用HMAC-SHA256算法生成符合各云服务商规范的Authorization头部。
 
     模板变量格式：{HashedCanonicalRequest}, {SignedHeaders}, {Signature}
 
@@ -148,21 +147,11 @@ def hmac_sha256_authorization(
     Returns:
         str: 完整的Authorization头部值 / Complete Authorization header value
     """
-
-    def _hmac_sha256_hex(key, message):
-        """内部 HMAC-SHA256 签名函数 (十六进制)"""
-        if isinstance(key, str):
-            key = key.encode("utf-8")
-        if isinstance(message, str):
-            message = message.encode("utf-8")
-        return hmac(key, message, sha256).hexdigest()
-
     # 1. 构建规范化头部 - 所有传入的头部都参与签名
     headers_to_sign = {k.lower(): str(v).strip() for k, v in headers.items()}
     signed_headers_list = sorted(headers_to_sign.keys())
 
     # 2. 构建规范请求字符串
-    # 构建规范化头部字符串
     canonical_headers = ""
     for header_name in signed_headers_list:
         canonical_headers += "{}:{}\n".format(header_name, headers_to_sign[header_name])
@@ -176,7 +165,7 @@ def hmac_sha256_authorization(
     string_to_sign = signing_string_format.format(HashedCanonicalRequest=hashed_canonical_request)
 
     # 4. 计算最终签名
-    signature = _hmac_sha256_hex(secret_key, string_to_sign)
+    signature = hmac_sha256(secret_key, string_to_sign).hexdigest()
 
     # 5. 构建Authorization头部 - 只需要替换 SignedHeaders 和 Signature
     authorization = authorization_format.format(SignedHeaders=signed_headers, Signature=signature)

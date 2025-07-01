@@ -5,7 +5,7 @@ Tencent Cloud DNSPod API
 
 @author: NewFuture
 """
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, hmac_sha256_digest
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, hmac_sha256
 from time import time, strftime, gmtime
 from json import dumps as jsonencode
 
@@ -55,9 +55,9 @@ class TencentCloudProvider(BaseProvider):
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
 
         # 派生签名密钥
-        secret_date = hmac_sha256_digest("TC3" + self.auth_token, date)
-        secret_service = hmac_sha256_digest(secret_date, self.service)
-        signing_key = hmac_sha256_digest(secret_service, "tc3_request")
+        secret_date = hmac_sha256("TC3" + self.auth_token, date).digest()
+        secret_service = hmac_sha256(secret_date, self.service).digest()
+        signing_key = hmac_sha256(secret_service, "tc3_request").digest()
 
         # 预处理模板字符串
         auth_format = "TC3-HMAC-SHA256 Credential=%s/%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (

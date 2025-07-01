@@ -12,7 +12,7 @@ All expected results are pre-calculated to ensure reproducible test results.
 """
 
 import unittest
-from ddns.provider._base import hmac_sha256_authorization, sha256_hash
+from ddns.provider._base import hmac_sha256_authorization, sha256_hash, hmac_sha256
 
 
 class TestHmacSha256Authorization(unittest.TestCase):
@@ -286,6 +286,68 @@ class TestHmacSha256Authorization(unittest.TestCase):
 
         # 相同内容的字符串和字节密钥应该产生相同的签名
         self.assertEqual(result_str, result_bytes)
+
+    def test_hmac_sha256_basic_functionality(self):
+        """测试 hmac_sha256 基础功能"""
+        key = "test_key"
+        message = "test_message"
+
+        # 测试返回的是 HMAC 对象
+        hmac_obj = hmac_sha256(key, message)
+
+        # 验证可以调用 digest() 和 hexdigest() 方法
+        digest_result = hmac_obj.digest()
+        hexdigest_result = hmac_obj.hexdigest()
+
+        # 验证结果类型
+        self.assertIsInstance(digest_result, bytes)
+        self.assertIsInstance(hexdigest_result, str)
+
+        # 验证 hexdigest 结果长度 (SHA256 产生64个十六进制字符)
+        self.assertEqual(len(hexdigest_result), 64)
+
+        # 验证结果的可复现性
+        hmac_obj2 = hmac_sha256(key, message)
+        self.assertEqual(hmac_obj.hexdigest(), hmac_obj2.hexdigest())
+
+    def test_hmac_sha256_different_key_types(self):
+        """测试 hmac_sha256 不同密钥类型"""
+        message = "test_message"
+
+        # 字符串密钥
+        hmac_str = hmac_sha256("test_key", message)
+
+        # 字节密钥
+        hmac_bytes = hmac_sha256(b"test_key", message)
+
+        # 相同内容的字符串和字节密钥应该产生相同的结果
+        self.assertEqual(hmac_str.hexdigest(), hmac_bytes.hexdigest())
+
+    def test_hmac_sha256_different_message_types(self):
+        """测试 hmac_sha256 不同消息类型"""
+        key = "test_key"
+
+        # 字符串消息
+        hmac_str = hmac_sha256(key, "test_message")
+
+        # 字节消息
+        hmac_bytes = hmac_sha256(key, b"test_message")
+
+        # 相同内容的字符串和字节消息应该产生相同的结果
+        self.assertEqual(hmac_str.hexdigest(), hmac_bytes.hexdigest())
+
+    def test_hmac_sha256_known_vector(self):
+        """测试 hmac_sha256 已知测试向量"""
+        # 使用已知的测试向量验证实现正确性
+        key = "key"
+        message = "The quick brown fox jumps over the lazy dog"
+
+        hmac_obj = hmac_sha256(key, message)
+        result = hmac_obj.hexdigest()
+
+        # 预期结果(可以通过其他实现验证)
+        expected = "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8"
+        self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
