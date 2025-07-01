@@ -2,7 +2,7 @@
 """
 Unit tests for HeProvider (Hurricane Electric)
 
-@author: Github Copilot
+@author: GitHub Copilot
 """
 
 from base_test import BaseProviderTestCase, unittest, patch, MagicMock
