@@ -8,26 +8,22 @@ cache module
 from os import path, stat
 from pickle import dump, load
 from time import time
-
-from logging import info, debug, warning
-
-try:  # python 3
-    from collections.abc import MutableMapping
-except ImportError:  # python 2
-    from collections import MutableMapping
+from logging import getLogger, Logger  # noqa: F401
 
 
-class Cache(MutableMapping):
+class Cache(dict):
     """
     using file to Cache data as dictionary
     """
 
-    def __init__(self, path, sync=False):
+    def __init__(self, path, logger=None, sync=False):
+        # type: (str, Logger | None, bool) -> None
         self.__data = {}
         self.__filename = path
         self.__sync = sync
         self.__time = time()
         self.__changed = False
+        self.__logger = (logger or getLogger()).getChild("Cache")
         self.load()
 
     @property
@@ -44,9 +40,9 @@ class Cache(MutableMapping):
         if not file:
             file = self.__filename
 
-        debug('load cache data from %s', file)
+        self.__logger.debug("load cache data from %s", file)
         if path.isfile(file):
-            with open(self.__filename, 'rb') as data:
+            with open(self.__filename, "rb") as data:
                 try:
                     self.__data = load(data)
                     self.__time = stat(file).st_mtime
@@ -54,9 +50,9 @@ class Cache(MutableMapping):
                 except ValueError:
                     pass
                 except Exception as e:
-                    warning(e)
+                    self.__logger.warning(e)
         else:
-            info('cache file not exist')
+            self.__logger.info("cache file not exist")
 
         self.__data = {}
         self.__time = time()
@@ -64,6 +60,7 @@ class Cache(MutableMapping):
         return self
 
     def data(self, key=None, default=None):
+        # type: (str | None, Any | None) -> dict | Any
         """
         获取当前字典或者制定得键值
         """
@@ -76,12 +73,11 @@ class Cache(MutableMapping):
             return self.__data.get(key, default)
 
     def sync(self):
-        """Sync the write buffer with the cache files and clear the buffer.
-        """
+        """Sync the write buffer with the cache files and clear the buffer."""
         if self.__changed:
-            with open(self.__filename, 'wb') as data:
+            with open(self.__filename, "wb") as data:
                 dump(self.__data, data)
-                debug('save cache data to %s', self.__filename)
+                self.__logger.debug("save cache data to %s", self.__filename)
             self.__time = time()
             self.__changed = False
         return self

@@ -54,7 +54,7 @@ def parse_array_string(value, enable_simple_split):
     仅当 trim 之后以 '[' 开头以 ']' 结尾时，才尝试使用 ast.literal_eval 解析
     默认返回原始字符串
     """
-    if not isinstance(value, str):
+    if not hasattr(value, "strip"):  # 非字符串
         return value
 
     trimmed = value.strip()
@@ -71,10 +71,10 @@ def parse_array_string(value, enable_simple_split):
     elif enable_simple_split:
         # 尝试使用逗号或分号分隔符解析
         sep = None
-        if ',' in trimmed:
-            sep = ','
-        elif ';' in trimmed:
-            sep = ';'
+        if "," in trimmed:
+            sep = ","
+        elif ";" in trimmed:
+            sep = ";"
         if sep:
             return [item.strip() for item in trimmed.split(sep) if item.strip()]
     return value
@@ -84,9 +84,8 @@ def get_system_info_str():
     system = platform.system()
     release = platform.release()
     machine = platform.machine()
-    arch = platform.architecture()[0]  # '64bit' or '32bit'
-
-    return "{}-{} {} ({})".format(system, release, machine, arch)
+    arch = platform.architecture()
+    return "{}-{} {} {}".format(system, release, machine, arch)
 
 
 def get_python_info_str():
@@ -100,21 +99,13 @@ def init_config(description, doc, version, date):
     配置
     """
     global __cli_args
-    parser = ArgumentParser(
-        description=description, epilog=doc, formatter_class=RawTextHelpFormatter
-    )
+    parser = ArgumentParser(description=description, epilog=doc, formatter_class=RawTextHelpFormatter)
     sysinfo = get_system_info_str()
     pyinfo = get_python_info_str()
     version_str = "v{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
     parser.add_argument("-v", "--version", action="version", version=version_str)
-    parser.add_argument(
-        "-c", "--config", metavar="FILE", help="load config file [配置文件路径]"
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="debug mode [调试模式等效 --log.level=DEBUG]",
-    )
+    parser.add_argument("-c", "--config", metavar="FILE", help="load config file [配置文件路径]")
+    parser.add_argument("--debug", action="store_true", help="debug mode [开启调试模式]")
 
     # 参数定义
     parser.add_argument(
@@ -182,24 +173,21 @@ def init_config(description, doc, version, date):
         const=False,
         help="disable cache [关闭缓存等效 --cache=false]",
     )
-    parser.add_argument(
-        "--log.file", metavar="FILE", help="log file [日志文件，默认标准输出]"
-    )
+    parser.add_argument("--log.file", metavar="FILE", help="log file [日志文件，默认标准输出]")
     parser.add_argument("--log.level", type=log_level, metavar="|".join(log_levels))
-    parser.add_argument(
-        "--log.format", metavar="FORMAT", help="log format [设置日志打印格式]"
-    )
-    parser.add_argument(
-        "--log.datefmt", metavar="FORMAT", help="date format [日志时间打印格式]"
-    )
+    parser.add_argument("--log.format", metavar="FORMAT", help="log format [设置日志打印格式]")
+    parser.add_argument("--log.datefmt", metavar="FORMAT", help="date format [日志时间打印格式]")
 
     __cli_args = parser.parse_args()
-    if __cli_args.debug:
-        # 如果启用调试模式，则设置日志级别为 DEBUG
+    is_debug = getattr(__cli_args, "debug", False)
+    if is_debug:
+        # 如果启用调试模式，则强制设置日志级别为 DEBUG
         setattr(__cli_args, "log.level", log_level("DEBUG"))
+        if not hasattr(__cli_args, "cache"):
+            setattr(__cli_args, "cache", False)  # 禁用缓存
 
-    is_configfile_required = not get_config("token") and not get_config("id")
-    config_file = get_config("config")
+    config_required = not get_config("token") and not get_config("id")
+    config_file = get_config("config")  # type: str | None # type: ignore
     if not config_file:
         # 未指定配置文件且需要读取文件时，依次查找
         cfgs = [
@@ -212,7 +200,7 @@ def init_config(description, doc, version, date):
     if path.isfile(config_file):
         __load_config(config_file)
         __cli_args.config = config_file
-    elif is_configfile_required:
+    elif config_required:
         error("Config file is required, but not found: %s", config_file)
         # 如果需要配置文件但没有指定，则自动生成
         if generate_config(config_file):
@@ -296,7 +284,7 @@ def generate_config(config_path):
         "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
         "id": "YOUR ID or EMAIL for DNS Provider",
         "token": "YOUR TOKEN or KEY for DNS Provider",
-        "dns": "dnspod",
+        "dns": "debug",  # DNS Provider, default is print
         "ipv4": ["newfuture.cc", "ddns.newfuture.cc"],
         "ipv6": ["newfuture.cc", "ipv6.ddns.newfuture.cc"],
         "index4": "default",

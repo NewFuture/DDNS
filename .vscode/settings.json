@@ -1,0 +1,29 @@
+{
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.supportAllPythonDocuments": true,
+    "python.analysis.generateWithTypeAnnotation": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.indexing": true,
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "addMissingImports": true,
+        "addMissingOptionalParameters": true,
+        "addMissingReturn": true,
+        "addMissingParameters": true,
+        "addMissingTypeHints": true,
+        "addMissingFunctionOverloads": true,
+        "addMissingFunctionOverloadsWithReturnType": true
+    },
+    "python.analysis.fixAll": [
+        "source.convertImportFormat",
+    ],
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "flake8.enabled": true,
+    "editor.bracketPairColorization.enabled": true,
+    "flake8.args": [
+        "--max-line-length=120"
+    ]
+}

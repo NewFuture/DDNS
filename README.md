@@ -22,6 +22,7 @@
   - [命令行参数](/doc/cli.md)
   - [JSON 配置文件](/doc/json.md)
   - [环境变量配置](/doc/env.md)
+  - [服务商配置指南](/doc/providers/)
 
 - 域名支持:
   - 多个域名支持
@@ -36,13 +37,15 @@
   - http 代理支持
   - 多代理自动切换
 - 服务商支持:
-  - [DNSPOD](https://www.dnspod.cn/)
-  - [阿里 DNS](http://www.alidns.com/)
+  - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
+  - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md))
   - [DNS.COM](https://www.dns.com/) (@loftor-git)
   - [DNSPOD 国际版](https://www.dnspod.com/)
   - [CloudFlare](https://www.cloudflare.com/) (@tongyifan)
   - [HE.net](https://dns.he.net/) (@NN708) (不支持自动创建记录)
   - [华为云](https://huaweicloud.com/) (@cybmp3)
+  - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md))
+  - 自定义回调 API ([配置指南](doc/providers/callback.md))
 - 其他:
   - 可设置定时任务
   - TTL 配置支持
@@ -57,60 +60,66 @@
 
 推荐 Docker 版，兼容性最佳，体积小，性能优化。
 
+- #### Docker（需要安装 Docker）
+
+  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
+
+  <details>
+  <summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
+
+  - 命令行cli
+
+      ```sh
+      docker run newfuture/ddns -h
+      ```
+
+  - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
+
+      ```sh
+      docker run -d -v /host/config/:/ddns/ --network host newfuture/ddns
+      ```
+
+  - 使用环境变量：
+
+      ```sh
+      docker run -d \
+        -e DDNS_DNS=dnspod \
+        -e DDNS_ID=12345 \
+        -e DDNS_TOKEN=mytokenkey \
+        -e DDNS_IPV4=ddns.newfuture.cc \
+        --network host \
+        newfuture/ddns
+      ```
+
+  </details>
+
 - #### pip 安装（需要 pip 或 easy_install）
 
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
-  2. 运行: `ddns`
+  2. 运行: `ddns -h` 或者 `python -m ddns`
 
 - #### 二进制版（单文件，无需 python）
 
-  - Windows [ddns.exe](https://github.com/NewFuture/DDNS/releases/latest)
-  - Linux（仅 Ubuntu 测试） [ddns](https://github.com/NewFuture/DDNS/releases/latest)
-  - Mac OSX [ddns-mac](https://github.com/NewFuture/DDNS/releases/latest)
+  前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### 源码运行（无任何依赖，需 python 环境）
 
   1. clone 或者 [下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip) 并解压
-  2. 运行 ./run.py（windows 双击 `run.bat` 或者运行 `python run.py`）
-
-- #### Docker（需要安装 Docker）
-
-  - 使用环境变量：
-
-    ```sh
-    docker run -d \
-      -e DDNS_DNS=dnspod \
-      -e DDNS_ID=12345 \
-      -e DDNS_TOKEN=mytokenkey \
-      -e DDNS_IPV4=ddns.newfuture.cc \
-      -e DDNS_IPV6=ddns.newfuture.cc \
-      --network host \
-      newfuture/ddns
-    ```
-
-  - 使用配置文件（docker 工作目录 `/ddns/`，默认配置位置 `/ddns/config.json`）：
-
-    ```sh
-    docker run -d \
-      -v /local/config/path/:/ddns/ \
-      --network host \
-      newfuture/ddns
-    ```
-
-  更多详细说明和高级用法请查看 [Docker 使用文档](doc/docker.md)。
+  2. 运行 `python run.py` 或者 `python -m ddns`
 
 ### ② 快速配置
 
 1. 申请 api `token`，填写到对应的 `id` 和 `token` 字段:
 
-   - [DNSPOD(国内版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
-   - [阿里云 accesskey](https://help.aliyun.com/document_detail/87745.htm)
-   - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
-   - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
-   - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，需要列出 Zone 权限）
-   - [HE.net DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
-   - [华为 APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
-   - 自定义回调的参数填写方式请查看下方的自定义回调配置说明
+   - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
+   - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
+   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet)
+   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token)
+   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
+   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
+   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
+   - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
+   - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
 
 2. 修改配置文件，`ipv4` 和 `ipv6` 字段，为待更新的域名，详细参照配置说明
 
@@ -130,12 +139,13 @@
 - **JSON配置文件**：介于命令行和环境变量之间，会覆盖环境变量中的设置
 - **环境变量**：优先级最低，当其他方式未设置时使用
 
-**特殊情况**：
+**高级用法**：
+
 - JSON配置中明确设为`null`的值会覆盖环境变量设置
 - `debug`参数只在命令行中有效，JSON配置文件中的同名设置无效
 - 多值参数（如`ipv4`、`ipv6`等）在命令行中使用方式为重复使用参数，如`--ipv4 domain1 --ipv4 domain2`
 
-各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)
+各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)、[服务商配置](doc/providers/)
 
 > 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/env.md) 了解所有环境变量的详细用法和示例
 
@@ -149,26 +159,26 @@
 
 ```bash
 ddns -c path/to/config.json
-# 或者源码运行
-python run.py -c /path/to/config.json
+# 或者python运行
+python -m ddns -c /path/to/config.json
 ```
 
 #### 配置参数表
 
-|  key     |        type        | required |   default   |    description    | tips                                                                                                        |
-| :------: | :----------------: | :------: | :---------: | :---------------: | ----------------------------------------------------------------------------------------------------------- |
-|   id     |       string       |    √     |     无      |    api 访问 ID    | Cloudflare 为邮箱（使用 Token 时留空）<br>HE.net 可留空<br>华为云为 Access Key ID (AK)                     |
-|  token   |       string       |    √     |     无      |  api 授权 token   | 部分平台叫 secret key，**反馈粘贴时删除**                                                                   |
-|  dns     |       string       |    No    | `"dnspod"`  |    dns 服务商     | 阿里 DNS 为 `alidns`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，自定义回调为 `callback` |
-|  ipv4    |       array        |    No    |    `[]`     |   ipv4 域名列表   | 为 `[]` 时，不会获取和更新 IPv4 地址                                                                        |
-|  ipv6    |       array        |    No    |    `[]`     |   ipv6 域名列表   | 为 `[]` 时，不会获取和更新 IPv6 地址                                                                        |
-| index4   | string\|int\|array |    No    | `"default"` |   ipv4 获取方式   | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                |
-| index6   | string\|int\|array |    No    | `"default"` |   ipv6 获取方式   | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                |
-|  ttl     |       number       |    No    |   `null`    | DNS 解析 TTL 时间 | 不设置采用 DNS 默认策略                                                                                     |
-|  proxy   |       string\|array       |    No    |     无      | http 代理 `;` 分割 | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                     |
-|  debug  |        bool        |    No    |   `false`   |   是否开启调试    | 等同于设置 log.level=DEBUG，仅命令行参数`--debug`有效                                                  |
-|  cache   |    string\|bool    |    No    |   `true`    |   是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                          |
-|  log     | object | No | `null` | 日志配置（可选） | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                   |
+|  key   |        type        | required |   default   |    description     | tips                                                                                                                                                                                     |
+| :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   id   |       string       |    √     |     无      |    api 访问 ID     | Cloudflare 为邮箱（使用 Token 时留空）<br>HE.net 可留空<br>华为云为 Access Key ID (AK)                                                                                                   |
+| token  |       string       |    √     |     无      |   api 授权 token   | 部分平台叫 secret key，**反馈粘贴时删除**                                                                                                                                                |
+|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，腾讯云为 `tencentcloud`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
+|  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表    | 为 `[]` 时，不会获取和更新 IPv4 地址                                                                                                                                                     |
+|  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表    | 为 `[]` 时，不会获取和更新 IPv6 地址                                                                                                                                                     |
+| index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
+| index6 | string\|int\|array |    No    | `"default"` |   ipv6 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
+|  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间  | 不设置采用 DNS 默认策略                                                                                                                                                                  |
+| proxy  |   string\|array    |    No    |     无      | http 代理 `;` 分割 | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                                                                                                  |
+| debug  |        bool        |    No    |   `false`   |    是否开启调试    | 调试模式，仅命令行参数`--debug`有效                                                                                                                                    |
+| cache  |    string\|bool    |    No    |   `true`    |    是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                                                                                                      |
+|  log   |       object       |    No    |   `null`    |  日志配置（可选）  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                                                                                               |
 
 #### index4 和 index6 参数说明
 
@@ -187,16 +197,18 @@ python run.py -c /path/to/config.json
 
 #### 自定义回调配置说明
 
-- `id` 字段填写回调地址，以 HTTP 或 HTTPS 开头，推荐采用 HTTPS 方式的回调 API ，当 `token` 字段非空且 URL 参数包含下表所示的常量字符串时，会自动替换为实际内容。
-- `token` 字段为 POST 参数，本字段为空或不存在则使用 GET 方式发起回调，回调参数采用 JSON 格式编码，当 JSON 的首层参数值包含下表所示的常量字符串时，会自动替换为实际内容。
+- `id` 字段填写回调地址，以 HTTP 或 HTTPS 开头，推荐采用 HTTPS 方式的回调 API，支持变量替换功能。
+- `token` 字段为 POST 请求参数（JSON对象或JSON字符串），本字段为空或不存在则使用 GET 方式发起回调。当 JSON 的参数值包含下表所示的常量字符串时，会自动替换为实际内容。
 
-| 常量名称          | 常量内容               | 说明      |
-| ---------------- | ---------------------- | -------- |
-| `__DOMAIN__`     | DDNS 域名              |          |
-| `__RECORDTYPE__` | DDNS 记录类型           |          |
-| `__TTL__`        | DDNS TTL               |          |
-| `__TIMESTAMP__`  | 请求发起时间戳          | 包含小数 |
+详细配置指南请查看：[Callback Provider 配置文档](doc/providers/callback.md)
+
+| 常量名称         | 常量内容                 | 说明     |
+| ---------------- | ------------------------ | -------- |
+| `__DOMAIN__`     | DDNS 域名                |          |
 | `__IP__`         | 获取的对应类型的 IP 地址 |          |
+| `__RECORDTYPE__` | DDNS 记录类型            |          |
+| `__TTL__`        | DDNS TTL                 |          |
+| `__TIMESTAMP__`  | 请求发起时间戳           | 包含小数 |
 
 #### 配置示例
 
@@ -205,21 +217,21 @@ python run.py -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 callback",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 tencentcloud 或 callback",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,
   "index6": "public",
   "ttl": 600,
-  "proxy": "127.0.0.1:1080;DIRECT",
+  "proxy": ["127.0.0.1:1080", "DIRECT"],
   "log": {
     "level": "DEBUG",
     "file": "dns.log",
-    "format": "%(asctime)s %(levelname)s [%(module)s]: %(message)s",
     "datefmt": "%Y-%m-%dT%H:%M:%S"
   }
 }
 ```
+
 </details>
 
 ## 定时任务
@@ -235,10 +247,13 @@ python run.py -c /path/to/config.json
 #### Linux
 
 - 使用 init.d 和 crontab:
+
   ```bash
   sudo ./task.sh
   ```
+
 - 使用 systemd:
+
   ```bash
   安装:
   sudo ./systemd.sh install
@@ -271,6 +286,7 @@ Docker 镜像在无额外参数的情况下，已默认启用每 5 分钟执行�
 - dnspod.cn 打开: <https://dnsapi.cn>
 - dnspod 国际版: <https://api.dnspod.com>
 - 华为 DNS <https://dns.myhuaweicloud.com>
+
 </details>
 
 <details>
@@ -279,7 +295,7 @@ Docker 镜像在无额外参数的情况下，已默认启用每 5 分钟执行�
 1. 先确认排查是否是系统/网络环境问题
 2. 在 [issues](https://github.com/NewFuture/DDNS/issues) 中搜索是否有类似问题
 3. 前两者均无法解决或者确定是 bug，[在此新建 issue](https://github.com/NewFuture/DDNS/issues/new)
-   - [ ] 开启 debug 配置
+   - [ ] 开启 `--debug`
    - [ ] 附上这些内容 **运行版本和方式**、**系统环境**、**出错日志**、**去掉 id/token** 的配置文件
    - [ ] 源码运行注明使用的 python 环境
 

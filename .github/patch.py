@@ -48,9 +48,7 @@ def update_nuitka_version(pyfile, version=None):
     with open(pyfile, "r", encoding="utf-8") as f:
         content = f.read()
     # 替换 nuitka-project 行
-    new_content, n = re.subn(
-        r"(# nuitka-project: --product-version=)[^\n]*", r"\g<1>" + pure_version, content
-    )
+    new_content, n = re.subn(r"(# nuitka-project: --product-version=)[^\n]*", r"\g<1>" + pure_version, content)
     if n > 0:
         with open(pyfile, "w", encoding="utf-8") as f:
             f.write(new_content)
@@ -163,7 +161,7 @@ def get_latest_tag():
         with urllib.request.urlopen(url) as response:
             data = json.load(response)
             if data and isinstance(data, list):
-                return data[0]['name']  # 获取第一个 tag 的 name
+                return data[0]["name"]  # 获取第一个 tag 的 name
     except Exception as e:
         print("Error fetching tag:", e)
     return None
@@ -178,13 +176,13 @@ def normalize_tag(tag: str) -> str:
 
 
 def ten_minute_bucket_id():
-    epoch_minutes = int(time.time() // 60)         # 当前时间（分钟级）
-    bucket = epoch_minutes // 10                   # 每10分钟为一个 bucket
-    return bucket % 65536                          # 限制在 0~65535 (2**16)
+    epoch_minutes = int(time.time() // 60)  # 当前时间（分钟级）
+    bucket = epoch_minutes // 10  # 每10分钟为一个 bucket
+    return bucket % 65536  # 限制在 0~65535 (2**16)
 
 
 def generate_version():
-    ref = os.environ.get('GITHUB_REF_NAME', '')
+    ref = os.environ.get("GITHUB_REF_NAME", "")
     if re.match(r"^v\d+\.\d+", ref):
         return normalize_tag(ref)
 
@@ -199,12 +197,12 @@ def generate_version():
 
 
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
-    with open(pyfile, 'r', encoding="utf-8") as f:
+    with open(pyfile, "r", encoding="utf-8") as f:
         text = f.read()
         text = text.replace("${BUILD_VERSION}", version)
         text = text.replace("${BUILD_DATE}", date_str)
     if text is not None:
-        with open(pyfile, 'w', encoding="utf-8") as f:
+        with open(pyfile, "w", encoding="utf-8") as f:
             f.write(text)
             print(f"Updated {pyfile}: version={version}, date={date_str}")
     else:
@@ -215,8 +213,8 @@ def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     """
-    if len(sys.argv) > 1 and sys.argv[1].lower() != 'version':
-        print(f'unknown arguments: {sys.argv}')
+    if len(sys.argv) > 1 and sys.argv[1].lower() != "version":
+        print(f"unknown arguments: {sys.argv}")
         exit(1)
     version = generate_version()
     date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -225,14 +223,14 @@ def main():
 
     # 修改__init__.py 中的 __version__
     replace_version_and_date(init_py_path, version, date_str)
-    if len(sys.argv) > 1 and sys.argv[1].lower() == 'version':
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "version":
         # python version only
         exit(0)
 
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
-    add_nuitka_include_modules(run_py_path)
+    # add_nuitka_include_modules(run_py_path)
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):

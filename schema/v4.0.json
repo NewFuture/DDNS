@@ -49,7 +49,9 @@
         "dnscom",
         "he",
         "huaweidns",
-        "callback"
+        "callback",
+        "debug",
+        "tencentcloud"
       ]
     },
     "ipv4": {
@@ -199,21 +201,36 @@
           "title": "Log Level",
           "description": "日志级别，如 DEBUG、INFO、WARNING、ERROR、CRITICAL",
           "default": "INFO",
-          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+          "enum": [
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL"
+          ]
         },
         "file": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "title": "Log Output File",
           "description": "日志输出文件路径，留空或为null时输出到控制台"
         },
         "format": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "title": "Log Format",
           "description": "日志格式，参考Python logging模块的格式字符串",
           "default": "%(asctime)s %(levelname)s [%(module)s]: %(message)s"
         },
         "datefmt": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "title": "Date Format",
           "description": "日期时间格式，参考Python time.strftime()的格式字符串",
           "default": "%Y-%m-%dT%H:%M:%S"

@@ -7,7 +7,7 @@ on:
   push:
     branches: ["master", "main"]
   pull_request:
-    branches: ["master", "main"]
+    branches: ["master", "main", "abc"]
 
 permissions:
   contents: read
@@ -34,7 +34,6 @@ jobs:
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       - name: check complexity and length # the GitHub editor is 127 chars wide
         run: flake8 . --count --max-complexity=12 --max-line-length=127 --statistics
-
   python:
     strategy:
       fail-fast: false
@@ -60,6 +59,18 @@ jobs:
         run: ${{env.PY}} run.py --version
       - name: test run module
         run:  ${{env.PY}} -m "ddns" -h
+      
+      - name: install mock for Python 2.7
+        if:  ${{ matrix.version == '2.7' }}
+        run: |
+          curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+          sudo ${{env.PY}} get-pip.py
+          ${{env.PY}} -m pip install mock==3.0.5
+        working-directory: /tmp
+      - name: run unit tests
+        run: ${{env.PY}} -m unittest discover tests -v
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
@@ -91,6 +102,8 @@ jobs:
         run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
+      - name: run unit tests
+        run: python3 -m unittest discover tests -v
 
       - uses: actions/upload-artifact@v4
         with:
@@ -140,6 +153,8 @@ jobs:
         run: python3 -m pip install imageio
    
       - run: python3 ./run.py -h
+      - name: run unit tests
+        run: python3 -m unittest discover tests -v
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3

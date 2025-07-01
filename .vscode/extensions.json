@@ -1,8 +1,11 @@
 {
     "recommendations": [
-        "ms-python.flake8",
-        "ms-python.autopep8",
-        "ms-python.python",
         "github.vscode-github-actions",
+        "github.vscode-pull-request-github",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-vscode.vscode-websearchforcopilot",
+        "ms-azuretools.vscode-containers"
     ]
 }

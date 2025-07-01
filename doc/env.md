@@ -108,6 +108,38 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   export DDNS_DNS="callback"      # 自定义回调
   ```
 
+### 自定义回调配置
+
+当使用 `DDNS_DNS="callback"` 时，可通过以下环境变量配置自定义回调：
+
+- **DDNS_ID**: 回调URL地址，支持变量替换
+- **DDNS_TOKEN**: POST请求参数（JSON字符串），为空时使用GET请求
+
+详细配置请参考：[Callback Provider 配置文档](providers/callback.md)
+
+**示例**:
+
+```bash
+# GET 方式回调
+export DDNS_DNS="callback"
+export DDNS_ID="https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__"
+export DDNS_TOKEN=""
+
+# POST 方式回调（JSON字符串）
+export DDNS_DNS="callback"
+export DDNS_ID="https://api.example.com/ddns"
+export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
+```
+
+**支持的变量替换**:
+
+- `__DOMAIN__`: 完整域名
+- `__IP__`: IP地址（IPv4或IPv6）
+- `__RECORDTYPE__`: DNS记录类型
+- `__TTL__`: 生存时间（秒）
+- `__LINE__`: 解析线路
+- `__TIMESTAMP__`: 当前时间戳
+
 ## 域名配置
 
 ### IPv4 域名列表
@@ -430,16 +462,16 @@ ddns
    - JSON 数组格式：`'["item1", "item2"]'`（推荐）
    - 逗号分隔格式：`"item1,item2"`
 
-2. **配置优先级和字段覆盖关系**: 
-   
+2. **配置优先级和字段覆盖关系**:
+
    DDNS工具中的配置优先级顺序为：**命令行参数 > JSON配置文件 > 环境变量**
-   
+
    - **命令行参数**: 优先级最高，会覆盖JSON配置文件和环境变量中的相同设置
    - **JSON配置文件**: 优先级中等，会覆盖环境变量中的设置，但会被命令行参数覆盖
    - **环境变量**: 优先级最低，当命令行参数和JSON配置文件中都没有相应设置时使用
-   
+
    举例说明：
-   
+
    ```
    # 环境变量设置
    export DDNS_TTL="600"
@@ -452,12 +484,12 @@ ddns
    # 命令行参数
    ddns --ttl 900
    ```
-   
+
    在上述例子中：
    - 最终生效的是命令行参数值：`ttl=900`
    - 如果不提供命令行参数，则使用JSON配置文件值：`ttl=300`
    - 如果JSON配置和命令行参数都不提供，则使用环境变量值：`ttl=600`
-   
+
    另外，JSON配置文件中明确设置为`null`的值会覆盖环境变量设置，相当于未设置该值。
 
 3. **大小写兼容**: 环境变量名支持大写、小写或混合大小写

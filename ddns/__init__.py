@@ -15,5 +15,7 @@ __doc__ = """
 ddns [v{}@{}]
 (i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
 (?) issues or bugs [问题和反馈]: https://github.com/NewFuture/DDNS/issues
-Copyright (c) New Future (MIT License)
-""".format(__version__, build_date)
+Copyright (c) NewFuture (MIT License)
+""".format(
+    __version__, build_date
+)

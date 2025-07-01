@@ -1,180 +1,102 @@
 # coding=utf-8
 """
-DNSCOM API
-DNS.COM 接口解析操作库
-http://open.dns.com/
-@author: Bigjin
-@mailto: i@bigjin.com
+DNSCOM/51dns API 接口解析操作库
+www.51dns.com (原dns.com)
+@author: Bigjin<i@bigjin.com>, NewFuture
 """
 
+from ._base import BaseProvider, TYPE_FORM
 from hashlib import md5
-from json import loads as jsondecode
-from logging import debug, info, warning
-from time import mktime
-from datetime import datetime
-
-try:  # python 3
-    from http.client import HTTPSConnection
-    from urllib.parse import urlencode
-except ImportError:  # python 2
-    from httplib import HTTPSConnection
-    from urllib import urlencode
-
-__author__ = 'Bigjin'
-# __all__ = ["request", "ID", "TOKEN", "PROXY"]
+from time import time
 
 
-class Config:
-    ID = "id"
-    TOKEN = "TOKEN"
-    PROXY = None  # 代理设置
-    TTL = None
-
-
-class API:
-    # API 配置
-    SITE = "www.dns.com"  # API endpoint
-    METHOD = "POST"  # 请求方法
-
-
-def signature(params):
+class DnscomProvider(BaseProvider):
     """
-    计算签名,返回签名后的查询参数
+    DNSCOM/51dns API Provider
+    https://www.51dns.com/document/api/index.html
     """
-    params.update({
-        'apiKey': Config.ID,
-        'timestamp': mktime(datetime.now().timetuple()),
-    })
-    query = urlencode(sorted(params.items()))
-    debug(query)
-    sign = query
-    debug("signString: %s", sign)
 
-    sign = md5((sign + Config.TOKEN).encode('utf-8')).hexdigest()
-    params["hash"] = sign
+    API = "https://www.51dns.com"
+    content_type = TYPE_FORM
 
-    return params
+    def _validate(self):
+        self.logger.warning(
+            "DNS.COM provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "https://github.com/NewFuture/DDNS/issues",
+        )
+        super(DnscomProvider, self)._validate()
 
-
-def request(action, param=None, **params):
-    """
-    发送请求数据
-    """
-    if param:
-        params.update(param)
-    params = dict((k, params[k]) for k in params if params[k] is not None)
-    params = signature(params)
-    info("%s/api/%s/ : params:%s", API.SITE, action, params)
-
-    if Config.PROXY:
-        conn = HTTPSConnection(Config.PROXY)
-        conn.set_tunnel(API.SITE, 443)
-    else:
-        conn = HTTPSConnection(API.SITE)
-
-    conn.request(API.METHOD, '/api/' + action + '/', urlencode(params),
-                 {"Content-type": "application/x-www-form-urlencoded"})
-    response = conn.getresponse()
-    result = response.read().decode('utf8')
-    conn.close()
-
-    if response.status < 200 or response.status >= 300:
-        warning('%s : error[%d]:%s', action, response.status, result)
-        raise Exception(result)
-    else:
-        data = jsondecode(result)
-        debug('%s : result:%s', action, data)
-        if data.get('code') != 0:
-            raise Exception("api error:", data.get('message'))
-        data = data.get('data')
-        if data is None:
-            raise Exception('response data is none')
-        return data
-
-
-def get_domain_info(domain):
-    """
-    切割域名获取主域名和对应ID
-    """
-    if len(domain.split('.')) > 2:
-        domains = domain.split('.', 1)
-        sub = domains[0]
-        main = domains[1]
-    else:
-        sub = ''  # 接口有bug 不能传 @ * 作为主机头，但是如果为空，默认为 @
-        main = domain
-
-    res = request("domain/getsingle", domainID=main)
-    domain_id = res.get('domainID')
-    return sub, main, domain_id
-
-
-def get_records(domain, domain_id, **conditions):
-    """
-        获取记录ID
-        返回满足条件的所有记录[]
-        TODO 大于500翻页
-    """
-    if not hasattr(get_records, "records"):
-        get_records.records = {}  # "静态变量"存储已查询过的id
-        get_records.keys = ("recordID", "record", "type", "viewID",
-                            "TTL", "state", "value")
-
-    if domain not in get_records.records:
-        get_records.records[domain] = {}
-        data = request("record/list",
-                       domainID=domain_id, pageSize=500)
-        if data.get('data'):
-            for record in data.get('data'):
-                get_records.records[domain][record["recordID"]] = {
-                    k: v for (k, v) in record.items() if k in get_records.keys}
-    records = {}
-    for (rid, record) in get_records.records[domain].items():
-        for (k, value) in conditions.items():
-            if record.get(k) != value:
-                break
-        else:  # for else push
-            records[rid] = record
-    return records
-
-
-def update_record(domain, value, record_type='A'):
-    """
-        更新记录
-    """
-    info(">>>>>%s(%s)", domain, record_type)
-    sub, main, domain_id = get_domain_info(domain)
-
-    records = get_records(main, domain_id, record=sub, type=record_type)
-    result = {}
-
-    if records:
-        for (rid, record) in records.items():
-            if record["value"] != value:
-                debug(sub, record)
-                res = request("record/modify", domainID=domain_id,
-                              recordID=rid, newvalue=value, newTTL=Config.TTL)
-                if res:
-                    # update records
-                    get_records.records[main][rid]["value"] = value
-                    result[rid] = res
-                else:
-                    result[rid] = "update fail!\n" + str(res)
-            else:
-                result[rid] = domain
-    else:
-        res = request("record/create", domainID=domain_id,
-                      value=value, host=sub, type=record_type, TTL=Config.TTL)
-        if res:
-            # update records INFO
-            rid = res.get('recordID')
-            get_records.records[main][rid] = {
-                'value': value,
-                "recordID": rid,
-                "record": sub,
-                "type": record_type
+    def _signature(self, params):
+        """https://www.51dns.com/document/api/70/72.html"""
+        params = {k: v for k, v in params.items() if v is not None}
+        params.update(
+            {
+                "apiKey": self.auth_id,
+                "timestamp": time(),  # 时间戳
             }
-            result = res
-        else:
-            result = domain + " created fail!"
-    return result
+        )
+        query = self._encode(sorted(params.items()))
+        sign = md5((query + self.auth_token).encode("utf-8")).hexdigest()
+        params["hash"] = sign
+        return params
+
+    def _request(self, action, **params):
+        params = self._signature(params)
+        data = self._http("POST", "/api/{}/".format(action), body=params)
+        if data is None or not isinstance(data, dict):
+            raise Exception("response data is none")
+        if data.get("code", 0) != 0:
+            raise Exception("api error: " + str(data.get("message")))
+        return data.get("data")
+
+    def _query_zone_id(self, domain):
+        """https://www.51dns.com/document/api/74/31.html"""
+        res = self._request("domain/getsingle", domainID=domain)
+        self.logger.debug("Queried domain: %s", res)
+        if res:
+            return res.get("domainID")
+        return None
+
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
+        """https://www.51dns.com/document/api/4/47.html"""
+        records = self._request("record/list", domainID=zone_id, host=subdomain, pageSize=500)
+        records = records.get("data", []) if records else []
+        for record in records:
+            if (
+                record.get("record") == subdomain
+                and record.get("type") == record_type
+                and (line is None or record.get("viewID") == line)
+            ):
+                return record
+        return None
+
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
+        """https://www.51dns.com/document/api/4/12.html"""
+        extra["remark"] = extra.get("remark", self.remark)
+        res = self._request(
+            "record/create",
+            domainID=zone_id,
+            value=value,
+            host=subdomain,
+            type=record_type,
+            TTL=ttl,
+            viewID=line,
+            **extra
+        )
+        if res and res.get("recordID"):
+            self.logger.info("Record created: %s", res)
+            return True
+        self.logger.error("Failed to create record: %s", res)
+        return False
+
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+        """https://www.51dns.com/document/api/4/45.html"""
+        extra["remark"] = extra.get("remark", self.remark)
+        res = self._request(
+            "record/modify", domainID=zone_id, recordID=old_record.get("recordID"), newvalue=value, newTTL=ttl
+        )
+        if res:
+            self.logger.info("Record updated: %s", res)
+            return True
+        self.logger.error("Failed to update record: %s", res)
+        return False
