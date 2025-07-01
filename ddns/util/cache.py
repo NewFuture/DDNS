@@ -18,7 +18,7 @@ class Cache(dict):
 
     def __init__(self, path, logger=None, sync=False):
         # type: (str, Logger | None, bool) -> None
-        self.__data = {}
+        super(Cache, self).__init__()
         self.__filename = path
         self.__sync = sync
         self.__time = time()
@@ -41,10 +41,12 @@ class Cache(dict):
             file = self.__filename
 
         self.__logger.debug("load cache data from %s", file)
-        if path.isfile(file):
+        if file and path.isfile(file):
             with open(file, "rb") as data:
                 try:
-                    self.__data = load(data)
+                    loaded_data = load(data)
+                    self.clear()
+                    self.update(loaded_data)
                     self.__time = stat(file).st_mtime
                     return self
                 except ValueError:
@@ -54,7 +56,7 @@ class Cache(dict):
         else:
             self.__logger.info("cache file not exist")
 
-        self.__data = {}
+        self.clear()
         self.__time = time()
         self.__changed = True
         return self
@@ -68,15 +70,18 @@ class Cache(dict):
             self.load()
 
         if key is None:
-            return self.__data
+            # 只返回非私有字段（不以__开头的字段）
+            return {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
         else:
-            return self.__data.get(key, default)
+            return self.get(key, default)
 
     def sync(self):
         """Sync the write buffer with the cache files and clear the buffer."""
-        if self.__changed:
+        if self.__changed and self.__filename:
             with open(self.__filename, "wb") as data:
-                dump(self.__data, data)
+                # 只保存非私有字段（不以__开头的字段）
+                filtered_data = {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
+                dump(filtered_data, data)
                 self.__logger.debug("save cache data to %s", self.__filename)
             self.__time = time()
             self.__changed = False
@@ -87,13 +92,10 @@ class Cache(dict):
         If a closed :class:`FileCache` object's methods are called, a
         :exc:`ValueError` will be raised.
         """
-        self.sync()
-        if hasattr(self, '_Cache__data'):
-            del self.__data
-        if hasattr(self, '_Cache__filename'):
-            del self.__filename
-        if hasattr(self, '_Cache__time'):
-            del self.__time
+        if self.__filename:
+            self.sync()
+        self.__filename = None
+        self.__time = None
         self.__sync = False
 
     def __update(self):
@@ -104,35 +106,47 @@ class Cache(dict):
             self.__time = time()
 
     def clear(self):
-        if self.data() is not None:
-            self.__data = {}
+        # 只清除非私有字段（不以__开头的字段）
+        keys_to_remove = [key for key in super(Cache, self).keys() if not key.startswith("__")]
+        if keys_to_remove:
+            for key in keys_to_remove:
+                super(Cache, self).__delitem__(key)
             self.__update()
 
     def __setitem__(self, key, value):
-        if self.data(key) != value:
-            self.__data[key] = value
-            self.__update()
+        if self.get(key) != value:
+            super(Cache, self).__setitem__(key, value)
+            # 私有字段（以__开头）不触发同步
+            if not key.startswith("__"):
+                self.__update()
 
     def __delitem__(self, key):
-        if key in self.data():
-            del self.__data[key]
+        # 检查键是否存在，如果不存在则直接返回，不抛错
+        if key not in self:
+            return
+        super(Cache, self).__delitem__(key)
+        # 私有字段（以__开头）不触发同步
+        if not key.startswith("__"):
             self.__update()
 
     def __getitem__(self, key):
-        return self.data(key)
+        return super(Cache, self).__getitem__(key)
 
     def __iter__(self):
-        for key in self.data():
-            yield key
+        # 只迭代非私有字段（不以__开头的字段）
+        for key in super(Cache, self).__iter__():
+            if not key.startswith("__"):
+                yield key
 
     def __len__(self):
-        return len(self.data())
+        # 不计算以__开头的私有字段
+        return len([key for key in super(Cache, self).keys() if not key.startswith("__")])
 
     def __contains__(self, key):
-        return key in self.data()
+        return super(Cache, self).__contains__(key)
 
     def __str__(self):
-        return self.data().__str__()
+        return super(Cache, self).__str__()
 
     def __del__(self):
         self.close()
