@@ -34,6 +34,8 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 ### 高级配置
 
+### 自动域名解析（推荐）
+
 ```json
 {
     "id": "LTAI4xxx", 
@@ -45,6 +47,30 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "comment": "DDNS自动更新"
 }
 ```
+
+### 手动指定站点ID（最低权限）
+
+当你已知站点ID时，可以使用手动格式避免ListSites权限：
+
+```json
+{
+    "id": "LTAI4xxx", 
+    "token": "xxx",
+    "dns": "aliesa",
+    "ipv4": ["www.example.com#123456"],
+    "ipv6": ["ipv6.example.com#123456"],
+    "ttl": 300
+}
+```
+
+### 支持的域名格式
+
+| 格式 | 说明 | 权限要求 | 示例 |
+|------|------|----------|------|
+| `subdomain.domain.com` | 自动查询站点ID | ListSites + 记录权限 | `www.example.com` |
+| `subdomain.domain.com#siteId` | 手动指定站点ID | 仅记录权限 | `www.example.com#123456` |
+| `subdomain+domain.com#siteId` | 使用+分隔符 | 仅记录权限 | `www+example.com#123456` |
+| `domain.com#siteId` | 根域名记录 | 仅记录权限 | `example.com#123456` |
 
 ## 可选参数
 
@@ -71,12 +97,26 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 ## 权限要求
 
+### 自动模式权限
+
 确保使用的阿里云账号具有以下ESA权限：
 
-- **ESA站点查询权限**：用于查询站点ID
-- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录
+- **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
+- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
+
+### 手动模式权限（推荐）
+
+当使用手动站点ID格式时，仅需要DNS记录权限：
+
+- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
 
 推荐创建专门的RAM子账号并仅授予必要的ESA权限。
+
+### 如何获取站点ID
+
+1. 登录[阿里云ESA控制台](https://esa.console.aliyun.com/)
+2. 选择对应的站点
+3. 在站点详情页面的URL中可以看到站点ID，或使用API调用`ListSites`获取
 
 ## API限制
 

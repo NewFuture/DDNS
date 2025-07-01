@@ -110,6 +110,41 @@ class TestAliesaProvider(BaseProviderTestCase):
         
         self.assertEqual(result, (None, None, "example.com"))
 
+    def test_split_zone_and_sub_manual_site_id(self):
+        """Test _split_zone_and_sub method with manual site ID"""
+        result = self.provider._split_zone_and_sub("www.example.com#12345")
+        
+        self.assertEqual(result, ("12345", "www", "example.com"))
+
+    def test_split_zone_and_sub_manual_site_id_with_plus(self):
+        """Test _split_zone_and_sub method with + separator and manual site ID"""
+        result = self.provider._split_zone_and_sub("www+example.com#12345")
+        
+        self.assertEqual(result, ("12345", "www", "example.com"))
+
+    def test_split_zone_and_sub_manual_site_id_root(self):
+        """Test _split_zone_and_sub method with manual site ID for root domain"""
+        result = self.provider._split_zone_and_sub("example.com#12345")
+        
+        self.assertEqual(result, ("12345", "@", "example.com"))
+
+    def test_split_zone_and_sub_manual_ids_with_record_id(self):
+        """Test _split_zone_and_sub method with both site and record ID"""
+        result = self.provider._split_zone_and_sub("www.example.com#12345#67890")
+        
+        self.assertEqual(result, ("12345", "www", "example.com"))
+
+    def test_split_zone_and_sub_empty_site_id(self):
+        """Test _split_zone_and_sub method with empty site ID falls back to auto"""
+        with patch.object(self.provider, '_request') as mock_request:
+            mock_request.return_value = {
+                "Sites": [{"SiteId": 99999, "SiteName": "example.com"}]
+            }
+            
+            result = self.provider._split_zone_and_sub("www.example.com##67890")
+            
+            self.assertEqual(result, ("99999", "www", "example.com"))
+
     @patch.object(AliesaProvider, '_request')
     def test_query_record_success_single(self, mock_request):
         """Test _query_record method with single record found"""

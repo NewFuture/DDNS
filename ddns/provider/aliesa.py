@@ -51,13 +51,44 @@ class AliesaProvider(BaseProvider):
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]
         """
-        AliESA 类似于 AliDNS，需要查询站点 ID
+        AliESA 支持多种域名格式:
+        1. 自动格式: www.example.com (自动查询)
+        2. 手动格式: www.example.com#siteId 或 www.example.com#siteId#recordId
+        3. + 分隔符: www+example.com#siteId (与~功能相同)
+        
         返回 (zone_id, subdomain, main_domain)
         """
-        # 提取主域名
-        main_domain = self._extract_main_domain(domain)
+        # 检查是否有手动指定的ID格式（使用#分隔符）
+        if '#' in domain:
+            parts = domain.split('#')
+            domain_part = parts[0]
+            site_id = parts[1] if len(parts) > 1 and parts[1] else None
+            record_id = parts[2] if len(parts) > 2 and parts[2] else None
+            
+            # 如果提供了站点ID，直接使用
+            if site_id:
+                # 处理 + 分隔符格式
+                if '+' in domain_part:
+                    subdomain, main_domain = domain_part.split('+', 1)
+                else:
+                    # 自动提取主域名
+                    main_domain = self._extract_main_domain(domain_part)
+                    if domain_part == main_domain:
+                        subdomain = "@"
+                    else:
+                        if domain_part.endswith("." + main_domain):
+                            subdomain = domain_part[:-len("." + main_domain)]
+                        else:
+                            subdomain = domain_part
+                
+                self.logger.debug("Manual site ID provided: %s for domain %s", site_id, domain_part)
+                return site_id, subdomain, main_domain
+            else:
+                # 站点ID为空，回退到自动查询，但仍使用解析出的domain_part
+                domain = domain_part
         
-        # 获取站点ID (zone_id)
+        # 标准自动查询流程
+        main_domain = self._extract_main_domain(domain)
         zone_id = self._query_zone_id(main_domain)
         
         if zone_id:
