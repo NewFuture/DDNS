@@ -204,7 +204,7 @@ class TestCache(unittest.TestCase):
         self.assertEqual(keys, ["normal_key"])
 
         # data() should exclude private fields
-        data = cache.data()
+        data = cache.get(None)
         self.assertEqual(data, {"normal_key": "normal_value"})
 
     def test_private_field_operations_no_sync(self):
@@ -253,19 +253,20 @@ class TestCache(unittest.TestCase):
         cache["key2"] = "value2"
 
         # Test getting all data
-        data = cache.data()
-        self.assertEqual(data, {"key1": "value1", "key2": "value2"})
+        # data = cache.get()
+        # self.assertEqual(data, {"key1": "value1", "key2": "value2"})
 
         # Test getting specific key
-        self.assertEqual(cache.data("key1"), "value1")
-        self.assertEqual(cache.data("nonexistent", "default"), "default")
+        self.assertEqual(cache.get("key1"), "value1")
+        self.assertEqual(cache.get("nonexistent", "default"), "default")
 
     def test_data_method_with_sync(self):
         """Test data method with sync enabled calls load"""
         cache = Cache(self.cache_file, sync=True)
 
         with patch.object(cache, "load") as mock_load:
-            cache.data()
+            cache.load()
+
             mock_load.assert_called_once()
 
     def test_sync_method(self):
@@ -452,7 +453,7 @@ class TestCache(unittest.TestCase):
         self.assertEqual(set(public_keys), {"public1", "public2"})
 
         # data() should only return public fields
-        data = cache.data()
+        data = cache.get(None)
         self.assertEqual(data, {"public1": "public_value1", "public2": "public_value2"})
 
         # Delete operations

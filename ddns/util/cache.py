@@ -4,7 +4,6 @@ cache module
 文件缓存
 """
 
-
 from os import path, stat
 from pickle import dump, load
 from time import time
@@ -31,7 +30,7 @@ class Cache(dict):
         """
         缓存修改时间
         """
-        return self.__time
+        return self.__time or 0
 
     def load(self, file=None):
         """
@@ -60,20 +59,6 @@ class Cache(dict):
         self.__time = time()
         self.__changed = True
         return self
-
-    def data(self, key=None, default=None):
-        # type: (str | None, Any | None) -> dict | Any
-        """
-        获取当前字典或者制定得键值
-        """
-        if self.__sync:
-            self.load()
-
-        if key is None:
-            # 只返回非私有字段（不以__开头的字段）
-            return {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
-        else:
-            return self.get(key, default)
 
     def sync(self):
         """Sync the write buffer with the cache files and clear the buffer."""
@@ -113,6 +98,17 @@ class Cache(dict):
                 super(Cache, self).__delitem__(key)
             self.__update()
 
+    def get(self, key, default=None):
+        """
+        获取指定键的值，如果键不存在则返回默认值
+        :param key: 键
+        :param default: 默认值
+        :return: 键对应的值或默认值
+        """
+        if key is None and default is None:
+            return {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
+        return super(Cache, self).get(key, default)
+
     def __setitem__(self, key, value):
         if self.get(key) != value:
             super(Cache, self).__setitem__(key, value)
@@ -122,7 +118,7 @@ class Cache(dict):
 
     def __delitem__(self, key):
         # 检查键是否存在，如果不存在则直接返回，不抛错
-        if key not in self:
+        if not super(Cache, self).__contains__(key):
             return
         super(Cache, self).__delitem__(key)
         # 私有字段（以__开头）不触发同步
@@ -137,6 +133,10 @@ class Cache(dict):
         for key in super(Cache, self).__iter__():
             if not key.startswith("__"):
                 yield key
+
+    def __items__(self):
+        # 只返回非私有字段（不以__开头的字段）
+        return ((key, value) for key, value in super(Cache, self).items() if not key.startswith("__"))
 
     def __len__(self):
         # 不计算以__开头的私有字段
