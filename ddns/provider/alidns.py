@@ -5,67 +5,93 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_FORM
-from hashlib import sha1
+from ._base import TYPE_FORM, BaseProvider
+from hashlib import sha256
 from hmac import new as hmac
-from base64 import b64encode
-from time import time, strftime, gmtime
+from time import strftime, gmtime, time
 
 
 class AlidnsProvider(BaseProvider):
     API = "https://alidns.aliyuncs.com"
-    content_type = TYPE_FORM
+    content_type = TYPE_FORM  # 阿里云DNS API使用表单格式
 
-    def _signature(self, params):
-        # type: (dict[str, Any]) -> dict[str, Any]
-        """
-        签名请求参数 (v2 RPC)
-        https://help.aliyun.com/zh/sdk/product-overview/rpc-mechanism
-        @todo: [v3](https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature)
-        Sign the request parameters for AliDNS API.
-        :param params: 请求参数/Request parameters
-        :return: 签名后的参数/Signed parameters
-        """
-        params.update(
-            {
-                "Format": "json",
-                "Version": "2015-01-09",
-                "AccessKeyId": self.auth_id,
-                "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
-                "SignatureMethod": "HMAC-SHA1",
-                "SignatureNonce": hex(hash(time()))[2:],
-                "SignatureVersion": "1.0",
-            }
+    api_version = "2015-01-09"  # API版本，v3签名需要
+
+    def _signature_v3(self, method, path, headers, query="", body_hash=""):
+        # type: (str, str, dict, str, str) -> str
+        """阿里云API v3签名算法 https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature"""
+        # 构造规范化头部
+        headers_to_sign = {k.lower(): str(v).strip() for k, v in headers.items()}
+
+        # 按字母顺序排序并构造
+        signed_headers_list = sorted(headers_to_sign.keys())
+        canonical_headers = "".join("{}:{}\n".format(key, headers_to_sign[key]) for key in signed_headers_list)
+        signed_headers = ";".join(signed_headers_list)
+
+        # 构造规范化请求
+        canonical_request = "\n".join([method, path, query, canonical_headers, signed_headers, body_hash])
+
+        # 5. 构造待签名字符串
+        algorithm = "ACS3-HMAC-SHA256"
+        hashed_canonical_request = sha256(canonical_request.encode("utf-8")).hexdigest()
+        string_to_sign = "\n".join([algorithm, hashed_canonical_request])
+        self.logger.debug("String to sign: %s", string_to_sign)
+
+        # 6. 计算签名
+        signature = hmac(self.auth_token.encode("utf-8"), string_to_sign.encode("utf-8"), sha256).hexdigest()
+
+        # 7. 构造Authorization头
+        authorization = "{} Credential={},SignedHeaders={},Signature={}".format(
+            algorithm, self.auth_id, signed_headers, signature
         )
-        query = self._encode(sorted(params.items()))
-        query = query.replace("+", "%20")
-        self.logger.debug("query: %s", query)
-        sign = "POST&%2F&" + self._quote(query, safe="")
-
-        self.logger.debug("sign: %s", sign)
-        sign = hmac((self.auth_token + "&").encode("utf-8"), sign.encode("utf-8"), sha1).digest()
-        sign = b64encode(sign).strip().decode()
-        params["Signature"] = sign
-        return params
+        return authorization
 
     def _request(self, action, **params):
         # type: (str, **(str | int | bytes | bool | None)) -> dict
         params = {k: v for k, v in params.items() if v is not None}
-        params["Action"] = action
-        params = self._signature(params)
-        return self._http("POST", "/", body=params)
+        # 从API URL中提取host
+        host = self.API.replace("https://", "").replace("http://", "").strip("/")
+        body_content = self._encode(params) if len(params) > 0 else ""
+        content_hash = sha256(body_content.encode("utf-8")).hexdigest()
+        # 构造请求头部
+        headers = {
+            "host": host,
+            "content-type": self.content_type,
+            "x-acs-action": action,
+            "x-acs-content-sha256": content_hash,
+            "x-acs-date": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
+            "x-acs-signature-nonce": str(hash(time()))[2:],
+            "x-acs-version": self.api_version,
+        }
+
+        # 生成Authorization头
+        authorization = self._signature_v3("POST", "/", headers, body_hash=content_hash)
+        headers["Authorization"] = authorization
+        # 对于v3签名的RPC API，参数在request body中
+        return self._http("POST", "/", body=body_content, headers=headers)
+
+    def _split_zone_and_sub(self, domain):
+        # type: (str) -> tuple[str | None, str | None, str]
+        """
+        AliDNS 支持直接查询主域名和RR，无需循环查询。
+        返回没有DomainId,用DomainName代替
+        https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-getmaindomainname
+        """
+        res = self._request("GetMainDomainName", InputString=domain)
+        sub, main = res.get("RR"), res.get("DomainName")
+        return (main, sub, main or domain)
 
     def _query_zone_id(self, domain):
-        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-getmaindomainname"""
-        res = self._request("GetMainDomainName", InputString=domain)
-        return res.get("DomainName")
+        """调用_split_zone_and_sub可直接获取，无需调用_query_zone_id"""
+        raise NotImplementedError("_split_zone_and_sub is used to get zone_id")
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
-        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describedomainrecords"""
+        """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describesubdomainrecords"""
+        sub = self._join_domain(subdomain, main_domain)
         data = self._request(
-            "DescribeDomainRecords",
-            DomainName=zone_id,
-            RRKeyWord=subdomain,
+            "DescribeSubDomainRecords",
+            SubDomain=sub,  # aliyun API要求SubDomain为完整域名
+            DomainName=main_domain,
             Type=record_type,
             Line=line,
             PageSize=500,
@@ -80,15 +106,14 @@ class AlidnsProvider(BaseProvider):
         elif not isinstance(records, list):
             self.logger.error("Invalid records format: %s", records)
         else:
-            return next((r for r in records if r.get("RR") == subdomain), None)
-
+            return next((r for r in records), None)
         return None
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord"""
         data = self._request(
             "AddDomainRecord",
-            DomainName=zone_id,
+            DomainName=main_domain,
             RR=subdomain,
             Value=value,
             Type=record_type,
@@ -104,6 +129,15 @@ class AlidnsProvider(BaseProvider):
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-updatedomainrecord"""
+        # 阿里云DNS update新旧值不能一样，先判断是否发生变化
+        if (
+            old_record.get("Value") == value
+            and old_record.get("Type") == record_type
+            and (not ttl or old_record.get("TTL") == ttl)
+        ):
+            domain = self._join_domain(old_record.get("RR"), old_record.get("DomainName"))
+            self.logger.warning("No changes detected, skipping update for record: %s", domain)
+            return True
         data = self._request(
             "UpdateDomainRecord",
             RecordId=old_record.get("RecordId"),

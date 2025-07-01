@@ -258,18 +258,16 @@ class SimpleProvider(object):
 
         res = response.body
         # 针对客户端错误、认证/授权错误和服务器错误直接抛出异常
-        if status_code >= 400:
-            self.logger.error("HTTP error: %s", res)
+        if status_code >= 500 or status_code in (400, 401, 403):
+            self.logger.error("HTTP error:\n%s", res)
             if status_code == 400:
-                raise RuntimeError("请求参数错误 (400): " + response.reason)
+                raise RuntimeError("请求参数错误 [400]: " + response.reason)
             elif status_code == 401:
-                raise RuntimeError("认证失败 (401): " + response.reason)
+                raise RuntimeError("认证失败 [401]: " + response.reason)
             elif status_code == 403:
-                raise RuntimeError("权限不足 (403): " + response.reason)
-            elif status_code >= 500:
-                raise RuntimeError("服务器错误 ({}): {}".format(status_code, response.reason))
+                raise RuntimeError("权限不足 [403]: " + response.reason)
             else:
-                raise RuntimeError("HTTP错误 ({}): {}".format(status_code, response.reason))
+                raise RuntimeError("服务器错误 [{}]: {}".format(status_code, response.reason))
 
         self.logger.debug("response:\n%s", res)
         if not self.decode_response:

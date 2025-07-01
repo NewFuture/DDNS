@@ -498,8 +498,12 @@ class TestDnspodProviderRealRequest(BaseProviderTestCase):
         with self.assertRaises(RuntimeError) as cm:
             invalid_provider._query_zone_id("example.com")
 
-        # 验证异常信息包含认证失败
-        self.assertIn("认证失败 (401)", str(cm.exception))
+        # 验证异常信息包含认证失败 - 更新错误消息格式
+        error_message = str(cm.exception)
+        self.assertTrue(
+            "认证失败" in error_message and "401" in error_message,
+            "Expected authentication error message not found in: {}".format(error_message),
+        )
 
 
 if __name__ == "__main__":

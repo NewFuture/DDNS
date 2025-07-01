@@ -174,6 +174,6 @@ This will display detailed logs for troubleshooting.
 
 - **DNSPod Documentation**: <https://docs.dnspod.cn/>
 - **API Reference**: <https://docs.dnspod.cn/api/>
-- **Support**: DNSPod customer service or community forums
+- [Tencent DNSPod(AccessKey)](./tencentcloud.md)
 
 It is recommended to use the API Token method for better security and easier DDNS configuration management.

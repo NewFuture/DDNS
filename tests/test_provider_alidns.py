@@ -31,110 +31,149 @@ class TestAlidnsProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, self.auth_token)
         self.assertEqual(provider.API, "https://alidns.aliyuncs.com")
 
-    @patch("ddns.provider.alidns.strftime")
-    @patch("ddns.provider.alidns.time")
-    def test_signature_generation(self, mock_time, mock_strftime):
-        """Test _signature method generates correct signature"""
-        # Mock time functions to get consistent results
-        mock_time.return_value = 1672574400.0  # 2023-01-01 12:00:00 UTC
-        mock_strftime.return_value = "2023-01-01T12:00:00Z"
-
+    def test_signature_v3_generation(self):
+        """Test _signature_v3 method generates correct v3 signature format"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        params = {"Action": "TestAction", "DomainName": "example.com"}
-        signed_params = provider._signature(params)
+        # Test headers for v3 signature
+        headers = {
+            "host": "alidns.aliyuncs.com",
+            "content-type": "application/x-www-form-urlencoded",
+            "x-acs-action": "TestAction",
+            "x-acs-content-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "x-acs-date": "2023-01-01T12:00:00Z",
+            "x-acs-signature-nonce": "23456789",
+            "x-acs-version": "2015-01-09",
+        }
 
-        # Verify standard parameters are added
-        self.assertEqual(signed_params["Format"], "json")
-        self.assertEqual(signed_params["Version"], "2015-01-09")
-        self.assertEqual(signed_params["AccessKeyId"], self.auth_id)
-        self.assertEqual(signed_params["Timestamp"], "2023-01-01T12:00:00Z")
-        self.assertEqual(signed_params["SignatureMethod"], "HMAC-SHA1")
-        self.assertEqual(signed_params["SignatureVersion"], "1.0")
-        self.assertIn("Signature", signed_params)
-        self.assertIn("SignatureNonce", signed_params)
+        body_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        authorization = provider._signature_v3("POST", "/", headers, body_hash=body_hash)
+
+        # Verify v3 authorization header format - only test the structure, not exact values
+        self.assertTrue(authorization.startswith("ACS3-HMAC-SHA256 Credential="))
+        self.assertIn("Credential={}".format(self.auth_id), authorization)
+        self.assertIn("SignedHeaders=", authorization)
+        self.assertIn("Signature=", authorization)
+        # Verify all headers are included in signed headers
+        self.assertIn("content-type", authorization)
+        self.assertIn("host", authorization)
+        self.assertIn("x-acs-action", authorization)
 
     def test_request_basic(self):
         """Test _request method with basic parameters"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-
-            mock_signature.return_value = {"Action": "TestAction", "Signature": "test_sig"}
+        # Only mock the HTTP call to avoid actual network requests
+        with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"Success": True}
 
             result = provider._request("TestAction", DomainName="example.com")
 
-            mock_signature.assert_called_once()
-            mock_http.assert_called_once_with("POST", "/", body={"Action": "TestAction", "Signature": "test_sig"})
+            # Verify HTTP call was made with correct method and path
+            mock_http.assert_called_once()
+            call_args = mock_http.call_args
+            self.assertEqual(call_args[0], ("POST", "/"))
+
+            # Verify body and headers are present
+            self.assertIn("body", call_args[1])
+            self.assertIn("headers", call_args[1])
+
+            # Verify headers contain required v3 signature fields
+            headers = call_args[1]["headers"]
+            self.assertIn("Authorization", headers)
+            self.assertIn("x-acs-action", headers)
+            self.assertIn("x-acs-date", headers)
+            self.assertIn("x-acs-version", headers)
+            self.assertEqual(headers["x-acs-action"], "TestAction")
+
+            # Verify body is form-encoded
+            body = call_args[1]["body"]
+            self.assertIn("DomainName=example.com", body)
+
             self.assertEqual(result, {"Success": True})
 
     def test_request_filters_none_params(self):
         """Test _request method filters out None parameters"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-
-            mock_signature.return_value = {"Action": "TestAction"}
+        # Only mock the HTTP call
+        with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {}
 
             provider._request("TestAction", DomainName="example.com", TTL=None, Line=None)
 
-            # Verify None parameters were filtered out before signing
-            call_args = mock_signature.call_args[1] if mock_signature.call_args else {}
-            self.assertNotIn("TTL", call_args)
-            self.assertNotIn("Line", call_args)
+            # Verify HTTP call was made
+            mock_http.assert_called_once()
 
-    def test_query_zone_id_success(self):
-        """Test _query_zone_id method with successful response"""
+            # Body should not contain None parameters
+            call_args = mock_http.call_args[1]
+            body = call_args.get("body", "")
+            self.assertNotIn("TTL=None", body)
+            self.assertNotIn("Line=None", body)
+            self.assertIn("DomainName=example.com", body)
+
+    def test_split_zone_and_sub_success(self):
+        """Test _split_zone_and_sub method with successful response"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {"DomainName": "example.com"}
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {"DomainName": "example.com", "RR": "sub"}
 
-            result = provider._query_zone_id("sub.example.com")
+            main, sub, zone_id = provider._split_zone_and_sub("sub.example.com")
 
-            mock_request.assert_called_once_with("GetMainDomainName", InputString="sub.example.com")
-            self.assertEqual(result, "example.com")
+            mock_http.assert_called_once()
+            # Verify GetMainDomainName API was called via headers
+            call_headers = mock_http.call_args[1]["headers"]
+            self.assertEqual(call_headers["x-acs-action"], "GetMainDomainName")
 
-    def test_query_zone_id_not_found(self):
-        """Test _query_zone_id method when domain is not found"""
+            # Verify the input parameter in body
+            call_body = mock_http.call_args[1]["body"]
+            self.assertIn("InputString=sub.example.com", call_body)
+
+            self.assertEqual(main, "example.com")
+            self.assertEqual(sub, "sub")
+            self.assertEqual(zone_id, "example.com")
+
+    def test_split_zone_and_sub_not_found(self):
+        """Test _split_zone_and_sub method when domain is not found"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {}
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {}
 
-            result = provider._query_zone_id("notfound.com")
+            main, sub, zone_id = provider._split_zone_and_sub("notfound.com")
 
-            mock_request.assert_called_once_with("GetMainDomainName", InputString="notfound.com")
-            self.assertIsNone(result)
+            mock_http.assert_called_once()
+            self.assertIsNone(main)
+            self.assertIsNone(sub)
+            self.assertEqual(zone_id, "notfound.com")
 
     def test_query_record_success_single(self):
         """Test _query_record method with single record found"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {
                 "DomainRecords": {
                     "Record": [
                         {"RR": "www", "RecordId": "123", "Value": "1.2.3.4", "Type": "A"},
-                        {"RR": "mail", "RecordId": "456", "Value": "5.6.7.8", "Type": "A"},
                     ]
                 }
             }
 
             result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
-            mock_request.assert_called_once_with(
-                "DescribeDomainRecords",
-                DomainName="example.com",
-                RRKeyWord="www",
-                Type="A",
-                Line=None,
-                PageSize=500,
-                Lang=None,
-                Status=None,
-            )
+            mock_http.assert_called_once()
+            # Verify DescribeSubDomainRecords API was called via headers
+            call_headers = mock_http.call_args[1]["headers"]
+            self.assertEqual(call_headers["x-acs-action"], "DescribeSubDomainRecords")
+
+            # Verify parameters in body
+            call_body = mock_http.call_args[1]["body"]
+            self.assertIn("SubDomain=www.example.com", call_body)
+            self.assertIn("DomainName=example.com", call_body)
+            self.assertIn("Type=A", call_body)
+
             self.assertIsNotNone(result)
             if result:  # Type narrowing for mypy
                 self.assertEqual(result["RecordId"], "123")
@@ -144,10 +183,8 @@ class TestAlidnsProvider(BaseProviderTestCase):
         """Test _query_record method when no matching record is found"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {
-                "DomainRecords": {"Record": [{"RR": "mail", "RecordId": "456", "Value": "5.6.7.8", "Type": "A"}]}
-            }
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {"DomainRecords": {"Record": []}}
 
             result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
@@ -157,8 +194,8 @@ class TestAlidnsProvider(BaseProviderTestCase):
         """Test _query_record method with empty records response"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {"DomainRecords": {"Record": []}}
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {"DomainRecords": {"Record": []}}
 
             result = provider._query_record("example.com", "www", "example.com", "A", None, {})
 
@@ -168,22 +205,18 @@ class TestAlidnsProvider(BaseProviderTestCase):
         """Test _query_record method with extra parameters"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            mock_request.return_value = {"DomainRecords": {"Record": []}}
+        with patch.object(provider, "_http") as mock_http:
+            mock_http.return_value = {"DomainRecords": {"Record": []}}
 
             extra = {"Lang": "en", "Status": "Enable"}
             provider._query_record("example.com", "www", "example.com", "A", "default", extra)
 
-            mock_request.assert_called_once_with(
-                "DescribeDomainRecords",
-                DomainName="example.com",
-                RRKeyWord="www",
-                Type="A",
-                Line="default",
-                PageSize=500,
-                Lang="en",
-                Status="Enable",
-            )
+            mock_http.assert_called_once()
+            # Verify extra parameters are included in the request
+            call_body = mock_http.call_args[1]["body"]
+            self.assertIn("Lang=en", call_body)
+            self.assertIn("Status=Enable", call_body)
+            self.assertIn("Line=default", call_body)
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
@@ -292,6 +325,27 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
             self.assertFalse(result)
 
+    def test_update_record_no_changes(self):
+        """Test _update_record method when no changes are detected"""
+        provider = AlidnsProvider(self.auth_id, self.auth_token)
+
+        old_record = {
+            "RecordId": "123456",
+            "RR": "www",
+            "Value": "1.2.3.4",
+            "Type": "A",
+            "TTL": 300,
+            "Line": "default",
+        }
+
+        with patch.object(provider, "_request") as mock_request:
+            # Same value, type, and TTL should skip update
+            result = provider._update_record("example.com", old_record, "1.2.3.4", "A", 300, "default", {})
+
+            # Should return True without making any API calls
+            self.assertTrue(result)
+            mock_request.assert_not_called()
+
     def test_update_record_with_extra_params(self):
         """Test _update_record method with extra parameters"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
@@ -332,10 +386,10 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
         # Mock only the HTTP layer to simulate API responses
-        with patch.object(provider, "_request") as mock_request:
-            # Simulate zone query response
-            mock_request.side_effect = [
-                {"DomainName": "example.com"},  # _query_zone_id response
+        with patch.object(provider, "_http") as mock_http:
+            # Simulate API responses in order: GetMainDomainName, DescribeSubDomainRecords, AddDomainRecord
+            mock_http.side_effect = [
+                {"DomainName": "example.com", "RR": "www"},  # _split_zone_and_sub response
                 {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
                 {"RecordId": "123456"},  # _create_record response
             ]
@@ -343,37 +397,23 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
-            # Verify the actual API calls made
-            self.assertEqual(mock_request.call_count, 3)
-            mock_request.assert_any_call("GetMainDomainName", InputString="example.com")
-            mock_request.assert_any_call(
-                "DescribeDomainRecords",
-                DomainName="example.com",
-                RRKeyWord="www",
-                Type="A",
-                Line="default",
-                PageSize=500,
-                Lang=None,
-                Status=None,
-            )
-            mock_request.assert_any_call(
-                "AddDomainRecord",
-                DomainName="example.com",
-                RR="www",
-                Value="1.2.3.4",
-                Type="A",
-                TTL=300,
-                Line="default",
-            )
+            # Verify the actual HTTP calls made - should be 3 calls
+            self.assertEqual(mock_http.call_count, 3)
+
+            # Check that proper API actions were called by examining request headers
+            call_actions = [call[1]["headers"]["x-acs-action"] for call in mock_http.call_args_list]
+            self.assertIn("GetMainDomainName", call_actions)
+            self.assertIn("DescribeSubDomainRecords", call_actions)
+            self.assertIn("AddDomainRecord", call_actions)
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            # Simulate API responses
-            mock_request.side_effect = [
-                {"DomainName": "example.com"},  # _query_zone_id response
+        with patch.object(provider, "_http") as mock_http:
+            # Simulate API responses: GetMainDomainName, DescribeSubDomainRecords, UpdateDomainRecord
+            mock_http.side_effect = [
+                {"DomainName": "example.com", "RR": "www"},  # _split_zone_and_sub response
                 {  # _query_record response (existing record found)
                     "DomainRecords": {
                         "Record": [
@@ -387,18 +427,20 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
-            # Verify the update call was made
-            mock_request.assert_any_call(
-                "UpdateDomainRecord", RecordId="123456", Value="1.2.3.4", RR="www", Type="A", TTL=300, Line="default"
-            )
+            # Verify 3 HTTP calls were made
+            self.assertEqual(mock_http.call_count, 3)
+
+            # Check that UpdateDomainRecord was called
+            call_actions = [call[1]["headers"]["x-acs-action"] for call in mock_http.call_args_list]
+            self.assertIn("UpdateDomainRecord", call_actions)
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
-            # Simulate API returning empty/null response for zone query
-            mock_request.return_value = {}
+        with patch.object(provider, "_http") as mock_http:
+            # Simulate API returning empty response for zone query
+            mock_http.return_value = {}
 
             # Should return False when zone not found
             result = provider.set_record("www.nonexistent.com", "1.2.3.4", "A")
@@ -408,10 +450,10 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record creation fails"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(provider, "_http") as mock_http:
             # Simulate responses: zone found, no existing record, creation fails
-            mock_request.side_effect = [
-                {"DomainName": "example.com"},  # _query_zone_id response
+            mock_http.side_effect = [
+                {"DomainName": "example.com", "RR": "www"},  # _split_zone_and_sub response
                 {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
                 {"Error": "API error", "Code": "InvalidParameter"},  # _create_record fails
             ]
@@ -424,10 +466,10 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow when record update fails"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(provider, "_http") as mock_http:
             # Simulate responses: zone found, existing record found, update fails
-            mock_request.side_effect = [
-                {"DomainName": "example.com"},  # _query_zone_id response
+            mock_http.side_effect = [
+                {"DomainName": "example.com", "RR": "www"},  # _split_zone_and_sub response
                 {  # _query_record response (existing record found)
                     "DomainRecords": {
                         "Record": [
@@ -446,10 +488,10 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
         """Test complete workflow with additional options like ttl and line"""
         provider = AlidnsProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_request") as mock_request:
+        with patch.object(provider, "_http") as mock_http:
             # Simulate successful creation with custom options
-            mock_request.side_effect = [
-                {"DomainName": "example.com"},  # _query_zone_id response
+            mock_http.side_effect = [
+                {"DomainName": "example.com", "RR": "www"},  # _split_zone_and_sub response
                 {"DomainRecords": {"Record": []}},  # _query_record response (no existing record)
                 {"RecordId": "123456"},  # _create_record response
             ]
@@ -458,15 +500,21 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
             self.assertTrue(result)
             # Verify that extra parameters are passed through correctly
-            mock_request.assert_any_call(
-                "AddDomainRecord",
-                DomainName="example.com",
-                RR="www",
-                Value="1.2.3.4",
-                Type="A",
-                TTL=600,
-                Line="unicom",
-            )
+            self.assertEqual(mock_http.call_count, 3)
+
+            # Check that the create call contains the correct parameters
+            # Find the AddDomainRecord call (should be the last one)
+            add_record_call = None
+            for call in mock_http.call_args_list:
+                if call[1]["headers"]["x-acs-action"] == "AddDomainRecord":
+                    add_record_call = call
+                    break
+
+            self.assertIsNotNone(add_record_call)
+            if add_record_call:
+                create_body = add_record_call[1]["body"]
+                self.assertIn("TTL=600", create_body)
+                self.assertIn("Line=unicom", create_body)
 
 
 if __name__ == "__main__":

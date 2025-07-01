@@ -145,6 +145,6 @@ ddns --debug
 
 - [DNSPod 文档](https://docs.dnspod.cn/)
 - [API 参考](https://docs.dnspod.cn/api/)
-- DNSPod 客服或社区论坛
+- [腾讯云DNSPod(AccessKey)](./tencentcloud.md)
 
 > 推荐使用 API Token 方式，提升安全性与管理便捷性。
