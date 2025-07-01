@@ -18,6 +18,13 @@ class HuaweiDNSProvider(BaseProvider):
     content_type = TYPE_JSON
     algorithm = "SDK-HMAC-SHA256"
 
+    def _validate(self):
+        self.logger.warning(
+            "华为云 DNS provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "https://github.com/NewFuture/DDNS/issues",
+        )
+        super(HuaweiDNSProvider, self)._validate()
+
     def _sign_headers(self, headers, signed_headers):
         a = []
         _headers = {}

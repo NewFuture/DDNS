@@ -22,6 +22,7 @@
   - [命令行参数](/doc/cli.md)
   - [JSON 配置文件](/doc/json.md)
   - [环境变量配置](/doc/env.md)
+  - [服务商配置指南](/doc/providers/)
 
 - 域名支持:
   - 多个域名支持
@@ -36,13 +37,15 @@
   - http 代理支持
   - 多代理自动切换
 - 服务商支持:
-  - [DNSPOD](https://www.dnspod.cn/)
-  - [阿里 DNS](http://www.alidns.com/)
+  - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
+  - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md))
   - [DNS.COM](https://www.dns.com/) (@loftor-git)
   - [DNSPOD 国际版](https://www.dnspod.com/)
   - [CloudFlare](https://www.cloudflare.com/) (@tongyifan)
   - [HE.net](https://dns.he.net/) (@NN708) (不支持自动创建记录)
   - [华为云](https://huaweicloud.com/) (@cybmp3)
+  - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md))
+  - 自定义回调 API ([配置指南](doc/providers/callback.md))
 - 其他:
   - 可设置定时任务
   - TTL 配置支持
@@ -108,14 +111,15 @@
 
 1. 申请 api `token`，填写到对应的 `id` 和 `token` 字段:
 
-   - [DNSPOD(中国版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
-   - [阿里云 accesskey](https://help.aliyun.com/document_detail/87745.htm)
-   - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
-   - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
-   - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
-   - [HE.net DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
-   - [华为 APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
-   - 自定义回调的参数填写方式请查看下方的自定义回调配置说明
+   - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
+   - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
+   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet)
+   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token)
+   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
+   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
+   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
+   - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
+   - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
 
 2. 修改配置文件，`ipv4` 和 `ipv6` 字段，为待更新的域名，详细参照配置说明
 
@@ -141,7 +145,7 @@
 - `debug`参数只在命令行中有效，JSON配置文件中的同名设置无效
 - 多值参数（如`ipv4`、`ipv6`等）在命令行中使用方式为重复使用参数，如`--ipv4 domain1 --ipv4 domain2`
 
-各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)
+各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)、[服务商配置](doc/providers/)
 
 > 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/env.md) 了解所有环境变量的详细用法和示例
 
@@ -165,7 +169,7 @@ python -m ddns -c /path/to/config.json
 | :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |   id   |       string       |    √     |     无      |    api 访问 ID     | Cloudflare 为邮箱（使用 Token 时留空）<br>HE.net 可留空<br>华为云为 Access Key ID (AK)                                                                                                   |
 | token  |       string       |    √     |     无      |   api 授权 token   | 部分平台叫 secret key，**反馈粘贴时删除**                                                                                                                                                |
-|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，自定义回调为 `callback` |
+|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，腾讯云为 `tencentcloud`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
 |  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表    | 为 `[]` 时，不会获取和更新 IPv4 地址                                                                                                                                                     |
 |  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表    | 为 `[]` 时，不会获取和更新 IPv6 地址                                                                                                                                                     |
 | index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
@@ -193,16 +197,18 @@ python -m ddns -c /path/to/config.json
 
 #### 自定义回调配置说明
 
-- `id` 字段填写回调地址，以 HTTP 或 HTTPS 开头，推荐采用 HTTPS 方式的回调 API ，当 `token` 字段非空且 URL 参数包含下表所示的常量字符串时，会自动替换为实际内容。
-- `token` 字段为 POST 参数，本字段为空或不存在则使用 GET 方式发起回调，回调参数采用 JSON 格式编码，当 JSON 的首层参数值包含下表所示的常量字符串时，会自动替换为实际内容。
+- `id` 字段填写回调地址，以 HTTP 或 HTTPS 开头，推荐采用 HTTPS 方式的回调 API，支持变量替换功能。
+- `token` 字段为 POST 请求参数（JSON对象或JSON字符串），本字段为空或不存在则使用 GET 方式发起回调。当 JSON 的参数值包含下表所示的常量字符串时，会自动替换为实际内容。
+
+详细配置指南请查看：[Callback Provider 配置文档](doc/providers/callback.md)
 
 | 常量名称         | 常量内容                 | 说明     |
 | ---------------- | ------------------------ | -------- |
 | `__DOMAIN__`     | DDNS 域名                |          |
+| `__IP__`         | 获取的对应类型的 IP 地址 |          |
 | `__RECORDTYPE__` | DDNS 记录类型            |          |
 | `__TTL__`        | DDNS TTL                 |          |
 | `__TIMESTAMP__`  | 请求发起时间戳           | 包含小数 |
-| `__IP__`         | 获取的对应类型的 IP 地址 |          |
 
 #### 配置示例
 
@@ -211,17 +217,16 @@ python -m ddns -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 callback",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 tencentcloud 或 callback",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,
   "index6": "public",
   "ttl": 600,
-  "proxy": "127.0.0.1:1080;DIRECT",
+  "proxy": ["127.0.0.1:1080", "DIRECT"],
   "log": {
     "level": "DEBUG",
     "file": "dns.log",
-    "format": "%(asctime)s %(levelname)s [%(module)s]: %(message)s",
     "datefmt": "%Y-%m-%dT%H:%M:%S"
   }
 }

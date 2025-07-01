@@ -19,6 +19,13 @@ class DnscomProvider(BaseProvider):
     API = "https://www.51dns.com"
     content_type = TYPE_FORM
 
+    def _validate(self):
+        self.logger.warning(
+            "DNS.COM provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "https://github.com/NewFuture/DDNS/issues",
+        )
+        super(DnscomProvider, self)._validate()
+
     def _signature(self, params):
         """https://www.51dns.com/document/api/70/72.html"""
         params = {k: v for k, v in params.items() if v is not None}

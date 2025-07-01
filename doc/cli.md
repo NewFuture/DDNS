@@ -89,6 +89,7 @@ API访问ID或用户标识。
   - Cloudflare: 填写邮箱地址（使用Token时可留空）
   - HE.net: 可留空
   - 华为云: 填写Access Key ID (AK)
+  - Callback: 填写回调URL地址（支持变量替换）
   - 其他服务商: 根据各自要求填写ID
 
 ### `--token TOKEN`
@@ -96,7 +97,22 @@ API访问ID或用户标识。
 API授权令牌或密钥。
 
 - **必需**: 是
-- **说明**: 部分平台称为Secret Key，请妥善保管
+- **说明**:
+  - 大部分平台: API密钥或Secret Key
+  - Callback: POST请求参数（JSON字符串），为空时使用GET请求
+  - 请妥善保管敏感信息
+
+**Callback配置示例**:
+
+```bash
+# GET方式回调
+ddns --dns callback --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__" --token ""
+
+# POST方式回调
+ddns --dns callback --id "https://api.example.com/ddns" --token '{"api_key": "your_key", "domain": "__DOMAIN__"}'
+```
+
+详细配置请参考：[Callback Provider 配置文档](providers/callback.md)
 
 ## 域名配置参数
 

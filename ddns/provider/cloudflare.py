@@ -12,6 +12,10 @@ class CloudflareProvider(BaseProvider):
     content_type = TYPE_JSON
 
     def _validate(self):
+        self.logger.warning(
+            "Cloudflare provider 缺少充分的真实环境测试，如遇问题请及时在 GitHub Issues 中反馈: %s",
+            "https://github.com/NewFuture/DDNS/issues",
+        )
         if not self.auth_token:
             raise ValueError("token must be configured")
         if self.auth_id:
