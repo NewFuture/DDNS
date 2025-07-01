@@ -174,8 +174,10 @@ def main():
     elif get_config("config_modified_time", float("inf")) >= cache.time:  # type: ignore
         info("Cache file is outdated.")
         cache.clear()
-    else:
+    elif len(cache) == 0:
         debug("Cache is empty.")
+    else:
+        debug("Cache loaded with %d entries.", len(cache))
     ttl = get_config("ttl")  # type: str # type: ignore
     update_ip("4", cache, dns, ttl, proxy_list)
     update_ip("6", cache, dns, ttl, proxy_list)
