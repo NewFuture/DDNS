@@ -89,11 +89,12 @@ def hmac_sha256(key, message):
         HMAC: HMAC签名对象，可调用.digest()获取字节或.hexdigest()获取十六进制字符串
               HMAC signature object, call .digest() for bytes or .hexdigest() for hex string
     """
-    if hasattr(key, "encode"):
-        key = key.encode("utf-8")  # type: ignore[no-redef]
-    if hasattr(message, "encode"):
-        message = message.encode("utf-8")  # type: ignore[no-redef]
-    return HMAC(key, message, sha256)  # type: ignore[no-redef]
+    # Python 2/3 compatible encoding - avoid double encoding in Python 2
+    if not isinstance(key, bytes):
+        key = key.encode("utf-8")
+    if not isinstance(message, bytes):
+        message = message.encode("utf-8")
+    return HMAC(key, message, sha256)
 
 
 def sha256_hash(data):
@@ -109,9 +110,10 @@ def sha256_hash(data):
     Returns:
         str: 十六进制哈希字符串 / Hexadecimal hash string
     """
-    if hasattr(data, "encode"):
-        data = data.encode("utf-8")  # type: ignore[no-redef]
-    return sha256(data).hexdigest()  # type: ignore[no-redef]
+    # Python 2/3 compatible encoding - avoid double encoding in Python 2
+    if not isinstance(data, bytes):
+        data = data.encode("utf-8")
+    return sha256(data).hexdigest()
 
 
 def hmac_sha256_authorization(

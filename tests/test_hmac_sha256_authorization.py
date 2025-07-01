@@ -131,7 +131,12 @@ class TestHmacSha256Authorization(unittest.TestCase):
         # 使用腾讯云官方文档中的固定参数示例
         # 来源: https://cloud.tencent.com/document/api/213/30654
         # 注意：腾讯云使用派生密钥，这里模拟最终的签名密钥
-        final_signing_key = bytes.fromhex("b596b923aad85185e2d1f6659d2a062e0a86731226e021e61bfe06f7ed05f5af")
+        # Python 2/3 compatible hex to bytes conversion
+        hex_string = "b596b923aad85185e2d1f6659d2a062e0a86731226e021e61bfe06f7ed05f5af"
+        try:
+            final_signing_key = bytes.fromhex(hex_string)
+        except AttributeError:  # Python 2.7
+            final_signing_key = hex_string.decode("hex")  # type: ignore[attr-defined]
         method = "POST"
         path = "/"
         query = ""  # POST请求，查询字符串为空
