@@ -108,7 +108,7 @@ class TestAliesaProvider(BaseProviderTestCase):
         
         result = self.provider._split_zone_and_sub("www.example.com")
         
-        self.assertEqual(result, (None, None, "example.com"))
+        self.assertEqual(result, (None, None, "www.example.com"))
 
     def test_split_zone_and_sub_manual_site_id(self):
         """Test _split_zone_and_sub method with manual site ID"""

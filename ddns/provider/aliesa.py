@@ -5,65 +5,24 @@ AliESA API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash
-from time import strftime, gmtime, time
+from .alidns import AlidnsProvider
 
 
-class AliesaProvider(BaseProvider):
+class AliesaProvider(AlidnsProvider):
     API = "https://esa.cn-hangzhou.aliyuncs.com"
-    content_type = TYPE_FORM  # 阿里云ESA API使用表单格式
-
     api_version = "2024-09-10"  # ESA API版本
-
-    def _request(self, action, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
-        """Aliyun ESA v3 API request with signature"""
-        params = {k: v for k, v in params.items() if v is not None}
-        body_content = self._encode(params) if len(params) > 0 else ""
-        content_hash = sha256_hash(body_content)
-        # 构造请求头部
-        headers = {
-            "host": self.API.split("://", 1)[1].strip("/"),
-            "content-type": self.content_type,
-            "x-acs-action": action,
-            "x-acs-content-sha256": content_hash,
-            "x-acs-date": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
-            "x-acs-signature-nonce": str(hash(time()))[2:],
-            "x-acs-version": self.api_version,
-        }
-
-        # 使用通用签名函数
-        authorization = hmac_sha256_authorization(
-            secret_key=self.auth_token,
-            method="POST",
-            path="/",
-            query="",
-            headers=headers,
-            body_hash=content_hash,
-            signing_string_format="ACS3-HMAC-SHA256\n{HashedCanonicalRequest}",
-            authorization_format=(
-                "ACS3-HMAC-SHA256 Credential=" + self.auth_id + ",SignedHeaders={SignedHeaders},Signature={Signature}"
-            ),
-        )
-        headers["Authorization"] = authorization
-        return self._http("POST", "/", body=body_content, headers=headers)
 
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]
         """
-        AliESA 支持多种域名格式:
-        1. 自动格式: www.example.com (自动查询)
-        2. 手动格式: www.example.com#siteId 或 www.example.com#siteId#recordId
-        3. + 分隔符: www+example.com#siteId (与~功能相同)
-        
-        返回 (zone_id, subdomain, main_domain)
+        AliESA 支持手动指定站点ID格式: www.example.com#siteId
+        对于其他格式使用BaseProvider的标准逻辑
         """
-        # 检查是否有手动指定的ID格式（使用#分隔符）
+        # 检查是否有手动指定的站点ID格式（使用#分隔符）
         if '#' in domain:
             parts = domain.split('#')
             domain_part = parts[0]
             site_id = parts[1] if len(parts) > 1 and parts[1] else None
-            record_id = parts[2] if len(parts) > 2 and parts[2] else None
             
             # 如果提供了站点ID，直接使用
             if site_id:
@@ -84,27 +43,11 @@ class AliesaProvider(BaseProvider):
                 self.logger.debug("Manual site ID provided: %s for domain %s", site_id, domain_part)
                 return site_id, subdomain, main_domain
             else:
-                # 站点ID为空，回退到自动查询，但仍使用解析出的domain_part
+                # 站点ID为空，回退到标准查询，但仍使用解析出的domain_part
                 domain = domain_part
         
-        # 标准自动查询流程
-        main_domain = self._extract_main_domain(domain)
-        zone_id = self._query_zone_id(main_domain)
-        
-        if zone_id:
-            # 计算子域名部分
-            if domain == main_domain:
-                subdomain = "@"  # 根域名使用 @
-            else:
-                # 移除主域名部分得到子域名
-                if domain.endswith("." + main_domain):
-                    subdomain = domain[:-len("." + main_domain)]
-                else:
-                    subdomain = domain
-            
-            return zone_id, subdomain, main_domain
-        
-        return None, None, main_domain
+        # 使用BaseProvider的标准逻辑进行自动查询
+        return super(AlidnsProvider, self)._split_zone_and_sub(domain)
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
@@ -112,7 +55,7 @@ class AliesaProvider(BaseProvider):
         查询站点ID
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-listsites
         """
-        res = self._request("ListSites", SiteName=domain, PageSize=50)
+        res = self._request("ListSites", SiteName=domain, PageSize=500)
         sites = res.get("Sites", [])
         
         for site in sites:
