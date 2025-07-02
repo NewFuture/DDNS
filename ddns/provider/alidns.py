@@ -9,10 +9,10 @@ from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_ha
 from time import strftime, gmtime, time
 
 
-class AlidnsProvider(BaseProvider):
+class AliBaseProvider(BaseProvider):
+    """阿里云基础Provider，提供通用的_request方法"""
     API = "https://alidns.aliyuncs.com"
     content_type = TYPE_FORM  # 阿里云DNS API使用表单格式
-
     api_version = "2015-01-09"  # API版本，v3签名需要
 
     def _request(self, action, **params):
@@ -48,6 +48,10 @@ class AlidnsProvider(BaseProvider):
         headers["Authorization"] = authorization
         # 对于v3签名的RPC API，参数在request body中
         return self._http("POST", "/", body=body_content, headers=headers)
+
+
+class AlidnsProvider(AliBaseProvider):
+    """阿里云DNS Provider"""
 
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]

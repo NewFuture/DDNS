@@ -1,6 +1,6 @@
 # coding=utf-8
 from ._base import SimpleProvider  # noqa: F401
-from .alidns import AlidnsProvider
+from .alidns import AlidnsProvider, AliBaseProvider
 from .aliesa import AliesaProvider
 from .callback import CallbackProvider
 from .cloudflare import CloudflareProvider

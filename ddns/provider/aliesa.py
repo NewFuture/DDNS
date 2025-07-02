@@ -5,10 +5,11 @@ AliESA API
 @author: NewFuture
 """
 
-from .alidns import AlidnsProvider
+from .alidns import AliBaseProvider
 
 
-class AliesaProvider(AlidnsProvider):
+class AliesaProvider(AliBaseProvider):
+    """阿里云边缘安全加速(ESA) DNS Provider"""
     API = "https://esa.cn-hangzhou.aliyuncs.com"
     api_version = "2024-09-10"  # ESA API版本
 
@@ -31,7 +32,13 @@ class AliesaProvider(AlidnsProvider):
                     subdomain, main_domain = domain_part.split('+', 1)
                 else:
                     # 自动提取主域名
-                    main_domain = self._extract_main_domain(domain_part)
+                    parts = domain_part.split('.')
+                    if len(parts) >= 2:
+                        # 返回最后两级域名作为主域名
+                        main_domain = '.'.join(parts[-2:])
+                    else:
+                        main_domain = domain_part
+                    
                     if domain_part == main_domain:
                         subdomain = "@"
                     else:
@@ -47,7 +54,7 @@ class AliesaProvider(AlidnsProvider):
                 domain = domain_part
         
         # 使用BaseProvider的标准逻辑进行自动查询
-        return super(AlidnsProvider, self)._split_zone_and_sub(domain)
+        return super(AliBaseProvider, self)._split_zone_and_sub(domain)
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
@@ -66,15 +73,6 @@ class AliesaProvider(AlidnsProvider):
         
         self.logger.error("Site not found for domain: %s", domain)
         return None
-
-    def _extract_main_domain(self, domain):
-        # type: (str) -> str
-        """提取主域名，去除子域名部分"""
-        parts = domain.split('.')
-        if len(parts) >= 2:
-            # 返回最后两级域名作为主域名
-            return '.'.join(parts[-2:])
-        return domain
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
