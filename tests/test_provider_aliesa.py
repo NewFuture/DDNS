@@ -22,7 +22,9 @@ class TestAliesaProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test AliesaProvider class constants"""
-        self.assertEqual(self.provider.API, "https://esa.cn-hangzhou.aliyuncs.com")
+        self.assertEqual(
+            self.provider.API, "https://esa.cn-hangzhou.aliyuncs.com"
+        )
         self.assertEqual(self.provider.api_version, "2024-09-10")
 
     def test_init_with_basic_config(self):
@@ -33,7 +35,9 @@ class TestAliesaProvider(BaseProviderTestCase):
         )
         self.assertEqual(provider.auth_id, "test_access_key")
         self.assertEqual(provider.auth_token, "test_secret_key")
-        self.assertEqual(provider.API, "https://esa.cn-hangzhou.aliyuncs.com")
+        self.assertEqual(
+            provider.API, "https://esa.cn-hangzhou.aliyuncs.com"
+        )
 
     def test_init_with_region_endpoint(self):
         """Test AliesaProvider initialization with custom region endpoint"""
@@ -43,7 +47,9 @@ class TestAliesaProvider(BaseProviderTestCase):
         )
         self.assertEqual(provider.auth_id, "test_access_key")
         self.assertEqual(provider.auth_token, "test_secret_key")
-        self.assertEqual(provider.API, "https://esa.cn-beijing.aliyuncs.com")
+        self.assertEqual(
+            provider.API, "https://esa.cn-beijing.aliyuncs.com"
+        )
 
     def test_init_with_invalid_region_format(self):
         """Test AliesaProvider initialization with invalid region format"""
@@ -117,25 +123,27 @@ class TestAliesaProvider(BaseProviderTestCase):
         self.assertEqual(result, ("12345", "www", "example.com"))
 
     def test_split_zone_and_sub_manual_site_id_with_plus(self):
-        """Test _split_zone_and_sub method with + separator and manual site ID"""
+        """Test _split_zone_and_sub method with + separator"""
         result = self.provider._split_zone_and_sub("www+example.com#12345")
 
         self.assertEqual(result, ("12345", "www", "example.com"))
 
     def test_split_zone_and_sub_manual_site_id_root(self):
-        """Test _split_zone_and_sub method with manual site ID for root domain"""
+        """Test _split_zone_and_sub method with manual site ID for root"""
         result = self.provider._split_zone_and_sub("example.com#12345")
 
         self.assertEqual(result, ("12345", "@", "example.com"))
 
     def test_split_zone_and_sub_manual_ids_with_record_id(self):
         """Test _split_zone_and_sub method with both site and record ID"""
-        result = self.provider._split_zone_and_sub("www.example.com#12345#67890")
+        result = self.provider._split_zone_and_sub(
+            "www.example.com#12345#67890"
+        )
 
         self.assertEqual(result, ("12345", "www", "example.com"))
 
     def test_split_zone_and_sub_empty_site_id(self):
-        """Test _split_zone_and_sub method with empty site ID falls back to auto"""
+        """Test _split_zone_and_sub method with empty site ID falls back"""
         with patch.object(self.provider, '_request') as mock_request:
             mock_request.return_value = {
                 "Sites": [{"SiteId": 99999, "SiteName": "example.com"}]
@@ -161,7 +169,9 @@ class TestAliesaProvider(BaseProviderTestCase):
             ]
         }
 
-        result = self.provider._query_record("12345", "www", "example.com", "A", None, {})
+        result = self.provider._query_record(
+            "12345", "www", "example.com", "A", None, {}
+        )
 
         expected = {
             "RecordId": "123456",
@@ -184,7 +194,9 @@ class TestAliesaProvider(BaseProviderTestCase):
         """Test _query_record method when no matching record is found"""
         mock_request.return_value = {"Records": []}
 
-        result = self.provider._query_record("12345", "www", "example.com", "A", None, {})
+        result = self.provider._query_record(
+            "12345", "www", "example.com", "A", None, {}
+        )
 
         self.assertIsNone(result)
 
@@ -348,7 +360,9 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
     @patch.object(AliesaProvider, '_split_zone_and_sub')
     @patch.object(AliesaProvider, '_query_record')
     @patch.object(AliesaProvider, '_update_record')
-    def test_full_workflow_update_existing_record(self, mock_update, mock_query_record, mock_split):
+    def test_full_workflow_update_existing_record(
+            self, mock_update, mock_query_record, mock_split
+    ):
         """Test complete workflow for updating an existing record"""
         # Setup mocks
         mock_split.return_value = ("12345", "www", "example.com")
@@ -362,7 +376,9 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
         mock_update.return_value = True
 
         # Execute
-        result = self.provider.set_record("www.example.com", "192.168.1.100", "A", 300)
+        result = self.provider.set_record(
+            "www.example.com", "192.168.1.100", "A", 300
+        )
 
         # Verify
         self.assertTrue(result)
@@ -373,7 +389,9 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
     @patch.object(AliesaProvider, '_split_zone_and_sub')
     @patch.object(AliesaProvider, '_query_record')
     @patch.object(AliesaProvider, '_create_record')
-    def test_full_workflow_create_new_record(self, mock_create, mock_query_record, mock_split):
+    def test_full_workflow_create_new_record(
+            self, mock_create, mock_query_record, mock_split
+    ):
         """Test complete workflow for creating a new record"""
         # Setup mocks
         mock_split.return_value = ("12345", "www", "example.com")
@@ -381,7 +399,9 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
         mock_create.return_value = True
 
         # Execute
-        result = self.provider.set_record("www.example.com", "192.168.1.100", "A", 300)
+        result = self.provider.set_record(
+            "www.example.com", "192.168.1.100", "A", 300
+        )
 
         # Verify
         self.assertTrue(result)
@@ -390,10 +410,8 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
         mock_create.assert_called_once()
 
 
-
-
 class TestAliesaProviderAPIResponse(BaseProviderTestCase):
-    """Test AliesaProvider API response handling based on official documentation"""
+    """Test AliesaProvider API response handling based on official docs"""
 
     def setUp(self):
         """Setup test provider with mock credentials"""
@@ -405,12 +423,20 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
 
     @patch.object(AliesaProvider, '_request')
     def test_list_sites_multiple_sites(self, mock_request):
-        """Test ListSites API response with multiple sites (following official docs)"""
+        """Test ListSites API response with multiple sites (official docs)"""
         mock_request.return_value = {
             "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
             "Sites": [
-                {"SiteId": 12345, "SiteName": "example.com", "Status": "activated"},
-                {"SiteId": 12346, "SiteName": "test.com", "Status": "activated"},
+                {
+                    "SiteId": 12345,
+                    "SiteName": "example.com",
+                    "Status": "activated"
+                },
+                {
+                    "SiteId": 12346,
+                    "SiteName": "test.com",
+                    "Status": "activated"
+                },
                 {"SiteId": 12347, "SiteName": "demo.com", "Status": "pending"}
             ]
         }
@@ -418,7 +444,9 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
         zone_id = self.provider._query_zone_id("example.com")
 
         self.assertEqual(zone_id, "12345")
-        mock_request.assert_called_once_with("ListSites", SiteName="example.com", PageSize=500)
+        mock_request.assert_called_once_with(
+            "ListSites", SiteName="example.com", PageSize=500
+        )
 
     @patch.object(AliesaProvider, '_request')
     def test_list_sites_no_matching_site(self, mock_request):
@@ -426,7 +454,11 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
         mock_request.return_value = {
             "RequestId": "CB1A380B-09F0-41BB-802B-72F8FD6DA2FE",
             "Sites": [
-                {"SiteId": 12346, "SiteName": "other.com", "Status": "activated"}
+                {
+                    "SiteId": 12346,
+                    "SiteName": "other.com",
+                    "Status": "activated"
+                }
             ]
         }
 
@@ -459,7 +491,9 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
             ]
         }
 
-        result = self.provider._query_record("12345", "www", "example.com", "A", None, {})
+        result = self.provider._query_record(
+            "12345", "www", "example.com", "A", None, {}
+        )
 
         # Should return the first matching record
         self.assertEqual(result["RecordId"], "123456")
@@ -503,41 +537,54 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
 
         self.assertTrue(result)
 
-
+    @patch.object(AliesaProvider, '_request')
+    def test_different_record_types_a(self, mock_request):
+        """Test support for A record type"""
+        mock_request.return_value = {"RecordId": "123456"}
+        result = self.provider._create_record(
+            "12345", "test", "example.com", "192.168.1.100", "A", 300, None, {}
+        )
+        self.assertTrue(result)
 
     @patch.object(AliesaProvider, '_request')
-    def test_different_record_types(self, mock_request):
-        """Test support for different DNS record types (A, AAAA, CNAME)"""
-        test_cases = [
-            ("A", "192.168.1.100"),
-            ("AAAA", "2001:db8::1"),
-            ("CNAME", "target.example.com"),
-        ]
+    def test_different_record_types_aaaa(self, mock_request):
+        """Test support for AAAA record type"""
+        mock_request.return_value = {"RecordId": "123456"}
+        result = self.provider._create_record(
+            "12345", "test", "example.com", "2001:db8::1", "AAAA", 300,
+            None, {}
+        )
+        self.assertTrue(result)
 
-        for record_type, value in test_cases:
-            with self.subTest(record_type=record_type):
-                mock_request.return_value = {"RecordId": "123456"}
+    @patch.object(AliesaProvider, '_request')
+    def test_different_record_types_cname(self, mock_request):
+        """Test support for CNAME record type"""
+        mock_request.return_value = {"RecordId": "123456"}
+        result = self.provider._create_record(
+            "12345", "test", "example.com", "target.example.com", "CNAME",
+            300, None, {}
+        )
+        self.assertTrue(result)
 
-                result = self.provider._create_record(
-                    "12345", "test", "example.com", value, record_type, 300, None, {}
-                )
+    def test_domain_parsing_root_domain(self):
+        """Test domain parsing for root domain with manual site ID"""
+        result = self.provider._split_zone_and_sub("example.com#12345")
+        self.assertEqual(result, ("12345", "@", "example.com"))
 
-                self.assertTrue(result)
+    def test_domain_parsing_subdomain(self):
+        """Test domain parsing for subdomain with manual site ID"""
+        result = self.provider._split_zone_and_sub("www.example.com#12345")
+        self.assertEqual(result, ("12345", "www", "example.com"))
 
-    def test_domain_parsing_edge_cases(self):
-        """Test domain parsing for various edge cases with manual site ID"""
-        test_cases = [
-            # (input_domain, expected_site_id, expected_subdomain, expected_main_domain)
-            ("example.com#12345", "12345", "@", "example.com"),
-            ("www.example.com#12345", "12345", "www", "example.com"),
-            ("api.v2.example.com#12345", "12345", "api.v2", "example.com"),
-            ("sub+example.com#12345", "12345", "sub", "example.com"),
-        ]
+    def test_domain_parsing_nested_subdomain(self):
+        """Test domain parsing for nested subdomain with manual site ID"""
+        result = self.provider._split_zone_and_sub("api.v2.example.com#12345")
+        self.assertEqual(result, ("12345", "api.v2", "example.com"))
 
-        for input_domain, expected_site_id, expected_subdomain, expected_main_domain in test_cases:
-            with self.subTest(domain=input_domain):
-                result = self.provider._split_zone_and_sub(input_domain)
-                self.assertEqual(result, (expected_site_id, expected_subdomain, expected_main_domain))
+    def test_domain_parsing_plus_separator(self):
+        """Test domain parsing with plus separator and manual site ID"""
+        result = self.provider._split_zone_and_sub("sub+example.com#12345")
+        self.assertEqual(result, ("12345", "sub", "example.com"))
 
 
 if __name__ == '__main__':

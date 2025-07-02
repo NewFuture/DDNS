@@ -13,18 +13,20 @@ class AliesaProvider(AliBaseProvider):
     API = "https://esa.cn-hangzhou.aliyuncs.com"
     api_version = "2024-09-10"  # ESA API版本
 
-    def __init__(self, auth_id, auth_token):
-        """初始化ESA Provider"""
+    def _validate(self):
+        """验证并解析认证信息，支持区域配置"""
         # 解析auth_id，支持 "region:access_id" 或 "access_id" 格式
-        if ':' in auth_id:
-            region, access_id = auth_id.split(':', 1)
+        if ':' in self.auth_id:
+            region, access_id = self.auth_id.split(':', 1)
             if not region or not access_id:
-                raise ValueError("Invalid auth_id format. Use 'region:access_id' or 'access_id'")
+                raise ValueError(
+                    "Invalid auth_id format. "
+                    "Use 'region:access_id' or 'access_id'"
+                )
             self.API = "https://esa.{}.aliyuncs.com".format(region)
-            super(AliesaProvider, self).__init__(access_id, auth_token)
-        else:
-            # 默认使用 cn-hangzhou 区域
-            super(AliesaProvider, self).__init__(auth_id, auth_token)
+            self.auth_id = access_id
+        # 调用父类验证
+        super(AliesaProvider, self)._validate()
 
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]
@@ -37,12 +39,12 @@ class AliesaProvider(AliBaseProvider):
             parts = domain.split('#')
             domain_part = parts[0]
             site_id = parts[1] if len(parts) > 1 and parts[1] else None
-            
+
             if site_id:
                 # 手动站点ID模式 - 解析域名格式
                 domain_part = domain_part.replace('+', '.')
                 domain_split = domain_part.split('.')
-                
+
                 if len(domain_split) == 2:
                     # 根域名: example.com#12345
                     return site_id, "@", domain_part
@@ -55,7 +57,7 @@ class AliesaProvider(AliBaseProvider):
             else:
                 # 空的站点ID，使用域名部分进行自动查找
                 domain = domain_part
-        
+
         # 使用基类的自动查找逻辑
         return super(AliesaProvider, self)._split_zone_and_sub(domain)
 
@@ -71,13 +73,16 @@ class AliesaProvider(AliBaseProvider):
         for site in sites:
             if site.get("SiteName") == domain:
                 site_id = site.get("SiteId")
-                self.logger.debug("Found site ID %s for domain %s", site_id, domain)
+                self.logger.debug(
+                    "Found site ID %s for domain %s", site_id, domain
+                )
                 return str(site_id)
 
         self.logger.error("Site not found for domain: %s", domain)
         return None
 
-    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
+    def _query_record(self, zone_id, subdomain, main_domain, record_type,
+                      line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """
         查询DNS记录
@@ -96,7 +101,8 @@ class AliesaProvider(AliBaseProvider):
         records = res.get("Records", [])
         if not records:
             self.logger.warning(
-                "No records found for [%s] with %s <%s> (line: %s)", zone_id, subdomain, record_type, line
+                "No records found for [%s] with %s <%s> (line: %s)",
+                zone_id, subdomain, record_type, line
             )
             return None
 
@@ -105,7 +111,8 @@ class AliesaProvider(AliBaseProvider):
         self.logger.debug("Found record: %s", record)
         return record
 
-    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
+    def _create_record(self, zone_id, subdomain, main_domain, value,
+                       record_type, ttl, line, extra):
         # type: (str, str, str, str, str, int | None, str | None, dict) -> bool
         """
         创建DNS记录
@@ -136,7 +143,8 @@ class AliesaProvider(AliBaseProvider):
         self.logger.error("Failed to create record: %s", data)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+    def _update_record(self, zone_id, old_record, value, record_type, ttl,
+                       line, extra):
         # type: (str, dict, str, str, int | None, str | None, dict) -> bool
         """
         更新DNS记录
@@ -148,7 +156,10 @@ class AliesaProvider(AliBaseProvider):
             and old_record.get("Type") == record_type
             and (not ttl or old_record.get("TTL") == ttl)
         ):
-            self.logger.warning("No changes detected, skipping update for record: %s", old_record.get("RecordName"))
+            self.logger.warning(
+                "No changes detected, skipping update for record: %s",
+                old_record.get("RecordName")
+            )
             return True
 
         params = {

@@ -63,7 +63,7 @@ ESA supports multiple region endpoints. You can specify the region in the `id` p
 Supported formats:
 - `"LTAI4xxx"` - Default uses cn-hangzhou region
 - `"cn-beijing:LTAI4xxx"` - Use cn-beijing region
-- `"cn-shanghai:LTAI4xxx"` - Use cn-shanghai region
+- `"ap-southeast-1:LTAI4xxx"` - Use ap-southeast-1 region
 
 ## Optional Parameters
 

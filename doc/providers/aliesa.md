@@ -63,7 +63,7 @@ ESA支持多个区域端点，可以通过在`id`参数中指定区域：
 支持的格式：
 - `"LTAI4xxx"` - 默认使用 cn-hangzhou 区域
 - `"cn-beijing:LTAI4xxx"` - 使用 cn-beijing 区域
-- `"cn-shanghai:LTAI4xxx"` - 使用 cn-shanghai 区域
+- `"ap-southeast-1:LTAI4xxx"` - 使用 ap-southeast-1 区域
 
 ## 可选参数
 
