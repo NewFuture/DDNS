@@ -106,7 +106,7 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
         domain = domain.lower()
         cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
-            info("%s[%s] address not changed, using cache.", domain, record_type)
+            info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
             update_success = True  # At least one domain is successfully cached
         else:
             # Update domain that is not cached or has different IP
@@ -115,7 +115,6 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
                 update_success = True
                 # Cache successful update immediately
                 if isinstance(cache, dict):
-                    cache_key = "{}:{}".format(domain, record_type)
                     cache[cache_key] = address
 
     return update_success
