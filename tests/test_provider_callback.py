@@ -302,7 +302,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             # In CI environments, use a shorter delay to speed up tests
             delay = random.uniform(0, 3)
         else:
-            delay = random.uniform(0, 1)
+            delay = random.uniform(0, 0.5)
         sleep(delay)
 
     def _assert_callback_result_logged(self, mock_logger, *expected_strings):
@@ -323,7 +323,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         )
 
     def test_real_callback_get_method(self):
-        """Test real callback using GET method with httpbin.org and verify logger calls"""
+        """Test real callback using GET method with httpbin.org and verify logger calls (retry once on failure)"""
         auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
         domain = "test.example.com"
         ip = "111.111.111.111"
@@ -333,11 +333,14 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
         self._random_delay()  # Add random delay before real request
         result = provider.set_record(domain, ip, "A")
+        if not result:
+            sleep(random.uniform(1.5, 4))
+            result = provider.set_record(domain, ip, "A")
         self.assertTrue(result)
         self._assert_callback_result_logged(mock_logger, domain, ip)
 
     def test_real_callback_post_method_with_json(self):
-        """Test real callback using POST method with JSON data and verify logger calls"""
+        """Test real callback using POST method with JSON data and verify logger calls (retry once on failure)"""
         auth_id = "https://httpbin.org/post"
         auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
         provider = CallbackProvider(auth_id, auth_token)
@@ -347,6 +350,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
         self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
+        if not result:
+            sleep(random.uniform(1.5, 4))
+            result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
         # httpbin.org returns JSON with our posted data, so it should be truthy
         self.assertTrue(result)
 
@@ -364,7 +370,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         self.assertFalse(result)
 
     def test_real_callback_redirects_handling(self):
-        """Test real callback with various HTTP redirect scenarios and verify logger calls"""
+        """Test real callback with various HTTP redirect scenarios and verify logger calls (retry once on failure)"""
         # Test simple redirect
         auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
         domain = "redirect.test.example.com"
@@ -375,6 +381,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             mock_logger = self._setup_provider_with_mock_logger(provider)
             self._random_delay()  # Add random delay before real request
             result = provider.set_record(domain, ip, "A")
+            if not result:
+                sleep(random.uniform(1.5, 4))
+                result = provider.set_record(domain, ip, "A")
             self.assertTrue(result)
             self._assert_callback_result_logged(mock_logger, domain, ip)
 
@@ -384,7 +393,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
                 self.skipTest("SSL certificate issue: {}".format(e))
 
     def test_real_callback_redirect_with_post(self):
-        """Test POST request redirect behavior (should change to GET after 302) and verify logger calls"""
+        """Test POST request redirect behavior (should change to GET after 302) and verify logger calls (retry once on failure)"""
         # POST to redirect endpoint - should convert to GET after 302
         auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
         auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
@@ -396,6 +405,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
             self._random_delay()  # Add random delay before real request
             result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
+            if not result:
+                sleep(random.uniform(1.5, 4))
+                result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
             # POST should be redirected as GET and succeed
             self.assertTrue(result)
 
