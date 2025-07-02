@@ -39,14 +39,12 @@
       "examples": [
         "dnspod",
         "alidns",
-        "aliesa",
         "cloudflare"
       ],
       "enum": [
         "dnspod",
         "alidns",
         "aliesa",
-        "esa",
         "cloudflare",
         "dnspod_com",
         "dnscom",

@@ -43,8 +43,7 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
     "dns": "aliesa",
     "ipv4": ["www.example.com", "api.example.com"],
     "ipv6": ["ipv6.example.com"],
-    "ttl": 300,
-    "comment": "DDNS Auto Update"
+    "ttl": 300
 }
 ```
 
@@ -77,7 +76,6 @@ When you know the site ID, you can use manual format to avoid ListSites permissi
 | Parameter | Description | Type | Default | Example |
 |-----------|-------------|------|---------|---------|
 | `ttl` | DNS record TTL value | Integer | 600 | 300 |
-| `comment` | DNS record remark | String | - | "DDNS Auto Update" |
 
 ## Use Cases
 
@@ -90,8 +88,7 @@ When your NAS or other services act as ESA CDN origin, you can use this DDNS to 
     "id": "LTAI4xxx",
     "token": "xxx", 
     "dns": "aliesa",
-    "ipv4": ["origin.example.com"],
-    "comment": "NAS Origin Auto Update"
+    "ipv4": ["origin.example.com"]
 }
 ```
 

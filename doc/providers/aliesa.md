@@ -43,8 +43,7 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "dns": "aliesa",
     "ipv4": ["www.example.com", "api.example.com"],
     "ipv6": ["ipv6.example.com"],
-    "ttl": 300,
-    "comment": "DDNS自动更新"
+    "ttl": 300
 }
 ```
 
@@ -63,21 +62,11 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 }
 ```
 
-### 支持的域名格式
-
-| 格式 | 说明 | 权限要求 | 示例 |
-|------|------|----------|------|
-| `subdomain.domain.com` | 自动查询站点ID | ListSites + 记录权限 | `www.example.com` |
-| `subdomain.domain.com#siteId` | 手动指定站点ID | 仅记录权限 | `www.example.com#123456` |
-| `subdomain+domain.com#siteId` | 使用+分隔符 | 仅记录权限 | `www+example.com#123456` |
-| `domain.com#siteId` | 根域名记录 | 仅记录权限 | `example.com#123456` |
-
 ## 可选参数
 
 | 参数 | 说明 | 类型 | 默认值 | 示例 |
 |------|------|------|--------|------|
 | `ttl` | DNS记录的TTL值 | 整数 | 600 | 300 |
-| `comment` | DNS记录备注 | 字符串 | - | "DDNS自动更新" |
 
 ## 使用场景
 
@@ -90,8 +79,7 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "id": "LTAI4xxx",
     "token": "xxx", 
     "dns": "aliesa",
-    "ipv4": ["origin.example.com"],
-    "comment": "NAS源站自动更新"
+    "ipv4": ["origin.example.com"]
 }
 ```
 
