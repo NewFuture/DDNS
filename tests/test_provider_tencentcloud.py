@@ -371,8 +371,8 @@ class TestTencentCloudProvider(BaseProviderTestCase):
     def test_update_record_with_line(self):
         """Test _update_record method with line parameter"""
         old_record = {
-            "RecordId": 123456, 
-            "Name": "www", 
+            "RecordId": 123456,
+            "Name": "www",
             "Line": "默认",
             "Domain": "example.com",
             "DomainId": 12345678
@@ -381,7 +381,8 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": 123456}
 
-            # Test with custom line parameter - note that TencentCloud uses old_record.Line when line parameter doesn't override
+            # Test with custom line parameter - note that TencentCloud uses old_record.Line when line parameter
+            # doesn't override
             result = self.provider._update_record(12345678, old_record, "5.6.7.8", "A", 600, "联通", {})
 
             self.assertTrue(result)

@@ -154,6 +154,7 @@ def init_config(description, doc, version, date):
         help="IPv6 domains [IPv6域名列表, 可配置多个域名]",
     )
     parser.add_argument("--ttl", type=int, help="DNS TTL(s) [设置域名解析过期时间]")
+    parser.add_argument("--line", help="DNS line/route [DNS线路设置，如电信、联通、移动等]")
     parser.add_argument(
         "--proxy",
         nargs="*",
@@ -296,6 +297,7 @@ def generate_config(config_path):
         "index4": "default",
         "index6": "default",
         "ttl": None,
+        "line": None,
         "proxy": None,
         "ssl": "auto",
         "log": {"level": "INFO"},
