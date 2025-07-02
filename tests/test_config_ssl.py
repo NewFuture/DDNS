@@ -8,10 +8,15 @@ Unit tests for SSL configuration integration
 import unittest
 import sys
 import os
-from unittest.mock import patch
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from unittest.mock import patch
+except ImportError:
+    # Python 2.7 compatibility
+    from mock import patch  # type: ignore
 
 from ddns.util.config import init_config, get_config  # noqa: E402
 from ddns.__init__ import __version__, __description__, __doc__, build_date  # noqa: E402
@@ -33,7 +38,14 @@ class TestSSLConfiguration(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Clear global state before each test
-        pass
+        import ddns.util.config
+        from argparse import Namespace
+        ddns.util.config.__cli_args = Namespace()
+        ddns.util.config.__config = {}
+        # Clear environment variables that might affect tests
+        for key in list(os.environ.keys()):
+            if key.lower().startswith('ddns_'):
+                del os.environ[key]
 
     def test_cli_ssl_false(self):
         """Test SSL configuration via CLI argument --ssl false"""
