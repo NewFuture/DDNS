@@ -317,6 +317,28 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   export DDNS_CACHE="/path/to/ddns.cache"
   ```
 
+### SSL证书验证
+
+#### DDNS_SSL
+
+- **类型**: 字符串或布尔值
+- **必需**: 否
+- **默认值**: `"auto"`
+- **说明**: SSL证书验证方式，控制HTTPS连接的证书验证行为
+- **可选值**:
+  - `"true"`: 强制验证SSL证书（最安全）
+  - `"false"`: 禁用SSL证书验证（最不安全）
+  - `"auto"`: 优先验证，SSL证书错误时自动降级（不安全）
+  - 文件路径: 使用指定路径的自定义CA证书（最安全）
+- **示例**:
+
+  ```bash
+  export DDNS_SSL="true"     # 强制验证SSL证书
+  export DDNS_SSL="false"    # 禁用SSL验证（不推荐）
+  export DDNS_SSL="auto"     # 自动降级模式
+  export DDNS_SSL="/etc/ssl/certs/ca-certificates.crt"  # 自定义CA证书
+  ```
+
 ### 日志配置
 
 #### DDNS_LOG_LEVEL

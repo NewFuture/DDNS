@@ -153,7 +153,8 @@ def main():
     # dns provider class
     dns_name = get_config("dns", "debug")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
-    dns = provider_class(get_config("id"), get_config("token"), logger=logger)  # type: ignore
+    ssl_config = get_config("ssl", "auto")  # type: str | bool # type: ignore
+    dns = provider_class(get_config("id"), get_config("token"), logger=logger, verify_ssl=ssl_config)  # type: ignore
 
     if get_config("config"):
         info("loaded Config from: %s", path.abspath(get_config("config")))  # type: ignore
