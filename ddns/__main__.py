@@ -100,27 +100,23 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
 
     record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
-    domains_to_update = []
     
-    # Check cache for each domain individually
+    # Check cache and update each domain individually
     for domain in domains:
         domain = domain.lower()
-        cache_key = f"{domain}:{record_type}"
+        cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
             info("%s[%s] address not changed, using cache.", domain, record_type)
             update_success = True  # At least one domain is successfully cached
         else:
-            domains_to_update.append(domain)
-    
-    # Update domains that are not cached or have different IP
-    for domain in domains_to_update:
-        if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
-            warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-            update_success = True
-            # Cache successful update immediately
-            if isinstance(cache, dict):
-                cache_key = f"{domain}:{record_type}"
-                cache[cache_key] = address
+            # Update domain that is not cached or has different IP
+            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
+                warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                update_success = True
+                # Cache successful update immediately
+                if isinstance(cache, dict):
+                    cache_key = "{}:{}".format(domain, record_type)
+                    cache[cache_key] = address
 
     return update_success
 
@@ -188,12 +184,6 @@ def main():
         debug("Cache is empty.")
     else:
         debug("Cache loaded with %d entries.", len(cache))
-        # Clean up old format cache entries (ipv4/ipv6 keys)
-        old_keys = [key for key in cache if key in ["ipv4", "ipv6"]]
-        if old_keys:
-            debug("Removing old cache format entries: %s", old_keys)
-            for key in old_keys:
-                del cache[key]
     ttl = get_config("ttl")  # type: str # type: ignore
     update_ip("4", cache, dns, ttl, proxy_list)
     update_ip("6", cache, dns, ttl, proxy_list)
