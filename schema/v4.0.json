@@ -162,6 +162,26 @@
         null
       ]
     },
+    "line": {
+      "$id": "/properties/line",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "DNS Line/Route",
+      "description": "DNS线路设置，如电信、联通、移动等，支持中文和英文线路名称",
+      "default": null,
+      "examples": [
+        "telecom",
+        "电信",
+        "unicom",
+        "联通",
+        "mobile",
+        "移动",
+        "default",
+        "默认"
+      ]
+    },
     "proxy": {
       "$id": "/properties/proxy",
       "type": [

@@ -295,6 +295,35 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
             self.assertFalse(result)
 
+    def test_line_configuration_support(self):
+        """Test that HuaweiDNSProvider supports line configuration"""
+        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"id": "rec123456"}
+
+            # Test create record with line parameter (line is passed as extra parameter for Huawei)
+            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, "telecom", {})
+
+            # For Huawei DNS, line can be passed as extra parameter
+            self.assertTrue(result)
+            mock_request.assert_called_once()
+
+    def test_update_record_with_line(self):
+        """Test _update_record method with line parameter"""
+        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+
+        old_record = {"id": "rec123", "name": "www.example.com."}
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"id": "rec123"}
+
+            # Test with line parameter (line is handled as needed for different DNS providers)
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, "unicom", {})
+
+            self.assertTrue(result)
+            mock_request.assert_called_once()
+
 
 class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
     """Integration test cases for HuaweiDNSProvider - testing with minimal mocking"""

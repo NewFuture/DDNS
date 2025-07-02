@@ -33,6 +33,7 @@ python run.py -h
 | `--index4`      |        | 字符串/数字列表 | IPv4 地址获取方式，支持多种获取方式          |
 | `--index6`      |        | 字符串/数字列表 | IPv6 地址获取方式，支持多种获取方式          |
 | `--ttl`         |        | 整数            | DNS 解析记录的 TTL 时间（秒）                |
+| `--line`        |        | 字符串          | DNS 解析线路，ISP线路选择                   |
 | `--proxy`       |        | 字符串列表      | HTTP 代理设置，支持多代理重复使用参数        |
 | `--cache`       |        | 布尔/字符串     | 是否启用缓存或自定义缓存路径                 |
 | `--ssl`         |        | 字符串          | SSL证书验证方式                             |
@@ -56,6 +57,7 @@ python run.py -h
 | `--index4`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index4 public`, `--index4 "regex:192\\.168\\..*"` |
 | `--index6`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index6 0`, `--index6 public`         |
 | `--ttl`      | 秒数                                         | `--ttl 600`                            |
+| `--line`     | 线路名称                                     | `--line 电信`, `--line telecom`        |
 | `--proxy`    | IP:端口, DIRECT                              | `--proxy 127.0.0.1:1080 --proxy DIRECT` |
 | `--cache`    | true, 文件路径                         | `--cache=true`, `--cache=/path/to/cache.json` |
 | `--ssl`      | true, false, auto, 文件路径                  | `--ssl false`, `--ssl /path/to/cert.pem` |

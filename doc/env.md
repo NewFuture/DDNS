@@ -32,6 +32,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_INDEX4` | 数组/字符串/数字 | `default` | IPv4地址获取方式 |
 | `DDNS_INDEX6` | 数组/字符串/数字 | `default` | IPv6地址获取方式 |
 | `DDNS_TTL` | 整数 | 无 | DNS解析TTL时间（秒） |
+| `DDNS_LINE` | 字符串 | 无 | DNS解析线路，ISP线路选择 |
 | `DDNS_PROXY` | 数组/字符串 | 无 | HTTP代理设置 |
 | `DDNS_CACHE` | 布尔值/字符串 | `true` | 缓存设置 |
 | `DDNS_LOG_LEVEL` | 字符串 | `INFO` | 日志级别 |
@@ -48,6 +49,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_IPV6` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV6="example.com,ipv6.example.com"` |
 | `DDNS_INDEX4` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
 | `DDNS_INDEX6` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX6="public"` |
+| `DDNS_LINE` | 线路名称，如默认、电信、联通、移动等 | `export DDNS_LINE="电信"` |
 | `DDNS_PROXY` | IP:端口, DIRECT, 分号分隔的列表 | `export DDNS_PROXY="127.0.0.1:1080;DIRECT"` |
 | `DDNS_CACHE` | true/false, 文件路径 | `export DDNS_CACHE="/path/to/cache.json"` |
 | `DDNS_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR, CRITICAL | `export DDNS_LOG_LEVEL="DEBUG"` |
