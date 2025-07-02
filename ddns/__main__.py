@@ -100,7 +100,7 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
 
     record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
-    
+
     # Check cache and update each domain individually
     for domain in domains:
         domain = domain.lower()
