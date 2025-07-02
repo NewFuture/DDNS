@@ -5,7 +5,6 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-python.black-formatter",
-        "ms-vscode.vscode-websearchforcopilot",
         "ms-azuretools.vscode-containers"
     ]
 }

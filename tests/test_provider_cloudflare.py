@@ -161,9 +161,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _query_record method with successful response"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
-
-            mock_join.return_value = "www.example.com"
+        with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = [
                 {"id": "rec123", "name": "www.example.com", "type": "A", "content": "1.2.3.4"},
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"},
@@ -173,17 +171,19 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 "zone123", "www", "example.com", "A", None, {}
             )  # type: dict # type: ignore
 
-            mock_join.assert_called_once_with("www", "example.com")
-            params = {"name.exact": "www.example.com"}
-            mock_request.assert_called_once_with("GET", "/zone123/dns_records", type="A", per_page=10000, **params)
             self.assertEqual(result["id"], "rec123")
             self.assertEqual(result["name"], "www.example.com")
+
+            params = {"name.exact": "www.example.com"}
+            mock_request.assert_called_once_with("GET", "/zone123/dns_records", type="A", per_page=10000, **params)
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
+        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
 
             mock_join.return_value = "www.example.com"
             mock_request.return_value = [
@@ -198,7 +198,9 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _query_record method with proxy option in extra parameters"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
+        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
 
             mock_join.return_value = "www.example.com"
             mock_request.return_value = []
@@ -218,14 +220,14 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _create_record method with successful creation"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
+        with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
 
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123", "name": "www.example.com"}
 
-            result = provider._create_record(
-                "zone123", "www", "example.com", "1.2.3.4", "A", 300, None, {}
-            )  # type: dict # type: ignore
+            result = provider._create_record("zone123", "www", "example.com", "1.2.3.4", "A", 300, None, {})
 
             mock_join.assert_called_once_with("www", "example.com")
             mock_request.assert_called_once_with(
@@ -243,7 +245,9 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _create_record method with failed creation"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
+        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
 
             mock_join.return_value = "www.example.com"
             mock_request.return_value = None  # API request failed
@@ -256,7 +260,9 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _create_record method with extra parameters"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch.object(provider, "_join_domain") as mock_join, patch.object(provider, "_request") as mock_request:
+        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
 
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123"}

@@ -5,7 +5,7 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain
 from json import dumps as jsonencode
 from time import strftime, gmtime
 
@@ -84,7 +84,7 @@ class HuaweiDNSProvider(BaseProvider):
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64004.html
         v2 https://support.huaweicloud.com/api-dns/ListRecordSetsByZone.html
         """
-        domain = self._join_domain(subdomain, main_domain) + "."
+        domain = join_domain(subdomain, main_domain) + "."
         data = self._request(
             "GET",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -103,7 +103,7 @@ class HuaweiDNSProvider(BaseProvider):
         v2.1 https://support.huaweicloud.com/api-dns/dns_api_64001.html
         v2 https://support.huaweicloud.com/api-dns/CreateRecordSet.html
         """
-        domain = self._join_domain(subdomain, main_domain) + "."
+        domain = join_domain(subdomain, main_domain) + "."
         extra["description"] = extra.get("description", self.remark)
         res = self._request(
             "POST",

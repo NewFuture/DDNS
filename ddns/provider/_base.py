@@ -472,9 +472,7 @@ class BaseProvider(SimpleProvider):
         """
         domain = domain.lower()
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-
-        # 优化域名解析逻辑
-        sub, main = self._split_custom_domain(domain)
+        sub, main = split_custom_domain(domain)
         try:
             if sub is not None:
                 # 使用自定义分隔符格式
@@ -620,42 +618,42 @@ class BaseProvider(SimpleProvider):
             return zone_id, sub, main
         return None, None, main
 
-    @staticmethod
-    def _split_custom_domain(domain):
-        # type: (str) -> tuple[str | None, str]
-        """
-        拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
 
-        如 sub~example.com => ('sub', 'example.com')
+def split_custom_domain(domain):
+    # type: (str) -> tuple[str | None, str]
+    """
+    拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)
 
-        Returns:
-            (sub, main): 子域 + 主域
-        """
-        for sep in ("~", "+"):
-            if sep in domain:
-                sub, main = domain.split(sep, 1)
-                return sub, main
-        return None, domain
+    如 sub~example.com => ('sub', 'example.com')
 
-    @staticmethod
-    def _join_domain(sub, main):
-        # type: (str | None, str) -> str
-        """
-        合并子域名和主域名为完整域名
+    Returns:
+        (sub, main): 子域 + 主域
+    """
+    for sep in ("~", "+"):
+        if sep in domain:
+            sub, main = domain.split(sep, 1)
+            return sub, main
+    return None, domain
 
-        Args:
-            sub (str | None): 子域名
-            main (str): 主域名
 
-        Returns:
-            str: 完整域名
-        """
-        sub = sub and sub.strip(".").strip().lower()
-        main = main and main.strip(".").strip().lower()
-        if not sub or sub == "@":
-            if not main:
-                raise ValueError("Both sub and main cannot be empty")
-            return main
+def join_domain(sub, main):
+    # type: (str | None, str) -> str
+    """
+    合并子域名和主域名为完整域名
+
+    Args:
+        sub (str | None): 子域名
+        main (str): 主域名
+
+    Returns:
+        str: 完整域名
+    """
+    sub = sub and sub.strip(".").strip().lower()
+    main = main and main.strip(".").strip().lower()
+    if not sub or sub == "@":
         if not main:
-            return sub
-        return "{}.{}".format(sub, main)
+            raise ValueError("Both sub and main cannot be empty")
+        return main
+    if not main:
+        return sub
+    return "{}.{}".format(sub, main)
