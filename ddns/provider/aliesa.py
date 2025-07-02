@@ -28,39 +28,6 @@ class AliesaProvider(AliBaseProvider):
         # 调用父类验证
         super(AliesaProvider, self)._validate()
 
-    def _split_zone_and_sub(self, domain):
-        # type: (str) -> tuple[str | None, str | None, str]
-        """
-        从完整域名拆分主域名、子域名和站点ID
-        支持手动站点ID格式: domain.com#site_id
-        """
-        # 检查是否包含手动站点ID
-        if '#' in domain:
-            parts = domain.split('#')
-            domain_part = parts[0]
-            site_id = parts[1] if len(parts) > 1 and parts[1] else None
-
-            if site_id:
-                # 手动站点ID模式 - 解析域名格式
-                domain_part = domain_part.replace('+', '.')
-                domain_split = domain_part.split('.')
-
-                if len(domain_split) == 2:
-                    # 根域名: example.com#12345
-                    return site_id, "@", domain_part
-                elif len(domain_split) >= 3:
-                    # 子域名: www.example.com#12345 或 api.v2.example.com#12345
-                    # 取最后两个部分作为主域名，其余作为子域名
-                    sub = ".".join(domain_split[:-2])
-                    main = ".".join(domain_split[-2:])
-                    return site_id, sub, main
-            else:
-                # 空的站点ID，使用域名部分进行自动查找
-                domain = domain_part
-
-        # 使用基类的自动查找逻辑
-        return super(AliesaProvider, self)._split_zone_and_sub(domain)
-
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
         """

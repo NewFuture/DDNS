@@ -116,44 +116,6 @@ class TestAliesaProvider(BaseProviderTestCase):
 
         self.assertEqual(result, (None, None, "www.example.com"))
 
-    def test_split_zone_and_sub_manual_site_id(self):
-        """Test _split_zone_and_sub method with manual site ID"""
-        result = self.provider._split_zone_and_sub("www.example.com#12345")
-
-        self.assertEqual(result, ("12345", "www", "example.com"))
-
-    def test_split_zone_and_sub_manual_site_id_with_plus(self):
-        """Test _split_zone_and_sub method with + separator"""
-        result = self.provider._split_zone_and_sub("www+example.com#12345")
-
-        self.assertEqual(result, ("12345", "www", "example.com"))
-
-    def test_split_zone_and_sub_manual_site_id_root(self):
-        """Test _split_zone_and_sub method with manual site ID for root"""
-        result = self.provider._split_zone_and_sub("example.com#12345")
-
-        self.assertEqual(result, ("12345", "@", "example.com"))
-
-    def test_split_zone_and_sub_manual_ids_with_record_id(self):
-        """Test _split_zone_and_sub method with both site and record ID"""
-        result = self.provider._split_zone_and_sub(
-            "www.example.com#12345#67890"
-        )
-
-        self.assertEqual(result, ("12345", "www", "example.com"))
-
-    def test_split_zone_and_sub_empty_site_id(self):
-        """Test _split_zone_and_sub method with empty site ID falls back"""
-        with patch.object(self.provider, '_request') as mock_request:
-            mock_request.return_value = {
-                "Sites": [{"SiteId": 99999, "SiteName": "example.com"}]
-            }
-
-            # Empty site ID should fall back to automatic lookup
-            result = self.provider._split_zone_and_sub("www.example.com#")
-
-            self.assertEqual(result, ("99999", "www", "example.com"))
-
     @patch.object(AliesaProvider, '_request')
     def test_query_record_success_single(self, mock_request):
         """Test _query_record method with single record found"""
@@ -565,26 +527,6 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
             300, None, {}
         )
         self.assertTrue(result)
-
-    def test_domain_parsing_root_domain(self):
-        """Test domain parsing for root domain with manual site ID"""
-        result = self.provider._split_zone_and_sub("example.com#12345")
-        self.assertEqual(result, ("12345", "@", "example.com"))
-
-    def test_domain_parsing_subdomain(self):
-        """Test domain parsing for subdomain with manual site ID"""
-        result = self.provider._split_zone_and_sub("www.example.com#12345")
-        self.assertEqual(result, ("12345", "www", "example.com"))
-
-    def test_domain_parsing_nested_subdomain(self):
-        """Test domain parsing for nested subdomain with manual site ID"""
-        result = self.provider._split_zone_and_sub("api.v2.example.com#12345")
-        self.assertEqual(result, ("12345", "api.v2", "example.com"))
-
-    def test_domain_parsing_plus_separator(self):
-        """Test domain parsing with plus separator and manual site ID"""
-        result = self.provider._split_zone_and_sub("sub+example.com#12345")
-        self.assertEqual(result, ("12345", "sub", "example.com"))
 
 
 if __name__ == '__main__':
