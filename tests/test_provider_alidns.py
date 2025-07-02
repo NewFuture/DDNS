@@ -343,6 +343,49 @@ class TestAlidnsProvider(BaseProviderTestCase):
             )
             self.assertTrue(result)
 
+    def test_line_configuration_support(self):
+        """Test that AlidnsProvider supports line configuration"""
+        provider = AlidnsProvider(self.auth_id, self.auth_token)
+
+        old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"RecordId": "123456"}
+
+            # Test with custom line parameter
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, "telecom", {})
+
+            mock_request.assert_called_once_with(
+                "UpdateDomainRecord",
+                RecordId="123456",
+                Value="5.6.7.8",
+                RR="www",
+                Type="A",
+                TTL=600,
+                Line="telecom",  # Should use the provided line parameter
+            )
+            self.assertTrue(result)
+
+    def test_create_record_with_line(self):
+        """Test _create_record method with line parameter"""
+        provider = AlidnsProvider(self.auth_id, self.auth_token)
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"RecordId": "123456"}
+
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "unicom", {})
+
+            mock_request.assert_called_once_with(
+                "AddDomainRecord",
+                DomainName="example.com",
+                RR="www",
+                Value="1.2.3.4",
+                Type="A",
+                TTL=300,
+                Line="unicom",
+            )
+            self.assertTrue(result)
+
 
 class TestAlidnsProviderIntegration(BaseProviderTestCase):
     """Integration test cases for AlidnsProvider - testing with minimal mocking"""

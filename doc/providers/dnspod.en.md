@@ -101,6 +101,19 @@ This method uses your DNSPod account email and password. It is still supported b
 }
 ```
 
+### Example 3: Configuration with Line Settings
+
+```json
+{
+  "id": "123456",
+  "token": "abcdef1234567890abcdef1234567890abcdef12",
+  "dns": "dnspod",
+  "ipv4": ["home.example.com"],
+  "ttl": 600,
+  "line": "电信"
+}
+```
+
 ## Optional Configuration Parameters
 
 ### TTL (Time To Live)

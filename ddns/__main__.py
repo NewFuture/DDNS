@@ -74,14 +74,14 @@ def change_dns_record(dns, proxy_list, **kw):
             dns.set_proxy(proxy)
         record_type, domain = kw["record_type"], kw["domain"]
         try:
-            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"])
+            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"], line=kw.get("line"))
         except Exception as e:
             error("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
 
 
-def update_ip(ip_type, cache, dns, ttl, proxy_list):
-    # type: (str, Cache | None, SimpleProvider, str, list[str]) -> bool | None
+def update_ip(ip_type, cache, dns, ttl, line, proxy_list):
+    # type: (str, Cache | None, SimpleProvider, str, str | None, list[str]) -> bool | None
     """
     更新IP
     """
@@ -110,7 +110,7 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
             update_success = True  # At least one domain is successfully cached
         else:
             # Update domain that is not cached or has different IP
-            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
+            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl, line=line):
                 warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
                 update_success = True
                 # Cache successful update immediately
@@ -184,8 +184,9 @@ def main():
     else:
         debug("Cache loaded with %d entries.", len(cache))
     ttl = get_config("ttl")  # type: str # type: ignore
-    update_ip("4", cache, dns, ttl, proxy_list)
-    update_ip("6", cache, dns, ttl, proxy_list)
+    line = get_config("line")  # type: str | None # type: ignore
+    update_ip("4", cache, dns, ttl, line, proxy_list)
+    update_ip("6", cache, dns, ttl, line, proxy_list)
 
 
 if __name__ == "__main__":
