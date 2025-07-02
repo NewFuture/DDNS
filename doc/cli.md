@@ -35,6 +35,7 @@ python run.py -h
 | `--ttl`         |        | 整数            | DNS 解析记录的 TTL 时间（秒）                |
 | `--proxy`       |        | 字符串列表      | HTTP 代理设置，支持多代理重复使用参数        |
 | `--cache`       |        | 布尔/字符串     | 是否启用缓存或自定义缓存路径                 |
+| `--ssl`         |        | 字符串          | SSL证书验证方式                             |
 | `--debug`       |        | 标志            | 开启调试模式（等同于 --log.level=DEBUG）     |
 | `--log.file`    |        | 字符串          | 日志文件路径，不指定则输出到控制台           |
 | `--log.level`   |        | 字符串          | 日志级别                                     |
@@ -57,6 +58,7 @@ python run.py -h
 | `--ttl`      | 秒数                                         | `--ttl 600`                            |
 | `--proxy`    | IP:端口, DIRECT                              | `--proxy 127.0.0.1:1080 --proxy DIRECT` |
 | `--cache`    | true, 文件路径                         | `--cache=true`, `--cache=/path/to/cache.json` |
+| `--ssl`      | true, false, auto, 文件路径                  | `--ssl false`, `--ssl /path/to/cert.pem` |
 | `--debug`    | (无值)                                       | `--debug`                              |
 | `--log.file` | 文件路径                                     | `--log.file=/var/log/ddns.log`         |
 | `--log.level`| DEBUG, INFO, WARNING, ERROR, CRITICAL        | `--log.level=DEBUG`                    |
@@ -195,6 +197,22 @@ HTTP代理设置，支持多代理轮换。
   - `--cache` (启用默认缓存)
   - `--cache=false` (禁用缓存)
   - `--cache=/path/to/ddns.cache` (自定义缓存路径)
+
+### `--ssl {true|false|auto|PATH}`
+
+SSL证书验证方式，控制HTTPS连接的证书验证行为。
+
+- **默认值**: `auto`
+- **可选值**:
+  - `true`: 强制验证SSL证书（最安全）
+  - `false`: 禁用SSL证书验证（最不安全）
+  - `auto`: 优先验证，SSL证书错误时自动降级（不安全）
+  - 文件路径: 使用指定路径的自定义CA证书（最安全）
+- **示例**:
+  - `--ssl true` (强制验证)
+  - `--ssl false` (禁用验证)
+  - `--ssl auto` (自动降级)
+  - `--ssl /etc/ssl/certs/ca-certificates.crt` (自定义CA证书)
 
 ### `--debug`
 
