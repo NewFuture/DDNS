@@ -361,6 +361,40 @@ class TestDnspodProvider(BaseProviderTestCase):
             self.assertFalse(result)
             self.provider.logger.error.assert_called_once()
 
+    def test_line_configuration_support(self):
+        """Test that DnspodProvider supports line configuration"""
+        with patch("ddns.provider.dnspod.DnspodProvider._request") as mock_request:
+            mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.1"}}
+
+            # Test create record with line parameter
+            result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", 600, "电信", {})
+
+            self.assertTrue(result)
+            mock_request.assert_called_once_with(
+                "Record.Create",
+                extra={},
+                domain_id="zone123",
+                sub_domain="www",
+                value="192.168.1.1",
+                record_type="A",
+                record_line="电信",
+                ttl=600,
+            )
+
+    def test_update_record_with_custom_line(self):
+        """Test _update_record method with custom line parameter"""
+        with patch("ddns.provider.dnspod.DnspodProvider._request") as mock_request:
+            mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.2"}}
+
+            old_record = {"id": "12345", "name": "www", "line": "默认"}
+
+            # Test with custom line parameter
+            result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", 300, "联通", {})
+
+            self.assertTrue(result)
+            call_args = mock_request.call_args[1]
+            self.assertEqual(call_args["record_line"], "联通")
+
 
 class TestDnspodProviderIntegration(BaseProviderTestCase):
     """DNSPod Provider 集成测试类"""

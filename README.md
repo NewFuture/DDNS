@@ -51,6 +51,7 @@
 - 其他:
   - 可设置定时任务
   - TTL 配置支持
+  - DNS 线路（运营商）配置支持（国内服务商）
   - 本地文件缓存（减少 API 请求）
   - 地址变更时触发自定义回调 API（与 DDNS 功能互斥）
 
@@ -178,6 +179,7 @@ python -m ddns -c /path/to/config.json
 | index6 | string\|int\|array |    No    | `"default"` |   ipv6 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
 |  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间  | 不设置采用 DNS 默认策略                                                                                                                                                                  |
 | proxy  |   string\|array    |    No    |     无      | http 代理 `;` 分割 | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                                                                                                  |
+|  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                                                                                    |
 | debug  |        bool        |    No    |   `false`   |    是否开启调试    | 调试模式，仅命令行参数`--debug`有效                                                                                                                                    |
 | cache  |    string\|bool    |    No    |   `true`    |    是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                                                                                                      |
 |  log   |       object       |    No    |   `null`    |  日志配置（可选）  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                                                                                               |

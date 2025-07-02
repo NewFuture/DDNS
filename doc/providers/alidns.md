@@ -54,7 +54,9 @@
     "dns": "alidns",
     "ipv6": ["dynamic.mydomain.com"],
     "ttl": 600,
-    "record_type": "A"
+    "record_type": "A",
+    "line": "telecom"
+}
 }
 ```
 

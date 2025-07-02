@@ -120,6 +120,7 @@ def init_config(description, doc, version, date):
             "he",
             "huaweidns",
             "callback",
+            "debug",
         ],
     )
     parser.add_argument("--id", help="API ID or email [对应账号ID或邮箱]")
@@ -153,6 +154,7 @@ def init_config(description, doc, version, date):
         help="IPv6 domains [IPv6域名列表, 可配置多个域名]",
     )
     parser.add_argument("--ttl", type=int, help="DNS TTL(s) [设置域名解析过期时间]")
+    parser.add_argument("--line", help="DNS line/route [DNS线路设置，如电信、联通、移动等]")
     parser.add_argument(
         "--proxy",
         nargs="*",
@@ -172,6 +174,11 @@ def init_config(description, doc, version, date):
         action="store_const",
         const=False,
         help="disable cache [关闭缓存等效 --cache=false]",
+    )
+    parser.add_argument(
+        "--ssl",
+        help="SSL certificate verification [SSL证书验证方式]: "
+        "true(强制验证), false(禁用验证), auto(自动降级), /path/to/cert.pem(自定义证书)",
     )
     parser.add_argument("--log.file", metavar="FILE", help="log file [日志文件，默认标准输出]")
     parser.add_argument("--log.level", type=log_level, metavar="|".join(log_levels))
@@ -290,7 +297,9 @@ def generate_config(config_path):
         "index4": "default",
         "index6": "default",
         "ttl": None,
+        "line": None,
         "proxy": None,
+        "ssl": "auto",
         "log": {"level": "INFO"},
     }
     try:

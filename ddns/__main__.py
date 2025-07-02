@@ -74,14 +74,14 @@ def change_dns_record(dns, proxy_list, **kw):
             dns.set_proxy(proxy)
         record_type, domain = kw["record_type"], kw["domain"]
         try:
-            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"])
+            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"], line=kw.get("line"))
         except Exception as e:
             error("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
 
 
-def update_ip(ip_type, cache, dns, ttl, proxy_list):
-    # type: (str, Cache | None, SimpleProvider, str, list[str]) -> bool | None
+def update_ip(ip_type, cache, dns, ttl, line, proxy_list):
+    # type: (str, Cache | None, SimpleProvider, str, str | None, list[str]) -> bool | None
     """
     更新IP
     """
@@ -98,20 +98,24 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
         error("Fail to get %s address!", ipname)
         return False
 
-    if cache and (address == cache.get(ipname)):
-        info("%s address not changed, using cache.", ipname)
-        return True
-
     record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
+
+    # Check cache and update each domain individually
     for domain in domains:
         domain = domain.lower()
-        if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
-            warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-            update_success = True
-
-    if isinstance(cache, dict):
-        cache[ipname] = update_success and address
+        cache_key = "{}:{}".format(domain, record_type)
+        if cache and cache.get(cache_key) == address:
+            info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
+            update_success = True  # At least one domain is successfully cached
+        else:
+            # Update domain that is not cached or has different IP
+            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl, line=line):
+                warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                update_success = True
+                # Cache successful update immediately
+                if isinstance(cache, dict):
+                    cache[cache_key] = address
 
     return update_success
 
@@ -153,7 +157,8 @@ def main():
     # dns provider class
     dns_name = get_config("dns", "debug")  # type: str # type: ignore
     provider_class = get_provider_class(dns_name)
-    dns = provider_class(get_config("id"), get_config("token"), logger=logger)  # type: ignore
+    ssl_config = get_config("ssl", "auto")  # type: str | bool # type: ignore
+    dns = provider_class(get_config("id"), get_config("token"), logger=logger, verify_ssl=ssl_config)  # type: ignore
 
     if get_config("config"):
         info("loaded Config from: %s", path.abspath(get_config("config")))  # type: ignore
@@ -179,8 +184,9 @@ def main():
     else:
         debug("Cache loaded with %d entries.", len(cache))
     ttl = get_config("ttl")  # type: str # type: ignore
-    update_ip("4", cache, dns, ttl, proxy_list)
-    update_ip("6", cache, dns, ttl, proxy_list)
+    line = get_config("line")  # type: str | None # type: ignore
+    update_ip("4", cache, dns, ttl, line, proxy_list)
+    update_ip("6", cache, dns, ttl, line, proxy_list)
 
 
 if __name__ == "__main__":

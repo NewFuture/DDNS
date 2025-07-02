@@ -76,6 +76,19 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 }
 ```
 
+### 示例 3：带线路配置
+
+```json
+{
+    "id": "123456",
+    "token": "abcdef1234567890abcdef1234567890abcdef12",
+    "dns": "dnspod",
+    "ipv4": ["home.example.com"],
+    "ttl": 600,
+    "line": "电信"
+}
+```
+
 ## 可选参数
 
 ### TTL（生存时间）

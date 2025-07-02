@@ -32,6 +32,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_INDEX4` | 数组/字符串/数字 | `default` | IPv4地址获取方式 |
 | `DDNS_INDEX6` | 数组/字符串/数字 | `default` | IPv6地址获取方式 |
 | `DDNS_TTL` | 整数 | 无 | DNS解析TTL时间（秒） |
+| `DDNS_LINE` | 字符串 | 无 | DNS解析线路，ISP线路选择 |
 | `DDNS_PROXY` | 数组/字符串 | 无 | HTTP代理设置 |
 | `DDNS_CACHE` | 布尔值/字符串 | `true` | 缓存设置 |
 | `DDNS_LOG_LEVEL` | 字符串 | `INFO` | 日志级别 |
@@ -48,6 +49,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_IPV6` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV6="example.com,ipv6.example.com"` |
 | `DDNS_INDEX4` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
 | `DDNS_INDEX6` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX6="public"` |
+| `DDNS_LINE` | 线路名称，如默认、电信、联通、移动等 | `export DDNS_LINE="电信"` |
 | `DDNS_PROXY` | IP:端口, DIRECT, 分号分隔的列表 | `export DDNS_PROXY="127.0.0.1:1080;DIRECT"` |
 | `DDNS_CACHE` | true/false, 文件路径 | `export DDNS_CACHE="/path/to/cache.json"` |
 | `DDNS_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR, CRITICAL | `export DDNS_LOG_LEVEL="DEBUG"` |
@@ -315,6 +317,28 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   
   # 自定义缓存文件路径
   export DDNS_CACHE="/path/to/ddns.cache"
+  ```
+
+### SSL证书验证
+
+#### DDNS_SSL
+
+- **类型**: 字符串或布尔值
+- **必需**: 否
+- **默认值**: `"auto"`
+- **说明**: SSL证书验证方式，控制HTTPS连接的证书验证行为
+- **可选值**:
+  - `"true"`: 强制验证SSL证书（最安全）
+  - `"false"`: 禁用SSL证书验证（最不安全）
+  - `"auto"`: 优先验证，SSL证书错误时自动降级（不安全）
+  - 文件路径: 使用指定路径的自定义CA证书（最安全）
+- **示例**:
+
+  ```bash
+  export DDNS_SSL="true"     # 强制验证SSL证书
+  export DDNS_SSL="false"    # 禁用SSL验证（不推荐）
+  export DDNS_SSL="auto"     # 自动降级模式
+  export DDNS_SSL="/etc/ssl/certs/ca-certificates.crt"  # 自定义CA证书
   ```
 
 ### 日志配置

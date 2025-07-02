@@ -46,7 +46,9 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 | index4   | string\|int\|array |  否  | `"default"` |   IPv4获取方式    | 详见下方说明                                                                                               |
 | index6   | string\|int\|array |  否  | `"default"` |   IPv6获取方式    | 详见下方说明                                                                                               |
 |  ttl     |       number       |  否  |   `null`    | DNS解析TTL时间     | 单位为秒，不设置则采用DNS默认策略                                                                          |
+|  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定，如：`"默认"`、`"电信"`、`"联通"`、`"移动"`等                          |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
+|   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  debug   |       boolean      |  否  |   `false`   | 是否开启调试       | 等同于设置log.level=DEBUG，配置文件中设置此字段无效，仅命令行参数`--debug`有效                             |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.cache`，也可以指定具体路径                              |
 |  log     |       object       |  否  |   `null`    | 日志配置（可选）   | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
@@ -112,6 +114,28 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 }
 ```
 
+### 带线路配置的DNS服务
+
+国内DNS服务商通常支持按运营商线路解析，可以为不同运营商的用户返回不同的IP地址：
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "12345",
+  "token": "mytokenkey", 
+  "dns": "dnspod",
+  "ipv4": ["telecom.example.com"],
+  "ttl": 600,
+  "line": "电信"
+}
+```
+
+**支持线路的DNS服务商：**
+- **阿里云DNS (alidns)**：`"default"`、`"telecom"`、`"unicom"`、`"mobile"`、`"oversea"`等
+- **DNSPod (dnspod)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
+- **腾讯云 (tencentcloud)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
+- **华为云 (huaweidns)**：通过额外参数支持线路配置
+
 ### 高级配置示例
 
 ```json
@@ -126,6 +150,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "index6": "public",
   "ttl": 300,
   "proxy": "127.0.0.1:1080;DIRECT",
+  "ssl": "auto",
   "cache": "/var/cache/ddns.cache",
   "log": {
     "level": "DEBUG",
