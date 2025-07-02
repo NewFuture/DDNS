@@ -47,20 +47,23 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 }
 ```
 
-### 手动指定站点ID（最低权限）
+### 自定义区域端点
 
-当你已知站点ID时，可以使用手动格式避免ListSites权限：
+ESA支持多个区域端点，可以通过在`id`参数中指定区域：
 
 ```json
 {
-    "id": "LTAI4xxx", 
+    "id": "cn-beijing:LTAI4xxx",
     "token": "xxx",
     "dns": "aliesa",
-    "ipv4": ["www.example.com#123456"],
-    "ipv6": ["ipv6.example.com#123456"],
-    "ttl": 300
+    "ipv4": ["www.example.com"]
 }
 ```
+
+支持的格式：
+- `"LTAI4xxx"` - 默认使用 cn-hangzhou 区域
+- `"cn-beijing:LTAI4xxx"` - 使用 cn-beijing 区域
+- `"cn-shanghai:LTAI4xxx"` - 使用 cn-shanghai 区域
 
 ## 可选参数
 
@@ -85,17 +88,9 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 ## 权限要求
 
-### 自动模式权限
-
 确保使用的阿里云账号具有以下ESA权限：
 
 - **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
-- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
-
-### 手动模式权限（推荐）
-
-当使用手动站点ID格式时，仅需要DNS记录权限：
-
 - **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
 
 推荐创建专门的RAM子账号并仅授予必要的ESA权限。

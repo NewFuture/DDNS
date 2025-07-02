@@ -47,29 +47,23 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
 }
 ```
 
-#### Manual Site ID Specification (Minimal Permissions)
+### Custom Region Endpoint
 
-When you know the site ID, you can use manual format to avoid ListSites permission:
+ESA supports multiple region endpoints. You can specify the region in the `id` parameter:
 
 ```json
 {
-    "id": "LTAI4xxx", 
+    "id": "cn-beijing:LTAI4xxx",
     "token": "xxx",
     "dns": "aliesa",
-    "ipv4": ["www.example.com#123456"],
-    "ipv6": ["ipv6.example.com#123456"],
-    "ttl": 300
+    "ipv4": ["www.example.com"]
 }
 ```
 
-### Supported Domain Formats
-
-| Format | Description | Permission Required | Example |
-|--------|-------------|-------------------|---------|
-| `subdomain.domain.com` | Auto query site ID | ListSites + Record permissions | `www.example.com` |
-| `subdomain.domain.com#siteId` | Manual site ID | Record permissions only | `www.example.com#123456` |
-| `subdomain+domain.com#siteId` | Use + separator | Record permissions only | `www+example.com#123456` |
-| `domain.com#siteId` | Root domain record | Record permissions only | `example.com#123456` |
+Supported formats:
+- `"LTAI4xxx"` - Default uses cn-hangzhou region
+- `"cn-beijing:LTAI4xxx"` - Use cn-beijing region
+- `"cn-shanghai:LTAI4xxx"` - Use cn-shanghai region
 
 ## Optional Parameters
 
@@ -94,17 +88,9 @@ When your NAS or other services act as ESA CDN origin, you can use this DDNS to 
 
 ## Permission Requirements
 
-### Automatic Mode Permissions
-
 Ensure the Alibaba Cloud account has the following ESA permissions:
 
 - **ESA Site Query Permission**: Used to query site IDs (`esa:ListSites`)
-- **ESA DNS Record Management Permission**: Used to query, create, and update DNS records (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
-
-### Manual Mode Permissions (Recommended)
-
-When using manual site ID format, only DNS record permissions are needed:
-
 - **ESA DNS Record Management Permission**: Used to query, create, and update DNS records (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
 
 It's recommended to create a dedicated RAM sub-account with only the necessary ESA permissions.
