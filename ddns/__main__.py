@@ -98,20 +98,24 @@ def update_ip(ip_type, cache, dns, ttl, proxy_list):
         error("Fail to get %s address!", ipname)
         return False
 
-    if cache and (address == cache.get(ipname)):
-        info("%s address not changed, using cache.", ipname)
-        return True
-
     record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
+
+    # Check cache and update each domain individually
     for domain in domains:
         domain = domain.lower()
-        if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
-            warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-            update_success = True
-
-    if isinstance(cache, dict):
-        cache[ipname] = update_success and address
+        cache_key = "{}:{}".format(domain, record_type)
+        if cache and cache.get(cache_key) == address:
+            info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
+            update_success = True  # At least one domain is successfully cached
+        else:
+            # Update domain that is not cached or has different IP
+            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl):
+                warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                update_success = True
+                # Cache successful update immediately
+                if isinstance(cache, dict):
+                    cache[cache_key] = address
 
     return update_success
 
