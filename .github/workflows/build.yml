@@ -67,6 +67,7 @@ jobs:
           sudo ${{env.PY}} get-pip.py
           ${{env.PY}} -m pip install mock==3.0.5
         working-directory: /tmp
+      - run: rm config.json
       - name: run unit tests
         run: ${{env.PY}} -m unittest discover tests -v
         env:

@@ -82,6 +82,8 @@ jobs:
       - run: python3 .github/patch.py version
       - name: Replace url in Readme
         run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+      - name: run unit tests
+        run: python -m unittest discover tests -v
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -127,6 +129,8 @@ jobs:
         if: runner.os == 'macOS'
         run: python3 -m pip install imageio
 
+      - name: run unit tests
+        run: python -m unittest discover tests -v
       - name: test run.py
         run: python3 ./run.py -h
 
