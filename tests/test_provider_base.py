@@ -85,33 +85,38 @@ class TestBaseProvider(BaseProviderTestCase):
 
     def test_split_custom_domain_with_tilde(self):
         """测试用~分隔的自定义域名"""
-        sub, main = BaseProvider._split_custom_domain("www~example.com")
+        from ddns.provider._base import split_custom_domain
+        sub, main = split_custom_domain("www~example.com")
         self.assertEqual(sub, "www")
         self.assertEqual(main, "example.com")
 
     def test_split_custom_domain_with_plus(self):
         """测试用+分隔的自定义域名"""
-        sub, main = BaseProvider._split_custom_domain("api+test.com")
+        from ddns.provider._base import split_custom_domain
+        sub, main = split_custom_domain("api+test.com")
         self.assertEqual(sub, "api")
         self.assertEqual(main, "test.com")
 
     def test_split_custom_domain_no_separator(self):
         """测试没有分隔符的域名"""
-        sub, main = BaseProvider._split_custom_domain("example.com")
+        from ddns.provider._base import split_custom_domain
+        sub, main = split_custom_domain("example.com")
         self.assertIsNone(sub)
         self.assertEqual(main, "example.com")
 
     def test_join_domain_normal(self):
         """测试正常合并域名"""
-        domain = BaseProvider._join_domain("www", "example.com")
+        from ddns.provider._base import join_domain
+        domain = join_domain("www", "example.com")
         self.assertEqual(domain, "www.example.com")
 
     def test_join_domain_empty_sub(self):
         """测试空子域名合并"""
-        domain = BaseProvider._join_domain("", "example.com")
+        from ddns.provider._base import join_domain
+        domain = join_domain("", "example.com")
         self.assertEqual(domain, "example.com")
 
-        domain = BaseProvider._join_domain("@", "example.com")
+        domain = join_domain("@", "example.com")
         self.assertEqual(domain, "example.com")
 
     def test_encode_dict(self):

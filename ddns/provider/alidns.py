@@ -5,7 +5,7 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash
+from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash, join_domain
 from time import strftime, gmtime, time
 
 
@@ -66,7 +66,7 @@ class AlidnsProvider(BaseProvider):
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-describesubdomainrecords"""
-        sub = self._join_domain(subdomain, main_domain)
+        sub = join_domain(subdomain, main_domain)
         data = self._request(
             "DescribeSubDomainRecords",
             SubDomain=sub,  # aliyun API要求SubDomain为完整域名
@@ -114,7 +114,7 @@ class AlidnsProvider(BaseProvider):
             and old_record.get("Type") == record_type
             and (not ttl or old_record.get("TTL") == ttl)
         ):
-            domain = self._join_domain(old_record.get("RR"), old_record.get("DomainName"))
+            domain = join_domain(old_record.get("RR"), old_record.get("DomainName"))
             self.logger.warning("No changes detected, skipping update for record: %s", domain)
             return True
         data = self._request(
