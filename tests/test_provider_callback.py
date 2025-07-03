@@ -290,13 +290,22 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up real test fixtures and skip on unsupported CI environments"""
         super(TestCallbackProviderRealIntegration, self).setUp()
-        # Skip on Python 3.10/3.12 or ARM or 32bit in CI
+        # Skip on Python 3.10/3.13 or 32bit in CI
         is_ci = os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITHUB_REF_NAME")
         pyver = sys.version_info
-        is_arm = hasattr(sys, "platform") and ("arm" in sys.platform or "aarch" in sys.platform)
-        is_32bit = platform.architecture()[0] == "32bit"
-        if is_ci and (pyver[:2] in [(3, 10), (3, 12)] or is_arm or is_32bit):
-            self.skipTest("Skip real HTTP integration on CI for Python 3.10/3.12, ARM, or 32bit platform")
+        sys_platform = sys.platform.lower()
+        machine = platform.machine().lower()
+        is_mac = sys_platform == "darwin"
+        # On macOS CI, require arm64; on others, require amd64/x86_64
+        if is_ci:
+            if is_mac:
+                if not ("arm" in machine or "aarch64" in machine):
+                    self.skipTest("On macOS CI, only arm64 is supported for integration tests.")
+            else:
+                if not ("amd64" in machine or "x86_64" in machine):
+                    self.skipTest("On non-macOS CI, only amd64/x86_64 is supported for integration tests.")
+            if pyver[:2] in [(3, 10), (3, 13)] or platform.architecture()[0] == "32bit":
+                self.skipTest("Skip real HTTP integration on CI for Python 3.10/3.13 or 32bit platform")
         # Use httpbin.org as a stable test server
         self.real_callback_url = "https://httpbin.org/post"
 
