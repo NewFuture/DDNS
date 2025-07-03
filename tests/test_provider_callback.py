@@ -274,6 +274,17 @@ class TestCallbackProvider(BaseProviderTestCase):
 
 
 class TestCallbackProviderRealIntegration(BaseProviderTestCase):
+    def _run_with_retry(self, func, *args, **kwargs):
+        """
+        Helper to run a function with retry logic: if the first call returns falsy, wait 1.5~4s and retry once.
+        Returns the result of the (first or second) call.
+        """
+        result = func(*args, **kwargs)
+        if not result:
+            sleep(random.uniform(1.5, 4))
+            result = func(*args, **kwargs)
+        return result
+
     """Real integration tests for CallbackProvider using httpbin.org"""
 
     def setUp(self):
@@ -332,10 +343,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request
-        result = provider.set_record(domain, ip, "A")
-        if not result:
-            sleep(random.uniform(1.5, 4))
-            result = provider.set_record(domain, ip, "A")
+        result = self._run_with_retry(provider.set_record, domain, ip, "A")
         self.assertTrue(result)
         self._assert_callback_result_logged(mock_logger, domain, ip)
 
@@ -349,10 +357,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request
-        result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
-        if not result:
-            sleep(random.uniform(1.5, 4))
-            result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
+        result = self._run_with_retry(provider.set_record, "test.example.com", "203.0.113.2", "A", 300)
         # httpbin.org returns JSON with our posted data, so it should be truthy
         self.assertTrue(result)
 
@@ -380,10 +385,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         try:
             mock_logger = self._setup_provider_with_mock_logger(provider)
             self._random_delay()  # Add random delay before real request
-            result = provider.set_record(domain, ip, "A")
-            if not result:
-                sleep(random.uniform(1.5, 4))
-                result = provider.set_record(domain, ip, "A")
+            result = self._run_with_retry(provider.set_record, domain, ip, "A")
             self.assertTrue(result)
             self._assert_callback_result_logged(mock_logger, domain, ip)
 
@@ -393,7 +395,8 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
                 self.skipTest("SSL certificate issue: {}".format(e))
 
     def test_real_callback_redirect_with_post(self):
-        """Test POST request redirect behavior (should change to GET after 302) and verify logger calls (retry once on failure)"""
+        """Test POST request redirect behavior (should change to GET after 302)
+        and verify logger calls (retry once on failure)"""
         # POST to redirect endpoint - should convert to GET after 302
         auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
         auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
@@ -404,10 +407,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             mock_logger = self._setup_provider_with_mock_logger(provider)
 
             self._random_delay()  # Add random delay before real request
-            result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
-            if not result:
-                sleep(random.uniform(1.5, 4))
-                result = provider.set_record("post-redirect.example.com", "203.0.113.202", "A")
+            result = self._run_with_retry(provider.set_record, "post-redirect.example.com", "203.0.113.202", "A")
             # POST should be redirected as GET and succeed
             self.assertTrue(result)
 
