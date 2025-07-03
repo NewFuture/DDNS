@@ -8,6 +8,7 @@ from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
+from .noip import NoipProvider
 from .tencentcloud import TencentCloudProvider
 from .debug import DebugProvider
 
@@ -48,6 +49,10 @@ def get_provider_class(provider_name):
         "huaweidns": HuaweiDNSProvider,
         "huawei": HuaweiDNSProvider,  # 兼容huawei
         "huaweicloud": HuaweiDNSProvider,
+        # no-ip
+        "noip": NoipProvider,
+        "no-ip": NoipProvider,  # 兼容no-ip
+        "noip_com": NoipProvider,  # 兼容noip.com
         # callback
         "callback": CallbackProvider,
         "webhook": CallbackProvider,  # 兼容
