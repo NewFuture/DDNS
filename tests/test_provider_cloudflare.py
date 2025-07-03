@@ -181,7 +181,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _query_record method when no matching record is found"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
 
@@ -198,7 +198,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _query_record method with proxy option in extra parameters"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
 
@@ -245,7 +245,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _create_record method with failed creation"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
 
@@ -260,7 +260,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _create_record method with extra parameters"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider._base.join_domain") as mock_join, patch.object(
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
 
