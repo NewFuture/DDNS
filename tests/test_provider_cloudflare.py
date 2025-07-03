@@ -181,8 +181,8 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _query_record method when no matching record is found"""
         provider = CloudflareProvider(self.auth_id, self.auth_token)
 
-        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
-            provider, "_request"
+        with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
+            provider, "_request", autospec=True
         ) as mock_request:
 
             mock_join.return_value = "www.example.com"
