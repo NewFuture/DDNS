@@ -138,11 +138,11 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider(self.auth_id, self.auth_token)
 
         result = provider.set_record(
-            domain="full.example.com", 
-            value="10.0.0.1", 
-            record_type="A", 
-            ttl=300, 
-            line="default", 
+            domain="full.example.com",
+            value="10.0.0.1",
+            record_type="A",
+            ttl=300,
+            line="default",
             extra_param="test"
         )
 
@@ -262,7 +262,8 @@ class TestNoipProvider(BaseProviderTestCase):
         result = provider.set_record("example.com", "192.168.1.1")
         self.assertFalse(result)
 
-        # Verify error was logged - empty string should be treated as unexpected response
+        # Verify error was logged - empty string should be treated as
+        # unexpected response
         provider.logger.error.assert_called_once()
         args = provider.logger.error.call_args[0]
         self.assertIn("Unexpected No-IP API response", args[0])
@@ -304,7 +305,7 @@ class TestNoipProvider(BaseProviderTestCase):
     def test_authentication_header_creation(self):
         """Test that authentication header is created correctly"""
         provider = NoipProvider("test_user", "test_pass")
-        
+
         # Test the auth header creation manually
         import base64
         auth_string = "test_user:test_pass"
@@ -312,14 +313,14 @@ class TestNoipProvider(BaseProviderTestCase):
             auth_bytes = auth_string.encode('utf-8')
         else:  # Python 2
             auth_bytes = auth_string
-        
+
         expected_auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
         expected_header = "Basic {0}".format(expected_auth_b64)
-        
+
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good 1.2.3.4"
             provider.set_record("test.com", "1.2.3.4")
-            
+
             # Check that the Authorization header was set correctly
             args, kwargs = mock_http.call_args
             headers = kwargs["headers"]
@@ -335,7 +336,8 @@ class TestNoipProvider(BaseProviderTestCase):
             provider.set_record("example.com", "192.168.1.1", "A")
 
         # Verify logger.info was called for initial log
-        provider.logger.info.assert_any_call("%s => %s(%s)", "example.com", "192.168.1.1", "A")
+        provider.logger.info.assert_any_call(
+            "%s => %s(%s)", "example.com", "192.168.1.1", "A")
 
 
 class TestNoipProviderIntegration(BaseProviderTestCase):
@@ -348,7 +350,8 @@ class TestNoipProviderIntegration(BaseProviderTestCase):
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good 1.2.3.4"
 
-            result = provider.set_record("test.com", "1.2.3.4", "A", 300, "default")
+            result = provider.set_record(
+                "test.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
             mock_http.assert_called_once()
@@ -371,7 +374,8 @@ class TestNoipProviderIntegration(BaseProviderTestCase):
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good ::1"
 
-            result = provider.set_record("test.com", "::1", "AAAA", 600, "telecom")
+            result = provider.set_record(
+                "test.com", "::1", "AAAA", 600, "telecom")
 
             self.assertTrue(result)
             mock_http.assert_called_once()
