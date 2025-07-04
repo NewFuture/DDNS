@@ -6,6 +6,7 @@ AliESA API
 """
 
 from .alidns import AliBaseProvider
+from ._base import join_domain
 
 
 class AliesaProvider(AliBaseProvider):
@@ -27,6 +28,68 @@ class AliesaProvider(AliBaseProvider):
             self.auth_id = access_id
         # 调用父类验证
         super(AliesaProvider, self)._validate()
+
+    def _request(self, action, **params):
+        # type: (str, **(str | int | bytes | bool | None)) -> dict
+        """ESA API request with appropriate HTTP method for each action"""
+        # ESA API uses different HTTP methods for different operations
+        if action in ["ListSites", "ListRecords"]:
+            # Query operations use GET
+            return self._request_with_method("GET", action, **params)
+        else:
+            # Modification operations use POST
+            return self._request_with_method("POST", action, **params)
+
+    def _request_with_method(self, method, action, **params):
+        # type: (str, str, **(str | int | bytes | bool | None)) -> dict
+        """ESA API request with specific HTTP method"""
+        from ._base import sha256_hash, hmac_sha256_authorization
+        from time import strftime, gmtime, time
+
+        params = {k: v for k, v in params.items() if v is not None}
+
+        if method == "GET":
+            # For GET requests, parameters go in query string
+            query_string = self._encode(params) if len(params) > 0 else ""
+            body_content = ""
+            path = "/" if not query_string else "/?{}".format(query_string)
+        else:
+            # For POST requests, parameters go in body
+            body_content = self._encode(params) if len(params) > 0 else ""
+            path = "/"
+            query_string = ""
+
+        content_hash = sha256_hash(body_content)
+
+        # 构造请求头部
+        headers = {
+            "host": self.API.split("://", 1)[1].strip("/"),
+            "content-type": self.content_type,
+            "x-acs-action": action,
+            "x-acs-content-sha256": content_hash,
+            "x-acs-date": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
+            "x-acs-signature-nonce": str(hash(time()))[2:],
+            "x-acs-version": self.api_version,
+        }
+
+        # 使用通用签名函数
+        authorization = hmac_sha256_authorization(
+            secret_key=self.auth_token,
+            method=method,
+            path=path,
+            query=query_string,
+            headers=headers,
+            body_hash=content_hash,
+            signing_string_format="ACS3-HMAC-SHA256\n{HashedCanonicalRequest}",
+            authorization_format=(
+                "ACS3-HMAC-SHA256 Credential=" + self.auth_id +
+                ",SignedHeaders={SignedHeaders},Signature={Signature}"
+            ),
+        )
+        headers["Authorization"] = authorization
+
+        # Make the HTTP request
+        return self._http(method, path, body=body_content, headers=headers)
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
@@ -55,7 +118,7 @@ class AliesaProvider(AliBaseProvider):
         查询DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-listrecords
         """
-        full_domain = self._join_domain(subdomain, main_domain)
+        full_domain = join_domain(subdomain, main_domain)
 
         res = self._request(
             "ListRecords",
@@ -85,7 +148,7 @@ class AliesaProvider(AliBaseProvider):
         创建DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
         """
-        full_domain = self._join_domain(subdomain, main_domain)
+        full_domain = join_domain(subdomain, main_domain)
 
         params = {
             "SiteId": int(zone_id),
