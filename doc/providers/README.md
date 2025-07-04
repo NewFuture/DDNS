@@ -10,7 +10,9 @@
 |----------|--------|----------|----------|------|
 | `dnspod` | [DNSPod 中国版](https://www.dnspod.cn/) | [dnspod.md](dnspod.md) | [dnspod.en.md](dnspod.en.md) | 国内最大DNS服务商 |
 | `alidns` | [阿里云 DNS](https://dns.console.aliyun.com/) | [alidns.md](alidns.md) | [alidns.en.md](alidns.en.md) | 阿里云生态集成 |
+| `aliesa` | [阿里云 ESA](https://esa.console.aliyun.com/) | [aliesa.md](aliesa.md) | [aliesa.en.md](aliesa.en.md) | 阿里云边缘安全加速 |
 | `tencentcloud` | [腾讯云 DNSPod](https://cloud.tencent.com/product/cns) | [tencentcloud.md](tencentcloud.md) | [tencentcloud.en.md](tencentcloud.en.md) | 腾讯云DNSPod服务 |
+| `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare.md](cloudflare.md) | [cloudflare.en.md](cloudflare.en.md) | 全球CDN和DNS服务 |
 | `noip` | [No-IP](https://www.noip.com/) | [noip.md](noip.md) | [noip.en.md](noip.en.md) | 流行的动态DNS服务 |
 | `callback` | 自定义API (Webhook) | [callback.md](callback.md) | [callback.en.md](callback.en.md) | 自定义HTTP API |
 
@@ -18,7 +20,6 @@
 
 | Provider | 服务商 | 官方文档 | 状态 |
 |----------|--------|----------|------|
-| `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [API文档](https://developers.cloudflare.com/api/) | ⚠️ 缺少充分测试 |
 | `dnscom` | [DNS.COM](https://www.dns.com/) | [API文档](https://www.dns.com/member/apiSet) | ⚠️ 缺少充分测试 |
 | `dnspod_com` | [DNSPod 国际版](https://www.dnspod.com/) | [API文档](https://www.dnspod.com/docs/info.html) | 国际版DNSPod |
 | `he` | [HE.net](https://dns.he.net/) | [DDNS文档](https://dns.he.net/docs.html) | ⚠️ 缺少充分测试，不支持自动创建记录 |
