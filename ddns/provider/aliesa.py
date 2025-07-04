@@ -2,7 +2,7 @@
 """
 AliESA API
 阿里云边缘安全加速(ESA) DNS 解析操作库
-@author: NewFuture
+@author: NewFuture, GitHub Copilot
 """
 
 from .alidns import AliBaseProvider
@@ -69,6 +69,7 @@ class AliesaProvider(AliBaseProvider):
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
         """
         full_domain = join_domain(subdomain, main_domain)
+        extra["Comment"] = extra.get("Comment", self.remark)
         data = self._request(
             method="POST",
             action="CreateRecord",
@@ -77,8 +78,7 @@ class AliesaProvider(AliBaseProvider):
             Type=record_type,
             Value=value,
             TTL=int(ttl) if ttl else None,
-            Comment=extra.pop("Comment", self.remark),
-            **extra,
+            **extra
         )
 
         if data and data.get("RecordId"):
@@ -103,6 +103,7 @@ class AliesaProvider(AliBaseProvider):
             self.logger.warning("No changes detected, skipping update for record: %s", old_record.get("RecordName"))
             return True
 
+        extra["Comment"] = extra.get("Comment", self.remark)
         data = self._request(
             method="POST",
             action="UpdateRecord",
@@ -111,8 +112,7 @@ class AliesaProvider(AliBaseProvider):
             Type=record_type,
             Value=value,
             TTL=int(ttl) if ttl else None,
-            Comment=extra.pop("Comment", self.remark),
-            **extra,
+            **extra
         )
 
         if data and data.get("RecordId"):
