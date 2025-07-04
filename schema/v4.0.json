@@ -42,16 +42,17 @@
         "cloudflare"
       ],
       "enum": [
-        "dnspod",
         "alidns",
         "aliesa",
+        "callback",
         "cloudflare",
-        "dnspod_com",
+        "debug",
         "dnscom",
+        "dnspod_com",
+        "dnspod",
         "he",
         "huaweidns",
-        "callback",
-        "debug",
+        "noip",
         "tencentcloud"
       ]
     },
