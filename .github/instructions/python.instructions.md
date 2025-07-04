@@ -76,7 +76,6 @@ schema/                  # JSON schemas
 
 **Available Methods**:
 - `_http(method, url, ...)` - HTTP/HTTPS requests with automatic error handling
-- `_encode(params)` - URL encoding for query strings and form data
 - `_mask_sensitive_data(data)` - Log-safe data masking for security (supports URL-encoded data)
 
 #### BaseProvider (Full CRUD DNS Provider - Recommended for Most Providers)
@@ -96,8 +95,6 @@ schema/                  # JSON schemas
 
 **Inherited Methods**:
 - `_http()` - HTTP requests with authentication error handling (raises RuntimeError on 401/403)
-- `_encode()` - Parameter encoding for URL query strings and form data
-- `_join_domain(sub, main)` - Domain name construction utility
 - `set_record()` - Automatic record management (orchestrates the above abstract methods)
 
 ## Code Quality Standards

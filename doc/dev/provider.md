@@ -95,8 +95,8 @@ class MySimpleProvider(SimpleProvider):
     支持简单的DNS记录更新，适用于大多数简单DNS API
     """
     API = 'https://api.simpledns.com'
-    ContentType = TYPE_FORM          # 或 TYPE_JSON
-    DecodeResponse = False           # 如果返回纯文本而非JSON，设为False
+    content_type = TYPE_FORM          # 或 TYPE_JSON
+    decode_response = False           # 如果返回纯文本而非JSON，设为False
 
     def _validate(self):
         """验证认证信息（可选重写）"""
@@ -135,24 +135,24 @@ class MyProvider(BaseProvider):
     适用于提供完整CRUD API的DNS服务商
     """
     API = 'https://api.exampledns.com'
-    ContentType = TYPE_JSON  # 或 TYPE_FORM
+    content_type = TYPE_JSON  # 或 TYPE_FORM
 
     def _query_zone_id(self, domain):
-        # type: (str) -> str
+        # type: (str) -> str | None
         """查询主域名的Zone ID"""
         # 精确查找 或者 list匹配
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line=None, extra=None):
-        # type: (str, str, str, int | None, str | None, dict | None) -> Any
+        # type: (str, str, str, str, str | None, dict | None) -> Any
         """查询现有DNS记录"""
 
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
+        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
         """创建新的DNS记录"""
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, int | None, str | None, dict | None) -> bool
+        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
         """更新现有DNS记录"""
 
     

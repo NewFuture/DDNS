@@ -4,7 +4,7 @@ CloudFlare API
 @author: TongYifan, NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON
+from ._base import BaseProvider, TYPE_JSON, join_domain
 
 
 class CloudflareProvider(BaseProvider):
@@ -51,7 +51,7 @@ class CloudflareProvider(BaseProvider):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/"""
         # cloudflare的域名查询需要完整域名
-        name = self._join_domain(subdomain, main_domain)
+        name = join_domain(subdomain, main_domain)
         query = {"name.exact": name}  # type: dict[str, str|None]
         if extra:
             query["proxied"] = extra.get("proxied", None)  # 代理状态
@@ -66,7 +66,7 @@ class CloudflareProvider(BaseProvider):
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         # type: (str, str, str, str, str, int | str | None, str | None, dict ) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/create/"""
-        name = self._join_domain(subdomain, main_domain)
+        name = join_domain(subdomain, main_domain)
         extra["comment"] = extra.get("comment", self.remark)  # 添加注释
         data = self._request(
             "POST", "/{}/dns_records".format(zone_id), name=name, type=record_type, content=value, ttl=ttl, **extra
