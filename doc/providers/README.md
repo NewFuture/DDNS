@@ -11,6 +11,7 @@
 | `dnspod` | [DNSPod 中国版](https://www.dnspod.cn/) | [dnspod.md](dnspod.md) | [dnspod.en.md](dnspod.en.md) | 国内最大DNS服务商 |
 | `alidns` | [阿里云 DNS](https://dns.console.aliyun.com/) | [alidns.md](alidns.md) | [alidns.en.md](alidns.en.md) | 阿里云生态集成 |
 | `tencentcloud` | [腾讯云 DNSPod](https://cloud.tencent.com/product/cns) | [tencentcloud.md](tencentcloud.md) | [tencentcloud.en.md](tencentcloud.en.md) | 腾讯云DNSPod服务 |
+| `noip` | [No-IP](https://www.noip.com/) | [noip.md](noip.md) | [noip.en.md](noip.en.md) | 流行的动态DNS服务 |
 | `callback` | 自定义API (Webhook) | [callback.md](callback.md) | [callback.en.md](callback.en.md) | 自定义HTTP API |
 
 ### 其他支持的Provider
@@ -64,6 +65,9 @@ ddns --dns cloudflare --id user@example.com --token your_api_key --ipv4 example.
 
 # Cloudflare (使用Token)
 ddns --dns cloudflare --token your_api_token --ipv4 example.com
+
+# No-IP
+ddns --dns noip --id your_username --token your_password --ipv4 example.com
 ```
 
 ### JSON配置文件
