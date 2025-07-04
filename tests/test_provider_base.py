@@ -6,7 +6,7 @@ BaseProvider 单元测试
 """
 
 from base_test import BaseProviderTestCase, unittest
-from ddns.provider._base import BaseProvider
+from ddns.provider._base import BaseProvider, encode_params
 
 
 class _TestProvider(BaseProvider):
@@ -86,6 +86,7 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_split_custom_domain_with_tilde(self):
         """测试用~分隔的自定义域名"""
         from ddns.provider._base import split_custom_domain
+
         sub, main = split_custom_domain("www~example.com")
         self.assertEqual(sub, "www")
         self.assertEqual(main, "example.com")
@@ -93,6 +94,7 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_split_custom_domain_with_plus(self):
         """测试用+分隔的自定义域名"""
         from ddns.provider._base import split_custom_domain
+
         sub, main = split_custom_domain("api+test.com")
         self.assertEqual(sub, "api")
         self.assertEqual(main, "test.com")
@@ -100,6 +102,7 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_split_custom_domain_no_separator(self):
         """测试没有分隔符的域名"""
         from ddns.provider._base import split_custom_domain
+
         sub, main = split_custom_domain("example.com")
         self.assertIsNone(sub)
         self.assertEqual(main, "example.com")
@@ -107,12 +110,14 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_join_domain_normal(self):
         """测试正常合并域名"""
         from ddns.provider._base import join_domain
+
         domain = join_domain("www", "example.com")
         self.assertEqual(domain, "www.example.com")
 
     def test_join_domain_empty_sub(self):
         """测试空子域名合并"""
         from ddns.provider._base import join_domain
+
         domain = join_domain("", "example.com")
         self.assertEqual(domain, "example.com")
 
@@ -122,20 +127,15 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_encode_dict(self):
         """测试编码字典参数"""
         params = {"key1": "value1", "key2": "value2"}
-        result = BaseProvider._encode(params)
+        result = encode_params(params)
         # 由于字典顺序可能不同，我们检查包含关系
         self.assertIn("key1=value1", result)
         self.assertIn("key2=value2", result)
 
     def test_encode_none(self):
         """测试编码None参数"""
-        result = BaseProvider._encode(None)
+        result = encode_params(None)
         self.assertEqual(result, "")
-
-    def test_quote_basic(self):
-        """测试基本URL编码"""
-        result = BaseProvider._quote("hello world")
-        self.assertEqual(result, "hello%20world")
 
     def test_mask_sensitive_data_empty(self):
         """测试空数据打码"""

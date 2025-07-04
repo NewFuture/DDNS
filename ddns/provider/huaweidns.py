@@ -5,7 +5,7 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
 from json import dumps as jsonencode
 from time import strftime, gmtime
 
@@ -32,7 +32,7 @@ class HuaweiDNSProvider(BaseProvider):
         # type: (str, str, **Any) -> dict
         params = {k: v for k, v in params.items() if v is not None}
         if method.upper() == "GET" or method.upper() == "DELETE":
-            query = self._encode(sorted(params.items()))
+            query = encode_params(params)
             body = ""
         else:
             query = ""

@@ -74,6 +74,24 @@ TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
 
 
+def encode_params(params):
+    # type: (dict|list|str|bytes|None) -> str
+    """
+    编码参数为 URL 查询字符串,参数顺序会排序
+
+    Args:
+        params (dict|list|str|bytes|None): 参数字典、列表或字符串
+    Returns:
+        str: 编码后的查询字符串
+    """
+    if not params:
+        return ""
+    elif isinstance(params, (str, bytes)):
+        return params  # type: ignore[return-value]
+    items = params.items() if isinstance(params, dict) else params
+    return urlencode(sorted(items), doseq=True)
+
+
 def hmac_sha256(key, message):
     # type: (str | bytes, str | bytes) -> HMAC
     """
@@ -314,7 +332,7 @@ class SimpleProvider(object):
 
         # 构建查询字符串
         if len(query_params) > 0:
-            url += ("&" if "?" in url else "?") + self._encode(query_params)
+            url += ("&" if "?" in url else "?") + encode_params(query_params)
 
         # 构建完整URL
         if not url.startswith("http://") and not url.startswith("https://"):
@@ -333,7 +351,7 @@ class SimpleProvider(object):
             if isinstance(body, (str, bytes)):
                 body_data = body
             elif self.content_type == TYPE_FORM:
-                body_data = self._encode(body)
+                body_data = encode_params(body)
             else:
                 body_data = jsonencode(body)
             self.logger.debug("body:\n%s", self._mask_sensitive_data(body_data))
@@ -368,7 +386,7 @@ class SimpleProvider(object):
             elif status_code == 401:
                 raise RuntimeError("认证失败 [401]: " + response.reason)
             elif status_code == 403:
-                raise RuntimeError("权限不足 [403]: " + response.reason)
+                raise RuntimeError("禁止访问 [403]: " + response.reason)
             else:
                 raise RuntimeError("服务器错误 [{}]: {}".format(status_code, response.reason))
 
@@ -381,37 +399,6 @@ class SimpleProvider(object):
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)
         return res
-
-    @staticmethod
-    def _encode(params):
-        # type: (dict|list|str|bytes|None) -> str
-        """
-        编码参数为 URL 查询字符串
-
-        Args:
-            params (dict|list|str|bytes|None): 参数字典、列表或字符串
-        Returns:
-            str: 编码后的查询字符串
-        """
-        if not params:
-            return ""
-        elif isinstance(params, (str, bytes)):
-            return params  # type: ignore[return-value]
-        return urlencode(params, doseq=True)
-
-    @staticmethod
-    def _quote(data, safe="/"):
-        # type: (str, str) -> str
-        """
-        对字符串进行 URL 编码
-
-        Args:
-            data (str): 待编码字符串
-
-        Returns:
-            str: 编码后的字符串
-        """
-        return quote(data, safe=safe)
 
     def _mask_sensitive_data(self, data):
         # type: (str | bytes | None) -> str | bytes | None
