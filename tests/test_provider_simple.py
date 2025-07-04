@@ -12,7 +12,7 @@ from ddns.provider._base import SimpleProvider, TYPE_FORM, encode_params
 class _TestableSimpleProvider(SimpleProvider):
     """Test implementation of SimpleProvider for testing purposes"""
 
-    API = "https://api.example.com"
+    endpoint = "https://api.example.com"
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """Test implementation of set_record"""
@@ -32,7 +32,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://api.example.com")
+        self.assertEqual(provider.endpoint, "https://api.example.com")
         self.assertEqual(provider.content_type, TYPE_FORM)
         self.assertTrue(provider.decode_response)
         self.assertEqual(provider.verify_ssl, "auto")  # Default verify_ssl should be "auto"

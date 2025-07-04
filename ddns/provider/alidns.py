@@ -12,7 +12,7 @@ from time import strftime, gmtime, time
 class AliBaseProvider(BaseProvider):
     """阿里云基础Provider，提供通用的_request方法"""
 
-    API = "https://alidns.aliyuncs.com"
+    endpoint = "https://alidns.aliyuncs.com"
     content_type = TYPE_FORM  # 阿里云DNS API使用表单格式
     api_version = "2015-01-09"  # API版本，v3签名需要
 
@@ -34,7 +34,7 @@ class AliBaseProvider(BaseProvider):
         content_hash = sha256_hash(body_content)
         # 构造请求头部
         headers = {
-            "host": self.API.split("://", 1)[1].strip("/"),
+            "host": self.endpoint.split("://", 1)[1].strip("/"),
             "content-type": self.content_type,
             "x-acs-action": action,
             "x-acs-content-sha256": content_hash,

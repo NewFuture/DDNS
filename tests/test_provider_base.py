@@ -12,7 +12,7 @@ from ddns.provider._base import BaseProvider, encode_params
 class _TestProvider(BaseProvider):
     """测试用的具体Provider实现"""
 
-    API = "https://api.example.com"
+    endpoint = "https://api.example.com"
 
     def __init__(self, auth_id="test_id", auth_token="test_token_123456789", **options):
         super(_TestProvider, self).__init__(auth_id, auth_token, **options)

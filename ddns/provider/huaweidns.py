@@ -11,7 +11,7 @@ from time import strftime, gmtime
 
 
 class HuaweiDNSProvider(BaseProvider):
-    API = "https://dns.myhuaweicloud.com"
+    endpoint = "https://dns.myhuaweicloud.com"
     content_type = TYPE_JSON
     algorithm = "SDK-HMAC-SHA256"
 
@@ -41,7 +41,7 @@ class HuaweiDNSProvider(BaseProvider):
         now = strftime("%Y%m%dT%H%M%SZ", gmtime())
         headers = {
             "content-type": self.content_type,
-            "host": self.API.split("://", 1)[1].strip("/"),
+            "host": self.endpoint.split("://", 1)[1].strip("/"),
             "X-Sdk-Date": now,
         }
 

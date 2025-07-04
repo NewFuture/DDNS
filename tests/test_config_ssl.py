@@ -18,7 +18,7 @@ from ddns.provider._base import SimpleProvider  # noqa: E402
 class _TestSSLProvider(SimpleProvider):
     """Test provider to verify SSL configuration"""
 
-    API = "https://api.example.com"
+    endpoint = "https://api.example.com"
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         return True

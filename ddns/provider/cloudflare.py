@@ -8,7 +8,7 @@ from ._base import BaseProvider, TYPE_JSON, join_domain
 
 
 class CloudflareProvider(BaseProvider):
-    API = "https://api.cloudflare.com"
+    endpoint = "https://api.cloudflare.com"
     content_type = TYPE_JSON
 
     def _validate(self):

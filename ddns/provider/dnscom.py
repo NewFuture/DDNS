@@ -16,7 +16,7 @@ class DnscomProvider(BaseProvider):
     https://www.51dns.com/document/api/index.html
     """
 
-    API = "https://www.51dns.com"
+    endpoint = "https://www.51dns.com"
     content_type = TYPE_FORM
 
     def _validate(self):

@@ -206,7 +206,7 @@ class SimpleProvider(object):
     __metaclass__ = ABCMeta
 
     # API endpoint domain (to be defined in subclass)
-    API = ""  # type: str # https://exampledns.com
+    endpoint = ""  # type: str # https://exampledns.com
     # Content-Type for requests (to be defined in subclass)
     content_type = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
     # 默认 accept 头部, 空则不设置
@@ -293,7 +293,7 @@ class SimpleProvider(object):
             raise ValueError("id must be configured")
         if not self.auth_token:
             raise ValueError("token must be configured")
-        if not self.API:
+        if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
@@ -336,9 +336,9 @@ class SimpleProvider(object):
 
         # 构建完整URL
         if not url.startswith("http://") and not url.startswith("https://"):
-            if not url.startswith("/") and self.API.endswith("/"):
+            if not url.startswith("/") and self.endpoint.endswith("/"):
                 url = "/" + url
-            url = self.API + url
+            url = self.endpoint + url
 
         # 记录请求日志
         self.logger.info("%s %s", method, self._mask_sensitive_data(url))

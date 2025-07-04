@@ -20,7 +20,7 @@ class TestDnspodComProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test DnspodComProvider class constants"""
-        self.assertEqual(DnspodComProvider.API, "https://api.dnspod.com")
+        self.assertEqual(DnspodComProvider.endpoint, "https://api.dnspod.com")
         self.assertEqual(DnspodComProvider.DefaultLine, "default")
 
     def test_init_with_basic_config(self):
@@ -28,7 +28,7 @@ class TestDnspodComProvider(BaseProviderTestCase):
         provider = DnspodComProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://api.dnspod.com")
+        self.assertEqual(provider.endpoint, "https://api.dnspod.com")
 
     def test_inheritance_from_dnspod(self):
         """Test that DnspodComProvider properly inherits from DnspodProvider"""
@@ -61,8 +61,8 @@ class TestDnspodComProviderIntegration(BaseProviderTestCase):
         dnspod_com_provider = DnspodComProvider(self.auth_id, self.auth_token)
 
         # Should use different API endpoints
-        self.assertNotEqual(dnspod_provider.API, dnspod_com_provider.API)
-        self.assertEqual(dnspod_com_provider.API, "https://api.dnspod.com")
+        self.assertNotEqual(dnspod_provider.endpoint, dnspod_com_provider.endpoint)
+        self.assertEqual(dnspod_com_provider.endpoint, "https://api.dnspod.com")
 
     def test_default_line_setting(self):
         """Test that DnspodComProvider uses correct default line"""

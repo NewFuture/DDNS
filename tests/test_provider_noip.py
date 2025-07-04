@@ -24,17 +24,18 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://dynupdate.no-ip.com")
+        self.assertEqual(provider.endpoint, "https://dynupdate.no-ip.com")
         self.assertFalse(provider.decode_response)
 
     def test_class_constants(self):
         """Test NoipProvider class constants"""
         provider = NoipProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.API, "https://dynupdate.no-ip.com")
+        self.assertEqual(provider.endpoint, "https://dynupdate.no-ip.com")
         self.assertFalse(provider.decode_response)
         self.assertIsNone(provider.accept)
         # ContentType should be form-encoded
         from ddns.provider._base import TYPE_FORM
+
         self.assertEqual(provider.content_type, TYPE_FORM)
 
     def test_validate_success_with_credentials(self):
@@ -138,12 +139,7 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider(self.auth_id, self.auth_token)
 
         result = provider.set_record(
-            domain="full.example.com",
-            value="10.0.0.1",
-            record_type="A",
-            ttl=300,
-            line="default",
-            extra_param="test"
+            domain="full.example.com", value="10.0.0.1", record_type="A", ttl=300, line="default", extra_param="test"
         )
 
         # Verify the result
@@ -307,14 +303,8 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider("test_user", "test_pass")
 
         # Test the auth header creation manually
-        import base64
-        auth_string = "test_user:test_pass"
-        if hasattr(auth_string, 'encode'):  # Python 3
-            auth_bytes = auth_string.encode('utf-8')
-        else:  # Python 2
-            auth_bytes = auth_string
 
-        expected_auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+        expected_auth_b64 = "dGVzdF91c2VyOnRlc3RfcGFzcw=="
         expected_header = "Basic {0}".format(expected_auth_b64)
 
         with patch.object(provider, "_http") as mock_http:
@@ -336,8 +326,7 @@ class TestNoipProvider(BaseProviderTestCase):
             provider.set_record("example.com", "192.168.1.1", "A")
 
         # Verify logger.info was called for initial log
-        provider.logger.info.assert_any_call(
-            "%s => %s(%s)", "example.com", "192.168.1.1", "A")
+        provider.logger.info.assert_any_call("%s => %s(%s)", "example.com", "192.168.1.1", "A")
 
 
 class TestNoipProviderIntegration(BaseProviderTestCase):
@@ -350,8 +339,7 @@ class TestNoipProviderIntegration(BaseProviderTestCase):
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good 1.2.3.4"
 
-            result = provider.set_record(
-                "test.com", "1.2.3.4", "A", 300, "default")
+            result = provider.set_record("test.com", "1.2.3.4", "A", 300, "default")
 
             self.assertTrue(result)
             mock_http.assert_called_once()
@@ -374,8 +362,7 @@ class TestNoipProviderIntegration(BaseProviderTestCase):
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good ::1"
 
-            result = provider.set_record(
-                "test.com", "::1", "AAAA", 600, "telecom")
+            result = provider.set_record("test.com", "::1", "AAAA", 600, "telecom")
 
             self.assertTrue(result)
             mock_http.assert_called_once()

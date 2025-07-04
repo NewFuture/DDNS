@@ -12,7 +12,7 @@ from ._base import join_domain, TYPE_JSON
 class AliesaProvider(AliBaseProvider):
     """阿里云边缘安全加速(ESA) DNS Provider"""
 
-    API = "https://esa.cn-hangzhou.aliyuncs.com"
+    endpoint = "https://esa.cn-hangzhou.aliyuncs.com"
     api_version = "2024-09-10"  # ESA API版本
     content_type = TYPE_JSON
 
@@ -23,7 +23,7 @@ class AliesaProvider(AliBaseProvider):
             region, access_id = self.auth_id.split(":", 1)
             if not region or not access_id:
                 raise ValueError("Invalid auth_id format. " "Use 'region:access_id' or 'access_id'")
-            self.API = "https://esa.{}.aliyuncs.com".format(region)
+            self.endpoint = "https://esa.{}.aliyuncs.com".format(region)
             self.auth_id = access_id
         # 调用父类验证
         super(AliesaProvider, self)._validate()
