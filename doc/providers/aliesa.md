@@ -34,8 +34,6 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 ### 高级配置
 
-### 自动域名解析（推荐）
-
 ```json
 {
     "id": "LTAI4xxx", 
@@ -46,25 +44,6 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "ttl": 300
 }
 ```
-
-### 自定义区域端点
-
-ESA支持多个区域端点，可以通过在`id`参数中指定区域：
-
-```json
-{
-    "id": "cn-beijing:LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com"]
-}
-```
-
-支持的格式：
-
-- `"LTAI4xxx"` - 默认使用 cn-hangzhou 区域
-- `"cn-beijing:LTAI4xxx"` - 使用 cn-beijing 区域
-- `"ap-southeast-1:LTAI4xxx"` - 使用 ap-southeast-1 区域
 
 ## 可选参数
 

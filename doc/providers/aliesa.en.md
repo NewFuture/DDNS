@@ -34,8 +34,6 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
 
 ### Advanced Configuration
 
-#### Automatic Domain Resolution (Recommended)
-
 ```json
 {
     "id": "LTAI4xxx", 
@@ -46,24 +44,6 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
     "ttl": 300
 }
 ```
-
-### Custom Region Endpoint
-
-ESA supports multiple region endpoints. You can specify the region in the `id` parameter:
-
-```json
-{
-    "id": "cn-beijing:LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com"]
-}
-```
-
-Supported formats:
-- `"LTAI4xxx"` - Default uses cn-hangzhou region
-- `"cn-beijing:LTAI4xxx"` - Use cn-beijing region
-- `"ap-southeast-1:LTAI4xxx"` - Use ap-southeast-1 region
 
 ## Optional Parameters
 

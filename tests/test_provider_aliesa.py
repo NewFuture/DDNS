@@ -29,18 +29,6 @@ class TestAliesaProvider(BaseProviderTestCase):
         self.assertEqual(provider.auth_token, "test_secret_key")
         self.assertEqual(provider.endpoint, "https://esa.cn-hangzhou.aliyuncs.com")
 
-    def test_init_with_region_endpoint(self):
-        """Test AliesaProvider initialization with custom region endpoint"""
-        provider = AliesaProvider(auth_id="cn-beijing:test_access_key", auth_token="test_secret_key")
-        self.assertEqual(provider.auth_id, "test_access_key")
-        self.assertEqual(provider.auth_token, "test_secret_key")
-        self.assertEqual(provider.endpoint, "https://esa.cn-beijing.aliyuncs.com")
-
-    def test_init_with_invalid_region_format(self):
-        """Test AliesaProvider initialization with invalid region format"""
-        with self.assertRaises(ValueError):
-            AliesaProvider(auth_id=":test_access_key", auth_token="test_secret_key")
-
     @patch.object(AliesaProvider, "_http")
     def test_request_basic(self, mock_http):
         """Test _request method with basic parameters"""
