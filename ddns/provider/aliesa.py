@@ -16,18 +16,6 @@ class AliesaProvider(AliBaseProvider):
     api_version = "2024-09-10"  # ESA API版本
     content_type = TYPE_JSON
 
-    def _validate(self):
-        """验证并解析认证信息，支持区域配置"""
-        # 解析auth_id，支持 "region:access_id" 或 "access_id" 格式
-        if ":" in self.auth_id:
-            region, access_id = self.auth_id.split(":", 1)
-            if not region or not access_id:
-                raise ValueError("Invalid auth_id format. " "Use 'region:access_id' or 'access_id'")
-            self.endpoint = "https://esa.{}.aliyuncs.com".format(region)
-            self.auth_id = access_id
-        # 调用父类验证
-        super(AliesaProvider, self)._validate()
-
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
         """
