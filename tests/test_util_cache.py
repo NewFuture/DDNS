@@ -6,20 +6,12 @@ Test cases for cache module
 """
 
 import unittest
-import sys
+
 import os
 import tempfile
 from time import sleep
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    # Python 2.7 compatibility
-    from mock import patch  # type: ignore
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from __init__ import patch
 from ddns.util.cache import Cache  # noqa: E402
 
 

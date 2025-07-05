@@ -31,7 +31,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test HuaweiDNSProvider class constants"""
-        self.assertEqual(HuaweiDNSProvider.API, "https://dns.myhuaweicloud.com")
+        self.assertEqual(HuaweiDNSProvider.endpoint, "https://dns.myhuaweicloud.com")
         self.assertEqual(HuaweiDNSProvider.content_type, "application/json")
         self.assertTrue(HuaweiDNSProvider.decode_response)
         self.assertEqual(HuaweiDNSProvider.algorithm, "SDK-HMAC-SHA256")
@@ -40,7 +40,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
         """Test HuaweiDNSProvider initialization with basic configuration"""
         self.assertEqual(self.provider.auth_id, self.auth_id)
         self.assertEqual(self.provider.auth_token, self.auth_token)
-        self.assertEqual(self.provider.API, "https://dns.myhuaweicloud.com")
+        self.assertEqual(self.provider.endpoint, "https://dns.myhuaweicloud.com")
 
     def test_request_get_method(self):
         """Test _request method with GET method"""

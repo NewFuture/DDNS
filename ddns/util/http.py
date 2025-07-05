@@ -14,12 +14,13 @@ import os
 
 try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection, HTTPException
-    from urllib.parse import urlparse
+    from urllib.parse import quote, urlencode, urlparse
 except ImportError:  # python 2
     from httplib import HTTPSConnection, HTTPConnection, HTTPException  # type: ignore[no-redef]
     from urlparse import urlparse  # type: ignore[no-redef]
+    from urllib import urlencode, quote  # type: ignore[no-redef]
 
-__all__ = ["send_http_request", "HttpResponse"]
+__all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
 
 logger = getLogger().getChild(__name__)
 
@@ -123,10 +124,7 @@ def _load_system_ca_certs(ssl_context):
                 loaded_count += 1
                 logger.debug("Loaded CA certificates from: %s", ca_path)
             except Exception as e:
-                logger.debug("Failed to load CA certificates from %s: %s", ca_path, e)
-
-    if loaded_count > 0:
-        logger.debug("Successfully loaded CA certificates from %d locations", loaded_count)
+                logger.info("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
 def _close_connection(conn):

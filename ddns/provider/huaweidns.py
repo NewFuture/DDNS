@@ -5,13 +5,12 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain
-from json import dumps as jsonencode
+from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
 from time import strftime, gmtime
 
 
 class HuaweiDNSProvider(BaseProvider):
-    API = "https://dns.myhuaweicloud.com"
+    endpoint = "https://dns.myhuaweicloud.com"
     content_type = TYPE_JSON
     algorithm = "SDK-HMAC-SHA256"
 
@@ -32,16 +31,16 @@ class HuaweiDNSProvider(BaseProvider):
         # type: (str, str, **Any) -> dict
         params = {k: v for k, v in params.items() if v is not None}
         if method.upper() == "GET" or method.upper() == "DELETE":
-            query = self._encode(sorted(params.items()))
+            query = encode_params(params)
             body = ""
         else:
             query = ""
-            body = jsonencode(params)
+            body = self._encode_body(params)
 
         now = strftime("%Y%m%dT%H%M%SZ", gmtime())
         headers = {
             "content-type": self.content_type,
-            "host": self.API.split("://", 1)[1].strip("/"),
+            "host": self.endpoint.split("://", 1)[1].strip("/"),
             "X-Sdk-Date": now,
         }
 

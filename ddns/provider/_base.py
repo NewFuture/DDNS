@@ -63,15 +63,28 @@ from hmac import HMAC
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
 from os import environ
-from ..util.http import send_http_request
-
-try:  # python 3
-    from urllib.parse import quote, urlencode
-except ImportError:  # python 2
-    from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
+from ..util.http import send_http_request, quote, urlencode
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
+
+
+def encode_params(params):
+    # type: (dict|list|str|bytes|None) -> str
+    """
+    编码参数为 URL 查询字符串,参数顺序会排序
+
+    Args:
+        params (dict|list|str|bytes|None): 参数字典、列表或字符串
+    Returns:
+        str: 编码后的查询字符串
+    """
+    if not params:
+        return ""
+    elif isinstance(params, (str, bytes)):
+        return params  # type: ignore[return-value]
+    items = params.items() if isinstance(params, dict) else params
+    return urlencode(sorted(items), doseq=True)
 
 
 def hmac_sha256(key, message):
@@ -188,7 +201,7 @@ class SimpleProvider(object):
     __metaclass__ = ABCMeta
 
     # API endpoint domain (to be defined in subclass)
-    API = ""  # type: str # https://exampledns.com
+    endpoint = ""  # type: str # https://exampledns.com
     # Content-Type for requests (to be defined in subclass)
     content_type = TYPE_FORM  # type: Literal["application/x-www-form-urlencoded"] | Literal["application/json"]
     # 默认 accept 头部, 空则不设置
@@ -275,7 +288,7 @@ class SimpleProvider(object):
             raise ValueError("id must be configured")
         if not self.auth_token:
             raise ValueError("token must be configured")
-        if not self.API:
+        if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
@@ -314,13 +327,13 @@ class SimpleProvider(object):
 
         # 构建查询字符串
         if len(query_params) > 0:
-            url += ("&" if "?" in url else "?") + self._encode(query_params)
+            url += ("&" if "?" in url else "?") + encode_params(query_params)
 
         # 构建完整URL
         if not url.startswith("http://") and not url.startswith("https://"):
-            if not url.startswith("/") and self.API.endswith("/"):
+            if not url.startswith("/") and self.endpoint.endswith("/"):
                 url = "/" + url
-            url = self.API + url
+            url = self.endpoint + url
 
         # 记录请求日志
         self.logger.info("%s %s", method, self._mask_sensitive_data(url))
@@ -330,12 +343,7 @@ class SimpleProvider(object):
         if body:
             if "content-type" not in headers:
                 headers["content-type"] = self.content_type
-            if isinstance(body, (str, bytes)):
-                body_data = body
-            elif self.content_type == TYPE_FORM:
-                body_data = self._encode(body)
-            else:
-                body_data = jsonencode(body)
+            body_data = self._encode_body(body)
             self.logger.debug("body:\n%s", self._mask_sensitive_data(body_data))
 
         # 处理headers
@@ -368,7 +376,7 @@ class SimpleProvider(object):
             elif status_code == 401:
                 raise RuntimeError("认证失败 [401]: " + response.reason)
             elif status_code == 403:
-                raise RuntimeError("权限不足 [403]: " + response.reason)
+                raise RuntimeError("禁止访问 [403]: " + response.reason)
             else:
                 raise RuntimeError("服务器错误 [{}]: {}".format(status_code, response.reason))
 
@@ -382,36 +390,23 @@ class SimpleProvider(object):
             self.logger.error("fail to decode response: %s", e)
         return res
 
-    @staticmethod
-    def _encode(params):
-        # type: (dict|list|str|bytes|None) -> str
+    def _encode_body(self, data):
+        # type: (dict | list | str | bytes | None) -> str
         """
-        编码参数为 URL 查询字符串
-
+        自动编码数据为字符串或字节, 根据 content_type 选择编码方式。
         Args:
-            params (dict|list|str|bytes|None): 参数字典、列表或字符串
+            data (dict | list | str | bytes | None): 待编码数据
+
         Returns:
-            str: 编码后的查询字符串
+            str | bytes | None: 编码后的数据
         """
-        if not params:
+        if isinstance(data, (str, bytes)):
+            return data  # type: ignore[return-value]
+        if not data:
             return ""
-        elif isinstance(params, (str, bytes)):
-            return params  # type: ignore[return-value]
-        return urlencode(params, doseq=True)
-
-    @staticmethod
-    def _quote(data, safe="/"):
-        # type: (str, str) -> str
-        """
-        对字符串进行 URL 编码
-
-        Args:
-            data (str): 待编码字符串
-
-        Returns:
-            str: 编码后的字符串
-        """
-        return quote(data, safe=safe)
+        if self.content_type == TYPE_FORM:
+            return encode_params(data)
+        return jsonencode(data)
 
     def _mask_sensitive_data(self, data):
         # type: (str | bytes | None) -> str | bytes | None
@@ -472,7 +467,7 @@ class BaseProvider(SimpleProvider):
         """
         domain = domain.lower()
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-        sub, main = split_custom_domain(domain)
+        sub, main = _split_custom_domain(domain)
         try:
             if sub is not None:
                 # 使用自定义分隔符格式
@@ -619,7 +614,7 @@ class BaseProvider(SimpleProvider):
         return None, None, main
 
 
-def split_custom_domain(domain):
+def _split_custom_domain(domain):
     # type: (str) -> tuple[str | None, str]
     """
     拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)

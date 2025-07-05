@@ -20,7 +20,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test DnscomProvider class constants"""
-        self.assertEqual(DnscomProvider.API, "https://www.51dns.com")
+        self.assertEqual(DnscomProvider.endpoint, "https://www.51dns.com")
         self.assertEqual(DnscomProvider.content_type, "application/x-www-form-urlencoded")
         self.assertTrue(DnscomProvider.decode_response)
 
@@ -29,7 +29,7 @@ class TestDnscomProvider(BaseProviderTestCase):
         provider = DnscomProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://www.51dns.com")
+        self.assertEqual(provider.endpoint, "https://www.51dns.com")
 
     @patch("ddns.provider.dnscom.time")
     @patch("ddns.provider.dnscom.md5")

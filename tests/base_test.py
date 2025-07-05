@@ -4,19 +4,8 @@ Base test utilities and common imports for all provider tests
 
 @author: Github Copilot
 """
-
 import unittest
-import sys
-import os
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:
-    # Python 2.7 compatibility
-    from mock import patch, MagicMock  # type: ignore
+from __init__ import patch, MagicMock  # noqa: F401 # Ensure the package is initialized
 
 
 class BaseProviderTestCase(unittest.TestCase):

@@ -5,25 +5,36 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash, join_domain
+from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
 from time import strftime, gmtime, time
 
 
-class AlidnsProvider(BaseProvider):
-    API = "https://alidns.aliyuncs.com"
-    content_type = TYPE_FORM  # 阿里云DNS API使用表单格式
+class AliBaseProvider(BaseProvider):
+    """阿里云基础Provider，提供通用的_request方法"""
 
+    endpoint = "https://alidns.aliyuncs.com"
+    content_type = TYPE_FORM  # 阿里云DNS API使用表单格式
     api_version = "2015-01-09"  # API版本，v3签名需要
 
-    def _request(self, action, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
+    def _request(self, action, method="POST", **params):
+        # type: (str, str, **(Any)) -> dict
         """Aliyun v3 https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature"""
         params = {k: v for k, v in params.items() if v is not None}
-        body_content = self._encode(params) if len(params) > 0 else ""
+
+        if method in ("GET", "DELETE"):
+            # For GET and DELETE requests, parameters go in query string
+            query_string = encode_params(params) if len(params) > 0 else ""
+            body_content = ""
+        else:
+            # For POST requests, parameters go in body
+            body_content = self._encode_body(params)
+            query_string = ""
+
+        path = "/"
         content_hash = sha256_hash(body_content)
         # 构造请求头部
         headers = {
-            "host": self.API.split("://", 1)[1].strip("/"),
+            "host": self.endpoint.split("://", 1)[1].strip("/"),
             "content-type": self.content_type,
             "x-acs-action": action,
             "x-acs-content-sha256": content_hash,
@@ -35,9 +46,9 @@ class AlidnsProvider(BaseProvider):
         # 使用通用签名函数
         authorization = hmac_sha256_authorization(
             secret_key=self.auth_token,
-            method="POST",
-            path="/",
-            query="",
+            method=method,
+            path=path,
+            query=query_string,
             headers=headers,
             body_hash=content_hash,
             signing_string_format="ACS3-HMAC-SHA256\n{HashedCanonicalRequest}",
@@ -47,7 +58,12 @@ class AlidnsProvider(BaseProvider):
         )
         headers["Authorization"] = authorization
         # 对于v3签名的RPC API，参数在request body中
-        return self._http("POST", "/", body=body_content, headers=headers)
+        path = path if not query_string else path + "?" + format(query_string)
+        return self._http(method, path, body=body_content, headers=headers)
+
+
+class AlidnsProvider(AliBaseProvider):
+    """阿里云DNS Provider"""
 
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]

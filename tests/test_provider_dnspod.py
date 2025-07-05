@@ -21,12 +21,12 @@ class TestDnspodProvider(BaseProviderTestCase):
         provider = DnspodProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://dnsapi.cn")
+        self.assertEqual(provider.endpoint, "https://dnsapi.cn")
         self.assertEqual(provider.DefaultLine, "默认")
 
     def test_class_constants(self):
         """Test DnspodProvider class constants"""
-        self.assertEqual(DnspodProvider.API, "https://dnsapi.cn")
+        self.assertEqual(DnspodProvider.endpoint, "https://dnsapi.cn")
         self.assertEqual(DnspodProvider.DefaultLine, "默认")
         # ContentType should be TYPE_FORM
         from ddns.provider._base import TYPE_FORM
@@ -367,7 +367,9 @@ class TestDnspodProvider(BaseProviderTestCase):
             mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.1"}}
 
             # Test create record with line parameter
-            result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", 600, "电信", {})
+            result = self.provider._create_record(
+                "zone123", "www", "example.com", "192.168.1.1", "A", 600, "电信", {}
+            )
 
             self.assertTrue(result)
             mock_request.assert_called_once_with(

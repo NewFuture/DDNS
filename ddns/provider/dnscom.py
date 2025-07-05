@@ -5,7 +5,7 @@ www.51dns.com (原dns.com)
 @author: Bigjin<i@bigjin.com>, NewFuture
 """
 
-from ._base import BaseProvider, TYPE_FORM
+from ._base import BaseProvider, TYPE_FORM, encode_params
 from hashlib import md5
 from time import time
 
@@ -16,7 +16,7 @@ class DnscomProvider(BaseProvider):
     https://www.51dns.com/document/api/index.html
     """
 
-    API = "https://www.51dns.com"
+    endpoint = "https://www.51dns.com"
     content_type = TYPE_FORM
 
     def _validate(self):
@@ -35,7 +35,7 @@ class DnscomProvider(BaseProvider):
                 "timestamp": time(),  # 时间戳
             }
         )
-        query = self._encode(sorted(params.items()))
+        query = encode_params(params)
         sign = md5((query + self.auth_token).encode("utf-8")).hexdigest()
         params["hash"] = sign
         return params

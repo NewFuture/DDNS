@@ -20,7 +20,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test CloudflareProvider class constants"""
-        self.assertEqual(CloudflareProvider.API, "https://api.cloudflare.com")
+        self.assertEqual(CloudflareProvider.endpoint, "https://api.cloudflare.com")
         self.assertEqual(CloudflareProvider.content_type, "application/json")
         self.assertTrue(CloudflareProvider.decode_response)
 
@@ -29,7 +29,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
         provider = CloudflareProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://api.cloudflare.com")
+        self.assertEqual(provider.endpoint, "https://api.cloudflare.com")
 
     def test_init_with_token_only(self):
         """Test CloudflareProvider initialization with token only (Bearer auth)"""
