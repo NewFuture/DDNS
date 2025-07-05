@@ -6,7 +6,7 @@ AliESA API
 """
 
 from .alidns import AliBaseProvider
-from ._base import join_domain, TYPE_JSON
+from ._base import join_domain
 
 
 class AliesaProvider(AliBaseProvider):
@@ -14,7 +14,6 @@ class AliesaProvider(AliBaseProvider):
 
     endpoint = "https://esa.cn-hangzhou.aliyuncs.com"
     api_version = "2024-09-10"  # ESA API版本
-    content_type = TYPE_JSON
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
