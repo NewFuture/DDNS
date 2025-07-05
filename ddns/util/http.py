@@ -124,10 +124,7 @@ def _load_system_ca_certs(ssl_context):
                 loaded_count += 1
                 logger.debug("Loaded CA certificates from: %s", ca_path)
             except Exception as e:
-                logger.debug("Failed to load CA certificates from %s: %s", ca_path, e)
-
-    if loaded_count > 0:
-        logger.debug("Successfully loaded CA certificates from %d locations", loaded_count)
+                logger.info("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
 def _close_connection(conn):

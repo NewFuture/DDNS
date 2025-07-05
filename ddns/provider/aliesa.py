@@ -47,11 +47,12 @@ class AliesaProvider(AliBaseProvider):
             SiteId=int(zone_id),
             RecordName=full_domain,
             Type=record_type,
+            RecordMatchType="EXACT",  # 精确匹配
             PageSize=100,
         )
 
         records = res.get("Records", [])
-        if not records:
+        if len(records) == 0:
             self.logger.warning(
                 "No records found for [%s] with %s <%s> (line: %s)", zone_id, subdomain, record_type, line
             )
@@ -76,8 +77,8 @@ class AliesaProvider(AliBaseProvider):
             SiteId=int(zone_id),
             RecordName=full_domain,
             Type=record_type,
-            Value=value,
-            TTL=int(ttl) if ttl else None,
+            Date={"value": value},
+            Ttl=int(ttl) if ttl else None,
             **extra
         )
 
@@ -110,8 +111,8 @@ class AliesaProvider(AliBaseProvider):
             SiteId=int(zone_id),
             RecordId=old_record.get("RecordId"),
             Type=record_type,
-            Value=value,
-            TTL=int(ttl) if ttl else None,
+            Data={"value": value},
+            Ttl=int(ttl) if ttl else None,
             **extra
         )
 

@@ -17,7 +17,7 @@ class AliBaseProvider(BaseProvider):
     api_version = "2015-01-09"  # API版本，v3签名需要
 
     def _request(self, action, method="POST", **params):
-        # type: (str, str, **(str | int | bytes | bool | None)) -> dict
+        # type: (str, str, **(Any)) -> dict
         """Aliyun v3 https://help.aliyun.com/zh/sdk/product-overview/v3-request-structure-and-signature"""
         params = {k: v for k, v in params.items() if v is not None}
 
