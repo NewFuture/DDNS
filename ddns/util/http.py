@@ -17,8 +17,8 @@ try:  # python 3
     from urllib.parse import quote, urlencode, urlparse
 except ImportError:  # python 2
     from httplib import HTTPSConnection, HTTPConnection, HTTPException  # type: ignore[no-redef]
-    from urlparse import quote, urlencode, urlparse  # type: ignore[no-redef]
-    from urllib import urlencode, quote  # type: ignore[no-redef] # noqa: F811
+    from urlparse import urlparse  # type: ignore[no-redef]
+    from urllib import urlencode, quote  # type: ignore[no-redef]
 
 __all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
 
