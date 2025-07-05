@@ -14,12 +14,12 @@ import os
 
 try:  # python 3
     from http.client import HTTPSConnection, HTTPConnection, HTTPException
-    from urllib.parse import urlparse
+    from urllib.parse import quote, urlencode, urlparse  # type: ignore[no-redef,import-untyped]
 except ImportError:  # python 2
     from httplib import HTTPSConnection, HTTPConnection, HTTPException  # type: ignore[no-redef]
-    from urlparse import urlparse  # type: ignore[no-redef]
+    from urlparse import quote, urlencode, urlparse  # type: ignore[no-redef]
 
-__all__ = ["send_http_request", "HttpResponse"]
+__all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
 
 logger = getLogger().getChild(__name__)
 

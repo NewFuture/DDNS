@@ -7,7 +7,6 @@ Tencent Cloud DNSPod API
 """
 from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, hmac_sha256
 from time import time, strftime, gmtime
-from json import dumps as jsonencode
 
 
 class TencentCloudProvider(BaseProvider):
@@ -42,7 +41,7 @@ class TencentCloudProvider(BaseProvider):
         """
         # 构建请求体
         params = {k: v for k, v in params.items() if v is not None}
-        body = jsonencode(params)
+        body = self._encode_body(params)
 
         # 构建请求头,小写 腾讯云只签名特定头部
         headers = {

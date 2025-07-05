@@ -6,7 +6,6 @@ HuaweiDNS API
 """
 
 from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
-from json import dumps as jsonencode
 from time import strftime, gmtime
 
 
@@ -36,7 +35,7 @@ class HuaweiDNSProvider(BaseProvider):
             body = ""
         else:
             query = ""
-            body = jsonencode(params)
+            body = self._encode_body(params)
 
         now = strftime("%Y%m%dT%H%M%SZ", gmtime())
         headers = {

@@ -63,12 +63,7 @@ from hmac import HMAC
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
 from os import environ
-from ..util.http import send_http_request
-
-try:  # python 3
-    from urllib.parse import quote, urlencode
-except ImportError:  # python 2
-    from urllib import urlencode, quote  # type: ignore[no-redef,import-untyped]
+from ..util.http import send_http_request, quote, urlencode
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -348,12 +343,7 @@ class SimpleProvider(object):
         if body:
             if "content-type" not in headers:
                 headers["content-type"] = self.content_type
-            if isinstance(body, (str, bytes)):
-                body_data = body
-            elif self.content_type == TYPE_FORM:
-                body_data = encode_params(body)
-            else:
-                body_data = jsonencode(body)
+            body_data = self._encode_body(body)
             self.logger.debug("body:\n%s", self._mask_sensitive_data(body_data))
 
         # 处理headers
@@ -399,6 +389,24 @@ class SimpleProvider(object):
         except Exception as e:
             self.logger.error("fail to decode response: %s", e)
         return res
+
+    def _encode_body(self, data):
+        # type: (dict | list | str | bytes | None) -> str
+        """
+        自动编码数据为字符串或字节, 根据 content_type 选择编码方式。
+        Args:
+            data (dict | list | str | bytes | None): 待编码数据
+
+        Returns:
+            str | bytes | None: 编码后的数据
+        """
+        if isinstance(data, (str, bytes)):
+            return data  # type: ignore[return-value]
+        if not data:
+            return ""
+        if self.content_type == TYPE_FORM:
+            return encode_params(data)
+        return jsonencode(data)
 
     def _mask_sensitive_data(self, data):
         # type: (str | bytes | None) -> str | bytes | None
@@ -459,7 +467,7 @@ class BaseProvider(SimpleProvider):
         """
         domain = domain.lower()
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-        sub, main = split_custom_domain(domain)
+        sub, main = _split_custom_domain(domain)
         try:
             if sub is not None:
                 # 使用自定义分隔符格式
@@ -606,7 +614,7 @@ class BaseProvider(SimpleProvider):
         return None, None, main
 
 
-def split_custom_domain(domain):
+def _split_custom_domain(domain):
     # type: (str) -> tuple[str | None, str]
     """
     拆分支持 ~ 或 + 的自定义格式域名为 (子域, 主域)

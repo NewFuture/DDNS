@@ -27,7 +27,7 @@ class AliBaseProvider(BaseProvider):
             body_content = ""
         else:
             # For POST requests, parameters go in body
-            body_content = encode_params(params) if len(params) > 0 else ""
+            body_content = self._encode_body(params)
             query_string = ""
 
         path = "/"
