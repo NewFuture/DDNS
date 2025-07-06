@@ -62,7 +62,6 @@ from hashlib import sha256
 from hmac import HMAC
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
-from os import environ
 from ..util.http import send_http_request
 
 try:  # python 3
@@ -199,12 +198,12 @@ class SimpleProvider(object):
     verify_ssl = "auto"  # type: bool | str
 
     # 版本
-    version = environ.get("DDNS_VERSION", "0.0.0")
+    version = ""
     # Description
     remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(version)
 
-    def __init__(self, auth_id, auth_token, logger=None, verify_ssl=None, **options):
-        # type: (str, str, Logger | None, bool|str| None, **object) -> None
+    def __init__(self, auth_id, auth_token, version=None, logger=None, verify_ssl=None, proxy=None, **options):
+        # type: (str|None, str|None, str|None, Logger | None, bool|str| None, list[str|None]|None, **object) -> None
         """
         初始化服务商对象
 
@@ -215,12 +214,15 @@ class SimpleProvider(object):
             auth_token (str): 密钥 / Authentication Token
             options (dict): 其它参数，如代理、调试等 / Additional options
         """
-        self.auth_id = auth_id  # type: str
-        self.auth_token = auth_token  # type: str
+        self.auth_id = auth_id
+        self.auth_token = auth_token
+        self.version = version
         self.options = options
+        self.proxy = proxy or [None]
+
         name = self.__class__.__name__
         self.logger = (logger or getLogger()).getChild(name)
-        self.proxy = None  # type: str | None
+
         if verify_ssl is not None:
             self.verify_ssl = verify_ssl
         self._zone_map = {}  # type: dict[str, str]
@@ -247,22 +249,6 @@ class SimpleProvider(object):
             Any: 执行结果
         """
         raise NotImplementedError("This set_record should be implemented by subclasses")
-
-    def set_proxy(self, proxy_str):
-        # type: (str | None) -> SimpleProvider
-        """
-        设置代理服务器
-
-        Set HTTPS proxy string.
-
-        Args:
-            proxy_str (str): 代理地址
-
-        Returns:
-            Self: 自身
-        """
-        self.proxy = proxy_str
-        return self
 
     def _validate(self):
         # type: () -> None
@@ -344,16 +330,26 @@ class SimpleProvider(object):
         if len(headers) > 2:
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
-        response = send_http_request(
-            url=url,
-            method=method,
-            body=body_data,
-            headers=headers,
-            proxy=self.proxy,
-            max_redirects=5,
-            verify_ssl=self.verify_ssl,
-        )
-
+        response = None  # type: Any
+        for p in self.proxy:
+            if p:
+                self.logger.debug("Using proxy: %s", p)
+            try:
+                response = send_http_request(
+                    url=url,
+                    method=method,
+                    body=body_data,
+                    headers=headers,
+                    proxy=p,
+                    max_redirects=5,
+                    verify_ssl=self.verify_ssl,
+                )
+                break  # 成功发送请求，跳出循环
+            except Exception as e:
+                self.logger.warning("Failed to send request via proxy %s: %s", p, e)
+        if not response:
+            self.logger.error("Failed to send request to %s after trying all proxies", url)
+            raise RuntimeError("Failed to send request to {}".format(url))
         # 处理响应
         status_code = response.status
         if not (200 <= status_code < 300):

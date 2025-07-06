@@ -4,21 +4,22 @@ DDNS
 @author: NewFuture, rufengsuixing
 """
 
-from os import path, environ, name as os_name
+from os import path, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
 from logging import basicConfig, getLogger, info, error, debug, warning, INFO
-
+from time import time
 import sys
 
-from .__init__ import __version__, __description__, __doc__, build_date
+from .__init__ import __version__, __description__, build_date
+from .config import load_config, Config  # noqa: F401
+from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from .util import ip
 from .util.cache import Cache
-from .util.config import init_config, get_config
-from .provider import get_provider_class, SimpleProvider  # noqa: F401
 
-environ["DDNS_VERSION"] = __version__
+logger = getLogger()
+logger.name = "ddns"
 
 
 def is_false(value):
@@ -65,34 +66,29 @@ def get_ip(ip_type, index="default"):
     return value
 
 
-def change_dns_record(dns, proxy_list, **kw):
-    # type: (SimpleProvider, list, **(str)) -> bool
-    for proxy in proxy_list:
-        if not proxy or (proxy.upper() in ["DIRECT", "NONE"]):
-            dns.set_proxy(None)
-        else:
-            dns.set_proxy(proxy)
-        record_type, domain = kw["record_type"], kw["domain"]
-        try:
-            return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"], line=kw.get("line"))
-        except Exception as e:
-            error("Failed to update %s record for %s: %s", record_type, domain, e)
+def change_dns_record(dns, **kw):
+    # type: (SimpleProvider,  **(Any)) -> bool
+    record_type, domain = kw["record_type"], kw["domain"]
+    try:
+        return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"], line=kw.get("line"))
+    except Exception as e:
+        logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
     return False
 
 
-def update_ip(ip_type, cache, dns, ttl, line, proxy_list):
-    # type: (str, Cache | None, SimpleProvider, str, str | None, list[str]) -> bool | None
+def update_ip(ip_type, dns, config, cache):
+    # type: (str, SimpleProvider, Config, Cache | None) -> bool | None
     """
     更新IP
     """
     ipname = "ipv" + ip_type
-    domains = get_config(ipname)
+    domains = getattr(config, ipname, None)  # type: list[str] | str | None
     if not domains:
         return None
     if not isinstance(domains, list):
         domains = domains.strip("; ").replace(",", ";").replace(" ", ";").split(";")
 
-    index_rule = get_config("index" + ip_type, "default")  # type: str # type: ignore
+    index_rule = getattr(config, "index" + ip_type, "default")  # type: str # type: ignore
     address = get_ip(ip_type, index_rule)
     if not address:
         error("Fail to get %s address!", ipname)
@@ -110,7 +106,9 @@ def update_ip(ip_type, cache, dns, ttl, line, proxy_list):
             update_success = True  # At least one domain is successfully cached
         else:
             # Update domain that is not cached or has different IP
-            if change_dns_record(dns, proxy_list, domain=domain, ip=address, record_type=record_type, ttl=ttl, line=line):
+            if change_dns_record(
+                dns, domain=domain, ip=address, record_type=record_type, ttl=config.ttl, line=config.line
+            ):
                 warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
                 update_success = True
                 # Cache successful update immediately
@@ -121,72 +119,54 @@ def update_ip(ip_type, cache, dns, ttl, line, proxy_list):
 
 
 def main():
-    """
-    更新
-    """
     encode = sys.stdout.encoding
     if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-    init_config(__description__, __doc__, __version__, build_date)
 
-    log_level = get_config("log.level", INFO)  # type: int # type: ignore
-    log_format = get_config("log.format")  # type: str | None # type: ignore
+    config = load_config(__description__, __version__, build_date)
+    log_format = config.log_format  # type: str  # type: ignore
     if log_format:
         # A custom log format is already set; no further action is required.
         pass
-    elif log_level < INFO:
+    elif config.log_level < INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
         log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
-    elif log_level > INFO:
+    elif config.log_level > INFO:
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
-    basicConfig(
-        level=log_level,
-        format=log_format,
-        datefmt=get_config("log.datefmt", "%Y-%m-%dT%H:%M:%S"),  # type: ignore
-        filename=get_config("log.file"),  # type: ignore
-    )
-    logger = getLogger()
-    logger.name = "ddns"
+    basicConfig(level=config.log_level, format=log_format, datefmt=config.log_datefmt, filename=config.log_file)
 
     debug("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
 
     # dns provider class
-    dns_name = get_config("dns", "debug")  # type: str # type: ignore
-    provider_class = get_provider_class(dns_name)
-    ssl_config = get_config("ssl", "auto")  # type: str | bool # type: ignore
-    dns = provider_class(get_config("id"), get_config("token"), logger=logger, verify_ssl=ssl_config)  # type: ignore
+    provider_class = get_provider_class(config.dns)
+    dns = provider_class(
+        config.id, config.token, version=__version__, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
+    )
 
-    if get_config("config"):
-        info("loaded Config from: %s", path.abspath(get_config("config")))  # type: ignore
-
-    proxy = get_config("proxy") or "DIRECT"
-    proxy_list = proxy if isinstance(proxy, list) else proxy.strip(";").replace(",", ";").split(";")
-
-    cache_config = get_config("cache", True)  # type: bool | str  # type: ignore
-    if cache_config is False:
+    if config.cache is False:
         cache = None
-    elif cache_config is True:
-        cache = Cache(path.join(gettempdir(), "ddns.cache"), logger)
+    elif config.cache is True:
+        cache_path = path.join(gettempdir(), "ddns.{}.cache".format(hash(config)))
+        cache = Cache(cache_path, logger)
     else:
-        cache = Cache(cache_config, logger)
+        cache = Cache(config.cache, logger)
 
     if cache is None:
         info("Cache is disabled!")
-    elif get_config("config_modified_time", float("inf")) >= cache.time:  # type: ignore
+    elif cache.time > time():  # type: ignore
         info("Cache file is outdated.")
         cache.clear()
     elif len(cache) == 0:
         debug("Cache is empty.")
     else:
         debug("Cache loaded with %d entries.", len(cache))
-    ttl = get_config("ttl")  # type: str # type: ignore
-    line = get_config("line")  # type: str | None # type: ignore
-    update_ip("4", cache, dns, ttl, line, proxy_list)
-    update_ip("6", cache, dns, ttl, line, proxy_list)
+
+    update_ip("4", dns, config, cache)
+    update_ip("6", dns, config, cache)
 
 
 if __name__ == "__main__":

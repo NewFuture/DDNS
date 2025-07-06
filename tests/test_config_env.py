@@ -1,0 +1,375 @@
+# coding=utf-8
+"""
+Unit tests for environment variable configuration module
+
+Current behavior being tested:
+- JSON arrays (values starting with '[' and ending with ']') are parsed into Python lists
+- JSON objects/dictionaries are kept as strings (not parsed)
+- All values have leading and trailing whitespace stripped
+- All other values (including comma-separated) are preserved as strings after stripping
+- Key normalization: uppercase to lowercase, dots to underscores
+- Case-insensitive prefix matching
+
+@author: GitHub Copilot
+"""
+
+import unittest
+import os
+from ddns.config.env import load_config
+
+
+class TestConfigEnv(unittest.TestCase):
+    """Test environment variable configuration loading"""
+
+    def setUp(self):
+        """Set up test environment"""
+        self._clear_test_env()
+
+    def tearDown(self):
+        """Clean up test environment"""
+        self._clear_test_env()
+
+    def _clear_test_env(self):
+        # type: () -> None
+        """Clear test environment variables"""
+        test_prefixes = ["DDNS_TEST_", "CUSTOM_", "MYAPP_"]
+        for key in list(os.environ.keys()):
+            if any(key.startswith(prefix) for prefix in test_prefixes):
+                del os.environ[key]
+
+    def test_basic_string_values(self):
+        """Test that basic string values are preserved"""
+        os.environ["DDNS_TEST_STRING"] = "test_value"
+        os.environ["DDNS_TEST_NUMBER"] = "42"
+        os.environ["DDNS_TEST_BOOL"] = "true"
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("string"), "test_value")
+        self.assertEqual(config.get("number"), "42")  # Kept as string
+        self.assertEqual(config.get("bool"), "true")  # Kept as string
+
+    def test_json_array_conversion(self):
+        """Test JSON array format conversion"""
+        test_cases = [
+            ('["item1", "item2", "item3"]', ["item1", "item2", "item3"]),
+            ('["a", "b"]', ["a", "b"]),
+            ("[]", []),
+            ("[1, 2, 3]", [1, 2, 3]),
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_JSON"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("json"), expected, "Failed for JSON value: %s" % env_value)
+
+    def test_json_dict_as_string(self):
+        """Test that JSON dictionary format is kept as string (not parsed)"""
+        test_cases = [
+            ('{"key": "value"}', '{"key": "value"}'),
+            ('{"a": 1, "b": 2}', '{"a": 1, "b": 2}'),
+            ("{}", "{}"),
+            ('{"nested": {"key": "value"}}', '{"nested": {"key": "value"}}'),
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_JSON"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("json"), expected, "Failed for JSON dict value: %s" % env_value)
+
+    def test_json_array_format(self):
+        """Test JSON array format conversion for any parameter"""
+        test_params = ["index4", "index6", "ipv4", "ipv6", "proxy", "regular_param"]
+
+        for param in test_params:
+            # Clear environment to avoid interference
+            self._clear_test_env()
+
+            # Test JSON format
+            os.environ["DDNS_TEST_" + param.upper()] = '["item1", "item2"]'
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get(param), ["item1", "item2"], "Failed for param with JSON: %s" % param)
+
+            # Test string format
+            os.environ["DDNS_TEST_" + param.upper()] = "item1,item2,item3"
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get(param), "item1,item2,item3", "Failed for param with string: %s" % param)
+
+    def test_regular_comma_values_kept_as_string(self):
+        """Test that regular comma-separated values are kept as strings"""
+        test_cases = [
+            ("item1,item2,item3", "item1,item2,item3"),
+            ("a,b,c,d", "a,b,c,d"),
+            ("host1:port1,host2:port2", "host1:port1,host2:port2"),
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_REGULAR"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("regular"), expected, "Failed for regular value: %s" % env_value)
+
+    def test_key_normalization(self):
+        """Test key normalization (uppercase to lowercase)"""
+        os.environ["DDNS_TEST_UPPER_CASE"] = "value1"
+        os.environ["DDNS_TEST_lower_case"] = "value2"
+        os.environ["DDNS_TEST_Mixed.Case"] = "value3"
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("upper_case"), "value1")
+        self.assertEqual(config.get("lower_case"), "value2")
+        self.assertEqual(config.get("mixed_case"), "value3")  # Dot replaced with underscore
+
+    def test_custom_prefix(self):
+        """Test custom prefix functionality"""
+        os.environ["CUSTOM_TEST"] = "custom_value"
+        os.environ["DDNS_TEST_NORMAL"] = "normal_value"
+
+        config = load_config(prefix="CUSTOM_")
+
+        self.assertEqual(config.get("test"), "custom_value")
+        self.assertIsNone(config.get("normal"))
+
+    def test_empty_prefix(self):
+        """Test empty prefix (loads all environment variables)"""
+        os.environ["TEST_EMPTY_PREFIX"] = "test_value"
+
+        config = load_config(prefix="")
+
+        # Should contain the test variable
+        self.assertEqual(config.get("test_empty_prefix"), "test_value")
+
+    def test_edge_cases(self):
+        """Test edge cases"""
+        test_cases = [
+            ("DDNS_TEST_EMPTY", "", ""),
+            ("DDNS_TEST_SPACES", "   ", ""),  # Spaces are stripped
+            ("DDNS_TEST_SPECIAL", "hello@world.com", "hello@world.com"),
+            ("DDNS_TEST_URL", "https://api.example.com?key=value", "https://api.example.com?key=value"),
+        ]
+
+        for env_key, env_value, expected in test_cases:
+            os.environ[env_key] = env_value
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("empty"), "")
+        self.assertEqual(config.get("spaces"), "")  # Spaces are stripped
+        self.assertEqual(config.get("special"), "hello@world.com")
+        self.assertEqual(config.get("url"), "https://api.example.com?key=value")
+
+    def test_invalid_json_array(self):
+        """Test handling of invalid JSON array format"""
+        # Invalid JSON should be treated as regular string for non-array params
+        os.environ["DDNS_TEST_INVALID"] = "[invalid json"
+        config = load_config(prefix="DDNS_TEST_")
+        self.assertEqual(config.get("invalid"), "[invalid json")
+
+        # Invalid JSON for array param should also return as string
+        os.environ["DDNS_TEST_IPV4"] = "[invalid json"
+        config = load_config(prefix="DDNS_TEST_")
+        self.assertEqual(config.get("ipv4"), "[invalid json")
+
+    def test_empty_values_remain_as_strings(self):
+        """Test that empty values remain as strings"""
+        test_params = ["index4", "index6", "ipv4", "ipv6", "proxy", "regular_param"]
+
+        for param in test_params:
+            # Test empty string
+            os.environ["DDNS_TEST_" + param.upper()] = ""
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get(param), "", "Failed for empty param: %s" % param)
+
+    def test_json_array_edge_cases(self):
+        """Test JSON array edge cases"""
+        test_cases = [
+            ('[""]', [""]),  # Array with empty string
+            ("[True, False]", [True, False]),  # Array with booleans (Python style)
+            ('["mixed", 123, True]', ["mixed", 123, True]),  # Mixed types
+            ("[1.5, 2.7]", [1.5, 2.7]),  # Array with floats
+            ('["single"]', ["single"]),  # Single item array
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_JSON"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("json"), expected, "Failed for JSON edge case: %s" % env_value)
+
+    def test_malformed_json_arrays(self):
+        """Test handling of malformed JSON arrays"""
+        malformed_cases = [
+            "[unclosed",  # Unclosed bracket
+            "closed]",  # Missing opening bracket
+            "[,]",  # Invalid comma
+            "[invalid syntax}",  # Wrong closing bracket
+            "not_json_at_all",  # Not JSON
+        ]
+
+        for malformed in malformed_cases:
+            os.environ["DDNS_TEST_MALFORMED"] = malformed
+            config = load_config(prefix="DDNS_TEST_")
+            # Should return as string for all params
+            self.assertEqual(config.get("malformed"), malformed, "Failed for malformed JSON: %s" % malformed)
+
+            # Also test with common params
+            os.environ["DDNS_TEST_IPV4"] = malformed
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("ipv4"), malformed, "Failed for malformed JSON in param: %s" % malformed)
+
+    def test_case_insensitive_prefix_matching(self):
+        """Test case-insensitive prefix matching"""
+        os.environ["ddns_test_lowercase"] = "value1"
+        os.environ["DDNS_TEST_UPPERCASE"] = "value2"
+        os.environ["Ddns_Test_MixedCase"] = "value3"
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("lowercase"), "value1")
+        self.assertEqual(config.get("uppercase"), "value2")
+        self.assertEqual(config.get("mixedcase"), "value3")
+
+    def test_special_characters_in_values(self):
+        """Test handling of special characters in values"""
+        special_values = [
+            ("DDNS_TEST_UNICODE", "café", "café"),
+            ("DDNS_TEST_SYMBOLS", "!@#$%^&*()", "!@#$%^&*()"),
+            ("DDNS_TEST_NEWLINES", "line1\nline2", "line1\nline2"),
+            ("DDNS_TEST_TABS", "col1\tcol2", "col1\tcol2"),
+            ("DDNS_TEST_QUOTES", 'He said "Hello"', 'He said "Hello"'),
+            ("DDNS_TEST_BACKSLASH", "path\\to\\file", "path\\to\\file"),
+        ]
+
+        for env_key, env_value, expected in special_values:
+            os.environ[env_key] = env_value
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("unicode"), "café")
+        self.assertEqual(config.get("symbols"), "!@#$%^&*()")
+        self.assertEqual(config.get("newlines"), "line1\nline2")
+        self.assertEqual(config.get("tabs"), "col1\tcol2")
+        self.assertEqual(config.get("quotes"), 'He said "Hello"')
+        self.assertEqual(config.get("backslash"), "path\\to\\file")
+
+    def test_numeric_and_boolean_strings(self):
+        """Test that numeric and boolean strings are preserved"""
+        test_cases = [
+            ("123", "123"),
+            ("0", "0"),
+            ("-456", "-456"),
+            ("3.14", "3.14"),
+            ("true", "true"),
+            ("false", "false"),
+            ("True", "True"),
+            ("False", "False"),
+            ("yes", "yes"),
+            ("no", "no"),
+            ("on", "on"),
+            ("off", "off"),
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_VALUE"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("value"), expected, "Failed to preserve string value: %s" % env_value)
+
+    def test_dot_to_underscore_conversion(self):
+        """Test conversion of dots to underscores in keys"""
+        test_keys = [
+            ("DDNS_TEST_SIMPLE.KEY", "simple_key"),
+            ("DDNS_TEST_MULTIPLE.DOT.KEY", "multiple_dot_key"),
+            ("DDNS_TEST_MIXED_key.name", "mixed_key_name"),
+            ("DDNS_TEST_END.DOT.", "end_dot_"),
+            ("DDNS_TEST_.START.DOT", "_start_dot"),
+        ]
+
+        for env_key, expected_key in test_keys:
+            os.environ[env_key] = "test_value"
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        for _, expected_key in test_keys:
+            self.assertEqual(config.get(expected_key), "test_value", "Failed for key conversion: %s" % expected_key)
+
+    def test_no_matching_environment_variables(self):
+        """Test behavior when no matching environment variables exist"""
+        # Clear all test variables
+        self._clear_test_env()
+
+        config = load_config(prefix="NONEXISTENT_PREFIX_")
+
+        self.assertEqual(len(config), 0)
+        self.assertIsInstance(config, dict)
+
+    def test_mixed_params_config(self):
+        """Test mixed configuration with different parameter types"""
+        os.environ["DDNS_TEST_STRING"] = "simple_string"
+        os.environ["DDNS_TEST_IPV4"] = '["192.168.1.1", "10.0.0.1"]'  # JSON format
+        os.environ["DDNS_TEST_IPV6"] = "::1,2001:db8::1"  # String format
+        os.environ["DDNS_TEST_OTHER_JSON"] = '["item1", "item2"]'  # JSON format
+        os.environ["DDNS_TEST_COMMA_VALUE"] = "a,b,c"  # String format
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        self.assertEqual(config.get("string"), "simple_string")
+        self.assertEqual(config.get("ipv4"), ["192.168.1.1", "10.0.0.1"])  # Parsed as array
+        self.assertEqual(config.get("ipv6"), "::1,2001:db8::1")  # Kept as string
+        self.assertEqual(config.get("other_json"), ["item1", "item2"])  # Parsed as array
+        self.assertEqual(config.get("comma_value"), "a,b,c")  # Kept as string
+
+    def test_malformed_json_dicts_as_strings(self):
+        """Test handling of malformed JSON dictionaries (kept as strings)"""
+        malformed_cases = [
+            '{"unclosed": "value"',  # Unclosed brace
+            '"missing_brace": "value"}',  # Missing opening brace
+            '{"invalid": json}',  # Invalid JSON syntax
+            '{"trailing": "comma",}',  # Trailing comma
+            '{"unquoted": key}',  # Unquoted key
+        ]
+
+        for malformed in malformed_cases:
+            os.environ["DDNS_TEST_MALFORMED_DICT"] = malformed
+            config = load_config(prefix="DDNS_TEST_")
+            # Should return as string when parsing fails
+            self.assertEqual(
+                config.get("malformed_dict"), malformed, "Failed for malformed JSON dict: %s" % malformed
+            )
+
+    def test_configuration_consistency(self):
+        """Test that configuration parsing is consistent across different input formats"""
+        # Test mixed array and object configurations
+        os.environ["DDNS_TEST_ARRAY_CONFIG"] = '["domain1.com", "domain2.com"]'
+        os.environ["DDNS_TEST_OBJECT_CONFIG"] = '{"ttl": 300, "line": "default"}'  # Kept as string
+        os.environ["DDNS_TEST_STRING_CONFIG"] = "simple_value"
+        os.environ["DDNS_TEST_NUMBER_CONFIG"] = "42"
+
+        config = load_config(prefix="DDNS_TEST_")
+
+        # Verify different types are handled correctly
+        self.assertIsInstance(config.get("array_config"), list)
+        self.assertIsInstance(config.get("object_config"), str)  # Objects are now kept as strings
+        self.assertIsInstance(config.get("string_config"), str)
+        self.assertIsInstance(config.get("number_config"), str)  # Numbers remain as strings
+
+        # Verify actual values
+        self.assertEqual(config.get("array_config"), ["domain1.com", "domain2.com"])
+        self.assertEqual(config.get("object_config"), '{"ttl": 300, "line": "default"}')  # Kept as string
+        self.assertEqual(config.get("string_config"), "simple_value")
+        self.assertEqual(config.get("number_config"), "42")
+
+    def test_whitespace_stripping(self):
+        """Test that leading and trailing whitespace is stripped from values"""
+        test_cases = [
+            ("  value  ", "value"),
+            ("\tvalue\t", "value"),
+            ("\n value \n", "value"),
+            ("  ", ""),  # Only whitespace becomes empty
+            (" \t\n ", ""),  # Mixed whitespace becomes empty
+            ("  [1, 2, 3]  ", [1, 2, 3]),  # JSON arrays are parsed after stripping
+            ('  {"key": "value"}  ', '{"key": "value"}'),  # JSON objects are kept as strings after stripping
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["DDNS_TEST_STRIP"] = env_value
+            config = load_config(prefix="DDNS_TEST_")
+            self.assertEqual(config.get("strip"), expected, "Failed for value with whitespace: %r" % env_value)
