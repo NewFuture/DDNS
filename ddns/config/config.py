@@ -49,6 +49,7 @@ class Config(object):
         self.dns = self._get("dns", "debug")  # type: str
         self.id = self._get("id")  # type: str | None
         self.token = self._get("token")  # type: str | None
+        self.endpoint = self._get("endpoint")  # type: str | None
         self.index4 = self._get("index4", [])  # type: list[str]
         self.index6 = self._get("index6", [])  # type: list[str]
         self.ipv4 = self._get("ipv4", [])  # type: list[str]
@@ -102,6 +103,7 @@ class Config(object):
             "dns": self.dns,
             "id": self.id,
             "token": self.token,
+            "endpoint": self.endpoint,
             "index4": self.index4,
             "index6": self.index6,
             "ipv4": self.ipv4,

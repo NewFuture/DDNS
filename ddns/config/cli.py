@@ -125,6 +125,7 @@ def load_config(description, doc, version, date):
     )
     parser.add_argument("--id", help="API ID or email [对应账号ID或邮箱]")
     parser.add_argument("--token", help="API token or key [授权凭证或密钥]")
+    parser.add_argument("--endpoint", help="API endpoint URL [API端点URL]")
     parser.add_argument(
         "--index4",
         nargs="*",

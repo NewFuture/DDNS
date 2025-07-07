@@ -35,7 +35,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         self.assertEqual(provider.API, "https://api.example.com")
         self.assertEqual(provider.content_type, TYPE_FORM)
         self.assertTrue(provider.decode_response)
-        self.assertEqual(provider.verify_ssl, "auto")  # Default verify_ssl should be "auto"
+        self.assertEqual(provider._verify_ssl, "auto")  # Default verify_ssl should be "auto"
         self.assertEqual(provider._zone_map, {})  # Should initialize empty zone map
 
     def test_init_with_logger(self):
@@ -50,27 +50,27 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         options = {"debug": True, "timeout": 30}
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False, **options)
         self.assertEqual(provider.options, options)
-        self.assertFalse(provider.verify_ssl)  # Should respect verify_ssl parameter
+        self.assertFalse(provider._verify_ssl)  # Should respect verify_ssl parameter
 
     def test_init_with_verify_ssl_string(self):
         """Test SimpleProvider initialization with verify_ssl as string"""
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl="/path/to/cert")
-        self.assertEqual(provider.verify_ssl, "/path/to/cert")
+        self.assertEqual(provider._verify_ssl, "/path/to/cert")
 
     def test_init_with_verify_ssl_false(self):
         """Test SimpleProvider initialization with verify_ssl as False"""
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False)
-        self.assertFalse(provider.verify_ssl)
+        self.assertFalse(provider._verify_ssl)
 
     def test_init_with_verify_ssl_truthy_value(self):
         """Test SimpleProvider initialization with verify_ssl as truthy value"""
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=1)  # type: ignore
-        self.assertEqual(provider.verify_ssl, 1)  # Should preserve the exact value
+        self.assertEqual(provider._verify_ssl, 1)  # Should preserve the exact value
 
     def test_init_with_verify_ssl_falsy_value(self):
         """Test SimpleProvider initialization with verify_ssl as falsy value"""
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=0)  # type: ignore
-        self.assertEqual(provider.verify_ssl, 0)  # Should preserve the exact value
+        self.assertEqual(provider._verify_ssl, 0)  # Should preserve the exact value
 
     def test_validate_missing_id(self):
         """Test _validate method with missing auth_id"""
@@ -95,25 +95,6 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         with self.assertRaises(ValueError) as cm:
             _TestableSimpleProvider(self.auth_id, "")
         self.assertIn("token must be configured", str(cm.exception))
-
-    def test_set_proxy(self):
-        """Test set_proxy method"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        proxy_str = "http://proxy.example.com:8080"
-
-        result = provider.set_proxy(proxy_str)
-
-        self.assertEqual(provider.proxy, proxy_str)
-        self.assertIs(result, provider)  # Should return self for chaining
-
-    def test_set_proxy_none(self):
-        """Test set_proxy method with None"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-
-        result = provider.set_proxy(None)
-
-        self.assertIsNone(provider.proxy)
-        self.assertIs(result, provider)
 
     def test_encode_dict(self):
         """Test _encode method with dictionary"""

@@ -14,12 +14,14 @@ import sys
 
 from .__init__ import __version__, __description__, build_date
 from .config import load_config, Config  # noqa: F401
-from .provider import get_provider_class, SimpleProvider  # noqa: F401
+from .provider import get_provider_class, SimpleProvider
 from .util import ip
 from .util.cache import Cache
 
 logger = getLogger()
 logger.name = "ddns"
+# Set user agent for All Providers
+SimpleProvider.user_agent = SimpleProvider.user_agent.format(version=__version__)
 
 
 def is_false(value):

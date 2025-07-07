@@ -194,16 +194,14 @@ class SimpleProvider(object):
     accept = TYPE_JSON  # type: str | None
     # Decode Response as JSON by default
     decode_response = True
-    # 是否验证 SSL 证书，默认为 True
-    verify_ssl = "auto"  # type: bool | str
 
-    # 版本
-    version = ""
+    # UA
+    user_agent = "DDNS/{version} (ddns@newfuture.cc)"
     # Description
-    remark = "Managed by [DDNS v{}](https://ddns.newfuture.cc)".format(version)
+    remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
-    def __init__(self, auth_id, auth_token, version=None, logger=None, verify_ssl=None, proxy=None, **options):
-        # type: (str|None, str|None, str|None, Logger | None, bool|str| None, list[str|None]|None, **object) -> None
+    def __init__(self, auth_id, auth_token, logger=None, verify_ssl="auto", proxy=None, endpoint=None, **options):
+        # type: (str|None, str|None, Logger | None, bool|str, list[str|None]|None, str|None, **object) -> None
         """
         初始化服务商对象
 
@@ -216,15 +214,15 @@ class SimpleProvider(object):
         """
         self.auth_id = auth_id
         self.auth_token = auth_token
-        self.version = version
-        self.options = options
-        self.proxy = proxy or [None]
+        if endpoint:
+            self.API = endpoint
+        self._proxy = proxy if proxy and len(proxy) else [None]
+        self._verify_ssl = verify_ssl
 
+        self.options = options
         name = self.__class__.__name__
         self.logger = (logger or getLogger()).getChild(name)
 
-        if verify_ssl is not None:
-            self.verify_ssl = verify_ssl
         self._zone_map = {}  # type: dict[str, str]
         self.logger.debug("%s initialized with: %s", self.__class__.__name__, auth_id)
         self._validate()  # 验证身份认证信息
@@ -327,11 +325,13 @@ class SimpleProvider(object):
         # 处理headers
         if self.accept and "accept" not in headers and "Accept" not in headers:
             headers["accept"] = self.accept
-        if len(headers) > 2:
+        if "user-agent" not in headers and "User-Agent" not in headers and self.user_agent:
+            headers["user-agent"] = self.user_agent
+        if len(headers) > 3:
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         response = None  # type: Any
-        for p in self.proxy:
+        for p in self._proxy:
             if p:
                 self.logger.debug("Using proxy: %s", p)
             try:
@@ -342,7 +342,7 @@ class SimpleProvider(object):
                     headers=headers,
                     proxy=p,
                     max_redirects=5,
-                    verify_ssl=self.verify_ssl,
+                    verify_ssl=self._verify_ssl,
                 )
                 break  # 成功发送请求，跳出循环
             except Exception as e:
