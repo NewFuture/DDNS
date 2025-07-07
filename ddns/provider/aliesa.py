@@ -70,6 +70,7 @@ class AliesaProvider(AliBaseProvider):
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
         """
         full_domain = join_domain(subdomain, main_domain)
+        record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
         data = self._request(
             method="POST",
@@ -97,13 +98,14 @@ class AliesaProvider(AliBaseProvider):
         """
         # 检查是否需要更新
         if (
-            old_record.get("Value") == value
+            old_record.get("Data", {}).get("Value") == value
             and old_record.get("Type") == record_type
             and (not ttl or old_record.get("TTL") == ttl)
         ):
             self.logger.warning("No changes detected, skipping update for record: %s", old_record.get("RecordName"))
             return True
 
+        record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
         data = self._request(
             method="POST",
