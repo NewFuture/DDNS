@@ -24,48 +24,30 @@ logger.name = "ddns"
 SimpleProvider.user_agent = SimpleProvider.user_agent.format(version=__version__)
 
 
-def is_false(value):
-    """
-    判断值是否为 False
-    字符串 'false', 或者 False, 或者 'none';
-    0 不是 False
-    """
-    if hasattr(value, "strip"):  # 字符串
-        return value.strip().lower() in ["false", "none"]
-    return value is False
-
-
-def get_ip(ip_type, index="default"):
+def get_ip(ip_type, index):
     """
     get IP address
     """
-    # CN: 捕获异常
-    # EN: Catch exceptions
-    value = None
-    try:
-        debug("get_ip(%s, %s)", ip_type, index)
-        if is_false(index):  # disabled
-            return False
-        elif isinstance(index, list):  # 如果获取到的规则是列表，则依次判断列表中每一个规则，直到获取到IP
-            for i in index:
-                value = get_ip(ip_type, i)
-                if value:
-                    break
-        elif str(index).isdigit():  # 数字 local eth
-            value = getattr(ip, "local_v" + ip_type)(index)
-        elif index.startswith("cmd:"):  # cmd
-            value = str(check_output(index[4:]).strip().decode("utf-8"))
-        elif index.startswith("shell:"):  # shell
-            value = str(check_output(index[6:], shell=True).strip().decode("utf-8"))
-        elif index.startswith("url:"):  # 自定义 url
-            value = getattr(ip, "public_v" + ip_type)(index[4:])
-        elif index.startswith("regex:"):  # 正则 regex
-            value = getattr(ip, "regex_v" + ip_type)(index[6:])
-        else:
-            value = getattr(ip, index + "_v" + ip_type)()
-    except Exception as e:
-        error("Failed to get %s address: %s", ip_type, e)
-    return value
+    if index is False:  # disabled
+        return False
+    for i in index:
+        try:
+            debug("get_ip:(%s, %s)", ip_type, i)
+            if str(i).isdigit():  # 数字 local eth
+                return getattr(ip, "local_v" + ip_type)(i)
+            elif i.startswith("cmd:"):  # cmd
+                return str(check_output(i[4:]).strip().decode("utf-8"))
+            elif i.startswith("shell:"):  # shell
+                return str(check_output(i[6:], shell=True).strip().decode("utf-8"))
+            elif i.startswith("url:"):  # 自定义 url
+                return getattr(ip, "public_v" + ip_type)(i[4:])
+            elif i.startswith("regex:"):  # 正则 regex
+                return getattr(ip, "regex_v" + ip_type)(i[6:])
+            else:
+                return getattr(ip, index + "_v" + ip_type)()
+        except Exception as e:
+            error("Failed to get %s address: %s", ip_type, e)
+    return None
 
 
 def change_dns_record(dns, **kw):
@@ -78,25 +60,22 @@ def change_dns_record(dns, **kw):
     return False
 
 
-def update_ip(ip_type, dns, config, cache):
-    # type: (str, SimpleProvider, Config, Cache | None) -> bool | None
+def update_ip(dns, cache, index_rule, domains, record_type, config):
+    # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config) -> bool | None
     """
     更新IP
     """
-    ipname = "ipv" + ip_type
-    domains = getattr(config, ipname, None)  # type: list[str] | str | None
+    # ipname = "ipv" + ip_type
     if not domains:
         return None
-    if not isinstance(domains, list):
-        domains = domains.strip("; ").replace(",", ";").replace(" ", ";").split(";")
 
-    index_rule = getattr(config, "index" + ip_type, "default")  # type: str # type: ignore
+    # index_rule = getattr(config, "index" + ip_type, "default")  # type: str # type: ignore
+    ip_type = "4" if record_type == "A" else "6"
     address = get_ip(ip_type, index_rule)
     if not address:
-        error("Fail to get %s address!", ipname)
+        error("Fail to get %s address!", ip_type)
         return False
 
-    record_type = "A" if ip_type == "4" else "AAAA"
     update_success = False
 
     # Check cache and update each domain individually
@@ -152,7 +131,7 @@ def main():
     if config.cache is False:
         cache = None
     elif config.cache is True:
-        cache_path = path.join(gettempdir(), "ddns.{}.cache".format(hash(config)))
+        cache_path = path.join(gettempdir(), "ddns.%s.cache" % config.md5())
         cache = Cache(cache_path, logger)
     else:
         cache = Cache(config.cache, logger)
@@ -167,8 +146,8 @@ def main():
     else:
         debug("Cache loaded with %d entries.", len(cache))
 
-    update_ip("4", dns, config, cache)
-    update_ip("6", dns, config, cache)
+    update_ip(dns, cache, config.index4, config.ipv4, "A", config)
+    update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config)
 
 
 if __name__ == "__main__":

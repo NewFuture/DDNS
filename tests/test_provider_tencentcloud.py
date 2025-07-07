@@ -365,7 +365,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
                 Value="1.2.3.4",
                 RecordLine="电信",
                 TTL=300,
-                Remark="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                Remark="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_update_record_with_line(self):
@@ -375,7 +375,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
             "Name": "www",
             "Line": "默认",
             "Domain": "example.com",
-            "DomainId": 12345678
+            "DomainId": 12345678,
         }
 
         with patch.object(self.provider, "_request") as mock_request:

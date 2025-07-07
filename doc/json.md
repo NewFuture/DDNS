@@ -43,8 +43,8 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |  dns     |       string       |  否  | `"dnspod"`  |    DNS服务商      | 可选值: dnspod, alidns, cloudflare, dnscom, dnspod_com, he, huaweidns, callback                              |
 |  ipv4    |       array        |  否  |    `[]`     |   IPv4域名列表    | 为`[]`时，不会获取和更新IPv4地址                                                                            |
 |  ipv6    |       array        |  否  |    `[]`     |   IPv6域名列表    | 为`[]`时，不会获取和更新IPv6地址                                                                            |
-| index4   | string\|int\|array |  否  | `"default"` |   IPv4获取方式    | 详见下方说明                                                                                               |
-| index6   | string\|int\|array |  否  | `"default"` |   IPv6获取方式    | 详见下方说明                                                                                               |
+| index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | 详见下方说明                                                                                               |
+| index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | 详见下方说明                                                                                               |
 |  ttl     |       number       |  否  |   `null`    | DNS解析TTL时间     | 单位为秒，不设置则采用DNS默认策略                                                                          |
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定，如：`"默认"`、`"电信"`、`"联通"`、`"移动"`等                          |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
@@ -75,6 +75,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
     * 注意：JSON中反斜杠需要转义，如`"regex:10\\.00\\..*"`表示匹配`10.00.`开头的IP
   * `"cmd:xxx"`：执行指定命令并使用其输出作为IP
   * `"shell:xxx"`：使用系统shell运行命令并使用其输出作为IP
+  * **逗号或分号分隔的字符串**：支持使用逗号`,`或分号`;`分隔多个获取方式，如`"public,regex:192\\.168\\..*"`
 * **布尔值**：`false`表示禁止更新相应IP类型的DNS记录
 * **数组**：按顺序尝试不同的获取方式，使用第一个成功获取的结果
 
@@ -131,10 +132,10 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 ```
 
 **支持线路的DNS服务商：**
-- **阿里云DNS (alidns)**：`"default"`、`"telecom"`、`"unicom"`、`"mobile"`、`"oversea"`等
-- **DNSPod (dnspod)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
-- **腾讯云 (tencentcloud)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
-- **华为云 (huaweidns)**：通过额外参数支持线路配置
+* **阿里云DNS (alidns)**：`"default"`、`"telecom"`、`"unicom"`、`"mobile"`、`"oversea"`等
+* **DNSPod (dnspod)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
+* **腾讯云 (tencentcloud)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
+* **华为云 (huaweidns)**：通过额外参数支持线路配置
 
 ### 高级配置示例
 

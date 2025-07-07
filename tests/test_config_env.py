@@ -373,3 +373,182 @@ class TestConfigEnv(unittest.TestCase):
             os.environ["DDNS_TEST_STRIP"] = env_value
             config = load_config(prefix="DDNS_TEST_")
             self.assertEqual(config.get("strip"), expected, "Failed for value with whitespace: %r" % env_value)
+
+    def test_standard_environment_variables_integration(self):
+        """Test integration with standard Python environment variables"""
+        # Clear any DDNS variables first
+        for key in list(os.environ.keys()):
+            if key.startswith("DDNS_"):
+                del os.environ[key]
+
+        # Test HTTP proxy variables
+        os.environ["HTTP_PROXY"] = "http://proxy.example.com:8080"
+        os.environ["PYTHONHTTPSVERIFY"] = "0"
+
+        config = load_config()
+
+        self.assertEqual(config.get("proxy"), "http://proxy.example.com:8080")
+        self.assertEqual(config.get("ssl"), "0")
+
+        # Clean up
+        del os.environ["HTTP_PROXY"]
+        del os.environ["PYTHONHTTPSVERIFY"]
+
+    def test_ddns_variables_override_standard_vars(self):
+        """Test that DDNS variables take precedence over standard environment variables"""
+        # Set standard variables
+        os.environ["HTTP_PROXY"] = "http://standard.proxy.com:8080"
+        os.environ["PYTHONHTTPSVERIFY"] = "0"
+
+        # Set DDNS variables
+        os.environ["DDNS_PROXY"] = "http://ddns.proxy.com:9090"
+        os.environ["DDNS_SSL"] = "true"
+
+        config = load_config()
+
+        # DDNS variables should override standard ones
+        self.assertEqual(config.get("proxy"), "http://ddns.proxy.com:9090")
+        self.assertEqual(config.get("ssl"), "true")
+
+        # Clean up
+        for key in ["HTTP_PROXY", "PYTHONHTTPSVERIFY", "DDNS_PROXY", "DDNS_SSL"]:
+            if key in os.environ:
+                del os.environ[key]
+
+    def test_partial_standard_variable_override(self):
+        """Test mixing standard and DDNS variables"""
+        # Set standard proxy but DDNS ssl
+        os.environ["HTTP_PROXY"] = "http://standard.proxy.com:8080"
+        os.environ["DDNS_SSL"] = "false"
+        os.environ["DDNS_DNS"] = "cloudflare"
+
+        config = load_config()
+
+        # Should get proxy from standard env, ssl from DDNS
+        self.assertEqual(config.get("proxy"), "http://standard.proxy.com:8080")
+        self.assertEqual(config.get("ssl"), "false")
+        self.assertEqual(config.get("dns"), "cloudflare")
+
+        # Clean up
+        for key in ["HTTP_PROXY", "DDNS_SSL", "DDNS_DNS"]:
+            if key in os.environ:
+                del os.environ[key]
+
+    def test_standard_env_vars_basic(self):
+        """Test basic standard environment variable support"""
+        # Test HTTP_PROXY (uppercase)
+        os.environ["HTTP_PROXY"] = "http://proxy.example.com:8080"
+        config = load_config()
+        self.assertEqual(config.get("proxy"), "http://proxy.example.com:8080")
+        del os.environ["HTTP_PROXY"]
+
+        # Test http_proxy (lowercase)
+        os.environ["http_proxy"] = "http://proxy.example.com:8080"
+        config = load_config()
+        self.assertEqual(config.get("proxy"), "http://proxy.example.com:8080")
+        del os.environ["http_proxy"]
+
+        # Test PYTHONHTTPSVERIFY
+        os.environ["PYTHONHTTPSVERIFY"] = "0"
+        config = load_config()
+        self.assertEqual(config.get("ssl"), "0")
+        del os.environ["PYTHONHTTPSVERIFY"]
+
+    def test_standard_env_vars_priority(self):
+        """Test standard environment variable priority"""
+        # Both HTTP_PROXY and http_proxy set, uppercase should take precedence
+        os.environ["HTTP_PROXY"] = "http://upper.proxy.com:8080"
+        os.environ["http_proxy"] = "http://lower.proxy.com:8080"
+
+        config = load_config()
+        # First one processed wins (depends on iteration order)
+        self.assertIn(config.get("proxy"), ["http://upper.proxy.com:8080", "http://lower.proxy.com:8080"])
+
+        # Clean up safely
+        if "HTTP_PROXY" in os.environ:
+            del os.environ["HTTP_PROXY"]
+        if "http_proxy" in os.environ:
+            del os.environ["http_proxy"]
+
+    def test_standard_env_vars_pythonhttpsverify_values(self):
+        """Test PYTHONHTTPSVERIFY with different values"""
+        test_cases = [
+            ("0", "0"),
+            ("1", "1"),
+            ("false", "false"),
+            ("true", "true"),
+            ("anything", "anything"),
+        ]
+
+        for env_value, expected in test_cases:
+            os.environ["PYTHONHTTPSVERIFY"] = env_value
+            config = load_config()
+            self.assertEqual(config.get("ssl"), expected)
+            del os.environ["PYTHONHTTPSVERIFY"]
+
+    def test_standard_env_vars_no_conflict_when_ddns_exists(self):
+        """Test that standard vars don't override existing DDNS vars due to priority logic"""
+        # Set DDNS variable first (should be processed later and take precedence)
+        os.environ["DDNS_PROXY"] = "http://ddns.proxy.com:9090"
+        # Set standard variable
+        os.environ["HTTP_PROXY"] = "http://standard.proxy.com:8080"
+
+        config = load_config()
+
+        # DDNS variable should win due to processing order
+        self.assertEqual(config.get("proxy"), "http://ddns.proxy.com:9090")
+
+        del os.environ["DDNS_PROXY"]
+        del os.environ["HTTP_PROXY"]
+
+    def test_standard_env_vars_with_json_arrays(self):
+        """Test standard environment variables with JSON array values"""
+        # Test that standard env vars go through the same parsing logic
+        os.environ["HTTP_PROXY"] = '["proxy1.com:8080", "proxy2.com:8080"]'
+        config = load_config()
+        self.assertEqual(config.get("proxy"), ["proxy1.com:8080", "proxy2.com:8080"])
+        del os.environ["HTTP_PROXY"]
+
+    def test_standard_env_vars_integration_full(self):
+        """Test full integration of standard and DDNS environment variables"""
+        # Set a mix of standard and DDNS variables
+        os.environ["HTTP_PROXY"] = "http://standard.proxy.com:8080"
+        os.environ["PYTHONHTTPSVERIFY"] = "0"
+        os.environ["DDNS_DNS"] = "cloudflare"
+        os.environ["DDNS_TOKEN"] = "secret123"
+        os.environ["DDNS_IPV4"] = '["example.com", "test.com"]'
+
+        config = load_config()
+
+        # Standard vars
+        self.assertEqual(config.get("proxy"), "http://standard.proxy.com:8080")
+        self.assertEqual(config.get("ssl"), "0")
+        # DDNS vars
+        self.assertEqual(config.get("dns"), "cloudflare")
+        self.assertEqual(config.get("token"), "secret123")
+        self.assertEqual(config.get("ipv4"), ["example.com", "test.com"])
+
+        # Clean up
+        for key in ["HTTP_PROXY", "PYTHONHTTPSVERIFY", "DDNS_DNS", "DDNS_TOKEN", "DDNS_IPV4"]:
+            if key in os.environ:
+                del os.environ[key]
+
+    def test_standard_env_vars_edge_cases(self):
+        """Test edge cases for standard environment variables"""
+        # Empty values
+        os.environ["HTTP_PROXY"] = ""
+        config = load_config()
+        self.assertEqual(config.get("proxy"), "")
+        del os.environ["HTTP_PROXY"]
+
+        # Whitespace values
+        os.environ["PYTHONHTTPSVERIFY"] = "  1  "
+        config = load_config()
+        self.assertEqual(config.get("ssl"), "1")  # Should be stripped
+        del os.environ["PYTHONHTTPSVERIFY"]
+
+        # Special characters
+        os.environ["HTTP_PROXY"] = "http://user:pass@proxy.com:8080"
+        config = load_config()
+        self.assertEqual(config.get("proxy"), "http://user:pass@proxy.com:8080")
+        del os.environ["HTTP_PROXY"]

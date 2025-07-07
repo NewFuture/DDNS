@@ -1,33 +1,57 @@
 # coding=utf-8
+from hashlib import md5
 from .cli import str_bool, log_level as get_log_level
 
 __all__ = ["Config", "split_array_string"]
 
 # 简单数组，支持',', ';' 分隔的参数列表
-SIMPLE_ARRAY_PARAMS = ["ipv4", "ipv6", "proxy"]
+SIMPLE_ARRAY_PARAMS = ["ipv4", "ipv6", "proxy", "index4", "index6"]
+
+
+def is_false(value):
+    """
+    判断值是否为 False
+    字符串 'false', 或者 False, 或者 'none';
+    0 不是 False
+    """
+    if hasattr(value, "strip"):  # 字符串
+        return value.strip().lower() in ["false", "none"]
+    return value is False
 
 
 def split_array_string(value):
     # type: (str|list) -> list
     """
     解析数组字符串
+    逐个分解，遇到特殊前缀时停止分割
     """
     if isinstance(value, list):
         return value
-    elif not value:  # 空值
-        return []
-    elif not hasattr(value, "strip"):  # 非字符串
-        return [value]
+    if not value or not hasattr(value, "strip"):
+        return [value] if value else []
 
-    # 尝试使用逗号或分号分隔符解析
-    sep, trimmed = None, value.strip()
-    if "," in trimmed:
-        sep = ","
-    elif ";" in trimmed:
-        sep = ";"
-    if sep:
-        return [item.strip() for item in trimmed.split(sep) if item.strip()]
-    return [value]  # 返回原始字符串作为单元素列表
+    trimmed = value.strip()
+
+    # 选择分隔符（逗号优先）
+    sep = "," if "," in trimmed else (";" if ";" in trimmed else None)
+    if not sep:
+        return [trimmed]
+
+    # 逐个分解，遇到特殊前缀时停止
+    parts = []
+    split_parts = trimmed.split(sep)
+    for i, part in enumerate(split_parts):
+        part = part.strip()
+        if not part:
+            continue
+
+        # 检查是否包含特殊前缀，如果有则合并剩余部分
+        if any(prefix in part for prefix in ["regex:", "cmd:", "shell:"]):
+            parts.append(sep.join(split_parts[i:]).strip())
+            break
+        parts.append(part)
+
+    return parts
 
 
 class Config(object):
@@ -50,15 +74,16 @@ class Config(object):
         self.id = self._get("id")  # type: str | None
         self.token = self._get("token")  # type: str | None
         self.endpoint = self._get("endpoint")  # type: str | None
-        self.index4 = self._get("index4", [])  # type: list[str]
-        self.index6 = self._get("index6", [])  # type: list[str]
+        self.index4 = self._get("index4", ["default"])  # type: list[str]|Literal[False]
+        self.index6 = self._get("index6", ["default"])  # type: list[str]|Literal[False]
+
         self.ipv4 = self._get("ipv4", [])  # type: list[str]
         self.ipv6 = self._get("ipv6", [])  # type: list[str]
         ttl = self._get("ttl", None)  # type: int | str | None
         self.ttl = int(ttl) if isinstance(ttl, (str, bytes)) else ttl  # type: int | None
         self.line = self._get("line", None)  # type: str | None
         proxy = self._get("proxy", [])  # type: list[str]
-        self.proxy = [None if p and p.upper() in ["DIRECT", "NONE"] else p for p in proxy]  # type: ignore[assignment]
+        self.proxy = [None if not p or p.upper() in ("DIRECT", "NONE") else p for p in proxy]
 
         # cache and SSL settings
         self.cache = str_bool(self._get("cache", True))
@@ -78,6 +103,8 @@ class Config(object):
         Get a configuration value by key.
         """
         value = self._cli_config.get(key, self._json_config.get(key, self._env_config.get(key, default)))
+        if is_false(value):
+            return False
         # 处理数组参数
         if key in SIMPLE_ARRAY_PARAMS:
             return split_array_string(value)
@@ -119,13 +146,12 @@ class Config(object):
         }
         return {k: v for k, v in dict_var.items() if v is not None}
 
-    def __hash__(self):
-        # type: () -> int
+    def md5(self):
+        # type: () -> str
         """
         Generate hash based on all merged configurations.
 
         Returns:
-            int: Hash value based on configuration attributes.
+            str: Hash value based on configuration attributes.
         """
-        # Convert list attributes to tuples for hashing, use tuple() for None safety
-        return hash(str(self.dict()))
+        return md5(str(self.dict()).encode("utf-8")).hexdigest()

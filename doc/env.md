@@ -29,8 +29,8 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_DNS` | 字符串 | `dnspod` | DNS服务提供商 |
 | `DDNS_IPV4` | 数组/字符串 | 无 | IPv4域名列表 |
 | `DDNS_IPV6` | 数组/字符串 | 无 | IPv6域名列表 |
-| `DDNS_INDEX4` | 数组/字符串/数字 | `default` | IPv4地址获取方式 |
-| `DDNS_INDEX6` | 数组/字符串/数字 | `default` | IPv6地址获取方式 |
+| `DDNS_INDEX4` | 数组/字符串/数字 | `["default"]` | IPv4地址获取方式 |
+| `DDNS_INDEX6` | 数组/字符串/数字 | `["default"]` | IPv6地址获取方式 |
 | `DDNS_TTL` | 整数 | 无 | DNS解析TTL时间（秒） |
 | `DDNS_LINE` | 字符串 | 无 | DNS解析线路，ISP线路选择 |
 | `DDNS_PROXY` | 数组/字符串 | 无 | HTTP代理设置 |
@@ -197,8 +197,9 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 
 - **类型**: 字符串或数组
 - **必需**: 否
-- **默认值**: `default`
-- **说明**: IPv4 地址获取方式
+- **默认值**: `["default"]` (使用系统默认外网IP)
+- **说明**: IPv4 地址获取方式。支持逗号`,`或分号`;`分隔的字符串格式
+- **特殊说明**: 当值包含 `regex:`、`cmd:` 或 `shell:` 前缀时，不支持分隔符分割，整个字符串作为单一配置项
 - **示例**:
 
   ```bash
@@ -214,14 +215,20 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   # 自定义 URL 获取
   export DDNS_INDEX4="url:http://ip.sb"
   
-  # 正则匹配（注意转义）
+  # 正则匹配（注意转义）- 不支持分割
   export DDNS_INDEX4="regex:192\\.168\\..*"
   
-  # 执行命令
+  # 执行命令 - 不支持分割
   export DDNS_INDEX4="cmd:curl -s http://ipv4.icanhazip.com"
   
-  # Shell 命令
+  # Shell 命令 - 不支持分割
   export DDNS_INDEX4="shell:ip route get 8.8.8.8 | awk '{print \$7}'"
+  
+  # 逗号分隔多种方式（仅限无特殊前缀时）
+  export DDNS_INDEX4="public,default"
+  
+  # 包含逗号的正则表达式（整体作为单一配置）
+  export DDNS_INDEX4="regex:192\\.168\\..*,10\\..*"
   
   # 多种方式组合（JSON 数组）
   export DDNS_INDEX4='["public", "regex:172\\..*"]'
@@ -236,19 +243,32 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 
 - **类型**: 字符串或数组
 - **必需**: 否
-- **默认值**: `default`
-- **说明**: IPv6 地址获取方式（用法同 INDEX4）
+- **默认值**: `["default"]` (使用系统默认外网IP)
+- **说明**: IPv6 地址获取方式（用法同 INDEX4）。支持逗号`,`或分号`;`分隔的字符串格式
+- **特殊说明**: 当值包含 `regex:`、`cmd:` 或 `shell:` 前缀时，不支持分隔符分割，整个字符串作为单一配置项
 - **示例**:
 
   ```bash
   # 公网 IPv6
   export DDNS_INDEX6="public"
   
-  # 正则匹配 IPv6
+  # 正则匹配 IPv6 - 不支持分割
   export DDNS_INDEX6="regex:2001:.*"
+  
+  # 包含逗号的正则表达式（整体作为单一配置）
+  export DDNS_INDEX6="regex:fe80::.*,2001:.*"
   
   # 自定义 URL
   export DDNS_INDEX6="url:http://ipv6.icanhazip.com"
+  
+  # 执行命令 - 不支持分割
+  export DDNS_INDEX6="cmd:curl -s http://ipv6.icanhazip.com"
+  
+  # Shell 命令 - 不支持分割  
+  export DDNS_INDEX6="shell:ip -6 addr | grep global"
+  
+  # 逗号分隔多种方式（仅限无特殊前缀时）
+  export DDNS_INDEX6="public,default"
   
   # 禁用 IPv6 获取
   export DDNS_INDEX6="false"
@@ -486,7 +506,12 @@ ddns
    - JSON 数组格式：`'["item1", "item2"]'`（推荐）
    - 逗号分隔格式：`"item1,item2"`
 
-2. **配置优先级和字段覆盖关系**:
+2. **特殊前缀规则**: 对于 `index4` 和 `index6` 参数：
+   - 当值包含 `regex:`、`cmd:` 或 `shell:` 前缀时，整个字符串将作为单一配置项，不会按分隔符分割
+   - 例如：`"regex:192\\.168\\..*,10\\..*"` 会被视为一个完整的正则表达式，而不是两个配置项
+   - 这是因为这些前缀的值内部可能包含逗号或分号，分割会破坏配置的完整性
+
+3. **配置优先级和字段覆盖关系**:
 
    DDNS工具中的配置优先级顺序为：**命令行参数 > JSON配置文件 > 环境变量**
 
@@ -516,11 +541,11 @@ ddns
 
    另外，JSON配置文件中明确设置为`null`的值会覆盖环境变量设置，相当于未设置该值。
 
-3. **大小写兼容**: 环境变量名支持大写、小写或混合大小写
+4. **大小写兼容**: 环境变量名支持大写、小写或混合大小写
 
-4. **安全提醒**:
+5. **安全提醒**:
    - 请妥善保管 `DDNS_TOKEN` 等敏感信息
    - 在脚本中使用时避免明文存储
    - 考虑使用 `.env` 文件或密钥管理系统
 
-5. **调试建议**: 出现问题时，可设置 `DDNS_LOG_LEVEL=DEBUG` 获取详细日志信息
+6. **调试建议**: 出现问题时，可设置 `DDNS_LOG_LEVEL=DEBUG` 获取详细日志信息

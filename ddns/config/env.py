@@ -41,7 +41,10 @@ def load_config(prefix="DDNS_"):
     1. 对于特定的数组参数（index4, index6, ipv4, ipv6, proxy），转换为数组
     2. 对于 JSON 格式的数组 [item1,item2]，转换为数组
     3. 键名转换：点号转下划线，支持大小写变体
-    4. 其他所有值保持原始字符串格式，去除前后空格
+    4. 自动检测标准 Python 环境变量：
+       - HTTP 代理：HTTP_PROXY, HTTPS_PROXY
+       - SSL 验证：PYTHONHTTPSVERIFY
+    5. 其他所有值保持原始字符串格式，去除前后空格
 
     Args:
         prefix (str): 环境变量前缀，默认为 "DDNS_"
@@ -49,15 +52,28 @@ def load_config(prefix="DDNS_"):
     Returns:
         dict: 从环境变量解析的配置字典
     """
-    # 收集所有符合前缀的环境变量
-    env_vars = {}  # type: dict[str, str | list]
-    for key, value in environ.items():
-        key_lower = key.lower()
-        if key_lower.startswith(prefix.lower()):
-            # 移除前缀并转换为小写，点号转下划线
-            config_key = key_lower[len(prefix) :].replace(".", "_")  # noqa: E203
+    env_vars = {}  # type: dict[str, str | list | bool]
 
-            # 对 JSON 数组和对象格式进行转换
+    # 标准环境变量映射 (小写键名)
+    standard_mappings = {
+        "http_proxy": "proxy",
+        "https_proxy": "proxy",
+        "pythonhttpsverify": "ssl",
+    }
+
+    # 处理所有环境变量
+    for key, value in environ.items():
+        lower_key, config_key = key.lower(), None
+
+        if lower_key in standard_mappings:
+            config_key = standard_mappings[lower_key]
+            if config_key in env_vars:
+                continue  # 系统变量低优先级，冲突直接跳过
+        elif lower_key.startswith(prefix.lower()):
+            config_key = lower_key[len(prefix) :].replace(".", "_")  # noqa: E203
+
+        # 如果匹配到配置键，处理并存储值
+        if config_key:
             env_vars[config_key] = try_parse_array_or_dict(value)
 
     return env_vars
