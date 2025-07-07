@@ -47,7 +47,7 @@ class AliesaProvider(AliBaseProvider):
             SiteId=int(zone_id),
             RecordName=full_domain,
             Type=record_type,
-            RecordMatchType="EXACT",  # 精确匹配
+            RecordMatchType="exact",  # 精确匹配
             PageSize=100,
         )
 
