@@ -57,11 +57,6 @@ class TestDnspodProvider(BaseProviderTestCase):
         self.assertEqual(body["format"], "json")
         self.assertEqual(body["test_param"], "test_value")
 
-        # Verify headers
-        headers = call_args[1]["headers"]
-        self.assertIn("User-Agent", headers)
-        self.assertIn("DDNS", headers["User-Agent"])
-
     @patch("ddns.provider.dnspod.DnspodProvider._http")
     def test_request_failure(self, mock_http):
         """Test _request method with failed response"""

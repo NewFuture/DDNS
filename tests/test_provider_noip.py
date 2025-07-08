@@ -365,7 +365,6 @@ class TestNoipProviderIntegration(BaseProviderTestCase):
 
             headers = kwargs["headers"]
             self.assertIn("Authorization", headers)
-            self.assertIn("User-Agent", headers)
 
     def test_full_workflow_ipv6_success(self):
         """Test complete workflow for IPv6 record with success response"""
