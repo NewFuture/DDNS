@@ -40,11 +40,12 @@ class AliesaProvider(AliBaseProvider):
         查询DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-listrecords
         """
+        zone_id = zone_id if isinstance(zone_id, int) else int(zone_id)
         full_domain = join_domain(subdomain, main_domain)
         res = self._request(
             method="GET",
             action="ListRecords",
-            SiteId=int(zone_id),
+            SiteId=zone_id,
             RecordName=full_domain,
             Type=record_type,
             RecordMatchType="exact",  # 精确匹配
@@ -53,9 +54,7 @@ class AliesaProvider(AliBaseProvider):
 
         records = res.get("Records", [])
         if len(records) == 0:
-            self.logger.warning(
-                "No records found for [%s] with %s <%s> (line: %s)", zone_id, subdomain, record_type, line
-            )
+            self.logger.warning("No records found for [%s] with %s <%s>", zone_id, full_domain, record_type)
             return None
 
         # 返回第一个匹配的记录
@@ -69,17 +68,20 @@ class AliesaProvider(AliBaseProvider):
         创建DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
         """
+        zone_id = zone_id if isinstance(zone_id, int) else int(zone_id)
         full_domain = join_domain(subdomain, main_domain)
         record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
+        extra["BizName"] = extra.get("BizName", "web")
+        extra["Proxied"] = extra.get("Proxied", true)
         data = self._request(
             method="POST",
             action="CreateRecord",
-            SiteId=int(zone_id),
+            SiteId=zone_id,
             RecordName=full_domain,
             Type=record_type,
-            Date={"value": value},
-            Ttl=int(ttl) if ttl else None,
+            Date={"Value": value},
+            Ttl=ttl or 1,
             **extra
         )
 
@@ -107,14 +109,15 @@ class AliesaProvider(AliBaseProvider):
 
         record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
+        extra["Proxied"] = extra.get("Proxied", old_record.get("Proxied"))
         data = self._request(
             method="POST",
             action="UpdateRecord",
             SiteId=int(zone_id),
             RecordId=old_record.get("RecordId"),
             Type=record_type,
-            Data={"value": value},
-            Ttl=int(ttl) if ttl else None,
+            Data={"Value": value},
+            Ttl=ttl,
             **extra
         )
 
