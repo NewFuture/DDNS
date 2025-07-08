@@ -690,3 +690,7 @@ class TestCliConfig(unittest.TestCase):
 
         # Note: Testing invalid providers would cause SystemExit,
         # which is the expected behavior for argparse validation
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -22,6 +22,7 @@ import sys
 import os
 import tempfile
 import shutil
+import json
 
 # Add the parent directory to the path so we can import the ddns module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -90,24 +91,41 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(args[2], self.test_version)
         self.assertEqual(args[3], self.test_date)
 
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_file_config")
-    @patch("ddns.config.load_cli_config")
-    def test_load_config_priority_order(self, mock_cli, mock_file, mock_env):
-        """Test configuration priority order: CLI > JSON > ENV"""
-        # Setup mocks with overlapping configurations
-        mock_cli.return_value = {"dns": "cli_dns", "id": "cli_id"}
-        mock_file.return_value = {"dns": "json_dns", "id": "json_id", "token": "json_token"}
-        mock_env.return_value = {"dns": "env_dns", "id": "env_id", "token": "env_token", "line": "env_line"}
+    def test_load_config_priority_order_integration(self):
+        """Test configuration priority order using real Config objects"""
+        # Create test configuration files
+        json_config_path = os.path.join(self.test_dir, "test_config.json")
+        with open(json_config_path, "w") as f:
+            json.dump({"dns": "json_dns", "id": "json_id", "token": "json_token"}, f)
 
-        # Call load_config
-        result = load_config(self.test_description, self.test_version, self.test_date)
+        # Set environment variables
+        os.environ["DDNS_DNS"] = "env_dns"
+        os.environ["DDNS_ID"] = "env_id"
+        os.environ["DDNS_TOKEN"] = "env_token"
+        os.environ["DDNS_LINE"] = "env_line"
 
-        # Verify priority order
-        self.assertEqual(result.dns, "cli_dns")  # CLI overrides JSON and ENV
-        self.assertEqual(result.id, "cli_id")  # CLI overrides JSON and ENV
-        self.assertEqual(result.token, "json_token")  # JSON overrides ENV when CLI doesn't have it
-        self.assertEqual(result.line, "env_line")  # ENV used when neither CLI nor JSON have it
+        try:
+            # Test CLI config takes priority over JSON and ENV
+            from ddns.config.config import Config
+            from ddns.config.file import load_config as load_file_config
+            from ddns.config.env import load_config as load_env_config
+
+            cli_config = {"dns": "cli_dns", "id": "cli_id", "config": json_config_path}
+            json_config = load_file_config(json_config_path)
+            env_config = load_env_config()
+
+            result = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
+
+            # Verify priority order
+            self.assertEqual(result.dns, "cli_dns")  # CLI overrides JSON and ENV
+            self.assertEqual(result.id, "cli_id")  # CLI overrides JSON and ENV
+            self.assertEqual(result.token, "json_token")  # JSON overrides ENV when CLI doesn't have it
+            self.assertEqual(result.line, "env_line")  # ENV used when neither CLI nor JSON have it
+
+        finally:
+            # Clean up environment variables
+            for key in ["DDNS_DNS", "DDNS_ID", "DDNS_TOKEN", "DDNS_LINE"]:
+                os.environ.pop(key, None)
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
@@ -476,6 +494,138 @@ class TestConfigInit(unittest.TestCase):
                     self.assertEqual(result.dns, "debug")  # Default value
                     self.assertIsNone(result.id)  # Default value
                     self.assertIsNone(result.token)  # Default value
+
+    def test_config_file_discovery_integration(self):
+        """Test config file discovery without mocking file system"""
+        # Create a config file in the test directory
+        config_content = {"dns": "cloudflare", "id": "test@example.com", "token": "secret123"}
+        config_path = os.path.join(self.test_dir, "config.json")
+
+        with open(config_path, "w") as f:
+            json.dump(config_content, f)
+
+        # Change to test directory so config.json is found
+        os.chdir(self.test_dir)
+
+        # Test direct Config creation with file loading
+        from ddns.config.file import load_config as load_file_config
+
+        loaded_config = load_file_config(config_path)
+        self.assertEqual(loaded_config["dns"], "cloudflare")
+        self.assertEqual(loaded_config["id"], "test@example.com")
+        self.assertEqual(loaded_config["token"], "secret123")
+
+    def test_environment_config_integration(self):
+        """Test environment configuration loading without mocking"""
+        # Set real environment variables
+        test_env_vars = {
+            "DDNS_DNS": "dnspod",
+            "DDNS_ID": "test_user",
+            "DDNS_TOKEN": "test_token_123",
+            "DDNS_TTL": "600",
+            "DDNS_IPV4": '["ip1.example.com", "ip2.example.com"]',
+        }
+
+        for key, value in test_env_vars.items():
+            os.environ[key] = value
+
+        try:
+            from ddns.config.env import load_config as load_env_config
+
+            env_config = load_env_config()
+
+            self.assertEqual(env_config["dns"], "dnspod")
+            self.assertEqual(env_config["id"], "test_user")
+            self.assertEqual(env_config["token"], "test_token_123")
+            self.assertEqual(env_config["ttl"], "600")
+            self.assertEqual(env_config["ipv4"], ["ip1.example.com", "ip2.example.com"])
+
+        finally:
+            # Clean up environment variables
+            for key in test_env_vars:
+                os.environ.pop(key, None)
+
+    def test_config_merging_without_mocks(self):
+        """Test configuration merging using real Config objects"""
+        cli_config = {"dns": "cloudflare", "debug": True}
+        json_config = {"dns": "dnspod", "id": "json_user", "token": "json_token"}
+        env_config = {"dns": "alidns", "id": "env_user", "token": "env_token", "ttl": "300"}
+
+        from ddns.config.config import Config
+
+        config = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
+
+        # Verify CLI takes highest priority
+        self.assertEqual(config.dns, "cloudflare")
+
+        # Verify JSON takes priority over ENV when CLI doesn't have the value
+        self.assertEqual(config.id, "json_user")
+        self.assertEqual(config.token, "json_token")
+
+        # Verify ENV is used when neither CLI nor JSON have the value
+        self.assertEqual(config.ttl, 300)  # Should be converted to int
+
+        # Verify CLI-specific values
+        self.assertTrue(hasattr(config, "dns"))
+
+    def test_array_parameter_processing_integration(self):
+        """Test array parameter processing without mocking"""
+        from ddns.config.config import Config
+
+        # Test various array configurations
+        test_configs = {
+            "cli": {"ipv4": "ip1.com,ip2.com,ip3.com", "proxy": "proxy1;proxy2"},
+            "json": {"ipv6": "ipv6-1.com,ipv6-2.com", "index4": "regex:192\\.168\\..*,backup"},
+            "env": {"index6": "default,public"},
+        }
+
+        config = Config(
+            cli_config=test_configs["cli"], json_config=test_configs["json"], env_config=test_configs["env"]
+        )
+
+        # Verify array splitting works correctly
+        self.assertEqual(config.ipv4, ["ip1.com", "ip2.com", "ip3.com"])
+        self.assertEqual(config.proxy, ["proxy1", "proxy2"])
+        self.assertEqual(config.ipv6, ["ipv6-1.com", "ipv6-2.com"])
+
+        # Verify special prefix handling (should not split)
+        self.assertEqual(config.index4, ["regex:192\\.168\\..*,backup"])
+        self.assertEqual(config.index6, ["default", "public"])
+
+    def test_file_parsing_fallback_integration(self):
+        """Test JSON to AST parsing fallback without mocking"""
+        # Create a file with Python dict syntax (not valid JSON)
+        python_dict_content = "{'dns': 'dnspod', 'id': 'python_user', 'token': 'python_token'}"
+        config_path = os.path.join(self.test_dir, "python_config.py")
+
+        with open(config_path, "w") as f:
+            f.write(python_dict_content)
+
+        from ddns.config.file import load_config as load_file_config
+
+        # Should fall back to AST parsing
+        loaded_config = load_file_config(config_path)
+        self.assertEqual(loaded_config["dns"], "dnspod")
+        self.assertEqual(loaded_config["id"], "python_user")
+        self.assertEqual(loaded_config["token"], "python_token")
+
+    def test_special_value_handling_integration(self):
+        """Test special value handling without mocking"""
+        from ddns.config.config import Config
+
+        config_data = {"proxy": "DIRECT,http://proxy.com,NONE", "ssl": "auto", "cache": "true", "ttl": "600"}
+
+        config = Config(cli_config=config_data)
+
+        # Verify proxy special value handling
+        self.assertEqual(config.proxy, [None, "http://proxy.com", None])
+
+        # Verify boolean conversion
+        self.assertTrue(config.cache)
+
+        # Verify TTL conversion to int
+        self.assertEqual(config.ttl, 600)
+        self.assertIsInstance(config.ttl, int)
 
 
 if __name__ == "__main__":

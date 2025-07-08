@@ -552,3 +552,7 @@ class TestConfigEnv(unittest.TestCase):
         config = load_config()
         self.assertEqual(config.get("proxy"), "http://user:pass@proxy.com:8080")
         del os.environ["HTTP_PROXY"]
+
+
+if __name__ == "__main__":
+    unittest.main()
