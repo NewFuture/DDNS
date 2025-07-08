@@ -40,14 +40,13 @@ class AliesaProvider(AliBaseProvider):
         查询DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-listrecords
         """
-        zone_id = zone_id if isinstance(zone_id, int) else int(zone_id)
         full_domain = join_domain(subdomain, main_domain)
         res = self._request(
             method="GET",
             action="ListRecords",
-            SiteId=zone_id,
+            SiteId=int(zone_id),
             RecordName=full_domain,
-            Type=record_type,
+            Type=self._get_type(record_type),
             RecordMatchType="exact",  # 精确匹配
             PageSize=100,
         )
@@ -68,18 +67,16 @@ class AliesaProvider(AliBaseProvider):
         创建DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
         """
-        zone_id = zone_id if isinstance(zone_id, int) else int(zone_id)
         full_domain = join_domain(subdomain, main_domain)
-        record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
         extra["BizName"] = extra.get("BizName", "web")
         extra["Proxied"] = extra.get("Proxied", True)
         data = self._request(
             method="POST",
             action="CreateRecord",
-            SiteId=zone_id,
+            SiteId=int(zone_id),
             RecordName=full_domain,
-            Type=record_type,
+            Type=self._get_type(record_type),
             Date={"Value": value},
             Ttl=ttl or 1,
             **extra
@@ -101,13 +98,12 @@ class AliesaProvider(AliBaseProvider):
         # 检查是否需要更新
         if (
             old_record.get("Data", {}).get("Value") == value
-            and old_record.get("Type") == record_type
-            and (not ttl or old_record.get("TTL") == ttl)
+            and old_record.get("RecordType") == self._get_type(record_type)
+            and (not ttl or old_record.get("Ttl") == ttl)
         ):
             self.logger.warning("No changes detected, skipping update for record: %s", old_record.get("RecordName"))
             return True
 
-        record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
         extra["Proxied"] = extra.get("Proxied", old_record.get("Proxied"))
         data = self._request(
@@ -115,7 +111,6 @@ class AliesaProvider(AliBaseProvider):
             action="UpdateRecord",
             SiteId=int(zone_id),
             RecordId=old_record.get("RecordId"),
-            Type=record_type,
             Data={"Value": value},
             Ttl=ttl,
             **extra
@@ -127,3 +122,7 @@ class AliesaProvider(AliBaseProvider):
 
         self.logger.error("Failed to update record: %s", data)
         return False
+
+    def _get_type(record_type):
+        # type: (str) -> str
+        return "A/AAAA" if record_type in ("A", "AAAA") else record_type
