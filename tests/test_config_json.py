@@ -28,7 +28,7 @@ import json
 # Add the parent directory to the path so we can import the ddns module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ddns.config.json import load_config, save_config  # noqa: E402
+from ddns.config.json_file import load_config, save_config  # noqa: E402
 
 
 class TestJsonConfig(unittest.TestCase):

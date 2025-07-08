@@ -89,7 +89,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
             if change_dns_record(
                 dns, domain=domain, ip=address, record_type=record_type, ttl=config.ttl, line=config.line
             ):
-                warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
                 update_success = True
                 # Cache successful update immediately
                 if isinstance(cache, dict):
