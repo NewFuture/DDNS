@@ -102,7 +102,12 @@ class Config(object):
         """
         Get a configuration value by key.
         """
-        value = self._cli_config.get(key, self._json_config.get(key, self._env_config.get(key, default)))
+        value = self._cli_config.get(key)
+        if isinstance(value, list) and len(value) == 1:
+            # 如果是单个元素的列表，取出第一个元素, 这样可以避免在 CLI 配置中使用单个值时仍然得到一个列表
+            value = value[0]
+        if value is None:
+            value = self._json_config.get(key, self._env_config.get(key, default))
         if is_false(value):
             return False
         # 处理数组参数

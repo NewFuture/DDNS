@@ -1,22 +1,5 @@
 # coding=utf-8
-"""
-Unit tests for Config class and utility functions
-
-This test suite provides comprehensive coverage for the main Config class,
-testing configuration merging, type conversions, and various edge cases.
-
-Test Coverage:
-- Config class initialization with different input sources
-- Configuration merging priority (CLI > JSON > ENV > default)
-- Type conversions (str to int, str to bool, log levels)
-- Array parameter parsing (split_array_string function)
-- Special value handling (proxy DIRECT/NONE)
-- Configuration dictionary export
-- Hash generation for configuration comparison
-
-@author: GitHub Copilot
-@updated: 2025-07-07
-"""
+"""Unit tests for Config class and utility functions"""
 
 import unittest
 import sys
@@ -81,7 +64,6 @@ class TestSplitArrayString(unittest.TestCase):
         result = split_array_string("single_item")
         self.assertEqual(result, ["single_item"])
 
-        # Test that whitespace is trimmed for single values
         result = split_array_string("  single_item  ")
         self.assertEqual(result, ["single_item"])
 
@@ -112,11 +94,9 @@ class TestSplitArrayString(unittest.TestCase):
         result = split_array_string("shell:ip -6 addr | grep global,public")
         self.assertEqual(result, ["shell:ip -6 addr | grep global,public"])
 
-        # Test that prefixes in the middle don't prevent splitting
         result = split_array_string("public,regex:192\\.168\\..*")
         self.assertEqual(result, ["public", "regex:192\\.168\\..*"])
 
-        # Test normal case without special prefixes
         result = split_array_string("public,default")
         self.assertEqual(result, ["public", "default"])
 
@@ -265,11 +245,9 @@ class TestConfig(unittest.TestCase):
 
     def test_config_proxy_special_values(self):
         """Test proxy special value handling (DIRECT, NONE)"""
-        # DIRECT should be converted to None
         config = Config(cli_config={"proxy": ["http://proxy1.com", "DIRECT", "http://proxy2.com"]})
         self.assertEqual(config.proxy, ["http://proxy1.com", None, "http://proxy2.com"])
 
-        # NONE should be converted to None
         config = Config(cli_config={"proxy": ["NONE", "http://proxy.com"]})
         self.assertEqual(config.proxy, [None, "http://proxy.com"])
 
@@ -528,49 +506,49 @@ class TestConfig(unittest.TestCase):
         config = Config(cli_config={"ssl": "false"})
         self.assertFalse(config.ssl)
 
-    def test_config_env_variable_types(self):
-        """Test Config with various environment variable types"""
+    def test_config_env_variable_types_and_conversion(self):
+        """Test Config with various environment variable types and conversions"""
         env_config = {
             "dns": "dnspod",
             "id": "12345",
             "token": "secret_token",
-            "ttl": "600",  # String that should be converted to int
-            "cache": "1",  # String that should be converted to bool
-            "ssl": "0",  # String that should be converted to bool
+            "ttl": "600",
+            "cache": "1",
+            "ssl": "0",
             "log_level": "DEBUG",
-            "ipv4": ["domain1.com", "domain2.com"],  # Already a list
-            "proxy": ["proxy1:8080", "proxy2:8080"],  # Already a list
+            "ipv4": ["domain1.com", "domain2.com"],
+            "proxy": ["proxy1:8080", "proxy2:8080"],
         }
         config = Config(env_config=env_config)
 
         self.assertEqual(config.dns, "dnspod")
         self.assertEqual(config.id, "12345")
         self.assertEqual(config.token, "secret_token")
-        self.assertEqual(config.ttl, 600)  # Should be converted to int
-        self.assertTrue(config.cache)  # "1" should be True
-        self.assertFalse(config.ssl)  # "0" should be False
-        self.assertEqual(config.log_level, 10)  # DEBUG level
+        self.assertEqual(config.ttl, 600)
+        self.assertTrue(config.cache)
+        self.assertFalse(config.ssl)
+        self.assertEqual(config.log_level, 10)
         self.assertEqual(config.ipv4, ["domain1.com", "domain2.com"])
         self.assertEqual(config.proxy, ["proxy1:8080", "proxy2:8080"])
 
-    def test_config_env_variable_string_conversion(self):
-        """Test Config with environment variables as strings (mimicking real env vars)"""
-        env_config = {
+        # Test string conversion variants
+        env_config2 = {
             "cache": "true",
             "ssl": "false",
             "ttl": "300",
             "log_level": "ERROR",
         }
-        config = Config(env_config=env_config)
+        config2 = Config(env_config=env_config2)
 
-        self.assertTrue(config.cache)
-        self.assertFalse(config.ssl)
-        self.assertEqual(config.ttl, 300)
-        self.assertEqual(config.log_level, 40)  # ERROR level
+        self.assertTrue(config2.cache)
+        self.assertFalse(config2.ssl)
+        self.assertEqual(config2.ttl, 300)
+        self.assertEqual(config2.log_level, 40)
 
-    def test_config_env_special_ssl_values(self):
-        """Test Config SSL handling with special environment values"""
-        test_cases = [
+    def test_config_env_special_value_handling(self):
+        """Test Config handling of special environment values"""
+        # SSL special values
+        ssl_cases = [
             ("auto", "auto"),
             ("/path/to/cert.pem", "/path/to/cert.pem"),
             ("true", True),
@@ -579,27 +557,26 @@ class TestConfig(unittest.TestCase):
             ("0", False),
         ]
 
-        for env_value, expected in test_cases:
+        for env_value, expected in ssl_cases:
             config = Config(env_config={"ssl": env_value})
             self.assertEqual(config.ssl, expected, "Failed for SSL value: {}".format(env_value))
 
-    def test_config_env_proxy_special_values(self):
-        """Test Config proxy handling with DIRECT and NONE values from environment"""
-        test_cases = [
+        # Proxy special values
+        proxy_cases = [
             (["DIRECT"], [None]),
             (["NONE"], [None]),
-            (["direct"], [None]),  # Case insensitive
-            (["none"], [None]),  # Case insensitive
+            (["direct"], [None]),
+            (["none"], [None]),
             (["proxy1:8080", "DIRECT", "proxy2:8080"], ["proxy1:8080", None, "proxy2:8080"]),
-            ([""], [None]),  # Empty string
+            ([""], [None]),
         ]
 
-        for env_value, expected in test_cases:
+        for env_value, expected in proxy_cases:
             config = Config(env_config={"proxy": env_value})
             self.assertEqual(config.proxy, expected, "Failed for proxy value: {}".format(env_value))
 
-    def test_config_md5_method(self):
-        """Test Config.md5() method"""
+    def test_config_md5_functionality(self):
+        """Test Config.md5() method functionality and consistency"""
         config1 = Config(cli_config={"dns": "cloudflare", "id": "test"})
         config2 = Config(cli_config={"dns": "cloudflare", "id": "test"})
         config3 = Config(cli_config={"dns": "alidns", "id": "test"})
@@ -612,13 +589,11 @@ class TestConfig(unittest.TestCase):
 
         # MD5 should be a valid hex string
         md5_hash = config1.md5()
-        self.assertEqual(len(md5_hash), 32)  # MD5 is 32 characters
+        self.assertEqual(len(md5_hash), 32)
         self.assertTrue(all(c in "0123456789abcdef" for c in md5_hash))
 
-    def test_config_md5_consistency(self):
-        """Test that MD5 hash is consistent across multiple calls"""
+        # Test consistency across multiple calls
         config = Config(cli_config={"dns": "cloudflare", "id": "test", "token": "secret"})
-
         hash1 = config.md5()
         hash2 = config.md5()
         hash3 = config.md5()
@@ -647,8 +622,6 @@ class TestConfig(unittest.TestCase):
 
     def test_config_env_json_array_like_values(self):
         """Test Config with environment variables that look like JSON arrays"""
-        # Note: In real environment usage, these would come from the env loader
-        # which might parse JSON arrays, but here we test with already parsed values
         env_config = {
             "ipv4": ["test1.example.com", "test2.example.com"],
             "index4": ["public", "regex:192\\.168\\..*"],
@@ -689,66 +662,110 @@ class TestConfig(unittest.TestCase):
             config = Config(env_config={"ttl": env_value})
             self.assertEqual(config.ttl, expected, "Failed for TTL value: {}".format(env_value))
 
-    def test_config_index_false_values(self):
-        """Test that index4 and index6 can be set to False to disable them"""
-        cli_config = {
-            "index4": "false",
-            "index6": False,
-        }
-        config = Config(cli_config=cli_config)
+    def test_config_index_parameters(self):
+        """Test index4 and index6 parameter handling"""
+        # Test False values
+        test_cases = [
+            ({"index4": "false", "index6": False}, {"index4": False, "index6": False}),
+            ({"index4": "none", "index6": "NONE"}, {"index4": False, "index6": False}),
+        ]
 
-        self.assertFalse(config.index4)
-        self.assertFalse(config.index6)
+        for cli_config, expected in test_cases:
+            config = Config(cli_config=cli_config)
+            for key, value in expected.items():
+                self.assertEqual(getattr(config, key), value)
 
-        # Test with "none" string as well
-        cli_config2 = {
-            "index4": "none",
-            "index6": "NONE",
-        }
-        config2 = Config(cli_config=cli_config2)
+        # Test special prefixes (no split)
+        prefix_cases = [
+            (
+                {"index4": "regex:192\\.168\\..*,10\\..*", "index6": "regex:fe80::.*,::1"},
+                {"index4": ["regex:192\\.168\\..*,10\\..*"], "index6": ["regex:fe80::.*,::1"]},
+            ),
+            (
+                {"index4": "cmd:curl -s ip.sb,backup", "index6": "cmd:curl -s ipv6.icanhazip.com,backup"},
+                {"index4": ["cmd:curl -s ip.sb,backup"], "index6": ["cmd:curl -s ipv6.icanhazip.com,backup"]},
+            ),
+            (
+                {
+                    "index4": "shell:ip route get 8.8.8.8 | awk '{print $7}';backup",
+                    "index6": "shell:ip -6 addr | grep global;backup",
+                },
+                {
+                    "index4": ["shell:ip route get 8.8.8.8 | awk '{print $7}';backup"],
+                    "index6": ["shell:ip -6 addr | grep global;backup"],
+                },
+            ),
+        ]
 
-        self.assertFalse(config2.index4)
-        self.assertFalse(config2.index6)
+        for cli_config, expected in prefix_cases:
+            config = Config(cli_config=cli_config)
+            for key, value in expected.items():
+                self.assertEqual(getattr(config, key), value)
 
-    def test_config_index_special_prefixes_no_split(self):
-        """Test that index4 and index6 with special prefixes don't get split"""
-        # Test regex: prefix at start - should not split
-        cli_config1 = {"index4": "regex:192\\.168\\..*,10\\..*", "index6": "regex:fe80::.*,::1"}
-        config1 = Config(cli_config=cli_config1)
+        # Test normal splitting when prefix is in the middle
+        normal_cases = [
+            (
+                {"index4": "public,regex:192\\.168\\..*", "index6": "public,cmd:curl -s ipv6.icanhazip.com"},
+                {
+                    "index4": ["public", "regex:192\\.168\\..*"],
+                    "index6": ["public", "cmd:curl -s ipv6.icanhazip.com"],
+                },
+            ),
+            (
+                {"index4": "public,default", "index6": "public;default"},
+                {"index4": ["public", "default"], "index6": ["public", "default"]},
+            ),
+        ]
 
-        self.assertEqual(config1.index4, ["regex:192\\.168\\..*,10\\..*"])
-        self.assertEqual(config1.index6, ["regex:fe80::.*,::1"])
+        for cli_config, expected in normal_cases:
+            config = Config(cli_config=cli_config)
+            for key, value in expected.items():
+                self.assertEqual(getattr(config, key), value)
 
-        # Test cmd: prefix at start - should not split
-        cli_config2 = {"index4": "cmd:curl -s ip.sb,backup", "index6": "cmd:curl -s ipv6.icanhazip.com,backup"}
-        config2 = Config(cli_config=cli_config2)
+    def test_cli_array_parameters_comprehensive(self):
+        """Test CLI array parameters with various input forms"""
+        test_cases = [
+            # String inputs
+            ({"proxy": "192.168.1.1:8080;direct"}, {"proxy": ["192.168.1.1:8080", None]}),
+            ({"index4": "public,default"}, {"index4": ["public", "default"]}),
+            (
+                {"proxy": "proxy1.com:8080;DIRECT;proxy2.com:3128"},
+                {"proxy": ["proxy1.com:8080", None, "proxy2.com:3128"]},
+            ),
+            ({"index4": "public, default, custom"}, {"index4": ["public", "default", "custom"]}),
+            # List inputs - single element (gets parsed)
+            ({"proxy": ["192.168.1.1:8080;direct"]}, {"proxy": ["192.168.1.1:8080", None]}),
+            ({"index4": ["public,default"]}, {"index4": ["public", "default"]}),
+            (
+                {"proxy": ["proxy1.com:8080;DIRECT;proxy2.com:3128"]},
+                {"proxy": ["proxy1.com:8080", None, "proxy2.com:3128"]},
+            ),
+            ({"index4": ["public,default,custom"]}, {"index4": ["public", "default", "custom"]}),
+            # List inputs - multiple elements (not parsed)
+            (
+                {"proxy": ["192.168.1.1:8080", "direct", "proxy2.com:3128"]},
+                {"proxy": ["192.168.1.1:8080", None, "proxy2.com:3128"]},
+            ),
+            ({"index4": ["public", "default", "custom"]}, {"index4": ["public", "default", "custom"]}),
+            (
+                {"proxy": ["192.168.1.1:8080;direct", "proxy2.com:3128"]},
+                {"proxy": ["192.168.1.1:8080;direct", "proxy2.com:3128"]},
+            ),
+            ({"index4": ["public,default", "custom"]}, {"index4": ["public,default", "custom"]}),
+            # Single values
+            ({"proxy": ["single.proxy.com:8080"]}, {"proxy": ["single.proxy.com:8080"]}),
+            ({"index4": ["single"]}, {"index4": ["single"]}),
+            # Empty lists
+            ({"proxy": []}, {"proxy": []}),
+            ({"index4": []}, {"index4": []}),
+        ]
 
-        self.assertEqual(config2.index4, ["cmd:curl -s ip.sb,backup"])
-        self.assertEqual(config2.index6, ["cmd:curl -s ipv6.icanhazip.com,backup"])
-
-        # Test shell: prefix at start - should not split
-        cli_config3 = {
-            "index4": "shell:ip route get 8.8.8.8 | awk '{print $7}';backup",
-            "index6": "shell:ip -6 addr | grep global;backup",
-        }
-        config3 = Config(cli_config=cli_config3)
-
-        self.assertEqual(config3.index4, ["shell:ip route get 8.8.8.8 | awk '{print $7}';backup"])
-        self.assertEqual(config3.index6, ["shell:ip -6 addr | grep global;backup"])
-
-        # Test that prefixes in the middle still allow splitting
-        cli_config4 = {"index4": "public,regex:192\\.168\\..*", "index6": "public,cmd:curl -s ipv6.icanhazip.com"}
-        config4 = Config(cli_config=cli_config4)
-
-        self.assertEqual(config4.index4, ["public", "regex:192\\.168\\..*"])
-        self.assertEqual(config4.index6, ["public", "cmd:curl -s ipv6.icanhazip.com"])
-
-        # Test that normal values still get split
-        cli_config5 = {"index4": "public,default", "index6": "public;default"}
-        config5 = Config(cli_config=cli_config5)
-
-        self.assertEqual(config5.index4, ["public", "default"])
-        self.assertEqual(config5.index6, ["public", "default"])
+        for cli_config, expected in test_cases:
+            config = Config(cli_config=cli_config)
+            for key, value in expected.items():
+                self.assertEqual(
+                    getattr(config, key), value, "Failed for config: {} on key: {}".format(cli_config, key)
+                )
 
 
 class TestIsFalse(unittest.TestCase):

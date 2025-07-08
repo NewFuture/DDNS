@@ -627,6 +627,62 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(config.ttl, 600)
         self.assertIsInstance(config.ttl, int)
 
+    def test_config_flattening_integration(self):
+        """Test comprehensive single-element flattening integration through load_config"""
+        # Create test configuration files
+        json_config_path = os.path.join(self.test_dir, "test_config.json")
+        with open(json_config_path, "w") as f:
+            json.dump({"dns": "cloudflare", "id": "json_id", "token": "json_token"}, f)
+
+        try:
+            # Test with mocked CLI that returns mixed list types (single and multi-element)
+            with patch("ddns.config.load_cli_config") as mock_cli:
+                with patch("ddns.config.load_env_config") as mock_env:
+                    # CLI returns mixed configurations to test all flattening scenarios
+                    mock_cli.return_value = {
+                        # Single-element tests
+                        "dns": ["debug"],  # Should be flattened to "debug"
+                        "id": ["cli_id"],  # Should be flattened to "cli_id"
+                        "ttl": [600],  # Should be flattened to 600
+                        "cache": ["false"],  # Should be flattened then processed to False
+                        "ssl": ["none"],  # Should be flattened then processed to False
+                        # Multi-element tests
+                        "ipv4": ["192.168.1.1", "10.0.0.1"],  # Should remain as list
+                        "ipv6": ["::1", "::2"],  # Should remain as list
+                        "proxy": ["http://proxy1.com", "http://proxy2.com"],  # Should remain as list
+                        # Mixed single-element array params
+                        "index4": ["default"],  # Single element array param
+                        "config": json_config_path,
+                    }
+                    mock_env.return_value = {"line": "env_line"}
+
+                    # Call load_config
+                    result = load_config(self.test_description, self.test_version, self.test_date)
+
+                    # Verify single-element flattening
+                    self.assertEqual(result.dns, "debug")  # CLI flattened
+                    self.assertEqual(result.id, "cli_id")  # CLI flattened
+                    self.assertEqual(result.ttl, 600)  # CLI flattened and converted
+                    self.assertEqual(result.cache, False)  # CLI flattened then str_bool processed
+                    self.assertEqual(result.ssl, False)  # CLI flattened then str_bool processed
+
+                    # Verify multi-element preservation
+                    self.assertEqual(result.ipv4, ["192.168.1.1", "10.0.0.1"])
+                    self.assertEqual(result.ipv6, ["::1", "::2"])
+                    self.assertEqual(result.proxy, ["http://proxy1.com", "http://proxy2.com"])
+
+                    # Verify single-element array parameter processing
+                    self.assertEqual(result.index4, ["default"])  # Array param processed
+
+                    # Verify fallback to JSON and ENV
+                    self.assertEqual(result.token, "json_token")  # JSON fallback
+                    self.assertEqual(result.line, "env_line")  # ENV fallback
+
+        finally:
+            # Clean up
+            if os.path.exists(json_config_path):
+                os.remove(json_config_path)
+
 
 if __name__ == "__main__":
     unittest.main()
