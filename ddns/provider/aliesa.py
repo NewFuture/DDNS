@@ -15,7 +15,7 @@ class AliesaProvider(AliBaseProvider):
     endpoint = "https://esa.cn-hangzhou.aliyuncs.com"
     api_version = "2024-09-10"  # ESA API版本
     content_type = TYPE_JSON
-    remark = "Managed by DDNS" # ESA comment 不能包含符号
+    remark = "Managed by DDNS"  # ESA comment 不能包含符号
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
