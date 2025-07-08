@@ -73,7 +73,7 @@ class AliesaProvider(AliBaseProvider):
         record_type = "A/AAAA" if record_type in ("A", "AAAA") else record_type
         extra["Comment"] = extra.get("Comment", self.remark)
         extra["BizName"] = extra.get("BizName", "web")
-        extra["Proxied"] = extra.get("Proxied", true)
+        extra["Proxied"] = extra.get("Proxied", True)
         data = self._request(
             method="POST",
             action="CreateRecord",
