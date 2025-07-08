@@ -45,7 +45,7 @@ def get_ip(ip_type, index):
             else:
                 return getattr(ip, index + "_v" + ip_type)()
         except Exception as e:
-            error("Failed to get %s address: %s", ip_type, e)
+            logger.error("Failed to get %s address: %s", ip_type, e)
     return None
 
 
@@ -72,7 +72,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
     ip_type = "4" if record_type == "A" else "6"
     address = get_ip(ip_type, index_rule)
     if not address:
-        error("Fail to get %s address!", ip_type)
+        logger.error("Fail to get %s address!", ip_type)
         return False
 
     update_success = False
