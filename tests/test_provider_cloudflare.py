@@ -308,7 +308,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark since extra is empty
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",  # Default Remark since extra is empty
                 proxied=False,
                 tags=["tag1"],
                 settings={"ttl": 300},
@@ -381,7 +381,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",  # Default Remark
                 proxied=True,  # Preserved from old record
                 tags=["important"],  # Preserved from old record
                 settings={"ttl": 300},  # Preserved from old record
@@ -427,7 +427,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 type="A",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):
@@ -455,7 +455,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 name="www.example.com",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
                 proxied=False,
                 tags=None,
                 settings=None,
@@ -529,7 +529,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 type="A",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
                 proxied=True,
                 priority=10,
             )

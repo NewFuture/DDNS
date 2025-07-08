@@ -10,7 +10,7 @@ import os
 import sys
 
 from .cli import load_config as load_cli_config
-from .json import load_config as load_json, save_config as save_json
+from .json_file import load_config as load_json_config, save_config as save_json
 from .env import load_config as load_env_config
 from .config import Config
 
@@ -73,7 +73,7 @@ Copyright (c) NewFuture (MIT License)
                 config_path = p
                 break
     if config_path and os.path.exists(config_path):
-        json_config = load_json(config_path)
+        json_config = load_json_config(config_path)
     else:
         json_config = {}
 

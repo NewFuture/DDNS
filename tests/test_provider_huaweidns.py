@@ -370,7 +370,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
                 records=["1.2.3.4"],
                 ttl=300,
                 line="line1",
-                description="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                description="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):
@@ -400,7 +400,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
                 type="A",
                 records=["1.2.3.4"],
                 ttl=300,
-                description="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                description="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_zone_not_found(self):

@@ -8,7 +8,7 @@ from os import path, name as os_name
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, getLogger, info, error, debug, warning, INFO
+from logging import basicConfig, getLogger, INFO
 from time import time
 import sys
 
@@ -19,7 +19,6 @@ from .util import ip
 from .util.cache import Cache
 
 logger = getLogger()
-logger.name = "ddns"
 # Set user agent for All Providers
 SimpleProvider.user_agent = SimpleProvider.user_agent.format(version=__version__)
 
@@ -32,7 +31,7 @@ def get_ip(ip_type, index):
         return False
     for i in index:
         try:
-            debug("get_ip:(%s, %s)", ip_type, i)
+            logger.debug("get_ip:(%s, %s)", ip_type, i)
             if str(i).isdigit():  # 数字 local eth
                 return getattr(ip, "local_v" + ip_type)(i)
             elif i.startswith("cmd:"):  # cmd
@@ -83,7 +82,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
         domain = domain.lower()
         cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
-            info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
+            logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
             update_success = True  # At least one domain is successfully cached
         else:
             # Update domain that is not cached or has different IP
@@ -120,12 +119,10 @@ def main():
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
     basicConfig(level=config.log_level, format=log_format, datefmt=config.log_datefmt, filename=config.log_file)
 
-    debug("DDNS[ %s ] run: %s %s", __version__, os_name, sys.platform)
-
     # dns provider class
     provider_class = get_provider_class(config.dns)
     dns = provider_class(
-        config.id, config.token, version=__version__, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
+        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
     )
 
     if config.cache is False:
@@ -137,18 +134,19 @@ def main():
         cache = Cache(config.cache, logger)
 
     if cache is None:
-        info("Cache is disabled!")
+        logger.info("Cache is disabled!")
     elif cache.time > time():  # type: ignore
-        info("Cache file is outdated.")
+        logger.info("Cache file is outdated.")
         cache.clear()
     elif len(cache) == 0:
-        debug("Cache is empty.")
+        logger.debug("Cache is empty.")
     else:
-        debug("Cache loaded with %d entries.", len(cache))
+        logger.debug("Cache loaded with %d entries.", len(cache))
 
     update_ip(dns, cache, config.index4, config.ipv4, "A", config)
     update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config)
 
 
 if __name__ == "__main__":
+    logger.name = "ddns"
     main()

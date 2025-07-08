@@ -342,7 +342,7 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
                 type="A",
                 TTL=300,
                 viewID="1",
-                remark="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                remark="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):

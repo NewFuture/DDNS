@@ -396,7 +396,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
                 RecordLine="默认",  # TencentCloud uses old_record line when available
                 Value="5.6.7.8",
                 TTL=600,
-                Remark="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                Remark="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
 
