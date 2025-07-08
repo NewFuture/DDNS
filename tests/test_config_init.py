@@ -93,11 +93,11 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
     @patch("ddns.config.load_cli_config")
-    def test_load_config_priority_order(self, mock_cli, mock_json, mock_env):
+    def test_load_config_priority_order(self, mock_cli, mock_file, mock_env):
         """Test configuration priority order: CLI > JSON > ENV"""
         # Setup mocks with overlapping configurations
         mock_cli.return_value = {"dns": "cli_dns", "id": "cli_id"}
-        mock_json.return_value = {"dns": "json_dns", "id": "json_id", "token": "json_token"}
+        mock_file.return_value = {"dns": "json_dns", "id": "json_id", "token": "json_token"}
         mock_env.return_value = {"dns": "env_dns", "id": "env_id", "token": "env_token", "line": "env_line"}
 
         # Call load_config
