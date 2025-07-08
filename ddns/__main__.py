@@ -4,7 +4,7 @@ DDNS
 @author: NewFuture, rufengsuixing
 """
 
-from os import path, name as os_name
+from os import path
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir

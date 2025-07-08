@@ -62,7 +62,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(ddns.config.Config, Config)
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     def test_load_config_basic(self, mock_cli, mock_json, mock_env):
         """Test basic load_config functionality"""
@@ -91,7 +91,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(args[3], self.test_date)
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     def test_load_config_priority_order(self, mock_cli, mock_json, mock_env):
         """Test configuration priority order: CLI > JSON > ENV"""
@@ -110,7 +110,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(result.line, "env_line")  # ENV used when neither CLI nor JSON have it
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
     def test_load_config_with_config_file_path(self, mock_exists, mock_cli, mock_json, mock_env):
@@ -131,7 +131,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(result.token, "custom_token")
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
     def test_load_config_with_env_config_file_path(self, mock_exists, mock_cli, mock_json, mock_env):
@@ -152,7 +152,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(result.token, "env_token")
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
     @patch("os.path.expanduser")
@@ -194,7 +194,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(result.id, "system_id")
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
     def test_load_config_no_config_file(self, mock_exists, mock_cli, mock_json, mock_env):
@@ -213,7 +213,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertIsNone(result.id)  # Should use default values
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
     def test_load_config_nonexistent_config_file(self, mock_exists, mock_cli, mock_json, mock_env):
@@ -352,7 +352,7 @@ class TestConfigInit(unittest.TestCase):
         mock_exit.assert_called_once_with(0)
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     def test_load_config_doc_string_format(self, mock_cli, mock_json, mock_env):
         """Test that doc string is properly formatted with version and date"""
@@ -374,7 +374,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertIn("MIT License", doc_string)
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     def test_load_config_config_object_creation(self, mock_cli, mock_json, mock_env):
         """Test that Config object is created with correct parameters"""
@@ -401,7 +401,7 @@ class TestConfigInit(unittest.TestCase):
             self.assertEqual(result, mock_config_instance)
 
     @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_json")
+    @patch("ddns.config.load_json_config")
     @patch("ddns.config.load_cli_config")
     def test_load_config_integration(self, mock_cli, mock_json, mock_env):
         """Test complete integration of load_config function"""
@@ -446,7 +446,7 @@ class TestConfigInit(unittest.TestCase):
         # Test with proper mocking to avoid actual CLI parsing
         with patch("ddns.config.load_cli_config") as mock_cli:
             with patch("ddns.config.load_env_config") as mock_env:
-                with patch("ddns.config.load_json") as mock_json:
+                with patch("ddns.config.load_json_config") as mock_json:
                     mock_cli.return_value = {"dns": "debug"}
                     mock_env.return_value = {}
                     mock_json.return_value = {}
@@ -463,7 +463,7 @@ class TestConfigInit(unittest.TestCase):
         """Test load_config edge cases"""
         with patch("ddns.config.load_cli_config") as mock_cli:
             with patch("ddns.config.load_env_config") as mock_env:
-                with patch("ddns.config.load_json") as mock_json:
+                with patch("ddns.config.load_json_config") as mock_json:
                     # Test with empty configurations
                     mock_cli.return_value = {}
                     mock_env.return_value = {}
