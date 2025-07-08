@@ -123,6 +123,6 @@ class AliesaProvider(AliBaseProvider):
         self.logger.error("Failed to update record: %s", data)
         return False
 
-    def _get_type(record_type):
+    def _get_type(self, record_type):
         # type: (str) -> str
         return "A/AAAA" if record_type in ("A", "AAAA") else record_type
