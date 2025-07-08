@@ -77,7 +77,7 @@ class AliesaProvider(AliBaseProvider):
             SiteId=int(zone_id),
             RecordName=full_domain,
             Type=self._get_type(record_type),
-            Date={"Value": value},
+            Data={"Value": value},
             Ttl=ttl or 1,
             **extra
         )
@@ -109,7 +109,6 @@ class AliesaProvider(AliBaseProvider):
         data = self._request(
             method="POST",
             action="UpdateRecord",
-            SiteId=int(zone_id),
             RecordId=old_record.get("RecordId"),
             Data={"Value": value},
             Ttl=ttl,
