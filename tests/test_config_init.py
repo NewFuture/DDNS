@@ -20,7 +20,7 @@ def capture_stdout_output(func, *args, **kwargs):
     if sys.version_info[0] < 3:
         # Python 2.7: Use BytesIO and decode
         buf = BytesIO()
-        with patch("sys.stdout", buf):
+        with patch("sys.stdout", new=buf):
             func(*args, **kwargs)
         output = buf.getvalue()
         if isinstance(output, bytes):
@@ -28,7 +28,7 @@ def capture_stdout_output(func, *args, **kwargs):
     else:
         # Python 3.x: Use StringIO
         buf = StringIO()
-        with patch("sys.stdout", buf):
+        with patch("sys.stdout", new=buf):
             func(*args, **kwargs)
         output = buf.getvalue()
     return output
@@ -267,10 +267,11 @@ class TestConfigInit(unittest.TestCase):
         mock_cli.return_value = {"new_config": True, "dns": "debug"}
         mock_save_json.return_value = False
 
-        with patch("sys.stdout.write") as mock_stdout:
+        mock_stdout = MagicMock()
+        with patch("sys.stdout", new=mock_stdout):
             load_config(self.test_description, self.test_version, self.test_date)
 
-        mock_stdout.assert_not_called()  # No success message on failure
+        mock_stdout.write.assert_not_called()  # No success message on failure
         mock_exit.assert_called_once_with(0)
 
     @patch("ddns.config.load_env_config")
