@@ -303,11 +303,6 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider("test_user", "test_pass")
 
         # Test the auth header creation manually
-        auth_string = "test_user:test_pass"
-        if hasattr(auth_string, "encode"):  # Python 3
-            auth_bytes = auth_string.encode("utf-8")
-        else:  # Python 2
-            auth_bytes = auth_string  # type: bytes # type: ignore
 
         expected_auth_b64 = "dGVzdF91c2VyOnRlc3RfcGFzcw=="
         expected_header = "Basic {0}".format(expected_auth_b64)

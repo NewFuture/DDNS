@@ -273,7 +273,7 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_cli_config")
     @patch("sys.exit")
-    def test_load_config_new_config_flag_with_custom_path(self, mock_exit, mock_cli, mock_env, mock_save_json):
+    def test_load_config_new_config_flag_and_custom_path(self, mock_exit, mock_cli, mock_env, mock_save_json):
         """Test load_config with --new-config flag and custom config path"""
         # Setup mocks
         mock_cli.return_value = {"new_config": "custom-config.json", "dns": "debug"}
@@ -613,7 +613,6 @@ class TestConfigInit(unittest.TestCase):
         # Verify TTL conversion to int
         self.assertEqual(config.ttl, 600)
         self.assertIsInstance(config.ttl, int)
-
 
 if __name__ == "__main__":
     unittest.main()
