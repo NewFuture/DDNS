@@ -11,6 +11,7 @@ import shutil
 import json
 import ddns.config
 from ddns.config import load_config, Config
+from io import StringIO  # For capturing stdout in Python2 and Python3
 
 
 class TestConfigInit(unittest.TestCase):
@@ -194,7 +195,9 @@ class TestConfigInit(unittest.TestCase):
         }
         mock_save_json.return_value = True
 
-        with patch("sys.stdout.write") as mock_stdout:
+        # Capture output written to stdout via write()
+        buf = StringIO()
+        with patch("sys.stdout", buf):
             load_config(self.test_description, self.test_version, self.test_date)
 
         mock_save_json.assert_called_once()
@@ -205,7 +208,8 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(config_data["token"], "test_token")
         self.assertEqual(config_data["ipv4"], ["ddns.newfuture.cc"])
         self.assertEqual(config_data["index4"], ["default"])
-        mock_stdout.assert_called_once_with("config.json is generated.\n")
+        # Verify stdout contains the generated config message
+        self.assertEqual(buf.getvalue(), "config.json is generated.\n")
         mock_exit.assert_called_once_with(0)
 
         # Test case 2: Custom config path
@@ -213,13 +217,16 @@ class TestConfigInit(unittest.TestCase):
         mock_exit.reset_mock()
         mock_cli.return_value = {"new_config": "custom-config.json", "dns": "debug"}
 
-        with patch("sys.stdout.write") as mock_stdout:
+        # Test case 2: custom config path output
+        buf = StringIO()
+        with patch("sys.stdout", buf):
             load_config(self.test_description, self.test_version, self.test_date)
 
         config_path, config_data = mock_save_json.call_args[0]
         self.assertEqual(config_path, "custom-config.json")
         self.assertEqual(config_data["dns"], "debug")
-        mock_stdout.assert_called_once_with("custom-config.json is generated.\n")
+        # Verify stdout contains the custom config message
+        self.assertEqual(buf.getvalue(), "custom-config.json is generated.\n")
 
         # Test case 3: Preserve existing arrays
         mock_save_json.reset_mock()

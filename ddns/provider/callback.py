@@ -72,7 +72,7 @@ class CallbackProvider(SimpleProvider):
 
     def _validate(self):
         # CallbackProvider uses auth_id as URL, not as regular ID
-        if not self.auth_id or "://" not in self.auth_id:
-            self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
-            raise ValueError("id must be configured with URL")
-        # CallbackProvider doesn't need auth_token validation (it can be empty)
+        if self.endpoint or (not self.auth_id or "://" not in self.auth_id):
+            # 如果 endpoint 已经设置，或者 auth_id 不是有效的 URL，则抛出异常
+            self.logger.critical("endpoint [%s] or id [%s] 必须是有效的URL", self.endpoint, self.auth_id)
+            raise ValueError("endpoint or id must be configured with URL")
