@@ -24,7 +24,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         self.assertProviderInitialized(self.provider)
         self.assertEqual(self.provider.service, "dnspod")
         self.assertEqual(self.provider.version_date, "2021-03-23")
-        self.assertEqual(self.provider.API, "https://dnspod.tencentcloudapi.com")
+        self.assertEqual(self.provider.endpoint, "https://dnspod.tencentcloudapi.com")
         self.assertEqual(self.provider.content_type, "application/json")
 
     def test_validate_success(self):

@@ -8,7 +8,7 @@ from ._base import SimpleProvider, TYPE_FORM
 
 
 class HeProvider(SimpleProvider):
-    API = "https://dyn.dns.he.net"
+    endpoint = "https://dyn.dns.he.net"
     content_type = TYPE_FORM
     accept = None  # he.net does not require a specific Accept header
     decode_response = False  # he.net response is plain text, not JSON

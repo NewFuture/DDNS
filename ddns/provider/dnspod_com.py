@@ -14,5 +14,5 @@ class DnspodComProvider(DnspodProvider):
     This class extends the DnspodProvider to use the global DNSPOD API.
     """
 
-    API = "https://api.dnspod.com"
+    endpoint = "https://api.dnspod.com"
     DefaultLine = "default"

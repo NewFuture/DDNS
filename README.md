@@ -39,6 +39,7 @@
 - 服务商支持:
   - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
   - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md)) ⚡
+  - [阿里云边缘安全加速(ESA)](https://esa.console.aliyun.com/) ([配置指南](doc/providers/aliesa.md)) ⚡
   - [DNS.COM](https://www.dns.com/) (@loftor-git)
   - [DNSPOD 国际版](https://www.dnspod.com/)
   - [CloudFlare](https://www.cloudflare.com/) (@tongyifan)
@@ -117,6 +118,7 @@
 
    - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
    - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
+   - **阿里云边缘安全加速(ESA)**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/aliesa.md)
    - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet)
    - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token)
    - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
@@ -174,7 +176,7 @@ python -m ddns -c /path/to/config.json
 | :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |   id   |       string       |    √     |     无      |    api 访问 ID     | Cloudflare 为邮箱（使用 Token 时留空）<br>HE.net 可留空<br>华为云为 Access Key ID (AK)                                                                                                   |
 | token  |       string       |    √     |     无      |   api 授权 token   | 部分平台叫 secret key，**反馈粘贴时删除**                                                                                                                                                |
-|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，腾讯云为 `tencentcloud`，No-IP 为 `noip`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
+|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，阿里ESA为 `aliesa`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，腾讯云为 `tencentcloud`，No-IP 为 `noip`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
 |  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表    | 为 `[]` 时，不会获取和更新 IPv4 地址                                                                                                                                                     |
 |  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表    | 为 `[]` 时，不会获取和更新 IPv6 地址                                                                                                                                                     |
 | index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
@@ -223,7 +225,7 @@ python -m ddns -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 tencentcloud 或 noip 或 callback",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 aliesa 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 tencentcloud 或 noip 或 callback",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,
@@ -287,6 +289,7 @@ Docker 镜像在无额外参数的情况下，已默认启用每 5 分钟执行�
 使用系统自带的 IE 浏览器访问一次对应的 API 即可
 
 - alidns 打开: <https://alidns.aliyuncs.com>
+- aliesa 打开: <https://esa.cn-hangzhou.aliyuncs.com>
 - cloudflare 打开: <https://api.cloudflare.com>
 - dns.com 打开: <https://www.dns.com>
 - dnspod.cn 打开: <https://dnsapi.cn>

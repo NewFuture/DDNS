@@ -17,7 +17,7 @@ class NoipProvider(SimpleProvider):
     No-IP update protocol.
     """
 
-    API = "https://dynupdate.no-ip.com"
+    endpoint = "https://dynupdate.no-ip.com"
     content_type = TYPE_FORM
     accept = None  # No-IP returns plain text response
     decode_response = False  # Response is plain text, not JSON
@@ -61,7 +61,7 @@ class NoipProvider(SimpleProvider):
 
         # Prepare HTTP Basic Authentication headers
         auth_string = "{0}:{1}".format(self.auth_id, self.auth_token)
-        if hasattr(auth_string, "encode"):  # Python 3
+        if not isinstance(auth_string, bytes):  # Python 3
             auth_bytes = auth_string.encode("utf-8")
         else:  # Python 2
             auth_bytes = auth_string

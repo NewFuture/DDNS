@@ -16,7 +16,7 @@ class CallbackProvider(SimpleProvider):
     Generic custom callback provider, supports GET/POST arbitrary API.
     """
 
-    API = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
+    endpoint = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
     content_type = TYPE_JSON
     decode_response = False  # Callback response is not JSON, it's a custom response
 
