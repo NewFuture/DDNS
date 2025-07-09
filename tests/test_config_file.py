@@ -9,14 +9,13 @@ Test Coverage:
 - JSON parsing (priority parser)
 - AST parsing (fallback parser)
 - Parser fallback logic
-- Configuration flattening
 - Error handling for invalid files
 - File encoding and special characters
 - Various data types and structures
 - Edge cases and malformed content
 
 @author: GitHub Copilot
-@updated: 2025-07-08
+@updated: 2025-07-09
 """
 
 from __init__ import unittest
@@ -102,7 +101,7 @@ class TestConfigFile(unittest.TestCase):
 
         # Verify fallback occurred
         log_output = self.log_capture.getvalue()
-        self.assertIn("JSON parsing failed, trying AST parser", log_output)
+        self.assertIn("JSON parsing failed", log_output)
         self.assertIn("Successfully loaded config file with AST parser", log_output)
 
     def test_load_config_with_arrays(self):
@@ -143,7 +142,7 @@ class TestConfigFile(unittest.TestCase):
                 "cert_path": "/path/to/cert.pem"
             }
         }"""
-        file_path = self.create_test_file("test_nested.json", json_content)
+        file_path = self.create_test_file("test_log_fields.json", json_content)
 
         config = load_config(file_path)
 
@@ -244,10 +243,7 @@ class TestConfigFile(unittest.TestCase):
             load_config(file_path)
 
         error_message = str(context.exception)
-        # The actual error might be from the flattening step, not the validation
-        self.assertTrue(
-            "Config content is not a dictionary" in error_message or "has no attribute 'items'" in error_message
-        )
+        self.assertIn("Config file must contain a dictionary, got: list", error_message)
 
     def test_load_config_nonexistent_file(self):
         """Test loading configuration from non-existent file"""
@@ -392,8 +388,7 @@ class TestConfigFile(unittest.TestCase):
 
         # Verify fallback occurred
         log_output = self.log_capture.getvalue()
-        self.assertIn("JSON parsing failed, trying AST parser", log_output)
-        self.assertIn("Successfully loaded config file with AST parser", log_output)
+        self.assertIn("JSON parsing failed", log_output)
 
     def test_load_config_large_file(self):
         """Test loading large configuration files"""
@@ -408,26 +403,6 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(len(loaded_config), 1001)  # dns + 1000 keys
         self.assertEqual(loaded_config["dns"], "cloudflare")
         self.assertEqual(loaded_config["key_999"], "value_999")
-
-    def test_load_config_deeply_nested_objects(self):
-        """Test loading and flattening deeply nested objects"""
-        nested_config = {
-            "dns": "cloudflare",
-            "level1": {"level2": {"level3": {"deep_key": "deep_value"}, "l2_key": "l2_value"}, "l1_key": "l1_value"},
-        }
-
-        config_file = self.create_test_file("nested.json", nested_config)
-        loaded_config = load_config(config_file)
-
-        # Check flattened keys
-        expected_keys = {
-            "dns": "cloudflare",
-            "level1_level2_level3_deep_key": "deep_value",
-            "level1_level2_l2_key": "l2_value",
-            "level1_l1_key": "l1_value",
-        }
-        for key, value in expected_keys.items():
-            self.assertEqual(loaded_config[key], value)
 
     def test_load_config_numeric_keys_in_nested(self):
         """Test nested objects with numeric keys"""

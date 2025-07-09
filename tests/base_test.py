@@ -1,11 +1,9 @@
 # coding=utf-8
 """
 Base test utilities and common imports for all provider tests
-
-@author: Github Copilot
+@author: NewFuture
 """
-import unittest
-from __init__ import patch, MagicMock  # noqa: F401 # Ensure the package is initialized
+from __init__ import unittest, patch, MagicMock  # noqa: F401 # Ensure the package is initialized
 
 
 class BaseProviderTestCase(unittest.TestCase):

@@ -614,5 +614,6 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(config.ttl, 600)
         self.assertIsInstance(config.ttl, int)
 
+
 if __name__ == "__main__":
     unittest.main()
