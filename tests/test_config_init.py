@@ -11,7 +11,7 @@ import shutil
 import json
 import ddns.config
 from ddns.config import load_config, Config
-from io import StringIO  # For capturing stdout in Python2 and Python3
+from io import StringIO, BytesIO  # For capturing stdout in Python2 and Python3
 
 
 class TestConfigInit(unittest.TestCase):
@@ -196,9 +196,20 @@ class TestConfigInit(unittest.TestCase):
         mock_save_json.return_value = True
 
         # Capture output written to stdout via write()
-        buf = StringIO()
-        with patch("sys.stdout", buf):
-            load_config(self.test_description, self.test_version, self.test_date)
+        import sys
+
+        if sys.version_info[0] < 3:
+            buf = BytesIO()
+            with patch("sys.stdout", buf):
+                load_config(self.test_description, self.test_version, self.test_date)
+            output = buf.getvalue()
+            if isinstance(output, bytes):
+                output = output.decode("utf-8")
+        else:
+            buf = StringIO()
+            with patch("sys.stdout", buf):
+                load_config(self.test_description, self.test_version, self.test_date)
+            output = buf.getvalue()
 
         mock_save_json.assert_called_once()
         config_path, config_data = mock_save_json.call_args[0]
