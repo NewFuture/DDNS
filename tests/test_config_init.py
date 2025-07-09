@@ -92,7 +92,7 @@ class TestConfigInit(unittest.TestCase):
             self.assertEqual(result.dns, "cli_dns")
             self.assertEqual(result.id, "cli_id")
             self.assertEqual(result.token, "json_token")  # JSON overrides ENV when CLI doesn't have it
-            self.assertEqual(result.line, "env_line")     # ENV used when neither CLI nor JSON have it
+            self.assertEqual(result.line, "env_line")  # ENV used when neither CLI nor JSON have it
 
         finally:
             for key in ["DDNS_DNS", "DDNS_ID", "DDNS_TOKEN", "DDNS_LINE"]:
@@ -141,7 +141,7 @@ class TestConfigInit(unittest.TestCase):
         default_locations = [
             ("config.json", "local"),
             ("/home/user/.ddns/config.json", "home"),
-            ("/etc/ddns/config.json", "system")
+            ("/etc/ddns/config.json", "system"),
         ]
 
         for config_path, location_type in default_locations:
@@ -371,6 +371,7 @@ class TestConfigInit(unittest.TestCase):
         os.chdir(self.test_dir)
 
         from ddns.config.file import load_config as load_file_config
+
         loaded_config = load_file_config(config_path)
         self.assertEqual(loaded_config["dns"], "cloudflare")
         self.assertEqual(loaded_config["id"], "test@example.com")
@@ -391,6 +392,7 @@ class TestConfigInit(unittest.TestCase):
 
         try:
             from ddns.config.env import load_config as load_env_config
+
             env_config = load_env_config()
 
             self.assertEqual(env_config["dns"], "dnspod")
@@ -410,6 +412,7 @@ class TestConfigInit(unittest.TestCase):
         env_config = {"dns": "alidns", "id": "env_user", "token": "env_token", "ttl": "300"}
 
         from ddns.config.config import Config
+
         config = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
 
         # Verify CLI takes highest priority
@@ -431,9 +434,7 @@ class TestConfigInit(unittest.TestCase):
         }
 
         config = Config(
-            cli_config=test_configs["cli"], 
-            json_config=test_configs["json"], 
-            env_config=test_configs["env"]
+            cli_config=test_configs["cli"], json_config=test_configs["json"], env_config=test_configs["env"]
         )
 
         # Verify array splitting works correctly
@@ -453,6 +454,7 @@ class TestConfigInit(unittest.TestCase):
             f.write(python_dict_content)
 
         from ddns.config.file import load_config as load_file_config
+
         loaded_config = load_file_config(config_path)
         self.assertEqual(loaded_config["dns"], "dnspod")
         self.assertEqual(loaded_config["id"], "python_user")
