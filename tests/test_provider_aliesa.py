@@ -4,8 +4,7 @@
 @author: NewFuture
 """
 
-import unittest
-from base_test import BaseProviderTestCase
+from base_test import unittest, BaseProviderTestCase
 from ddns.provider.aliesa import AliesaProvider
 
 

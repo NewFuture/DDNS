@@ -1,13 +1,7 @@
 # coding=utf-8
 """Unit tests for Config class and utility functions"""
 
-import unittest
-import sys
-import os
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from __init__ import unittest
 from ddns.config.config import Config, split_array_string, SIMPLE_ARRAY_PARAMS  # noqa: E402
 
 
@@ -110,8 +104,8 @@ class TestConfig(unittest.TestCase):
 
         # Test default values
         self.assertEqual(config.dns, "debug")
-        self.assertIsNone(config.id)
-        self.assertIsNone(config.token)
+        self.assertEqual(config.id, "")
+        self.assertEqual(config.token, "")
         self.assertEqual(config.index4, ["default"])
         self.assertEqual(config.index6, ["default"])
         self.assertEqual(config.ipv4, [])
@@ -338,8 +332,8 @@ class TestConfig(unittest.TestCase):
         result = config.dict()
 
         # None values should be filtered out
-        self.assertNotIn("id", result)
-        self.assertNotIn("token", result)
+        self.assertIn("id", result)
+        self.assertIn("token", result)
         self.assertNotIn("ttl", result)
         self.assertNotIn("line", result)
 

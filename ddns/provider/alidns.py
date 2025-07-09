@@ -5,7 +5,8 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
+from ._base import TYPE_FORM, BaseProvider, join_domain, encode_params
+from ._signature import hmac_sha256_authorization, sha256_hash
 from time import strftime, gmtime, time
 
 

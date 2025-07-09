@@ -4,18 +4,11 @@ Unit tests for ddns.config.__init__ module
 @author: GitHub Copilot
 """
 
-import unittest
-import sys
+from __init__ import unittest, patch, MagicMock
 import os
 import tempfile
 import shutil
 import json
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from base_test import patch, MagicMock  # noqa: E402
-
 import ddns.config  # noqa: E402
 from ddns.config import load_config, Config  # noqa: E402
 
@@ -217,7 +210,7 @@ class TestConfigInit(unittest.TestCase):
         # Verify JSON was not loaded
         mock_json.assert_not_called()
         self.assertEqual(result.dns, "debug")
-        self.assertIsNone(result.id)  # Should use default values
+        self.assertEqual(result.id, "")  # Should use default values
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
@@ -486,8 +479,8 @@ class TestConfigInit(unittest.TestCase):
                     # Should create Config with defaults
                     self.assertIsInstance(result, Config)
                     self.assertEqual(result.dns, "debug")  # Default value
-                    self.assertIsNone(result.id)  # Default value
-                    self.assertIsNone(result.token)  # Default value
+                    self.assertEqual(result.id, "")  # Default value
+                    self.assertEqual(result.token, "")  # Default value
 
     def test_config_file_discovery_integration(self):
         """Test config file discovery without mocking file system"""

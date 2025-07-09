@@ -71,8 +71,8 @@ class Config(object):
 
         # dns related configurations
         self.dns = self._get("dns", "debug")  # type: str
-        self.id = self._get("id")  # type: str | None
-        self.token = self._get("token")  # type: str | None
+        self.id = self._get("id", "")  # type: str
+        self.token = self._get("token", "")  # type: str
         self.endpoint = self._get("endpoint")  # type: str | None
         self.index4 = self._get("index4", ["default"])  # type: list[str]|Literal[False]
         self.index6 = self._get("index6", ["default"])  # type: list[str]|Literal[False]
@@ -82,8 +82,8 @@ class Config(object):
         ttl = self._get("ttl", None)  # type: int | str | None
         self.ttl = int(ttl) if isinstance(ttl, (str, bytes)) else ttl  # type: int | None
         self.line = self._get("line", None)  # type: str | None
-        proxy = self._get("proxy", [])  # type: list[str]
-        self.proxy = [None if not p or p.upper() in ("DIRECT", "NONE") else p for p in proxy]
+        proxy = self._get("proxy", None)  # type: list[str]
+        self.proxy = proxy and [None if not p or p.upper() in ("DIRECT", "NONE") else p for p in proxy]
 
         # cache and SSL settings
         self.cache = str_bool(self._get("cache", True))

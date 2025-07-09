@@ -69,24 +69,24 @@ class TestBaseProvider(BaseProviderTestCase):
         """测试使用endpoint参数覆盖默认API"""
         custom_endpoint = "https://custom.api.com"
         provider = _TestProvider("test_id", "test_token", endpoint=custom_endpoint)
-        self.assertEqual(provider.API, custom_endpoint)
+        self.assertEqual(provider.endpoint, custom_endpoint)
         self.assertEqual(provider.auth_id, "test_id")
         self.assertEqual(provider.auth_token, "test_token")
 
     def test_init_without_endpoint_uses_default(self):
         """测试不提供endpoint时使用默认API"""
         provider = _TestProvider("test_id", "test_token")
-        self.assertEqual(provider.API, "https://api.example.com")  # 使用类级别的默认值
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
         self.assertEqual(provider.auth_id, "test_id")
         self.assertEqual(provider.auth_token, "test_token")
 
     def test_init_with_empty_endpoint_ignored(self):
         """测试空endpoint参数被忽略"""
         provider = _TestProvider("test_id", "test_token", endpoint="")
-        self.assertEqual(provider.API, "https://api.example.com")  # 使用类级别的默认值
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
 
         provider = _TestProvider("test_id", "test_token", endpoint=None)
-        self.assertEqual(provider.API, "https://api.example.com")  # 使用类级别的默认值
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
 
     def test_user_agent_exists_and_format(self):
         """测试user_agent存在且格式正确"""
@@ -111,16 +111,16 @@ class TestBaseProvider(BaseProviderTestCase):
 
         # 创建一个有不同默认API的测试类
         class _CustomAPIProvider(_TestProvider):
-            API = "https://different.api.com"
+            endpoint = "https://different.api.com"
 
         # 不使用endpoint - 应该使用类级别的API
         provider1 = _CustomAPIProvider("id", "token")
-        self.assertEqual(provider1.API, "https://different.api.com")
+        self.assertEqual(provider1.endpoint, "https://different.api.com")
 
         # 使用endpoint - 应该覆盖类级别的API
         custom_endpoint = "https://override.api.com"
         provider2 = _CustomAPIProvider("id", "token", endpoint=custom_endpoint)
-        self.assertEqual(provider2.API, custom_endpoint)
+        self.assertEqual(provider2.endpoint, custom_endpoint)
 
     def test_get_zone_id_from_cache(self):
         """测试从缓存获取zone_id"""

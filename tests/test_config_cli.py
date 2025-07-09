@@ -21,13 +21,8 @@ Test Coverage:
 @updated: 2025-07-06
 """
 
-import unittest
+from __init__ import unittest
 import sys
-import os
-
-# Add the parent directory to the path so we can import the ddns module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from ddns.config.cli import load_config, str_bool, log_level  # noqa: E402
 
 

@@ -13,7 +13,7 @@ Current behavior being tested:
 @author: GitHub Copilot
 """
 
-import unittest
+from __init__ import unittest
 import os
 from ddns.config.env import load_config
 

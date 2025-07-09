@@ -5,7 +5,8 @@ Tencent Cloud DNSPod API
 
 @author: NewFuture
 """
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, hmac_sha256
+from ._base import BaseProvider, TYPE_JSON
+from ._signature import hmac_sha256_authorization, sha256_hash, hmac_sha256
 from time import time, strftime, gmtime
 
 

@@ -5,7 +5,8 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
+from ._base import BaseProvider, TYPE_JSON, join_domain, encode_params
+from ._signature import hmac_sha256_authorization, sha256_hash
 from time import strftime, gmtime
 
 

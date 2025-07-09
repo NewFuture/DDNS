@@ -7,7 +7,7 @@ This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS 
 - Use only Python standard library modules (no external dependencies)
 - Ensure Python 2.7 and 3.x compatibility
 - Run tests before committing to ensure all functionality works correctly
-- check the lint 
+- Check the linting and formatting using `flake8` and `black`
 
 ### Development Flow
 - Test: `python -m unittest discover tests` or `python -m pytest tests/`
@@ -22,7 +22,7 @@ Follow the steps below to add a new DNS provider:
 ## Repository Structure
 - `ddns/`: Main application code
   - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, etc.)
-  
+  - `config/`: Configuration management (loading, parsing, validation)
   - `util/`: Utility functions (HTTP client, configuration management, IP detection)
 - `tests/`: Unit tests using unittest framework
 - `doc/`: Documentation and user guides
@@ -45,10 +45,12 @@ Follow the steps below to add a new DNS provider:
 
 ### Test Structure
 - Place tests in `tests/` directory using `test_*.py` naming
-- Inherit from `BaseProviderTestCase` for consistency
+- import unittest, patch, MagicMock
+  - for all provider tests, use the `from base_test import BaseProviderTestCase, unittest, patch, MagicMock`
+  - for all other tests, use `from __init__ import unittest, patch, MagicMock ` to ensure compatibility with both unittest and pytest
 - Use unittest (default) or pytest (optional)
 
-### Basic Test Template
+### Basic provider Test Template
 ```python
 from base_test import BaseProviderTestCase, patch, MagicMock
 from ddns.provider.example import ExampleProvider
