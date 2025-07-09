@@ -76,7 +76,6 @@ class Config(object):
         self.endpoint = self._get("endpoint")  # type: str | None
         self.index4 = self._get("index4", ["default"])  # type: list[str]|Literal[False]
         self.index6 = self._get("index6", ["default"])  # type: list[str]|Literal[False]
-
         self.ipv4 = self._get("ipv4", [])  # type: list[str]
         self.ipv6 = self._get("ipv6", [])  # type: list[str]
         ttl = self._get("ttl", None)  # type: int | str | None

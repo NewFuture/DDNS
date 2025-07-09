@@ -40,7 +40,8 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 | :------: | :----------------: | :--: | :---------: | :---------------: | ------------------------------------------------------------------------------------------------------------ |
 |   id     |       string       |  是  |     无      |    API 访问 ID    | Cloudflare为邮箱（使用Token时留空）<br>HE.net可留空<br>华为云为Access Key ID (AK)                         |
 |  token   |       string       |  是  |     无      |  API 授权令牌     | 部分平台叫secret key                                                                                    |
-|  dns     |       string       |  否  | `"dnspod"`  |    DNS服务商      | 可选值: dnspod, alidns, cloudflare, dnscom, dnspod_com, he, huaweidns, callback                              |
+| endpoint |       string       |  否  |     无      |   API端点URL      | 用于自定义或私有部署的API地址，为空时使用默认端点                                                           |
+|  dns     |       string       |  否  | `"dnspod"`  |    DNS服务商      | 可选值: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, he, huaweidns, noip, tencentcloud |
 |  ipv4    |       array        |  否  |    `[]`     |   IPv4域名列表    | 为`[]`时，不会获取和更新IPv4地址                                                                            |
 |  ipv6    |       array        |  否  |    `[]`     |   IPv6域名列表    | 为`[]`时，不会获取和更新IPv6地址                                                                            |
 | index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | 详见下方说明                                                                                               |
@@ -132,6 +133,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 ```
 
 **支持线路的DNS服务商：**
+
 * **阿里云DNS (alidns)**：`"default"`、`"telecom"`、`"unicom"`、`"mobile"`、`"oversea"`等
 * **DNSPod (dnspod)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
 * **腾讯云 (tencentcloud)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
@@ -178,17 +180,46 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 }
 ```
 
-### 自定义回调配置示例
+### 自定义API端点配置
+
+当使用自定义或私有部署的DNS API时：
 
 ```json
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-  "id": "https://api.example.com/ddns/update?domain=__DOMAIN__&type=__RECORDTYPE__&ip=__IP__",
-  "token": "{\"domain\": \"__DOMAIN__\", \"ip\": \"__IP__\", \"timestamp\": \"__TIMESTAMP__\"}",
+  "id": "12345",
+  "token": "mytokenkey",
+  "endpoint": "https://api.private-dns.com",
+  "dns": "cloudflare",
+  "ipv4": ["example.com"],
+  "ttl": 600
+}
+```
+
+### 自定义回调配置示例
+
+#### GET方式回调
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__&ttl=__TTL__",
+  "token": "",
+  "dns": "callback",
+  "ipv4": ["example.com"]
+}
+```
+
+#### POST方式回调
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "https://api.example.com/ddns",
+  "token": "{\"api_key\": \"your_key\", \"domain\": \"__DOMAIN__\", \"ip\": \"__IP__\", \"type\": \"__RECORDTYPE__\"}",
   "dns": "callback",
   "ipv4": ["example.com"],
-  "ipv6": ["example.com"],
-  "ttl": 600
+  "ipv6": ["example.com"]
 }
 ```
 

@@ -9,9 +9,29 @@ import os
 import tempfile
 import shutil
 import json
+import sys
 import ddns.config
 from ddns.config import load_config, Config
 from io import StringIO, BytesIO  # For capturing stdout in Python2 and Python3
+
+
+def capture_stdout_output(func, *args, **kwargs):
+    """Capture stdout output in a Python 2.7/3.x compatible way"""
+    if sys.version_info[0] < 3:
+        # Python 2.7: Use BytesIO and decode
+        buf = BytesIO()
+        with patch("sys.stdout", buf):
+            func(*args, **kwargs)
+        output = buf.getvalue()
+        if isinstance(output, bytes):
+            output = output.decode("utf-8")
+    else:
+        # Python 3.x: Use StringIO
+        buf = StringIO()
+        with patch("sys.stdout", buf):
+            func(*args, **kwargs)
+        output = buf.getvalue()
+    return output
 
 
 class TestConfigInit(unittest.TestCase):
@@ -196,20 +216,7 @@ class TestConfigInit(unittest.TestCase):
         mock_save_json.return_value = True
 
         # Capture output written to stdout via write()
-        import sys
-
-        if sys.version_info[0] < 3:
-            buf = BytesIO()
-            with patch("sys.stdout", buf):
-                load_config(self.test_description, self.test_version, self.test_date)
-            output = buf.getvalue()
-            if isinstance(output, bytes):
-                output = output.decode("utf-8")
-        else:
-            buf = StringIO()
-            with patch("sys.stdout", buf):
-                load_config(self.test_description, self.test_version, self.test_date)
-            output = buf.getvalue()
+        output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
         mock_save_json.assert_called_once()
         config_path, config_data = mock_save_json.call_args[0]
@@ -220,7 +227,7 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(config_data["ipv4"], ["ddns.newfuture.cc"])
         self.assertEqual(config_data["index4"], ["default"])
         # Verify stdout contains the generated config message
-        self.assertEqual(buf.getvalue(), "config.json is generated.\n")
+        self.assertEqual(output, "config.json is generated.\n")
         mock_exit.assert_called_once_with(0)
 
         # Test case 2: Custom config path
@@ -229,15 +236,13 @@ class TestConfigInit(unittest.TestCase):
         mock_cli.return_value = {"new_config": "custom-config.json", "dns": "debug"}
 
         # Test case 2: custom config path output
-        buf = StringIO()
-        with patch("sys.stdout", buf):
-            load_config(self.test_description, self.test_version, self.test_date)
+        output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
         config_path, config_data = mock_save_json.call_args[0]
         self.assertEqual(config_path, "custom-config.json")
         self.assertEqual(config_data["dns"], "debug")
         # Verify stdout contains the custom config message
-        self.assertEqual(buf.getvalue(), "custom-config.json is generated.\n")
+        self.assertEqual(output, "custom-config.json is generated.\n")
 
         # Test case 3: Preserve existing arrays
         mock_save_json.reset_mock()

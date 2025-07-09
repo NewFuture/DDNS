@@ -27,6 +27,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_ID` | 字符串 | 无 | API访问ID或用户标识 |
 | `DDNS_TOKEN` | 字符串 | 无 | API授权令牌或密钥 |
 | `DDNS_DNS` | 字符串 | `dnspod` | DNS服务提供商 |
+| `DDNS_ENDPOINT` | 字符串 | 无 | API端点URL，用于自定义或私有部署的API地址 |
 | `DDNS_IPV4` | 数组/字符串 | 无 | IPv4域名列表 |
 | `DDNS_IPV6` | 数组/字符串 | 无 | IPv6域名列表 |
 | `DDNS_INDEX4` | 数组/字符串/数字 | `["default"]` | IPv4地址获取方式 |
@@ -44,7 +45,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 
 | 环境变量 | 可能的值 | 示例 |
 |---------|---------|------|
-| `DDNS_DNS` | dnspod, alidns, cloudflare, dnscom, dnspod_com, he, huaweidns, callback | `export DDNS_DNS="cloudflare"` |
+| `DDNS_DNS` | 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, he, huaweidns, noip, tencentcloud | `export DDNS_DNS="cloudflare"` |
 | `DDNS_IPV4` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV4='["example.com", "www.example.com"]'` |
 | `DDNS_IPV6` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV6="example.com,ipv6.example.com"` |
 | `DDNS_INDEX4` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
@@ -96,18 +97,38 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 - **类型**: 字符串
 - **必需**: 否
 - **默认值**: `dnspod`
-- **可选值**: `alidns`, `cloudflare`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `callback`
+- **可选值**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `noip`, `tencentcloud`
 - **说明**: DNS 服务提供商
 - **示例**:
 
   ```bash
   export DDNS_DNS="alidns"        # 阿里云 DNS
+  export DDNS_DNS="aliesa"        # 阿里云企业版 DNS
   export DDNS_DNS="cloudflare"    # CloudFlare
   export DDNS_DNS="dnspod"        # DNSPod 国内版
   export DDNS_DNS="dnspod_com"    # DNSPod 国际版
+  export DDNS_DNS="dnscom"        # DNS.COM
+  export DDNS_DNS="51dns"         # 51DNS (DNS.COM别名)
   export DDNS_DNS="he"            # HE.net
   export DDNS_DNS="huaweidns"     # 华为云 DNS
+  export DDNS_DNS="noip"          # NoIP
+  export DDNS_DNS="tencentcloud"  # 腾讯云 DNS
   export DDNS_DNS="callback"      # 自定义回调
+  export DDNS_DNS="debug"         # 调试模式
+  ```
+
+#### DDNS_ENDPOINT
+
+- **类型**: 字符串
+- **必需**: 否
+- **默认值**: 无（使用各DNS服务商的默认API端点）
+- **说明**: API端点URL，用于自定义或私有部署的API地址
+- **示例**:
+
+  ```bash
+  export DDNS_ENDPOINT="https://api.example.com"     # 自定义API端点
+  export DDNS_ENDPOINT="https://private.dns.com"     # 私有部署的DNS API
+  export DDNS_ENDPOINT=""                             # 使用默认端点
   ```
 
 ### 自定义回调配置

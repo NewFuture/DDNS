@@ -1,21 +1,14 @@
 # DDNS Docker
 
 - 基本特性
-    -   基于 Alpine Linux，最终编译后的镜像体积小（< 7MB）
-    -   支持多种硬件架构（amd64、arm64、arm/v7、arm/v6、ppc64le、s390x、386、mips64le）
-    -   内置定时任务，默认每 5 分钟自动更新一次
-    -   无需外部依赖，开箱即用, 性能优化，资源占用低
--   配置方式:
-    -   [CLI 命令行参数](cli.md)
-    -   [JSON 配置文件](json.md)
-    -   [Env 环境变量](env.md)
-
-> Features：
->
-> -   Docker compatible, cross-platform, lightweight image (<7MB), multi-arch support
-> -   Built-in scheduler (auto update every 5 min)
-> -   No external dependencies, optimized performance, low resource usage
-> -   Multiple configuration methods: CLI, JSON file, environment variables
+  - 基于 Alpine Linux，最终编译后的镜像体积小（< 7MB）
+  - 支持多种硬件架构（amd64、arm64、arm/v7、arm/v6、ppc64le、s390x、386、mips64le）
+  - 内置定时任务，默认每 5 分钟自动更新一次
+  - 无需外部依赖，开箱即用, 性能优化，资源占用低
+- 配置方式:
+  - [CLI 命令行参数](cli.md)
+  - [JSON 配置文件](json.md)
+  - [Env 环境变量](env.md)
 
 ## 镜像说明
 
@@ -23,9 +16,9 @@
 
 DDNS 镜像版本(Docker Tag)：
 
--   `latest`: 最新稳定版(Default stable release )
--   `next`: 下一个版本(Next beta version)
--   `edge` 最新开发版,不稳定(Latest dev build, unstable, master branch)
+- `latest`: 最新稳定版
+- `next`: 下一个版本
+- `edge` 最新开发版,不稳定
 
 ```bash
 docker pull newfuture/ddns:latest
@@ -38,37 +31,28 @@ docker pull newfuture/ddns:next
 docker pull newfuture/ddns:v4.0.0
 ```
 
-### 镜像源 (image sources)
+### 镜像源
 
 镜像会同步发布到以下源：
 
--   [Docker Hub](https://hub.docker.com/r/newfuture/ddns): `docker.io/newfuture/ddns`
--   [GitHub Packages](https://github.com/newfuture/DDNS/pkgs/container/ddns): `ghcr.io/newfuture/ddns`
+- [Docker Hub](https://hub.docker.com/r/newfuture/ddns): `docker.io/newfuture/ddns`
+- [GitHub Packages](https://github.com/newfuture/DDNS/pkgs/container/ddns): `ghcr.io/newfuture/ddns`
 
-supports `docker pull ghcr.io/newfuture/ddns`
+支持 `docker pull ghcr.io/newfuture/ddns`
 
 ## 运行方式 docker run
 
 DDNS Docker 镜像支持三种配置方式：命令行，环境变量和配置文件。
 
--   当设置了命令行参数时，容器将**直接运行单次执行 DDNS 程序，而不会启用定时任务**。
--   如果您需要定时任务，请使用环境变量或配置文件方式。
+- 当设置了命令行参数时，容器将**直接运行单次执行 DDNS 程序，而不会启用定时任务**。
+- 如果您需要定时任务，请使用环境变量或配置文件方式。
 
-> DDNS Docker image supports three configuration methods: command line, environment variables, and config file.
->
-> -   If command line arguments are set, the container runs DDNS directly (no scheduler).
->     -   See [CLI docs](cli.md) for details.
->     -   This mode is suitable for one-time runs or debugging.
-> -   For scheduled updates, use environment variables or config file.
->     -   See [Environment Variable Docs](env.md) for all supported variables.
->     -   Mount your local config directory to `/ddns/` in the container. See [JSON Config Docs](json.md) for details.
+**注意**:
 
-**注意** (docker run 时的注意事项):
-
--   使用了 `-v` 挂载配置文件或目录，确保容器内的 `/ddns/` 目录包含有效的配置文件（如 `config.json`），否则 DDNS 将无法正常工作。
--   使用了 `--network host`，请确保您的 Docker 守护进程已正确配置以支持此模式。
--   使用 `-d` 参数可以让容器在后台运行, 使用前请确保您了解 Docker 的基本操作。
--   使用 `-e DDNS_XXX=YYY` 参数可以设置环境变量，容器内的 DDNS 程序会自动读取这些变量。
+- 使用了 `-v` 挂载配置文件或目录，确保容器内的 `/ddns/` 目录包含有效的配置文件（如 `config.json`），否则 DDNS 将无法正常工作。
+- 使用了 `--network host`，请确保您的 Docker 守护进程已正确配置以支持此模式。
+- 使用 `-d` 参数可以让容器在后台运行, 使用前请确保您了解 Docker 的基本操作。
+- 使用 `-e DDNS_XXX=YYY` 参数可以设置环境变量，容器内的 DDNS 程序会自动读取这些变量。
 
 ### 使用命令行参数 CLI
 
@@ -108,8 +92,8 @@ docker run -d \
   -e DDNS_DNS=dnspod \
   -e DDNS_ID=12345 \
   -e DDNS_TOKEN=mytokenkey \
-  -e DDNS_IPV4=example.com,www.example.com \
-  -e DDNS_INDEX4=['public',0]
+  -e DDNS_IPV4='["example.com","www.example.com"]' \
+  -e DDNS_INDEX4='["public",0]' \
   --network host \
   --name ddns \
   newfuture/ddns
@@ -117,20 +101,13 @@ docker run -d \
 
 想要了解所有支持的环境变量，请参考[环境变量配置说明](env.md)。
 
-
-## 网络模式 Network
-
-> **Network Modes:**
->
-> -   `host`: Container uses host network, recommended for correct IP detection
-> -   `bridge` (default): Container has its own IP, use `public` mode to get public IP
-
+## 网络模式
 
 ### host 网络模式
 
 使用 `--network host` 可让容器直接使用宿主机的网络，这样 DDNS 可以正确获取宿主机的 IP 地址。
 
-对于 Public 或者 url 通常不需要设置 host
+对于 Public 或者 url 通常不需要设置 host。
 
 ```bash
 docker run -d \
@@ -144,7 +121,17 @@ docker run -d \
 
 ### bridge 网络模式（默认）
 
-如果您不想使用 host 网络模式，也可以使用默认的 bridge 模式，但需要注意此时容器具有 IP，您需要使用 `public` 模式获取公网 IP：
+如果您不想使用 host 网络模式，也可以使用默认的 bridge 模式，但需要注意此时容器具有自己的 IP，您需要使用 `public` 模式获取公网 IP：
+
+```bash
+docker run -d \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  -e DDNS_INDEX4=public \
+  newfuture/ddns
+```
 
 ## 高级配置
 
@@ -249,8 +236,6 @@ docker-compose up -d
 
 如果您需要在容器中添加其他工具或自定义环境，可以基于官方镜像创建自己的 Dockerfile：
 
-> You can extend the official image with your own tools/scripts via Dockerfile.
-
 ```dockerfile
 FROM newfuture/ddns:latest
 
@@ -266,13 +251,6 @@ RUN chmod +x /bin/custom-script.sh
 ```
 
 ## 排障和常见问题
-
-> **Troubleshooting & FAQ:**
->
-> -   Can't get correct IP: use `--network host` or set `DDNS_INDEX4=public`
-> -   No scheduled updates: check logs, container status, or run update manually
-> -   Container exits immediately: run with `-it` for debugging, check config
-> -   Network issues: check connectivity, set HTTP proxy if needed
 
 ### 容器无法获取正确的 IP 地址
 
@@ -313,8 +291,8 @@ RUN chmod +x /bin/custom-script.sh
 
 ## 更多资源
 
--   [DDNS GitHub 主页](https://github.com/NewFuture/DDNS)
--   [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
--   [环境变量配置详情](env.md)
--   [JSON 配置文件详情](json.md)
--   [命令行参数详情](cli.md)
+- [DDNS GitHub 主页](https://github.com/NewFuture/DDNS)
+- [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
+- [环境变量配置详情](env.md)
+- [JSON 配置文件详情](json.md)
+- [命令行参数详情](cli.md)
