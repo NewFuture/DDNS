@@ -23,6 +23,7 @@ import tempfile
 import shutil
 import logging
 import os
+import json
 from io import StringIO
 from ddns.config.file import load_config, save_config
 
@@ -51,10 +52,8 @@ class TestConfigFile(unittest.TestCase):
         # type: (str, str | dict) -> str
         """Helper method to create a test file with given content"""
         file_path = os.path.join(self.temp_dir, filename)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, "w") as f:
             if isinstance(content, dict):
-                import json
-
                 f.write(json.dumps(content, indent=2, ensure_ascii=False))
             else:
                 f.write(content)
