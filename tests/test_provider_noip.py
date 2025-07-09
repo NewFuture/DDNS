@@ -312,7 +312,7 @@ class TestNoipProvider(BaseProviderTestCase):
         if hasattr(auth_string, 'encode'):  # Python 3
             auth_bytes = auth_string.encode('utf-8')
         else:  # Python 2
-            auth_bytes = auth_string
+            auth_bytes = auth_string  # type: bytes # type: ignore
 
         expected_auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
         expected_header = "Basic {0}".format(expected_auth_b64)

@@ -7,6 +7,7 @@ This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS 
 - Use only Python standard library modules (no external dependencies)
 - Ensure Python 2.7 and 3.x compatibility
 - Run tests before committing to ensure all functionality works correctly
+- check the lint 
 
 ### Development Flow
 - Test: `python -m unittest discover tests` or `python -m pytest tests/`
@@ -21,6 +22,7 @@ Follow the steps below to add a new DNS provider:
 ## Repository Structure
 - `ddns/`: Main application code
   - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, etc.)
+  
   - `util/`: Utility functions (HTTP client, configuration management, IP detection)
 - `tests/`: Unit tests using unittest framework
 - `doc/`: Documentation and user guides

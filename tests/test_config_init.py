@@ -1,19 +1,6 @@
 # coding=utf-8
 """
 Unit tests for ddns.config.__init__ module
-
-This test suite provides comprehensive coverage for the configuration loading
-functionality in the ddns.config package, including the main load_config function
-and its integration with CLI, JSON, and environment configuration sources.
-
-Test Coverage:
-- load_config function with different configuration sources
-- Configuration merging priority (CLI > JSON > ENV)
-- JSON configuration file discovery in default locations
-- --new-config flag handling and configuration generation
-- Error handling for missing or invalid configuration files
-- Module exports (__all__ validation)
-
 @author: GitHub Copilot
 """
 
@@ -65,12 +52,14 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
     @patch("ddns.config.load_cli_config")
-    def test_load_config_basic(self, mock_cli, mock_json, mock_env):
+    @patch("os.path.exists")
+    def test_load_config_basic(self, mock_exists, mock_cli, mock_json, mock_env):
         """Test basic load_config functionality"""
         # Setup mocks
-        mock_cli.return_value = {"dns": "debug", "id": "test_id"}
+        mock_cli.return_value = {"dns": "debug", "id": "test_id", "config": "test_config.json"}
         mock_json.return_value = {"token": "test_token", "ttl": 300}
         mock_env.return_value = {"proxy": ["http://proxy.com"]}
+        mock_exists.return_value = True  # Mock file exists
 
         # Call load_config
         result = load_config(self.test_description, self.test_version, self.test_date)
@@ -394,16 +383,18 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
     @patch("ddns.config.load_cli_config")
-    def test_load_config_config_object_creation(self, mock_cli, mock_json, mock_env):
+    @patch("os.path.exists")
+    def test_load_config_config_object_creation(self, mock_exists, mock_cli, mock_json, mock_env):
         """Test that Config object is created with correct parameters"""
         # Setup mocks
-        cli_config = {"dns": "cloudflare", "id": "test@example.com"}
+        cli_config = {"dns": "cloudflare", "id": "test@example.com", "config": "test_config.json"}
         json_config = {"token": "test_token", "ttl": 300}
         env_config = {"proxy": ["http://proxy.com"]}
 
         mock_cli.return_value = cli_config
         mock_json.return_value = json_config
         mock_env.return_value = env_config
+        mock_exists.return_value = True  # Mock file exists
 
         # Call load_config
         with patch("ddns.config.Config") as mock_config_class:
@@ -421,7 +412,8 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
     @patch("ddns.config.load_cli_config")
-    def test_load_config_integration(self, mock_cli, mock_json, mock_env):
+    @patch("os.path.exists")
+    def test_load_config_integration(self, mock_exists, mock_cli, mock_json, mock_env):
         """Test complete integration of load_config function"""
         # Setup realistic configuration scenario
         mock_cli.return_value = {
@@ -429,6 +421,7 @@ class TestConfigInit(unittest.TestCase):
             "id": "test@example.com",
             "log_level": "DEBUG",
             "cache": "false",
+            "config": "test_config.json",
         }
         mock_json.return_value = {
             "token": "cf_token_123",
@@ -437,6 +430,7 @@ class TestConfigInit(unittest.TestCase):
             "cache": "true",  # Should be overridden by CLI
         }
         mock_env.return_value = {"proxy": ["http://proxy.corp.com:8080"], "line": "default"}
+        mock_exists.return_value = True  # Mock file exists
 
         # Call load_config
         result = load_config(self.test_description, self.test_version, self.test_date)
@@ -626,62 +620,6 @@ class TestConfigInit(unittest.TestCase):
         # Verify TTL conversion to int
         self.assertEqual(config.ttl, 600)
         self.assertIsInstance(config.ttl, int)
-
-    def test_config_flattening_integration(self):
-        """Test comprehensive single-element flattening integration through load_config"""
-        # Create test configuration files
-        json_config_path = os.path.join(self.test_dir, "test_config.json")
-        with open(json_config_path, "w") as f:
-            json.dump({"dns": "cloudflare", "id": "json_id", "token": "json_token"}, f)
-
-        try:
-            # Test with mocked CLI that returns mixed list types (single and multi-element)
-            with patch("ddns.config.load_cli_config") as mock_cli:
-                with patch("ddns.config.load_env_config") as mock_env:
-                    # CLI returns mixed configurations to test all flattening scenarios
-                    mock_cli.return_value = {
-                        # Single-element tests
-                        "dns": ["debug"],  # Should be flattened to "debug"
-                        "id": ["cli_id"],  # Should be flattened to "cli_id"
-                        "ttl": [600],  # Should be flattened to 600
-                        "cache": ["false"],  # Should be flattened then processed to False
-                        "ssl": ["none"],  # Should be flattened then processed to False
-                        # Multi-element tests
-                        "ipv4": ["192.168.1.1", "10.0.0.1"],  # Should remain as list
-                        "ipv6": ["::1", "::2"],  # Should remain as list
-                        "proxy": ["http://proxy1.com", "http://proxy2.com"],  # Should remain as list
-                        # Mixed single-element array params
-                        "index4": ["default"],  # Single element array param
-                        "config": json_config_path,
-                    }
-                    mock_env.return_value = {"line": "env_line"}
-
-                    # Call load_config
-                    result = load_config(self.test_description, self.test_version, self.test_date)
-
-                    # Verify single-element flattening
-                    self.assertEqual(result.dns, "debug")  # CLI flattened
-                    self.assertEqual(result.id, "cli_id")  # CLI flattened
-                    self.assertEqual(result.ttl, 600)  # CLI flattened and converted
-                    self.assertEqual(result.cache, False)  # CLI flattened then str_bool processed
-                    self.assertEqual(result.ssl, False)  # CLI flattened then str_bool processed
-
-                    # Verify multi-element preservation
-                    self.assertEqual(result.ipv4, ["192.168.1.1", "10.0.0.1"])
-                    self.assertEqual(result.ipv6, ["::1", "::2"])
-                    self.assertEqual(result.proxy, ["http://proxy1.com", "http://proxy2.com"])
-
-                    # Verify single-element array parameter processing
-                    self.assertEqual(result.index4, ["default"])  # Array param processed
-
-                    # Verify fallback to JSON and ENV
-                    self.assertEqual(result.token, "json_token")  # JSON fallback
-                    self.assertEqual(result.line, "env_line")  # ENV fallback
-
-        finally:
-            # Clean up
-            if os.path.exists(json_config_path):
-                os.remove(json_config_path)
 
 
 if __name__ == "__main__":

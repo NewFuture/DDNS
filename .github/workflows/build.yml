@@ -104,7 +104,7 @@ jobs:
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - name: run unit tests
-        run: python3 -m unittest discover tests -v
+        run: python3 -m unittest -v
 
       - uses: actions/upload-artifact@v4
         with:
@@ -155,7 +155,7 @@ jobs:
    
       - run: python3 ./run.py -h
       - name: run unit tests
-        run: python3 -m unittest discover tests -v
+        run: python3 -m unittest -v
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
