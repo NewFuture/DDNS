@@ -20,7 +20,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test AlidnsProvider class constants"""
-        self.assertEqual(AlidnsProvider.API, "https://alidns.aliyuncs.com")
+        self.assertEqual(AlidnsProvider.endpoint, "https://alidns.aliyuncs.com")
         self.assertEqual(AlidnsProvider.content_type, "application/x-www-form-urlencoded")
         self.assertTrue(AlidnsProvider.decode_response)
 
@@ -29,7 +29,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         provider = AlidnsProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://alidns.aliyuncs.com")
+        self.assertEqual(provider.endpoint, "https://alidns.aliyuncs.com")
 
     def test_request_basic(self):
         """Test _request method with basic parameters"""

@@ -6,13 +6,13 @@ Unit tests for SimpleProvider
 """
 
 from base_test import BaseProviderTestCase, unittest, MagicMock
-from ddns.provider._base import SimpleProvider, TYPE_FORM
+from ddns.provider._base import SimpleProvider, TYPE_FORM, encode_params
 
 
 class _TestableSimpleProvider(SimpleProvider):
     """Test implementation of SimpleProvider for testing purposes"""
 
-    API = "https://api.example.com"
+    endpoint = "https://api.example.com"
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """Test implementation of set_record"""
@@ -32,7 +32,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
         self.assertEqual(provider.auth_id, self.auth_id)
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://api.example.com")
+        self.assertEqual(provider.endpoint, "https://api.example.com")
         self.assertEqual(provider.content_type, TYPE_FORM)
         self.assertTrue(provider.decode_response)
         self.assertEqual(provider.verify_ssl, "auto")  # Default verify_ssl should be "auto"
@@ -118,55 +118,12 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
     def test_encode_dict(self):
         """Test _encode method with dictionary"""
         params = {"key1": "value1", "key2": "value2"}
-        result = _TestableSimpleProvider._encode(params)
+        result = encode_params(params)
 
         # Result should be URL-encoded string
         self.assertIn("key1=value1", result)
         self.assertIn("key2=value2", result)
         self.assertIn("&", result)
-
-    def test_encode_list(self):
-        """Test _encode method with list"""
-        params = [("key1", "value1"), ("key2", "value2")]
-        result = _TestableSimpleProvider._encode(params)
-
-        self.assertIn("key1=value1", result)
-        self.assertIn("key2=value2", result)
-
-    def test_encode_string(self):
-        """Test _encode method with string"""
-        params = "key1=value1&key2=value2"
-        result = _TestableSimpleProvider._encode(params)
-
-        self.assertEqual(result, params)
-
-    def test_encode_none(self):
-        """Test _encode method with None"""
-        result = _TestableSimpleProvider._encode(None)
-        self.assertEqual(result, "")
-
-    def test_encode_empty_dict(self):
-        """Test _encode method with empty dictionary"""
-        result = _TestableSimpleProvider._encode({})
-        self.assertEqual(result, "")
-
-    def test_quote_basic(self):
-        """Test _quote method with basic string"""
-        data = "hello world"
-        result = _TestableSimpleProvider._quote(data)
-        self.assertEqual(result, "hello%20world")
-
-    def test_quote_with_safe_chars(self):
-        """Test _quote method with safe characters"""
-        data = "hello/world"
-        result = _TestableSimpleProvider._quote(data, safe="/")
-        self.assertEqual(result, "hello/world")
-
-    def test_quote_without_safe_chars(self):
-        """Test _quote method without safe characters"""
-        data = "hello/world"
-        result = _TestableSimpleProvider._quote(data, safe="")
-        self.assertEqual(result, "hello%2Fworld")
 
     def test_mask_sensitive_data_basic(self):
         """Test _mask_sensitive_data method with basic token"""

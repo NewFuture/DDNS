@@ -14,7 +14,7 @@ class DnspodProvider(BaseProvider):
     DNSPOD 接口解析操作库
     """
 
-    API = "https://dnsapi.cn"
+    endpoint = "https://dnsapi.cn"
     content_type = TYPE_FORM
 
     DefaultLine = "默认"

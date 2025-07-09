@@ -25,13 +25,13 @@ class TestHeProvider(BaseProviderTestCase):
         provider = HeProvider("", self.auth_token)
         self.assertEqual(provider.auth_id, "")
         self.assertEqual(provider.auth_token, self.auth_token)
-        self.assertEqual(provider.API, "https://dyn.dns.he.net")
+        self.assertEqual(provider.endpoint, "https://dyn.dns.he.net")
         self.assertFalse(provider.decode_response)
 
     def test_class_constants(self):
         """Test HeProvider class constants"""
         provider = HeProvider("", self.auth_token)
-        self.assertEqual(provider.API, "https://dyn.dns.he.net")
+        self.assertEqual(provider.endpoint, "https://dyn.dns.he.net")
         self.assertFalse(provider.decode_response)
         # ContentType should be form-encoded
         from ddns.provider._base import TYPE_FORM
