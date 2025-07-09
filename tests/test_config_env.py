@@ -1,15 +1,6 @@
 # coding=utf-8
 """
-Unit tests for environment variable configuration module
-
-Current behavior being tested:
-- JSON arrays (values starting with '[' and ending with ']') are parsed into Python lists
-- JSON objects/dictionaries are kept as strings (not parsed)
-- All values have leading and trailing whitespace stripped
-- All other values (including comma-separated) are preserved as strings after stripping
-- Key normalization: uppercase to lowercase, dots to underscores
-- Case-insensitive prefix matching
-
+Unit tests for ddns.config.env module
 @author: GitHub Copilot
 """
 

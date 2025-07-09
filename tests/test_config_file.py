@@ -1,21 +1,7 @@
 # coding=utf-8
 """
-Unit tests for configuration file loading module
-
-This test suite provides comprehensive coverage for the configuration file loading module,
-testing both JSON and AST parsing, fallback logic, error handling, and edge cases.
-
-Test Coverage:
-- JSON parsing (priority parser)
-- AST parsing (fallback parser)
-- Parser fallback logic
-- Error handling for invalid files
-- File encoding and special characters
-- Various data types and structures
-- Edge cases and malformed content
-
+Unit tests for ddns.config.file module
 @author: GitHub Copilot
-@updated: 2025-07-09
 """
 
 from __init__ import unittest

@@ -1,4 +1,8 @@
 # coding=utf-8
+"""
+Unit tests for ddns.config.cli module
+@author: GitHub Copilot
+"""
 from __init__ import unittest
 import sys
 from ddns.config.cli import load_config, str_bool, log_level  # noqa: E402
