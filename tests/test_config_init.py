@@ -254,8 +254,8 @@ class TestConfigInit(unittest.TestCase):
             "index4": ["custom", "rule"],
         }
 
-        with patch("sys.stdout.write"):
-            load_config(self.test_description, self.test_version, self.test_date)
+        # Test case 3: Preserve existing arrays (capture output)
+        capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
         config_data = mock_save_json.call_args[0][1]
         self.assertEqual(config_data["ipv4"], ["my.domain.com", "my2.domain.com"])
