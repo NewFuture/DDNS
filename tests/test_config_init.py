@@ -145,14 +145,14 @@ class TestConfigInit(unittest.TestCase):
         ]
 
         for config_path, location_type in default_locations:
-            with self.subTest(location=location_type):
-                mock_json.reset_mock()
-                mock_exists.side_effect = lambda path: path == config_path
-                mock_json.return_value = {"id": "{}_id".format(location_type)}
+            # Python 2.7 compatible: test each location separately without subTest
+            mock_json.reset_mock()
+            mock_exists.side_effect = lambda path: path == config_path
+            mock_json.return_value = {"id": "{}_id".format(location_type)}
 
-                result = load_config(self.test_description, self.test_version, self.test_date)
-                mock_json.assert_called_with(config_path)
-                self.assertEqual(result.id, "{}_id".format(location_type))
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            mock_json.assert_called_with(config_path)
+            self.assertEqual(result.id, "{}_id".format(location_type))
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")

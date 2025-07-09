@@ -10,6 +10,7 @@ import shutil
 import logging
 import os
 import json
+import io
 from io import StringIO
 from ddns.config.file import load_config, save_config
 
@@ -38,10 +39,13 @@ class TestConfigFile(unittest.TestCase):
         # type: (str, str | dict) -> str
         """Helper method to create a test file with given content"""
         file_path = os.path.join(self.temp_dir, filename)
-        with open(file_path, "w") as f:
+        # Use io.open with utf-8 encoding for Python 2 and 3 compatibility
+        with io.open(file_path, "w", encoding="utf-8") as f:
             if isinstance(content, dict):
+                # Dump JSON with ensure_ascii=False to preserve Unicode characters
                 f.write(json.dumps(content, indent=2, ensure_ascii=False))
             else:
+                # Write content directly
                 f.write(content)
         return file_path
 

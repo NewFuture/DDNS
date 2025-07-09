@@ -194,21 +194,6 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(config["index6"], ["url:http://ipv6.example.com"])
 
     def test_load_config_dns_providers(self):
-        dns_providers = [
-            "51dns",
-            "alidns",
-            "aliesa",
-            "cloudflare",
-            "dnscom",
-            "dnspod",
-            "dnspod_com",
-            "he",
-            "huaweidns",
-            "noip",
-            "tencentcloud",
-            "callback",
-            "debug",
-        ]
         # 测试CLI中实际支持的DNS providers
         cli_supported_providers = [
             "51dns",
