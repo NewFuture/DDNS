@@ -110,7 +110,9 @@ def load_config(description, doc, version, date):
         "--dns",
         help="DNS provider [DNS服务提供商]",
         choices=[
+            "51dns",
             "alidns",
+            "aliesa",
             "callback",
             "cloudflare",
             "debug",
@@ -178,6 +180,9 @@ def load_config(description, doc, version, date):
     )
     parser.add_argument(
         "--ssl",
+        type=str_bool,
+        nargs="?",
+        const=True,
         help="SSL certificate verification [SSL证书验证方式]: "
         "true(强制验证), false(禁用验证), auto(自动降级), /path/to/cert.pem(自定义证书)",
     )
