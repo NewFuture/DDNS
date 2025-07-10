@@ -1,7 +1,12 @@
 # -*- coding:utf-8 -*-
+"""
+Configuration file loader for DDNS. supports both JSON and AST parsing.
+@author: NewFuture
+"""
+from ast import literal_eval
+from io import open
 from json import loads as loadjson, dump as dumpjson
 import logging
-from ast import literal_eval
 
 
 def load_config(config_path):
@@ -21,7 +26,7 @@ def load_config(config_path):
     """
     content = ""
     try:
-        with open(config_path, "r") as configfile:
+        with open(config_path, "r", encoding="utf-8") as configfile:
             content = configfile.read()
     except Exception as e:
         logging.exception("Failed to load config file `%s`: %s", config_path, e)
@@ -75,8 +80,8 @@ def save_config(config_path, config):
         bool: 保存成功返回True，失败返回False
     """
     try:
-        with open(config_path, "w") as f:
-            dumpjson(config, f, indent=2)
+        with open(config_path, "w", encoding="utf-8") as f:
+            dumpjson(config, f, indent=2, ensure_ascii=False)
             return True
     except IOError:
         logging.critical("Cannot open config file to write: `%s`!", config_path)

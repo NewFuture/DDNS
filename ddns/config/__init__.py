@@ -4,6 +4,8 @@ Configuration loader for DDNS.
 
 This module handles loading configuration from command-line arguments,
 JSON configuration files, and environment variables.
+
+@author: NewFuture
 """
 
 import os
@@ -51,6 +53,7 @@ Copyright (c) NewFuture (MIT License)
     new_config = cli_config.get("new_config")
     if new_config:
         config = Config(cli_config=cli_config).dict()
+        config["dns"] = config.get("dns", "debug")
         config["id"] = cli_config.get("id", "YOUR ID or EMAIL for DNS Provider")
         config["token"] = cli_config.get("token", "YOUR TOKEN or KEY for DNS Provider")
         if not config["ipv4"] or len(config["ipv4"]) == 0:

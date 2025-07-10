@@ -1,4 +1,9 @@
 # -*- coding:utf-8 -*-
+"""
+Configuration loader for DDNS command-line interface.
+@author: NewFuture
+"""
+
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
 from logging import getLevelName
 import platform

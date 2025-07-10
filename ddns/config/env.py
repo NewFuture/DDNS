@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
-from os import environ
+"""
+Configuration loader for DDNS environment variables.
+@author: NewFuture
+"""
 from ast import literal_eval
+from os import environ
 import logging
-
-# from json import loads as json_decode
 
 __all__ = ["load_config"]
 
