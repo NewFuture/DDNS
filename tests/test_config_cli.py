@@ -5,12 +5,19 @@ Unit tests for ddns.config.cli module
 """
 from __init__ import unittest
 import sys
+import io
 from ddns.config.cli import load_config, str_bool, log_level  # noqa: E402
 
 
 class TestCliConfig(unittest.TestCase):
 
     def setUp(self):
+        encode = sys.stdout.encoding
+        if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
+            # 兼容windows 和部分ASCII编码的老旧系统
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
         self.original_argv = sys.argv[:]
 
     def tearDown(self):
