@@ -5,7 +5,7 @@ Configuration file loader for DDNS. supports both JSON and AST parsing.
 """
 from ast import literal_eval
 from io import open
-from json import loads as loadjson, dump as dumpjson
+from json import loads as json_decode, dumps as json_encode
 import logging
 
 
@@ -33,7 +33,7 @@ def load_config(config_path):
         raise
     # 优先尝试JSON解析
     try:
-        config = loadjson(content)
+        config = json_decode(content)
         logging.debug("Successfully loaded config file with JSON parser: %s", config_path)
     except (ValueError, SyntaxError) as json_error:
         # JSON解析失败，尝试AST解析
@@ -81,7 +81,10 @@ def save_config(config_path, config):
     """
     try:
         with open(config_path, "w", encoding="utf-8") as f:
-            dumpjson(config, f, indent=2, ensure_ascii=False)
+            content = json_encode(config, indent=2, ensure_ascii=False)
+            if hasattr(content, "decode"):
+                content = content.decode("utf-8")  # type: ignore # compatibility with Python 2
+            f.write(content)
             return True
     except IOError:
         logging.critical("Cannot open config file to write: `%s`!", config_path)
