@@ -16,6 +16,7 @@
         "addMissingFunctionOverloads": true,
         "addMissingFunctionOverloadsWithReturnType": true
     },
+    "editor.formatOnSaveMode": "file",
     "python.analysis.fixAll": [
         "source.convertImportFormat",
     ],

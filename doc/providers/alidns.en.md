@@ -45,31 +45,26 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
 - `token`: Your Alibaba Cloud AccessKey Secret
 - `dns`: Must be set to `"alidns"`
 
+## Permission Requirements
+
+Ensure the Alibaba Cloud account has the following permissions:
+
+- **AliyunDNSFullAccess**: Full access to Alibaba Cloud DNS (recommended)
+- **AliyunDNSReadOnlyAccess + Custom Write Permissions**: Fine-grained permission control
+
+You can view and configure permissions in the [RAM Access Control](https://ram.console.aliyun.com/policies).
+
 ## Complete Configuration Examples
 
-### Basic Configuration
-
 ```json
 {
   "id": "LTAI4xxxxxxxxxxxxxxx",
   "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "dns": "alidns",
-  "index6": ["default"],
-  "ipv6": ["home.example.com", "server.example.com"]
-}
-```
-
-### Configuration with Optional Parameters
-
-```json
-{
-  "id": "LTAI4xxxxxxxxxxxxxxx",
-  "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "dns": "alidns",
-  "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com",
-  "ipv4": ["example.com"],
+  "endpoint": "https://alidns.aliyuncs.com",
   "index4": ["public"],
   "index6": ["default"],
+  "ipv4": ["example.com"],
   "ipv6": ["dynamic.mydomain.com"],
   "line": "telecom",
   "ttl": 600
@@ -78,42 +73,21 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
 
 ## Optional Configuration Parameters
 
-### TTL (Time To Live)
+| Parameter | Description           | Type              | Range/Options                                 | Default |
+|-----------|-----------------------|-------------------|-----------------------------------------------|---------|
+| ttl       | Time To Live (TTL)    | Integer (seconds) | 1 - 86400                                     | 600     |
+| line      | Resolution Line       | String            | default, telecom, unicom, mobile, oversea    | default |
+| endpoint  | Custom API Endpoint   | String            | URL (see below)                              | `https://alidns.aliyuncs.com`|
 
-```json
-{
-  "ttl": 600
-}
-```
-
-- **Range**: 1-86400 seconds
-- **Default**: 600 seconds (10 minutes)
-- **Recommended**: 300-600 seconds for dynamic DNS
-
-### Resolution Line
-
-```json
-{
-  "line": "default"
-}
-```
-
-- **Options**: "default", "telecom", "unicom", "mobile", "oversea", etc.
-- **Default**: "default"
-- Available line types vary by service plan
+> **Note**: Supported values for `ttl` and `line` may vary by service plan.
 
 ### Custom API Endpoint
-
-```json
-{
-  "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com"
-}
-```
 
 Alibaba Cloud DNS supports multiple regional endpoints for optimal network performance:
 
 #### China Regions
 
+- **Default (Recommended)**: `https://alidns.aliyuncs.com`
 - **East China 1 (Hangzhou)**: `https://alidns.cn-hangzhou.aliyuncs.com`
 - **East China 2 (Shanghai)**: `https://alidns.cn-shanghai.aliyuncs.com`
 - **North China 1 (Qingdao)**: `https://alidns.cn-qingdao.aliyuncs.com`
@@ -121,7 +95,6 @@ Alibaba Cloud DNS supports multiple regional endpoints for optimal network perfo
 - **North China 3 (Zhangjiakou)**: `https://alidns.cn-zhangjiakou.aliyuncs.com`
 - **South China 1 (Shenzhen)**: `https://alidns.cn-shenzhen.aliyuncs.com`
 - **Southwest 1 (Chengdu)**: `https://alidns.cn-chengdu.aliyuncs.com`
-- **Default (Recommended)**: `https://alidns.aliyuncs.com`
 
 #### International Regions
 
@@ -136,15 +109,6 @@ Alibaba Cloud DNS supports multiple regional endpoints for optimal network perfo
 - **Europe West 1 (London)**: `https://alidns.eu-west-1.aliyuncs.com`
 
 > **Note**: It's recommended to use the default endpoint `https://alidns.aliyuncs.com`, as Alibaba Cloud automatically routes to the optimal node. Specify regional endpoints only in special network environments.
-
-## Permission Requirements
-
-Ensure the Alibaba Cloud account has the following permissions:
-
-- **AliyunDNSFullAccess**: Full access to Alibaba Cloud DNS (recommended)
-- **AliyunDNSReadOnlyAccess + Custom Write Permissions**: Fine-grained permission control
-
-You can view and configure permissions in the [RAM Access Control](https://ram.console.aliyun.com/policies).
 
 ## Troubleshooting
 

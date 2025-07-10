@@ -36,27 +36,13 @@ Huawei Cloud DNS uses Access Key ID and Secret Access Key for API authentication
 - `token`: Huawei Cloud Secret Access Key
 - `dns`: Fixed as `"huaweidns"`
 
-## Complete Configuration Examples
-
-### Basic Configuration
+## Complete Configuration Example
 
 ```json
 {
+    "dns": "huaweidns",
     "id": "your_access_key_id",
     "token": "your_secret_access_key",
-    "dns": "huaweidns",
-    "ipv6": ["home.example.com", "server.example.com"],
-    "index6": ["default"]
-}
-```
-
-### Configuration with Optional Parameters
-
-```json
-{
-    "id": "your_access_key_id",
-    "token": "your_secret_access_key",
-    "dns": "huaweidns",
     "endpoint": "https://dns.myhuaweicloud.com",
     "index4": ["default"],
     "index6": ["default"],
@@ -68,47 +54,20 @@ Huawei Cloud DNS uses Access Key ID and Secret Access Key for API authentication
 
 ## Optional Parameters
 
-### TTL (Time To Live)
+| Parameter | Default Value                         | Description                    | Range/Options                                            |
+|-----------|---------------------------------------|--------------------------------|----------------------------------------------------------|
+| `ttl`     | auto                                  | DNS record TTL (seconds)       | 1-86400                                                  |
+| `line`    | `"default"`                          | Resolution line type           | `"default"`, `"unicom"`, `"telecom"`, `"mobile"`, `"overseas"`, `"edu"`, etc. |
+| `endpoint`| `"https://dns.myhuaweicloud.com"`    | API service endpoint           | See endpoint list below                                  |
 
-```json
-{
-    "ttl": 600
-}
-```
-
-- **Range**: 1-86400 seconds
-- **Default**: 300 seconds
-- **Recommended**: 300-600 seconds for dynamic DNS
-
-### Resolution Line
-
-```json
-{
-    "line": "default"
-}
-```
-
-- **Options**: "default", "unicom", "telecom", "mobile", "overseas", "edu", etc.
-- **Default**: "default"
-- Different service plans support different line types
-
-## Endpoint Configuration
-
-Huawei Cloud DNS supports multiple regional service endpoints, allowing users to choose the optimal node based on their location:
-
-### Recommended Endpoint
-
-```json
-{
-    "endpoint": "https://dns.myhuaweicloud.com"
-}
-```
+> **Note**: The value ranges for `ttl` and `line` may vary depending on the service plan.
 
 ### Available Endpoints
 
+- **Global Service**: `https://dns.myhuaweicloud.com` (Default, Recommended)
+
 #### China Mainland
 
-- **Global Service**: `https://dns.myhuaweicloud.com` (Default, Recommended)
 - **North China-Beijing4**: `https://dns.cn-north-4.myhuaweicloud.com`
 - **East China-Shanghai1**: `https://dns.cn-east-3.myhuaweicloud.com`
 - **South China-Guangzhou**: `https://dns.cn-south-1.myhuaweicloud.com`
@@ -125,22 +84,8 @@ Huawei Cloud DNS supports multiple regional service endpoints, allowing users to
 - **Latin America-Mexico City1**: `https://dns.la-north-2.myhuaweicloud.com`
 - **Latin America-Sao Paulo1**: `https://dns.sa-brazil-1.myhuaweicloud.com`
 
-### Endpoint Selection Recommendations
+#### Endpoint Selection Recommendations
 
-```json
-{
-    "dns": "huaweidns",
-    "id": "your_access_key_id",
-    "token": "your_secret_access_key",
-    "endpoint": "https://dns.myhuaweicloud.com",
-    "ipv4": ["example.com"],
-    "ttl": 600
-}
-```
-
-**Recommended Usage Scenarios:**
-
-- **Default Choice**: Use the global service endpoint `https://dns.myhuaweicloud.com`
 - **Network Optimization**: Choose nearby regional endpoints if experiencing high latency in specific regions
 - **Compliance Requirements**: Select appropriate regional endpoints for data sovereignty requirements
 
@@ -208,9 +153,9 @@ ddns --debug
 
 ## Support and Resources
 
-- **Huawei Cloud DNS Documentation**: <https://support.huaweicloud.com/intl/en-us/dns/>
-- **Huawei Cloud DNS API Reference**: <https://support.huaweicloud.com/intl/en-us/api-dns/>
-- **Huawei Cloud Console**: <https://console.huaweicloud.com/dns/>
-- **Huawei Cloud Technical Support**: <https://support.huaweicloud.com/intl/en-us/>
+- [Huawei Cloud DNS Documentation](https://support.huaweicloud.com/dns/)
+- [Huawei Cloud DNS API Reference](https://support.huaweicloud.com/api-dns/)
+- [Huawei Cloud Console](https://console.huaweicloud.com/dns/)
+- [Huawei Cloud Technical Support](https://support.huaweicloud.com/)
 
 > It is recommended to use sub-users and grant only the necessary DNS permissions to improve security. Regularly rotate access keys to ensure account security.

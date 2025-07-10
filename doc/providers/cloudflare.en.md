@@ -32,7 +32,7 @@ Cloudflare is a leading global CDN and network security service provider. This D
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. Go to "My Profile" → "API Tokens"
 3. Create custom token with permissions:
-   - **Zone:Read** and **DNS:Edit**
+   - **Zone.Zone Read**, **Zone.DNS Read**, **Zone.DNS Edit**
 4. Select domains to manage
 
 ### Global API Key
@@ -40,6 +40,14 @@ Cloudflare is a leading global CDN and network security service provider. This D
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. Go to "My Profile" → "API Tokens"
 3. View "Global API Key"
+
+## Permission Requirements
+
+- **API Token**: Grant the following minimum permissions for secure operation:
+  - `Zone.Zone Read` – list and retrieve zone information
+  - `Zone.DNS Read` – list existing DNS records
+  - `Zone.DNS Edit` – create and update DNS records
+- **Global API Key**: Has full permissions; use only when API Token is not supported and store securely
 
 ## Configuration Examples
 
@@ -57,22 +65,11 @@ Cloudflare is a leading global CDN and network security service provider. This D
 
 ## Optional Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `ttl` | DNS record TTL value | 300 |
-| `endpoint` | Custom API endpoint URL | `https://api.cloudflare.com` |
-
-### Custom API Endpoint
-
-```json
-{
-    "endpoint": "https://api.cloudflare.com"
-}
-```
+| Parameter | Description         | Type   | Default               |
+|-----------|------------------------|--------|-----------------------|
+| `ttl`     | DNS record TTL value   | int    | auto (automatic TTL)  |
 
 Cloudflare uses a single global API endpoint, but custom endpoints may be needed in special cases:
-
-#### Special Purpose Endpoints
 
 - **Enterprise/Private Cloud Deployments**: Configure according to specific deployment environment
 - **Proxy/Mirror Services**: Third-party API proxy service addresses
@@ -89,16 +86,11 @@ Cloudflare uses a single global API endpoint, but custom endpoints may be needed
 
 ### Debug Mode
 
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "debug": true,
-    "ipv4": ["ddns.example.com"]
-}
+```sh
+ddns -c config.json --debug
 ```
 
-## Resources
+## Related Links
 
 - [Cloudflare API Documentation](https://developers.cloudflare.com/api/)
 - [Cloudflare Dashboard](https://dash.cloudflare.com/)

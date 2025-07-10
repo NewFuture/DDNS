@@ -35,11 +35,19 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
    - **区域:读取** 和 **DNS:编辑**
 4. 选择要管理的域名
 
-### Global API Key
+### 全局 API Key
 
 1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
 2. 进入「我的个人资料」→「API 令牌」
 3. 查看「Global API Key」
+
+## 权限要求
+
+- **API Token**：请授予以下最小权限以确保安全：
+  - `Zone.Zone Read`（区域: 读取）– 用于列出和获取域名区域信息
+  - `Zone.DNS Read`（DNS: 读取）– 用于列出现有记录
+  - `Zone.DNS Edit`（DNS: 编辑）– 用于创建和更新 DNS 记录
+- **Global API Key**：拥有所有权限，仅在无法使用 API Token 时使用，并确保妥善保管
 
 ## 配置示例
 
@@ -57,22 +65,11 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 
 ## 可选参数
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `ttl` | DNS记录的TTL值 | 300 |
-| `endpoint` | 自定义API端点地址 | `https://api.cloudflare.com` |
-
-### 自定义API端点
-
-```json
-{
-    "endpoint": "https://api.cloudflare.com"
-}
-```
+| 参数 | 说明 | 类型 | 默认值 |
+|------|------|------|-------|
+| `ttl` | DNS记录的TTL值 | int | 自动 |
 
 Cloudflare使用单一的全球API端点，但在特殊情况下可能需要自定义：
-
-#### 特殊用途端点
 
 - **企业版/私有云部署**：根据具体部署环境配置
 - **代理/镜像服务**：第三方API代理服务地址

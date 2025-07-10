@@ -37,81 +37,25 @@ HE.net uses a dedicated dynamic DNS password for authentication, not your accoun
 - `dns`: Fixed as `"he"`
 - `id`: **Not required** (HE.net doesn't use user ID)
 
-## Complete Configuration Examples
-
-### Basic Configuration
+## Complete Configuration Example
 
 ```json
 {
-    "token": "your_ddns_password",
-    "dns": "he",
-    "ipv4": ["home.example.com"],
-    "index4": ["public"]
-}
-```
-
-### Multiple Domain Configuration
-
-```json
-{
-    "token": "your_ddns_password",
-    "dns": "he",
-    "ipv4": ["home.example.com", "server.example.com"],
-    "ipv6": ["home-v6.example.com"],
-    "index4": ["public"],
-    "index6": ["public"]
-}
-```
-
-### Configuration with Optional Parameters
-
-```json
-{
-    "token": "your_ddns_password",
-    "dns": "he",
-    "endpoint": "https://dyn.dns.he.net",
-    "ipv4": ["dynamic.example.com"],
-    "index4": ["public"],
-    "ttl": 300
+  "token": "your_ddns_password",
+  "dns": "he",
+  "index4": ["public"],
+  "index6": ["public"],
+  "ipv4": ["home.example.com", "server.example.com"],
+  "ipv6": ["home-v6.example.com"],
+  "ttl": 300
 }
 ```
 
 ## Optional Parameters
 
-### Custom API Endpoint
-
-```json
-{
-    "endpoint": "https://dyn.dns.he.net"
-}
-```
-
-- **Default endpoint**: `https://dyn.dns.he.net` (recommended)
-- HE.net uses a unified dynamic DNS update endpoint
-
-### TTL (Time to Live)
-
-```json
-{
-    "ttl": 300
-}
-```
-
-- **Range**: 300-86400 seconds
-- **Default**: 300 seconds
-- **Note**: Actual TTL is determined by the HE.net DNS record settings
-
-### Record Type
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- **Supported types**: A, AAAA
-- **Default**: A (IPv4)
-- IPv6 addresses use "AAAA" type
+| Parameter | Description              | Range        | Default | Notes                                      |
+|-----------|--------------------------|--------------|---------|--------------------------------------------|
+| `ttl`     | DNS record TTL (seconds) | 300 - 86400  | auto    | Actual TTL determined by HE.net record settings |
 
 ## Usage Limitations
 
@@ -127,16 +71,6 @@ HE.net uses a dedicated dynamic DNS password for authentication, not your accoun
 2. **Enable DDNS**: Enable dynamic DNS functionality for the record
 3. **Get password**: Record the DDNS password for each record
 4. **Configure DDNS**: Use the corresponding password to configure the dynamic DNS client
-
-## Permission Requirements
-
-Ensure you have the following permissions in HE.net:
-
-- **Domain Management**: Management permissions for the target domain
-- **Record Editing**: Ability to create and edit DNS records
-- **DDNS Enable**: Ability to enable dynamic DNS functionality for records
-
-You can view and manage domains in [HE.net DNS Management](https://dns.he.net/).
 
 ## Troubleshooting
 

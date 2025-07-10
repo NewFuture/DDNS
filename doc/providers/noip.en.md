@@ -6,17 +6,13 @@ No-IP is a popular dynamic DNS service that supports the standard DDNS dynamic u
 
 ## Authentication Methods
 
-### Username and Password Authentication
-
-Uses No-IP account username and password for authentication, which is the simplest authentication method.
-
-#### Getting Authentication Information
-
 1. Register or log in to [No-IP website](https://www.noip.com/)
 2. Use your registered username and password
 3. Create hostnames in the control panel
 
-#### Configuration Example
+### Username and Password Authentication
+
+Uses No-IP account username and password for authentication, which is the simplest authentication method.
 
 ```json
 {
@@ -30,7 +26,7 @@ Uses No-IP account username and password for authentication, which is the simple
 - `token`: No-IP password
 - `dns`: Fixed as `"noip"`
 
-### DDNS KEY Authentication (Recommended)
+### DDNS KEY + ID Authentication (Recommended)
 
 Uses DDNS ID and DDNS KEY for authentication, which is more secure.
 
@@ -40,8 +36,6 @@ Uses DDNS ID and DDNS KEY for authentication, which is more secure.
 2. Go to **Dynamic DNS** > **No-IP Hostnames**
 3. Create or edit dynamic DNS hostname
 4. Generate DDNS KEY for API authentication
-
-#### Configuration Example
 
 ```json
 {
@@ -55,9 +49,7 @@ Uses DDNS ID and DDNS KEY for authentication, which is more secure.
 - `token`: DDNS KEY
 - `dns`: Fixed as `"noip"`
 
-## Complete Configuration Examples
-
-### Basic Configuration
+## Complete Configuration Example
 
 ```json
 {
@@ -77,11 +69,10 @@ Uses DDNS ID and DDNS KEY for authentication, which is more secure.
     "token": "your_password",
     "dns": "noip",
     "endpoint": "https://dynupdate.no-ip.com",
-    "ipv4": ["home.example.com"],
-    "ipv6": ["home-v6.example.com"],
     "index4": ["public"],
     "index6": ["public"],
-    "ttl": 300
+    "ipv4": ["home.example.com"],
+    "ipv6": ["home-v6.example.com"]
 }
 ```
 
@@ -116,59 +107,39 @@ No-IP supports custom API endpoints, suitable for:
 
 For other No-IP compatible DDNS services or custom deployments, you can specify different API endpoints.
 
-### TTL (Time To Live)
+## Troubleshooting
 
-```json
-{
-    "ttl": 300
-}
+### Debug Mode
+
+Enable debug logging to see detailed information:
+
+```sh
+ddns --debug
 ```
 
-- **Range**: 60-86400 seconds
-- **Default**: 300 seconds
-- **Recommended**: 300-600 seconds for dynamic DNS
-
-### Record Type
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- **Supported Types**: A, AAAA
-- **Default**: A (IPv4)
-- Use "AAAA" for IPv6 addresses
-
-## Permission Requirements
-
-Ensure the No-IP account has the following permissions:
-
-- **Hostname Management**: Ability to create and manage dynamic DNS hostnames
-- **DDNS Updates**: Dynamic DNS update permissions
-
-You can view and manage hostnames in the [No-IP Control Panel](https://www.noip.com/members/).
-
-## Response Codes
+### No-IP Response Codes
 
 | Response | Meaning | Status |
 |----------|---------|--------|
 | `good <ip>` | Update successful | ✅ |
-| `nochg <ip>` | IP unchanged | ✅ |
-| `nohost` | Hostname not found | ❌ |
+| `nochg <ip>` | IP address unchanged | ✅ |
+| `nohost` | Hostname does not exist | ❌ |
 | `badauth` | Authentication failed | ❌ |
 | `badagent` | Client disabled | ❌ |
-| `!donator` | Paid account required | ❌ |
-| `abuse` | Account banned | ❌ |
+| `!donator` | Paid account feature required | ❌ |
+| `abuse` | Account banned or abused | ❌ |
 
-## Troubleshooting
+## API Limitations
 
-- **Authentication failed (badauth)**: Check username and password
-- **Hostname not found (nohost)**: Check domain spelling
-- **Paid feature required (!donator)**: Upgrade account
-- **Account banned (abuse)**: Contact support
+- **Update Frequency**: Recommended interval of at least 5 minutes
+- **Free Accounts**: Must login at least once within 30 days for confirmation
+- **Hostname Count**: Free accounts limited to 3 hostnames
 
-## Related Links
+## Support and Resources
 
 - [No-IP Website](https://www.noip.com/)
-- [API Documentation](https://www.noip.com/integrate/request)
+- [No-IP API Documentation](https://www.noip.com/integrate/request)
+- [No-IP Control Panel](https://www.noip.com/members/)
+- [No-IP Technical Support](https://www.noip.com/support)
+
+> It's recommended to use DDNS KEY authentication for improved security. Regularly check hostname status to ensure proper service operation.

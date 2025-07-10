@@ -8,7 +8,7 @@
 
 ### AccessKey 认证
 
-ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提供AccessKey ID和AccessKey Secret。
+ESA API使用与[阿里云](alidns.md)其他服务相同的AccessKey认证方式，需要提供AccessKey ID和AccessKey Secret。
 
 ```json
 {
@@ -36,8 +36,12 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "id": "LTAI4xxx",
     "token": "xxx",
     "dns": "aliesa",
+    "endpoint": "https://esa.ap-southeast-1.aliyuncs.com",
+    "index4": ["public"],
+    "index6": ["default"],
     "ipv4": ["www.example.com", "api.example.com"],
-    "index4": ["public"]
+    "ipv6": ["dynamic.mydomain.com"],
+    "ttl": 600
 }
 ```
 
@@ -50,20 +54,15 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 ### 自定义区域端点
 
-当需要访问特定区域的ESA服务时，可以自定义endpoint：
+当需要访问特定区域的ESA服务时，可以配置自定义端点地址 `endpoint`：
 
-比如使用东南亚ESA节点
+#### 国内节点
 
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "endpoint": "https://esa.ap-southeast-1.aliyuncs.com",
-    "ipv4": ["www.example.com"],
-    "index4": ["public"]
-}
-```
+- **华东1（杭州）**：`https://esa.cn-hangzhou.aliyuncs.com`（默认）
+
+#### 国际节点
+
+- **亚太东南1（新加坡）**：`https://esa.ap-southeast-1.aliyuncs.com`
 
 ## 故障排除
 

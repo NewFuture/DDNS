@@ -1,4 +1,4 @@
-# 阿里云DNS 配置指南 中文文档
+# 阿里云DNS 配置指南
 
 ## 概述
 
@@ -21,8 +21,8 @@
 ```json
 {
     "dns": "alidns",
-    "id": "LTAI4xxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    "id": "AccessKey_ID",
+    "token": "AccessKey_Secret"
 }
 ```
 
@@ -58,42 +58,21 @@
 
 ## 可选参数
 
-### TTL（生存时间）
+| 参数 | 描述 | 类型 | 范围/选项 | 默认 |
+|------|------|------|-----------|------|
+| ttl  | 生存时间（TTL） | 整数 (秒) | 1 - 86400 | 600 |
+| line | 解析线路       | 字符串 | default, telecom, unicom, mobile, oversea | default |
+| endpoint | 自定义API端点 | 字符串 | URL(见下表) | `https://alidns.aliyuncs.com` |
 
-```json
-{
-    "ttl": 600
-}
-```
-
-- 范围：1-86400 秒
-- 默认：600 秒
-- 推荐：300-600 秒用于动态DNS
-
-### 解析线路
-
-```json
-{
-    "line": "default"
-}
-```
-
-- 选项："default"、"telecom"、"unicom"、"mobile"、"oversea"等
-- 默认："default"
-- 不同套餐支持的线路类型不同
+> **注意**：`ttl` 和 `line` 不同套餐支持的值可能不同。
 
 ### 自定义API端点
-
-```json
-{
-    "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com"
-}
-```
 
 阿里云DNS支持多个区域端点，可根据网络环境选择最优节点：
 
 #### 国内节点
 
+- **默认（推荐）**：`https://alidns.aliyuncs.com`
 - **华东1（杭州）**：`https://alidns.cn-hangzhou.aliyuncs.com`
 - **华东2（上海）**：`https://alidns.cn-shanghai.aliyuncs.com`
 - **华北1（青岛）**：`https://alidns.cn-qingdao.aliyuncs.com`
@@ -101,7 +80,6 @@
 - **华北3（张家口）**：`https://alidns.cn-zhangjiakou.aliyuncs.com`
 - **华南1（深圳）**：`https://alidns.cn-shenzhen.aliyuncs.com`
 - **西南1（成都）**：`https://alidns.cn-chengdu.aliyuncs.com`
-- **默认（推荐）**：`https://alidns.aliyuncs.com`
 
 #### 海外节点
 

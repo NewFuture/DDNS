@@ -10,6 +10,8 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 |------|------|------|------|
 | `id` | 回调URL地址，支持变量替换 | ✅ | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
 | `token` | POST 请求参数（JSON对象或JSON字符串），为空时使用GET请求 | 可选 | `{"api_key": "your_key"}` 或 `"{\"api_key\": \"your_key\"}"` |
+| `endpoint` | 可选，API端点地址，默认为 `空` | 可选 | `https://api.example.com/ddns` |
+| `dns` | 固定值 `"callback"`，表示使用回调方式 | ✅ | `"callback"` |
 
 ### 最小配置示例
 
@@ -19,72 +21,56 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
     "token": "",
     "dns": "callback",
     "ipv4": ["sub.example.com"],
-    "ipv6": ["ipv6.example.com"]
+    "index4": ["default"]
 }
 ```
 
 ## 请求方式
 
-### GET 请求（推荐简单场景）
+| 方法 | 条件       | 描述               |
+|------|------------|--------------------|
+| GET  | token 为空 | 使用 URL 查询参数  |
+| POST | token 非空 | 使用 JSON 请求体   |
 
-当 `token` 为空或未设置时，使用 GET 请求方式：
+### GET 请求示例
 
 ```json
 {
     "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
     "token": "",
-    "dns": "callback"
+    "dns": "callback",
+    "ipv4": ["sub.example.com"],
+    "index4": ["default"]
 }
 ```
-
-**实际请求示例：**
 
 ```http
 GET https://api.example.com/update?domain=sub.example.com&ip=192.168.1.100&type=A
 ```
 
-### POST 请求（推荐复杂场景）
-
-当 `token` 不为空时，使用 POST 请求方式。`token` 可以是 JSON 对象或 JSON 字符串，作为 POST 请求体：
-
-**JSON 对象格式：**
+### POST 请求示例
 
 ```json
 {
-    "id": "https://api.example.com/ddns",
+    "id": "https://api.example.com/update",
     "token": {
         "api_key": "your_secret_key",
         "domain": "__DOMAIN__",
-        "value": "__IP__",
-        "type": "__RECORDTYPE__",
-        "ttl": "__TTL__"
+        "value": "__IP__"
     },
-    "dns": "callback"
+    "dns": "callback",
+    "ipv4": ["sub.example.com"],
+    "index4": ["default"]
 }
-```
-
-**JSON 字符串格式：**
-
-```json
-{
-    "id": "https://api.example.com/ddns",
-    "token": "{\"api_key\": \"your_secret_key\", \"domain\": \"__DOMAIN__\", \"value\": \"__IP__\"}",
-    "dns": "callback"
-}
-```
-
-**实际请求示例：**
 
 ```http
-POST https://api.example.com/ddns
+POST https://api.example.com/update
 Content-Type: application/json
 
 {
-    "api_key": "your_secret_key",
-    "domain": "sub.example.com",
-    "value": "192.168.1.100",
-    "type": "A",
-    "ttl": "300"
+  "api_key": "your_secret_key",
+  "domain": "sub.example.com",
+  "value": "192.168.1.100",
 }
 ```
 
@@ -100,37 +86,6 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 | `__TTL__` | 生存时间（秒） | `300`、`600` |
 | `__LINE__` | 解析线路 | `default`、`unicom` |
 | `__TIMESTAMP__` | 当前时间戳 | `1634567890.123` |
-
-### 变量替换示例
-
-**配置：**
-
-```json
-{
-    "id": "https://api.example.com/ddns/__DOMAIN__?ip=__IP__&ts=__TIMESTAMP__",
-    "token": {
-        "domain": "__DOMAIN__",
-        "record_type": "__RECORDTYPE__",
-        "ttl": "__TTL__",
-        "timestamp": "__TIMESTAMP__"
-    },
-    "dns": "callback"
-}
-```
-
-**实际请求：**
-
-```http
-POST https://api.example.com/ddns/sub.example.com?ip=192.168.1.100&ts=1634567890.123
-Content-Type: application/json
-
-{
-    "domain": "sub.example.com",
-    "record_type": "A",
-    "ttl": 300,
-    "timestamp": 1634567890.123
-}
-```
 
 ## 使用场景
 
@@ -165,9 +120,7 @@ Content-Type: application/json
 }
 ```
 
-## 高级配置
-
-### 错误处理
+## 错误处理
 
 Callback Provider 会记录详细的日志信息：
 
@@ -181,39 +134,6 @@ Callback Provider 会记录详细的日志信息：
 2. **认证**: 在 token 中包含必要的认证信息
 3. **验证**: 服务端应验证请求的合法性
 4. **日志**: 避免在日志中暴露敏感信息
-
-## 完整配置示例
-
-### GET方式回调
-
-```json
-{
-    "id": "https://api.example.com/update?key=your_api_key&domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
-    "token": "",
-    "dns": "callback",
-    "ipv4": ["home.example.com", "server.example.com"],
-    "index4": ["default"]
-}
-```
-
-### POST方式回调（集成第三方DNS服务）
-
-```json
-{
-    "id": "https://api.third-party-dns.com/v1/records",
-    "token": {
-        "auth_token": "your_api_token",
-        "zone": "example.com",
-        "name": "__DOMAIN__",
-        "content": "__IP__",
-        "type": "__RECORDTYPE__",
-        "ttl": "__TTL__"
-    },
-    "dns": "callback",
-    "ipv4": ["*.example.com"],
-    "index4": ["default"]
-}
-```
 
 ## 故障排除
 
