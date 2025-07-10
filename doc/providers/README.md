@@ -20,7 +20,7 @@
 
 | Provider | 服务商 | 官方文档 | 状态 |
 |----------|--------|----------|------|
-| `dnscom` | [DNS.COM](https://www.dns.com/) | [API文档](https://www.dns.com/member/apiSet) | ⚠️ 缺少充分测试 |
+| `dnscom`(51dns) | [51DNS](https://www.51dns.com/) | [API文档](https://www.dns.com/member/apiSet) | ⚠️ 缺少充分测试 |
 | `dnspod_com` | [DNSPod 国际版](https://www.dnspod.com/) | [API文档](https://www.dnspod.com/docs/info.html) | 国际版DNSPod |
 | `he` | [HE.net](https://dns.he.net/) | [DDNS文档](https://dns.he.net/docs.html) | ⚠️ 缺少充分测试，不支持自动创建记录 |
 | `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [API文档](https://support.huaweicloud.com/api-dns/) | ⚠️ 缺少充分测试 |
@@ -31,7 +31,8 @@
 
 大部分provider支持自动创建不存在的DNS记录，但有例外：
 
-- ❌ **HE.net**: 不支持自动创建记录，需要手动在控制面板中预先创建
+- ❌ **he**: 不支持自动创建记录，需要手动在控制面板中预先创建
+- ❌ **noip**: 不支持自动创建记录，需要手动在控制面板中预先创建
 
 <!-- ## 🔧 域名格式支持
 
@@ -80,7 +81,7 @@ ddns --dns noip --id your_username --token your_password --ipv4 example.com
   "id": "12345",
   "token": "your_token_here",
   "ipv4": ["ddns.example.com", "*.example.com"],
-  "ipv6": ["ddns.example.com"],
+  "index": ["default"],
   "ttl": 600
 }
 ```
@@ -92,6 +93,7 @@ export DDNS_DNS=dnspod
 export DDNS_ID=12345
 export DDNS_TOKEN=your_token_here
 export DDNS_IPV4=ddns.example.com
+export DDNS_INDEX=default
 ddns --debug
 ```
 

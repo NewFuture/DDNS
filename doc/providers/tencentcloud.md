@@ -48,7 +48,8 @@
     "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "tencentcloud",
-    "ipv6": ["home.example.com", "server.example.com"]
+    "ipv6": ["home.example.com", "server.example.com"],
+    "index6": ["default"]
 }
 ```
 
@@ -60,8 +61,7 @@
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "tencentcloud",
     "ipv6": ["dynamic.mydomain.com"],
-    "ttl": 300,
-    "record_type": "A"
+    "index6": ["default"]
 }
 ```
 
@@ -74,18 +74,6 @@
     "ttl": 300
 }
 ```
-
-### 记录类型
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- 支持：A、AAAA、CNAME
-- 默认：A（IPv4）
-- IPv6地址使用"AAAA"类型
 
 ### 线路类型
 

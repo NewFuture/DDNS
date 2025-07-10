@@ -61,6 +61,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
     "id": "123456",
     "token": "abcdef1234567890abcdef1234567890abcdef12",
     "dns": "dnspod",
+    "index6": ["public"],
     "ipv6": ["home.example.com", "nas.example.com"]
 }
 ```
@@ -72,6 +73,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
     "id": "myemail@gmail.com",
     "token": "mypassword123",
     "dns": "dnspod",
+    "index6": ["public"],
     "ipv6": ["dynamic.mydomain.com"]
 }
 ```
@@ -83,6 +85,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
     "id": "123456",
     "token": "abcdef1234567890abcdef1234567890abcdef12",
     "dns": "dnspod",
+    "index4": ["public"],
     "ipv4": ["home.example.com"],
     "ttl": 600,
     "line": "电信"
@@ -102,17 +105,6 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 - 范围：1-604800 秒
 - 默认：600 秒
 - 推荐：120-600 秒
-
-### 记录类型
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- 支持：A、AAAA、CNAME
-- 默认：A（IPv4）
 
 ### 线路（运营商线路）
 
@@ -158,6 +150,6 @@ ddns --debug
 
 - [DNSPod 文档](https://docs.dnspod.cn/)
 - [API 参考](https://docs.dnspod.cn/api/)
-- [腾讯云DNSPod(AccessKey)](./tencentcloud.md)
+- [腾讯云DNSPod(AccessKey)](./tencentcloud.md) (DNSPod 的 AccessKey 方式)
 
 > 推荐使用 API Token 方式，提升安全性与管理便捷性。

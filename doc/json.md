@@ -21,7 +21,7 @@ ddns
 ddns -c /path/to/config.json
 
 # 或者使用Python源码
-python run.py -c /path/to/config.json
+python -m ddns -c /path/to/config.json
 ```
 
 ## JSON模式
@@ -177,6 +177,47 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "index4": ["public", 0, "regex:192\\.168\\..*"],
   "index6": ["public", "url:http://ipv6.icanhazip.com"],
   "ttl": 600
+}
+```
+
+### 不同DNS服务商配置示例
+
+#### 阿里云DNS
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "LTAI4xxxxxxxxxxxxx",
+  "token": "your_secret_key",
+  "dns": "alidns",
+  "ipv4": ["example.com"],
+  "line": "default"
+}
+```
+
+#### 阿里云ESA
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "LTAI4xxxxxxxxxxxxx",
+  "token": "your_secret_key",
+  "dns": "aliesa",
+  "ipv4": ["example.com"],
+  "endpoint": "https://esa.ap-southeast-1.aliyuncs.com"
+}
+```
+
+#### No-IP
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "your_username",
+  "token": "your_password",
+  "dns": "noip",
+  "ipv4": ["home.example.com"],
+  "endpoint": "https://dynupdate.no-ip.com"
 }
 ```
 

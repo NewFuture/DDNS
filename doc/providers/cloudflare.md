@@ -52,19 +52,7 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
     "dns": "cloudflare",
     "token": "your_api_token_here",
     "ipv4": ["ddns.example.com", "www.example.com"],
-    "ipv6": ["ddns.example.com"]
-}
-```
-
-### 高级配置
-
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"],
-    "ttl": 300,
-    "comment": "动态DNS更新"
+    "index4": ["default"]
 }
 ```
 
@@ -73,7 +61,6 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
 | `ttl` | DNS记录的TTL值 | 300 |
-| `comment` | DNS记录备注 | "DDNS" |
 
 ## 故障排除
 
@@ -89,7 +76,7 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 {
     "dns": "cloudflare",
     "token": "your_api_token_here",
-    "debug": true,
+    "index4": ["default"],
     "ipv4": ["ddns.example.com"]
 }
 ```

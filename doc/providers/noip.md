@@ -1,6 +1,8 @@
 # No-IP 配置指南
 
-No-IP 是流行的动态 DNS 服务，支持标准的 No-IP 动态更新协议。
+No-IP 是流行的动态 DNS 服务，支持标准的 DDNS 动态更新协议，采用Basic Auth 认证。
+
+对于类似服务，可以直接替换endpoint.
 
 ## 配置参数
 
@@ -9,21 +11,11 @@ No-IP 是流行的动态 DNS 服务，支持标准的 No-IP 动态更新协议�
 | `dns` | 服务商名称 | ✅ | `"noip"` |
 | `id` | No-IP 用户名或 DDNS ID | ✅ | `"your_username"` |
 | `token` | No-IP 密码或 DDNS KEY | ✅ | `"your_password"` |
+| `endpoint` | 自定义API端点地址 | 🔘 | `"https://dynupdate.no-ip.com"` |
 
 ## 配置示例
 
 ### 基本配置
-
-```json
-{
-    "dns": "noip",
-    "id": "your_username",
-    "token": "your_password",
-    "ipv4": ["home.example.com"]
-}
-```
-
-### 多个域名
 
 ```json
 {
@@ -34,7 +26,22 @@ No-IP 是流行的动态 DNS 服务，支持标准的 No-IP 动态更新协议�
         "home.example.com",
         "office.example.com"
     ],
-    "ipv6": ["ipv6.example.com"]
+    "index4": ["public"]
+}
+```
+
+### 自定义服务端点
+
+对于No-IP兼容的其他DDNS服务或自定义部署，可以指定不同的API端点：
+
+```json
+{
+    "dns": "noip",
+    "id": "your_username",
+    "token": "your_password", 
+    "endpoint": "https://your-ddns-server.com",
+    "ipv4": ["home.example.com"],
+    "index4": ["public"]
 }
 ```
 

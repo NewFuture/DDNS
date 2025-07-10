@@ -15,7 +15,7 @@ Or using Python source code:
 
 ```bash
 # python run.py [options]
-python run.py -h
+python -m ddns -h
 ```
 
 ## Parameter List
@@ -170,6 +170,18 @@ ddns --dns dnspod --id 12345 --token your_token --ipv4 example.com
 ddns --dns alidns --id your_access_key --token your_secret_key --ipv4 example.com
 ```
 
+#### Alibaba Cloud ESA
+
+```bash
+ddns --dns aliesa --id your_access_key --token your_secret_key --ipv4 example.com
+```
+
+#### No-IP
+
+```bash
+ddns --dns noip --id your_username --token your_password --ipv4 example.com
+```
+
 #### Custom Callback
 
 ```bash
@@ -212,6 +224,14 @@ ddns --dns cloudflare --token your_token --ipv4 example.com \
 # Use custom API endpoint
 ddns --dns cloudflare --token your_token --ipv4 example.com \
      --endpoint https://api.private-cloudflare.com
+
+# Alibaba Cloud ESA with custom region
+ddns --dns aliesa --id your_access_key --token your_secret_key --ipv4 example.com \
+     --endpoint https://esa.ap-southeast-1.aliyuncs.com
+
+# No-IP compatible service
+ddns --dns noip --id your_username --token your_password --ipv4 example.com \
+     --endpoint https://your-ddns-server.com
 ```
 
 #### Cache and SSL Settings

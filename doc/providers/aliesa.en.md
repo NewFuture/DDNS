@@ -50,8 +50,21 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
 | Parameter | Description | Type | Default | Example |
 |-----------|-------------|------|---------|---------|
 | `ttl` | DNS record TTL value | Integer | 600 | 300 |
+| `endpoint` | Custom API endpoint URL | String | `https://esa.cn-hangzhou.aliyuncs.com` | `https://esa.ap-southeast-1.aliyuncs.com` |
 
-## Use Cases
+### Custom Regional Endpoint
+
+When you need to access ESA services in specific regions, you can customize the endpoint:
+
+```json
+{
+    "id": "LTAI4xxx",
+    "token": "xxx",
+    "dns": "aliesa",
+    "endpoint": "https://esa.ap-southeast-1.aliyuncs.com",
+    "ipv4": ["www.example.com"]
+}
+```
 
 ### Dynamic IP CDN Origin
 

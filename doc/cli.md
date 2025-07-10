@@ -15,7 +15,7 @@ ddns -h
 
 ```bash
 # python run.py [选项]
-python run.py -h
+python -m ddns -h
 ```
 
 ## 参数列表
@@ -26,7 +26,7 @@ python run.py -h
 | `--version`     | `-v`   | 标志            | 显示版本信息并退出                           |
 | `--config`      | `-c`   | 字符串          | 指定配置文件路径                             |
 | `--new-config`  |        | 标志/字符串     | 生成新的配置文件                             |
-| `--dns`         |        | 选择项          | DNS服务提供商                                |
+| `--dns`         |        | 选择项          | [DNS服务提供商](providers/README.md)        |
 | `--endpoint`    |        | 字符串          | API 端点 URL，用于自定义或私有部署的API地址    |
 | `--id`          |        | 字符串          | API 访问 ID 或授权账户                       |
 | `--token`       |        | 字符串          | API 授权令牌或密钥                           |
@@ -41,7 +41,7 @@ python run.py -h
 | `--no-cache`    |        | 标志            | 禁用缓存（等效于 --cache=false）             |
 | `--ssl`         |        | 字符串          | SSL证书验证方式                             |
 | `--no-ssl`      |        | 标志            | 禁用SSL验证（等效于 --ssl=false）            |
-| `--debug`       |        | 标志            | 开启调试模式（等同于 --log_level=DEBUG）     |
+| `--debug`       |        | 标志            | 开启调试模式                                |
 | `--log_file`    |        | 字符串          | 日志文件路径，不指定则输出到控制台           |
 | `--log_level`   |        | 字符串          | 日志级别                                     |
 | `--log_format`  |        | 字符串          | 日志格式字符串                               |
@@ -53,11 +53,11 @@ python run.py -h
 
 | 参数         | 可能的值                                     | 示例                                    |
 |--------------|----------------------------------------------|----------------------------------------|
-| `--dns`      | 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, he, huaweidns, noip, tencentcloud | `--dns cloudflare`                     |
+| `--dns`      | 51dns, alidns, aliesa, callback, cloudflare, <br> debug, dnscom, dnspod_com, dnspod, he, <br> huaweidns, noip, tencentcloud | `--dns cloudflare`                     |
 | `--endpoint` | URL地址                                      | `--endpoint https://api.private.com`   |
 | `--id`       | API ID, 邮箱, Access Key                     | `--id user@example.com`                |
 | `--token`    | API Token, Secret Key                        | `--token abcdef123456`                 |
-| `--new-config`| true, false, 文件路径                       | `--new-config`, `--new-config=config.json` |
+| `--new-config`| 空 或 文件路径                               | `--new-config`, `--new-config=config.json` |
 | `--ipv4`     | 域名                                         | `--ipv4 example.com --ipv4 sub.example.com` |
 | `--ipv6`     | 域名                                         | `--ipv6 example.com`                   |
 | `--index4`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index4 public`, `--index4 "regex:192\\.168\\..*"` |
@@ -75,20 +75,9 @@ python run.py -h
 
 ## DNS服务配置参数
 
-### `--dns {alidns,cloudflare,dnscom,dnspod,dnspod_com,he,huaweidns,callback}`
+### `--dns DNS_PROVIDER`
 
-DNS服务提供商。
-
-- **默认值**: `dnspod`
-- **可选值**:
-  - `alidns`: 阿里云DNS
-  - `cloudflare`: Cloudflare
-  - `dnscom`: DNS.COM
-  - `dnspod`: DNSPOD国内版
-  - `dnspod_com`: DNSPOD国际版
-  - `he`: HE.net
-  - `huaweidns`: 华为云DNS
-  - `callback`: 自定义回调
+[DNS服务提供商](providers/README.md)详细列表。
 
 ### `--id ID`
 
@@ -146,7 +135,7 @@ ddns --dns callback --id "https://api.example.com/ddns" --token '{"api_key": "yo
 
 ## IP获取方式参数
 
-### `--index4 [METHOD...]`
+### `--index4 [Rule...]`
 
 IPv4地址获取方式。
 
@@ -166,7 +155,7 @@ IPv4地址获取方式。
   - `--index4 "regex:192\\.168\\.*"` (匹配192.168开头的IP)
   - `--index4 public --index4 0` (先尝试获取公网IP，失败则使用第一个网卡)
 
-### `--index6 [METHOD...]`
+### `--index6 [Rule...]`
 
 IPv6地址获取方式，用法同`--index4`。
 
@@ -192,7 +181,7 @@ HTTP代理设置，支持多代理轮换。
 
 ## 系统配置参数
 
-### `--cache [BOOL|PATH]`
+### `--cache {true|false|PATH}`
 
 启用缓存以减少API请求。
 
@@ -248,15 +237,6 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
 - **示例**:
   - `--log_file=/var/log/ddns.log`
   - `--log_file=./ddns.log`
-
-### `--log_format FORMAT`
-
-设置日志格式字符串（参考Python logging模块格式）。
-
-- **默认值**: `%(asctime)s %(levelname)s [%(module)s]: %(message)s`
-- **示例**:
-  - `--log_format="%(asctime)s %(levelname)s: %(message)s"`
-  - `--log_format="%(levelname)s [%(filename)s:%(lineno)d]: %(message)s"`
 
 ### `--log_datefmt FORMAT`
 
@@ -340,6 +320,9 @@ ddns --dns cloudflare --id user@example.com --token your_api_token --ipv4 exampl
 # 阿里云DNS
 ddns --dns alidns --id your_access_key_id --token your_access_key_secret --ipv4 example.com
 
+# 阿里云ESA（自定义端点）
+ddns --dns aliesa --id your_access_key_id --token your_access_key_secret --endpoint https://esa.ap-southeast-1.aliyuncs.com --ipv4 example.com
+
 # 华为云DNS
 ddns --dns huaweidns --id your_access_key --token your_secret_key --ipv4 example.com
 
@@ -354,6 +337,9 @@ ddns --dns tencentcloud --id your_secret_id --token your_secret_key --ipv4 examp
 
 # NoIP
 ddns --dns noip --id your_username --token your_password --ipv4 example.com
+
+# NoIP（自定义端点）
+ddns --dns noip --id your_username --token your_password --endpoint https://your-ddns-server.com --ipv4 example.com
 ```
 
 ### 高级配置示例
@@ -368,23 +354,18 @@ ddns --dns cloudflare --id user@example.com --token API_TOKEN \
 
 # 使用代理和自定义TTL
 ddns --dns dnspod --id 12345 --token mytokenkey \
-     --ipv4 example.com --ttl 300 \
+     --index4 public --ipv4 example.com --ttl 300 \
      --proxy 127.0.0.1:1080 --proxy DIRECT
 
-# 指定DNS线路（适用于国内DNS服务商）
 ddns --dns dnspod --id 12345 --token mytokenkey \
      --ipv4 telecom.example.com --line 电信
 
-# 使用自定义API端点
-ddns --dns cloudflare --endpoint https://api.private-cf.com \
-     --id user@example.com --token API_TOKEN --ipv4 example.com
 
 # 调试模式
-ddns --debug --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com
+ddns --debug ...
 
 # 禁用缓存和SSL验证
-ddns --dns cloudflare --id user@example.com --token API_TOKEN \
-     --ipv4 example.com --no-cache --no-ssl
+ddns --no-cache --no-ssl ...
 ```
 
 ### 自定义回调示例
@@ -394,7 +375,7 @@ ddns --dns cloudflare --id user@example.com --token API_TOKEN \
 ddns --dns callback \
      --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__&ttl=__TTL__" \
      --token "" \
-     --ipv4 example.com
+     --ipv4 example.com --index4 public
 
 # POST方式回调
 ddns --dns callback \
@@ -408,7 +389,7 @@ ddns --dns callback \
 ```bash
 # 详细日志配置
 ddns --dns cloudflare --id user@example.com --token API_TOKEN \
-     --ipv4 example.com \
+     --ipv4 example.com  --index4 public \
      --log_level=DEBUG \
      --log_file=/var/log/ddns.log \
      --log_format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s" \

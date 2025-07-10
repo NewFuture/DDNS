@@ -148,7 +148,8 @@ Content-Type: application/json
         "record_type": "__RECORDTYPE__",
         "timestamp": "__TIMESTAMP__"
     },
-    "dns": "callback"
+    "dns": "callback",
+    "index4": ["default"]
 }
 ```
 
@@ -191,8 +192,7 @@ Callback Provider 会记录详细的日志信息：
     "token": "",
     "dns": "callback",
     "ipv4": ["home.example.com", "server.example.com"],
-    "ipv6": ["ipv6.example.com"],
-    "debug": true
+    "index4": ["default"]
 }
 ```
 
@@ -211,8 +211,7 @@ Callback Provider 会记录详细的日志信息：
     },
     "dns": "callback",
     "ipv4": ["*.example.com"],
-    "ipv6": ["*.example.com"],
-    "debug": true
+    "index4": ["default"]
 }
 ```
 

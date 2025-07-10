@@ -21,7 +21,7 @@ ddns
 ddns -c /path/to/config.json
 
 # Or using Python source code
-python run.py -c /path/to/config.json
+python -m ddns -c /path/to/config.json
 ```
 
 ## JSON Schema
@@ -195,6 +195,30 @@ Supported variable substitutions:
   "token": "your_secret_key",
   "ipv4": ["example.com"],
   "line": "default"
+}
+```
+
+#### Alibaba Cloud ESA
+
+```json
+{
+  "dns": "aliesa",
+  "id": "LTAI4xxxxxxxxxxxxx",
+  "token": "your_secret_key",
+  "ipv4": ["example.com"],
+  "endpoint": "https://esa.ap-southeast-1.aliyuncs.com"
+}
+```
+
+#### No-IP
+
+```json
+{
+  "dns": "noip",
+  "id": "your_username",
+  "token": "your_password",
+  "ipv4": ["home.example.com"],
+  "endpoint": "https://dynupdate.no-ip.com"
 }
 ```
 
@@ -431,20 +455,23 @@ This means command line arguments will override any settings in configuration fi
 
 ### Security
 
-- Store sensitive tokens in separate files with restricted permissions
+* Store sensitive tokens in separate files with restricted permissions
+
 * Use environment variables for tokens in containerized environments
 * Never commit configuration files with real tokens to version control
 
 ### Reliability
 
-- Use multiple IP detection methods for fallback
+* Use multiple IP detection methods for fallback
+
 * Configure appropriate TTL values for your use case
 * Enable caching to avoid rate limiting
 * Set up proper logging for troubleshooting
 
 ### Performance
 
-- Use `"auto"` SSL mode for automatic fallback
+* Use `"auto"` SSL mode for automatic fallback
+
 * Configure multiple proxy servers for redundancy
 * Set reasonable TTL values to balance speed and reliability
 

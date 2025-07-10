@@ -9,6 +9,7 @@ No-IP is a popular dynamic DNS service that supports the standard No-IP Dynamic 
 | `dns` | Provider name | ✅ | `"noip"` |
 | `id` | No-IP username or DDNS ID | ✅ | `"your_username"` |
 | `token` | No-IP password or DDNS KEY | ✅ | `"your_password"` |
+| `endpoint` | Custom API endpoint URL | 🔘 | `"https://dynupdate.no-ip.com"` |
 
 ## Configuration Examples
 
@@ -19,7 +20,8 @@ No-IP is a popular dynamic DNS service that supports the standard No-IP Dynamic 
     "dns": "noip",
     "id": "your_username",
     "token": "your_password",
-    "ipv4": ["home.example.com"]
+    "ipv4": ["home.example.com"],
+    "index4": ["default"]
 }
 ```
 
@@ -35,6 +37,20 @@ No-IP is a popular dynamic DNS service that supports the standard No-IP Dynamic 
         "office.example.com"
     ],
     "ipv6": ["ipv6.example.com"]
+}
+```
+
+### Custom Service Endpoint
+
+For other No-IP compatible DDNS services or custom deployments, you can specify different API endpoints:
+
+```json
+{
+    "dns": "noip",
+    "id": "your_username",
+    "token": "your_password", 
+    "endpoint": "https://your-ddns-server.com",
+    "ipv4": ["home.example.com"]
 }
 ```
 

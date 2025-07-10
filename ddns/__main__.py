@@ -23,13 +23,13 @@ logger = getLogger()
 SimpleProvider.user_agent = SimpleProvider.user_agent.format(version=__version__)
 
 
-def get_ip(ip_type, index):
+def get_ip(ip_type, rules):
     """
     get IP address
     """
-    if index is False:  # disabled
+    if rules is False:  # disabled
         return False
-    for i in index:
+    for i in rules:
         try:
             logger.debug("get_ip:(%s, %s)", ip_type, i)
             if str(i).isdigit():  # 数字 local eth
@@ -43,7 +43,7 @@ def get_ip(ip_type, index):
             elif i.startswith("regex:"):  # 正则 regex
                 return getattr(ip, "regex_v" + ip_type)(i[6:])
             else:
-                return getattr(ip, index + "_v" + ip_type)()
+                return getattr(ip, i + "_v" + ip_type)()
         except Exception as e:
             logger.error("Failed to get %s address: %s", ip_type, e)
     return None
