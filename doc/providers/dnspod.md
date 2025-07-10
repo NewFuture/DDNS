@@ -20,8 +20,6 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 3. 点击“创建密钥”，填写描述，选择域名管理权限，完成创建
 4. 复制 **ID**（数字）和 **Token**（字符串），密钥只显示一次，请妥善保存
 
-#### 配置示例
-
 ```json
 {
     "dns": "dnspod",
@@ -38,8 +36,6 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 使用 DNSPod 账号邮箱和密码，安全性较低，仅建议特殊场景使用。
 
-#### 配置示例
-
 ```json
 {
     "id": "your-email@example.com",
@@ -54,41 +50,17 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 ## 完整配置示例
 
-### 示例 1：API Token
-
-```json
-{
-    "id": "123456",
-    "token": "abcdef1234567890abcdef1234567890abcdef12",
-    "dns": "dnspod",
-    "index6": ["public"],
-    "ipv6": ["home.example.com", "nas.example.com"]
-}
-```
-
-### 示例 2：邮箱认证
-
-```json
-{
-    "id": "myemail@gmail.com",
-    "token": "mypassword123",
-    "dns": "dnspod",
-    "index6": ["public"],
-    "ipv6": ["dynamic.mydomain.com"]
-}
-```
-
-### 示例 3：带线路配置
-
 ```json
 {
     "id": "123456",
     "token": "abcdef1234567890abcdef1234567890abcdef12",
     "dns": "dnspod",
     "index4": ["public"],
+    "index6": ["public"],
     "ipv4": ["home.example.com"],
-    "ttl": 600,
-    "line": "电信"
+    "ipv6": ["home.example.com", "nas.example.com"],
+    "line": "默认",
+    "ttl": 600
 }
 ```
 

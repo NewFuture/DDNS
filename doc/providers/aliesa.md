@@ -18,9 +18,18 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 }
 ```
 
-## 完整配置示例
+## 权限要求
 
-### 基础配置
+确保使用的阿里云账号具有以下ESA权限：
+
+推荐 `AliyunESAFullAccess` 包含下列所有权限
+
+- **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
+- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
+
+推荐创建专门的RAM子账号并仅授予必要的ESA权限。
+
+## 完整配置示例
 
 ```json
 {
@@ -55,17 +64,6 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
     "index4": ["public"]
 }
 ```
-
-## 权限要求
-
-确保使用的阿里云账号具有以下ESA权限：
-
-推荐 `AliyunESAFullAccess` 包含下列所有权限
-
-- **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
-- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
-
-推荐创建专门的RAM子账号并仅授予必要的ESA权限。
 
 ## 故障排除
 

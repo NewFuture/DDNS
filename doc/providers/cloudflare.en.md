@@ -11,8 +11,7 @@ Cloudflare is a leading global CDN and network security service provider. This D
 ```json
 {
     "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"]
+    "token": "your_api_token_here"
 }
 ```
 
@@ -23,7 +22,6 @@ Cloudflare is a leading global CDN and network security service provider. This D
     "id": "your_email@example.com",
     "token": "your_global_api_key",
     "dns": "cloudflare",
-    "ipv4": ["ddns.example.com"]
 }
 ```
 
@@ -45,26 +43,15 @@ Cloudflare is a leading global CDN and network security service provider. This D
 
 ## Configuration Examples
 
-### Basic Configuration
-
 ```json
 {
     "dns": "cloudflare",
     "token": "your_api_token_here",
     "ipv4": ["ddns.example.com", "www.example.com"],
-    "ipv6": ["ddns.example.com"]
-}
-```
-
-### Advanced Configuration
-
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"],
-    "ttl": 300,
-    "comment": "Dynamic DNS update"
+    "ipv6": ["ddns.example.com"],
+    "index4": ["default"],
+    "index6": ["default"],  
+    "ttl": 600
 }
 ```
 
@@ -73,7 +60,24 @@ Cloudflare is a leading global CDN and network security service provider. This D
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `ttl` | DNS record TTL value | 300 |
-| `comment` | DNS record comment | "DDNS" |
+| `endpoint` | Custom API endpoint URL | `https://api.cloudflare.com` |
+
+### Custom API Endpoint
+
+```json
+{
+    "endpoint": "https://api.cloudflare.com"
+}
+```
+
+Cloudflare uses a single global API endpoint, but custom endpoints may be needed in special cases:
+
+#### Special Purpose Endpoints
+
+- **Enterprise/Private Cloud Deployments**: Configure according to specific deployment environment
+- **Proxy/Mirror Services**: Third-party API proxy service addresses
+
+> **Note**: Cloudflare officially recommends using the default global endpoint `https://api.cloudflare.com`, which is automatically optimized through Cloudflare's global network. Custom endpoints are only needed when using enterprise private deployments or third-party proxy services.
 
 ## Troubleshooting
 

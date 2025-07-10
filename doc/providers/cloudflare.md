@@ -12,7 +12,6 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 {
     "dns": "cloudflare",
     "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"]
 }
 ```
 
@@ -23,7 +22,6 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
     "id": "your_email@example.com",
     "token": "your_global_api_key",
     "dns": "cloudflare",
-    "ipv4": ["ddns.example.com"]
 }
 ```
 
@@ -45,14 +43,15 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 
 ## 配置示例
 
-### 基础配置
-
 ```json
 {
     "dns": "cloudflare",
     "token": "your_api_token_here",
+    "index4": ["default"],
+    "index6": ["default"],
     "ipv4": ["ddns.example.com", "www.example.com"],
-    "index4": ["default"]
+    "ipv6": ["ddns.example.com"],
+    "ttl": 600
 }
 ```
 
@@ -61,6 +60,24 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
 | `ttl` | DNS记录的TTL值 | 300 |
+| `endpoint` | 自定义API端点地址 | `https://api.cloudflare.com` |
+
+### 自定义API端点
+
+```json
+{
+    "endpoint": "https://api.cloudflare.com"
+}
+```
+
+Cloudflare使用单一的全球API端点，但在特殊情况下可能需要自定义：
+
+#### 特殊用途端点
+
+- **企业版/私有云部署**：根据具体部署环境配置
+- **代理/镜像服务**：第三方API代理服务地址
+
+> **注意**：Cloudflare官方推荐使用默认的全球端点 `https://api.cloudflare.com`，该端点通过Cloudflare的全球网络自动优化路由。只有在使用企业版私有部署或第三方代理服务时才需要自定义端点。
 
 ## 故障排除
 
@@ -72,13 +89,8 @@ Cloudflare 是全球领先的 CDN 和网络安全服务提供商。本 DDNS 项�
 
 ### 调试模式
 
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "index4": ["default"],
-    "ipv4": ["ddns.example.com"]
-}
+```sh
+ddns -c config.json --debug
 ```
 
 ## 相关链接

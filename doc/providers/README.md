@@ -14,6 +14,8 @@
 | `tencentcloud` | [腾讯云 DNSPod](https://cloud.tencent.com/product/cns) | [tencentcloud.md](tencentcloud.md) | [tencentcloud.en.md](tencentcloud.en.md) | 腾讯云DNSPod服务 |
 | `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare.md](cloudflare.md) | [cloudflare.en.md](cloudflare.en.md) | 全球CDN和DNS服务 |
 | `noip` | [No-IP](https://www.noip.com/) | [noip.md](noip.md) | [noip.en.md](noip.en.md) | 流行的动态DNS服务 |
+| `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns.md](huaweidns.md) | [huaweidns.en.md](huaweidns.en.md) | ⚠️ 等待验证 |
+| `he` | [HE.net](https://dns.he.net/) | [he.md](he.md) | [he.en.md](he.en.md) | ⚠️ 等待验证，不支持自动创建记录 |
 | `callback` | 自定义API (Webhook) | [callback.md](callback.md) | [callback.en.md](callback.en.md) | 自定义HTTP API |
 
 ### 其他支持的Provider
@@ -22,8 +24,6 @@
 |----------|--------|----------|------|
 | `dnscom`(51dns) | [51DNS](https://www.51dns.com/) | [API文档](https://www.dns.com/member/apiSet) | ⚠️ 缺少充分测试 |
 | `dnspod_com` | [DNSPod 国际版](https://www.dnspod.com/) | [API文档](https://www.dnspod.com/docs/info.html) | 国际版DNSPod |
-| `he` | [HE.net](https://dns.he.net/) | [DDNS文档](https://dns.he.net/docs.html) | ⚠️ 缺少充分测试，不支持自动创建记录 |
-| `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [API文档](https://support.huaweicloud.com/api-dns/) | ⚠️ 缺少充分测试 |
 
 ## ⚙️ 特殊配置说明
 

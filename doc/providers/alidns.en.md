@@ -54,6 +54,7 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
   "id": "LTAI4xxxxxxxxxxxxxxx",
   "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "dns": "alidns",
+  "index6": ["default"],
   "ipv6": ["home.example.com", "server.example.com"]
 }
 ```
@@ -65,9 +66,13 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
   "id": "LTAI4xxxxxxxxxxxxxxx",
   "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "dns": "alidns",
+  "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com",
+  "ipv4": ["example.com"],
+  "index4": ["public"],
+  "index6": ["default"],
   "ipv6": ["dynamic.mydomain.com"],
-  "ttl": 600,
-  "record_type": "A"
+  "line": "telecom",
+  "ttl": 600
 }
 ```
 
@@ -85,18 +90,6 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
 - **Default**: 600 seconds (10 minutes)
 - **Recommended**: 300-600 seconds for dynamic DNS
 
-### Record Type
-
-```json
-{
-  "record_type": "A"
-}
-```
-
-- **Supported Types**: A, AAAA, CNAME, MX, TXT, SRV, etc.
-- **Default**: A (IPv4)
-- Use "AAAA" for IPv6 addresses
-
 ### Resolution Line
 
 ```json
@@ -108,6 +101,41 @@ Alibaba Cloud DNS uses AccessKey ID and AccessKey Secret for API authentication,
 - **Options**: "default", "telecom", "unicom", "mobile", "oversea", etc.
 - **Default**: "default"
 - Available line types vary by service plan
+
+### Custom API Endpoint
+
+```json
+{
+  "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com"
+}
+```
+
+Alibaba Cloud DNS supports multiple regional endpoints for optimal network performance:
+
+#### China Regions
+
+- **East China 1 (Hangzhou)**: `https://alidns.cn-hangzhou.aliyuncs.com`
+- **East China 2 (Shanghai)**: `https://alidns.cn-shanghai.aliyuncs.com`
+- **North China 1 (Qingdao)**: `https://alidns.cn-qingdao.aliyuncs.com`
+- **North China 2 (Beijing)**: `https://alidns.cn-beijing.aliyuncs.com`
+- **North China 3 (Zhangjiakou)**: `https://alidns.cn-zhangjiakou.aliyuncs.com`
+- **South China 1 (Shenzhen)**: `https://alidns.cn-shenzhen.aliyuncs.com`
+- **Southwest 1 (Chengdu)**: `https://alidns.cn-chengdu.aliyuncs.com`
+- **Default (Recommended)**: `https://alidns.aliyuncs.com`
+
+#### International Regions
+
+- **Asia Pacific Southeast 1 (Singapore)**: `https://alidns.ap-southeast-1.aliyuncs.com`
+- **Asia Pacific Southeast 2 (Sydney)**: `https://alidns.ap-southeast-2.aliyuncs.com`
+- **Asia Pacific Southeast 3 (Kuala Lumpur)**: `https://alidns.ap-southeast-3.aliyuncs.com`
+- **Asia Pacific South 1 (Mumbai)**: `https://alidns.ap-south-1.aliyuncs.com`
+- **Asia Pacific Northeast 1 (Tokyo)**: `https://alidns.ap-northeast-1.aliyuncs.com`
+- **US East 1 (Virginia)**: `https://alidns.us-east-1.aliyuncs.com`
+- **US West 1 (Silicon Valley)**: `https://alidns.us-west-1.aliyuncs.com`
+- **Europe Central 1 (Frankfurt)**: `https://alidns.eu-central-1.aliyuncs.com`
+- **Europe West 1 (London)**: `https://alidns.eu-west-1.aliyuncs.com`
+
+> **Note**: It's recommended to use the default endpoint `https://alidns.aliyuncs.com`, as Alibaba Cloud automatically routes to the optimal node. Specify regional endpoints only in special network environments.
 
 ## Permission Requirements
 

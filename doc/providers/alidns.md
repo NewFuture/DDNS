@@ -18,8 +18,6 @@
 4. 复制生成的 **AccessKey ID** 和 **AccessKey Secret**，请妥善保存
 5. 确保账号具有云解析DNS的操作权限
 
-#### 配置示例
-
 ```json
 {
     "dns": "alidns",
@@ -32,31 +30,29 @@
 - `token`：阿里云 AccessKey Secret
 - `dns`：固定为 `"alidns"`
 
+## 权限要求
+
+确保使用的阿里云账号具有以下权限：
+
+- **AliyunDNSFullAccess**：云解析DNS完全访问权限（推荐）
+- **AliyunDNSReadOnlyAccess + 自定义写权限**：精细化权限控制
+
+可以在 [RAM访问控制](https://ram.console.aliyun.com/policies) 中查看和配置权限。
+
 ## 完整配置示例
 
-### 基本配置
-
 ```json
 {
     "id": "LTAI4xxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "alidns",
-    "ipv6": ["home.example.com", "server.example.com"]
-}
-```
-
-### 带可选参数的配置
-
-```json
-{
-    "id": "LTAI4xxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "dns": "alidns",
+    "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com",
+    "index4": ["public"],
+    "index6": ["default"],
+    "ipv4": ["example.com"],
     "ipv6": ["dynamic.mydomain.com"],
-    "ttl": 600,
-    "record_type": "A",
-    "line": "telecom"
-}
+    "line": "telecom",
+    "ttl": 600
 }
 ```
 
@@ -74,18 +70,6 @@
 - 默认：600 秒
 - 推荐：300-600 秒用于动态DNS
 
-### 记录类型
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- 支持：A、AAAA、CNAME、MX、TXT、SRV等
-- 默认：A（IPv4）
-- IPv6地址使用"AAAA"类型
-
 ### 解析线路
 
 ```json
@@ -98,14 +82,40 @@
 - 默认："default"
 - 不同套餐支持的线路类型不同
 
-## 权限要求
+### 自定义API端点
 
-确保使用的阿里云账号具有以下权限：
+```json
+{
+    "endpoint": "https://alidns.ap-southeast-1.aliyuncs.com"
+}
+```
 
-- **AliyunDNSFullAccess**：云解析DNS完全访问权限（推荐）
-- **AliyunDNSReadOnlyAccess + 自定义写权限**：精细化权限控制
+阿里云DNS支持多个区域端点，可根据网络环境选择最优节点：
 
-可以在 [RAM访问控制](https://ram.console.aliyun.com/policies) 中查看和配置权限。
+#### 国内节点
+
+- **华东1（杭州）**：`https://alidns.cn-hangzhou.aliyuncs.com`
+- **华东2（上海）**：`https://alidns.cn-shanghai.aliyuncs.com`
+- **华北1（青岛）**：`https://alidns.cn-qingdao.aliyuncs.com`
+- **华北2（北京）**：`https://alidns.cn-beijing.aliyuncs.com`
+- **华北3（张家口）**：`https://alidns.cn-zhangjiakou.aliyuncs.com`
+- **华南1（深圳）**：`https://alidns.cn-shenzhen.aliyuncs.com`
+- **西南1（成都）**：`https://alidns.cn-chengdu.aliyuncs.com`
+- **默认（推荐）**：`https://alidns.aliyuncs.com`
+
+#### 海外节点
+
+- **亚太东南1（新加坡）**：`https://alidns.ap-southeast-1.aliyuncs.com`
+- **亚太东南2（悉尼）**：`https://alidns.ap-southeast-2.aliyuncs.com`
+- **亚太东南3（吉隆坡）**：`https://alidns.ap-southeast-3.aliyuncs.com`
+- **亚太南部1（孟买）**：`https://alidns.ap-south-1.aliyuncs.com`
+- **亚太东北1（东京）**：`https://alidns.ap-northeast-1.aliyuncs.com`
+- **美国东部1（弗吉尼亚）**：`https://alidns.us-east-1.aliyuncs.com`
+- **美国西部1（硅谷）**：`https://alidns.us-west-1.aliyuncs.com`
+- **欧洲中部1（法兰克福）**：`https://alidns.eu-central-1.aliyuncs.com`
+- **欧洲西部1（伦敦）**：`https://alidns.eu-west-1.aliyuncs.com`
+
+> **注意**：建议使用默认端点 `https://alidns.aliyuncs.com`，阿里云会自动路由到最优节点。只有在特殊网络环境下才需要指定特定区域端点。
 
 ## 故障排除
 

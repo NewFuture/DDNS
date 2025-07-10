@@ -60,8 +60,13 @@
     "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "tencentcloud",
+    "endpoint": "https://dnspod.ap-singapore.tencentcloudapi.com",
+    "index4": ["default"],
+    "index6": ["default"],
+    "ipv4": ["example.com"],
     "ipv6": ["dynamic.mydomain.com"],
-    "index6": ["default"]
+    "line": "默认",
+    "ttl": 600
 }
 ```
 
@@ -85,6 +90,37 @@
 
 - 选项："默认"、"电信"、"联通"、"移动"、"教育网"等
 - 默认："默认"
+
+### 自定义API端点
+
+```json
+{
+    "endpoint": "https://dnspod.tencentcloudapi.com"
+}
+```
+
+腾讯云DNSPod API支持多个区域端点，可根据网络环境选择最优节点：
+
+#### 国内节点
+
+- **华南地区（广州）**：`https://dnspod.ap-guangzhou.tencentcloudapi.com`
+- **华东地区（上海）**：`https://dnspod.ap-shanghai.tencentcloudapi.com`
+- **华北地区（北京）**：`https://dnspod.ap-beijing.tencentcloudapi.com`
+- **西南地区（成都）**：`https://dnspod.ap-chengdu.tencentcloudapi.com`
+- **港澳台地区（香港）**：`https://dnspod.ap-hongkong.tencentcloudapi.com`
+
+#### 海外节点
+
+- **亚太东南（新加坡）**：`https://dnspod.ap-singapore.tencentcloudapi.com`
+- **亚太东南（曼谷）**：`https://dnspod.ap-bangkok.tencentcloudapi.com`
+- **亚太南部（孟买）**：`https://dnspod.ap-mumbai.tencentcloudapi.com`
+- **亚太东北（首尔）**：`https://dnspod.ap-seoul.tencentcloudapi.com`
+- **亚太东北（东京）**：`https://dnspod.ap-tokyo.tencentcloudapi.com`
+- **美国东部（弗吉尼亚）**：`https://dnspod.na-ashburn.tencentcloudapi.com`
+- **美国西部（硅谷）**：`https://dnspod.na-siliconvalley.tencentcloudapi.com`
+- **欧洲地区（法兰克福）**：`https://dnspod.eu-frankfurt.tencentcloudapi.com`
+
+> **注意**：建议使用默认端点 `https://dnspod.tencentcloudapi.com`，腾讯云会自动路由到最优节点。只有在特殊网络环境下才需要指定特定区域端点。
 
 ## 权限要求
 
@@ -147,8 +183,7 @@ ddns --debug
 ## 支持与资源
 
 - [腾讯云DNSPod产品文档](https://cloud.tencent.com/document/product/1427)
-- [腾讯云DNSPod API文档](https://cloud.tencent.com/document/api/1427)
+- [腾讯云DNSPod v3 API文档](https://cloud.tencent.com/document/api/1427)
 - [腾讯云控制台](https://console.cloud.tencent.com/dnspod)
-- [腾讯云技术支持](https://cloud.tencent.com/document/product/282)
 
 > 建议使用子账号API密钥并仅授予必要的DNSPod权限，以提高安全性。
