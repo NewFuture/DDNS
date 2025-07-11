@@ -179,7 +179,8 @@ class TestConfigInit(unittest.TestCase):
     @patch("ddns.config.load_file_config")
     @patch("ddns.config.load_cli_config")
     @patch("os.path.exists")
-    def test_load_config_missing_files(self, mock_exists, mock_cli, mock_json, mock_env):
+    @patch("sys.exit")
+    def test_load_config_missing_files(self, mock_exit, mock_exists, mock_cli, mock_json, mock_env):
         """Test load_config when config files don't exist"""
         mock_env.return_value = {}
         mock_exists.return_value = False
@@ -191,20 +192,23 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(result.dns, "debug")
         self.assertEqual(result.id, "")  # Default value
 
-        # Test case 2: Specified config file doesn't exist
+        # Test case 2: Specified config file doesn't exist should exit
         mock_json.reset_mock()
         mock_cli.return_value = {"config": "/nonexistent/config.json", "dns": "debug"}
-        result = load_config(self.test_description, self.test_version, self.test_date)
-        mock_json.assert_not_called()
-        self.assertEqual(result.dns, "debug")
 
-    @patch("ddns.config.save_json")
+        # This should trigger sys.exit(1) due to missing config file
+        load_config(self.test_description, self.test_version, self.test_date)
+        mock_exit.assert_called_with(1)
+
+    @patch("ddns.config.save_config")
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_cli_config")
     @patch("sys.exit")
-    def test_load_config_new_config_scenarios(self, mock_exit, mock_cli, mock_env, mock_save_json):
+    @patch("os.path.exists")
+    def test_load_config_new_config_scenarios(self, mock_exists, mock_exit, mock_cli, mock_env, mock_save_config):
         """Test load_config with --new-config flag in various scenarios"""
         mock_env.return_value = {}
+        mock_exists.return_value = False  # Simulate config.json doesn't exist
 
         # Test case 1: Basic new config generation
         mock_cli.return_value = {
@@ -213,13 +217,13 @@ class TestConfigInit(unittest.TestCase):
             "id": "test@example.com",
             "token": "test_token",
         }
-        mock_save_json.return_value = True
+        mock_save_config.return_value = True
 
         # Capture output written to stdout via write()
         output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
-        mock_save_json.assert_called_once()
-        config_path, config_data = mock_save_json.call_args[0]
+        mock_save_config.assert_called_once()
+        config_path, config_data = mock_save_config.call_args[0]
         self.assertEqual(config_path, "config.json")
         self.assertEqual(config_data["dns"], "cloudflare")
         self.assertEqual(config_data["id"], "test@example.com")
@@ -231,21 +235,21 @@ class TestConfigInit(unittest.TestCase):
         mock_exit.assert_called_once_with(0)
 
         # Test case 2: Custom config path
-        mock_save_json.reset_mock()
+        mock_save_config.reset_mock()
         mock_exit.reset_mock()
         mock_cli.return_value = {"new_config": "custom-config.json", "dns": "debug"}
 
         # Test case 2: custom config path output
         output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
-        config_path, config_data = mock_save_json.call_args[0]
+        config_path, config_data = mock_save_config.call_args[0]
         self.assertEqual(config_path, "custom-config.json")
         self.assertEqual(config_data["dns"], "debug")
         # Verify stdout contains the custom config message
         self.assertEqual(output, "custom-config.json is generated.\n")
 
         # Test case 3: Preserve existing arrays
-        mock_save_json.reset_mock()
+        mock_save_config.reset_mock()
         mock_exit.reset_mock()
         mock_cli.return_value = {
             "new_config": True,
@@ -257,22 +261,21 @@ class TestConfigInit(unittest.TestCase):
         # Test case 3: Preserve existing arrays (capture output)
         capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
 
-        config_data = mock_save_json.call_args[0][1]
+        config_data = mock_save_config.call_args[0][1]
         self.assertEqual(config_data["ipv4"], ["my.domain.com", "my2.domain.com"])
         self.assertEqual(config_data["index4"], ["custom", "rule"])
 
         # Test case 4: Save failure
-        mock_save_json.reset_mock()
+        mock_save_config.reset_mock()
         mock_exit.reset_mock()
         mock_cli.return_value = {"new_config": True, "dns": "debug"}
-        mock_save_json.return_value = False
 
-        mock_stdout = MagicMock()
-        with patch("sys.stdout", new=mock_stdout):
+        # Mock save_config to raise an exception (simulating save failure)
+        mock_save_config.side_effect = Exception("Cannot write to file")
+
+        # When save_config raises an exception, the function should not write success message
+        with self.assertRaises(Exception):
             load_config(self.test_description, self.test_version, self.test_date)
-
-        mock_stdout.write.assert_not_called()  # No success message on failure
-        mock_exit.assert_called_once_with(0)
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")

@@ -5,13 +5,13 @@ Configuration loader for DDNS environment variables.
 """
 from ast import literal_eval
 from os import environ
-import logging
+from sys import stderr
 
 __all__ = ["load_config"]
 
 
-def try_parse_array_or_dict(value):
-    # type: (str) -> Any
+def _try_parse_array(value, key=None):
+    # type: (str, str|None) -> Any
     """解析数组值[], 非数组返回元素字符串（去除前后空格）"""
     if not value:
         return value
@@ -28,7 +28,7 @@ def try_parse_array_or_dict(value):
         try:
             return literal_eval(value)
         except Exception:
-            logging.warning("Failed to parse JSON array from value: %s", value)
+            stderr.write("Failed to parse JSON array from value: {}={}\n".format(key, value))
             pass
     # 返回去除前后空格的字符串
     return value
@@ -76,6 +76,6 @@ def load_config(prefix="DDNS_"):
 
         # 如果匹配到配置键，处理并存储值
         if config_key:
-            env_vars[config_key] = try_parse_array_or_dict(value)
+            env_vars[config_key] = _try_parse_array(value, key=key)
 
     return env_vars

@@ -8,7 +8,7 @@ from os import path
 from io import TextIOWrapper
 from subprocess import check_output
 from tempfile import gettempdir
-from logging import basicConfig, getLogger, INFO
+from logging import getLogger
 from time import time
 import sys
 
@@ -106,18 +106,6 @@ def main():
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
     config = load_config(__description__, __version__, build_date)
-    log_format = config.log_format  # type: str  # type: ignore
-    if log_format:
-        # A custom log format is already set; no further action is required.
-        pass
-    elif config.log_level < INFO:
-        # Override log format in debug mode to include filename and line number for detailed debugging
-        log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
-    elif config.log_level > INFO:
-        log_format = "%(asctime)s %(levelname)s: %(message)s"
-    else:
-        log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
-    basicConfig(level=config.log_level, format=log_format, datefmt=config.log_datefmt, filename=config.log_file)
 
     # dns provider class
     provider_class = get_provider_class(config.dns)
