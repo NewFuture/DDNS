@@ -6,15 +6,24 @@ applyTo: '**/*.py'
 
 ## Core Principles
 
+## Gihub Copilot Agent Usage
+
+- **Minimize Terminal Usage**: Use terminal commands sparingly to reduce complexity
+- **Windows Compatibility**: Avoid `&&` and `||` operators that may not work on all shells
+- **No Directory Changes**: Avoid `cd` commands; you are always in the project root
+- **terminal Usage**: run command `python3` instead of `python`, and this is the only command you should use
+
 ### Dependencies and Environment
+
 - **Standard Library Only**: Use only Python standard library modules unless explicitly permitted
 - **Self-Contained**: Code must run without third-party dependencies on Windows, macOS, and Linux
 - **No External Dependencies**: Avoid pip packages to ensure maximum compatibility and easy deployment
 
 ### Python 2.7 and 3.x Compatibility
+
 - **Primary Target**: Python 3.x is preferred
 - **Legacy Support**: When Python 2.7 compatibility is required, use `six` library patterns
-- **Forbidden Features**: 
+- **Forbidden Features**:
   - NO f-strings (not supported in Python 2.7)
   - NO `async`/`await` syntax
   - Avoid Python 3.6+ exclusive features when compatibility is needed
@@ -22,7 +31,8 @@ applyTo: '**/*.py'
 ## Project Architecture
 
 ### Directory Structure
-```
+
+```txt
 ddns/                    # Main application code
 ├── provider/           # DNS provider implementations
 │   ├── _base.py       # Abstract base classes (SimpleProvider, BaseProvider)
@@ -62,44 +72,53 @@ schema/                  # JSON schemas
 ### Provider Architecture
 
 #### SimpleProvider (Basic DNS Provider)
+
 **Purpose**: For DNS providers that only support simple record updates without querying existing records.
 
 **Must Implement**:
-- `set_record(domain, value, record_type="A", ttl=None, line=None, **extra)` 
-    - Updates or creates DNS records
-    - Should handle both creation and update logic, if supported by the provider
-    - Must return `True` on success, `False` on failure with appropriate error logging
-    - Should never raise exceptions for API failures
+
+- `set_record(domain, value, record_type="A", ttl=None, line=None, **extra)`
+  - Updates or creates DNS records
+  - Should handle both creation and update logic, if supported by the provider
+  - Must return `True` on success, `False` on failure with appropriate error logging
+  - Should never raise exceptions for API failures
 
 **Optional**:
+
 - `_validate()` - Custom authentication validation (has default implementation)
 
 **Available Methods**:
+
 - `_http(method, url, ...)` - HTTP/HTTPS requests with automatic error handling
 - `_mask_sensitive_data(data)` - Log-safe data masking for security (supports URL-encoded data)
 
 #### BaseProvider (Full CRUD DNS Provider - Recommended for Most Providers)
+
 **Purpose**: For DNS providers supporting complete DNS record management with query capabilities.
 
 **Must Implement**:
+
 - `_query_zone_id(domain)` - Retrieves zone ID for a domain by calling domain info or list domains/zones API
 - `_query_record(zone_id, subdomain, main_domain, record_type, line, extra)` - Finds existing DNS record by calling list records or query record API
 - `_create_record(zone_id, subdomain, main_domain, value, record_type, ttl, line, extra)` - Creates new DNS record by calling create record API
 - `_update_record(zone_id, old_record, value, record_type, ttl, line, extra)` - Updates existing DNS record by calling update record API
 
 **Recommended Practices**:
+
 - Implement a `_request()` method for signed/authenticated HTTP requests:
   - Should raise `Exception` or `RuntimeError` on blocking errors for fast failure
   - Should return `None` or appropriate default on recoverable errors (e.g., NotFound)
 - Use `self.logger` for consistent logging throughout the provider
 
 **Inherited Methods**:
+
 - `_http()` - HTTP requests with authentication error handling (raises RuntimeError on 401/403)
 - `set_record()` - Automatic record management (orchestrates the above abstract methods)
 
 ## Code Quality Standards
 
 ### Type Hints and Annotations
+
 ```python
 # Use complete type hints for all functions
 def update_record(self, record_id, value, ttl=None):
@@ -112,8 +131,8 @@ class Provider:
     auth_id = ""  # type: str
 ```
 
-
 ### Logging Best Practices
+
 ```python
 # Use structured logging with appropriate levels and consistent formatting
 self.logger.info("Updating record: %s => %s", domain, value)
@@ -129,12 +148,14 @@ self.logger.info("Request URL: %s", self._mask_sensitive_data(url))
 ## Documentation Standards
 
 ### Documentation Guidelines
+
 - **User Documentation** (`doc/`): End-user guides, CLI usage, and deployment instructions
 - **Developer Documentation** (`doc/dev/`): API guides, architecture documentation, and contribution guidelines
 - **Code Documentation**: Inline docstrings and comments within source files
 - **Configuration Documentation**: JSON schemas with examples and validation rules
 
 ### Docstring Format
+
 ```python
 def create_record(self, zone_id, name, value, record_type="A"):
     # type: (str, str, str, str) -> bool
@@ -158,6 +179,7 @@ def create_record(self, zone_id, name, value, record_type="A"):
 ```
 
 ### Inline Comments
+
 ```python
 # Explain complex business logic with clear, concise comments
 # Attempt to resolve zone automatically by walking up the domain hierarchy
@@ -174,6 +196,7 @@ for i in range(2, len(domain_parts) + 1):
 All tests must be placed in the `tests/` directory, with a shared base test class for common functionality.
 
 ### Test Structure
+
 ```python
 # tests/test_provider_example.py
 from base_test import BaseProviderTestCase, MagicMock, patch
@@ -199,6 +222,7 @@ class TestExampleProvider(BaseProviderTestCase):
 ## Performance and Security
 
 ### HTTP Client Usage
+
 ```python
 # Always use the base class _http method for consistent behavior
 response = self._http("POST", "/api/records", 
@@ -215,24 +239,28 @@ if response is None:
 ## Development Workflow
 
 ### Code Validation
+
 - **Linting**: Use editor's Python extensions instead of command-line tools
 - **Type Checking**: Ensure Pylance compatibility
 - **Testing**: Run tests before committing changes
 - **Documentation**: Update relevant documentation when making changes
 
 ### Documentation Maintenance
+
 - **API Changes**: Update docstrings and `doc/dev/provider.md` for provider interface changes
 - **Configuration Changes**: Update JSON schemas in `schema/` directory
 - **User-Facing Changes**: Update CLI documentation in `doc/cli.md`
 - **Examples**: Keep code examples in documentation synchronized with actual implementation
 
 ### Terminal Usage Guidelines for Copilot Agent
+
 - **Minimize Usage**: Use terminal commands sparingly to reduce complexity
 - **Windows Compatibility**: Avoid `&&` and `||` operators that may not work on all shells
 - **No Directory Changes**: Use absolute paths instead of `cd` commands for reliability
 - **Avoid Manual Compilation**: Use editor extensions for syntax checking instead of `python -c`
 
 ### Common Anti-Patterns to Avoid
+
 ```python
 # DON'T: Use f-strings (incompatible with Python 2.7)
 error_msg = f"Failed to update {domain}"  # Not supported in Python 2.7
@@ -282,12 +310,12 @@ To create a new DNS provider, follow these steps:
 
 1. **Create a new file** in the `ddns/provider/` directory, e.g., `myprovider.py`.
 2. **Implement the provider class** inheriting from `BaseProvider` or `SimpleProvider` as appropriate based on the API capabilities.
-   * For the **BaseProvider** interface, implement these required methods:
+   - For the **BaseProvider** interface, implement these required methods:
      - `_query_zone_id(domain)`
      - `_query_record(zone_id, subdomain, main_domain, record_type, line, extra)`
      - `_create_record(zone_id, subdomain, main_domain, value, record_type, ttl, line, extra)`
      - `_update_record(zone_id, old_record, value, record_type, ttl, line, extra)`
-   * For the **SimpleProvider** interface, implement this required method:
+   - For the **SimpleProvider** interface, implement this required method:
      - `set_record(domain, value, record_type="A", ttl=None, line=None, **extra)`
 3. **Implement the `_request()` method** for authenticated API calls.
 4. **Add the provider to the `ddns/__init__.py`** file to make it available in the main package.

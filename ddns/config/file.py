@@ -77,6 +77,28 @@ def save_config(config_path, config):
     Raises:
         Exception: 保存失败时抛出异常
     """
+    # 补全默认配置
+    config = {
+        "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+        "dns": config.get("dns", "debug"),
+        "id": config.get("id", "YOUR ID or EMAIL for DNS Provider"),
+        "token": config.get("token", "YOUR TOKEN or KEY for DNS Provider"),
+        "ipv4": config.get("ipv4", ["ddns.newfuture.cc"]),
+        "index4": config.get("index4", ["default"]),
+        "ipv6": config.get("ipv6", []),
+        "index6": config.get("index6", []),
+        "ttl": config.get("ttl", 600),
+        "line": config.get("line", None),
+        "proxy": config.get("proxy", []),
+        "cache": config.get("cache", True),
+        "ssl": config.get("ssl", "auto"),
+        "log": {
+            "file": config.get("log_file"),
+            "level": config.get("log_level", "INFO"),
+            "format": config.get("log_format"),
+            "datefmt": config.get("log_datefmt"),
+        },
+    }
     try:
         with open(config_path, "w", encoding="utf-8") as f:
             content = json_encode(config, indent=2, ensure_ascii=False)

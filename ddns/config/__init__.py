@@ -16,31 +16,6 @@ from .env import load_config as load_env_config
 from .config import Config
 
 
-def _generate_config_exit(cli_config):
-    # type: (dict) -> None
-    """Create a new configuration."""
-    new_config = cli_config.get("new_config")  # type: str | None
-    if new_config is None or new_config is True:
-        # If --new-config is used without a specific path, use default config.json
-        new_config = "config.json"
-        if os.path.exists(new_config):
-            sys.stderr.write("The default %s already exists!\n" % new_config)
-            sys.stdout.write("Please use `--new-config=%s` to specify a new config file.\n" % new_config)
-            sys.exit(1)
-
-    config = Config(cli_config=cli_config).dict()
-    config["dns"] = config.get("dns", "debug")
-    config["id"] = cli_config.get("id", "YOUR ID or EMAIL for DNS Provider")
-    config["token"] = cli_config.get("token", "YOUR TOKEN or KEY for DNS Provider")
-    if not config["ipv4"] or len(config["ipv4"]) == 0:
-        config["ipv4"] = ["ddns.newfuture.cc"]
-    if not config["index4"] or len(config["index4"]) == 0:
-        config["index4"] = ["default"]
-    save_config(new_config, config)
-    sys.stdout.write("%s is generated.\n" % new_config)
-    sys.exit(0)
-
-
 def _get_config_path(config_path):
     # type: (str|None) -> str | None
     if not config_path:
@@ -88,11 +63,8 @@ Copyright (c) NewFuture (MIT License)
     )
     # Load CLI configuration first
     cli_config = load_cli_config(description, doc, version, date)
-    # Handle --new-config flag before loading other configs
-    if cli_config.get("new_config") is not None:
-        _generate_config_exit(cli_config)
-
     env_config = load_env_config()
+
     config_path = _get_config_path(cli_config.get("config", env_config.get("config")))
     json_config = load_file_config(config_path) if config_path else {}
 
@@ -111,19 +83,28 @@ Copyright (c) NewFuture (MIT License)
     else:
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
     logging.basicConfig(level=conf.log_level, format=log_format, datefmt=conf.log_datefmt, filename=conf.log_file)
+    logger = logging.getLogger().getChild("config")  # type: logging.Logger
+
+    if len(cli_config) <= 1 and len(json_config) == 0 and len(env_config) == 0:
+        # No configuration provided, use CLI and environment variables only
+        logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
+        logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
+        save_config(config_path or "config.json", cli_config)
+        logger.info("No config file found, generated default config at `%s`.", config_path or "config.json")
+        sys.exit(1)
 
     # logger 初始化之后再开始记log
     if config_path:
-        logging.info("load config: %s", config_path)
+        logger.info("load config: %s", config_path)
     else:
-        logging.debug("No config file specified, using CLI and environment variables only.")
+        logger.debug("No config file specified, using CLI and environment variables only.")
 
     if not conf.dns:
         if cli_config.get("debug"):
             conf.dns = "debug"
         else:
-            logging.critical("No DNS provider specified! Please set `dns` in config or use `--dns` CLI option.")
-            sys.exit(1)
+            logger.critical("No DNS provider specified! Please set `dns` in config or use `--dns` CLI option.")
+            sys.exit(2)
 
     return conf
 

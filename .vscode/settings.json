@@ -26,5 +26,10 @@
     "editor.bracketPairColorization.enabled": true,
     "flake8.args": [
         "--max-line-length=120"
-    ]
+    ],
+    "github.copilot.chat.agent.terminal.allowList": {
+        "python": true,
+        "python3": true,
+        "echo": true
+    },
 }

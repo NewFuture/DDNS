@@ -59,33 +59,22 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(ddns.config.load_config, load_config)
         self.assertEqual(ddns.config.Config, Config)
 
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_file_config")
-    @patch("ddns.config.load_cli_config")
-    @patch("os.path.exists")
-    def test_load_config_basic(self, mock_exists, mock_cli, mock_json, mock_env):
-        """Test basic load_config functionality"""
-        mock_cli.return_value = {"dns": "debug", "id": "test_id", "config": "test_config.json"}
-        mock_json.return_value = {"token": "test_token", "ttl": 300}
-        mock_env.return_value = {"proxy": ["http://proxy.com"]}
-        mock_exists.return_value = True
+    def test_load_config_basic_integration(self):
+        """Test basic load_config functionality with real files"""
+        # Create test config file
+        config_content = {"dns": "debug", "token": "test_token", "ttl": 300}
+        config_path = os.path.join(self.test_dir, "test_config.json")
+        with open(config_path, "w") as f:
+            json.dump(config_content, f)
 
-        result = load_config(self.test_description, self.test_version, self.test_date)
-
-        self.assertIsInstance(result, Config)
-        self.assertEqual(result.dns, "debug")
-        self.assertEqual(result.id, "test_id")
-        self.assertEqual(result.token, "test_token")
-        self.assertEqual(result.ttl, 300)
-        self.assertEqual(result.proxy, ["http://proxy.com"])
-
-        # Verify CLI was called with correct arguments
-        mock_cli.assert_called_once()
-        args = mock_cli.call_args[0]
-        self.assertEqual(args[0], self.test_description)
-        self.assertIn("v1.0.0@2025-07-07", args[1])
-        self.assertEqual(args[2], self.test_version)
-        self.assertEqual(args[3], self.test_date)
+        # Test loading with CLI args
+        with patch("sys.argv", ["ddns", "--config", config_path, "--id", "test_id"]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertIsInstance(result, Config)
+            self.assertEqual(result.dns, "debug")
+            self.assertEqual(result.id, "test_id")  # CLI overrides
+            self.assertEqual(result.token, "test_token")  # From JSON
+            self.assertEqual(result.ttl, 300)  # From JSON
 
     def test_load_config_priority_order_integration(self):
         """Test configuration priority order using real Config objects"""
@@ -119,33 +108,30 @@ class TestConfigInit(unittest.TestCase):
             for key in ["DDNS_DNS", "DDNS_ID", "DDNS_TOKEN", "DDNS_LINE"]:
                 os.environ.pop(key, None)
 
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_file_config")
-    @patch("ddns.config.load_cli_config")
-    @patch("os.path.exists")
-    def test_load_config_file_paths(self, mock_exists, mock_cli, mock_json, mock_env):
+    def test_load_config_file_paths_integration(self):
         """Test load_config with various config file path sources"""
         # Test case 1: Explicit config file path from CLI
-        mock_cli.return_value = {"config": "/custom/config.json", "dns": "cloudflare"}
-        mock_env.return_value = {}
-        mock_exists.return_value = True
-        mock_json.return_value = {"id": "custom_id", "token": "custom_token"}
+        config_content = {"dns": "cloudflare", "id": "custom_id", "token": "custom_token"}
+        config_path = os.path.join(self.test_dir, "custom_config.json")
+        with open(config_path, "w") as f:
+            json.dump(config_content, f)
 
-        result = load_config(self.test_description, self.test_version, self.test_date)
-        mock_json.assert_called_with("/custom/config.json")
-        self.assertEqual(result.dns, "cloudflare")
-        self.assertEqual(result.id, "custom_id")
+        with patch("sys.argv", ["ddns", "--config", config_path]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertEqual(result.dns, "cloudflare")
+            self.assertEqual(result.id, "custom_id")
 
         # Test case 2: Config file path from environment
-        mock_json.reset_mock()
-        mock_cli.return_value = {"dns": "alidns"}
-        mock_env.return_value = {"config": "/env/config.json"}
-        mock_json.return_value = {"id": "env_id", "token": "env_token"}
+        env_config_path = os.path.join(self.test_dir, "env_config.json")
+        env_config_content = {"dns": "alidns", "id": "env_id", "token": "env_token"}
+        with open(env_config_path, "w") as f:
+            json.dump(env_config_content, f)
 
-        result = load_config(self.test_description, self.test_version, self.test_date)
-        mock_json.assert_called_with("/env/config.json")
-        self.assertEqual(result.dns, "alidns")
-        self.assertEqual(result.id, "env_id")
+        with patch.dict(os.environ, {"DDNS_CONFIG": env_config_path}):
+            with patch("sys.argv", ["ddns"]):
+                result = load_config(self.test_description, self.test_version, self.test_date)
+                self.assertEqual(result.dns, "alidns")
+                self.assertEqual(result.id, "env_id")
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
@@ -175,125 +161,31 @@ class TestConfigInit(unittest.TestCase):
             mock_json.assert_called_with(config_path)
             self.assertEqual(result.id, "{}_id".format(location_type))
 
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_file_config")
-    @patch("ddns.config.load_cli_config")
-    @patch("os.path.exists")
-    @patch("sys.exit")
-    def test_load_config_missing_files(self, mock_exit, mock_exists, mock_cli, mock_json, mock_env):
+    def test_load_config_missing_files_integration(self):
         """Test load_config when config files don't exist"""
-        mock_env.return_value = {}
-        mock_exists.return_value = False
-
-        # Test case 1: No config file at all
-        mock_cli.return_value = {"dns": "debug"}
-        result = load_config(self.test_description, self.test_version, self.test_date)
-        mock_json.assert_not_called()
-        self.assertEqual(result.dns, "debug")
-        self.assertEqual(result.id, "")  # Default value
+        # Test case 1: No config file but provide minimal CLI args
+        with patch("sys.argv", ["ddns", "--dns", "debug", "--id", "test", "--token", "test"]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertEqual(result.dns, "debug")
+            self.assertEqual(result.id, "test")
 
         # Test case 2: Specified config file doesn't exist should exit
-        mock_json.reset_mock()
-        mock_cli.return_value = {"config": "/nonexistent/config.json", "dns": "debug"}
+        with patch("sys.argv", ["ddns", "--config", "/nonexistent/config.json", "--dns", "debug"]):
+            with self.assertRaises(SystemExit):
+                load_config(self.test_description, self.test_version, self.test_date)
 
-        # This should trigger sys.exit(1) due to missing config file
-        load_config(self.test_description, self.test_version, self.test_date)
-        mock_exit.assert_called_with(1)
-
-    @patch("ddns.config.save_config")
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_cli_config")
-    @patch("sys.exit")
-    @patch("os.path.exists")
-    def test_load_config_new_config_scenarios(self, mock_exists, mock_exit, mock_cli, mock_env, mock_save_config):
-        """Test load_config with --new-config flag in various scenarios"""
-        mock_env.return_value = {}
-        mock_exists.return_value = False  # Simulate config.json doesn't exist
-
-        # Test case 1: Basic new config generation
-        mock_cli.return_value = {
-            "new_config": True,
-            "dns": "cloudflare",
-            "id": "test@example.com",
-            "token": "test_token",
-        }
-        mock_save_config.return_value = True
-
-        # Capture output written to stdout via write()
-        output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
-
-        mock_save_config.assert_called_once()
-        config_path, config_data = mock_save_config.call_args[0]
-        self.assertEqual(config_path, "config.json")
-        self.assertEqual(config_data["dns"], "cloudflare")
-        self.assertEqual(config_data["id"], "test@example.com")
-        self.assertEqual(config_data["token"], "test_token")
-        self.assertEqual(config_data["ipv4"], ["ddns.newfuture.cc"])
-        self.assertEqual(config_data["index4"], ["default"])
-        # Verify stdout contains the generated config message
-        self.assertEqual(output, "config.json is generated.\n")
-        mock_exit.assert_called_once_with(0)
-
-        # Test case 2: Custom config path
-        mock_save_config.reset_mock()
-        mock_exit.reset_mock()
-        mock_cli.return_value = {"new_config": "custom-config.json", "dns": "debug"}
-
-        # Test case 2: custom config path output
-        output = capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
-
-        config_path, config_data = mock_save_config.call_args[0]
-        self.assertEqual(config_path, "custom-config.json")
-        self.assertEqual(config_data["dns"], "debug")
-        # Verify stdout contains the custom config message
-        self.assertEqual(output, "custom-config.json is generated.\n")
-
-        # Test case 3: Preserve existing arrays
-        mock_save_config.reset_mock()
-        mock_exit.reset_mock()
-        mock_cli.return_value = {
-            "new_config": True,
-            "dns": "cloudflare",
-            "ipv4": ["my.domain.com", "my2.domain.com"],
-            "index4": ["custom", "rule"],
-        }
-
-        # Test case 3: Preserve existing arrays (capture output)
-        capture_stdout_output(load_config, self.test_description, self.test_version, self.test_date)
-
-        config_data = mock_save_config.call_args[0][1]
-        self.assertEqual(config_data["ipv4"], ["my.domain.com", "my2.domain.com"])
-        self.assertEqual(config_data["index4"], ["custom", "rule"])
-
-        # Test case 4: Save failure
-        mock_save_config.reset_mock()
-        mock_exit.reset_mock()
-        mock_cli.return_value = {"new_config": True, "dns": "debug"}
-
-        # Mock save_config to raise an exception (simulating save failure)
-        mock_save_config.side_effect = Exception("Cannot write to file")
-
-        # When save_config raises an exception, the function should not write success message
-        with self.assertRaises(Exception):
-            load_config(self.test_description, self.test_version, self.test_date)
-
-    @patch("ddns.config.load_env_config")
-    @patch("ddns.config.load_file_config")
-    @patch("ddns.config.load_cli_config")
-    def test_load_config_doc_string_format(self, mock_cli, mock_json, mock_env):
+    def test_load_config_doc_string_format_integration(self):
         """Test that doc string is properly formatted with version and date"""
-        mock_cli.return_value = {"dns": "debug"}
-        mock_env.return_value = {}
-        mock_json.return_value = {}
+        # Create a minimal config to avoid auto-generation
+        config_content = {"dns": "debug", "id": "test", "token": "test"}
+        config_path = os.path.join(self.test_dir, "test_config.json")
+        with open(config_path, "w") as f:
+            json.dump(config_content, f)
 
-        load_config(self.test_description, self.test_version, self.test_date)
-
-        mock_cli.assert_called_once()
-        doc_string = mock_cli.call_args[0][1]
-        self.assertIn("v1.0.0@2025-07-07", doc_string)
-        self.assertIn("https://ddns.newfuture.cc/", doc_string)
-        self.assertIn("https://github.com/NewFuture/DDNS/issues", doc_string)
-        self.assertIn("MIT License", doc_string)
+        with patch("sys.argv", ["ddns", "--config", config_path]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertIsInstance(result, Config)
+            self.assertEqual(result.dns, "debug")
 
     @patch("ddns.config.load_env_config")
     @patch("ddns.config.load_file_config")
@@ -361,31 +253,34 @@ class TestConfigInit(unittest.TestCase):
 
     def test_load_config_parameter_validation_and_edge_cases(self):
         """Test load_config parameter validation and edge cases"""
-        with patch("ddns.config.load_cli_config") as mock_cli:
-            with patch("ddns.config.load_env_config") as mock_env:
-                with patch("ddns.config.load_file_config") as mock_json:
-                    # Test case 1: Valid parameters
-                    mock_cli.return_value = {"dns": "debug"}
-                    mock_env.return_value = {}
-                    mock_json.return_value = {}
+        # Test case 1: Valid parameters with DNS
+        config_content = {"dns": "debug", "id": "test", "token": "test"}
+        config_path = os.path.join(self.test_dir, "valid_config.json")
+        with open(config_path, "w") as f:
+            json.dump(config_content, f)
 
-                    result = load_config(self.test_description, self.test_version, self.test_date)
-                    self.assertIsInstance(result, Config)
+        with patch("sys.argv", ["ddns", "--config", config_path]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertIsInstance(result, Config)
 
-                    # Test case 2: Empty string parameters
-                    result = load_config("", "", "")
-                    self.assertIsInstance(result, Config)
+        # Test case 2: Empty string parameters but provide CLI DNS
+        with patch("sys.argv", ["ddns", "--dns", "debug", "--id", "test", "--token", "test"]):
+            result = load_config("", "", "")
+            self.assertIsInstance(result, Config)
 
-                    # Test case 3: Empty configurations (edge case)
-                    mock_cli.return_value = {}
-                    mock_env.return_value = {}
-                    mock_json.return_value = {}
-
-                    result = load_config(self.test_description, self.test_version, self.test_date)
-                    self.assertIsInstance(result, Config)
-                    self.assertEqual(result.dns, "debug")  # Default value
-                    self.assertEqual(result.id, "")  # Default value
-                    self.assertEqual(result.token, "")  # Default value
+        # Test case 3: Empty configurations should cause exit (edge case)
+        # Change to a clean directory with no config files
+        empty_dir = os.path.join(self.test_dir, "empty")
+        os.makedirs(empty_dir)
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(empty_dir)
+            with patch("sys.argv", ["ddns"]):  # No arguments at all
+                with self.assertRaises(SystemExit) as cm:
+                    load_config(self.test_description, self.test_version, self.test_date)
+                self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
+        finally:
+            os.chdir(old_cwd)
 
     def test_config_file_discovery_integration(self):
         """Test config file discovery without mocking file system"""

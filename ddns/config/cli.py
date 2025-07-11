@@ -6,7 +6,11 @@ Configuration loader for DDNS command-line interface.
 
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
 from logging import getLevelName
+from os import path as os_path
 import platform
+import sys
+
+from .file import save_config
 
 __all__ = ["load_config", "str_bool"]
 
@@ -70,6 +74,28 @@ class ExtendAction(Action):
         setattr(namespace, self.dest, items)
 
 
+class NewConfigAction(Action):
+    """生成配置文件并退出程序"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+
+        # 获取配置文件路径
+        if values and values != "true":
+            config_path = str(values)  # type: str
+        else:
+            config_path = getattr(namespace, "config", "config.json")  # type: str
+            if os_path.exists(config_path):
+                sys.stderr.write("The default %s already exists!\n" % config_path)
+                sys.stdout.write("Please use `--new-config=%s` to specify a new config file.\n" % config_path)
+                sys.exit(1)
+        # 获取当前已解析的参数
+        current_config = {k: v for k, v in vars(namespace).items() if v is not None}
+        # 保存配置文件
+        save_config(config_path, current_config)
+        sys.stdout.write("%s is generated.\n" % config_path)
+        sys.exit(0)
+
+
 def load_config(description, doc, version, date):
     # type: (str, str, str, str) -> dict
     """
@@ -100,15 +126,8 @@ def load_config(description, doc, version, date):
     parser.add_argument("-c", "--config", metavar="FILE", help="load config file [配置文件路径]")
     parser.add_argument("--debug", action="store_true", help="debug mode [开启调试模式]")
     parser.add_argument(
-        "--new-config",
-        metavar="FILE",
-        dest="new_config",
-        type=str_bool,
-        nargs="?",
-        const=True,
-        help="generate a new config [生成配置文件]",
+        "--new-config", metavar="FILE", action=NewConfigAction, nargs="?", help="generate new config [生成配置文件]"
     )
-    parser.add_argument("--new_config", type=str_bool, nargs="?", const=True, help=SUPPRESS)
 
     # 参数定义
     parser.add_argument(

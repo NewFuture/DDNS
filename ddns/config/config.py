@@ -74,7 +74,7 @@ class Config(object):
         self._env_config = env_config or {}
 
         # dns related configurations
-        self.dns = self._get("dns", "debug")  # type: str
+        self.dns = self._get("dns", "")  # type: str
         self.id = self._get("id", "")  # type: str
         self.token = self._get("token", "")  # type: str
         self.endpoint = self._get("endpoint")  # type: str | None
