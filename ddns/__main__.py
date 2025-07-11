@@ -4,19 +4,16 @@ DDNS
 @author: NewFuture, rufengsuixing
 """
 
-from os import path
 from io import TextIOWrapper
 from subprocess import check_output
-from tempfile import gettempdir
 from logging import getLogger
-from time import time
 import sys
 
 from .__init__ import __version__, __description__, build_date
 from .config import load_config, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
 from .util import ip
-from .util.cache import Cache
+from .cache import Cache
 
 logger = getLogger()
 # Set user agent for All Providers
@@ -49,26 +46,14 @@ def get_ip(ip_type, rules):
     return None
 
 
-def change_dns_record(dns, **kw):
-    # type: (SimpleProvider,  **(Any)) -> bool
-    record_type, domain = kw["record_type"], kw["domain"]
-    try:
-        return dns.set_record(domain, kw["ip"], record_type=record_type, ttl=kw["ttl"], line=kw.get("line"))
-    except Exception as e:
-        logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
-    return False
-
-
 def update_ip(dns, cache, index_rule, domains, record_type, config):
     # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config) -> bool | None
     """
-    更新IP
+    更新IP并变更DNS记录
     """
-    # ipname = "ipv" + ip_type
     if not domains:
         return None
 
-    # index_rule = getattr(config, "index" + ip_type, "default")  # type: str # type: ignore
     ip_type = "4" if record_type == "A" else "6"
     address = get_ip(ip_type, index_rule)
     if not address:
@@ -77,25 +62,42 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
 
     update_success = False
 
-    # Check cache and update each domain individually
     for domain in domains:
         domain = domain.lower()
         cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
             logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
-            update_success = True  # At least one domain is successfully cached
+            update_success = True
         else:
-            # Update domain that is not cached or has different IP
-            if change_dns_record(
-                dns, domain=domain, ip=address, record_type=record_type, ttl=config.ttl, line=config.line
-            ):
-                logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-                update_success = True
-                # Cache successful update immediately
-                if isinstance(cache, dict):
-                    cache[cache_key] = address
-
+            try:
+                result = dns.set_record(domain, address, record_type=record_type, ttl=config.ttl, line=config.line)
+                if result:
+                    logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                    update_success = True
+                    if isinstance(cache, dict):
+                        cache[cache_key] = address
+                else:
+                    logger.error("Failed to update %s record for %s", record_type, domain)
+            except Exception as e:
+                logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
     return update_success
+
+
+def run(config):
+    # type: (Config) -> bool
+    """
+    Run the DDNS update process
+    """
+    # dns provider class
+    provider_class = get_provider_class(config.dns)
+    dns = provider_class(
+        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
+    )
+    cache = Cache.new(config.cache, config.md5(), logger)
+    return (
+        update_ip(dns, cache, config.index4, config.ipv4, "A", config) is not False
+        and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config) is not False
+    )
 
 
 def main():
@@ -104,37 +106,10 @@ def main():
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-
+    logger.name = "ddns"
     config = load_config(__description__, __version__, build_date)
-
-    # dns provider class
-    provider_class = get_provider_class(config.dns)
-    dns = provider_class(
-        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
-    )
-
-    if config.cache is False:
-        cache = None
-    elif config.cache is True:
-        cache_path = path.join(gettempdir(), "ddns.%s.cache" % config.md5())
-        cache = Cache(cache_path, logger)
-    else:
-        cache = Cache(config.cache, logger)
-
-    if cache is None:
-        logger.info("Cache is disabled!")
-    elif cache.time > time():  # type: ignore
-        logger.info("Cache file is outdated.")
-        cache.clear()
-    elif len(cache) == 0:
-        logger.debug("Cache is empty.")
-    else:
-        logger.debug("Cache loaded with %d entries.", len(cache))
-
-    update_ip(dns, cache, config.index4, config.ipv4, "A", config)
-    update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config)
+    run(config)
 
 
 if __name__ == "__main__":
-    logger.name = "ddns"
     main()

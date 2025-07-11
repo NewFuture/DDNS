@@ -5,14 +5,12 @@ Test cases for cache module
 @author: GitHub Copilot
 """
 
-import unittest
+from __init__ import patch, unittest
 
 import os
 import tempfile
 from time import sleep
-
-from __init__ import patch
-from ddns.util.cache import Cache  # noqa: E402
+from ddns.cache import Cache  # noqa: E402
 
 
 class TestCache(unittest.TestCase):
@@ -286,7 +284,7 @@ class TestCache(unittest.TestCase):
         cache["key1"] = "value1"
         cache.sync()  # This clears the __changed flag
 
-        with patch("ddns.util.cache.dump") as mock_dump:
+        with patch("ddns.cache.dump") as mock_dump:
             cache.sync()  # This should not call dump since no changes
             mock_dump.assert_not_called()
 
@@ -323,7 +321,7 @@ class TestCache(unittest.TestCase):
 
         cache = Cache(self.cache_file)
 
-        with patch("ddns.util.cache.load", side_effect=Exception("Test error")):
+        with patch("ddns.cache.load", side_effect=Exception("Test error")):
             with patch.object(cache, "_Cache__logger") as mock_logger:
                 cache.load()
                 mock_logger.warning.assert_called_once()

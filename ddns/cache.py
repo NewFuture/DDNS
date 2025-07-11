@@ -4,10 +4,11 @@ cache module
 文件缓存
 """
 
+from logging import getLogger, Logger  # noqa: F401
 from os import path, stat
 from pickle import dump, load
+from tempfile import gettempdir
 from time import time
-from logging import getLogger, Logger  # noqa: F401
 
 
 class Cache(dict):
@@ -150,3 +151,31 @@ class Cache(dict):
 
     def __del__(self):
         self.close()
+
+    @staticmethod
+    def new(config_cache, hash, logger):
+        # type: (str|bool, str, Logger) -> Cache|None
+        """
+        new cache from a file path.
+        :param path: Path to the cache file.
+        :param logger: Optional logger for debug messages.
+        :return: Cache instance with loaded data.
+        """
+        if config_cache is False:
+            cache = None
+        elif config_cache is True:
+            cache_path = path.join(gettempdir(), "ddns.%s.cache" % hash)
+            cache = Cache(cache_path, logger)
+        else:
+            cache = Cache(config_cache, logger)
+
+        if cache is None:
+            logger.debug("Cache is disabled!")
+        elif cache.time + 72 * 3600 < time():  # 72小时有效期
+            logger.info("Cache file is outdated.")
+            cache.clear()
+        elif len(cache) == 0:
+            logger.debug("Cache is empty.")
+        else:
+            logger.debug("Cache loaded with %d entries.", len(cache))
+        return cache
