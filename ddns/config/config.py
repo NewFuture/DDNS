@@ -118,42 +118,6 @@ class Config(object):
             return split_array_string(value)
         return value
 
-    def dict(self):
-        # type: () -> dict[str, Any]
-        """
-        Convert the Config object to a dictionary.
-
-        Returns:
-            dict: Dictionary representation of all configuration values.
-        """
-        log = {
-            "level": get_log_level(self.log_level) if isinstance(self.log_level, int) else self.log_level,
-            "format": self.log_format,
-            "file": self.log_file,
-            "datefmt": self.log_datefmt,
-        }
-        dict_var = {
-            # DNS provider settings
-            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-            "dns": self.dns,
-            "id": self.id,
-            "token": self.token,
-            "endpoint": self.endpoint,
-            "index4": self.index4,
-            "index6": self.index6,
-            "ipv4": self.ipv4,
-            "ipv6": self.ipv6,
-            "ttl": self.ttl,
-            "line": self.line,
-            # System settings
-            "proxy": self.proxy,
-            "cache": self.cache,
-            "ssl": self.ssl,
-            # Logging settings
-            "log": {k: v for k, v in log.items() if v is not None},
-        }
-        return {k: v for k, v in dict_var.items() if v is not None}
-
     def md5(self):
         # type: () -> str
         """
@@ -162,4 +126,25 @@ class Config(object):
         Returns:
             str: Hash value based on configuration attributes.
         """
-        return md5(str(self.dict()).encode("utf-8")).hexdigest()
+        dict_var = {
+            "dns": self.dns,
+            "id": self.id,
+            "token": self.token,
+            "endpoint": self.endpoint,
+            "index4": self.index4,
+            "index6": self.index6,
+            "ipv4": self.ipv4,
+            "ipv6": self.ipv6,
+            "line": self.line,
+            "ttl": self.ttl,
+            # System settings
+            "cache": self.cache,
+            "proxy": self.proxy,
+            "ssl": self.ssl,
+            # Logging settings
+            "log_level": self.log_level,
+            "log_format": self.log_format,
+            "log_file": self.log_file,
+            "log_datefmt": self.log_datefmt,
+        }
+        return md5(str(dict_var).encode("utf-8")).hexdigest()

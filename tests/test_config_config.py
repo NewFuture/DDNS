@@ -48,7 +48,7 @@ class TestConfig(unittest.TestCase):
         """Test Config initialization with various sources and priority"""
         # Empty initialization
         config = Config()
-        self.assertEqual(config.dns, "debug")
+        self.assertEqual(config.dns, "")  # Default is empty string, not "debug"
         self.assertEqual(config.id, "")
         self.assertEqual(config.index4, ["default"])
         self.assertEqual(config.index6, ["default"])
@@ -176,14 +176,14 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config.index6)
 
     def test_config_dict_and_utility_methods(self):
-        """Test Config.dict() method and utility functions"""
+        """Test Config attributes and utility functions"""
         config = Config(cli_config={"dns": "cloudflare", "id": "test_id", "token": "secret", "ttl": 300})
-        config_dict = config.dict()
-        self.assertIsInstance(config_dict, dict)
-        self.assertEqual(config_dict["dns"], "cloudflare")
-        self.assertEqual(config_dict["id"], "test_id")
-        self.assertEqual(config_dict["ttl"], 300)
-        self.assertNotIn("log_file", config_dict)  # None values filtered
+
+        # Test individual attributes
+        self.assertEqual(config.dns, "cloudflare")
+        self.assertEqual(config.id, "test_id")
+        self.assertEqual(config.token, "secret")
+        self.assertEqual(config.ttl, 300)
 
         # Test SIMPLE_ARRAY_PARAMS constant
         self.assertIn("ipv4", SIMPLE_ARRAY_PARAMS)

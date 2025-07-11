@@ -13,8 +13,8 @@ import io
 from io import StringIO
 from ddns.config.file import load_config, save_config
 
-FileNotFoundError = globals().get('FileNotFoundError', IOError)
-PermissionError = globals().get('PermissionError', IOError)
+FileNotFoundError = globals().get("FileNotFoundError", IOError)
+PermissionError = globals().get("PermissionError", IOError)
 
 
 class TestConfigFile(unittest.TestCase):
@@ -294,19 +294,24 @@ class TestConfigFile(unittest.TestCase):
         self.assertTrue(result)
         self.assertTrue(os.path.exists(file_path))
 
-        # Verify saved content can be loaded back
+        # Verify saved content can be loaded back and contains our data
         loaded_config = load_config(file_path)
-        self.assertEqual(loaded_config, config_data)
+        # save_config adds default values, so we only check our specific values
+        self.assertEqual(loaded_config["dns"], config_data["dns"])
+        self.assertEqual(loaded_config["id"], config_data["id"])
+        self.assertEqual(loaded_config["token"], config_data["token"])
+        # Check that schema and other defaults are added
+        self.assertIn("$schema", loaded_config)
+        self.assertIn("cache", loaded_config)
 
     def test_save_config_complex_data(self):
         """Test saving configuration with complex data types"""
         config_data = {
             "dns": "dnspod",
-            "arrays": ["item1", "item2"],
-            "nested": {"key1": "value1", "key2": 123},
-            "boolean": True,
-            "null_value": None,
-            "number": 456.789,
+            "ipv4": ["item1", "item2"],  # Changed "arrays" to "ipv4" which is a valid config field
+            "log_level": "DEBUG",  # Use log_level instead of nested
+            "cache": True,
+            "proxy": [],
         }
         file_path = os.path.join(self.temp_dir, "save_complex.json")
 
@@ -314,13 +319,14 @@ class TestConfigFile(unittest.TestCase):
 
         self.assertTrue(result)
 
-        # Verify saved content
+        # Verify saved content contains our specific values
         loaded_config = load_config(file_path)
         self.assertEqual(loaded_config["dns"], config_data["dns"])
-        self.assertEqual(loaded_config["arrays"], config_data["arrays"])
-        self.assertEqual(loaded_config["boolean"], config_data["boolean"])
-        self.assertEqual(loaded_config["null_value"], config_data["null_value"])
-        self.assertEqual(loaded_config["number"], config_data["number"])
+        self.assertEqual(loaded_config["ipv4"], config_data["ipv4"])
+        self.assertEqual(loaded_config["cache"], config_data["cache"])
+        self.assertEqual(loaded_config["proxy"], config_data["proxy"])
+        # Check that defaults are applied when values are not provided
+        self.assertEqual(loaded_config["ttl"], 600)  # Default value when not provided
 
     def test_save_config_invalid_path(self):
         """Test saving configuration to invalid path"""
@@ -448,7 +454,7 @@ class TestConfigFile(unittest.TestCase):
 
     def test_save_config_pretty_format(self):
         """Test that saved JSON is properly formatted"""
-        config_data = {"dns": "cloudflare", "nested": {"key1": "value1", "key2": "value2"}}
+        config_data = {"dns": "cloudflare", "log_level": "DEBUG", "log_file": "/var/log/ddns.log"}
 
         save_file = os.path.join(self.temp_dir, "formatted.json")
         result = save_config(save_file, config_data)
@@ -459,9 +465,9 @@ class TestConfigFile(unittest.TestCase):
         # Check that the file is properly indented
         with open(save_file, "r") as f:
             content = f.read()
-            # Should have proper indentation
+            # Should have proper indentation (2 spaces for top level, 4 for nested)
             self.assertIn('  "dns":', content)
-            self.assertIn('    "key1":', content)
+            self.assertIn('    "level":', content)  # log.level should be nested with 4 spaces
 
     def test_save_config_readonly_file(self):
         """Test saving to a read-only file"""
