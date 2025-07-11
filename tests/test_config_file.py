@@ -13,6 +13,8 @@ import io
 from io import StringIO
 from ddns.config.file import load_config, save_config
 
+FileNotFoundError = globals().get('FileNotFoundError', IOError)
+PermissionError = globals().get('PermissionError', IOError)
 
 class TestConfigFile(unittest.TestCase):
     """Test cases for configuration file loading and saving"""

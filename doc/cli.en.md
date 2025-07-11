@@ -20,56 +20,34 @@ python -m ddns -h
 
 ## Parameter List
 
-| Long Parameter  | Short | Type            | Description                                      |
-| --------------- | ----- | --------------- | ------------------------------------------------ |
-| `--help`        | `-h`  | Flag            | Show help message and exit                       |
-| `--version`     | `-v`  | Flag            | Show version information and exit                |
-| `--config`      | `-c`  | String          | Specify configuration file path                  |
-| `--new-config`  |       | Flag/String     | Generate new configuration file                  |
-| `--dns`         |       | Choice          | DNS service provider                             |
-| `--endpoint`    |       | String          | API endpoint URL for custom or private API      |
-| `--id`          |       | String          | API access ID or authorization account          |
-| `--token`       |       | String          | API authorization token or key                  |
-| `--ipv4`        |       | String List     | IPv4 domain list, repeat parameter for multiple |
-| `--ipv6`        |       | String List     | IPv6 domain list, repeat parameter for multiple |
-| `--index4`      |       | String/Number List | IPv4 address detection methods               |
-| `--index6`      |       | String/Number List | IPv6 address detection methods               |
-| `--ttl`         |       | Integer         | DNS record TTL time (seconds)                   |
-| `--line`        |       | String          | DNS resolution line, ISP line selection         |
-| `--proxy`       |       | String List     | HTTP proxy settings, repeat for multiple        |
-| `--cache`       |       | Boolean/String  | Enable cache or custom cache path               |
-| `--no-cache`    |       | Flag            | Disable cache (equivalent to --cache=false)     |
-| `--ssl`         |       | String          | SSL certificate verification method              |
-| `--no-ssl`      |       | Flag            | Disable SSL verification (equivalent to --ssl=false) |
-| `--debug`       |       | Flag            | Enable debug mode (same as --log_level=DEBUG)   |
-| `--log_file`    |       | String          | Log file path, outputs to console if not specified |
-| `--log_level`   |       | String          | Log level                                        |
-| `--log_format`  |       | String          | Log format string                                |
-| `--log_datefmt` |       | String          | Date time format string                          |
+| Parameter          |     Type    | Description                                                                                                                                                               | Example                                                  |
+| --------------- | :---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `-h, --help`    |     Flag    | Show help message and exit                                                                                                                                                | `--help`                                                 |
+| `-v, --version` |     Flag    | Show version information and exit                                                                                                                                         | `--version`                                              |
+| `-c, --config`  |    String   | Specify the path to the configuration file                                                                                                                                | `--config config.json`                                   |
+| `--new-config`  | Flag/String | Generate a new config file (optional file path)                                                                                                                           | `--new-config` <br> `--new-config=config.json`           |
+| `--debug`       |     Flag    | Enable debug mode                                                                                                                                                         | `--debug`                                                |
+| `--dns`         |    Choice   | [DNS Providers](providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--endpoint`    |    String   | Custom API endpoint URL (useful for self-hosted services)                                                                                                                 | `--endpoint https://api.private.com`                     |
+| `--id`          |    String   | API Access ID, email, or Access Key                                                                                                                                       | `--id user@example.com`                                  |
+| `--token`       |    String   | API token or secret key                                                                                                                                                   | `--token abcdef123456`                                   |
+| `--ipv4`        | String List | List of domain names for IPv4, repeat the option for multiple domains                                                                                                     | `--ipv4 test.com --ipv4 4.test.com`                      |
+| `--ipv6`        | String List | List of domain names for IPv6, repeat the option for multiple domains                                                                                                     | `--ipv6 test.com`                                        |
+| `--index4`      |     List    | Methods to retrieve IPv4 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public` <br> `--index4 "regex:192\\.168\\..*"` |
+| `--index6`      |     List    | Methods to retrieve IPv6 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0` <br> `--index6 public`                      |
+| `--ttl`         |   Integer   | DNS record TTL time in seconds                                                                                                                                            | `--ttl 600`                                              |
+| `--line`        |    String   | DNS resolution line (e.g. ISP line)                                                                                                                                       | `--line 电信` <br> `--line telecom`                        |
+| `--proxy`       | String List | HTTP proxy settings, format: IP\:Port or `DIRECT`                                                                                                                         | `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--cache`       | Flag/String | Enable cache or specify custom cache path                                                                                                                                 | `--cache` <br> `--cache=/path/to/cache`                  |
+| `--no-cache`    |     Flag    | Disable cache (equivalent to `--cache=false`)                                                                                                                             | `--no-cache`                                             |
+| `--ssl`         |    String   | SSL certificate verification: true, false, auto, or file path                                                                                                             | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`         |
+| `--no-ssl`      |     Flag    | Disable SSL verification (equivalent to `--ssl=false`)                                                                                                                    | `--no-ssl`                                               |
+| `--log_file`    |    String   | Log file path. If not set, logs are output to the console                                                                                                                 | `--log_file=/var/log/ddns.log`                           |
+| `--log_level`   |    String   | Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL                                                                                                                      | `--log_level=ERROR`                                      |
+| `--log_format`  |    String   | Log format string (compatible with Python `logging` module)                                                                                                               | `--log_format="%(asctime)s:%(message)s"`                 |
+| `--log_datefmt` |    String   | Date/time format string for logs                                                                                                                                          | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
 
-Where `--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version` are command line only parameters.
-
-### Parameter Value Examples
-
-| Parameter    | Possible Values                              | Example                                   |
-|--------------|----------------------------------------------|-------------------------------------------|
-| `--dns`      | 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, he, huaweidns, noip, tencentcloud | `--dns cloudflare`                       |
-| `--endpoint` | URL address                                  | `--endpoint https://api.private.com`     |
-| `--id`       | API ID, email, Access Key                   | `--id user@example.com`                  |
-| `--token`    | API Token, Secret Key                       | `--token abcdef123456`                   |
-| `--new-config`| true, false, file path                     | `--new-config`, `--new-config=config.json` |
-| `--ipv4`     | Domain names                                 | `--ipv4 example.com --ipv4 sub.example.com` |
-| `--ipv6`     | Domain names                                 | `--ipv6 example.com`                     |
-| `--index4`   | number, default, public, url:, regex:, cmd:, shell: | `--index4 public`, `--index4 "regex:192\\.168\\..*"` |
-| `--index6`   | number, default, public, url:, regex:, cmd:, shell: | `--index6 0`, `--index6 public`           |
-| `--ttl`      | Seconds                                      | `--ttl 600`                              |
-| `--line`     | Line name                                    | `--line telecom`, `--line unicom`        |
-| `--proxy`    | IP:port, DIRECT                              | `--proxy 127.0.0.1:1080 --proxy DIRECT` |
-| `--cache`    | true, false, file path                      | `--cache=true`, `--cache=/path/to/cache.json` |
-| `--ssl`      | true, false, auto, file path                | `--ssl false`, `--ssl /path/to/cert.pem` |
-| `--debug`    | (no value)                                   | `--debug`                                |
-| `--log_file` | File path                                    | `--log_file=/var/log/ddns.log`          |
-| `--log_level`| DEBUG, INFO, WARNING, ERROR, CRITICAL       | `--log_level=DEBUG`                      |
+> **Note**: Where `--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version` are command line only parameters.
 
 ## DNS Provider Values
 

@@ -9,53 +9,28 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 > `export DDNS_xxx="xxx"` command applies to the current host
 > `docker run -e DDNS_xxx="xxx"` command applies to the container
 
-### Environment Variable Naming Rules
-
-| Config Parameter | Environment Variable | Example |
-|------------------|---------------------|---------|
-| `id` | `DDNS_ID` or `ddns_id` | `DDNS_ID=12345` |
-| `token` | `DDNS_TOKEN` or `ddns_token` | `DDNS_TOKEN=mytokenkey` |
-| `log_level` | `DDNS_LOG_LEVEL` or `ddns_log_level` | `DDNS_LOG_LEVEL=DEBUG` |
-| `log_file` | `DDNS_LOG_FILE` or `ddns_log_file` | `DDNS_LOG_FILE=/var/log/ddns.log` |
-
 ## Complete Environment Variables List
 
-The following table lists all supported DDNS environment variables:
+| Environment Variable     | Accepted Values                                                                                     | Description                              | Example                                                     |
+|--------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------|-------------------------------------------------------------|
+| `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
+| `DDNS_ID`                | Depends on the provider                                                                              | API account or ID                        | `DDNS_ID="user@example.com"`                                |
+| `DDNS_TOKEN`             | Depends on the provider                                                                              | API token or secret                      | `DDNS_TOKEN="abcdef123456"`                                 |
+| `DDNS_ENDPOINT`          | URL (starting with http or https)                                                                   | Custom API endpoint                       | `DDNS_ENDPOINT=https://api.dns.cn`                          |
+| `DDNS_IPV4`              | Domains as array or comma-separated string                                                           | List of IPv4 domains                      | `DDNS_IPV4='["t.com","4.t.com"]'`                           |
+| `DDNS_IPV6`              | Domains as array or comma-separated string                                                           | List of IPv6 domains                      | `DDNS_IPV6=t.com,6.t.com`                                   |
+| `DDNS_INDEX4`            | Number, `default`, `public`, `url:`, `regex:`, `cmd:`, `shell:`, or an array of them                | IPv4 address detection methods            | `DDNS_INDEX4="[0,'regex:192.168.*']"`                       |
+| `DDNS_INDEX6`            | Number, `default`, `public`, `url:`, `regex:`, `cmd:`, `shell:`, or an array of them                | IPv6 address detection methods            | `DDNS_INDEX6=public`                                        |
+| `DDNS_TTL`               | Integer (seconds), varies by provider                                                                | DNS record TTL                            | `DDNS_TTL=600`                                              |
+| `DDNS_LINE`              | ISP line such as: 电信, 联通, 移动, or provider-specific values                                     | DNS resolution line                       | `DDNS_LINE=电信`                                            |
+| `DDNS_PROXY`             | IP:port or `DIRECT`, multiple values separated by semicolons                                        | HTTP proxy settings                       | `DDNS_PROXY="127.0.0.1:1080;DIRECT"`                        |
+| `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
+| `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
+| `DDNS_LOG_LEVEL`         | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                                     | Logging level                             | `DDNS_LOG_LEVEL="DEBUG"`                                    |
+| `DDNS_LOG_FILE`          | File path                                                                                            | Output log file (default: stdout)         | `DDNS_LOG_FILE="/tmp/ddns.log"`                             |
+| `DDNS_LOG_FORMAT`        | Python logging format string                                                                         | Log format template                       | `DDNS_LOG_FORMAT="%(message)s"`                             |
+| `DDNS_LOG_DATEFMT`       | Date-time format string                                                                              | Log timestamp format                      | `DDNS_LOG_DATEFMT="%m-%d %H:%M"`                            |
 
-| Environment Variable | Type | Default Value | Description |
-|---------------------|------|---------------|-------------|
-| `DDNS_ID` | String | None | API access ID or user identifier |
-| `DDNS_TOKEN` | String | None | API authorization token or key |
-| `DDNS_DNS` | String | `dnspod` | DNS service provider |
-| `DDNS_ENDPOINT` | String | None | API endpoint URL for custom or private API |
-| `DDNS_IPV4` | Array/String | None | IPv4 domain list |
-| `DDNS_IPV6` | Array/String | None | IPv6 domain list |
-| `DDNS_INDEX4` | Array/String/Number | `["default"]` | IPv4 address detection methods |
-| `DDNS_INDEX6` | Array/String/Number | `["default"]` | IPv6 address detection methods |
-| `DDNS_TTL` | Integer | None | DNS resolution TTL time (seconds) |
-| `DDNS_LINE` | String | None | DNS resolution line, ISP line selection |
-| `DDNS_PROXY` | Array/String | None | HTTP proxy settings |
-| `DDNS_CACHE` | Boolean/String | `true` | Cache settings |
-| `DDNS_LOG_LEVEL` | String | `INFO` | Log level |
-| `DDNS_LOG_FILE` | String | None | Log file path |
-| `DDNS_LOG_FORMAT` | String | `%(asctime)s %(levelname)s [%(module)s]: %(message)s` | Log format string |
-| `DDNS_LOG_DATEFMT` | String | `%Y-%m-%dT%H:%M:%S` | Date time format string |
-
-### Parameter Value Examples
-
-| Environment Variable | Possible Values | Example |
-|---------------------|-----------------|---------|
-| `DDNS_DNS` | 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, he, huaweidns, noip, tencentcloud | `export DDNS_DNS="cloudflare"` |
-| `DDNS_IPV4` | JSON array, comma-separated string | `export DDNS_IPV4='["example.com", "www.example.com"]'` |
-| `DDNS_IPV6` | JSON array, comma-separated string | `export DDNS_IPV6="example.com,ipv6.example.com"` |
-| `DDNS_INDEX4` | number, default, public, url:, regex:, cmd:, shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
-| `DDNS_INDEX6` | number, default, public, url:, regex:, cmd:, shell: | `export DDNS_INDEX6="public"` |
-| `DDNS_LINE` | Line names like default, telecom, unicom, mobile, etc. | `export DDNS_LINE="telecom"` |
-| `DDNS_PROXY` | IP:port, DIRECT, semicolon-separated list | `export DDNS_PROXY="127.0.0.1:1080;DIRECT"` |
-| `DDNS_CACHE` | true/false, file path | `export DDNS_CACHE="/path/to/cache.json"` |
-| `DDNS_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR, CRITICAL | `export DDNS_LOG_LEVEL="DEBUG"` |
-| `DDNS_LOG_FORMAT` | Format string | `export DDNS_LOG_FORMAT="%(asctime)s: %(message)s"` |
-| `DDNS_LOG_DATEFMT` | Date format string | `export DDNS_LOG_DATEFMT="%Y-%m-%d %H:%M:%S"` |
 
 ## Basic Configuration Parameters
 

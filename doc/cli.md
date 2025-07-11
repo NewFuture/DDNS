@@ -11,67 +11,44 @@
 ddns -h
 ```
 
-或者使用Python源码：
+或者使用Python：
 
 ```bash
-# python run.py [选项]
-python -m ddns -h
+# python3 -m ddns [选项]
+python3 -m ddns -h
 ```
 
 ## 参数列表
 
-| 长参数          | 短参数 | 类型            | 描述                                         |
-| --------------- | ------ | --------------- | -------------------------------------------- |
-| `--help`        | `-h`   | 标志            | 显示帮助信息并退出                           |
-| `--version`     | `-v`   | 标志            | 显示版本信息并退出                           |
-| `--config`      | `-c`   | 字符串          | 指定配置文件路径                             |
-| `--new-config`  |        | 标志/字符串     | 生成新的配置文件                             |
-| `--dns`         |        | 选择项          | [DNS服务提供商](providers/README.md)        |
-| `--endpoint`    |        | 字符串          | API 端点 URL，用于自定义或私有部署的API地址    |
-| `--id`          |        | 字符串          | API 访问 ID 或授权账户                       |
-| `--token`       |        | 字符串          | API 授权令牌或密钥                           |
-| `--ipv4`        |        | 字符串列表      | IPv4 域名列表，多个域名重复使用参数          |
-| `--ipv6`        |        | 字符串列表      | IPv6 域名列表，多个域名重复使用参数          |
-| `--index4`      |        | 字符串/数字列表 | IPv4 地址获取方式，支持多种获取方式          |
-| `--index6`      |        | 字符串/数字列表 | IPv6 地址获取方式，支持多种获取方式          |
-| `--ttl`         |        | 整数            | DNS 解析记录的 TTL 时间（秒）                |
-| `--line`        |        | 字符串          | DNS 解析线路，ISP线路选择                   |
-| `--proxy`       |        | 字符串列表      | HTTP 代理设置，支持多代理重复使用参数        |
-| `--cache`       |        | 布尔/字符串     | 是否启用缓存或自定义缓存路径                 |
-| `--no-cache`    |        | 标志            | 禁用缓存（等效于 --cache=false）             |
-| `--ssl`         |        | 字符串          | SSL证书验证方式                             |
-| `--no-ssl`      |        | 标志            | 禁用SSL验证（等效于 --ssl=false）            |
-| `--debug`       |        | 标志            | 开启调试模式                                |
-| `--log_file`    |        | 字符串          | 日志文件路径，不指定则输出到控制台           |
-| `--log_level`   |        | 字符串          | 日志级别                                     |
-| `--log_format`  |        | 字符串          | 日志格式字符串                               |
-| `--log_datefmt` |        | 字符串          | 日期时间格式字符串                           |
+| 参数              | 类型       | 描述                                                                                                                                       | 示例                                                       |
+| --------------- | :-----: | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `-h, --help`    | 标志       | 显示帮助信息并退出                                                                                                                                | `--help`                                                 |
+| `-v, --version` | 标志       | 显示版本信息并退出                                                                                                                                | `--version`                                              |
+| `-c, --config`  | 字符串      | 指定配置文件路径                                                                                                                                 | `--config config.json`                                   |
+| `--new-config`  | 标志/字符串   | 生成新的配置文件（可指定路径）                                                                                                                          | `--new-config` <br> `--new-config=config.json`           |
+| `--debug`       | 标志       | 开启调试模式                                                                                                                                   | `--debug`                                                |
+| `--dns`         | 选择项      | [DNS服务提供商](providers/README.md)包括：<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--endpoint`    | 字符串      | 自定义API 端点 URL(更换服务节点)                                                                                                            | `--endpoint https://api.private.com`                     |
+| `--id`          | 字符串      | API 访问 ID、邮箱或 Access ID                                                                                                                 | `--id user@example.com`                                  |
+| `--token`       | 字符串      | API 授权令牌或密钥（Secret Key）                                                                                                                  | `--token abcdef123456`                                   |
+| `--ipv4`        | 字符串列表    | IPv4 域名列表，多个域名重复使用参数                                                                                                                     | `--ipv4 test.com --ipv4 4.test.com`              |
+| `--ipv6`        | 字符串列表    | IPv6 域名列表，多个域名重复使用参数                                                                                                                     | `--ipv6 test.com`                                     |
+| `--index4`      | 列表 | IPv4 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public` <br> `--index4 "regex:192\\.168\\..*"` |
+| `--index6`      | 列表 | IPv6 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0` <br> `--index6 public`                      |
+| `--ttl`         | 整数       | DNS 解析记录的 TTL 时间（秒）                                                                                                                      | `--ttl 600`                                              |
+| `--line`        | 字符串      | 解析线路(部分provider支持)，如 ISP线路                                                                                                                         | `--line 电信` <br> `--line telecom`                        |
+| `--proxy`       | 字符串列表    | HTTP 代理设置，可用格式：IP:端口 或 `DIRECT`                                                                                                   | `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--cache`       | 标志/字符串   | 是否启用缓存或自定义缓存路径                                                                                                                           | `--cache` <br> `--cache=/path/to/cache`        |
+| `--no-cache`    | 标志       | 禁用缓存（等效于 `--cache=false`）                                                                                                                | `--no-cache`                                             |
+| `--ssl`         | 字符串      | SSL 证书验证方式，支持：true, false, auto, 文件路径                                                                                                    | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`             |
+| `--no-ssl`      | 标志       | 禁用 SSL 验证（等效于 `--ssl=false`）                                                                                                             | `--no-ssl`                                               |
+| `--log_file`    | 字符串      | 日志文件路径，不指定则输出到控制台                                                                                                                        | `--log_file=/var/log/ddns.log`                           |
+| `--log_level`   | 字符串      | 日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL                                                                                               | `--log_level=ERROR`                                      |
+| `--log_format`  | 字符串      | 日志格式字符串（`logging`模块格式）                                                                                                                   | `--log_format="%(asctime)s:%(message)s"`                |
+| `--log_datefmt` | 字符串      | 日志日期时间格式                                                                                                                                 | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
 
-其中`--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`为命令行独有参数。
+> **注意**: 其中`--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`为命令行独有参数。
 
-### 参数值示例
-
-| 参数         | 可能的值                                     | 示例                                    |
-|--------------|----------------------------------------------|----------------------------------------|
-| `--dns`      | 51dns, alidns, aliesa, callback, cloudflare, <br> debug, dnscom, dnspod_com, dnspod, he, <br> huaweidns, noip, tencentcloud | `--dns cloudflare`                     |
-| `--endpoint` | URL地址                                      | `--endpoint https://api.private.com`   |
-| `--id`       | API ID, 邮箱, Access Key                     | `--id user@example.com`                |
-| `--token`    | API Token, Secret Key                        | `--token abcdef123456`                 |
-| `--new-config`| 空 或 文件路径                               | `--new-config`, `--new-config=config.json` |
-| `--ipv4`     | 域名                                         | `--ipv4 example.com --ipv4 sub.example.com` |
-| `--ipv6`     | 域名                                         | `--ipv6 example.com`                   |
-| `--index4`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index4 public`, `--index4 "regex:192\\.168\\..*"` |
-| `--index6`   | 数字, default, public, url:, regex:, cmd:, shell: | `--index6 0`, `--index6 public`         |
-| `--ttl`      | 秒数                                         | `--ttl 600`                            |
-| `--line`     | 线路名称                                     | `--line 电信`, `--line telecom`        |
-| `--proxy`    | IP:端口, DIRECT                              | `--proxy 127.0.0.1:1080 --proxy DIRECT` |
-| `--cache`    | true, false, 文件路径                       | `--cache=true`, `--cache=/path/to/cache.json` |
-| `--ssl`      | true, false, auto, 文件路径                  | `--ssl false`, `--ssl /path/to/cert.pem` |
-| `--debug`    | (无值)                                       | `--debug`                              |
-| `--log_file` | 文件路径                                     | `--log_file=/var/log/ddns.log`         |
-| `--log_level`| DEBUG, INFO, WARNING, ERROR, CRITICAL        | `--log_level=DEBUG`                    |
-| `--log_format` | 格式字符串                                 | `--log_format="%(asctime)s: %(message)s"` |
-| `--log_datefmt` | 日期格式字符串                            | `--log_datefmt="%Y-%m-%d %H:%M:%S"`    |
 
 ## DNS服务配置参数
 

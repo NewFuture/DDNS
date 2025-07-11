@@ -13,13 +13,12 @@
 > 注意：在Docker中使用配置文件时，需要通过卷映射将配置文件挂载到容器的`/ddns/`目录。详情请参考[Docker使用文档](docker.md)。
 
 ```bash
-# 使用默认配置文件
-# 无配置时会自动生成配置文件
-ddns
+# 生成配置文件
+ddns --new-config
+ddns --new-config config.json
 
 # 使用指定配置文件
 ddns -c /path/to/config.json
-
 # 或者使用Python源码
 python -m ddns -c /path/to/config.json
 ```
@@ -36,7 +35,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ## 配置参数表
 
-|  键名    |        类型        | 必需 |   默认值    |    说明          | 备注                                                                                                         |
+|  键名    |        类型        | 必需 |   默认值    |    参数说明          | 备注                                                                                                         |
 | :------: | :----------------: | :--: | :---------: | :---------------: | ------------------------------------------------------------------------------------------------------------ |
 |   id     |       string       |  是  |     无      |    API 访问 ID    | Cloudflare为邮箱（使用Token时留空）<br>HE.net可留空<br>华为云为Access Key ID (AK)                         |
 |  token   |       string       |  是  |     无      |  API 授权令牌     | 部分平台叫secret key                                                                                    |
@@ -46,21 +45,21 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |  ipv6    |       array        |  否  |    `[]`     |   IPv6域名列表    | 为`[]`时，不会获取和更新IPv6地址                                                                            |
 | index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | 详见下方说明                                                                                               |
 | index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | 详见下方说明                                                                                               |
-|  ttl     |       number       |  否  |   `null`    | DNS解析TTL时间     | 单位为秒，不设置则采用DNS默认策略                                                                          |
+|  ttl     |       number       |  否  |   `null`    | DNS TTL时间     | 单位为秒，不设置则采用DNS默认策略                                                                          |
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定，如：`"默认"`、`"电信"`、`"联通"`、`"移动"`等                          |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
-|   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
+|   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
-|  log     |       object       |  否  |   `null`    | 日志配置（可选）   | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
+|  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
 
 ### log对象参数说明
 
-|  键名   |   类型   | 必需 |               默认值                |    说明    |
-| :-----: | :------: | :--: | :---------------------------------: | :--------: |
-|  level  |  string  |  否  |               `INFO`                | 日志级别   |
-|  file   |  string  |  否  |                 无                  | 日志文件路径 |
-| format  |  string  |  否  | `%(asctime)s %(levelname)s [%(module)s]: %(message)s` | 日志格式字符串 |
-| datefmt |  string  |  否  |         `%Y-%m-%dT%H:%M:%S`         | 日期时间格式 |
+|  键名   |   类型   | 必需 |     默认值            |    说明    |
+| :-----: | :------: | :--: | :-----------------: | :--------: |
+|  level  |  string  |  否  |       `INFO`        | 日志级别   |
+|  file   |  string  |  否  |         无          | 日志文件路径 |
+| format  |  string  |  否  |    自动调整          | 日志格式字符串 |
+| datefmt |  string  |  否  | `%Y-%m-%dT%H:%M:%S` | 日期时间格式 |
 
 ### index4和index6参数说明
 
@@ -114,29 +113,6 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "ttl": 600
 }
 ```
-
-### 带线路配置的DNS服务
-
-国内DNS服务商通常支持按运营商线路解析，可以为不同运营商的用户返回不同的IP地址：
-
-```json
-{
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-  "id": "12345",
-  "token": "mytokenkey", 
-  "dns": "dnspod",
-  "ipv4": ["telecom.example.com"],
-  "ttl": 600,
-  "line": "电信"
-}
-```
-
-**支持线路的DNS服务商：**
-
-* **阿里云DNS (alidns)**：`"default"`、`"telecom"`、`"unicom"`、`"mobile"`、`"oversea"`等
-* **DNSPod (dnspod)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
-* **腾讯云 (tencentcloud)**：`"默认"`、`"电信"`、`"联通"`、`"移动"`等
-* **华为云 (huaweidns)**：通过额外参数支持线路配置
 
 ### 高级配置示例
 
