@@ -29,7 +29,11 @@
     ],
     "github.copilot.chat.agent.terminal.allowList": {
         "python": true,
+        "python -m": true,
+        "python -m unittest": true,
         "python3": true,
+        "python3 -m": true,
+        "python3 -m unittest": true,
         "echo": true
     },
 }
