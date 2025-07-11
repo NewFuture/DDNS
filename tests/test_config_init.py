@@ -286,10 +286,12 @@ class TestConfigInit(unittest.TestCase):
             self.assertIsInstance(result, Config)
 
         # Test case 3: Empty configurations should cause exit (edge case)
-        with patch("sys.argv", ["ddns"]):  # No arguments at all
-            with self.assertRaises(SystemExit) as cm:
-                load_config(self.test_description, self.test_version, self.test_date)
-            self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
+        # Switch to a clean temporary directory to ensure no config.json exists
+        with patch("ddns.config.load_env_config", return_value={}):  # Empty env config
+            with patch("sys.argv", ["ddns"]):  # No arguments at all
+                with self.assertRaises(SystemExit) as cm:
+                    load_config(self.test_description, self.test_version, self.test_date)
+                self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
 
     def test_config_file_discovery_integration(self):
         """Test config file discovery in current directory"""
