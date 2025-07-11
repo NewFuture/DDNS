@@ -44,9 +44,25 @@ class TestConfigInit(unittest.TestCase):
         self.test_date = "2025-07-07"
         self.test_dir = tempfile.mkdtemp()
         self.original_cwd = os.getcwd()
+        # Change to the test directory to isolate from any existing config.json
+        os.chdir(self.test_dir)
+
+        # Save and clear any existing DDNS-related environment variables
+        self.original_env = {}
+        ddns_prefixes = ["DDNS_", "DNS_", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "PYTHONHTTPSVERIFY"]
+
+        # Backup and clear any existing environment variables that might interfere
+        for key in list(os.environ.keys()):
+            if any(key.startswith(prefix) for prefix in ddns_prefixes):
+                self.original_env[key] = os.environ.pop(key)
 
     def tearDown(self):
         """Clean up test fixtures"""
+        # Restore original environment variables
+        for key, value in self.original_env.items():
+            os.environ[key] = value
+
+        # Change back to original directory and clean up temp directory
         os.chdir(self.original_cwd)
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
@@ -105,6 +121,7 @@ class TestConfigInit(unittest.TestCase):
             self.assertEqual(result.line, "env_line")  # ENV used when neither CLI nor JSON have it
 
         finally:
+            # Clean up test environment variables (original env will be restored in tearDown)
             for key in ["DDNS_DNS", "DDNS_ID", "DDNS_TOKEN", "DDNS_LINE"]:
                 os.environ.pop(key, None)
 
@@ -263,34 +280,25 @@ class TestConfigInit(unittest.TestCase):
             result = load_config(self.test_description, self.test_version, self.test_date)
             self.assertIsInstance(result, Config)
 
-        # Test case 2: Empty string parameters but provide CLI DNS
+        # Test case 2: Empty string parameters but provide CLI DNS - no config files exist
         with patch("sys.argv", ["ddns", "--dns", "debug", "--id", "test", "--token", "test"]):
             result = load_config("", "", "")
             self.assertIsInstance(result, Config)
 
         # Test case 3: Empty configurations should cause exit (edge case)
-        # Change to a clean directory with no config files
-        empty_dir = os.path.join(self.test_dir, "empty")
-        os.makedirs(empty_dir)
-        old_cwd = os.getcwd()
-        try:
-            os.chdir(empty_dir)
-            with patch("sys.argv", ["ddns"]):  # No arguments at all
-                with self.assertRaises(SystemExit) as cm:
-                    load_config(self.test_description, self.test_version, self.test_date)
-                self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
-        finally:
-            os.chdir(old_cwd)
+        with patch("sys.argv", ["ddns"]):  # No arguments at all
+            with self.assertRaises(SystemExit) as cm:
+                load_config(self.test_description, self.test_version, self.test_date)
+            self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
 
     def test_config_file_discovery_integration(self):
-        """Test config file discovery without mocking file system"""
+        """Test config file discovery in current directory"""
+        # Test 1: Direct path loading
         config_content = {"dns": "cloudflare", "id": "test@example.com", "token": "secret123"}
-        config_path = os.path.join(self.test_dir, "config.json")
+        config_path = os.path.join(self.test_dir, "direct_config.json")
 
         with open(config_path, "w") as f:
             json.dump(config_content, f)
-
-        os.chdir(self.test_dir)
 
         from ddns.config.file import load_config as load_file_config
 
@@ -298,6 +306,20 @@ class TestConfigInit(unittest.TestCase):
         self.assertEqual(loaded_config["dns"], "cloudflare")
         self.assertEqual(loaded_config["id"], "test@example.com")
         self.assertEqual(loaded_config["token"], "secret123")
+
+        # Test 2: Auto-discovery in current directory
+        auto_config_content = {"dns": "debug", "id": "auto@example.com", "token": "auto123"}
+        auto_config_path = os.path.join(self.test_dir, "config.json")  # Default name in current dir
+
+        with open(auto_config_path, "w") as f:
+            json.dump(auto_config_content, f)
+
+        # Test that it can be auto-discovered when no explicit config is provided
+        with patch("sys.argv", ["ddns"]):
+            result = load_config(self.test_description, self.test_version, self.test_date)
+            self.assertEqual(result.dns, "debug")
+            self.assertEqual(result.id, "auto@example.com")
+            self.assertEqual(result.token, "auto123")
 
     def test_environment_config_integration(self):
         """Test environment configuration loading without mocking"""
@@ -324,6 +346,7 @@ class TestConfigInit(unittest.TestCase):
             self.assertEqual(env_config["ipv4"], ["ip1.example.com", "ip2.example.com"])
 
         finally:
+            # Clean up test environment variables (original env will be restored in tearDown)
             for key in test_env_vars:
                 os.environ.pop(key, None)
 
