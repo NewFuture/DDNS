@@ -14,8 +14,8 @@ class _TestProvider(BaseProvider):
 
     endpoint = "https://api.example.com"
 
-    def __init__(self, auth_id="test_id", auth_token="test_token_123456789", **options):
-        super(_TestProvider, self).__init__(auth_id, auth_token, **options)
+    def __init__(self, id="test_id", token="test_token_123456789", **options):
+        super(_TestProvider, self).__init__(id, token, **options)
         self._test_zone_data = {"example.com": "zone123", "test.com": "zone456"}
         self._test_records = {}
 
@@ -47,20 +47,20 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_init_success(self):
         """测试正常初始化"""
         provider = _TestProvider("test_id", "test_token")
-        self.assertEqual(provider.auth_id, "test_id")
-        self.assertEqual(provider.auth_token, "test_token")
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
         self.assertIsNotNone(provider.logger)
         self.assertEqual(provider._proxy, [None])  # proxy 初始化为 [None]
         self.assertEqual(provider._zone_map, {})
 
     def test_validate_missing_id(self):
-        """测试缺少auth_id的验证"""
+        """测试缺少id的验证"""
         with self.assertRaises(ValueError) as cm:
             _TestProvider("", "token")
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_missing_token(self):
-        """测试缺少auth_token的验证"""
+        """测试缺少token的验证"""
         with self.assertRaises(ValueError) as cm:
             _TestProvider("id", "")
         self.assertIn("token must be configured", str(cm.exception))
@@ -70,15 +70,15 @@ class TestBaseProvider(BaseProviderTestCase):
         custom_endpoint = "https://custom.api.com"
         provider = _TestProvider("test_id", "test_token", endpoint=custom_endpoint)
         self.assertEqual(provider.endpoint, custom_endpoint)
-        self.assertEqual(provider.auth_id, "test_id")
-        self.assertEqual(provider.auth_token, "test_token")
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
 
     def test_init_without_endpoint_uses_default(self):
         """测试不提供endpoint时使用默认API"""
         provider = _TestProvider("test_id", "test_token")
         self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
-        self.assertEqual(provider.auth_id, "test_id")
-        self.assertEqual(provider.auth_token, "test_token")
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
 
     def test_init_with_empty_endpoint_ignored(self):
         """测试空endpoint参数被忽略"""
@@ -198,9 +198,9 @@ class TestBaseProvider(BaseProviderTestCase):
 
     def test_mask_sensitive_data_long_token(self):
         """测试长token的打码"""
-        data = "auth_token=test_token_123456789&other=value"
+        data = "token=test_token_123456789&other=value"
         result = self.provider._mask_sensitive_data(data)
-        expected = "auth_token=te***89&other=value"
+        expected = "token=te***89&other=value"
         self.assertEqual(result, expected)
 
     def test_set_record_create(self):

@@ -24,13 +24,13 @@ class TestDebugProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test DebugProvider initialization with basic configuration"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
 
     def test_validate_always_passes(self):
         """Test _validate method always passes (no validation required)"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
         # Should not raise any exception
         provider._validate()
 
@@ -43,7 +43,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_ipv4(self, mock_stdout):
         """Test set_record method with IPv4 address"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "192.168.1.1", "A")
 
@@ -57,7 +57,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_ipv6(self, mock_stdout):
         """Test set_record method with IPv6 address"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "2001:db8::1", "AAAA")
 
@@ -71,7 +71,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_other_type(self, mock_stdout):
         """Test set_record method with other record types (CNAME, etc.)"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "target.example.com", "CNAME")
 
@@ -85,7 +85,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_mx_type(self, mock_stdout):
         """Test set_record method with MX record type"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "mail.example.com", "MX")
 
@@ -99,7 +99,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_with_all_parameters(self, mock_stdout):
         """Test set_record method with all optional parameters"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record(
             domain="test.example.com", value="10.0.0.1", record_type="A", ttl=300, line="default", extra_param="test"
@@ -114,7 +114,7 @@ class TestDebugProvider(BaseProviderTestCase):
 
     def test_set_record_logger_debug_called(self):
         """Test that logger.debug is called with correct parameters"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         # Mock the logger
         provider.logger = MagicMock()
@@ -133,7 +133,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_multiple_calls(self, mock_stdout):
         """Test multiple calls to set_record method"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         # Make multiple calls
         result1 = provider.set_record("example1.com", "192.168.1.1", "A")
@@ -154,7 +154,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_empty_values(self, mock_stdout):
         """Test set_record method with empty values"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("", "", "")
 
@@ -168,7 +168,7 @@ class TestDebugProvider(BaseProviderTestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_none_values(self, mock_stdout):
         """Test set_record method with None values"""
-        provider = DebugProvider(self.auth_id, self.auth_token)
+        provider = DebugProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "192.168.1.1", None)  # type: ignore
 
@@ -185,7 +185,7 @@ class TestDebugProviderIntegration(unittest.TestCase):
 
     def test_full_workflow_ipv4(self):
         """Test complete workflow for IPv4 record"""
-        provider = DebugProvider("test_auth_id", "test_auth_token")
+        provider = DebugProvider("test_auth_id", "test_token")
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             result = provider.set_record("test.com", "1.2.3.4", "A", 300, "default")
@@ -196,7 +196,7 @@ class TestDebugProviderIntegration(unittest.TestCase):
 
     def test_full_workflow_ipv6(self):
         """Test complete workflow for IPv6 record"""
-        provider = DebugProvider("test_auth_id", "test_auth_token")
+        provider = DebugProvider("test_auth_id", "test_token")
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             result = provider.set_record("test.com", "::1", "AAAA", 600, "telecom")
@@ -207,7 +207,7 @@ class TestDebugProviderIntegration(unittest.TestCase):
 
     def test_full_workflow_cname(self):
         """Test complete workflow for CNAME record"""
-        provider = DebugProvider("test_auth_id", "test_auth_token")
+        provider = DebugProvider("test_auth_id", "test_token")
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             result = provider.set_record("www.test.com", "test.com", "CNAME", 3600)

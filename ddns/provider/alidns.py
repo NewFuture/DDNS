@@ -46,7 +46,7 @@ class AliBaseProvider(BaseProvider):
 
         # 使用通用签名函数
         authorization = hmac_sha256_authorization(
-            secret_key=self.auth_token,
+            secret_key=self.token,
             method=method,
             path=path,
             query=query_string,
@@ -54,7 +54,7 @@ class AliBaseProvider(BaseProvider):
             body_hash=content_hash,
             signing_string_format="ACS3-HMAC-SHA256\n{HashedCanonicalRequest}",
             authorization_format=(
-                "ACS3-HMAC-SHA256 Credential=" + self.auth_id + ",SignedHeaders={SignedHeaders},Signature={Signature}"
+                "ACS3-HMAC-SHA256 Credential=" + self.id + ",SignedHeaders={SignedHeaders},Signature={Signature}"
             ),
         )
         headers["Authorization"] = authorization

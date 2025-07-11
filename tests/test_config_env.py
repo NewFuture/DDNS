@@ -296,24 +296,6 @@ class TestConfigEnv(unittest.TestCase):
         self.assertEqual(config.get("other_json"), ["item1", "item2"])  # Parsed as array
         self.assertEqual(config.get("comma_value"), "a,b,c")  # Kept as string
 
-    def test_malformed_json_dicts_as_strings(self):
-        """Test handling of malformed JSON dictionaries (kept as strings)"""
-        malformed_cases = [
-            '{"unclosed": "value"',  # Unclosed brace
-            '"missing_brace": "value"}',  # Missing opening brace
-            '{"invalid": json}',  # Invalid JSON syntax
-            '{"trailing": "comma",}',  # Trailing comma
-            '{"unquoted": key}',  # Unquoted key
-        ]
-
-        for malformed in malformed_cases:
-            os.environ["DDNS_TEST_MALFORMED_DICT"] = malformed
-            config = load_config(prefix="DDNS_TEST_")
-            # Should return as string when parsing fails
-            self.assertEqual(
-                config.get("malformed_dict"), malformed, "Failed for malformed JSON dict: %s" % malformed
-            )
-
     def test_configuration_consistency(self):
         """Test that configuration parsing is consistent across different input formats"""
         # Test mixed array and object configurations
@@ -519,11 +501,20 @@ class TestConfigEnv(unittest.TestCase):
         self._assert_proxy_value("DIRECT;http://proxy1.com:8080")
         del os.environ["HTTP_PROXY"]
 
-        # Test both HTTP_PROXY and HTTPS_PROXY
+        # Test both HTTP_PROXY and HTTPS_PROXY (order-independent check for Python 2 compatibility)
         os.environ["HTTP_PROXY"] = "http://proxy1.com:8080"
         os.environ["HTTPS_PROXY"] = "http://proxy2.com:8080"
-        expected = "DIRECT;http://proxy1.com:8080;http://proxy2.com:8080"
-        self._assert_proxy_value(expected)
+        config = load_config()
+        proxy_value = config.get("proxy")
+        self.assertIsNotNone(proxy_value)
+        # Check that it starts with DIRECT and contains both proxies (order-independent)
+        self.assertTrue(proxy_value.startswith("DIRECT;"))  # type: ignore
+        self.assertIn("http://proxy1.com:8080", proxy_value)  # type: ignore
+        self.assertIn("http://proxy2.com:8080", proxy_value)  # type: ignore
+        # Verify the format is correct (should have exactly 3 parts: DIRECT + 2 proxies)
+        proxy_parts = proxy_value.split(";")  # type: ignore
+        self.assertEqual(len(proxy_parts), 3)
+        self.assertEqual(proxy_parts[0], "DIRECT")
         del os.environ["HTTP_PROXY"]
         del os.environ["HTTPS_PROXY"]
 

@@ -394,7 +394,7 @@ def validate_all(self):
     if not self.dns:
         errors.append("DNS provider not specified")
     
-    if not self.auth_token:
+    if not self.token:
         errors.append("Authentication token not provided")
     
     if errors:

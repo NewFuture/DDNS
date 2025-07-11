@@ -107,7 +107,7 @@ class SimpleProvider(object):
     # Description
     remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
-    def __init__(self, auth_id, auth_token, logger=None, verify_ssl="auto", proxy=None, endpoint=None, **options):
+    def __init__(self, id, token, logger=None, verify_ssl="auto", proxy=None, endpoint=None, **options):
         # type: (str, str, Logger | None, bool|str, Sequence[str|None]|None, str|None, **object) -> None
         """
         初始化服务商对象
@@ -115,12 +115,12 @@ class SimpleProvider(object):
         Initialize provider instance.
 
         Args:
-            auth_id (str): 身份认证 ID / Authentication ID
-            auth_token (str): 密钥 / Authentication Token
-            options (dict): 其它参数，如代理、调试等 / Additional options
+            id (str): 身份认证 ID / Authentication ID
+            token (str): 密钥 / Authentication Token
+            options (dict): 其它参数 / Additional options
         """
-        self.auth_id = auth_id
-        self.auth_token = auth_token
+        self.id = id
+        self.token = token
         if endpoint:
             self.endpoint = endpoint
         self._proxy = proxy if proxy and len(proxy) else [None]
@@ -131,7 +131,7 @@ class SimpleProvider(object):
         self.logger = (logger or getLogger()).getChild(name)
 
         self._zone_map = {}  # type: dict[str, str]
-        self.logger.debug("%s initialized with: %s", self.__class__.__name__, auth_id)
+        self.logger.debug("%s initialized with: %s", self.__class__.__name__, id)
         self._validate()  # 验证身份认证信息
 
     @abstractmethod
@@ -162,9 +162,9 @@ class SimpleProvider(object):
 
         Validate authentication credentials.
         """
-        if not self.auth_id:
+        if not self.id:
             raise ValueError("id must be configured")
-        if not self.auth_token:
+        if not self.token:
             raise ValueError("token must be configured")
         if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
@@ -308,19 +308,19 @@ class SimpleProvider(object):
         Returns:
             str | bytes | None: 打码后的字符串
         """
-        if not data or not self.auth_token:
+        if not data or not self.token:
             return data
 
         # 生成打码后的token
-        token_masked = self.auth_token[:2] + "***" + self.auth_token[-2:] if len(self.auth_token) > 4 else "***"
-        token_encoded = quote(self.auth_token, safe="")
+        token_masked = self.token[:2] + "***" + self.token[-2:] if len(self.token) > 4 else "***"
+        token_encoded = quote(self.token, safe="")
 
         if isinstance(data, bytes):  # 处理字节数据
-            return data.replace(self.auth_token.encode(), token_masked.encode()).replace(
+            return data.replace(self.token.encode(), token_masked.encode()).replace(
                 token_encoded.encode(), token_masked.encode()
             )
         if hasattr(data, "replace"):  # 处理字符串数据
-            return data.replace(self.auth_token, token_masked).replace(token_encoded, token_masked)
+            return data.replace(self.token, token_masked).replace(token_encoded, token_masked)
         return data
 
 

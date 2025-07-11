@@ -12,22 +12,22 @@ class CloudflareProvider(BaseProvider):
     content_type = TYPE_JSON
 
     def _validate(self):
-        if not self.auth_token:
+        if not self.token:
             raise ValueError("token must be configured")
-        if self.auth_id:
+        if self.id:
             # must be email for Cloudflare API v4
-            if "@" not in self.auth_id:
+            if "@" not in self.id:
                 self.logger.critical("ID 必须为空或有效的邮箱地址")
                 raise ValueError("ID must be a valid email or Empty for Cloudflare API v4")
 
     def _request(self, method, action, **params):
         """发送请求数据"""
         headers = {}
-        if self.auth_id:
-            headers["X-Auth-Email"] = self.auth_id
-            headers["X-Auth-Key"] = self.auth_token
+        if self.id:
+            headers["X-Auth-Email"] = self.id
+            headers["X-Auth-Key"] = self.token
         else:
-            headers["Authorization"] = "Bearer " + self.auth_token
+            headers["Authorization"] = "Bearer " + self.token
 
         params = {k: v for k, v in params.items() if v is not None}  # 过滤掉None参数
         data = self._http(method, "/client/v4/zones" + action, headers=headers, params=params)

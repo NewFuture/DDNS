@@ -102,7 +102,7 @@ class MySimpleProvider(SimpleProvider):
         """验证认证信息（可选重写）"""
         super(MySimpleProvider, self)._validate()
         # 添加特定的验证逻辑，如检查API密钥格式
-        if not self.auth_token or len(self.auth_token) < 16:
+        if not self.token or len(self.token) < 16:
             raise ValueError("Invalid API token format")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
@@ -163,7 +163,7 @@ class MyProvider(BaseProvider):
         request_params = {
             "Action": action,
             "Version": "2023-01-01",
-            "AccessKeyId": self.auth_id,
+            "AccessKeyId": self.token,
             **{k: v for k, v in params.items() if v is not None}
         }
 
@@ -203,7 +203,7 @@ def _validate(self):
     """认证信息验证示例"""
     super(MyProvider, self)._validate()
     # 检查API密钥格式
-    if not self.auth_token or len(self.auth_token) < 16:
+    if not self.token or len(self.token) < 16:
         raise ValueError("API token must be at least 16 characters")
 ```
 
@@ -360,7 +360,7 @@ def _request(self, action, **params):
     
     # 生成签名
     authorization = hmac_sha256_authorization(
-        secret_key=self.auth_token,
+        secret_key=self.token,
         method="POST",
         path="/",
         query=query_string,
@@ -379,7 +379,7 @@ def _request(self, action, **params):
 ```python
 def _request(self, action, **params):
     # 腾讯云需要派生密钥
-    derived_key = self._derive_signing_key(date, service, self.auth_token)
+    derived_key = self._derive_signing_key(date, service, self.token)
     
     # 构建请求头部
     headers = {

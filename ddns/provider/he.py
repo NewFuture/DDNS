@@ -18,9 +18,9 @@ class HeProvider(SimpleProvider):
             "HE.net 缺少充分的真实环境测试，请及时在 GitHub Issues 中反馈: %s",
             "https://github.com/NewFuture/DDNS/issues",
         )
-        if self.auth_id:
+        if self.id:
             raise ValueError("Hurricane Electric (he.net) does not use `id`, use `token(password)` only.")
-        if not self.auth_token:
+        if not self.token:
             raise ValueError("Hurricane Electric (he.net) requires `token(password)`.")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
@@ -32,7 +32,7 @@ class HeProvider(SimpleProvider):
         params = {
             "hostname": domain,  # he.net requires full domain name
             "myip": value,  # IP address to update
-            "password": self.auth_token,  # Use auth_token as password
+            "password": self.token,  # Use token as password
         }
         try:
             res = self._http("POST", "/nic/update", body=params)

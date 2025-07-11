@@ -51,10 +51,10 @@ class HuaweiDNSProvider(BaseProvider):
         sign_path = path if path.endswith("/") else path + "/"
         authorization_format = "%s Access=%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (
             self.algorithm,
-            self.auth_id,
+            self.id,
         )
         authorization = hmac_sha256_authorization(
-            secret_key=self.auth_token,
+            secret_key=self.token,
             method=method,
             path=sign_path,
             query=query,

@@ -55,13 +55,13 @@ class TencentCloudProvider(BaseProvider):
         credential_scope = "{}/{}/tc3_request".format(date, self.service)
 
         # 派生签名密钥
-        secret_date = hmac_sha256("TC3" + self.auth_token, date).digest()
+        secret_date = hmac_sha256("TC3" + self.token, date).digest()
         secret_service = hmac_sha256(secret_date, self.service).digest()
         signing_key = hmac_sha256(secret_service, "tc3_request").digest()
 
         # 预处理模板字符串
         auth_format = "TC3-HMAC-SHA256 Credential=%s/%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (
-            self.auth_id,
+            self.id,
             credential_scope,
         )
         timestamp = str(int(time()))

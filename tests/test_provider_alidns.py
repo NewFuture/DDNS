@@ -15,8 +15,8 @@ class TestAlidnsProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestAlidnsProvider, self).setUp()
-        self.auth_id = "test_access_key_id"
-        self.auth_token = "test_access_key_secret"
+        self.authid = "test_access_key_id"
+        self.token = "test_access_key_secret"
 
     def test_class_constants(self):
         """Test AlidnsProvider class constants"""
@@ -26,14 +26,14 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test AlidnsProvider initialization with basic configuration"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://alidns.aliyuncs.com")
 
     def test_request_basic(self):
         """Test _request method with basic parameters"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         # Only mock the HTTP call to avoid actual network requests
         with patch.object(provider, "_http") as mock_http:
@@ -66,7 +66,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_request_filters_none_params(self):
         """Test _request method filters out None parameters"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         # Only mock the HTTP call
         with patch.object(provider, "_http") as mock_http:
@@ -86,7 +86,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_split_zone_and_sub_success(self):
         """Test _split_zone_and_sub method with successful response"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"DomainName": "example.com", "RR": "sub"}
@@ -108,7 +108,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_split_zone_and_sub_not_found(self):
         """Test _split_zone_and_sub method when domain is not found"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {}
@@ -122,7 +122,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_query_record_success_single(self):
         """Test _query_record method with single record found"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {
@@ -153,7 +153,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"DomainRecords": {"Record": []}}
@@ -164,7 +164,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_query_record_empty_response(self):
         """Test _query_record method with empty records response"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"DomainRecords": {"Record": []}}
@@ -175,7 +175,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_query_record_with_extra_params(self):
         """Test _query_record method with extra parameters"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"DomainRecords": {"Record": []}}
@@ -192,7 +192,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
@@ -212,7 +212,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_create_record_failure(self):
         """Test _create_record method with failed creation"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"Error": "Invalid domain"}
@@ -223,7 +223,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_create_record_with_extra_params(self):
         """Test _create_record method with extra parameters"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
@@ -248,7 +248,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_update_record_success(self):
         """Test _update_record method with successful update"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
 
@@ -264,7 +264,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_update_record_with_fallback_line(self):
         """Test _update_record method uses old record's line when line is None"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
 
@@ -286,7 +286,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
 
@@ -299,7 +299,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_update_record_no_changes(self):
         """Test _update_record method when no changes are detected"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {
             "RecordId": "123456",
@@ -320,7 +320,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_update_record_with_extra_params(self):
         """Test _update_record method with extra parameters"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
 
@@ -345,7 +345,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_line_configuration_support(self):
         """Test that AlidnsProvider supports line configuration"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         old_record = {"RecordId": "123456", "RR": "www", "Line": "default"}
 
@@ -368,7 +368,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
     def test_create_record_with_line(self):
         """Test _create_record method with line parameter"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": "123456"}
@@ -393,12 +393,12 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestAlidnsProviderIntegration, self).setUp()
-        self.auth_id = "test_access_key_id"
-        self.auth_token = "test_access_key_secret"
+        self.authid = "test_access_key_id"
+        self.token = "test_access_key_secret"
 
     def test_full_workflow_create_new_record(self):
         """Test complete workflow for creating a new record"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         # Mock only the HTTP layer to simulate API responses
         with patch.object(provider, "_http") as mock_http:
@@ -423,7 +423,7 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             # Simulate API responses: GetMainDomainName, DescribeSubDomainRecords, UpdateDomainRecord
@@ -451,7 +451,7 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             # Simulate API returning empty response for zone query
@@ -463,7 +463,7 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_create_failure(self):
         """Test complete workflow when record creation fails"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             # Simulate responses: zone found, no existing record, creation fails
@@ -479,7 +479,7 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_failure(self):
         """Test complete workflow when record update fails"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             # Simulate responses: zone found, existing record found, update fails
@@ -501,7 +501,7 @@ class TestAlidnsProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_with_options(self):
         """Test complete workflow with additional options like ttl and line"""
-        provider = AlidnsProvider(self.auth_id, self.auth_token)
+        provider = AlidnsProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             # Simulate successful creation with custom options

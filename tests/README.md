@@ -78,7 +78,7 @@ class TestYourProvider(BaseProviderTestCase):
         # 提供商特定的设置 / Provider-specific setup
         
     def test_your_feature(self):
-        provider = YourProvider(self.auth_id, self.auth_token)
+        provider = YourProvider(self.id, self.token)
         # 测试实现 / Test implementation
 ```
 

@@ -125,10 +125,6 @@ def update_record(self, record_id, value, ttl=None):
     # type: (str, str, int | None) -> bool
     """Update DNS record with new value."""
     pass
-
-# Use type annotations for class attributes
-class Provider:
-    auth_id = ""  # type: str
 ```
 
 ### Logging Best Practices
@@ -204,8 +200,8 @@ from base_test import BaseProviderTestCase, MagicMock, patch
 class TestExampleProvider(BaseProviderTestCase):
     def setUp(self):
         super(TestExampleProvider, self).setUp()
-        self.provider = ExampleProvider(self.auth_id, self.auth_token)
-    
+        self.provider = ExampleProvider(self.id, self.token)
+
     @patch("ddns.provider.example._http")
     def test_create_record_success(self, mock_http):
         # Arrange

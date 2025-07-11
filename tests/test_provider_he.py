@@ -15,22 +15,22 @@ class TestHeProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestHeProvider, self).setUp()
-        # Override default auth values for HE provider - HE uses empty auth_id
-        self.auth_id = ""
-        self.auth_token = "test_password"
+        # Override default auth values for HE provider - HE uses empty id
+        self.authid = ""
+        self.token = "test_password"
 
     def test_init_with_basic_config(self):
         """Test HeProvider initialization with basic configuration"""
-        # HE provider should use empty auth_id and only auth_token
-        provider = HeProvider("", self.auth_token)
-        self.assertEqual(provider.auth_id, "")
-        self.assertEqual(provider.auth_token, self.auth_token)
+        # HE provider should use empty id and only token
+        provider = HeProvider("", self.token)
+        self.assertEqual(provider.id, "")
+        self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://dyn.dns.he.net")
         self.assertFalse(provider.decode_response)
 
     def test_class_constants(self):
         """Test HeProvider class constants"""
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         self.assertEqual(provider.endpoint, "https://dyn.dns.he.net")
         self.assertFalse(provider.decode_response)
         # ContentType should be form-encoded
@@ -40,18 +40,18 @@ class TestHeProvider(BaseProviderTestCase):
 
     def test_validate_success_with_token_only(self):
         """Test _validate method passes with token only (correct usage)"""
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         # Should not raise any exception
         provider._validate()
 
-    def test_validate_fails_with_auth_id(self):
-        """Test _validate method fails when auth_id is provided"""
+    def test_validate_fails_with_id(self):
+        """Test _validate method fails when id is provided"""
         with self.assertRaises(ValueError) as cm:
-            HeProvider("some_id", self.auth_token)
+            HeProvider("some_id", self.token)
         self.assertIn("does not use `id`", str(cm.exception))
 
     def test_validate_fails_without_token(self):
-        """Test _validate method fails when auth_token is missing"""
+        """Test _validate method fails when token is missing"""
         with self.assertRaises(ValueError) as cm:
             HeProvider("", "")
         self.assertIn("requires `token(password)`", str(cm.exception))
@@ -61,7 +61,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with 'good' response"""
         mock_http.return_value = "good 192.168.1.1"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         result = provider.set_record("example.com", "192.168.1.1", "A")
 
@@ -78,14 +78,14 @@ class TestHeProvider(BaseProviderTestCase):
         body = kwargs["body"]
         self.assertEqual(body["hostname"], "example.com")
         self.assertEqual(body["myip"], "192.168.1.1")
-        self.assertEqual(body["password"], self.auth_token)
+        self.assertEqual(body["password"], self.token)
 
     @patch.object(HeProvider, "_http")
     def test_set_record_success_nochg_response(self, mock_http):
         """Test set_record method with 'nochg' response"""
         mock_http.return_value = "nochg 192.168.1.1"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         result = provider.set_record("test.example.com", "192.168.1.1", "A")
 
@@ -102,14 +102,14 @@ class TestHeProvider(BaseProviderTestCase):
         body = kwargs["body"]
         self.assertEqual(body["hostname"], "test.example.com")
         self.assertEqual(body["myip"], "192.168.1.1")
-        self.assertEqual(body["password"], self.auth_token)
+        self.assertEqual(body["password"], self.token)
 
     @patch.object(HeProvider, "_http")
     def test_set_record_ipv6_address(self, mock_http):
         """Test set_record method with IPv6 address"""
         mock_http.return_value = "good 2001:db8::1"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         result = provider.set_record("ipv6.example.com", "2001:db8::1", "AAAA")
 
@@ -127,7 +127,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with all optional parameters"""
         mock_http.return_value = "good 10.0.0.1"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         result = provider.set_record(
             domain="full.example.com", value="10.0.0.1", record_type="A", ttl=300, line="default", extra_param="test"
@@ -141,14 +141,14 @@ class TestHeProvider(BaseProviderTestCase):
         body = kwargs["body"]
         self.assertEqual(body["hostname"], "full.example.com")
         self.assertEqual(body["myip"], "10.0.0.1")
-        self.assertEqual(body["password"], self.auth_token)
+        self.assertEqual(body["password"], self.token)
 
     @patch.object(HeProvider, "_http")
     def test_set_record_empty_response_error(self, mock_http):
         """Test set_record method with empty response (should return False)"""
         mock_http.return_value = ""  # Empty response
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -162,7 +162,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with None response (should return False)"""
         mock_http.return_value = None  # None response
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -180,7 +180,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method when _http raises an exception"""
         mock_http.side_effect = Exception("Network error")
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -198,7 +198,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with error response"""
         mock_http.return_value = "badauth"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -212,7 +212,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with abuse response"""
         mock_http.return_value = "abuse"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -226,7 +226,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with notfqdn response"""
         mock_http.return_value = "notfqdn"
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -240,7 +240,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with partial 'good' response"""
         mock_http.return_value = "good"  # Just 'good' without IP
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -256,7 +256,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Test set_record method with partial 'nochg' response"""
         mock_http.return_value = "nochg"  # Just 'nochg' without IP
 
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -269,7 +269,7 @@ class TestHeProvider(BaseProviderTestCase):
 
     def test_set_record_logger_info_called(self):
         """Test that logger.info is called with correct parameters"""
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         # Mock the logger and _http
         provider.logger = MagicMock()
@@ -284,7 +284,7 @@ class TestHeProvider(BaseProviderTestCase):
 
     def test_set_record_logger_info_on_success(self):
         """Test that logger.info is called on success"""
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         # Mock the logger and _http
         provider.logger = MagicMock()
@@ -300,7 +300,7 @@ class TestHeProvider(BaseProviderTestCase):
 
     def test_set_record_logger_error_called(self):
         """Test that logger.error is called on error response"""
-        provider = HeProvider("", self.auth_token)
+        provider = HeProvider("", self.token)
 
         # Mock the logger and _http
         provider.logger = MagicMock()
@@ -320,7 +320,7 @@ class TestHeProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_ipv4_success(self):
         """Test complete workflow for IPv4 record with success response"""
-        provider = HeProvider("", "test_auth_token")
+        provider = HeProvider("", "test_token")
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good 1.2.3.4"
@@ -336,11 +336,11 @@ class TestHeProviderIntegration(BaseProviderTestCase):
             body = kwargs["body"]
             self.assertEqual(body["hostname"], "test.com")
             self.assertEqual(body["myip"], "1.2.3.4")
-            self.assertEqual(body["password"], "test_auth_token")
+            self.assertEqual(body["password"], "test_token")
 
     def test_full_workflow_ipv6_success(self):
         """Test complete workflow for IPv6 record with success response"""
-        provider = HeProvider("", "test_auth_token")
+        provider = HeProvider("", "test_token")
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good ::1"
@@ -357,7 +357,7 @@ class TestHeProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_error_handling(self):
         """Test complete workflow with error handling"""
-        provider = HeProvider("", "test_auth_token")
+        provider = HeProvider("", "test_token")
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "badauth"

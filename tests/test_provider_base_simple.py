@@ -29,9 +29,9 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test SimpleProvider initialization with basic configuration"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = _TestableSimpleProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://api.example.com")
         self.assertEqual(provider.content_type, TYPE_FORM)
         self.assertTrue(provider.decode_response)
@@ -41,59 +41,59 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
     def test_init_with_logger(self):
         """Test SimpleProvider initialization with logger"""
         logger = MagicMock()
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, logger=logger)
+        provider = _TestableSimpleProvider(self.authid, self.token, logger=logger)
         logger.getChild.assert_called_once_with("_TestableSimpleProvider")
         self.assertIsNotNone(provider.logger)
 
     def test_init_with_options(self):
         """Test SimpleProvider initialization with additional options"""
         options = {"debug": True, "timeout": 30}
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False, **options)
+        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=False, **options)
         self.assertEqual(provider.options, options)
         self.assertFalse(provider._verify_ssl)  # Should respect verify_ssl parameter
 
     def test_init_with_verify_ssl_string(self):
         """Test SimpleProvider initialization with verify_ssl as string"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl="/path/to/cert")
+        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl="/path/to/cert")
         self.assertEqual(provider._verify_ssl, "/path/to/cert")
 
     def test_init_with_verify_ssl_false(self):
         """Test SimpleProvider initialization with verify_ssl as False"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=False)
+        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=False)
         self.assertFalse(provider._verify_ssl)
 
     def test_init_with_verify_ssl_truthy_value(self):
         """Test SimpleProvider initialization with verify_ssl as truthy value"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=1)  # type: ignore
+        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=1)  # type: ignore
         self.assertEqual(provider._verify_ssl, 1)  # Should preserve the exact value
 
     def test_init_with_verify_ssl_falsy_value(self):
         """Test SimpleProvider initialization with verify_ssl as falsy value"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token, verify_ssl=0)  # type: ignore
+        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=0)  # type: ignore
         self.assertEqual(provider._verify_ssl, 0)  # Should preserve the exact value
 
     def test_validate_missing_id(self):
-        """Test _validate method with missing auth_id"""
+        """Test _validate method with missing id"""
         with self.assertRaises(ValueError) as cm:
-            _TestableSimpleProvider(None, self.auth_token)  # type: ignore
+            _TestableSimpleProvider(None, self.token)  # type: ignore
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_missing_token(self):
-        """Test _validate method with missing auth_token"""
+        """Test _validate method with missing token"""
         with self.assertRaises(ValueError) as cm:
-            _TestableSimpleProvider(self.auth_id, None)  # type: ignore
+            _TestableSimpleProvider(self.authid, None)  # type: ignore
         self.assertIn("token must be configured", str(cm.exception))
 
     def test_validate_empty_id(self):
-        """Test _validate method with empty auth_id"""
+        """Test _validate method with empty authid"""
         with self.assertRaises(ValueError) as cm:
-            _TestableSimpleProvider("", self.auth_token)
+            _TestableSimpleProvider("", self.token)
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_empty_token(self):
-        """Test _validate method with empty auth_token"""
+        """Test _validate method with empty token"""
         with self.assertRaises(ValueError) as cm:
-            _TestableSimpleProvider(self.auth_id, "")
+            _TestableSimpleProvider(self.authid, "")
         self.assertIn("token must be configured", str(cm.exception))
 
     def test_encode_dict(self):
@@ -108,7 +108,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_basic(self):
         """Test _mask_sensitive_data method with basic token"""
-        provider = _TestableSimpleProvider(self.auth_id, "secret123")
+        provider = _TestableSimpleProvider(self.authid, "secret123")
         data = "url?token=secret123&other=value"
 
         result = provider._mask_sensitive_data(data)  # type: str # type: ignore
@@ -118,7 +118,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_short_token(self):
         """Test _mask_sensitive_data method with short token"""
-        provider = _TestableSimpleProvider(self.auth_id, "abc")
+        provider = _TestableSimpleProvider(self.authid, "abc")
         data = "url?token=abc&other=value"
 
         result = provider._mask_sensitive_data(data)  # type: str # type: ignore
@@ -128,7 +128,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_empty_data(self):
         """Test _mask_sensitive_data method with empty data"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
+        provider = _TestableSimpleProvider(self.authid, self.token)
 
         result = provider._mask_sensitive_data("")
 
@@ -136,7 +136,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_none_data(self):
         """Test _mask_sensitive_data method with None data"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
+        provider = _TestableSimpleProvider(self.authid, self.token)
 
         result = provider._mask_sensitive_data(None)
 
@@ -144,9 +144,9 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_no_token(self):
         """Test _mask_sensitive_data method with no token"""
-        # Create provider normally first, then modify auth_token
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
-        provider.auth_token = ""  # Override after init
+        # Create provider normally first, then modify token
+        provider = _TestableSimpleProvider(self.authid, self.token)
+        provider.token = ""  # Override after init
         data = "url?token=secret123&other=value"
 
         result = provider._mask_sensitive_data(data)
@@ -155,7 +155,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_mask_sensitive_data_long_token(self):
         """Test _mask_sensitive_data method with long token"""
-        provider = _TestableSimpleProvider(self.auth_id, "verylongsecrettoken123")
+        provider = _TestableSimpleProvider(self.authid, "verylongsecrettoken123")
         data = "url?token=verylongsecrettoken123&other=value"
 
         result = provider._mask_sensitive_data(data)  # type: str # type: ignore
@@ -187,7 +187,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         # 验证包含打码信息
         self.assertIn("se***23", result_str)
 
-        # auth_id 不再被打码，应该保持原样（URL编码形式）
+        # id 不再被打码，应该保持原样（URL编码形式）
         self.assertIn(id_encoded, result_str)  # user%40example.com
 
     def test_mask_sensitive_data_bytes_url_encoded(self):
@@ -215,7 +215,7 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
 
     def test_set_record_abstract_method(self):
         """Test that set_record is implemented in test class"""
-        provider = _TestableSimpleProvider(self.auth_id, self.auth_token)
+        provider = _TestableSimpleProvider(self.authid, self.token)
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -239,7 +239,7 @@ class _TestableSimpleProviderValidation(BaseProviderTestCase):
     def test_validate_missing_api(self):
         """Test _validate method when API is not defined"""
         with self.assertRaises(ValueError) as cm:
-            _TestableSimpleProviderWithNoAPI(self.auth_id, self.auth_token)
+            _TestableSimpleProviderWithNoAPI(self.authid, self.token)
         self.assertIn("API endpoint must be defined", str(cm.exception))
         self.assertIn("_TestableSimpleProviderWithNoAPI", str(cm.exception))
 

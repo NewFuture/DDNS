@@ -16,7 +16,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestTencentCloudProvider, self).setUp()
-        self.provider = TencentCloudProvider(self.auth_id, self.auth_token)
+        self.provider = TencentCloudProvider(self.authid, self.token)
         self.logger = self.mock_logger(self.provider)
 
     def test_init(self):
@@ -32,16 +32,16 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         # Should not raise any exception
         self.provider._validate()
 
-    def test_validate_missing_auth_id(self):
-        """Test validation with missing auth_id"""
+    def test_validate_missing_id(self):
+        """Test validation with missing id"""
         with self.assertRaises(ValueError) as context:
-            TencentCloudProvider("", self.auth_token, self.logger)
+            TencentCloudProvider("", self.token, self.logger)
         self.assertIn("id", str(context.exception))
 
-    def test_validate_missing_auth_token(self):
-        """Test validation with missing auth_token"""
+    def test_validate_missing_token(self):
+        """Test validation with missing token"""
         with self.assertRaises(ValueError) as context:
-            TencentCloudProvider(self.auth_id, "", self.logger)
+            TencentCloudProvider(self.authid, "", self.logger)
         self.assertIn("token", str(context.exception))
 
     @patch.object(TencentCloudProvider, "_http")
@@ -406,7 +406,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestTencentCloudProviderIntegration, self).setUp()
-        self.provider = TencentCloudProvider(self.auth_id, self.auth_token)
+        self.provider = TencentCloudProvider(self.authid, self.token)
         self.logger = self.mock_logger(self.provider)
 
     @patch.object(TencentCloudProvider, "_http")

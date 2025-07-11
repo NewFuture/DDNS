@@ -16,7 +16,7 @@ class CallbackProvider(SimpleProvider):
     Generic custom callback provider, supports GET/POST arbitrary API.
     """
 
-    endpoint = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
+    endpoint = ""  # CallbackProvider uses id as URL, no fixed API endpoint
     content_type = TYPE_JSON
     decode_response = False  # Callback response is not JSON, it's a custom response
 
@@ -26,8 +26,8 @@ class CallbackProvider(SimpleProvider):
         Send custom callback request, support GET/POST
         """
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-        url = self.auth_id  # 直接用 auth_id 作为 url
-        token = self.auth_token  # auth_token 作为 POST 参数
+        url = self.id  # 直接用 id 作为 url
+        token = self.token  # token 作为 POST 参数
         extra.update(
             {
                 "__DOMAIN__": domain,
@@ -71,8 +71,8 @@ class CallbackProvider(SimpleProvider):
         return string
 
     def _validate(self):
-        # CallbackProvider uses auth_id as URL, not as regular ID
-        if self.endpoint or (not self.auth_id or "://" not in self.auth_id):
-            # 如果 endpoint 已经设置，或者 auth_id 不是有效的 URL，则抛出异常
-            self.logger.critical("endpoint [%s] or id [%s] 必须是有效的URL", self.endpoint, self.auth_id)
+        # CallbackProvider uses id as URL, not as regular ID
+        if self.endpoint or (not self.id or "://" not in self.id):
+            # 如果 endpoint 已经设置，或者 id 不是有效的 URL，则抛出异常
+            self.logger.critical("endpoint [%s] or id [%s] 必须是有效的URL", self.endpoint, self.id)
             raise ValueError("endpoint or id must be configured with URL")
