@@ -4,7 +4,7 @@
 
 DDNS supports configuration through environment variables with the following priority order: **[Command Line Arguments](cli.en.md) > [Configuration File](json.en.md) > Environment Variables**
 
-All environment variables use the `DDNS_` prefix followed by the parameter name (recommended uppercase), with dots (`.`) replaced by underscores (`_`).
+All environment variables use the `DDNS_` prefix followed by the parameter name (recommended uppercase).
 
 > `export DDNS_xxx="xxx"` command applies to the current host
 > `docker run -e DDNS_xxx="xxx"` command applies to the container
@@ -15,8 +15,8 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 |------------------|---------------------|---------|
 | `id` | `DDNS_ID` or `ddns_id` | `DDNS_ID=12345` |
 | `token` | `DDNS_TOKEN` or `ddns_token` | `DDNS_TOKEN=mytokenkey` |
-| `log.level` | `DDNS_LOG_LEVEL` or `ddns_log_level` | `DDNS_LOG_LEVEL=DEBUG` |
-| `log.file` | `DDNS_LOG_FILE` or `ddns_log_file` | `DDNS_LOG_FILE=/var/log/ddns.log` |
+| `log_level` | `DDNS_LOG_LEVEL` or `ddns_log_level` | `DDNS_LOG_LEVEL=DEBUG` |
+| `log_file` | `DDNS_LOG_FILE` or `ddns_log_file` | `DDNS_LOG_FILE=/var/log/ddns.log` |
 
 ## Complete Environment Variables List
 

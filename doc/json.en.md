@@ -50,8 +50,7 @@ DDNS configuration files follow JSON Schema, and it's recommended to add the `$s
 | line     | string             | No       | `null`        | DNS Resolution Line   | ISP line selection, supported values depend on DNS provider, e.g., `"default"`, `"telecom"`, `"unicom"`, `"mobile"`, etc.   |
 | proxy    | string\|array      | No       | None          | HTTP Proxy           | Multiple proxies are tried one by one until success, `DIRECT` means direct connection                                        |
 | ssl      | string\|boolean    | No       | `"auto"`      | SSL Certificate Verification | `true` (force verification), `false` (disable verification), `"auto"` (auto fallback), or custom CA certificate file path |
-| debug    | boolean            | No       | `false`       | Enable Debug Mode    | Equivalent to setting log.level=DEBUG, setting this field in config file is ineffective, only `--debug` CLI parameter works |
-| cache    | string\|bool       | No       | `true`        | Enable Record Caching | Normally enabled to avoid frequent updates, default location is `ddns.cache` in temp directory, can specify custom path     |
+| cache    | string\|bool       | No       | `true`        | Enable Record Caching | Normally enabled to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, can specify custom path     |
 | log      | object             | No       | `null`        | Log Configuration (Optional) | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters                                      |
 
 ### log Object Parameters

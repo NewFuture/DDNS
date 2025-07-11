@@ -50,8 +50,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定，如：`"默认"`、`"电信"`、`"联通"`、`"移动"`等                          |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
 |   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
-|  debug   |       boolean      |  否  |   `false`   | 是否开启调试       | 等同于设置log.level=DEBUG，配置文件中设置此字段无效，仅命令行参数`--debug`有效                             |
-|  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.cache`，也可以指定具体路径                              |
+|  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
 |  log     |       object       |  否  |   `null`    | 日志配置（可选）   | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
 
 ### log对象参数说明
