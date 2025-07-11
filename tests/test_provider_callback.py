@@ -22,45 +22,45 @@ class TestCallbackProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestCallbackProvider, self).setUp()
-        self.auth_id = "https://example.com/callback?domain=__DOMAIN__&ip=__IP__"
-        self.auth_token = ""  # Use empty string instead of None for auth_token
+        self.authid = "https://example.com/callback?domain=__DOMAIN__&ip=__IP__"
+        self.token = ""  # Use empty string instead of None for token
 
     def test_init_with_basic_config(self):
         """Test CallbackProvider initialization with basic configuration"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
         self.assertFalse(provider.decode_response)
 
     def test_init_with_token_config(self):
         """Test CallbackProvider initialization with token configuration"""
-        auth_token = '{"api_key": "__DOMAIN__", "value": "__IP__"}'
-        provider = CallbackProvider(self.auth_id, auth_token)
-        self.assertEqual(provider.auth_token, auth_token)
+        token = '{"api_key": "__DOMAIN__", "value": "__IP__"}'
+        provider = CallbackProvider(self.authid, token)
+        self.assertEqual(provider.token, token)
 
     def test_validate_success(self):
         """Test _validate method with valid configuration"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
-        # Should not raise any exception since we have a valid auth_id
+        provider = CallbackProvider(self.authid, self.token)
+        # Should not raise any exception since we have a valid id
         provider._validate()
 
     def test_validate_failure_no_id(self):
         """Test _validate method with missing id"""
         # _validate is called in __init__, so we need to test it directly
         with self.assertRaises(ValueError) as cm:
-            CallbackProvider(None, self.auth_token)  # type: ignore
+            CallbackProvider(None, self.token)  # type: ignore
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_failure_empty_id(self):
         """Test _validate method with empty id"""
         # _validate is called in __init__, so we need to test it directly
         with self.assertRaises(ValueError) as cm:
-            CallbackProvider("", self.auth_token)
+            CallbackProvider("", self.token)
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_replace_vars_basic(self):
         """Test _replace_vars method with basic replacements"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "Hello __NAME__, your IP is __IP__"
         mapping = {"__NAME__": "World", "__IP__": "192.168.1.1"}
@@ -71,7 +71,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_no_matches(self):
         """Test _replace_vars method with no matching variables"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "No variables here"
         mapping = {"__NAME__": "World"}
@@ -81,7 +81,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_partial_matches(self):
         """Test _replace_vars method with partial matches"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "__DOMAIN__ and __UNKNOWN__ and __IP__"
         mapping = {"__DOMAIN__": "example.com", "__IP__": "1.2.3.4"}
@@ -92,14 +92,14 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_empty_string(self):
         """Test _replace_vars method with empty string"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         result = provider._replace_vars("", {"__TEST__": "value"})
         self.assertEqual(result, "")
 
     def test_replace_vars_empty_mapping(self):
         """Test _replace_vars method with empty mapping"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "__DOMAIN__ test"
         result = provider._replace_vars(test_str, {})
@@ -107,7 +107,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_none_values(self):
         """Test _replace_vars method with None values (should convert to string)"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "TTL: __TTL__, Line: __LINE__"
         mapping = {"__TTL__": None, "__LINE__": None}
@@ -118,7 +118,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_numeric_values(self):
         """Test _replace_vars method with numeric values (should convert to string)"""
-        provider = CallbackProvider(self.auth_id, self.auth_token)
+        provider = CallbackProvider(self.authid, self.token)
 
         test_str = "Port: __PORT__, TTL: __TTL__"
         mapping = {"__PORT__": 8080, "__TTL__": 300}
@@ -134,7 +134,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
-        provider = CallbackProvider(self.auth_id, None)  # type: ignore
+        provider = CallbackProvider(self.authid, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -156,8 +156,8 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
-        auth_token = {"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}
-        provider = CallbackProvider(self.auth_id, auth_token)  # type: ignore
+        token = {"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}
+        provider = CallbackProvider(self.authid, token)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -184,8 +184,8 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
-        auth_token = '{"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
-        provider = CallbackProvider(self.auth_id, auth_token)
+        token = '{"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
+        provider = CallbackProvider(self.authid, token)
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -212,8 +212,8 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
-        auth_token = {"api_key": 12345, "domain": "__DOMAIN__", "timeout": 30, "enabled": True}
-        provider = CallbackProvider(self.auth_id, auth_token)  # type: ignore
+        token = {"api_key": 12345, "domain": "__DOMAIN__", "timeout": 30, "enabled": True}
+        provider = CallbackProvider(self.authid, token)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -239,7 +239,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = None  # Simulate failure
 
-        provider = CallbackProvider(self.auth_id, None)  # type: ignore
+        provider = CallbackProvider(self.authid, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -253,7 +253,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = None  # None response
 
-        provider = CallbackProvider(self.auth_id, None)  # type: ignore
+        provider = CallbackProvider(self.authid, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -265,8 +265,8 @@ class TestCallbackProvider(BaseProviderTestCase):
         """Test handling of JSON decode errors in POST method"""
         mock_jsondecode.side_effect = ValueError("Invalid JSON")
 
-        auth_token = "invalid json"
-        provider = CallbackProvider(self.auth_id, auth_token)
+        token = "invalid json"
+        provider = CallbackProvider(self.authid, token)
 
         # This should raise an exception when trying to decode invalid JSON
         with self.assertRaises(ValueError):
@@ -344,11 +344,11 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
     def test_real_callback_get_method(self):
         """Test real callback using GET method with httpbin.org and verify logger calls (retry once on failure)"""
-        auth_id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
+        id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
         domain = "test.example.com"
         ip = "111.111.111.111"
 
-        provider = CallbackProvider(auth_id, "")
+        provider = CallbackProvider(id, "")
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request
@@ -358,9 +358,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
     def test_real_callback_post_method_with_json(self):
         """Test real callback using POST method with JSON data and verify logger calls (retry once on failure)"""
-        auth_id = "https://httpbin.org/post"
-        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
-        provider = CallbackProvider(auth_id, auth_token)
+        id = "https://httpbin.org/post"
+        token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
+        provider = CallbackProvider(id, token)
 
         # Setup provider with mock logger
         mock_logger = self._setup_provider_with_mock_logger(provider)
@@ -376,8 +376,8 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
         # Use an invalid URL to test error handling
-        auth_id = "https://httpbin.org/status/500"  # This returns HTTP 500
-        provider = CallbackProvider(auth_id, "")
+        id = "https://httpbin.org/status/500"  # This returns HTTP 500
+        provider = CallbackProvider(id, "")
 
         self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.5")
@@ -386,11 +386,11 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_redirects_handling(self):
         """Test real callback with various HTTP redirect scenarios and verify logger calls (retry once on failure)"""
         # Test simple redirect
-        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
+        id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
         domain = "redirect.test.example.com"
         ip = "203.0.113.21"
 
-        provider = CallbackProvider(auth_id, "")
+        provider = CallbackProvider(id, "")
         try:
             mock_logger = self._setup_provider_with_mock_logger(provider)
             self._random_delay()  # Add random delay before real request
@@ -407,9 +407,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         """Test POST request redirect behavior (should change to GET after 302)
         and verify logger calls (retry once on failure)"""
         # POST to redirect endpoint - should convert to GET after 302
-        auth_id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
-        auth_token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
-        provider = CallbackProvider(auth_id, auth_token)
+        id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
+        token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
+        provider = CallbackProvider(id, token)
 
         try:
             # Setup provider with mock logger

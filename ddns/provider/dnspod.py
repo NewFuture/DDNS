@@ -36,7 +36,7 @@ class DnspodProvider(BaseProvider):
         if extra:
             params.update(extra)
         params = {k: v for k, v in params.items() if v is not None}
-        params.update({"login_token": "{0},{1}".format(self.auth_id, self.auth_token), "format": "json"})
+        params.update({"login_token": "{0},{1}".format(self.id, self.token), "format": "json"})
         data = self._http("POST", "/" + action, body=params)
         if data and data.get("status", {}).get("code") == "1":  # 请求成功
             return data

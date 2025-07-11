@@ -102,7 +102,7 @@ class MySimpleProvider(SimpleProvider):
         """Validate authentication info (optional override)"""
         super(MySimpleProvider, self)._validate()
         # Add specific validation logic, like checking API key format
-        if not self.auth_token or len(self.auth_token) < 16:
+        if not self.token or len(self.token) < 16:
             raise ValueError("Invalid API token format")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
@@ -161,7 +161,7 @@ class MyProvider(BaseProvider):
         request_params = {
             "Action": action,
             "Version": "2023-01-01",
-            "AccessKeyId": self.auth_id,
+            "AccessKeyId": self.id,
             **{k: v for k, v in params.items() if v is not None}
         }
 
@@ -200,7 +200,7 @@ def _validate(self):
     """Authentication info validation example"""
     super(MyProvider, self)._validate()
     # Check API key format
-    if not self.auth_token or len(self.auth_token) < 16:
+    if not self.token or len(self.token) < 16:
         raise ValueError("API token must be at least 16 characters")
 ```
 
@@ -355,7 +355,7 @@ def _request(self, action, **params):
     
     # Generate signature
     authorization = hmac_sha256_authorization(
-        secret_key=self.auth_token,
+        secret_key=self.token,
         method="POST",
         path="/",
         query=query_string,
@@ -374,7 +374,7 @@ def _request(self, action, **params):
 ```python
 def _request(self, action, **params):
     # Tencent Cloud requires derived key
-    derived_key = self._derive_signing_key(date, service, self.auth_token)
+    derived_key = self._derive_signing_key(date, service, self.token)
     
     # Build request headers
     headers = {

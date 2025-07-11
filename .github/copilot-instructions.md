@@ -58,8 +58,8 @@ from ddns.provider.example import ExampleProvider
 class TestExampleProvider(BaseProviderTestCase):
     def setUp(self):
         super(TestExampleProvider, self).setUp()
-        self.provider = ExampleProvider(self.auth_id, self.auth_token)
-    
+        self.provider = ExampleProvider(self.id, self.token)
+
     @patch.object(ExampleProvider, "_http")
     def test_set_record_success(self, mock_http):
         mock_http.return_value = {"success": True}

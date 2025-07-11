@@ -15,9 +15,9 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestHuaweiDNSProvider, self).setUp()
-        self.auth_id = "test_access_key"
-        self.auth_token = "test_secret_key"
-        self.provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        self.authid = "test_access_key"
+        self.token = "test_secret_key"
+        self.provider = HuaweiDNSProvider(self.authid, self.token)
 
         # Mock strftime for all tests
         self.strftime_patcher = patch("ddns.provider.huaweidns.strftime")
@@ -38,8 +38,8 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test HuaweiDNSProvider initialization with basic configuration"""
-        self.assertEqual(self.provider.auth_id, self.auth_id)
-        self.assertEqual(self.provider.auth_token, self.auth_token)
+        self.assertEqual(self.provider.id, self.authid)
+        self.assertEqual(self.provider.token, self.token)
         self.assertEqual(self.provider.endpoint, "https://dns.myhuaweicloud.com")
 
     def test_request_get_method(self):
@@ -205,7 +205,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_create_record_failure(self):
         """Test _create_record method with failed creation"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"error": "Zone not found"}
@@ -216,7 +216,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_update_record_success(self):
         """Test _update_record method with successful update"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com.", "ttl": 300}
 
@@ -238,7 +238,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_update_record_with_fallback_ttl(self):
         """Test _update_record method uses old record's TTL when ttl is None"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com.", "ttl": 300}
 
@@ -260,7 +260,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_update_record_with_extra_params(self):
         """Test _update_record method with extra parameters"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com.", "ttl": 300}
 
@@ -284,7 +284,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com."}
 
@@ -297,7 +297,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_line_configuration_support(self):
         """Test that HuaweiDNSProvider supports line configuration"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123456"}
@@ -311,7 +311,7 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
 
     def test_update_record_with_line(self):
         """Test _update_record method with line parameter"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com."}
 
@@ -331,12 +331,12 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestHuaweiDNSProviderIntegration, self).setUp()
-        self.auth_id = "test_access_key"
-        self.auth_token = "test_secret_key"
+        self.authid = "test_access_key"
+        self.token = "test_secret_key"
 
     def test_full_workflow_create_new_record(self):
         """Test complete workflow for creating a new record"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         # Mock only the HTTP layer to simulate API responses
         with patch.object(provider, "_request") as mock_request:
@@ -375,7 +375,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate API responses
@@ -405,7 +405,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate API returning empty zones array
@@ -416,7 +416,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_create_failure(self):
         """Test complete workflow when record creation fails"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, no existing record, creation fails
@@ -432,7 +432,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_failure(self):
         """Test complete workflow when record update fails"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, existing record found, update fails
@@ -452,7 +452,7 @@ class TestHuaweiDNSProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_with_extra_options(self):
         """Test complete workflow with additional options"""
-        provider = HuaweiDNSProvider(self.auth_id, self.auth_token)
+        provider = HuaweiDNSProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate successful creation with custom options
