@@ -476,6 +476,196 @@ class TestCache(unittest.TestCase):
         # Note: private fields might still appear in str() since it calls super().__str__()
         # This is acceptable as str() shows the raw dict content
 
+    def test_json_format_verification(self):
+        """Test that cache files are saved in JSON format"""
+        import json
+
+        cache = Cache(self.cache_file)
+        cache["string_key"] = "string_value"
+        cache["number_key"] = 42
+        cache["list_key"] = [1, 2, 3]
+        cache["dict_key"] = {"nested": "value"}
+
+        # Save to file
+        cache.sync()
+
+        # Verify file exists and is valid JSON
+        self.assertTrue(os.path.exists(self.cache_file))
+
+        # Read the file and verify it's valid JSON
+        with open(self.cache_file, "r") as f:
+            file_content = f.read()
+            parsed_json = json.loads(file_content)
+
+        # Verify the content matches what we saved
+        self.assertEqual(parsed_json["string_key"], "string_value")
+        self.assertEqual(parsed_json["number_key"], 42)
+        self.assertEqual(parsed_json["list_key"], [1, 2, 3])
+        self.assertEqual(parsed_json["dict_key"], {"nested": "value"})
+
+        # Verify the file contains readable JSON (not binary pickle data)
+        self.assertIn('"string_key"', file_content)
+        self.assertIn('"string_value"', file_content)
+
+    def test_cache_new_disabled(self):
+        """Test Cache.new with cache disabled (config_cache=False)"""
+        import logging
+
+        logger = logging.getLogger("test_logger")
+        cache = Cache.new(False, "test_hash", logger)
+
+        # Should return None when cache is disabled
+        self.assertIsNone(cache)
+
+    def test_cache_new_temp_file(self):
+        """Test Cache.new with temp file creation (config_cache=True)"""
+        import logging
+        import tempfile
+
+        logger = logging.getLogger("test_logger")
+        test_hash = "test_hash_123"
+        cache = Cache.new(True, test_hash, logger)
+
+        # Should create a cache instance
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+
+        # Should use temp directory with correct naming pattern
+        expected_pattern = "ddns.%s.cache" % test_hash
+        self.assertIn(expected_pattern, cache._Cache__filename)
+        self.assertIn(tempfile.gettempdir(), cache._Cache__filename)
+
+        # Clean up
+        cache.close()
+
+    def test_cache_new_custom_path(self):
+        """Test Cache.new with custom cache file path"""
+        import logging
+
+        logger = logging.getLogger("test_logger")
+        custom_path = self.cache_file
+        cache = Cache.new(custom_path, "unused_hash", logger)
+
+        # Should create a cache instance with custom path
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+        self.assertEqual(cache._Cache__filename, custom_path)
+
+        # Clean up
+        cache.close()
+
+    @patch('ddns.cache.time')
+    def test_cache_new_outdated_cache(self, mock_time):
+        """Test Cache.new with outdated cache file (>72 hours old)"""
+        import logging
+        import json
+
+        logger = logging.getLogger("test_logger")
+
+        # Create a cache file with some data
+        test_data = {"test_key": "test_value"}
+        with open(self.cache_file, "w") as f:
+            json.dump(test_data, f)
+
+        # Mock current time to make cache appear outdated
+        # Cache file mtime will be recent, but we'll mock current time to be 73 hours later
+        current_time = 1000000
+        mock_time.return_value = current_time
+
+        # Mock the file modification time to be 73 hours ago
+        old_mtime = current_time - (73 * 3600)  # 73 hours ago
+
+        with patch('ddns.cache.stat') as mock_stat:
+            mock_stat.return_value.st_mtime = old_mtime
+            cache = Cache.new(self.cache_file, "test_hash", logger)
+
+        # Should create cache instance but clear outdated data
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+        self.assertEqual(len(cache), 0)  # Should be empty due to age
+
+        # Clean up
+        cache.close()
+
+    def test_cache_new_empty_cache(self):
+        """Test Cache.new with empty cache file"""
+        import logging
+        import json
+
+        logger = logging.getLogger("test_logger")
+
+        # Create an empty cache file
+        with open(self.cache_file, "w") as f:
+            json.dump({}, f)
+
+        cache = Cache.new(self.cache_file, "test_hash", logger)
+
+        # Should create cache instance
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+        self.assertEqual(len(cache), 0)
+
+        # Clean up
+        cache.close()
+
+    @patch('ddns.cache.time')
+    def test_cache_new_valid_cache(self, mock_time):
+        """Test Cache.new with valid cache file with data"""
+        import logging
+        import json
+
+        logger = logging.getLogger("test_logger")
+
+        # Create a cache file with test data
+        test_data = {
+            "domain1.com": {"ip": "1.2.3.4", "timestamp": 1234567890},
+            "domain2.com": {"ip": "5.6.7.8", "timestamp": 1234567891}
+        }
+        with open(self.cache_file, "w") as f:
+            json.dump(test_data, f)
+
+        # Mock current time to be within 72 hours of cache creation
+        current_time = 1000000
+        mock_time.return_value = current_time
+
+        # Mock file modification time to be recent (within 72 hours)
+        recent_mtime = current_time - (24 * 3600)  # 24 hours ago
+
+        with patch('ddns.cache.stat') as mock_stat:
+            mock_stat.return_value.st_mtime = recent_mtime
+            cache = Cache.new(self.cache_file, "test_hash", logger)
+
+        # Should create cache instance with loaded data
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cache["domain1.com"]["ip"], "1.2.3.4")
+        self.assertEqual(cache["domain2.com"]["ip"], "5.6.7.8")
+
+        # Clean up
+        cache.close()
+
+    def test_cache_new_nonexistent_file(self):
+        """Test Cache.new with nonexistent cache file"""
+        import logging
+
+        logger = logging.getLogger("test_logger")
+        nonexistent_path = tempfile.mktemp(prefix="ddns_test_nonexistent_", suffix=".cache")
+
+        # Ensure file doesn't exist
+        if os.path.exists(nonexistent_path):
+            os.remove(nonexistent_path)
+
+        cache = Cache.new(nonexistent_path, "test_hash", logger)
+
+        # Should create cache instance with empty data
+        self.assertIsNotNone(cache)
+        self.assertIsInstance(cache, Cache)
+        self.assertEqual(len(cache), 0)
+
+        # Clean up
+        cache.close()
+
 
 if __name__ == "__main__":
     unittest.main()

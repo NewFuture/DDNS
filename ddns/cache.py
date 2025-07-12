@@ -6,7 +6,7 @@ cache module
 
 from logging import getLogger, Logger  # noqa: F401
 from os import path, stat
-from pickle import dump, load
+from json import load, dump
 from tempfile import gettempdir
 from time import time
 
@@ -41,18 +41,20 @@ class Cache(dict):
             file = self.__filename
 
         self.__logger.debug("load cache data from %s", file)
-        if file and path.isfile(file):
-            with open(file, "rb") as data:
-                try:
+        if file:
+            try:
+                with open(file, "r") as data:
                     loaded_data = load(data)
                     self.clear()
                     self.update(loaded_data)
                     self.__time = stat(file).st_mtime
                     return self
-                except ValueError:
-                    pass
-                except Exception as e:
-                    self.__logger.warning(e)
+            except (IOError, OSError):
+                self.__logger.info("cache file not exist or cannot be opened")
+            except ValueError:
+                pass
+            except Exception as e:
+                self.__logger.warning(e)
         else:
             self.__logger.info("cache file not exist")
 
@@ -64,10 +66,10 @@ class Cache(dict):
     def sync(self):
         """Sync the write buffer with the cache files and clear the buffer."""
         if self.__changed and self.__filename:
-            with open(self.__filename, "wb") as data:
+            with open(self.__filename, "w") as data:
                 # 只保存非私有字段（不以__开头的字段）
                 filtered_data = {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
-                dump(filtered_data, data)
+                dump(filtered_data, data, separators=(',', ':'))
                 self.__logger.debug("save cache data to %s", self.__filename)
             self.__time = time()
             self.__changed = False
