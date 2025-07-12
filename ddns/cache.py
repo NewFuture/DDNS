@@ -44,18 +44,17 @@ class Cache(dict):
         if file:
             try:
                 with open(file, "r") as data:
-                    try:
-                        loaded_data = load(data)
-                        self.clear()
-                        self.update(loaded_data)
-                        self.__time = stat(file).st_mtime
-                        return self
-                    except ValueError:
-                        pass
-                    except Exception as e:
-                        self.__logger.warning(e)
+                    loaded_data = load(data)
+                    self.clear()
+                    self.update(loaded_data)
+                    self.__time = stat(file).st_mtime
+                    return self
             except (IOError, OSError):
                 self.__logger.info("cache file not exist or cannot be opened")
+            except ValueError:
+                pass
+            except Exception as e:
+                self.__logger.warning(e)
         else:
             self.__logger.info("cache file not exist")
 
