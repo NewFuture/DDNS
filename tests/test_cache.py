@@ -650,7 +650,7 @@ class TestCache(unittest.TestCase):
         import logging
 
         logger = logging.getLogger("test_logger")
-        nonexistent_path = "/tmp/nonexistent_cache_file.cache"
+        nonexistent_path = tempfile.mktemp(prefix="ddns_test_nonexistent_", suffix=".cache")
 
         # Ensure file doesn't exist
         if os.path.exists(nonexistent_path):
