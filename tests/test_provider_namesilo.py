@@ -19,7 +19,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
     def test_init_with_basic_config(self):
         """Test basic provider initialization"""
         self.assertProviderInitialized(self.provider)
-        self.assertEqual(self.provider.endpoint, "https://www.namesilo.com/api")
+        self.assertEqual(self.provider.endpoint, "https://www.namesilo.com")
         self.assertEqual(self.provider.content_type, "application/json")
 
     def test_init_with_custom_endpoint(self):
@@ -63,7 +63,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
         mock_http.assert_called_once()
         args, kwargs = mock_http.call_args
         self.assertEqual(args[0], "GET")
-        self.assertEqual(args[1], "/testOperation")
+        self.assertEqual(args[1], "/api/testOperation")
 
         expected_queries = {"domain": "example.com", "version": "1", "type": "json", "key": self.token}
         self.assertEqual(kwargs["queries"], expected_queries)
@@ -88,8 +88,8 @@ class TestNamesiloProvider(BaseProviderTestCase):
         self.assertIn("400", warning_call[1])
         self.assertIn("Invalid domain", warning_call[2])
 
-        # Should return original response even on error
-        self.assertEqual(result, mock_response)
+        # Should return None on error
+        self.assertIsNone(result)
 
     @patch.object(NamesiloProvider, "_request")
     def test_query_zone_id_success(self, mock_request):
@@ -169,7 +169,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
             "rrtype": "A",
             "rrhost": "test",
             "rrvalue": "1.2.3.4",
-            "rrttl": "3600",
+            "rrttl": 3600,
         }
         mock_request.assert_called_once_with("dnsAddRecord", **expected_params)
         self.assertTrue(result)
@@ -181,14 +181,14 @@ class TestNamesiloProvider(BaseProviderTestCase):
 
         result = self.provider._create_record("example.com", "test", "example.com", "1.2.3.4", "A", None, None, {})
 
-        expected_params = {"domain": "example.com", "rrtype": "A", "rrhost": "test", "rrvalue": "1.2.3.4"}
+        expected_params = {"domain": "example.com", "rrtype": "A", "rrhost": "test", "rrvalue": "1.2.3.4", "rrttl": None}
         mock_request.assert_called_once_with("dnsAddRecord", **expected_params)
         self.assertTrue(result)
 
     @patch.object(NamesiloProvider, "_request")
     def test_create_record_failure(self, mock_request):
         """Test failed record creation"""
-        mock_request.return_value = {"code": "400", "detail": "Invalid record data"}
+        mock_request.return_value = None
 
         result = self.provider._create_record("example.com", "test", "example.com", "invalid", "A", 3600, None, {})
 
@@ -209,7 +209,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
             "rrhost": "test",
             "rrvalue": "5.6.7.8",
             "rrtype": "A",
-            "rrttl": "7200",
+            "rrttl": 7200,
         }
         mock_request.assert_called_once_with("dnsUpdateRecord", **expected_params)
         self.assertTrue(result)
@@ -248,7 +248,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
     @patch.object(NamesiloProvider, "_request")
     def test_update_record_failure(self, mock_request):
         """Test failed record update"""
-        mock_request.return_value = {"code": "400", "detail": "Record not found"}
+        mock_request.return_value = None
 
         old_record = {"record_id": "12345", "host": "test", "type": "A", "value": "1.2.3.4", "ttl": "3600"}
 
