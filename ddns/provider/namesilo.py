@@ -31,6 +31,10 @@ class NamesiloProvider(BaseProvider):
         if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
+        # Warn if ID is configured since NameSilo doesn't need it
+        if self.id:
+            self.logger.warning("NameSilo does not require 'id' configuration - only API key (token) is needed")
+
         # Show pending verification warning
         self.logger.warning("NameSilo provider implementation is pending verification - please test thoroughly")
 
