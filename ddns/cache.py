@@ -69,7 +69,7 @@ class Cache(dict):
             with open(self.__filename, "w") as data:
                 # 只保存非私有字段（不以__开头的字段）
                 filtered_data = {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
-                dump(filtered_data, data, separators=(',', ':'))
+                dump(filtered_data, data, separators=(",", ":"))
                 self.__logger.debug("save cache data to %s", self.__filename)
             self.__time = time()
             self.__changed = False

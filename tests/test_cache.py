@@ -554,7 +554,7 @@ class TestCache(unittest.TestCase):
         # Clean up
         cache.close()
 
-    @patch('ddns.cache.time')
+    @patch("ddns.cache.time")
     def test_cache_new_outdated_cache(self, mock_time):
         """Test Cache.new with outdated cache file (>72 hours old)"""
         import logging
@@ -575,7 +575,7 @@ class TestCache(unittest.TestCase):
         # Mock the file modification time to be 73 hours ago
         old_mtime = current_time - (73 * 3600)  # 73 hours ago
 
-        with patch('ddns.cache.stat') as mock_stat:
+        with patch("ddns.cache.stat") as mock_stat:
             mock_stat.return_value.st_mtime = old_mtime
             cache = Cache.new(self.cache_file, "test_hash", logger)
 
@@ -608,7 +608,7 @@ class TestCache(unittest.TestCase):
         # Clean up
         cache.close()
 
-    @patch('ddns.cache.time')
+    @patch("ddns.cache.time")
     def test_cache_new_valid_cache(self, mock_time):
         """Test Cache.new with valid cache file with data"""
         import logging
@@ -619,7 +619,7 @@ class TestCache(unittest.TestCase):
         # Create a cache file with test data
         test_data = {
             "domain1.com": {"ip": "1.2.3.4", "timestamp": 1234567890},
-            "domain2.com": {"ip": "5.6.7.8", "timestamp": 1234567891}
+            "domain2.com": {"ip": "5.6.7.8", "timestamp": 1234567891},
         }
         with open(self.cache_file, "w") as f:
             json.dump(test_data, f)
@@ -631,7 +631,7 @@ class TestCache(unittest.TestCase):
         # Mock file modification time to be recent (within 72 hours)
         recent_mtime = current_time - (24 * 3600)  # 24 hours ago
 
-        with patch('ddns.cache.stat') as mock_stat:
+        with patch("ddns.cache.stat") as mock_stat:
             mock_stat.return_value.st_mtime = recent_mtime
             cache = Cache.new(self.cache_file, "test_hash", logger)
 
