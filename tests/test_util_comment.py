@@ -235,10 +235,11 @@ class TestRemoveComment(unittest.TestCase):
             ('{"a": "b"} // End comment', '{"a": "b"}'),  # End double slash
         ]
 
-        for input_content, expected in test_cases:
-            with self.subTest(input_content=input_content):
-                result = remove_comment(input_content)
-                self.assertEqual(result, expected)
+        for i, (input_content, expected) in enumerate(test_cases):
+            result = remove_comment(input_content)
+            self.assertEqual(result, expected,
+                           "Failed for test case %d: %r -> expected %r, got %r" %
+                           (i, input_content, expected, result))
 
 
 if __name__ == "__main__":

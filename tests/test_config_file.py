@@ -476,10 +476,10 @@ class TestConfigFile(unittest.TestCase):
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Schema validation
     "debug": false,  // false=disable, true=enable
     "dns": "dnspod_com",  // DNS provider
-    "id": "1008666",      
+    "id": "1008666",
     "token": "ae86$cbbcctv666666666666666",  // API Token
     "ipv4": ["test.lorzl.ml"],  // IPv4 domains
-    "ipv6": ["test.lorzl.ml"],  // IPv6 domains  
+    "ipv6": ["test.lorzl.ml"],  // IPv6 domains
     "proxy": null  // Proxy settings
 }"""
         file_path = self.create_test_file("test_double_slash_comments.json", json_with_comments)
