@@ -56,41 +56,28 @@ def _remove_line_comment(line):
 
     # 查找行内注释，需要考虑字符串内容
     in_string = False
-    escaped = False
     quote_char = None
-
     i = 0
+
     while i < len(line):
         char = line[i]
 
-        if escaped:
-            # 跳过转义字符
-            escaped = False
-            i += 1
+        # 处理字符串内的转义序列
+        if in_string and char == "\\" and i + 1 < len(line):
+            i += 2  # 跳过转义字符
             continue
 
-        if char == "\\" and in_string:
-            # 转义字符
-            escaped = True
-            i += 1
-            continue
+        # 处理引号字符
+        if char in ('"', "'"):
+            if not in_string:
+                in_string = True
+                quote_char = char
+            elif char == quote_char:
+                in_string = False
+                quote_char = None
 
-        if char in ('"', "'") and not in_string:
-            # 开始字符串
-            in_string = True
-            quote_char = char
-            i += 1
-            continue
-
-        if char == quote_char and in_string:
-            # 结束字符串
-            in_string = False
-            quote_char = None
-            i += 1
-            continue
-
-        if not in_string:
-            # 检查注释标记
+        # 在字符串外检查注释标记
+        elif not in_string:
             if char == "#":
                 return line[:i].rstrip()
             elif char == "/" and i + 1 < len(line) and line[i + 1] == "/":

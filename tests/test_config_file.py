@@ -494,7 +494,7 @@ class TestConfigFile(unittest.TestCase):
             "token": "ae86$cbbcctv666666666666666",
             "ipv4": ["test.lorzl.ml"],
             "ipv6": ["test.lorzl.ml"],
-            "proxy": None
+            "proxy": None,
         }
         self.assertEqual(config, expected)
 
