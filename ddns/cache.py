@@ -6,7 +6,7 @@ cache module
 
 from logging import getLogger, Logger  # noqa: F401
 from os import path, stat
-import json
+from json import load, dump
 from tempfile import gettempdir
 from time import time
 
@@ -44,7 +44,7 @@ class Cache(dict):
         if file and path.isfile(file):
             with open(file, "r") as data:
                 try:
-                    loaded_data = json.load(data)
+                    loaded_data = load(data)
                     self.clear()
                     self.update(loaded_data)
                     self.__time = stat(file).st_mtime
@@ -67,7 +67,7 @@ class Cache(dict):
             with open(self.__filename, "w") as data:
                 # 只保存非私有字段（不以__开头的字段）
                 filtered_data = {k: v for k, v in super(Cache, self).items() if not k.startswith("__")}
-                json.dump(filtered_data, data, indent=2, separators=(',', ': '))
+                dump(filtered_data, data, separators=(',', ':'))
                 self.__logger.debug("save cache data to %s", self.__filename)
             self.__time = time()
             self.__changed = False

@@ -284,7 +284,7 @@ class TestCache(unittest.TestCase):
         cache["key1"] = "value1"
         cache.sync()  # This clears the __changed flag
 
-        with patch("ddns.cache.json.dump") as mock_dump:
+        with patch("ddns.cache.dump") as mock_dump:
             cache.sync()  # This should not call dump since no changes
             mock_dump.assert_not_called()
 
@@ -321,7 +321,7 @@ class TestCache(unittest.TestCase):
 
         cache = Cache(self.cache_file)
 
-        with patch("ddns.cache.json.load", side_effect=Exception("Test error")):
+        with patch("ddns.cache.load", side_effect=Exception("Test error")):
             with patch.object(cache, "_Cache__logger") as mock_logger:
                 cache.load()
                 mock_logger.warning.assert_called_once()
