@@ -10,6 +10,7 @@ from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
+from .namesilo import NamesiloProvider
 from .noip import NoipProvider
 from .tencentcloud import TencentCloudProvider
 
@@ -55,6 +56,9 @@ def get_provider_class(provider_name):
         "huaweidns": HuaweiDNSProvider,
         "huawei": HuaweiDNSProvider,  # 兼容huawei
         "huaweicloud": HuaweiDNSProvider,
+        # namesilo
+        "namesilo": NamesiloProvider,
+        "namesilo_com": NamesiloProvider,  # 兼容namesilo.com
         # no-ip
         "noip": NoipProvider,
         "no-ip": NoipProvider,  # 兼容no-ip
