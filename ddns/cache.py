@@ -41,18 +41,21 @@ class Cache(dict):
             file = self.__filename
 
         self.__logger.debug("load cache data from %s", file)
-        if file and path.isfile(file):
-            with open(file, "r") as data:
-                try:
-                    loaded_data = load(data)
-                    self.clear()
-                    self.update(loaded_data)
-                    self.__time = stat(file).st_mtime
-                    return self
-                except ValueError:
-                    pass
-                except Exception as e:
-                    self.__logger.warning(e)
+        if file:
+            try:
+                with open(file, "r") as data:
+                    try:
+                        loaded_data = load(data)
+                        self.clear()
+                        self.update(loaded_data)
+                        self.__time = stat(file).st_mtime
+                        return self
+                    except ValueError:
+                        pass
+                    except Exception as e:
+                        self.__logger.warning(e)
+            except (IOError, OSError):
+                self.__logger.info("cache file not exist or cannot be opened")
         else:
             self.__logger.info("cache file not exist")
 
