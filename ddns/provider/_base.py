@@ -243,7 +243,6 @@ class SimpleProvider(object):
                     body=body_data,
                     headers=headers,
                     proxy=p,
-                    max_redirects=5,
                     verify_ssl=self._verify_ssl,
                 )
                 break  # 成功发送请求，跳出循环
