@@ -8,7 +8,7 @@
 
 ### AccessKey 认证
 
-ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提供AccessKey ID和AccessKey Secret。
+ESA API使用与[阿里云](alidns.md)其他服务相同的AccessKey认证方式，需要提供AccessKey ID和AccessKey Secret。
 
 ```json
 {
@@ -18,30 +18,30 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 }
 ```
 
-## 完整配置示例
+## 权限要求
 
-### 基础配置
+确保使用的阿里云账号具有以下ESA权限：
+
+推荐 `AliyunESAFullAccess` 包含下列所有权限
+
+- **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
+- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
+
+推荐创建专门的RAM子账号并仅授予必要的ESA权限。
+
+## 完整配置示例
 
 ```json
 {
     "id": "LTAI4xxx",
     "token": "xxx",
     "dns": "aliesa",
+    "endpoint": "https://esa.ap-southeast-1.aliyuncs.com",
+    "index4": ["public"],
+    "index6": ["default"],
     "ipv4": ["www.example.com", "api.example.com"],
-    "ipv6": ["ipv6.example.com"]
-}
-```
-
-### 高级配置
-
-```json
-{
-    "id": "LTAI4xxx", 
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com", "api.example.com"],
-    "ipv6": ["ipv6.example.com"],
-    "ttl": 300
+    "ipv6": ["dynamic.mydomain.com"],
+    "ttl": 600
 }
 ```
 
@@ -49,43 +49,20 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 | 参数 | 说明 | 类型 | 默认值 | 示例 |
 |------|------|------|--------|------|
-| `ttl` | DNS记录的TTL值 | 整数 | 600 | 300 |
+| `ttl` | DNS记录的TTL值 | 整数 | 1(自动) | 600 |
+| `endpoint` | 自定义API端点地址 | 字符串 | `https://esa.cn-hangzhou.aliyuncs.com` | `https://esa.ap-southeast-1.aliyuncs.com` |
 
-## 使用场景
+### 自定义区域端点
 
-### 动态IP的CDN源站
+当需要访问特定区域的ESA服务时，可以配置自定义端点地址 `endpoint`：
 
-当你的NAS或其他服务作为ESA的CDN源站时，可以使用此DDNS来自动更新源站IP：
+#### 国内节点
 
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx", 
-    "dns": "aliesa",
-    "ipv4": ["origin.example.com"]
-}
-```
+- **华东1（杭州）**：`https://esa.cn-hangzhou.aliyuncs.com`（默认）
 
-## 权限要求
+#### 国际节点
 
-确保使用的阿里云账号具有以下ESA权限：
-
-- **ESA站点查询权限**：用于查询站点ID (`esa:ListSites`)
-- **ESA DNS记录管理权限**：用于查询、创建和更新DNS记录 (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
-
-推荐创建专门的RAM子账号并仅授予必要的ESA权限。
-
-### 如何获取站点ID
-
-1. 登录[阿里云ESA控制台](https://esa.console.aliyun.com/)
-2. 选择对应的站点
-3. 在站点详情页面的URL中可以看到站点ID，或使用API调用`ListSites`获取
-
-## API限制
-
-- **站点数量**：根据ESA套餐不同
-- **DNS记录数量**：根据ESA套餐不同
-- **API调用频率**：遵循阿里云ESA API限制
+- **亚太东南1（新加坡）**：`https://esa.ap-southeast-1.aliyuncs.com`
 
 ## 故障排除
 
@@ -113,14 +90,8 @@ ESA API使用与阿里云其他服务相同的AccessKey认证方式，需要提�
 
 启用调试模式查看详细的API交互信息：
 
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "debug": true,
-    "ipv4": ["www.example.com"]
-}
+```sh
+ddns -c config.json --debug
 ```
 
 ## 支持与资源

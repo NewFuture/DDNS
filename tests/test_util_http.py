@@ -5,10 +5,9 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-import unittest
+from __init__ import MagicMock, patch, unittest
 import ssl
 import sys
-from base_test import MagicMock, patch
 from ddns.util.http import (
     HTTPException,
     send_http_request,

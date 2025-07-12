@@ -40,11 +40,11 @@
   - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
   - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md)) ⚡
   - [阿里云边缘安全加速(ESA)](https://esa.console.aliyun.com/) ([配置指南](doc/providers/aliesa.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) (@loftor-git)
-  - [DNSPOD 国际版](https://www.dnspod.com/)
-  - [CloudFlare](https://www.cloudflare.com/) (@tongyifan)
-  - [HE.net](https://dns.he.net/) (@NN708) (不支持自动创建记录)
-  - [华为云](https://huaweicloud.com/) (@cybmp3) ⚡
+  - [DNS.COM](https://www.dns.com/) ([配置指南](doc/providers/dnscom.md)) (@loftor-git)
+  - [DNSPOD 国际版](https://www.dnspod.com/) ([配置指南](doc/providers/dnspod_com.md))
+  - [CloudFlare](https://www.cloudflare.com/) ([配置指南](doc/providers/cloudflare.md)) (@tongyifan)
+  - [HE.net](https://dns.he.net/) ([配置指南](doc/providers/he.md)) (@NN708) (不支持自动创建记录)
+  - [华为云](https://huaweicloud.com/) ([配置指南](doc/providers/huaweidns.md)) (@cybmp3) ⚡
   - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md)) ⚡
   - [No-IP](https://www.noip.com/) ([配置指南](doc/providers/noip.md))
   - 自定义回调 API ([配置指南](doc/providers/callback.md))
@@ -119,11 +119,11 @@
    - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
    - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
    - **阿里云边缘安全加速(ESA)**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/aliesa.md)
-   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet)
-   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token)
-   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**）
-   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空）
-   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥）
+   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [详细配置文档](doc/providers/dnscom.md)
+   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [详细配置文档](doc/providers/dnspod_com.md)
+   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**） | [详细配置文档](doc/providers/cloudflare.md)
+   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)
+   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](doc/providers/huaweidns.md)
    - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
    - **No-IP**: [用户名和密码](https://www.noip.com/)（使用 No-IP 账户的用户名和密码） | [详细配置文档](doc/providers/noip.md)
    - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明

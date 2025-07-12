@@ -73,6 +73,11 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      - name: test debug config
+        run: ${{env.PY}} -m ddns -c tests/config/debug.json
+      - name: test callback config  
+        run: ${{env.PY}} run.py -c tests/config/callback.json
+
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
         run:  python3 .github/patch.py
@@ -104,7 +109,12 @@ jobs:
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - name: run unit tests
-        run: python3 -m unittest discover tests -v
+        run: python3 -m unittest -v
+
+      - name: test debug config
+        run: python3 -m ddns -c tests/config/debug.json
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -155,7 +165,12 @@ jobs:
    
       - run: python3 ./run.py -h
       - name: run unit tests
-        run: python3 -m unittest discover tests -v
+        run: python3 -m unittest -v
+
+      - name: test debug config
+        run: python3 -m ddns -c tests/config/debug.json
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
@@ -175,6 +190,10 @@ jobs:
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
+      - name: test debug config with executable
+        run: ./dist/ddns -c tests/config/debug.json
+      - name: test callback config with executable  
+        run: ./dist/ddns -c tests/config/callback.json
 
       # Upload build result
       - name: Upload Artifacts
@@ -325,8 +344,12 @@ jobs:
             echo "Running test..."
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -v
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
+            echo "Testing with debug config..."
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
+            echo "Testing with callback config..."
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
           done
       
       # 上传测试结果和镜像

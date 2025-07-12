@@ -1,192 +1,114 @@
-# DDNS Provider English Documentation
+# DNSPod China Configuration Guide
+
+> For Global DNSPod, see [DNSPod Global Configuration Guide](dnspod_com.en.md).
 
 ## Overview
 
-DNSPod is a DNS service provider under Tencent Cloud, widely used in mainland China. This DDNS project supports connecting to DNSPod via two authentication methods:
+DNSPod China (dnspod.cn) is a DNS service provider, widely used in mainland China. This DDNS project supports two authentication methods to connect to DNSPod:
 
 1. **API Token** (Recommended)
 2. **Email + Password** (Legacy)
+3. AccessKey (Tencent Cloud DNSPod) [Reference](tencentcloud.md)
 
 ## Authentication Methods
 
-### Method 1: API Token (Recommended)
+### 1. API Token (Recommended)
 
-The API Token method is more secure and is the recommended way to integrate with DNSPod.
+The API Token method is more secure and is the recommended integration method by DNSPod.
 
-#### How to Obtain an API Token
+#### Obtaining API Token
 
-1. **Login to DNSPod Console**
-    - Visit [DNSPod Console](https://console.dnspod.cn/)
-    - Sign in with your DNSPod account
-
-2. **Go to API Key Management**
-    - Click "User Center"
-    - Select the "API Key" menu
-    - Or directly visit: <https://console.dnspod.cn/account/token/token>
-
-3. **Create a New API Key**
-    - Click the "Create Key" button
-    - Enter a descriptive name (e.g., "DDNS Host")
-    - Select appropriate permissions (domain management permission required)
-    - Click "Confirm" to create
-
-4. **Copy Key Information**
-    - **ID**: The key ID (numeric value)
-    - **Token**: The actual key string (long alphanumeric string)
-    - **Important**: Save both values immediately, as the key will only be shown once
-
-#### Configuration Using API Token
+1. Login to [DNSPod Console](https://console.dnspod.cn/)
+2. Go to "User Center" > "API Key" or visit <https://console.dnspod.cn/account/token/token>
+3. Click "Create Key", fill in description, select domain management permissions, and complete creation
+4. Copy the **ID** (numeric) and **Token** (string). The key is only displayed once, please save it securely
 
 ```json
 {
-  "dns": "dnspod",
-  "id": "123456",
-  "token": "abcdef1234567890abcdef1234567890"
+    "dns": "dnspod",
+    "id": "123456",
+    "token": "abcdef1234567890abcdef1234567890"
 }
 ```
 
-**Parameters:**
+- `id`: API Token ID
+- `token`: API Token secret
+- `dns`: Must be `"dnspod"`
 
-- `id`: Your API Token ID (numeric string)
-- `token`: Your API Token secret
-- `dns`: Must be set to `"dnspod"`
+### 2. Email + Password (Legacy)
 
-### Method 2: Email + Password (Legacy)
-
-This method uses your DNSPod account email and password. It is still supported but less secure than API Token.
-
-#### How to Use Email Authentication
-
-1. **Ensure Account Availability**
-    - Make sure you can log in to DNSPod with your email and password
-    - Verify your account has domain management permissions
-
-2. **Email and Password Configuration**
+Uses DNSPod account email and password. Lower security, only recommended for special scenarios.
 
 ```json
 {
-  "id": "your-email@example.com",
-  "token": "your-account-password",
-  "dns": "dnspod"
+    "id": "your-email@example.com",
+    "token": "your-account-password",
+    "dns": "dnspod"
 }
 ```
 
-**Parameters:**
+- `id`: DNSPod account email
+- `token`: DNSPod account password
+- `dns`: Must be `"dnspod"`
 
-- `id`: Your DNSPod account email address
-- `token`: Your DNSPod account password
-- `dns`: Must be set to `"dnspod"`
-
-## Complete Configuration Examples
-
-### Example 1: API Token Configuration (Recommended)
+## Complete Configuration Example
 
 ```json
 {
   "id": "123456",
   "token": "abcdef1234567890abcdef1234567890abcdef12",
   "dns": "dnspod",
-  "ipv6": ["home.example.com", "nas.example.com"]
-}
-```
-
-### Example 2: Email Authentication Configuration
-
-```json
-{
-  "id": "myemail@gmail.com",
-  "token": "mypassword123",
-  "dns": "dnspod",
-  "ipv6": ["dynamic.mydomain.com"]
-}
-```
-
-### Example 3: Configuration with Line Settings
-
-```json
-{
-  "id": "123456",
-  "token": "abcdef1234567890abcdef1234567890abcdef12",
-  "dns": "dnspod",
+  "index4": ["public"],
+  "index6": ["public"],
   "ipv4": ["home.example.com"],
-  "ttl": 600,
-  "line": "电信"
-}
-```
-
-## Optional Configuration Parameters
-
-### TTL (Time To Live)
-
-```json
-{
+  "ipv6": ["home.example.com", "nas.example.com"],
+  "line": "默认",
   "ttl": 600
 }
 ```
 
-- **Range**: 1-604800 seconds
-- **Default**: 600 seconds (10 minutes)
-- **Recommended**: 120-600 seconds for dynamic DNS
+## Optional Parameters
 
-### Record Type
+| Parameter | Description               | Type    | Range/Options                             | Default |
+|-----------|---------------------------|---------|-------------------------------------------|---------|
+| `ttl`     | Time To Live (seconds)    | Integer | 1-604800                                | 600     |
+| `line`    | DNS line/route            | String  | "默认"、"电信"、"联通"、"移动" etc. | "默认" |
 
-```json
-{
-  "record_type": "A"
-}
-```
-
-- **Supported Types**: A, AAAA, CNAME
-- **Default**: A (IPv4)
-- Use "AAAA" for IPv6 addresses
-
-### Line (ISP Route)
-
-```json
-{
-  "line": "默认"
-}
-```
-
-- **Options**: "默认" (Default), "电信" (China Telecom), "联通" (China Unicom), "移动" (China Mobile), etc.
-- **Default**: "默认" (Default line)
+> **Note**: Supported values for `ttl` and `line` may vary by service plan.
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### "Authentication Failed" Error
+#### "Authentication Failed"
 
-- **API Token**: Check if ID and Token are correct
-- **Email**: Check email and password for typos
-- **Permissions**: Ensure the token/account has domain management permissions
+- Check if API Token or email/password are correct
+- Confirm domain management permissions
 
-#### "Domain Not Found" Error
+#### "Domain Not Found"
 
-- Verify the domain is added to your DNSPod account
-- Check the domain spelling in your configuration
-- Ensure the domain is active and not suspended
+- Domain has been added to DNSPod account
+- Configuration spelling is correct
+- Domain is in active state
 
 #### "Record Creation Failed"
 
-- Check if the subdomain already exists with a different record type
-- Verify TTL value is within the acceptable range
-- Ensure you have permission to modify the specific domain
+- Check if subdomain has conflicting records
+- TTL is reasonable
+- Has modification permissions
 
 ### Debug Mode
 
-Enable debug logging to troubleshoot issues:
+Enable debug logging:
 
 ```sh
 ddns --debug
 ```
 
-This will display detailed logs for troubleshooting.
-
 ## Support and Resources
 
-- **DNSPod Documentation**: <https://docs.dnspod.cn/>
-- **API Reference**: <https://docs.dnspod.cn/api/>
-- [Tencent DNSPod(AccessKey)](./tencentcloud.md)
+- [DNSPod Documentation](https://docs.dnspod.cn/)
+- [API Reference](https://docs.dnspod.cn/api/)
+- [Tencent Cloud DNSPod (AccessKey)](./tencentcloud.en.md) (DNSPod's AccessKey method)
 
-It is recommended to use the API Token method for better security and easier DDNS configuration management.
+> It is recommended to use the API Token method for improved security and management convenience.

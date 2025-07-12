@@ -2,17 +2,17 @@
 """
 HMAC-SHA256 Authorization 函数单元测试
 
-针对 ddns.provider._base.hmac_sha256_authorization 函数的完整测试套件。
+针对 ddns.provider._signature.hmac_sha256_authorization 函数的完整测试套件。
 测试覆盖多种典型使用场景，包括各大云服务商的认证模式，
 所有期望结果都是预先计算好的，确保测试结果的可复现性。
 
-Test suite for ddns.provider._base.hmac_sha256_authorization function.
+Test suite for ddns.provider._signature.hmac_sha256_authorization function.
 Covers various typical use cases including authentication patterns of major cloud providers.
 All expected results are pre-calculated to ensure reproducible test results.
 """
 
-import unittest
-from ddns.provider._base import hmac_sha256_authorization, sha256_hash, hmac_sha256
+from __init__ import unittest
+from ddns.provider._signature import hmac_sha256_authorization, sha256_hash, hmac_sha256
 
 
 class TestHmacSha256Authorization(unittest.TestCase):

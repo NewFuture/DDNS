@@ -14,13 +14,13 @@ class TestDnspodProvider(BaseProviderTestCase):
     def setUp(self):
         """测试初始化"""
         super(TestDnspodProvider, self).setUp()
-        self.provider = DnspodProvider(self.auth_id, self.auth_token)
+        self.provider = DnspodProvider(self.authid, self.token)
 
     def test_init_with_basic_config(self):
         """Test DnspodProvider initialization with basic configuration"""
-        provider = DnspodProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = DnspodProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://dnsapi.cn")
         self.assertEqual(provider.DefaultLine, "默认")
 
@@ -52,15 +52,10 @@ class TestDnspodProvider(BaseProviderTestCase):
         # Verify body contains login token and format
         body = call_args[1]["body"]
         self.assertIn("login_token", body)
-        expected_token = "{0},{1}".format(self.auth_id, self.auth_token)
+        expected_token = "{0},{1}".format(self.authid, self.token)
         self.assertEqual(body["login_token"], expected_token)
         self.assertEqual(body["format"], "json")
         self.assertEqual(body["test_param"], "test_value")
-
-        # Verify headers
-        headers = call_args[1]["headers"]
-        self.assertIn("User-Agent", headers)
-        self.assertIn("DDNS", headers["User-Agent"])
 
     @patch("ddns.provider.dnspod.DnspodProvider._http")
     def test_request_failure(self, mock_http):
@@ -404,7 +399,7 @@ class TestDnspodProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """测试初始化"""
         super(TestDnspodProviderIntegration, self).setUp()
-        self.provider = DnspodProvider(self.auth_id, self.auth_token)
+        self.provider = DnspodProvider(self.authid, self.token)
         self.provider.logger = MagicMock()
 
     @patch("ddns.provider.dnspod.DnspodProvider._http")

@@ -5,7 +5,8 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, hmac_sha256_authorization, sha256_hash, join_domain, encode_params
+from ._base import BaseProvider, TYPE_JSON, join_domain, encode_params
+from ._signature import hmac_sha256_authorization, sha256_hash
 from time import strftime, gmtime
 
 
@@ -50,10 +51,10 @@ class HuaweiDNSProvider(BaseProvider):
         sign_path = path if path.endswith("/") else path + "/"
         authorization_format = "%s Access=%s, SignedHeaders={SignedHeaders}, Signature={Signature}" % (
             self.algorithm,
-            self.auth_id,
+            self.id,
         )
         authorization = hmac_sha256_authorization(
-            secret_key=self.auth_token,
+            secret_key=self.token,
             method=method,
             path=sign_path,
             query=query,

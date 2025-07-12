@@ -16,7 +16,7 @@ class CallbackProvider(SimpleProvider):
     Generic custom callback provider, supports GET/POST arbitrary API.
     """
 
-    endpoint = ""  # CallbackProvider uses auth_id as URL, no fixed API endpoint
+    endpoint = ""  # CallbackProvider uses id as URL, no fixed API endpoint
     content_type = TYPE_JSON
     decode_response = False  # Callback response is not JSON, it's a custom response
 
@@ -26,9 +26,8 @@ class CallbackProvider(SimpleProvider):
         Send custom callback request, support GET/POST
         """
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-        url = self.auth_id  # 直接用 auth_id 作为 url
-        token = self.auth_token  # auth_token 作为 POST 参数
-        headers = {"User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.version)}
+        url = self.id  # 直接用 id 作为 url
+        token = self.token  # token 作为 POST 参数
         extra.update(
             {
                 "__DOMAIN__": domain,
@@ -51,7 +50,7 @@ class CallbackProvider(SimpleProvider):
                     params[k] = self._replace_vars(v, extra)
 
         try:
-            res = self._http(method, url, body=params, headers=headers)
+            res = self._http(method, url, body=params)
             if res is not None:
                 self.logger.info("Callback result: %s", res)
                 return True
@@ -72,8 +71,8 @@ class CallbackProvider(SimpleProvider):
         return string
 
     def _validate(self):
-        # CallbackProvider uses auth_id as URL, not as regular ID
-        if not self.auth_id or "://" not in self.auth_id:
-            self.logger.critical("callback ID 参数[%s] 必须是有效的URL", self.auth_id)
-            raise ValueError("id must be configured with URL")
-        # CallbackProvider doesn't need auth_token validation (it can be empty)
+        # CallbackProvider uses id as URL, not as regular ID
+        if self.endpoint or (not self.id or "://" not in self.id):
+            # 如果 endpoint 已经设置，或者 id 不是有效的 URL，则抛出异常
+            self.logger.critical("endpoint [%s] or id [%s] 必须是有效的URL", self.endpoint, self.id)
+            raise ValueError("endpoint or id must be configured with URL")

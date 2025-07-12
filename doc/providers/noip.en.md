@@ -1,75 +1,145 @@
-# No-IP Provider Configuration Guide
+# No-IP Configuration Guide
 
-No-IP is a popular dynamic DNS service that supports the standard No-IP Dynamic Update Protocol.
+## Overview
 
-## Configuration Parameters
+No-IP is a popular dynamic DNS service that supports the standard DDNS dynamic update protocol with Basic Auth authentication. This DDNS project supports authentication through No-IP username and password or DDNS KEY.
 
-| Parameter | Description | Required | Example |
-|-----------|-------------|----------|---------|
-| `dns` | Provider name | ✅ | `"noip"` |
-| `id` | No-IP username or DDNS ID | ✅ | `"your_username"` |
-| `token` | No-IP password or DDNS KEY | ✅ | `"your_password"` |
+## Authentication Methods
 
-## Configuration Examples
+1. Register or log in to [No-IP website](https://www.noip.com/)
+2. Use your registered username and password
+3. Create hostnames in the control panel
 
-### Basic Configuration
+### Username and Password Authentication
+
+Uses No-IP account username and password for authentication, which is the simplest authentication method.
+
+```json
+{
+    "dns": "noip",
+    "id": "your_username",
+    "token": "your_password"
+}
+```
+
+- `id`: No-IP username
+- `token`: No-IP password
+- `dns`: Fixed as `"noip"`
+
+### DDNS KEY + ID Authentication (Recommended)
+
+Uses DDNS ID and DDNS KEY for authentication, which is more secure.
+
+#### Getting DDNS KEY
+
+1. Log in to [No-IP website](https://www.noip.com/)
+2. Go to **Dynamic DNS** > **No-IP Hostnames**
+3. Create or edit dynamic DNS hostname
+4. Generate DDNS KEY for API authentication
+
+```json
+{
+    "dns": "noip",
+    "id": "your_ddns_id",
+    "token": "your_ddns_key"
+}
+```
+
+- `id`: DDNS ID
+- `token`: DDNS KEY
+- `dns`: Fixed as `"noip"`
+
+## Complete Configuration Example
+
+```json
+{
+    "id": "myusername",
+    "token": "mypassword",
+    "dns": "noip",
+    "ipv4": ["home.example.com", "office.example.com"],
+    "index4": ["public"]
+}
+```
+
+### Configuration with Optional Parameters
+
+```json
+{
+    "id": "your_username",
+    "token": "your_password",
+    "dns": "noip",
+    "endpoint": "https://dynupdate.no-ip.com",
+    "index4": ["public"],
+    "index6": ["public"],
+    "ipv4": ["home.example.com"],
+    "ipv6": ["home-v6.example.com"]
+}
+```
+
+## Optional Parameters
+
+### Custom API Endpoint
+
+```json
+{
+    "endpoint": "https://dynupdate.no-ip.com"
+}
+```
+
+No-IP supports custom API endpoints, suitable for:
+
+#### Official Endpoints
+
+- **Default Endpoint**: `https://dynupdate.no-ip.com` (Recommended)
+- **Backup Endpoint**: `https://dynupdate2.no-ip.com`
+
+#### Compatible Services
 
 ```json
 {
     "dns": "noip",
     "id": "your_username",
     "token": "your_password",
+    "endpoint": "https://your-ddns-server.com",
     "ipv4": ["home.example.com"]
 }
 ```
 
-### Multiple Domains
+For other No-IP compatible DDNS services or custom deployments, you can specify different API endpoints.
 
-```json
-{
-    "dns": "noip",
-    "id": "myusername", 
-    "token": "mypassword",
-    "ipv4": [
-        "home.example.com",
-        "office.example.com"
-    ],
-    "ipv6": ["ipv6.example.com"]
-}
+## Troubleshooting
+
+### Debug Mode
+
+Enable debug logging to see detailed information:
+
+```sh
+ddns --debug
 ```
 
-## Authentication Methods
-
-### Username and Password
-
-Uses No-IP account username and password for authentication.
-
-### DDNS KEY Authentication (Recommended)
-
-Uses DDNS ID and DDNS KEY for authentication, which is more secure.
-
-How to obtain: Login to [No-IP website](https://www.noip.com/) → Create Dynamic DNS hostname → Generate DDNS KEY
-
-## Response Codes
+### No-IP Response Codes
 
 | Response | Meaning | Status |
 |----------|---------|--------|
 | `good <ip>` | Update successful | ✅ |
-| `nochg <ip>` | IP unchanged | ✅ |
-| `nohost` | Hostname not found | ❌ |
+| `nochg <ip>` | IP address unchanged | ✅ |
+| `nohost` | Hostname does not exist | ❌ |
 | `badauth` | Authentication failed | ❌ |
 | `badagent` | Client disabled | ❌ |
-| `!donator` | Paid account required | ❌ |
-| `abuse` | Account banned | ❌ |
+| `!donator` | Paid account feature required | ❌ |
+| `abuse` | Account banned or abused | ❌ |
 
-## Troubleshooting
+## API Limitations
 
-- **Authentication failed (badauth)**: Check username and password
-- **Hostname not found (nohost)**: Check domain spelling
-- **Paid feature required (!donator)**: Upgrade account
-- **Account banned (abuse)**: Contact support
+- **Update Frequency**: Recommended interval of at least 5 minutes
+- **Free Accounts**: Must login at least once within 30 days for confirmation
+- **Hostname Count**: Free accounts limited to 3 hostnames
 
-## Related Links
+## Support and Resources
 
 - [No-IP Website](https://www.noip.com/)
-- [API Documentation](https://www.noip.com/integrate/request)
+- [No-IP API Documentation](https://www.noip.com/integrate/request)
+- [No-IP Control Panel](https://www.noip.com/members/)
+- [No-IP Technical Support](https://www.noip.com/support)
+
+> It's recommended to use DDNS KEY authentication for improved security. Regularly check hostname status to ensure proper service operation.

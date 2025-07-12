@@ -1,75 +1,145 @@
 # No-IP 配置指南
 
-No-IP 是流行的动态 DNS 服务，支持标准的 No-IP 动态更新协议。
+## 概述
 
-## 配置参数
+No-IP是流行的动态DNS服务，支持标准的DDNS动态更新协议，采用Basic Auth认证。本 DDNS 项目支持通过No-IP用户名和密码或DDNS KEY进行认证。
 
-| 参数 | 说明 | 必需 | 示例 |
-|------|------|------|------|
-| `dns` | 服务商名称 | ✅ | `"noip"` |
-| `id` | No-IP 用户名或 DDNS ID | ✅ | `"your_username"` |
-| `token` | No-IP 密码或 DDNS KEY | ✅ | `"your_password"` |
+## 认证方式
 
-## 配置示例
+1. 注册或登录 [No-IP 官网](https://www.noip.com/)
+2. 使用注册的用户名和密码
+3. 在控制面板中创建主机名（hostname）
 
-### 基本配置
+### 用户名密码认证
+
+使用No-IP账户用户名和密码进行认证，这是最简单的认证方式。
+
+```json
+{
+    "dns": "noip",
+    "id": "your_username",
+    "token": "your_password"
+}
+```
+
+- `id`：No-IP用户名
+- `token`：No-IP密码
+- `dns`：固定为 `"noip"`
+
+### DDNS KEY + Id 认证（推荐）
+
+使用DDNS ID和DDNS KEY进行认证，更加安全。
+
+#### 获取DDNS KEY
+
+1. 登录 [No-IP 官网](https://www.noip.com/)
+2. 进入 **Dynamic DNS** > **No-IP Hostnames**
+3. 创建或编辑动态DNS主机名
+4. 生成DDNS KEY用于API认证
+
+```json
+{
+    "dns": "noip",
+    "id": "your_ddns_id",
+    "token": "your_ddns_key"
+}
+```
+
+- `id`：DDNS ID
+- `token`：DDNS KEY
+- `dns`：固定为 `"noip"`
+
+## 完整配置示例
+
+```json
+{
+    "id": "myusername",
+    "token": "mypassword",
+    "dns": "noip",
+    "ipv4": ["home.example.com", "office.example.com"],
+    "index4": ["public"]
+}
+```
+
+### 带可选参数的配置
+
+```json
+{
+    "id": "your_username",
+    "token": "your_password",
+    "dns": "noip",
+    "endpoint": "https://dynupdate.no-ip.com",
+    "index4": ["public"],
+    "index6": ["public"],
+    "ipv4": ["home.example.com"],
+    "ipv6": ["home-v6.example.com"]
+}
+```
+
+## 可选参数
+
+### 自定义API端点
+
+```json
+{
+    "endpoint": "https://dynupdate.no-ip.com"
+}
+```
+
+No-IP支持自定义API端点，适用于：
+
+#### 官方端点
+
+- **默认端点**：`https://dynupdate.no-ip.com`（推荐）
+- **备用端点**：`https://dynupdate2.no-ip.com`
+
+#### 兼容服务
 
 ```json
 {
     "dns": "noip",
     "id": "your_username",
     "token": "your_password",
+    "endpoint": "https://your-ddns-server.com",
     "ipv4": ["home.example.com"]
 }
 ```
 
-### 多个域名
+对于No-IP兼容的其他DDNS服务或自定义部署，可以指定不同的API端点。
 
-```json
-{
-    "dns": "noip",
-    "id": "myusername", 
-    "token": "mypassword",
-    "ipv4": [
-        "home.example.com",
-        "office.example.com"
-    ],
-    "ipv6": ["ipv6.example.com"]
-}
+## 故障排除
+
+### 调试模式
+
+启用调试日志查看详细信息：
+
+```sh
+ddns --debug
 ```
 
-## 认证方式
-
-### 用户名密码认证
-
-使用 No-IP 账户用户名和密码进行认证。
-
-### DDNS KEY 认证（推荐）
-
-使用 DDNS ID 和 DDNS KEY 进行认证，更安全。
-
-获取方式：登录 [No-IP 官网](https://www.noip.com/) → 创建动态 DNS 主机名 → 生成 DDNS KEY
-
-## 响应代码
+### No-IP响应代码
 
 | 响应 | 含义 | 状态 |
 |------|------|------|
 | `good <ip>` | 更新成功 | ✅ |
-| `nochg <ip>` | IP 无变化 | ✅ |
+| `nochg <ip>` | IP地址无变化 | ✅ |
 | `nohost` | 主机名不存在 | ❌ |
 | `badauth` | 认证失败 | ❌ |
 | `badagent` | 客户端被禁用 | ❌ |
-| `!donator` | 需要付费账户 | ❌ |
-| `abuse` | 账户被封禁 | ❌ |
+| `!donator` | 需要付费账户功能 | ❌ |
+| `abuse` | 账户被封禁或滥用 | ❌ |
 
-## 故障排除
+## API限制
 
-- **认证失败 (badauth)**：检查用户名和密码
-- **主机名不存在 (nohost)**：检查域名拼写
-- **需要付费功能 (!donator)**：升级账户
-- **账户被封 (abuse)**：联系客服
+- **更新频率**：建议间隔不少于5分钟
+- **免费账户**：30天内需至少一次登录确认
+- **主机名数量**：免费账户限制3个主机名
 
-## 相关链接
+## 支持与资源
 
-- [No-IP 官网](https://www.noip.com/)
-- [API 文档](https://www.noip.com/integrate/request)
+- [No-IP官网](https://www.noip.com/)
+- [No-IP API文档](https://www.noip.com/integrate/request)
+- [No-IP控制面板](https://www.noip.com/members/)
+- [No-IP技术支持](https://www.noip.com/support)
+
+> 建议使用DDNS KEY认证方式以提高安全性，定期检查主机名状态确保服务正常运行。

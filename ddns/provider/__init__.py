@@ -1,9 +1,10 @@
 # coding=utf-8
-from ._base import SimpleProvider  # noqa: F401
+from ._base import SimpleProvider
 from .alidns import AlidnsProvider
 from .aliesa import AliesaProvider
 from .callback import CallbackProvider
 from .cloudflare import CloudflareProvider
+from .debug import DebugProvider
 from .dnscom import DnscomProvider
 from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
@@ -11,7 +12,8 @@ from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
 from .noip import NoipProvider
 from .tencentcloud import TencentCloudProvider
-from .debug import DebugProvider
+
+__all__ = ["SimpleProvider", "get_provider_class"]
 
 
 def get_provider_class(provider_name):
@@ -44,8 +46,8 @@ def get_provider_class(provider_name):
         "esa": AliesaProvider,  # 兼容esa
         # dns.com
         "dnscom": DnscomProvider,
-        "51dns": DnscomProvider,  # 兼容旧的51dns
-        "dns_com": DnscomProvider,  # 兼容旧的dns_com
+        "51dns": DnscomProvider,  # 兼容51dns
+        "dns_com": DnscomProvider,  # 兼容dns_com
         # he.net
         "he": HeProvider,
         "he_net": HeProvider,  # 兼容he.net

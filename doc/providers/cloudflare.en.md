@@ -11,8 +11,7 @@ Cloudflare is a leading global CDN and network security service provider. This D
 ```json
 {
     "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"]
+    "token": "your_api_token_here"
 }
 ```
 
@@ -23,7 +22,6 @@ Cloudflare is a leading global CDN and network security service provider. This D
     "id": "your_email@example.com",
     "token": "your_global_api_key",
     "dns": "cloudflare",
-    "ipv4": ["ddns.example.com"]
 }
 ```
 
@@ -34,7 +32,7 @@ Cloudflare is a leading global CDN and network security service provider. This D
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. Go to "My Profile" → "API Tokens"
 3. Create custom token with permissions:
-   - **Zone:Read** and **DNS:Edit**
+   - **Zone.Zone Read**, **Zone.DNS Read**, **Zone.DNS Edit**
 4. Select domains to manage
 
 ### Global API Key
@@ -43,37 +41,40 @@ Cloudflare is a leading global CDN and network security service provider. This D
 2. Go to "My Profile" → "API Tokens"
 3. View "Global API Key"
 
-## Configuration Examples
+## Permission Requirements
 
-### Basic Configuration
+- **API Token**: Grant the following minimum permissions for secure operation:
+  - `Zone.Zone Read` – list and retrieve zone information
+  - `Zone.DNS Read` – list existing DNS records
+  - `Zone.DNS Edit` – create and update DNS records
+- **Global API Key**: Has full permissions; use only when API Token is not supported and store securely
+
+## Configuration Examples
 
 ```json
 {
     "dns": "cloudflare",
     "token": "your_api_token_here",
     "ipv4": ["ddns.example.com", "www.example.com"],
-    "ipv6": ["ddns.example.com"]
-}
-```
-
-### Advanced Configuration
-
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "ipv4": ["ddns.example.com"],
-    "ttl": 300,
-    "comment": "Dynamic DNS update"
+    "ipv6": ["ddns.example.com"],
+    "index4": ["default"],
+    "index6": ["default"],  
+    "ttl": 600
 }
 ```
 
 ## Optional Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `ttl` | DNS record TTL value | 300 |
-| `comment` | DNS record comment | "DDNS" |
+| Parameter | Description         | Type   | Default               |
+|-----------|------------------------|--------|-----------------------|
+| `ttl`     | DNS record TTL value   | int    | auto (automatic TTL)  |
+
+Cloudflare uses a single global API endpoint, but custom endpoints may be needed in special cases:
+
+- **Enterprise/Private Cloud Deployments**: Configure according to specific deployment environment
+- **Proxy/Mirror Services**: Third-party API proxy service addresses
+
+> **Note**: Cloudflare officially recommends using the default global endpoint `https://api.cloudflare.com`, which is automatically optimized through Cloudflare's global network. Custom endpoints are only needed when using enterprise private deployments or third-party proxy services.
 
 ## Troubleshooting
 
@@ -85,16 +86,11 @@ Cloudflare is a leading global CDN and network security service provider. This D
 
 ### Debug Mode
 
-```json
-{
-    "dns": "cloudflare",
-    "token": "your_api_token_here",
-    "debug": true,
-    "ipv4": ["ddns.example.com"]
-}
+```sh
+ddns -c config.json --debug
 ```
 
-## Resources
+## Related Links
 
 - [Cloudflare API Documentation](https://developers.cloudflare.com/api/)
 - [Cloudflare Dashboard](https://dash.cloudflare.com/)

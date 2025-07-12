@@ -31,12 +31,12 @@ class DnscomProvider(BaseProvider):
         params = {k: v for k, v in params.items() if v is not None}
         params.update(
             {
-                "apiKey": self.auth_id,
+                "apiKey": self.id,
                 "timestamp": time(),  # 时间戳
             }
         )
         query = encode_params(params)
-        sign = md5((query + self.auth_token).encode("utf-8")).hexdigest()
+        sign = md5((query + self.token).encode("utf-8")).hexdigest()
         params["hash"] = sign
         return params
 

@@ -30,6 +30,20 @@
       "title": "API Token",
       "description": "DNS服务商的访问Token或者Key"
     },
+    "endpoint": {
+      "$id": "/properties/endpoint",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "API Endpoint",
+      "description": "DNS服务商的API端点URL，用于自定义或私有部署的API地址",
+      "default": null,
+      "examples": [
+        "https://dnsapi.com",
+        null
+      ]
+    },
     "dns": {
       "$id": "/properties/dns",
       "type": "string",
@@ -109,14 +123,20 @@
       "minItems": 1,
       "minimum": 0,
       "title": "IPv4 address Setting",
-      "description": "本机 IPv4 获取方式设置",
-      "default": "default",
+      "description": "本机 IPv4 获取方式设置，支持数组、字符串(逗号/分号分隔)等多种格式",
+      "default": [
+        "default"
+      ],
       "examples": [
         "default",
         "public",
         0,
-        1,
         "192\\\\.168\\\\..*",
+        "public,regex:192\\\\.168\\\\..*",
+        [
+          "public",
+          "default"
+        ],
         false
       ]
     },
@@ -139,14 +159,21 @@
       "minItems": 1,
       "minimum": 0,
       "title": "IPv6 address Setting",
-      "description": "本机 IPv6 获取方式设置",
-      "default": "default",
+      "description": "本机 IPv6 获取方式设置，支持数组、字符串(逗号/分号分隔)等多种格式",
+      "default": [
+        "default"
+      ],
       "examples": [
         "default",
         "public",
         0,
         1,
         "2404:f801:10:.*",
+        "public;regex:2404:f801:.*",
+        [
+          "public",
+          "default"
+        ],
         false
       ]
     },
@@ -176,10 +203,6 @@
       "examples": [
         "telecom",
         "电信",
-        "unicom",
-        "联通",
-        "mobile",
-        "移动",
         "default",
         "默认"
       ]
@@ -188,14 +211,25 @@
       "$id": "/properties/proxy",
       "type": [
         "string",
-        "null"
+        "null",
+        "array"
       ],
       "title": "HTTP Proxy Setting",
       "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
       "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
       "examples": [
         "127.0.0.1:1080;DIRECT"
-      ]
+      ],
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv4/items",
+        "title": "ipv4 domain for DDNS",
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9\\-_:\\.]*$",
+        "examples": [
+          "127.0.0.1:1080"
+        ]
+      }
     },
     "cache": {
       "$id": "/properties/cache",
@@ -210,6 +244,21 @@
         true,
         false,
         "/path/to/cache/ddns.cache"
+      ]
+    },
+    "ssl": {
+      "$id": "/properties/ssl",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "SSL/TLS Setting",
+      "description": "SSL/TLS连接设置，auto表示自动检测，true强制使用SSL，false禁用SSL",
+      "default": "auto",
+      "examples": [
+        "auto",
+        true,
+        false
       ]
     },
     "log": {
@@ -263,7 +312,6 @@
     }
   },
   "required": [
-    "id",
     "token"
   ],
   "additionalProperties": false

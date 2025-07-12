@@ -4,90 +4,36 @@
 
 DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命令行参数](cli.md) > [配置文件](json.md) > 环境变量**
 
-所有环境变量都以 `DDNS_` 为前缀，后跟参数名（推荐全大写），点号(`.`)替换为下划线(`_`)。
+所有环境变量都以 `DDNS_` 为前缀，后跟参数名（推荐全大写）,对象和属性分隔符用`_`分割。
 
-> export DDNS_xxx="xxx"  命令作用于当前主机
-> docker run -e DDNS_xxx="xxx" 命令作用于容器内
-
-### 环境变量命名规则
-
-| 配置参数 | 环境变量名称 | 示例 |
-|---------|-------------|------|
-| `id` | `DDNS_ID` 或 `ddns_id` | `DDNS_ID=12345` |
-| `token` | `DDNS_TOKEN` 或 `ddns_token` | `DDNS_TOKEN=mytokenkey` |
-| `log.level` | `DDNS_LOG_LEVEL` 或 `ddns_log_level` | `DDNS_LOG_LEVEL=DEBUG` |
-| `log.file` | `DDNS_LOG_FILE` 或 `ddns_log_file` | `DDNS_LOG_FILE=/var/log/ddns.log` |
+> export DDNS_XXX="xxx"  命令作用于当前主机
+> docker run -e DDNS_XXX="xxx" 命令作用于容器内
 
 ## 环境变量完整参数列表
 
-以下是DDNS支持的所有环境变量参数列表：
+| 环境变量               | 参数格式                                                                                             | 描述                              | 示例                                                     |
+|------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------|----------------------------------------------------------|
+| `DDNS_DNS`             | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](./providers/README.md) | `DDNS_DNS=cloudflare`                                    |
+| `DDNS_ID`              | 依 DNS 服务商而定                                                                                   | API 账号 或 ID                    | `DDNS_ID="user@example.com"`                             |
+| `DDNS_TOKEN`           | 依 DNS 服务商而定                                                                                   | API 授权令牌或 Secret             | `DDNS_TOKEN="abcdef123456"`                              |
+| `DDNS_ENDPOINT`        | URL（http 或 https 协议）                                                                           | 自定义 API 地址                   | `DDNS_ENDPOINT=https://api.dns.cn`                       |
+| `DDNS_IPV4`            | 域名，数组或逗号分隔字符串                                                                          | IPv4 域名列表                     | `DDNS_IPV4='["t.com","4.t.com"]'`                        |
+| `DDNS_IPV6`            | 域名，数组或逗号分隔字符串                                                                          | IPv6 域名列表                     | `DDNS_IPV6=t.com,6.t.com`                                |
+| `DDNS_INDEX4`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv4 获取方式                     | `DDNS_INDEX4="[0,'regex:192.168.*']"`                    |
+| `DDNS_INDEX6`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv6 获取方式                     | `DDNS_INDEX6=public`                                     |
+| `DDNS_TTL`             | 整数（单位：秒），依服务商而定                                                                     | 设置 DNS TTL                      | `DDNS_TTL=600`                                           |
+| `DDNS_LINE`            | 依服务商而定，如：电信、移动                                                                        | DNS 解析线路                      | `DDNS_LINE=电信`                                         |
+| `DDNS_PROXY`           | IP:端口 或 DIRECT，支持多代理数组或分号分隔                                                         | HTTP 代理设置                     | `DDNS_PROXY="127.0.0.1:1080;DIRECT"`                     |
+| `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
+| `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
+| `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |
+| `DDNS_LOG_FILE`        | 文件路径                                                                                            | 设置日志输出文件（默认输出到终端）| `DDNS_LOG_FILE="/tmp/ddns.log"`                          |
+| `DDNS_LOG_FORMAT`      | Python logging 格式模板                                                                             | 设置日志格式                      | `DDNS_LOG_FORMAT="%(message)s"`                          |
+| `DDNS_LOG_DATEFMT`     | 日期时间格式字符串                                                                                  | 设置日志时间格式                  | `DDNS_LOG_DATEFMT="%m-%d %H:%M"`                         |
 
-| 环境变量 | 类型 | 默认值 | 描述 |
-|---------|------|--------|------|
-| `DDNS_ID` | 字符串 | 无 | API访问ID或用户标识 |
-| `DDNS_TOKEN` | 字符串 | 无 | API授权令牌或密钥 |
-| `DDNS_DNS` | 字符串 | `dnspod` | DNS服务提供商 |
-| `DDNS_IPV4` | 数组/字符串 | 无 | IPv4域名列表 |
-| `DDNS_IPV6` | 数组/字符串 | 无 | IPv6域名列表 |
-| `DDNS_INDEX4` | 数组/字符串/数字 | `default` | IPv4地址获取方式 |
-| `DDNS_INDEX6` | 数组/字符串/数字 | `default` | IPv6地址获取方式 |
-| `DDNS_TTL` | 整数 | 无 | DNS解析TTL时间（秒） |
-| `DDNS_LINE` | 字符串 | 无 | DNS解析线路，ISP线路选择 |
-| `DDNS_PROXY` | 数组/字符串 | 无 | HTTP代理设置 |
-| `DDNS_CACHE` | 布尔值/字符串 | `true` | 缓存设置 |
-| `DDNS_LOG_LEVEL` | 字符串 | `INFO` | 日志级别 |
-| `DDNS_LOG_FILE` | 字符串 | 无 | 日志文件路径 |
-| `DDNS_LOG_FORMAT` | 字符串 | `%(asctime)s %(levelname)s [%(module)s]: %(message)s` | 日志格式字符串 |
-| `DDNS_LOG_DATEFMT` | 字符串 | `%Y-%m-%dT%H:%M:%S` | 日期时间格式字符串 |
-
-### 参数值示例
-
-| 环境变量 | 可能的值 | 示例 |
-|---------|---------|------|
-| `DDNS_DNS` | dnspod, alidns, cloudflare, dnscom, dnspod_com, he, huaweidns, callback | `export DDNS_DNS="cloudflare"` |
-| `DDNS_IPV4` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV4='["example.com", "www.example.com"]'` |
-| `DDNS_IPV6` | JSON数组, 逗号分隔的字符串 | `export DDNS_IPV6="example.com,ipv6.example.com"` |
-| `DDNS_INDEX4` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX4='["public", "regex:192\\.168\\..*"]'` |
-| `DDNS_INDEX6` | 数字、default、public、url:、regex:、cmd:、shell: | `export DDNS_INDEX6="public"` |
-| `DDNS_LINE` | 线路名称，如默认、电信、联通、移动等 | `export DDNS_LINE="电信"` |
-| `DDNS_PROXY` | IP:端口, DIRECT, 分号分隔的列表 | `export DDNS_PROXY="127.0.0.1:1080;DIRECT"` |
-| `DDNS_CACHE` | true/false, 文件路径 | `export DDNS_CACHE="/path/to/cache.json"` |
-| `DDNS_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR, CRITICAL | `export DDNS_LOG_LEVEL="DEBUG"` |
-| `DDNS_LOG_FORMAT` | 格式字符串 | `export DDNS_LOG_FORMAT="%(asctime)s: %(message)s"` |
-| `DDNS_LOG_DATEFMT` | 日期格式字符串 | `export DDNS_LOG_DATEFMT="%Y-%m-%d %H:%M:%S"` |
+> **注意**: 数组确认字符串引号，可打印出来查看
 
 ## 基础配置参数
-
-### 认证信息
-
-#### DDNS_ID
-
-- **类型**: 字符串
-- **必需**: 是（部分 DNS 服务商可选）
-- **说明**: API 访问 ID 或用户标识
-- **示例**:
-
-  ```bash
-  export DDNS_ID="12345"
-  # DNSPod 为用户 ID
-  # 阿里云为 Access Key ID
-  # CloudFlare 为邮箱地址（使用 Token 时可留空）
-  # HE.net 可留空
-  # 华为云为 Access Key ID (AK)
-  ```
-
-#### DDNS_TOKEN
-
-- **类型**: 字符串
-- **必需**: 是
-- **说明**: API 授权令牌或密钥
-- **示例**:
-
-  ```bash
-  export DDNS_TOKEN="your_api_token_here"
-  # 部分平台称为 Secret Key
-  # 注意：请妥善保管，不要泄露
-  ```
 
 ### DNS 服务商
 
@@ -96,51 +42,39 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 - **类型**: 字符串
 - **必需**: 否
 - **默认值**: `dnspod`
-- **可选值**: `alidns`, `cloudflare`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `callback`
+- **可选值**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `noip`, `tencentcloud`
 - **说明**: DNS 服务提供商
 - **示例**:
 
   ```bash
   export DDNS_DNS="alidns"        # 阿里云 DNS
+  export DDNS_DNS="aliesa"        # 阿里云企业版 DNS
   export DDNS_DNS="cloudflare"    # CloudFlare
   export DDNS_DNS="dnspod"        # DNSPod 国内版
   export DDNS_DNS="dnspod_com"    # DNSPod 国际版
+  export DDNS_DNS="dnscom"        # DNS.COM
+  export DDNS_DNS="51dns"         # 51DNS (DNS.COM别名)
   export DDNS_DNS="he"            # HE.net
   export DDNS_DNS="huaweidns"     # 华为云 DNS
+  export DDNS_DNS="noip"          # NoIP
+  export DDNS_DNS="tencentcloud"  # 腾讯云 DNS
   export DDNS_DNS="callback"      # 自定义回调
+  export DDNS_DNS="debug"         # 调试模式
   ```
 
-### 自定义回调配置
+#### DDNS_ENDPOINT
 
-当使用 `DDNS_DNS="callback"` 时，可通过以下环境变量配置自定义回调：
+- **类型**: 字符串
+- **必需**: 否
+- **默认值**: 无（使用各DNS服务商的默认API端点）
+- **说明**: API端点URL，用于自定义或私有部署的API地址
+- **示例**:
 
-- **DDNS_ID**: 回调URL地址，支持变量替换
-- **DDNS_TOKEN**: POST请求参数（JSON字符串），为空时使用GET请求
-
-详细配置请参考：[Callback Provider 配置文档](providers/callback.md)
-
-**示例**:
-
-```bash
-# GET 方式回调
-export DDNS_DNS="callback"
-export DDNS_ID="https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__"
-export DDNS_TOKEN=""
-
-# POST 方式回调（JSON字符串）
-export DDNS_DNS="callback"
-export DDNS_ID="https://api.example.com/ddns"
-export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
-```
-
-**支持的变量替换**:
-
-- `__DOMAIN__`: 完整域名
-- `__IP__`: IP地址（IPv4或IPv6）
-- `__RECORDTYPE__`: DNS记录类型
-- `__TTL__`: 生存时间（秒）
-- `__LINE__`: 解析线路
-- `__TIMESTAMP__`: 当前时间戳
+  ```bash
+  export DDNS_ENDPOINT="https://api.example.com"     # 自定义API端点
+  export DDNS_ENDPOINT="https://private.dns.com"     # 私有部署的DNS API
+  export DDNS_ENDPOINT=""                             # 使用默认端点
+  ```
 
 ## 域名配置
 
@@ -165,29 +99,6 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   export DDNS_IPV4="[]"
   ```
 
-### IPv6 域名列表
-
-#### DDNS_IPV6
-
-- **类型**: 数组（支持 JSON / Python 格式）
-- **必需**: 否
-- **默认值**: `[]`
-- **说明**: 需要更新 IPv6 记录的域名列表
-- **示例**:
-
-  ```bash
-  # 单个域名
-  export DDNS_IPV6="ipv6.example.com"
-
-  # JSON 数组格式（推荐）
-  export DDNS_IPV6='["ipv6.example.com", "v6.example.com"]'
-
-  # python 列表格式
-  export DDNS_IPV6="['ipv6.example.com', 'v6.example.com']"
-
-  # 禁用 IPv6 更新
-  export DDNS_IPV6="[]"
-  ```
 
 ## IP 获取方式
 
@@ -197,8 +108,9 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 
 - **类型**: 字符串或数组
 - **必需**: 否
-- **默认值**: `default`
-- **说明**: IPv4 地址获取方式
+- **默认值**: `["default"]` (使用系统默认外网IP)
+- **说明**: IPv4 地址获取方式。支持逗号`,`或分号`;`分隔的字符串格式
+- **特殊说明**: 当值包含 `regex:`、`cmd:` 或 `shell:` 前缀时，不支持分隔符分割，整个字符串作为单一配置项
 - **示例**:
 
   ```bash
@@ -214,14 +126,20 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   # 自定义 URL 获取
   export DDNS_INDEX4="url:http://ip.sb"
   
-  # 正则匹配（注意转义）
+  # 正则匹配（注意转义）- 不支持分割
   export DDNS_INDEX4="regex:192\\.168\\..*"
   
-  # 执行命令
+  # 执行命令 - 不支持分割
   export DDNS_INDEX4="cmd:curl -s http://ipv4.icanhazip.com"
   
-  # Shell 命令
+  # Shell 命令 - 不支持分割
   export DDNS_INDEX4="shell:ip route get 8.8.8.8 | awk '{print \$7}'"
+  
+  # 逗号分隔多种方式（仅限无特殊前缀时）
+  export DDNS_INDEX4="public,default"
+  
+  # 包含逗号的正则表达式（整体作为单一配置）
+  export DDNS_INDEX4="regex:192\\.168\\..*,10\\..*"
   
   # 多种方式组合（JSON 数组）
   export DDNS_INDEX4='["public", "regex:172\\..*"]'
@@ -230,47 +148,7 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   export DDNS_INDEX4="false"
   ```
 
-### IPv6 获取方式
-
-#### DDNS_INDEX6
-
-- **类型**: 字符串或数组
-- **必需**: 否
-- **默认值**: `default`
-- **说明**: IPv6 地址获取方式（用法同 INDEX4）
-- **示例**:
-
-  ```bash
-  # 公网 IPv6
-  export DDNS_INDEX6="public"
-  
-  # 正则匹配 IPv6
-  export DDNS_INDEX6="regex:2001:.*"
-  
-  # 自定义 URL
-  export DDNS_INDEX6="url:http://ipv6.icanhazip.com"
-  
-  # 禁用 IPv6 获取
-  export DDNS_INDEX6="false"
-  ```
-
 ## 网络配置
-
-### TTL 设置
-
-#### DDNS_TTL
-
-- **类型**: 整数
-- **必需**: 否
-- **默认值**: `null`（使用 DNS 默认值）
-- **说明**: DNS 记录的 TTL（生存时间），单位为秒
-- **示例**:
-
-  ```bash
-  export DDNS_TTL="600"     # 10 分钟
-  export DDNS_TTL="3600"    # 1 小时
-  export DDNS_TTL="86400"   # 24 小时
-  ```
 
 ### 代理设置
 
@@ -411,22 +289,6 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 
 ## 使用示例
 
-### 基础配置示例
-
-```bash
-#!/bin/bash
-# DNSPod 配置示例
-export DDNS_DNS="dnspod"
-export DDNS_ID="12345"
-export DDNS_TOKEN="your_token_here"
-export DDNS_IPV4='["example.com", "www.example.com"]'
-export DDNS_IPV6='["ipv6.example.com"]'
-export DDNS_TTL="600"
-
-# 运行 DDNS
-ddns
-```
-
 ### Docker 环境变量示例
 
 ```bash
@@ -486,7 +348,12 @@ ddns
    - JSON 数组格式：`'["item1", "item2"]'`（推荐）
    - 逗号分隔格式：`"item1,item2"`
 
-2. **配置优先级和字段覆盖关系**:
+2. **特殊前缀规则**: 对于 `index4` 和 `index6` 参数：
+   - 当值包含 `regex:`、`cmd:` 或 `shell:` 前缀时，整个字符串将作为单一配置项，不会按分隔符分割
+   - 例如：`"regex:192\\.168\\..*,10\\..*"` 会被视为一个完整的正则表达式，而不是两个配置项
+   - 这是因为这些前缀的值内部可能包含逗号或分号，分割会破坏配置的完整性
+
+3. **配置优先级和字段覆盖关系**:
 
    DDNS工具中的配置优先级顺序为：**命令行参数 > JSON配置文件 > 环境变量**
 
@@ -516,11 +383,11 @@ ddns
 
    另外，JSON配置文件中明确设置为`null`的值会覆盖环境变量设置，相当于未设置该值。
 
-3. **大小写兼容**: 环境变量名支持大写、小写或混合大小写
+4. **大小写兼容**: 环境变量名支持大写、小写或混合大小写
 
-4. **安全提醒**:
+5. **安全提醒**:
    - 请妥善保管 `DDNS_TOKEN` 等敏感信息
    - 在脚本中使用时避免明文存储
    - 考虑使用 `.env` 文件或密钥管理系统
 
-5. **调试建议**: 出现问题时，可设置 `DDNS_LOG_LEVEL=DEBUG` 获取详细日志信息
+6. **调试建议**: 出现问题时，可设置 `DDNS_LOG_LEVEL=DEBUG` 获取详细日志信息

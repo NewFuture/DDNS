@@ -5,13 +5,14 @@ DDNS Tests Package
 
 import sys
 import os
+import unittest
 
 try:
     from unittest.mock import patch, MagicMock
 except ImportError:  # Python 2
     from mock import patch, MagicMock  # type: ignore
 
-__all__ = ["patch", "MagicMock"]
+__all__ = ["patch", "MagicMock", "unittest"]
 
 # 添加当前目录到 Python 路径，这样就可以直接导入 test_base
 current_dir = os.path.dirname(__file__)

@@ -1,11 +1,9 @@
 # coding=utf-8
 """
 Base test utilities and common imports for all provider tests
-
-@author: Github Copilot
+@author: NewFuture
 """
-import unittest
-from __init__ import patch, MagicMock  # noqa: F401 # Ensure the package is initialized
+from __init__ import unittest, patch, MagicMock  # noqa: F401 # Ensure the package is initialized
 
 
 class BaseProviderTestCase(unittest.TestCase):
@@ -13,13 +11,13 @@ class BaseProviderTestCase(unittest.TestCase):
 
     def setUp(self):
         """Set up common test fixtures"""
-        self.auth_id = "test_id"
-        self.auth_token = "test_token"
+        self.authid = "test_id"
+        self.token = "test_token"
 
-    def assertProviderInitialized(self, provider, expected_auth_id=None, expected_auth_token=None):
+    def assertProviderInitialized(self, provider, expected_id=None, expected_token=None):
         """Helper method to assert provider is correctly initialized"""
-        self.assertEqual(provider.auth_id, expected_auth_id or self.auth_id)
-        self.assertEqual(provider.auth_token, expected_auth_token or self.auth_token)
+        self.assertEqual(provider.id, expected_id or self.authid)
+        self.assertEqual(provider.token, expected_token or self.token)
 
     def mock_logger(self, provider):
         """Helper method to mock provider logger"""

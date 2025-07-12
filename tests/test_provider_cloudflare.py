@@ -15,8 +15,8 @@ class TestCloudflareProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestCloudflareProvider, self).setUp()
-        self.auth_id = "test@example.com"
-        self.auth_token = "test_api_key_or_token"
+        self.authid = "test@example.com"
+        self.token = "test_api_key_or_token"
 
     def test_class_constants(self):
         """Test CloudflareProvider class constants"""
@@ -26,44 +26,44 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test CloudflareProvider initialization with basic configuration"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
-        self.assertEqual(provider.auth_id, self.auth_id)
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
+        self.assertEqual(provider.id, self.authid)
+        self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://api.cloudflare.com")
 
     def test_init_with_token_only(self):
         """Test CloudflareProvider initialization with token only (Bearer auth)"""
-        provider = CloudflareProvider("", self.auth_token)
-        self.assertEqual(provider.auth_id, "")
-        self.assertEqual(provider.auth_token, self.auth_token)
+        provider = CloudflareProvider("", self.token)
+        self.assertEqual(provider.id, "")
+        self.assertEqual(provider.token, self.token)
 
     def test_validate_success_with_email(self):
         """Test _validate method with valid email"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
         # Should not raise any exception
         provider._validate()
 
     def test_validate_success_with_token_only(self):
         """Test _validate method with token only (no email)"""
-        provider = CloudflareProvider("", self.auth_token)
+        provider = CloudflareProvider("", self.token)
         # Should not raise any exception
         provider._validate()
 
     def test_validate_failure_no_token(self):
         """Test _validate method with missing token"""
         with self.assertRaises(ValueError) as cm:
-            CloudflareProvider(self.auth_id, "")
+            CloudflareProvider(self.authid, "")
         self.assertIn("token must be configured", str(cm.exception))
 
     def test_validate_failure_invalid_email(self):
         """Test _validate method with invalid email format"""
         with self.assertRaises(ValueError) as cm:
-            CloudflareProvider("invalid_email", self.auth_token)
+            CloudflareProvider("invalid_email", self.token)
         self.assertIn("ID must be a valid email or Empty", str(cm.exception))
 
     def test_request_with_email_auth(self):
         """Test _request method using email + API key authentication"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"success": True, "result": {"id": "zone123"}}
@@ -73,14 +73,14 @@ class TestCloudflareProvider(BaseProviderTestCase):
             mock_http.assert_called_once_with(
                 "GET",
                 "/client/v4/zones/test",
-                headers={"X-Auth-Email": self.auth_id, "X-Auth-Key": self.auth_token},
+                headers={"X-Auth-Email": self.authid, "X-Auth-Key": self.token},
                 params={"param1": "value1"},
             )
             self.assertEqual(result, {"id": "zone123"})
 
     def test_request_with_bearer_auth(self):
         """Test _request method using Bearer token authentication"""
-        provider = CloudflareProvider("", self.auth_token)
+        provider = CloudflareProvider("", self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"success": True, "result": {"id": "zone123"}}
@@ -90,14 +90,14 @@ class TestCloudflareProvider(BaseProviderTestCase):
             mock_http.assert_called_once_with(
                 "GET",
                 "/client/v4/zones/test",
-                headers={"Authorization": "Bearer " + self.auth_token},
+                headers={"Authorization": "Bearer " + self.token},
                 params={"param1": "value1"},
             )
             self.assertEqual(result, {"id": "zone123"})
 
     def test_request_failure(self):
         """Test _request method with failed response"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"success": False, "errors": ["Invalid API key"]}
@@ -108,7 +108,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_request_filters_none_params(self):
         """Test _request method filters out None parameters"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"success": True, "result": {}}
@@ -122,7 +122,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_zone_id_success(self):
         """Test _query_zone_id method with successful response"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = [
@@ -137,7 +137,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_zone_id_not_found(self):
         """Test _query_zone_id method when domain is not found"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = [{"id": "zone456", "name": "other.com"}]
@@ -148,7 +148,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_zone_id_empty_response(self):
         """Test _query_zone_id method with empty response"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = []
@@ -159,7 +159,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_record_success(self):
         """Test _query_record method with successful response"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = [
@@ -179,7 +179,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request", autospec=True
@@ -196,7 +196,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_query_record_with_proxy_option(self):
         """Test _query_record method with proxy option in extra parameters"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
@@ -218,7 +218,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request"
@@ -243,7 +243,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_create_record_failure(self):
         """Test _create_record method with failed creation"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
@@ -258,7 +258,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_create_record_with_extra_params(self):
         """Test _create_record method with extra parameters"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
@@ -285,7 +285,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_update_record_success(self):
         """Test _update_record method with successful update"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         old_record = {
             "id": "rec123",
@@ -308,7 +308,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark since extra is empty
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",  # Default Remark since extra is empty
                 proxied=False,
                 tags=["tag1"],
                 settings={"ttl": 300},
@@ -317,7 +317,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com"}
 
@@ -330,7 +330,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_update_record_with_extra_params(self):
         """Test _update_record method with extra parameters overriding defaults"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         old_record = {"id": "rec123", "name": "www.example.com", "comment": "Old comment", "proxied": False}
 
@@ -357,7 +357,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
     def test_update_record_preserves_old_values(self):
         """Test _update_record method preserves proxied/tags/settings from old record, uses default comment"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         old_record = {
             "id": "rec123",
@@ -381,7 +381,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 name="www.example.com",
                 content="5.6.7.8",
                 ttl=600,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",  # Default Remark
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",  # Default Remark
                 proxied=True,  # Preserved from old record
                 tags=["important"],  # Preserved from old record
                 settings={"ttl": 300},  # Preserved from old record
@@ -395,12 +395,12 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestCloudflareProviderIntegration, self).setUp()
-        self.auth_id = "test@example.com"
-        self.auth_token = "test_api_key"
+        self.authid = "test@example.com"
+        self.token = "test_api_key"
 
     def test_full_workflow_create_new_record(self):
         """Test complete workflow for creating a new record"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         # Mock only the HTTP layer to simulate API responses
         with patch.object(provider, "_request") as mock_request:
@@ -427,12 +427,12 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 type="A",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
             )
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate API responses
@@ -455,7 +455,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 name="www.example.com",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
                 proxied=False,
                 tags=None,
                 settings=None,
@@ -463,7 +463,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate API returning empty array for zone query
@@ -474,7 +474,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_create_failure(self):
         """Test complete workflow when record creation fails"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, no existing record, creation fails
@@ -490,7 +490,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_failure(self):
         """Test complete workflow when record update fails"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, existing record found, update fails
@@ -508,7 +508,7 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_with_proxy_options(self):
         """Test complete workflow with proxy and other Cloudflare-specific options"""
-        provider = CloudflareProvider(self.auth_id, self.auth_token)
+        provider = CloudflareProvider(self.authid, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate successful creation with custom options
@@ -529,14 +529,14 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
                 type="A",
                 content="1.2.3.4",
                 ttl=300,
-                comment="Managed by [DDNS v0.0.0](https://ddns.newfuture.cc)",
+                comment="Managed by [DDNS](https://ddns.newfuture.cc)",
                 proxied=True,
                 priority=10,
             )
 
     def test_full_workflow_bearer_token_auth(self):
         """Test complete workflow using Bearer token authentication"""
-        provider = CloudflareProvider("", self.auth_token)  # No email, Bearer token only
+        provider = CloudflareProvider("", self.token)  # No email, Bearer token only
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate successful workflow

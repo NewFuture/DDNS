@@ -26,9 +26,9 @@ class NoipProvider(SimpleProvider):
         """
         Validate authentication credentials for No-IP
         """
-        if not self.auth_id:
+        if not self.id:
             raise ValueError("No-IP requires username as 'id'")
-        if not self.auth_token:
+        if not self.token:
             raise ValueError("No-IP requires password as 'token'")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
@@ -60,7 +60,7 @@ class NoipProvider(SimpleProvider):
         params = {"hostname": domain, "myip": value}
 
         # Prepare HTTP Basic Authentication headers
-        auth_string = "{0}:{1}".format(self.auth_id, self.auth_token)
+        auth_string = "{0}:{1}".format(self.id, self.token)
         if not isinstance(auth_string, bytes):  # Python 3
             auth_bytes = auth_string.encode("utf-8")
         else:  # Python 2
@@ -69,7 +69,6 @@ class NoipProvider(SimpleProvider):
         auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
         headers = {
             "Authorization": "Basic {0}".format(auth_b64),
-            "User-Agent": "DDNS/{0} (ddns@newfuture.cc)".format(self.version),
         }
 
         try:

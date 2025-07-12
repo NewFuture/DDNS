@@ -4,8 +4,7 @@
 @author: NewFuture
 """
 
-import unittest
-from base_test import BaseProviderTestCase
+from base_test import unittest, BaseProviderTestCase
 from ddns.provider.aliesa import AliesaProvider
 
 
@@ -15,7 +14,7 @@ class TestAliesaProvider(BaseProviderTestCase):
     def setUp(self):
         """Setup test provider with mock credentials"""
         super(TestAliesaProvider, self).setUp()
-        self.provider = AliesaProvider(auth_id="test_access_key", auth_token="test_secret_key")
+        self.provider = AliesaProvider(id="test_access_key", token="test_secret_key")
 
     def test_class_constants(self):
         """Test AliesaProvider class constants"""
@@ -24,23 +23,23 @@ class TestAliesaProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test AliesaProvider initialization with basic configuration"""
-        provider = AliesaProvider(auth_id="test_access_key", auth_token="test_secret_key")
-        self.assertEqual(provider.auth_id, "test_access_key")
-        self.assertEqual(provider.auth_token, "test_secret_key")
+        provider = AliesaProvider(id="test_access_key", token="test_secret_key")
+        self.assertEqual(provider.id, "test_access_key")
+        self.assertEqual(provider.token, "test_secret_key")
         self.assertEqual(provider.endpoint, "https://esa.cn-hangzhou.aliyuncs.com")
 
     def test_init_with_empty_credentials(self):
         """Test AliesaProvider initialization with empty credentials raises ValueError"""
         with self.assertRaises(ValueError):
-            AliesaProvider(auth_id="", auth_token="")
+            AliesaProvider(id="", token="")
 
     def test_init_with_long_credentials(self):
         """Test AliesaProvider initialization with long credentials"""
         long_id = "a" * 50
         long_token = "b" * 100
-        provider = AliesaProvider(auth_id=long_id, auth_token=long_token)
-        self.assertEqual(provider.auth_id, long_id)
-        self.assertEqual(provider.auth_token, long_token)
+        provider = AliesaProvider(id=long_id, token=long_token)
+        self.assertEqual(provider.id, long_id)
+        self.assertEqual(provider.token, long_token)
 
     def test_zone_id_query_logic(self):
         """Test zone ID query logic with various domain formats"""
@@ -343,7 +342,7 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Setup test provider with mock credentials"""
         super(TestAliesaProviderIntegration, self).setUp()
-        self.provider = AliesaProvider(auth_id="test_access_key", auth_token="test_secret_key")
+        self.provider = AliesaProvider(id="test_access_key", token="test_secret_key")
 
     def test_full_workflow_logic(self):
         """Test complete workflow logic without mocking internal methods"""
@@ -474,7 +473,7 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
     def setUp(self):
         """Setup test provider with mock credentials"""
         super(TestAliesaProviderAPIResponse, self).setUp()
-        self.provider = AliesaProvider(auth_id="test_access_key", auth_token="test_secret_key")
+        self.provider = AliesaProvider(id="test_access_key", token="test_secret_key")
 
     def test_successful_response_detection(self):
         """Test successful API response detection logic"""

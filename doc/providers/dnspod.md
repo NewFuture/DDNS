@@ -1,11 +1,12 @@
-# DNSPod 配置指南 中文文档
+# DNSPod 中国版 配置指南
 
 ## 概述
 
-DNSPod 是腾讯云旗下的 DNS 解析服务商，在中国大陆地区广泛使用。本 DDNS 项目支持两种认证方式连接 DNSPod：
+DNSPod (dnspod.cn) 在中国大陆地区广泛使用，后被腾讯云收购。本 DDNS 项目支持两种认证方式连接 DNSPod：
 
 1. **API Token**（推荐）
 2. **邮箱 + 密码**（传统）
+3. AccessKey（腾讯云 DNSPod）[参考](tencentcloud.md)
 
 ## 认证方式
 
@@ -19,8 +20,6 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 2. 进入“用户中心” > “API 密钥”或访问 <https://console.dnspod.cn/account/token/token>
 3. 点击“创建密钥”，填写描述，选择域名管理权限，完成创建
 4. 复制 **ID**（数字）和 **Token**（字符串），密钥只显示一次，请妥善保存
-
-#### 配置示例
 
 ```json
 {
@@ -38,8 +37,6 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 使用 DNSPod 账号邮箱和密码，安全性较低，仅建议特殊场景使用。
 
-#### 配置示例
-
 ```json
 {
     "id": "your-email@example.com",
@@ -54,76 +51,30 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 ## 完整配置示例
 
-### 示例 1：API Token
-
 ```json
 {
     "id": "123456",
     "token": "abcdef1234567890abcdef1234567890abcdef12",
     "dns": "dnspod",
-    "ipv6": ["home.example.com", "nas.example.com"]
-}
-```
-
-### 示例 2：邮箱认证
-
-```json
-{
-    "id": "myemail@gmail.com",
-    "token": "mypassword123",
-    "dns": "dnspod",
-    "ipv6": ["dynamic.mydomain.com"]
-}
-```
-
-### 示例 3：带线路配置
-
-```json
-{
-    "id": "123456",
-    "token": "abcdef1234567890abcdef1234567890abcdef12",
-    "dns": "dnspod",
+    "index4": ["public"],
+    "index6": ["public"],
     "ipv4": ["home.example.com"],
-    "ttl": 600,
-    "line": "电信"
+    "ipv6": ["home.example.com", "nas.example.com"],
+    "line": "默认",
+    "ttl": 600
 }
 ```
 
 ## 可选参数
 
-### TTL（生存时间）
+### 可选参数一览
 
-```json
-{
-    "ttl": 600
-}
-```
+| 参数   | 说明         | 类型   | 取值范围/示例         | 默认值   |
+|--------|--------------|--------|-----------------------|----------|
+| ttl    | 生存时间     | int    | 1-604800（秒）        | 600      |
+| line   | 线路        | str    | "默认"、"电信"、"联通"、"移动"等 | "默认"   |
 
-- 范围：1-604800 秒
-- 默认：600 秒
-- 推荐：120-600 秒
-
-### 记录类型
-
-```json
-{
-    "record_type": "A"
-}
-```
-
-- 支持：A、AAAA、CNAME
-- 默认：A（IPv4）
-
-### 线路（运营商线路）
-
-```json
-{
-    "line": "默认"
-}
-```
-
-- 选项："默认"、"电信"、"联通"、"移动"等
-- 默认："默认"
+> **注意**：`ttl` 和 `line` 不同套餐支持的值可能不同。
 
 ## 故障排除
 
@@ -158,6 +109,6 @@ ddns --debug
 
 - [DNSPod 文档](https://docs.dnspod.cn/)
 - [API 参考](https://docs.dnspod.cn/api/)
-- [腾讯云DNSPod(AccessKey)](./tencentcloud.md)
+- [腾讯云DNSPod(AccessKey)](./tencentcloud.md) (DNSPod 的 AccessKey 方式)
 
 > 推荐使用 API Token 方式，提升安全性与管理便捷性。

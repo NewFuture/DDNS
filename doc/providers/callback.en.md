@@ -6,87 +6,74 @@ The Callback Provider is a universal custom callback interface that allows you t
 
 ### Configuration Parameters
 
-| Parameter | Description | Required | Example |
-|-----------|-------------|----------|---------|
-| `id` | Callback URL address with variable substitution support | ✅ | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
-| `token` | POST request parameters (JSON object or JSON string), uses GET when empty | Optional | `{"api_key": "your_key"}` or `"{\"api_key\": \"your_key\"}"` |
+| Parameter  | Description                                                   | Required | Example                                                      |
+|------------|---------------------------------------------------------------|----------|--------------------------------------------------------------|
+| `id`       | Callback URL with variable substitution support               | ✅        | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__`    |
+| `token`    | POST request parameters (JSON object or JSON string). Empty for GET | Optional | `{"api_key": "your_key"}` or `"{\"api_key\": \"your_key\"}"` |
+| `endpoint` | Optional API endpoint base URL. If omitted, default is blank   | Optional | `https://api.example.com/ddns`                                |
+| `dns`      | Must be set to `"callback"` to use callback method           | ✅        | `"callback"`                                                |
 
 ### Minimal Configuration Example
 
 ```json
 {
-    "id": "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__",
-    "token": "",
-    "dns": "callback",
-    "ipv4": ["sub.example.com"],
-    "ipv6": ["ipv6.example.com"]
+  "id": "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__",
+  "token": "",
+  "dns": "callback",
+  "ipv4": ["sub.example.com"],
+  "index4": ["default"]
 }
 ```
 
 ## Request Methods
 
-### GET Request (Recommended for Simple Scenarios)
+| Method | Condition        | Description              |
+|--------|------------------|--------------------------|
+| GET    | `token` is empty | Use URL query parameters |
+| POST   | `token` provided | Use JSON request body    |
 
-When `token` is empty or not set, GET request method is used:
+### GET Request Example
 
 ```json
 {
-    "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
-    "token": "",
-    "dns": "callback"
+  "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
+  "token": "",
+  "dns": "callback",
+  "ipv4": ["sub.example.com"],
+  "index4": ["default"]
 }
 ```
-
-**Actual Request Example:**
 
 ```http
 GET https://api.example.com/update?domain=sub.example.com&ip=192.168.1.100&type=A
 ```
 
-### POST Request (Recommended for Complex Scenarios)
-
-When `token` is not empty, POST request method is used. `token` can be either a JSON object or JSON string, used as POST request body:
-
-**JSON Object Format:**
+### POST Request Example
 
 ```json
 {
-    "id": "https://api.example.com/ddns",
-    "token": {
-        "api_key": "your_secret_key",
-        "domain": "__DOMAIN__",
-        "value": "__IP__",
-        "type": "__RECORDTYPE__",
-        "ttl": "__TTL__"
-    },
-    "dns": "callback"
+  "id": "https://api.example.com/ddns",
+  "token": {
+    "api_key": "your_secret_key",
+    "domain": "__DOMAIN__",
+    "value": "__IP__"
+  },
+  "dns": "callback",
+  "ipv4": ["sub.example.com"],
+  "index4": ["default"]
 }
 ```
-
-**JSON String Format:**
-
-```json
-{
-    "id": "https://api.example.com/ddns",
-    "token": "{\"api_key\": \"your_secret_key\", \"domain\": \"__DOMAIN__\", \"value\": \"__IP__\"}",
-    "dns": "callback"
-}
-```
-
-**Actual Request Example:**
 
 ```http
 POST https://api.example.com/ddns
 Content-Type: application/json
 
 {
-    "api_key": "your_secret_key",
-    "domain": "sub.example.com",
-    "value": "192.168.1.100",
-    "type": "A",
-    "ttl": "300"
+  "api_key": "your_secret_key",
+  "domain": "sub.example.com",
+  "value": "192.168.1.100"
 }
-```
+```  
 
 ## Variable Substitution
 
@@ -111,8 +98,8 @@ The Callback Provider supports the following built-in variables that are automat
     "token": {
         "domain": "__DOMAIN__",
         "record_type": "__RECORDTYPE__",
-        "ttl": __TTL__,
-        "timestamp": __TIMESTAMP__
+        "ttl": "__TTL__",
+        "timestamp": "__TIMESTAMP__"
     },
     "dns": "callback"
 }
@@ -127,8 +114,8 @@ Content-Type: application/json
 {
     "domain": "sub.example.com",
     "record_type": "A",
-    "ttl": 300,
-    "timestamp": 1634567890.123
+    "ttl": "300",
+    "timestamp": "1634567890.123"
 }
 ```
 
@@ -180,41 +167,6 @@ The Callback Provider logs detailed information:
 2. **Authentication**: Include necessary authentication information in token
 3. **Validation**: Server should validate request legitimacy
 4. **Logging**: Avoid exposing sensitive information in logs
-
-## Complete Configuration Examples
-
-### GET Method Callback
-
-```json
-{
-    "id": "https://api.example.com/update?key=your_api_key&domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
-    "token": "",
-    "dns": "callback",
-    "ipv4": ["home.example.com", "server.example.com"],
-    "ipv6": ["ipv6.example.com"],
-    "debug": true
-}
-```
-
-### POST Method Callback (Third-party DNS Integration)
-
-```json
-{
-    "id": "https://api.third-party-dns.com/v1/records",
-    "token": {
-        "auth_token": "your_api_token",
-        "zone": "example.com",
-        "name": "__DOMAIN__",
-        "content": "__IP__",
-        "type": "__RECORDTYPE__",
-        "ttl": "__TTL__"
-    },
-    "dns": "callback",
-    "ipv4": ["*.example.com"],
-    "ipv6": ["*.example.com"],
-    "debug": true
-}
-```
 
 ## Troubleshooting
 

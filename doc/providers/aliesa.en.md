@@ -8,7 +8,7 @@ Alibaba Cloud Edge Security Acceleration (ESA) is an edge security acceleration 
 
 ### AccessKey Authentication
 
-ESA API uses the same AccessKey authentication as other Alibaba Cloud services, requiring AccessKey ID and AccessKey Secret.
+ESA API uses the same AccessKey authentication as other [Alibaba Cloud services](alidns.en.md), requiring AccessKey ID and AccessKey Secret.
 
 ```json
 {
@@ -18,74 +18,49 @@ ESA API uses the same AccessKey authentication as other Alibaba Cloud services, 
 }
 ```
 
-## Complete Configuration Examples
-
-### Basic Configuration
-
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com", "api.example.com"],
-    "ipv6": ["ipv6.example.com"]
-}
-```
-
-### Advanced Configuration
-
-```json
-{
-    "id": "LTAI4xxx", 
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com", "api.example.com"],
-    "ipv6": ["ipv6.example.com"],
-    "ttl": 300
-}
-```
-
-## Optional Parameters
-
-| Parameter | Description | Type | Default | Example |
-|-----------|-------------|------|---------|---------|
-| `ttl` | DNS record TTL value | Integer | 600 | 300 |
-
-## Use Cases
-
-### Dynamic IP CDN Origin
-
-When your NAS or other services act as ESA CDN origin, you can use this DDNS to automatically update origin IP:
-
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx", 
-    "dns": "aliesa",
-    "ipv4": ["origin.example.com"]
-}
-```
-
 ## Permission Requirements
 
 Ensure the Alibaba Cloud account has the following ESA permissions:
+
+Recommended `AliyunESAFullAccess` includes all the permissions below:
 
 - **ESA Site Query Permission**: Used to query site IDs (`esa:ListSites`)
 - **ESA DNS Record Management Permission**: Used to query, create, and update DNS records (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
 
 It's recommended to create a dedicated RAM sub-account with only the necessary ESA permissions.
 
-### How to Get Site ID
+## Complete Configuration Example
 
-1. Log in to [Alibaba Cloud ESA Console](https://esa.console.aliyun.com/)
-2. Select the corresponding site
-3. The site ID can be seen in the URL of the site details page, or use API call `ListSites` to get it
+```json
+{
+    "id": "LTAI4xxx",
+    "token": "xxx",
+    "dns": "aliesa",
+    "ipv4": ["www.example.com", "api.example.com"],
+    "ipv6": ["www6.example.com"],
+    "index4": ["public"],
+    "index6": ["public"]
+}
+```
 
-## API Limitations
+## Optional Parameters
 
-- **Site Count**: Varies by ESA package
-- **DNS Record Count**: Varies by ESA package
-- **API Call Frequency**: Follows Alibaba Cloud ESA API limits
+| Parameter   | Description                   | Type          | Default                            | Example                                 |
+|-------------|-------------------------------|---------------|------------------------------------|-----------------------------------------|
+| `ttl`       | DNS record TTL value          | Integer       | 1 (auto)                           | 600                                     |
+| `endpoint`  | Custom API endpoint URL       | String        | `https://esa.cn-hangzhou.aliyuncs.com` | `https://esa.ap-southeast-1.aliyuncs.com` |
+
+### Custom Regional Endpoint
+
+When you need to access ESA services in specific regions, you can configure a custom endpoint address:
+
+#### China Regions
+
+- **East China 1 (Hangzhou)**: `https://esa.cn-hangzhou.aliyuncs.com` (Default, Recommended)
+
+#### International Regions
+
+- **Asia Pacific Southeast 1 (Singapore)**: `https://esa.ap-southeast-1.aliyuncs.com`
 
 ## Troubleshooting
 
@@ -113,14 +88,8 @@ It's recommended to create a dedicated RAM sub-account with only the necessary E
 
 Enable debug mode to view detailed API interaction information:
 
-```json
-{
-    "id": "LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "debug": true,
-    "ipv4": ["www.example.com"]
-}
+```sh
+ddns -c config.json --debug
 ```
 
 ## Support and Resources

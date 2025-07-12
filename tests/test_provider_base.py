@@ -14,8 +14,8 @@ class _TestProvider(BaseProvider):
 
     endpoint = "https://api.example.com"
 
-    def __init__(self, auth_id="test_id", auth_token="test_token_123456789", **options):
-        super(_TestProvider, self).__init__(auth_id, auth_token, **options)
+    def __init__(self, id="test_id", token="test_token_123456789", **options):
+        super(_TestProvider, self).__init__(id, token, **options)
         self._test_zone_data = {"example.com": "zone123", "test.com": "zone456"}
         self._test_records = {}
 
@@ -47,23 +47,80 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_init_success(self):
         """测试正常初始化"""
         provider = _TestProvider("test_id", "test_token")
-        self.assertEqual(provider.auth_id, "test_id")
-        self.assertEqual(provider.auth_token, "test_token")
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
         self.assertIsNotNone(provider.logger)
-        self.assertIsNone(provider.proxy)
+        self.assertEqual(provider._proxy, [None])  # proxy 初始化为 [None]
         self.assertEqual(provider._zone_map, {})
 
     def test_validate_missing_id(self):
-        """测试缺少auth_id的验证"""
+        """测试缺少id的验证"""
         with self.assertRaises(ValueError) as cm:
             _TestProvider("", "token")
         self.assertIn("id must be configured", str(cm.exception))
 
     def test_validate_missing_token(self):
-        """测试缺少auth_token的验证"""
+        """测试缺少token的验证"""
         with self.assertRaises(ValueError) as cm:
             _TestProvider("id", "")
         self.assertIn("token must be configured", str(cm.exception))
+
+    def test_init_with_endpoint_override(self):
+        """测试使用endpoint参数覆盖默认API"""
+        custom_endpoint = "https://custom.api.com"
+        provider = _TestProvider("test_id", "test_token", endpoint=custom_endpoint)
+        self.assertEqual(provider.endpoint, custom_endpoint)
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
+
+    def test_init_without_endpoint_uses_default(self):
+        """测试不提供endpoint时使用默认API"""
+        provider = _TestProvider("test_id", "test_token")
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
+        self.assertEqual(provider.id, "test_id")
+        self.assertEqual(provider.token, "test_token")
+
+    def test_init_with_empty_endpoint_ignored(self):
+        """测试空endpoint参数被忽略"""
+        provider = _TestProvider("test_id", "test_token", endpoint="")
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
+
+        provider = _TestProvider("test_id", "test_token", endpoint=None)
+        self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
+
+    def test_user_agent_exists_and_format(self):
+        """测试user_agent存在且格式正确"""
+        provider = _TestProvider("test_id", "test_token")
+        self.assertTrue(hasattr(provider, "user_agent"))
+        self.assertIsInstance(provider.user_agent, str)
+        self.assertGreater(len(provider.user_agent), 0)
+        # 检查是否包含基本的用户代理信息
+        self.assertIn("DDNS", provider.user_agent)
+
+    def test_remark_exists_and_format(self):
+        """测试remark存在且格式正确"""
+        provider = _TestProvider("test_id", "test_token")
+        self.assertTrue(hasattr(provider, "remark"))
+        self.assertIsInstance(provider.remark, str)
+        self.assertGreater(len(provider.remark), 0)
+        # 检查是否包含基本的说明信息
+        self.assertIn("DDNS", provider.remark)
+
+    def test_endpoint_priority_over_class_api(self):
+        """测试endpoint参数优先级高于类级别API"""
+
+        # 创建一个有不同默认API的测试类
+        class _CustomAPIProvider(_TestProvider):
+            endpoint = "https://different.api.com"
+
+        # 不使用endpoint - 应该使用类级别的API
+        provider1 = _CustomAPIProvider("id", "token")
+        self.assertEqual(provider1.endpoint, "https://different.api.com")
+
+        # 使用endpoint - 应该覆盖类级别的API
+        custom_endpoint = "https://override.api.com"
+        provider2 = _CustomAPIProvider("id", "token", endpoint=custom_endpoint)
+        self.assertEqual(provider2.endpoint, custom_endpoint)
 
     def test_get_zone_id_from_cache(self):
         """测试从缓存获取zone_id"""
@@ -76,12 +133,6 @@ class TestBaseProvider(BaseProviderTestCase):
         zone_id = self.provider.get_zone_id("example.com")
         self.assertEqual(zone_id, "zone123")
         self.assertEqual(self.provider._zone_map["example.com"], "zone123")
-
-    def test_set_proxy(self):
-        """测试设置代理"""
-        result = self.provider.set_proxy("http://proxy:8080")
-        self.assertEqual(self.provider.proxy, "http://proxy:8080")
-        self.assertEqual(result, self.provider)  # 测试链式调用
 
     def test_split_custom_domain_with_tilde(self):
         """测试用~分隔的自定义域名"""
@@ -147,9 +198,9 @@ class TestBaseProvider(BaseProviderTestCase):
 
     def test_mask_sensitive_data_long_token(self):
         """测试长token的打码"""
-        data = "auth_token=test_token_123456789&other=value"
+        data = "token=test_token_123456789&other=value"
         result = self.provider._mask_sensitive_data(data)
-        expected = "auth_token=te***89&other=value"
+        expected = "token=te***89&other=value"
         self.assertEqual(result, expected)
 
     def test_set_record_create(self):

@@ -71,7 +71,8 @@ Tencent Cloud DNS uses SecretId and SecretKey for API authentication, which is t
   "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "dns": "tencentcloud",
-  "ipv6": ["home.example.com", "server.example.com"]
+  "ipv6": ["home.example.com", "server.example.com"],
+  "index6": ["default"]
 }
 ```
 
@@ -82,9 +83,12 @@ Tencent Cloud DNS uses SecretId and SecretKey for API authentication, which is t
   "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "dns": "tencentcloud",
+  "endpoint": "https://dnspod.ap-singapore.tencentcloudapi.com",
+  "index4": ["default"],
+  "index6": ["default"],
+  "ipv4": ["example.com"],
   "ipv6": ["dynamic.mydomain.com"],
-  "ttl": 300,
-  "record_type": "A"
+  "ttl": 600
 }
 ```
 
@@ -98,22 +102,6 @@ Tencent Cloud DNS uses SecretId and SecretKey for API authentication, which is t
 }
 ```
 
-- **Range**: 1-604800 seconds
-- **Default**: 600 seconds (10 minutes)
-- **Recommended**: 120-600 seconds for dynamic DNS
-
-### Record Type
-
-```json
-{
-  "record_type": "A"
-}
-```
-
-- **Supported Types**: A, AAAA, CNAME
-- **Default**: A (IPv4)
-- Use "AAAA" for IPv6 addresses
-
 ### Line Type (ISP Route)
 
 ```json
@@ -124,6 +112,37 @@ Tencent Cloud DNS uses SecretId and SecretKey for API authentication, which is t
 
 - **Options**: "默认" (Default), "电信" (China Telecom), "联通" (China Unicom), "移动" (China Mobile), "教育网" (Education Network), etc.
 - **Default**: "默认" (Default line)
+
+### Custom API Endpoint
+
+```json
+{
+  "endpoint": "https://dnspod.tencentcloudapi.com"
+}
+```
+
+Tencent Cloud DNSPod API supports multiple regional endpoints for optimal network performance:
+
+#### China Regions
+
+- **South China (Guangzhou)**: `https://dnspod.ap-guangzhou.tencentcloudapi.com`
+- **East China (Shanghai)**: `https://dnspod.ap-shanghai.tencentcloudapi.com`
+- **North China (Beijing)**: `https://dnspod.ap-beijing.tencentcloudapi.com`
+- **Southwest China (Chengdu)**: `https://dnspod.ap-chengdu.tencentcloudapi.com`
+- **Hong Kong**: `https://dnspod.ap-hongkong.tencentcloudapi.com`
+
+#### International Regions
+
+- **Asia Pacific Southeast (Singapore)**: `https://dnspod.ap-singapore.tencentcloudapi.com`
+- **Asia Pacific Southeast (Bangkok)**: `https://dnspod.ap-bangkok.tencentcloudapi.com`
+- **Asia Pacific South (Mumbai)**: `https://dnspod.ap-mumbai.tencentcloudapi.com`
+- **Asia Pacific Northeast (Seoul)**: `https://dnspod.ap-seoul.tencentcloudapi.com`
+- **Asia Pacific Northeast (Tokyo)**: `https://dnspod.ap-tokyo.tencentcloudapi.com`
+- **US East (Virginia)**: `https://dnspod.na-ashburn.tencentcloudapi.com`
+- **US West (Silicon Valley)**: `https://dnspod.na-siliconvalley.tencentcloudapi.com`
+- **Europe (Frankfurt)**: `https://dnspod.eu-frankfurt.tencentcloudapi.com`
+
+> **Note**: It's recommended to use the default endpoint `https://dnspod.tencentcloudapi.com`, as Tencent Cloud automatically routes to the optimal node. Specify regional endpoints only in special network environments.
 
 ## Permission Requirements
 
