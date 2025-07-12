@@ -1,5 +1,7 @@
 # NameSilo DNS Configuration Guide
 
+> **Important Note**: The NameSilo provider implementation is pending verification. Please test thoroughly before using in production environments.
+
 ## Overview
 
 NameSilo is a US-based domain registrar and DNS service provider that offers reliable domain management and DNS resolution services. This DDNS project supports automatic DNS record management through the NameSilo API.
@@ -82,17 +84,6 @@ In special circumstances, you may need to customize the endpoint:
 
 > **Note**: The official NameSilo API endpoint is `https://www.namesilo.com`. It's not recommended to modify this unless using a proxy service.
 
-## Supported Record Types
-
-NameSilo API supports the following DNS record types:
-- **A Record**: IPv4 address resolution
-- **AAAA Record**: IPv6 address resolution
-- **CNAME Record**: Domain alias
-- **MX Record**: Mail exchange record
-- **TXT Record**: Text record
-- **NS Record**: Name server record
-- **SRV Record**: Service record
-
 ## Troubleshooting
 
 ### Common Errors
@@ -145,5 +136,3 @@ ddns -c config.json --debug
 - [NameSilo API Manager](https://www.namesilo.com/account/api-manager)
 
 > **Security Tip**: It's recommended to regularly rotate API Keys and monitor account activity logs to ensure secure API usage.
-
-> **Important Note**: The NameSilo provider implementation is pending verification. Please test thoroughly before using in production environments.

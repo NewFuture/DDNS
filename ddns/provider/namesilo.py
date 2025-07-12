@@ -30,7 +30,7 @@ class NamesiloProvider(BaseProvider):
             raise ValueError("API key (token) must be configured for NameSilo")
         if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
-        
+
         # Show pending verification warning
         self.logger.warning("NameSilo provider implementation is pending verification - please test thoroughly")
 
@@ -75,15 +75,6 @@ class NamesiloProvider(BaseProvider):
         """
         Query domain information to get domain as zone identifier
         @doc: https://www.namesilo.com/api-reference#domains/get-domain-info
-
-        For NameSilo, the domain name itself serves as the zone identifier
-        We verify the domain exists by calling getDomainInfo
-
-        Args:
-            domain (str): Domain name
-
-        Returns:
-            str | None: Domain name if it exists, None otherwise
         """
         response = self._request("getDomainInfo", domain=domain)
 
@@ -102,17 +93,6 @@ class NamesiloProvider(BaseProvider):
         """
         Query existing DNS record
         @doc: https://www.namesilo.com/api-reference#dns/list-dns-records
-
-        Args:
-            zone_id (str): Domain name (zone identifier)
-            subdomain (str): Subdomain name
-            main_domain (str): Main domain name
-            record_type (str): Record type (A, AAAA, CNAME, etc.)
-            line (str | None): Line/location parameter (not used by NameSilo)
-            extra (dict): Extra parameters
-
-        Returns:
-            dict | None: Record information if found
         """
         response = self._request("dnsListRecords", domain=zone_id)
 
@@ -125,8 +105,8 @@ class NamesiloProvider(BaseProvider):
 
             # Find matching record
             for record in records:
-                if (record.get("host") == subdomain and 
-                    record.get("type") == record_type):
+                if (record.get("host") == subdomain and
+                        record.get("type") == record_type):
                     self.logger.debug("Found existing record: %s", record)
                     return record
 
@@ -138,29 +118,16 @@ class NamesiloProvider(BaseProvider):
         """
         Create new DNS record
         @doc: https://www.namesilo.com/api-reference#dns/add-dns-record
-
-        Args:
-            zone_id (str): Domain name (zone identifier)
-            subdomain (str): Subdomain name
-            main_domain (str): Main domain name
-            value (str): Record value
-            record_type (str): Record type
-            ttl (int | str | None): TTL value
-            line (str | None): Line parameter (not used)
-            extra (dict): Extra parameters
-
-        Returns:
-            bool: True if record created successfully
         """
         # Add TTL if provided - None values will be filtered out in _request
         rrttl = ttl
-        
-        response = self._request("dnsAddRecord", 
-                                domain=zone_id, 
-                                rrtype=record_type, 
-                                rrhost=subdomain, 
-                                rrvalue=value,
-                                rrttl=rrttl)
+
+        response = self._request("dnsAddRecord",
+                                 domain=main_domain,
+                                 rrtype=record_type,
+                                 rrhost=subdomain,
+                                 rrvalue=value,
+                                 rrttl=rrttl)
 
         if response:
             record_id = response.get("record_id")
@@ -175,18 +142,6 @@ class NamesiloProvider(BaseProvider):
         """
         Update existing DNS record
         @doc: https://www.namesilo.com/api-reference#dns/update-dns-record
-
-        Args:
-            zone_id (str): Domain name (zone identifier)
-            old_record (dict): Existing record information
-            value (str): New record value
-            record_type (str): Record type
-            ttl (int | str | None): TTL value
-            line (str | None): Line parameter (not used)
-            extra (dict): Extra parameters
-
-        Returns:
-            bool: True if record updated successfully
         """
         record_id = old_record.get("record_id")
         if not record_id:
@@ -194,15 +149,15 @@ class NamesiloProvider(BaseProvider):
             return False
 
         # Use provided TTL or keep existing
-        rrttl = ttl if ttl else old_record.get("ttl")
+        rrttl = ttl or old_record.get("ttl")
 
         response = self._request("dnsUpdateRecord",
-                                domain=zone_id,
-                                rrid=record_id,
-                                rrhost=old_record.get("host", ""),
-                                rrvalue=value,
-                                rrtype=record_type,
-                                rrttl=rrttl)
+                                 rrid=record_id,
+                                 domain=zone_id,
+                                 rrhost=old_record.get("host", ""),
+                                 rrvalue=value,
+                                 rrtype=record_type,
+                                 rrttl=rrttl)
 
         if response:
             self.logger.info("DNS record updated successfully: %s", record_id)

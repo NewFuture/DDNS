@@ -1,5 +1,7 @@
 # NameSilo DNS 配置指南
 
+> **重要说明**：NameSilo 提供商实现正在等待验证，请在生产环境使用前进行充分测试。
+
 ## 概述
 
 NameSilo 是一家美国域名注册商和DNS服务提供商，提供可靠的域名管理和DNS解析服务。本 DDNS 项目支持通过 NameSilo API 进行 DNS 记录的自动管理。
@@ -82,17 +84,6 @@ NameSilo API Key 具有以下权限：
 
 > **注意**：NameSilo 官方 API 端点为 `https://www.namesilo.com`，除非使用代理服务，否则不建议修改。
 
-## 支持的记录类型
-
-NameSilo API 支持以下 DNS 记录类型：
-- **A记录**：IPv4 地址解析
-- **AAAA记录**：IPv6 地址解析
-- **CNAME记录**：域名别名
-- **MX记录**：邮件交换记录
-- **TXT记录**：文本记录
-- **NS记录**：名称服务器记录
-- **SRV记录**：服务记录
-
 ## 故障排除
 
 ### 常见错误
@@ -145,5 +136,3 @@ ddns -c config.json --debug
 - [NameSilo API Manager](https://www.namesilo.com/account/api-manager)
 
 > **安全提示**：建议定期轮换 API Key，并监控账户活动日志，确保 API 使用安全。
-
-> **重要说明**：NameSilo 提供商实现正在等待验证，请在生产环境使用前进行充分测试。
