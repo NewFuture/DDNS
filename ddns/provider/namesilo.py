@@ -70,7 +70,6 @@ class NamesiloProvider(BaseProvider):
                 # Log error details
                 error_msg = reply.get("detail", "Unknown error")
                 self.logger.warning("NameSilo API error [%s]: %s", reply.get("code", "unknown"), error_msg)
-                return None
 
         return None
 
@@ -102,15 +101,13 @@ class NamesiloProvider(BaseProvider):
 
         if response:
             records = response.get("resource_record", [])
-
             # Handle single record response
             if isinstance(records, dict):
                 records = [records]
 
             # Find matching record
             for record in records:
-                if (record.get("host") == subdomain and
-                        record.get("type") == record_type):
+                if record.get("host") == subdomain and record.get("type") == record_type:
                     self.logger.debug("Found existing record: %s", record)
                     return record
 
@@ -123,15 +120,9 @@ class NamesiloProvider(BaseProvider):
         Create new DNS record
         @doc: https://www.namesilo.com/api-reference#dns/add-dns-record
         """
-        # Add TTL if provided - None values will be filtered out in _request
-        rrttl = ttl
-
-        response = self._request("dnsAddRecord",
-                                 domain=main_domain,
-                                 rrtype=record_type,
-                                 rrhost=subdomain,
-                                 rrvalue=value,
-                                 rrttl=rrttl)
+        response = self._request(
+            "dnsAddRecord", domain=main_domain, rrtype=record_type, rrhost=subdomain, rrvalue=value, rrttl=ttl
+        )
 
         if response:
             record_id = response.get("record_id")
@@ -155,13 +146,15 @@ class NamesiloProvider(BaseProvider):
         # Use provided TTL or keep existing
         rrttl = ttl or old_record.get("ttl")
 
-        response = self._request("dnsUpdateRecord",
-                                 rrid=record_id,
-                                 domain=zone_id,
-                                 rrhost=old_record.get("host", ""),
-                                 rrvalue=value,
-                                 rrtype=record_type,
-                                 rrttl=rrttl)
+        response = self._request(
+            "dnsUpdateRecord",
+            rrid=record_id,
+            domain=zone_id,
+            rrhost=old_record.get("host", ""),
+            rrvalue=value,
+            rrtype=record_type,
+            rrttl=rrttl,
+        )
 
         if response:
             self.logger.info("DNS record updated successfully: %s", record_id)
