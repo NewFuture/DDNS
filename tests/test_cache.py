@@ -284,7 +284,7 @@ class TestCache(unittest.TestCase):
         cache["key1"] = "value1"
         cache.sync()  # This clears the __changed flag
 
-        with patch("ddns.cache.dump") as mock_dump:
+        with patch("ddns.cache.json.dump") as mock_dump:
             cache.sync()  # This should not call dump since no changes
             mock_dump.assert_not_called()
 
@@ -321,7 +321,7 @@ class TestCache(unittest.TestCase):
 
         cache = Cache(self.cache_file)
 
-        with patch("ddns.cache.load", side_effect=Exception("Test error")):
+        with patch("ddns.cache.json.load", side_effect=Exception("Test error")):
             with patch.object(cache, "_Cache__logger") as mock_logger:
                 cache.load()
                 mock_logger.warning.assert_called_once()
@@ -475,6 +475,37 @@ class TestCache(unittest.TestCase):
         self.assertIn("public_value", str_repr)
         # Note: private fields might still appear in str() since it calls super().__str__()
         # This is acceptable as str() shows the raw dict content
+
+    def test_json_format_verification(self):
+        """Test that cache files are saved in JSON format"""
+        import json
+        
+        cache = Cache(self.cache_file)
+        cache["string_key"] = "string_value"
+        cache["number_key"] = 42
+        cache["list_key"] = [1, 2, 3]
+        cache["dict_key"] = {"nested": "value"}
+        
+        # Save to file
+        cache.sync()
+        
+        # Verify file exists and is valid JSON
+        self.assertTrue(os.path.exists(self.cache_file))
+        
+        # Read the file and verify it's valid JSON
+        with open(self.cache_file, "r") as f:
+            file_content = f.read()
+            parsed_json = json.loads(file_content)
+        
+        # Verify the content matches what we saved
+        self.assertEqual(parsed_json["string_key"], "string_value")
+        self.assertEqual(parsed_json["number_key"], 42)
+        self.assertEqual(parsed_json["list_key"], [1, 2, 3])
+        self.assertEqual(parsed_json["dict_key"], {"nested": "value"})
+        
+        # Verify the file contains readable JSON (not binary pickle data)
+        self.assertIn('"string_key"', file_content)
+        self.assertIn('"string_value"', file_content)
 
 
 if __name__ == "__main__":
