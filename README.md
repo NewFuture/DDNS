@@ -45,6 +45,7 @@
   - [CloudFlare](https://www.cloudflare.com/) ([配置指南](doc/providers/cloudflare.md)) (@tongyifan)
   - [HE.net](https://dns.he.net/) ([配置指南](doc/providers/he.md)) (@NN708) (不支持自动创建记录)
   - [华为云](https://huaweicloud.com/) ([配置指南](doc/providers/huaweidns.md)) (@cybmp3) ⚡
+  - [NameSilo](https://www.namesilo.com/) ([配置指南](doc/providers/namesilo.md))
   - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md)) ⚡
   - [No-IP](https://www.noip.com/) ([配置指南](doc/providers/noip.md))
   - 自定义回调 API ([配置指南](doc/providers/callback.md))
@@ -124,6 +125,7 @@
    - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**） | [详细配置文档](doc/providers/cloudflare.md)
    - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)
    - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](doc/providers/huaweidns.md)
+   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager)（API Manager 中获取 API Key） | [详细配置文档](doc/providers/namesilo.md)
    - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
    - **No-IP**: [用户名和密码](https://www.noip.com/)（使用 No-IP 账户的用户名和密码） | [详细配置文档](doc/providers/noip.md)
    - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
@@ -176,7 +178,7 @@ python -m ddns -c /path/to/config.json
 | :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |   id   |       string       |    √     |     无      |    api 访问 ID     | Cloudflare 为邮箱（使用 Token 时留空）<br>HE.net 可留空<br>华为云为 Access Key ID (AK)                                                                                                   |
 | token  |       string       |    √     |     无      |   api 授权 token   | 部分平台叫 secret key，**反馈粘贴时删除**                                                                                                                                                |
-|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，阿里ESA为 `aliesa`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，腾讯云为 `tencentcloud`，No-IP 为 `noip`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
+|  dns   |       string       |    No    | `"dnspod"`  |     dns 服务商     | 阿里 DNS 为 `alidns`，阿里ESA为 `aliesa`，Cloudflare 为 `cloudflare`，dns.com 为 `dnscom`，DNSPOD 国内为 `dnspod`，DNSPOD 国际为 `dnspod_com`，HE.net 为 `he`，华为云为 `huaweidns`，NameSilo 为 `namesilo`，腾讯云为 `tencentcloud`，No-IP 为 `noip`，自定义回调为 `callback`。部分服务商有[详细配置文档](doc/providers/) |
 |  ipv4  |       array        |    No    |    `[]`     |   ipv4 域名列表    | 为 `[]` 时，不会获取和更新 IPv4 地址                                                                                                                                                     |
 |  ipv6  |       array        |    No    |    `[]`     |   ipv6 域名列表    | 为 `[]` 时，不会获取和更新 IPv6 地址                                                                                                                                                     |
 | index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
@@ -225,7 +227,7 @@ python -m ddns -c /path/to/config.json
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
   "token": "mytokenkey",
-  "dns": "dnspod 或 dnspod_com 或 alidns 或 aliesa 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 tencentcloud 或 noip 或 callback",
+  "dns": "dnspod 或 dnspod_com 或 alidns 或 aliesa 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 namesilo 或 tencentcloud 或 noip 或 callback",
   "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
   "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
   "index4": 0,

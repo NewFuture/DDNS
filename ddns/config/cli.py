@@ -145,6 +145,7 @@ def load_config(description, doc, version, date):
             "dnspod",
             "he",
             "huaweidns",
+            "namesilo",
             "noip",
             "tencentcloud",
         ],
