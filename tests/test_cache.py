@@ -479,30 +479,30 @@ class TestCache(unittest.TestCase):
     def test_json_format_verification(self):
         """Test that cache files are saved in JSON format"""
         import json
-        
+
         cache = Cache(self.cache_file)
         cache["string_key"] = "string_value"
         cache["number_key"] = 42
         cache["list_key"] = [1, 2, 3]
         cache["dict_key"] = {"nested": "value"}
-        
+
         # Save to file
         cache.sync()
-        
+
         # Verify file exists and is valid JSON
         self.assertTrue(os.path.exists(self.cache_file))
-        
+
         # Read the file and verify it's valid JSON
         with open(self.cache_file, "r") as f:
             file_content = f.read()
             parsed_json = json.loads(file_content)
-        
+
         # Verify the content matches what we saved
         self.assertEqual(parsed_json["string_key"], "string_value")
         self.assertEqual(parsed_json["number_key"], 42)
         self.assertEqual(parsed_json["list_key"], [1, 2, 3])
         self.assertEqual(parsed_json["dict_key"], {"nested": "value"})
-        
+
         # Verify the file contains readable JSON (not binary pickle data)
         self.assertIn('"string_key"', file_content)
         self.assertIn('"string_value"', file_content)
