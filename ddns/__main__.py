@@ -12,7 +12,7 @@ import sys
 from .__init__ import __version__, __description__, build_date
 from .config import load_config, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
-from .util import ip
+from . import ip
 from .cache import Cache
 
 logger = getLogger()
