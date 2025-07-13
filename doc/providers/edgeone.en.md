@@ -26,7 +26,7 @@ Tencent Cloud EdgeOne uses `SecretId` and `SecretKey` for API authentication, wh
 ```json
 {
     "dns": "edgeone",
-    "id": "YOUR_API_SECRECT_ID",
+    "id": "YOUR_API_SECRET_ID",
     "token": "YOUR_API_SECRECT_KEY"
 }
 ```
