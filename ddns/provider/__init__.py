@@ -8,6 +8,7 @@ from .debug import DebugProvider
 from .dnscom import DnscomProvider
 from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
+from .edgeone import EdgeOneProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
 from .namesilo import NamesiloProvider
@@ -37,6 +38,10 @@ def get_provider_class(provider_name):
         "tencentcloud": TencentCloudProvider,
         "tencent": TencentCloudProvider,  # 兼容tencent
         "qcloud": TencentCloudProvider,  # 兼容qcloud
+        # tencent cloud edgeone
+        "edgeone": EdgeOneProvider,
+        "teo": EdgeOneProvider,  # 兼容teo (EdgeOne产品的API名称)
+        "edge": EdgeOneProvider,  # 兼容edge
         # cloudflare
         "cloudflare": CloudflareProvider,
         # aliyun alidns
