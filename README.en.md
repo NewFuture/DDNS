@@ -45,6 +45,7 @@
   - [CloudFlare](https://www.cloudflare.com/) ([Configuration Guide](doc/providers/cloudflare.en.md)) (@tongyifan)
   - [HE.net](https://dns.he.net/) ([Configuration Guide](doc/providers/he.en.md)) (@NN708) (Does not support auto-record creation)
   - [Huawei Cloud](https://huaweicloud.com/) ([Configuration Guide](doc/providers/huaweidns.en.md)) (@cybmp3) ⚡
+  - [NameSilo](https://www.namesilo.com/) ([Configuration Guide](doc/providers/namesilo.en.md))
   - [Tencent Cloud](https://cloud.tencent.com/) ([Configuration Guide](doc/providers/tencentcloud.en.md)) ⚡
   - [No-IP](https://www.noip.com/) ([Configuration Guide](doc/providers/noip.en.md))
   - Custom Callback API ([Configuration Guide](doc/providers/callback.en.md))
@@ -124,6 +125,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
    - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (Besides `email + API KEY`, you can also use `Token`, **requires list Zone permission**) | [Detailed Configuration](doc/providers/cloudflare.en.md)
    - **HE.net**: [DDNS Documentation](https://dns.he.net/docs.html) (Only fill the set password in the `token` field, `id` field can be left empty) | [Detailed Configuration](doc/providers/he.en.md)
    - **Huawei Cloud DNS**: [APIKEY Application](https://console.huaweicloud.com/iam/) (Click Access Keys on the left, then click Create Access Key) | [Detailed Configuration](doc/providers/huaweidns.en.md)
+   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager) (Get API Key from API Manager) | [Detailed Configuration](doc/providers/namesilo.en.md)
    - **Tencent Cloud DNS**: [Detailed Configuration](doc/providers/tencentcloud.en.md)
    - **No-IP**: [Username and Password](https://www.noip.com/) (Use No-IP account username and password) | [Detailed Configuration](doc/providers/noip.en.md)
    - **Custom Callback**: For parameter configuration, please refer to the custom callback configuration instructions below
