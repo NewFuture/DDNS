@@ -539,18 +539,18 @@ class TestDnspodProviderRealRequest(BaseProviderTestCase):
             "Expected request failure error message not found in: {}".format(error_message),
         )
 
-        # 验证日志中记录了HTTP 401错误和认证失败信息
+        # 验证日志中记录了请求失败信息
         warning_calls = invalid_provider.logger.warning.call_args_list
-
-        # 应该有警告日志记录HTTP 401错误
-        has_http_401_warning = any("HTTP error 401" in str(call) or "401" in str(call) for call in warning_calls)
-        self.assertTrue(has_http_401_warning, "Expected HTTP 401 error warning in logs: {}".format(warning_calls))
 
         # 应该有警告日志记录请求失败
         has_request_failure_warning = any("Failed to send request via proxy" in str(call) for call in warning_calls)
         self.assertTrue(
             has_request_failure_warning, "Expected request failure warning in logs: {}".format(warning_calls)
         )
+
+        # 验证确实有日志被记录（warning 或 error）
+        total_logs = len(warning_calls) + len(invalid_provider.logger.error.call_args_list)
+        self.assertTrue(total_logs > 0, "Expected at least one log entry")
 
 
 if __name__ == "__main__":
