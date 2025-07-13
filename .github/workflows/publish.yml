@@ -82,8 +82,17 @@ jobs:
       - run: python3 .github/patch.py version
       - name: Replace url in Readme
         run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+
       - name: run unit tests
         run: python -m unittest discover tests -v
+
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
+      - name: test debug config
+        run: python3 -m ddns -c tests/config/debug.json
+      - name: test noip config
+        run: python3 -m ddns -c tests/config/noip.json
+
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -151,6 +160,13 @@ jobs:
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
+
+      - name: test callback config with executable  
+        run: ./dist/ddns -c tests/config/callback.json
+      - name: test debug config with executable
+        run: ./dist/ddns -c tests/config/debug.json
+      - name: test noip config with executable
+        run: ./dist/ddns -c tests/config/noip.json
 
       - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
         if: runner.os == 'Linux'
