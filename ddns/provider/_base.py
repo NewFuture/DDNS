@@ -124,7 +124,7 @@ class SimpleProvider(object):
         if endpoint:
             self.endpoint = endpoint
         self._proxy = proxy if proxy and len(proxy) else [None]
-        self._verify_ssl = verify_ssl
+        self._ssl = verify_ssl
 
         self.options = options
         name = self.__class__.__name__
@@ -238,18 +238,14 @@ class SimpleProvider(object):
                 self.logger.debug("Using proxy: %s", p)
             try:
                 response = send_http_request(
-                    method=method,
-                    url=url,
-                    body=body_data,
-                    headers=headers,
-                    proxy=p,
-                    verify_ssl=self._verify_ssl,
+                    method, url, body=body_data, headers=headers, proxy=p, verify_ssl=self._ssl
                 )
                 break  # 成功发送请求，跳出循环
             except Exception as e:
-                self.logger.warning("Failed to send request via proxy %s: %s", p, e)
+                self.logger.warning("Failed to send request: %s", e)
         if not response:
-            self.logger.error("Failed to send request to %s after trying all proxies", url)
+            if len(self._proxy) > 1:
+                self.logger.error("Failed to send request via all proxies: %s", self._proxy)
             raise RuntimeError("Failed to send request to {}".format(url))
         # 处理响应
         status_code = response.status

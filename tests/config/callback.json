@@ -9,7 +9,11 @@
   "index4": [
     "url:http://api.ipify.cn",
     "url:http://api.myip.la",
-    "public"
+    "url:http://checkip.amazonaws.com",
+    "url:http://icanhazip.com",
+    "url:https://ifconfig.co/ip",
+    "url:https://api.ipify.org",
+    "url:https://ifconfig.me/ip"
   ],
   "ipv6": [],
   "index6": false,

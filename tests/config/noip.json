@@ -1,0 +1,21 @@
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "noip",
+    "id": "TEST",
+    "token": "TEST",
+    "endpoint": "https://httpbin.org/base64/Z29vZCAxOTIuMTY4LjEuMQ==?",
+    "ipv4": [
+        "test.example.com"
+    ],
+    "index4": [
+        "public"
+    ],
+    "ttl": 300,
+    "line": "default",
+    "proxy": null,
+    "cache": false,
+    "log": {
+        "level": "DEBUG",
+        "datefmt": "%m-%d %H:%M:%S"
+    }
+}

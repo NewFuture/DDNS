@@ -179,19 +179,13 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         raw_body = response.read()
         decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
         return HttpResponse(response.getcode(), getattr(response, "msg", ""), response_headers, decoded_body)
-
     except HTTPError as e:
         # 记录HTTP错误并读取响应体用于调试
-        logger.warning("HTTP error %s: %s for %s", e.code, getattr(e, "reason", str(e)), url)
-        # 尝试读取错误响应体
-        try:
-            error_body = e.read()
-            if error_body:
-                logger.debug("HTTP error response body: %s", _decode_response_body(error_body, None))
-        except Exception:
-            pass
-        raise
-
+        response_headers = getattr(e, "headers", {})
+        raw_body = e.read()
+        decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
+        logger.error("HTTP error %s: %s for %s", e.code, getattr(e, "reason", str(e)), url)
+        return HttpResponse(e.code, getattr(e, "reason", str(e)), response_headers, decoded_body)
     except ssl.SSLError:
         if verify_ssl == "auto":
             logger.warning("SSL verification failed, switching to unverified connection %s", url)
