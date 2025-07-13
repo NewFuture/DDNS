@@ -286,8 +286,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
 
         self.assertFalse(result)
 
-    @patch("ddns.provider.edgeone.strftime")
-    @patch("ddns.provider.edgeone.time")
+    @patch("ddns.provider.tencentcloud.strftime")
+    @patch("ddns.provider.tencentcloud.time")
     @patch.object(EdgeOneProvider, "_http")
     def test_request_success(self, mock_http, mock_time, mock_strftime):
         """Test successful API request"""
@@ -303,8 +303,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             self.assertEqual(result["ZoneId"], "zone-123456")
         mock_http.assert_called_once()
 
-    @patch("ddns.provider.edgeone.strftime")
-    @patch("ddns.provider.edgeone.time")
+    @patch("ddns.provider.tencentcloud.strftime")
+    @patch("ddns.provider.tencentcloud.time")
     @patch.object(EdgeOneProvider, "_http")
     def test_request_api_error(self, mock_http, mock_time, mock_strftime):
         """Test API request with error response"""
@@ -318,8 +318,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
 
         self.assertIsNone(result)
 
-    @patch("ddns.provider.edgeone.strftime")
-    @patch("ddns.provider.edgeone.time")
+    @patch("ddns.provider.tencentcloud.strftime")
+    @patch("ddns.provider.tencentcloud.time")
     @patch.object(EdgeOneProvider, "_http")
     def test_request_unexpected_response(self, mock_http, mock_time, mock_strftime):
         """Test API request with unexpected response format"""
@@ -331,8 +331,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
 
         self.assertIsNone(result)
 
-    @patch("ddns.provider.edgeone.strftime")
-    @patch("ddns.provider.edgeone.time")
+    @patch("ddns.provider.tencentcloud.strftime")
+    @patch("ddns.provider.tencentcloud.time")
     @patch.object(EdgeOneProvider, "_http")
     def test_request_exception(self, mock_http, mock_time, mock_strftime):
         """Test API request with exception"""
