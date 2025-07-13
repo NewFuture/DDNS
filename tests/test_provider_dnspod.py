@@ -525,15 +525,31 @@ class TestDnspodProviderRealRequest(BaseProviderTestCase):
         # 使用无效的认证信息创建 provider
         invalid_provider = DnspodProvider("invalid_id", "invalid_token")
 
-        # 尝试查询域名信息，应该抛出认证失败异常
+        # Mock logger to capture log messages
+        invalid_provider.logger = MagicMock()
+
+        # 尝试查询域名信息，应该抛出请求失败异常
         with self.assertRaises(RuntimeError) as cm:
             invalid_provider._query_zone_id("example.com")
 
-        # 验证异常信息包含认证失败 - 更新错误消息格式
+        # 验证异常信息 - 由于HTTP错误处理更新，现在的错误消息格式不同
         error_message = str(cm.exception)
         self.assertTrue(
-            "认证失败" in error_message and "401" in error_message,
-            "Expected authentication error message not found in: {}".format(error_message),
+            "Failed to send request to" in error_message and "dnsapi.cn" in error_message,
+            "Expected request failure error message not found in: {}".format(error_message),
+        )
+
+        # 验证日志中记录了HTTP 401错误和认证失败信息
+        warning_calls = invalid_provider.logger.warning.call_args_list
+
+        # 应该有警告日志记录HTTP 401错误
+        has_http_401_warning = any("HTTP error 401" in str(call) or "401" in str(call) for call in warning_calls)
+        self.assertTrue(has_http_401_warning, "Expected HTTP 401 error warning in logs: {}".format(warning_calls))
+
+        # 应该有警告日志记录请求失败
+        has_request_failure_warning = any("Failed to send request via proxy" in str(call) for call in warning_calls)
+        self.assertTrue(
+            has_request_failure_warning, "Expected request failure warning in logs: {}".format(warning_calls)
         )
 
 
