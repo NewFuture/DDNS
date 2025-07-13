@@ -4,9 +4,10 @@
 
 Tencent Cloud EdgeOne is a global edge computing and security acceleration service platform provided by Tencent Cloud, which includes DNS resolution capabilities. This DDNS project supports dynamic DNS record updates through Tencent Cloud EdgeOne API.
 
-**Website**: 
-- International: [https://edgeone.ai/zh](https://edgeone.ai/zh)
-- Domestic: [https://cloud.tencent.com/product/teo](https://cloud.tencent.com/product/teo)
+**Website**:
+
+- International: [https://edgeone.ai](https://edgeone.ai)
+- TecentCloud: [https://cloud.tencent.com/product/teo](https://cloud.tencent.com/product/teo)
 
 ## Authentication
 
@@ -22,7 +23,19 @@ Tencent Cloud EdgeOne uses `SecretId` and `SecretKey` for API authentication, wh
 4. Copy the generated **SecretId** and **SecretKey**, store them securely
 5. Ensure the account has EdgeOne related permissions
 
-## Permission Requirements
+```json
+{
+    "dns": "edgeone",
+    "id": "YOUR_API_SECRECT_ID",
+    "token": "YOUR_API_SECRECT_KEY"
+}
+```
+
+- `id`: Tencent Cloud SecretId
+- `token`: Tencent Cloud SecretKey
+- `dns`: Can use `"edgeone"`
+
+### Permission Requirements
 
 Ensure the Tencent Cloud account used for DDNS has the following EdgeOne related permissions:
 
@@ -33,36 +46,30 @@ Ensure the Tencent Cloud account used for DDNS has the following EdgeOne related
 
 It is recommended to use a sub-account with minimal necessary permissions instead of using the main account credentials.
 
-#### Configuration Example
-
-```json
-{
-    "dns": "edgeone",
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-}
-```
-
-- `id`: Tencent Cloud SecretId
-- `token`: Tencent Cloud SecretKey
-- `dns`: Can use `"edgeone"`, `"tencent_edgeone"`, or `"teo"`
-
 ## Complete Configuration Example
 
 ```json
 {
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "edgeone",
-    "domains": "test.example.com"
+    "id": "YOUR_API_SECRECT_ID",
+    "token": "YOUR_API_SECRECT_KEY",
+    "endpoint": "https://teo.tencentcloudapi.com",
+    "index4": ["default"],
+    "index6": ["default"],
+    "ipv4": ["ddns.newfuture.cc"],
+    "ipv6": ["ipv6.ddns.newfuture.cc"],
+    "ttl": 300
 }
 ```
 
-- `id`: Tencent Cloud SecretId
-- `token`: Tencent Cloud SecretKey
-- `dns`: Can use `"edgeone"`, `"tencent_edgeone"`, or `"teo"`
+## Optional Parameters
 
-## Service Endpoints
+| Parameter | Description | Type | Range/Options | Default |
+|-----------|-------------|------|---------------|---------|
+| ttl | Time To Live (TTL) | Integer (seconds) | 60 - 86400 | 300 |
+| endpoint | Custom API endpoint | String | URL(see table below) | `https://teo.tencentcloudapi.com` |
+
+### Service Endpoints
 
 EdgeOne supports both international and domestic versions with different API endpoints:
 
@@ -76,8 +83,7 @@ Both versions have the same API logic but different server node distributions.
 1. **Service Differences**: EdgeOne is different from traditional DNSPod service, ensure domains are properly configured in EdgeOne console
 2. **API Limits**: EdgeOne API has rate limits, set reasonable update intervals
 3. **Permission Management**: Create dedicated sub-accounts for DDNS with minimal necessary permissions
-4. **Key Security**: SecretKey is sensitive information, store securely and avoid exposure
-5. **Record Conflicts**: Ensure DNS records to be updated don't conflict with other EdgeOne features (acceleration, security rules)
+4. **Record Conflicts**: Ensure DNS records to be updated don't conflict with other EdgeOne features (acceleration, security rules)
 
 ## Troubleshooting
 

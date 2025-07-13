@@ -4,9 +4,10 @@
 
 腾讯云 EdgeOne 是腾讯云提供的全球边缘计算和安全加速服务平台，其中包含DNS解析功能。本 DDNS 项目支持通过腾讯云EdgeOne API进行DNS记录的动态更新。
 
-**官网**: 
-- 国际版: [https://edgeone.ai/zh](https://edgeone.ai/zh)
+**官网**:
+
 - 国内版: [https://cloud.tencent.com/product/teo](https://cloud.tencent.com/product/teo)
+- 国际版: [https://edgeone.ai/zh](https://edgeone.ai/zh)
 
 ## 认证方式
 
@@ -22,6 +23,18 @@
 4. 复制生成的 **SecretId** 和 **SecretKey**，请妥善保存
 5. 确保账号具有EdgeOne相关权限
 
+```json
+{
+    "dns": "edgeone",
+    "id": "YOUR_API_SECRECT_ID",
+    "token": "YOUR_API_SECRECT_KEY"
+}
+```
+
+- `id`：腾讯云 SecretId
+- `token`：腾讯云 SecretKey
+- `dns`：可以使用 `"edgeone"`
+
 ## 权限要求
 
 确保用于DDNS的腾讯云账号具有以下EdgeOne相关权限：
@@ -33,32 +46,18 @@
 
 建议使用子账号并分配最小必要权限，而不是使用主账号密钥。
 
-#### 配置示例
-
-```json
-{
-    "dns": "edgeone",
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-}
-```
-
-- `id`：腾讯云 SecretId
-- `token`：腾讯云 SecretKey
-- `dns`：可以使用 `"edgeone"`, `"tencent_edgeone"`, 或 `"teo"`
-
 ## 完整配置示例
 
 ```json
 {
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "edgeone",
+    "id": "YOUR_API_SECRECT_ID",
+    "token": "YOUR_API_SECRECT_KEY",
     "endpoint": "https://teo.tencentcloudapi.com",
     "index4": ["default"],
     "index6": ["default"],
-    "ipv4": ["example.com"],
-    "ipv6": ["ipv6.example.com"],
+    "ipv4": ["ddns.newfuture.cc"],
+    "ipv6": ["ipv6.ddns.newfuture.cc"],
     "ttl": 300
 }
 ```
@@ -67,16 +66,14 @@
 
 | 参数 | 描述 | 类型 | 范围/选项 | 默认 |
 |------|------|------|-----------|------|
-| ttl  | 生存时间（TTL） | 整数 (秒) | 1 - 86400 | 300 |
+| ttl  | 生存时间（TTL） | 整数 (秒) | 60 - 86400 | 300 |
 | endpoint | 自定义API端点 | 字符串 | URL(见下表) | `https://teo.tencentcloudapi.com` |
 
-> **注意**：`ttl` 不同套餐支持的值可能不同。
-
-## 服务端点
+### 服务端点
 
 EdgeOne 支持国际版和国内版，使用不同的API端点：
 
-- **默认**: `https://teo.tencentcloudapi.com` 
+- **默认**: `https://teo.tencentcloudapi.com`
 - **国际版**: `https://teo.intl.tencentcloudapi.com`
 
 两个版本的API逻辑相同，只是服务器节点分布不同。
@@ -86,8 +83,7 @@ EdgeOne 支持国际版和国内版，使用不同的API端点：
 1. **服务差异**: EdgeOne 与传统的DNSPod服务不同，请确保域名已在EdgeOne控制台中正确配置
 2. **API限制**: EdgeOne API有调用频率限制，建议合理设置更新间隔
 3. **权限管理**: 建议为DDNS创建专门的子账号并分配最小必要权限
-4. **密钥安全**: SecretKey是敏感信息，请妥善保管，避免泄露
-5. **记录冲突**: 确保要更新的DNS记录不与EdgeOne的其他功能（如加速、安全规则）产生冲突
+4. **记录冲突**: 确保要更新的DNS记录不与EdgeOne的其他功能（如加速、安全规则）产生冲突
 
 ## 故障排除
 

@@ -52,7 +52,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         result = self.provider._request("TestAction")
 
         self.assertIsNone(result)
-        self.provider.logger.error.assert_called_once()
+        self.provider.logger.error.assert_called_once()  # type: ignore[attr-defined]
 
     @patch.object(EdgeOneProvider, "_request")
     def test_query_zone_id_success(self, mock_request):
@@ -91,9 +91,11 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             "Records": [{"RecordId": "rec-123456", "Name": "test.example.com", "Type": "A", "Content": "1.2.3.4"}]
         }
 
-        record = self.provider._query_record("zone-123456", "test.example.com", "example.com", "A", None, {})
+        record = self.provider._query_record("zone-123456", "test", "example.com", "A", None, {})
 
         self.assertIsNotNone(record)
+        # Type assertion for mypy - we've already checked record is not None
+        assert record is not None
         self.assertEqual(record["RecordId"], "rec-123456")
         self.assertEqual(record["Name"], "test.example.com")
         self.assertEqual(record["Type"], "A")
@@ -135,7 +137,9 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         result = self.provider._create_record("zone-123456", "test", "example.com", "1.2.3.4", "A", 300, None, {})
 
         self.assertTrue(result)
-        self.provider.logger.info.assert_called_with("Record created successfully with ID: %s", "rec-123456")
+        self.provider.logger.info.assert_called_with(  # type: ignore[attr-defined]
+            "Record created successfully with ID: %s", "rec-123456"
+        )
 
         # 验证请求参数
         mock_request.assert_called_once_with(
@@ -191,7 +195,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         result = self.provider._create_record("zone-123456", "test", "example.com", "1.2.3.4", "A", None, None, {})
 
         self.assertFalse(result)
-        self.provider.logger.error.assert_called_once()
+        self.provider.logger.error.assert_called_once()  # type: ignore[attr-defined]
 
     @patch.object(EdgeOneProvider, "_request")
     def test_update_record_success(self, mock_request):
@@ -203,7 +207,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         result = self.provider._update_record("zone-123456", old_record, "5.6.7.8", "A", 300, None, {})
 
         self.assertTrue(result)
-        self.provider.logger.info.assert_called_with("Record updated successfully")
+        self.provider.logger.info.assert_called_with("Record updated successfully")  # type: ignore[attr-defined]
 
         # 验证请求参数
         mock_request.assert_called_once_with(
@@ -257,7 +261,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         result = self.provider._update_record("zone-123456", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertFalse(result)
-        self.provider.logger.error.assert_called_once()
+        self.provider.logger.error.assert_called_once()  # type: ignore[attr-defined]
 
     @patch.object(EdgeOneProvider, "_query_record")
     @patch.object(EdgeOneProvider, "_create_record")

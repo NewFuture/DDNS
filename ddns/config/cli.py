@@ -143,6 +143,7 @@ def load_config(description, doc, version, date):
             "dnscom",
             "dnspod_com",
             "dnspod",
+            "edgeone",
             "he",
             "huaweidns",
             "namesilo",
