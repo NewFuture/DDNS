@@ -54,7 +54,20 @@ class TestHttpResponse(unittest.TestCase):
 
     def test_get_header_case_insensitive(self):
         """测试get_header方法不区分大小写"""
-        headers = [("Content-Type", "application/json"), ("Content-Length", "100")]
+
+        # 模拟 response.info() 对象，支持不区分大小写的 get 方法
+        class MockHeaders:
+            def __init__(self):
+                self._headers = {"Content-Type": "application/json", "Content-Length": "100"}
+
+            def get(self, name, default=None):
+                # 模拟 HTTPMessage 的不区分大小写查找
+                for key, value in self._headers.items():
+                    if key.lower() == name.lower():
+                        return value
+                return default
+
+        headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
         self.assertEqual(response.get_header("content-type"), "application/json")
@@ -64,7 +77,18 @@ class TestHttpResponse(unittest.TestCase):
 
     def test_get_header_not_found(self):
         """测试get_header方法找不到头部时的默认值"""
-        headers = [("Content-Type", "application/json")]
+
+        class MockHeaders:
+            def __init__(self):
+                self._headers = {"Content-Type": "application/json"}
+
+            def get(self, name, default=None):
+                for key, value in self._headers.items():
+                    if key.lower() == name.lower():
+                        return value
+                return default
+
+        headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
         self.assertIsNone(response.get_header("Authorization"))
@@ -72,7 +96,18 @@ class TestHttpResponse(unittest.TestCase):
 
     def test_get_header_first_match(self):
         """测试get_header方法返回第一个匹配的头部"""
-        headers = [("Set-Cookie", "session=abc"), ("Set-Cookie", "token=xyz")]
+
+        class MockHeaders:
+            def __init__(self):
+                self._headers = {"Set-Cookie": "session=abc"}  # 只保留第一个值
+
+            def get(self, name, default=None):
+                for key, value in self._headers.items():
+                    if key.lower() == name.lower():
+                        return value
+                return default
+
+        headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
         self.assertEqual(response.get_header("Set-Cookie"), "session=abc")

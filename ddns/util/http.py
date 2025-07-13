@@ -13,19 +13,11 @@ import ssl
 import os
 
 try:  # python 3
-    from urllib.request import Request, HTTPSHandler, ProxyHandler, build_opener, OpenerDirector
+    from urllib.request import Request, HTTPSHandler, ProxyHandler, build_opener, OpenerDirector  # noqa: F401
     from urllib.parse import quote, urlencode
     from urllib.error import HTTPError, URLError
 except ImportError:  # python 2
-    from urllib2 import (
-        Request,
-        HTTPSHandler,  # type: ignore[no-redef]
-        ProxyHandler,
-        build_opener,
-        OpenerDirector,
-        HTTPError,
-        URLError,
-    )
+    from urllib2 import Request, HTTPSHandler, ProxyHandler, build_opener, HTTPError, URLError  # type: ignore[no-redef]
     from urllib import urlencode, quote  # type: ignore[no-redef]
 
 __all__ = [
@@ -43,14 +35,14 @@ class HttpResponse(object):
     """HTTP响应封装类"""
 
     def __init__(self, status, reason, headers, body):
-        # type: (int, str, list[tuple[str, str]], str) -> None
+        # type: (int, str, object, str) -> None
         """
         初始化HTTP响应对象
 
         Args:
             status (int): HTTP状态码
             reason (str): 状态原因短语
-            headers (list[tuple[str, str]]): 响应头列表，保持原始格式和顺序
+            headers (object): 响应头对象，直接使用 response.info()
             body (str): 响应体内容
         """
         self.status = status
@@ -61,19 +53,16 @@ class HttpResponse(object):
     def get_header(self, name, default=None):
         # type: (str, str | None) -> str | None
         """
-        获取指定名称的头部值（不区分大小写）
+        获取指定名称的头部值
 
         Args:
             name (str): 头部名称
+            default (str | None): 默认值
 
         Returns:
-            str | None: 头部值，如果不存在则返回None
+            str | None: 头部值，如果不存在则返回默认值
         """
-        name_lower = name.lower()
-        for header_name, header_value in self.headers:
-            if header_name.lower() == name_lower:
-                return header_value
-        return default
+        return self.headers.get(name, default)  # type: ignore[union-attr]
 
 
 # 移除了自定义重定向处理器，使用urllib2/urllib.request的内置重定向处理
@@ -186,28 +175,22 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
 
     try:
         response = opener.open(req)
+        response_headers = response.info()
         raw_body = response.read()
-        status = response.getcode()
-        reason = response.msg if hasattr(response, "msg") else "OK"
-        response_headers = list(response.info().items()) if hasattr(response.info(), "items") else []
-
-        content_type = response.info().get("Content-Type")
-        decoded_body = _decode_response_body(raw_body, content_type)
-        return HttpResponse(status, reason, response_headers, decoded_body)
+        decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
+        return HttpResponse(response.getcode(), getattr(response, "msg", ""), response_headers, decoded_body)
 
     except HTTPError as e:
-        # 处理HTTP错误（4xx, 5xx等）
+        # 记录HTTP错误并读取响应体用于调试
+        logger.warning("HTTP error %s: %s for %s", e.code, getattr(e, "reason", str(e)), url)
+        # 尝试读取错误响应体
         try:
-            raw_body = e.read()
-            content_type = e.headers.get("Content-Type") if hasattr(e, "headers") else None
-            decoded_body = _decode_response_body(raw_body, content_type)
-            response_headers = (
-                list(e.headers.items()) if hasattr(e, "headers") and hasattr(e.headers, "items") else []
-            )
-            reason = e.reason if hasattr(e, "reason") else str(e)
-            return HttpResponse(e.code, reason, response_headers, decoded_body)
+            error_body = e.read()
+            if error_body:
+                logger.debug("HTTP error response body: %s", _decode_response_body(error_body, None))
         except Exception:
-            return HttpResponse(e.code, str(e), [], "")
+            pass
+        raise
 
     except ssl.SSLError:
         if verify_ssl == "auto":
