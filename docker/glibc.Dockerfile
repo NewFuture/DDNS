@@ -4,14 +4,19 @@ ARG PYTHON_VERSION=3.8
 ARG NUITKA_VERSION=main
 
 
-# build with debian-slim (glibc 2.28)
 FROM python:${PYTHON_VERSION}-slim-buster AS base-builder
 # 安装必要的依赖
+# Use Debian archive for buster
+RUN sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /etc/apt/sources.list \
+    && sed -i '/security.debian.org/d' /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ccache \
     patchelf \
     build-essential \
     libffi-dev \
+    clang \
+    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/* /tmp/* /var/log/*
 # 安装Python依赖
@@ -32,9 +37,6 @@ ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
 # 构建二进制文件，glibc arm下编译会报错，
-# collect2: fatal error: ld terminated with signal 11 [Segmentation fault], core dumped compilation terminated.
-# FATAL: Error, the C compiler 'gcc' crashed with segfault. Consider upgrading it or using '--clang' option.
-RUN apt-get update && apt-get install -y --no-install-recommends clang
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --linux-icon=ddns.svg \
