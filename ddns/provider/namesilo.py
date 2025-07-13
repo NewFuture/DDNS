@@ -97,11 +97,11 @@ class NamesiloProvider(BaseProvider):
         Query existing DNS record
         @doc: https://www.namesilo.com/api-reference#dns/list-dns-records
         """
-        response = self._request("dnsListRecords", domain=zone_id)
+        response = self._request("dnsListRecords", domain=main_domain)
 
         if response:
             records = response.get("resource_record", [])
-            # Handle single record response
+            # Handle single record response (API returns dict instead of list)
             if isinstance(records, dict):
                 records = [records]
 
@@ -143,17 +143,15 @@ class NamesiloProvider(BaseProvider):
             self.logger.error("No record_id found in old_record: %s", old_record)
             return False
 
-        # Use provided TTL or keep existing
-        rrttl = ttl or old_record.get("ttl")
-
+        # In NameSilo, zone_id is the main domain name
         response = self._request(
             "dnsUpdateRecord",
             rrid=record_id,
-            domain=zone_id,
-            rrhost=old_record.get("host", ""),
+            domain=zone_id,  # zone_id is main_domain in NameSilo
+            rrhost=old_record.get("host", ""),  # host field contains subdomain
             rrvalue=value,
             rrtype=record_type,
-            rrttl=rrttl,
+            rrttl=ttl or old_record.get("ttl"),
         )
 
         if response:
