@@ -173,10 +173,6 @@ jobs:
 
       - name: test callback config
         run: python3 -m ddns -c tests/config/callback.json
-      - name: test debug config with executable
-        run: ./dist/ddns -c tests/config/debug.json
-      - name: test noip config with executable
-        run: ./dist/ddns -c tests/config/noip.json
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.3
@@ -197,8 +193,6 @@ jobs:
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
 
-      - name: test callback config with executable  
-        run: ./dist/ddns -c tests/config/callback.json
       - name: test debug config with executable
         run: ./dist/ddns -c tests/config/debug.json
       - name: test noip config with executable

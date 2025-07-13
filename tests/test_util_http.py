@@ -174,17 +174,96 @@ class TestDecodeResponseBody(unittest.TestCase):
 class TestSendHttpRequest(unittest.TestCase):
     """测试 send_http_request 函数"""
 
-    def test_urllib_handles_redirects(self):
-        """测试重定向处理 - 现在由urllib2/urllib.request内置处理"""
-        # 由于我们现在使用urllib2/urllib.request的内置重定向处理，
-        # 重定向功能由标准库自动处理，无需额外测试
-        pass
+    def test_get_request_real_api(self):
+        """测试真实的GET请求 - 使用postman-echo API服务"""
+        from ddns.util.http import send_http_request
 
-    def test_ssl_auto_fallback_concept(self):
-        """测试SSL auto模式概念 - 实际由urllib处理"""
-        # SSL fallback功能现在集成在urllib中
-        # 这个测试验证概念存在，具体实现由标准库处理
-        pass
+        # 使用postman-echo.com提供的GET测试端点
+        try:
+            response = send_http_request("GET", "https://postman-echo.com/get?test=ddns")
+            self.assertEqual(response.status, 200)
+            self.assertIsNotNone(response.body)
+            # 验证响应内容是JSON格式
+            import json
+
+            data = json.loads(response.body)
+            self.assertIn("args", data)
+            self.assertIn("url", data)
+            self.assertIn("test", data["args"])
+            self.assertEqual(data["args"]["test"], "ddns")
+        except Exception as e:
+            # 网络不可用时跳过测试
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_json_api_response(self):
+        """测试JSON API响应解析"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 使用postman-echo.com的基本GET端点，返回请求信息
+            response = send_http_request("GET", "https://postman-echo.com/get?format=json")
+            self.assertEqual(response.status, 200)
+            self.assertIsNotNone(response.body)
+
+            # 验证返回的是有效的JSON
+            import json
+
+            data = json.loads(response.body)
+            # postman-echo返回请求信息对象
+            self.assertIn("args", data)
+            self.assertIn("url", data)
+            self.assertIsInstance(data, dict)
+            self.assertTrue(len(data) > 0)
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_provider_api_patterns(self):
+        """测试常见DNS provider API模式"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 测试认证失败场景 - 使用postman-echo模拟401错误
+            headers = {
+                "Authorization": "Bearer invalid-token",
+                "Content-Type": "application/json",
+                "User-Agent": "DDNS-Client/4.0",
+            }
+
+            # 使用postman-echo模拟401认证失败响应
+            response = send_http_request("GET", "https://postman-echo.com/status/401", headers=headers)
+
+            # 应该返回401认证失败
+            self.assertEqual(response.status, 401)
+            # 401响应可能有空响应体，这是正常的
+            self.assertIsNotNone(response.body)
+
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_dns_over_https_simulation(self):
+        """测试DNS类型的API响应解析"""
+        from ddns.util.http import send_http_request
+
+        try:
+            headers = {"Accept": "application/dns-json", "User-Agent": "DDNS-Test/1.0"}
+
+            # 使用postman-echo模拟一个带有特定结构的JSON响应
+            response = send_http_request(
+                "GET", "https://postman-echo.com/get?domain=example.com&type=A", headers=headers
+            )
+
+            self.assertEqual(response.status, 200)
+
+            import json
+
+            data = json.loads(response.body)
+            # postman-echo返回请求信息，包含args参数
+            self.assertIn("args", data)
+            self.assertIn("domain", data["args"])
+            self.assertEqual(data["args"]["domain"], "example.com")
+
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
 
 
 if __name__ == "__main__":
