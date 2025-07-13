@@ -7,7 +7,9 @@
     "test.example.com"
   ],
   "index4": [
-    "default"
+    "url:http://api.ipify.cn",
+    "url:http://api.myip.la",
+    "public"
   ],
   "ipv6": [],
   "index6": false,
