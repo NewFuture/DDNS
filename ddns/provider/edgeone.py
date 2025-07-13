@@ -6,6 +6,7 @@ Tencent Cloud EdgeOne API
 @author: NewFuture, GitHub Copilot
 """
 from .tencentcloud import TencentCloudProvider
+from ._base import join_domain
 
 
 class EdgeOneProvider(TencentCloudProvider):
@@ -27,7 +28,10 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str) -> str | None
         """查询域名的 zone_id https://edgeone.ai/zh/document/54132"""
         # 使用 DescribeZones API 查询站点信息
-        response = self._request("DescribeZones", Filters=[{"Name": "zone-name", "Values": [domain]}])
+        response = self._request(
+            "DescribeZones",
+            Filters=[{"Name": "zone-name", "Values": [domain]}],
+        )
 
         if not response or "Zones" not in response:
             self.logger.debug("Zone info not found or query failed for: %s", domain)
@@ -53,7 +57,10 @@ class EdgeOneProvider(TencentCloudProvider):
         """查询 DNS 记录列表 https://edgeone.ai/zh/document/50484"""
 
         filters = [
-            {"Name": "name", "Values": [subdomain if subdomain != "@" else main_domain]},
+            {
+                "Name": "name",
+                "Values": [subdomain if subdomain != "@" else main_domain],
+            },
             {"Name": "type", "Values": [record_type.upper()]},
         ]
 
@@ -79,22 +86,30 @@ class EdgeOneProvider(TencentCloudProvider):
         self.logger.debug("No matching record found")
         return None
 
-    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
+    def _create_record(
+        self,
+        zone_id,
+        subdomain,
+        main_domain,
+        value,
+        record_type,
+        ttl,
+        line,
+        extra,
+    ):
+        # type: (str, str, str, str, str, int | str | None, str | None, dict)
+        # -> bool
         """创建 DNS 记录 https://edgeone.ai/zh/document/50488"""
 
-        record_name = subdomain if subdomain and subdomain != "@" else main_domain
-
-        record_data = {
-            "ZoneId": zone_id,
-            "Name": record_name,
-            "Type": record_type.upper(),
-            "Content": value,
-            "TTL": ttl and int(ttl),
-            "Comment": extra.get("Comment", self.remark),
-        }
-
-        response = self._request("CreateRecord", **record_data)
+        response = self._request(
+            "CreateRecord",
+            ZoneId=zone_id,
+            Name=join_domain(subdomain, main_domain),
+            Type=record_type.upper(),
+            Content=value,
+            TTL=ttl and int(ttl),
+            Comment=extra.get("Comment", self.remark),
+        )
 
         if response and "RecordId" in response:
             self.logger.info("Record created successfully with ID: %s", response["RecordId"])
@@ -103,21 +118,30 @@ class EdgeOneProvider(TencentCloudProvider):
         self.logger.error("Failed to create record:\n%s", response)
         return False
 
-    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
+    def _update_record(
+        self,
+        zone_id,
+        old_record,
+        value,
+        record_type,
+        ttl,
+        line,
+        extra,
+    ):
+        # type: (str, dict, str, str, int | str | None, str | None, dict)
+        # -> bool
         """更新 DNS 记录: https://edgeone.ai/zh/document/67541"""
 
-        record_data = {
-            "ZoneId": zone_id,
-            "RecordId": old_record.get("RecordId"),
-            "Name": old_record.get("Name"),
-            "Type": record_type.upper(),
-            "Content": value,
-            "TTL": int(ttl) if ttl else old_record.get("TTL", 300),
-            "Comment": extra.get("Comment", self.remark),
-        }
-
-        response = self._request("ModifyRecord", **record_data)
+        response = self._request(
+            "ModifyRecord",
+            ZoneId=zone_id,
+            RecordId=old_record.get("RecordId"),
+            Name=old_record.get("Name"),
+            Type=record_type.upper(),
+            Content=value,
+            TTL=int(ttl) if ttl else old_record.get("TTL", 300),
+            Comment=extra.get("Comment", self.remark),
+        )
 
         if response and "RecordId" in response:
             self.logger.info("Record updated successfully")

@@ -66,8 +66,8 @@ It is recommended to use a sub-account with minimal necessary permissions instea
 
 EdgeOne supports both international and domestic versions with different API endpoints:
 
-- **International**: `https://teo.tencentcloudapi.com` (default)
-- **Domestic**: `https://teo.tencentcloudapi.com`
+- **Default**: `https://teo.tencentcloudapi.com`
+- **International**: `https://teo.intl.tencentcloudapi.com`
 
 Both versions have the same API logic but different server node distributions.
 

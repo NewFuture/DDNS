@@ -47,6 +47,7 @@
   - [华为云](https://huaweicloud.com/) ([配置指南](doc/providers/huaweidns.md)) (@cybmp3) ⚡
   - [NameSilo](https://www.namesilo.com/) ([配置指南](doc/providers/namesilo.md))
   - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md)) ⚡
+  - [腾讯云EdgeOne](https://edgeone.ai/) ([配置指南](doc/providers/edgeone.md)) ⚡
   - [No-IP](https://www.noip.com/) ([配置指南](doc/providers/noip.md))
   - 自定义回调 API ([配置指南](doc/providers/callback.md))
   

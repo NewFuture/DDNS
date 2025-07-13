@@ -141,7 +141,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_request.assert_called_once_with(
             "CreateRecord",
             ZoneId="zone-123456",
-            Name="test",
+            Name="test.example.com",
             Type="A",
             Content="1.2.3.4",
             TTL=300,

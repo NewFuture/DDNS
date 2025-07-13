@@ -54,20 +54,30 @@
     "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "edgeone",
-    "domains": "test.example.com"
+    "endpoint": "https://teo.tencentcloudapi.com",
+    "index4": ["default"],
+    "index6": ["default"],
+    "ipv4": ["example.com"],
+    "ipv6": ["ipv6.example.com"],
+    "ttl": 300
 }
 ```
 
-- `id`：腾讯云 SecretId
-- `token`：腾讯云 SecretKey
-- `dns`：可以使用 `"edgeone"`, `"tencent_edgeone"`, 或 `"teo"`
+## 可选参数
+
+| 参数 | 描述 | 类型 | 范围/选项 | 默认 |
+|------|------|------|-----------|------|
+| ttl  | 生存时间（TTL） | 整数 (秒) | 1 - 86400 | 300 |
+| endpoint | 自定义API端点 | 字符串 | URL(见下表) | `https://teo.tencentcloudapi.com` |
+
+> **注意**：`ttl` 不同套餐支持的值可能不同。
 
 ## 服务端点
 
 EdgeOne 支持国际版和国内版，使用不同的API端点：
 
-- **国际版**: `https://teo.tencentcloudapi.com` (默认)
-- **国内版**: `https://teo.tencentcloudapi.com` 
+- **默认**: `https://teo.tencentcloudapi.com` 
+- **国际版**: `https://teo.intl.tencentcloudapi.com`
 
 两个版本的API逻辑相同，只是服务器节点分布不同。
 
