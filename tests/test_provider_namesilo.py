@@ -111,22 +111,6 @@ class TestNamesiloProvider(BaseProviderTestCase):
         self.assertIsNone(result)
 
     @patch.object(NamesiloProvider, "_request")
-    def test_query_record_success_single_record(self, mock_request):
-        """Test successful record query with single matching record"""
-        mock_request.return_value = {
-            "code": "300",
-            "resource_record": {"record_id": "12345", "host": "test", "type": "A", "value": "1.2.3.4", "ttl": "3600"},
-        }
-
-        result = self.provider._query_record("example.com", "test", "example.com", "A", None, {})
-
-        mock_request.assert_called_once_with("dnsListRecords", domain="example.com")
-        self.assertIsNotNone(result)
-        self.assertEqual(result["record_id"], "12345")
-        self.assertEqual(result["host"], "test")
-        self.assertEqual(result["type"], "A")
-
-    @patch.object(NamesiloProvider, "_request")
     def test_query_record_success_multiple_records(self, mock_request):
         """Test successful record query with multiple records"""
         mock_request.return_value = {
@@ -181,7 +165,13 @@ class TestNamesiloProvider(BaseProviderTestCase):
 
         result = self.provider._create_record("example.com", "test", "example.com", "1.2.3.4", "A", None, None, {})
 
-        expected_params = {"domain": "example.com", "rrtype": "A", "rrhost": "test", "rrvalue": "1.2.3.4", "rrttl": None}
+        expected_params = {
+            "domain": "example.com",
+            "rrtype": "A",
+            "rrhost": "test",
+            "rrvalue": "1.2.3.4",
+            "rrttl": None,
+        }
         mock_request.assert_called_once_with("dnsAddRecord", **expected_params)
         self.assertTrue(result)
 
@@ -271,13 +261,15 @@ class TestNamesiloProvider(BaseProviderTestCase):
             {
                 "reply": {
                     "code": "300",
-                    "resource_record": {
-                        "record_id": "12345",
-                        "host": "test",
-                        "type": "A",
-                        "value": "1.2.3.4",
-                        "ttl": "3600",
-                    },
+                    "resource_record": [
+                        {
+                            "record_id": "12345",
+                            "host": "test",
+                            "type": "A",
+                            "value": "1.2.3.4",
+                            "ttl": "3600",
+                        }
+                    ],
                 }
             },
             # dnsUpdateRecord response

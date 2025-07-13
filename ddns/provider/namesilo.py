@@ -101,9 +101,6 @@ class NamesiloProvider(BaseProvider):
 
         if response:
             records = response.get("resource_record", [])
-            # Handle single record response (API returns dict instead of list)
-            if isinstance(records, dict):
-                records = [records]
 
             # Find matching record
             for record in records:
@@ -148,7 +145,7 @@ class NamesiloProvider(BaseProvider):
             "dnsUpdateRecord",
             rrid=record_id,
             domain=zone_id,  # zone_id is main_domain in NameSilo
-            rrhost=old_record.get("host", ""),  # host field contains subdomain
+            rrhost=old_record.get("host"),  # host field contains subdomain
             rrvalue=value,
             rrtype=record_type,
             rrttl=ttl or old_record.get("ttl"),
