@@ -452,6 +452,52 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(loaded_config["symbols"], "αβγδε")
         self.assertEqual(loaded_config["emoji"], "🌍🔧⚡")
 
+    def test_load_config_json_with_hash_comments(self):
+        """测试加载带有 # 注释的JSON配置文件"""
+        json_with_comments = """{
+    # Configuration for DDNS
+    "dns": "cloudflare",  # DNS provider
+    "id": "test@example.com",
+    "token": "secret123",  # API token
+    "ttl": 300
+    # End of config
+}"""
+        file_path = self.create_test_file("test_hash_comments.json", json_with_comments)
+
+        config = load_config(file_path)
+
+        expected = {"dns": "cloudflare", "id": "test@example.com", "token": "secret123", "ttl": 300}
+        self.assertEqual(config, expected)
+
+    def test_load_config_json_with_double_slash_comments(self):
+        """测试加载带有 // 注释的JSON配置文件"""
+        json_with_comments = """{
+    // Configuration for DDNS
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Schema validation
+    "debug": false,  // false=disable, true=enable
+    "dns": "dnspod_com",  // DNS provider
+    "id": "1008666",
+    "token": "ae86$cbbcctv666666666666666",  // API Token
+    "ipv4": ["test.lorzl.ml"],  // IPv4 domains
+    "ipv6": ["test.lorzl.ml"],  // IPv6 domains
+    "proxy": null  // Proxy settings
+}"""
+        file_path = self.create_test_file("test_double_slash_comments.json", json_with_comments)
+
+        config = load_config(file_path)
+
+        expected = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+            "debug": False,
+            "dns": "dnspod_com",
+            "id": "1008666",
+            "token": "ae86$cbbcctv666666666666666",
+            "ipv4": ["test.lorzl.ml"],
+            "ipv6": ["test.lorzl.ml"],
+            "proxy": None,
+        }
+        self.assertEqual(config, expected)
+
     def test_save_config_pretty_format(self):
         """Test that saved JSON is properly formatted"""
         config_data = {"dns": "cloudflare", "log_level": "DEBUG", "log_file": "/var/log/ddns.log"}

@@ -7,6 +7,7 @@ from ast import literal_eval
 from io import open
 from json import loads as json_decode, dumps as json_encode
 from sys import stderr, stdout
+from ..util.comment import remove_comment
 
 
 def load_config(config_path):
@@ -31,9 +32,11 @@ def load_config(config_path):
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
-    # 优先尝试JSON解析
+    # 移除注释后尝试JSON解析
     try:
-        config = json_decode(content)
+        # 移除单行注释（# 和 // 风格）
+        content_without_comments = remove_comment(content)
+        config = json_decode(content_without_comments)
     except (ValueError, SyntaxError) as json_error:
         # JSON解析失败，尝试AST解析
         try:
