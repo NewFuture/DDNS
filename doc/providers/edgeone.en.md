@@ -1,10 +1,12 @@
-# Tencent Cloud EdgeOne International Configuration Guide
+# Tencent Cloud EdgeOne Configuration Guide
 
 ## Overview
 
-Tencent Cloud EdgeOne International is a global edge computing and security acceleration service platform provided by Tencent Cloud, which includes DNS resolution capabilities. This DDNS project supports dynamic DNS record updates through Tencent Cloud EdgeOne API.
+Tencent Cloud EdgeOne is a global edge computing and security acceleration service platform provided by Tencent Cloud, which includes DNS resolution capabilities. This DDNS project supports dynamic DNS record updates through Tencent Cloud EdgeOne API.
 
-**Website**: [https://edgeone.ai/zh](https://edgeone.ai/zh)
+**Website**: 
+- International: [https://edgeone.ai/zh](https://edgeone.ai/zh)
+- Domestic: [https://cloud.tencent.com/product/teo](https://cloud.tencent.com/product/teo)
 
 ## Authentication
 
@@ -20,6 +22,17 @@ Tencent Cloud EdgeOne uses `SecretId` and `SecretKey` for API authentication, wh
 4. Copy the generated **SecretId** and **SecretKey**, store them securely
 5. Ensure the account has EdgeOne related permissions
 
+## Permission Requirements
+
+Ensure the Tencent Cloud account used for DDNS has the following EdgeOne related permissions:
+
+- `teo:DescribeZones` - Query site information
+- `teo:DescribeRecords` - Query DNS records
+- `teo:CreateRecord` - Create DNS records  
+- `teo:ModifyRecord` - Modify DNS records
+
+It is recommended to use a sub-account with minimal necessary permissions instead of using the main account credentials.
+
 #### Configuration Example
 
 ```json
@@ -34,88 +47,29 @@ Tencent Cloud EdgeOne uses `SecretId` and `SecretKey` for API authentication, wh
 - `token`: Tencent Cloud SecretKey
 - `dns`: Can use `"edgeone"`, `"tencent_edgeone"`, or `"teo"`
 
-## Complete Configuration Examples
-
-### Basic Configuration
+## Complete Configuration Example
 
 ```json
 {
     "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "edgeone",
-    "ipv4": "test",
-    "ipv6": "test6",
     "domains": "test.example.com"
 }
 ```
 
-### Advanced Configuration
+- `id`: Tencent Cloud SecretId
+- `token`: Tencent Cloud SecretKey
+- `dns`: Can use `"edgeone"`, `"tencent_edgeone"`, or `"teo"`
 
-```json
-{
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "dns": "edgeone",
-    "domains": [
-        {
-            "domain": "test.example.com",
-            "type": "A",
-            "ttl": 600
-        },
-        {
-            "domain": "test6.example.com", 
-            "type": "AAAA",
-            "ttl": 300
-        },
-        {
-            "domain": "@~example.com",
-            "type": "A"
-        }
-    ],
-    "ipv4": {
-        "interface": "eth0",
-        "url": "https://api.ipify.org"
-    },
-    "ipv6": "auto"
-}
-```
+## Service Endpoints
 
-## Supported Record Types
+EdgeOne supports both international and domestic versions with different API endpoints:
 
-EdgeOne supports the following DNS record types:
+- **International**: `https://teo.tencentcloudapi.com` (default)
+- **Domestic**: `https://teo.tencentcloudapi.com`
 
-- **A Record**: IPv4 address resolution
-- **AAAA Record**: IPv6 address resolution
-- **CNAME Record**: Canonical name record
-- **MX Record**: Mail exchange record
-- **TXT Record**: Text record
-- **NS Record**: Name server record
-
-## Domain Format Support
-
-### Standard Format
-```
-test.example.com
-```
-
-### Custom Separator Format
-Use `~` or `+` to separate subdomain and main domain:
-```
-test~example.com
-sub+example.com
-@~example.com  # Root domain record
-```
-
-## Required Permissions
-
-Ensure the Tencent Cloud account used for DDNS has the following EdgeOne related permissions:
-
-- `teo:DescribeZones` - Query zone information
-- `teo:DescribeRecords` - Query DNS records
-- `teo:CreateRecord` - Create DNS records
-- `teo:ModifyRecord` - Modify DNS records
-
-It is recommended to use a sub-account with minimal necessary permissions rather than using the main account key.
+Both versions have the same API logic but different server node distributions.
 
 ## Important Notes
 
@@ -148,12 +102,8 @@ It is recommended to use a sub-account with minimal necessary permissions rather
 
 Enable debug mode to view detailed API requests and responses:
 
-```json
-{
-    "debug": true,
-    "dns": "edgeone",
-    ...
-}
+```bash
+ddns --debug
 ```
 
 ## Related Links

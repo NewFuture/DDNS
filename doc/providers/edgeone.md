@@ -1,10 +1,12 @@
-# 腾讯云 EdgeOne 国际版 配置指南 中文文档
+# 腾讯云 EdgeOne 配置指南
 
 ## 概述
 
-腾讯云 EdgeOne 国际版是腾讯云提供的全球边缘计算和安全加速服务平台，其中包含DNS解析功能。本 DDNS 项目支持通过腾讯云EdgeOne API进行DNS记录的动态更新。
+腾讯云 EdgeOne 是腾讯云提供的全球边缘计算和安全加速服务平台，其中包含DNS解析功能。本 DDNS 项目支持通过腾讯云EdgeOne API进行DNS记录的动态更新。
 
-**官网**: [https://edgeone.ai/zh](https://edgeone.ai/zh)
+**官网**: 
+- 国际版: [https://edgeone.ai/zh](https://edgeone.ai/zh)
+- 国内版: [https://cloud.tencent.com/product/teo](https://cloud.tencent.com/product/teo)
 
 ## 认证方式
 
@@ -19,6 +21,17 @@
 3. 点击"新建密钥"按钮
 4. 复制生成的 **SecretId** 和 **SecretKey**，请妥善保存
 5. 确保账号具有EdgeOne相关权限
+
+## 权限要求
+
+确保用于DDNS的腾讯云账号具有以下EdgeOne相关权限：
+
+- `teo:DescribeZones` - 查询站点信息
+- `teo:DescribeRecords` - 查询DNS记录
+- `teo:CreateRecord` - 创建DNS记录  
+- `teo:ModifyRecord` - 修改DNS记录
+
+建议使用子账号并分配最小必要权限，而不是使用主账号密钥。
 
 #### 配置示例
 
@@ -36,86 +49,27 @@
 
 ## 完整配置示例
 
-### 基本配置
-
 ```json
 {
     "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "dns": "edgeone",
-    "ipv4": "test",
-    "ipv6": "test6",
     "domains": "test.example.com"
 }
 ```
 
-### 高级配置
+- `id`：腾讯云 SecretId
+- `token`：腾讯云 SecretKey
+- `dns`：可以使用 `"edgeone"`, `"tencent_edgeone"`, 或 `"teo"`
 
-```json
-{
-    "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 
-    "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "dns": "edgeone",
-    "domains": [
-        {
-            "domain": "test.example.com",
-            "type": "A",
-            "ttl": 600
-        },
-        {
-            "domain": "test6.example.com", 
-            "type": "AAAA",
-            "ttl": 300
-        },
-        {
-            "domain": "@~example.com",
-            "type": "A"
-        }
-    ],
-    "ipv4": {
-        "interface": "eth0",
-        "url": "https://api.ipify.org"
-    },
-    "ipv6": "auto"
-}
-```
+## 服务端点
 
-## 支持的记录类型
+EdgeOne 支持国际版和国内版，使用不同的API端点：
 
-EdgeOne 支持以下DNS记录类型：
+- **国际版**: `https://teo.tencentcloudapi.com` (默认)
+- **国内版**: `https://teo.tencentcloudapi.com` 
 
-- **A记录**: IPv4地址解析
-- **AAAA记录**: IPv6地址解析
-- **CNAME记录**: 别名记录
-- **MX记录**: 邮件交换记录
-- **TXT记录**: 文本记录
-- **NS记录**: 名称服务器记录
-
-## 域名格式支持
-
-### 标准格式
-```
-test.example.com
-```
-
-### 自定义分隔符格式
-使用 `~` 或 `+` 分隔子域名和主域名：
-```
-test~example.com
-sub+example.com
-@~example.com  # 根域名记录
-```
-
-## 权限要求
-
-确保用于DDNS的腾讯云账号具有以下EdgeOne相关权限：
-
-- `teo:DescribeZones` - 查询站点信息
-- `teo:DescribeRecords` - 查询DNS记录
-- `teo:CreateRecord` - 创建DNS记录  
-- `teo:ModifyRecord` - 修改DNS记录
-
-建议使用子账号并分配最小必要权限，而不是使用主账号密钥。
+两个版本的API逻辑相同，只是服务器节点分布不同。
 
 ## 注意事项
 
@@ -148,12 +102,8 @@ sub+example.com
 
 启用调试模式查看详细的API请求和响应：
 
-```json
-{
-    "debug": true,
-    "dns": "edgeone",
-    ...
-}
+```bash
+ddns --debug
 ```
 
 ## 相关链接
