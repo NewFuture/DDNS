@@ -238,8 +238,8 @@ class SimpleProvider(object):
                 self.logger.debug("Using proxy: %s", p)
             try:
                 response = send_http_request(
-                    url=url,
                     method=method,
+                    url=url,
                     body=body_data,
                     headers=headers,
                     proxy=p,

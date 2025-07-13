@@ -88,6 +88,9 @@ def run(config):
     """
     Run the DDNS update process
     """
+    # 设置IP模块的SSL验证配置
+    ip.ssl_verify = config.ssl
+
     # dns provider class
     provider_class = get_provider_class(config.dns)
     dns = provider_class(
