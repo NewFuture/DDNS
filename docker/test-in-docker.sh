@@ -44,8 +44,9 @@ fi
 docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file -h
 docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file --version
 docker run --rm -v="$volume:/dist" --platform=$platform $container sh -c "/dist/$file || test -f config.json"
-docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/debug.json
 docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/callback.json
+docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/debug.json
+docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/noip.json
 
 # delete to avoid being reused
 docker image rm $container

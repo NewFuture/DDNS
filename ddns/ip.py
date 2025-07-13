@@ -5,10 +5,10 @@ from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
 
-try:  # python3
-    from urllib.request import urlopen, Request
-except ImportError:  # python2
-    from urllib2 import urlopen, Request  # type: ignore[import-untyped]  # noqa: F401
+from .util.http import send_http_request
+
+# 模块级别的SSL验证配置，默认使用auto模式
+ssl_verify = "auto"
 
 # IPV4正则
 IPV4_REG = r"((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])"
@@ -48,13 +48,15 @@ def local_v4(i=0):  # 本地ipv4地址
 def _open(url, reg):
     try:
         debug("open: %s", url)
-        res = (
-            urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0 ddns"}), timeout=60)
-            .read()
-            .decode("utf8", "ignore")
+        response = send_http_request(
+            method="GET", url=url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify_ssl=ssl_verify
         )
+        res = response.body
         debug("response: %s", res)
-        return compile(reg).search(res).group()
+        match = compile(reg).search(res)
+        if match:
+            return match.group()
+        error("No match found in response: %s", res)
     except Exception as e:
         error(e)
 
