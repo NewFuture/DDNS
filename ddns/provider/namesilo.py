@@ -39,7 +39,7 @@ class NamesiloProvider(BaseProvider):
         self.logger.warning("NameSilo provider implementation is pending verification - please test thoroughly")
 
     def _request(self, operation, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
+        # type: (str, **(str | int | bytes | bool | None)) -> dict|None
         """
         Send request to NameSilo API
 

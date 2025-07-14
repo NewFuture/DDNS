@@ -46,7 +46,8 @@
   - [HE.net](https://dns.he.net/) ([Configuration Guide](doc/providers/he.en.md)) (@NN708) (Does not support auto-record creation)
   - [Huawei Cloud](https://huaweicloud.com/) ([Configuration Guide](doc/providers/huaweidns.en.md)) (@cybmp3) ⚡
   - [NameSilo](https://www.namesilo.com/) ([Configuration Guide](doc/providers/namesilo.en.md))
-  - [Tencent Cloud](https://cloud.tencent.com/) ([Configuration Guide](doc/providers/tencentcloud.en.md)) ⚡
+  - [Tencent Cloud DNS](https://cloud.tencent.com/) ([Configuration Guide](doc/providers/tencentcloud.en.md)) ⚡
+  - [Tencent Cloud EdgeOne](https://cloud.tencent.com/product/teo) ([Configuration Guide](doc/providers/edgeone.en.md)) ⚡
   - [No-IP](https://www.noip.com/) ([Configuration Guide](doc/providers/noip.en.md))
   - Custom Callback API ([Configuration Guide](doc/providers/callback.en.md))
   

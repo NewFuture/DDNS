@@ -13,7 +13,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 
 | Environment Variable     | Accepted Values                                                                                     | Description                              | Example                                                     |
 |--------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------|-------------------------------------------------------------|
-| `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
+| `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
 | `DDNS_ID`                | Depends on the provider                                                                              | API account or ID                        | `DDNS_ID="user@example.com"`                                |
 | `DDNS_TOKEN`             | Depends on the provider                                                                              | API token or secret                      | `DDNS_TOKEN="abcdef123456"`                                 |
 | `DDNS_ENDPOINT`          | URL (starting with http or https)                                                                   | Custom API endpoint                       | `DDNS_ENDPOINT=https://api.dns.cn`                          |
@@ -82,7 +82,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 - **Type**: String
 - **Required**: No
 - **Default**: `dnspod`
-- **Available Values**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `noip`, `tencentcloud`
+- **Available Values**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud`
 - **Description**: DNS service provider
 - **Examples**:
 
