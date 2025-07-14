@@ -110,7 +110,7 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 
 ```json
 {
-    "enpodit": "https://hooks.example.com",
+    "endpoint": "https://hooks.example.com",
     "id":"/webhook",
     "token": {
         "event": "ddns_update",
