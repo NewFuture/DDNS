@@ -60,10 +60,10 @@ class EdgeOneProvider(TencentCloudProvider):
         domain = join_domain(subdomain, main_domain)
         origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
         res = self._request("CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra)
-        if res and "Response" in res:
-            self.logger.info("Acceleration domain created (%s)", res.get("Response", {}).get("RequestId"))
-
+        if res:
+            self.logger.info("Acceleration domain created (%s)", res.get("RequestId"))
             return True
+
         self.logger.error("Failed to create acceleration domain, response: %s", res)
         return False
 
@@ -76,7 +76,7 @@ class EdgeOneProvider(TencentCloudProvider):
         response = self._request("ModifyAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin)
 
         if response:
-            self.logger.info("Acceleration domain updated (%s)", response.get("Response", {}).get("RequestId"))
+            self.logger.info("Acceleration domain updated (%s)", response.get("RequestId"))
             return True
         self.logger.error("Failed to update acceleration domain origin, response: %s", response)
         return False
