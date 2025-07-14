@@ -29,11 +29,28 @@
     ],
     "github.copilot.chat.agent.terminal.allowList": {
         "python": true,
+        "python -c": true,
         "python -m": true,
         "python -m unittest": true,
         "python3": true,
+        "python3 -c": true,
         "python3 -m": true,
         "python3 -m unittest": true,
-        "echo": true
+        "echo": true,
+        "cd": true,
+        "ls": true,
+        "dir": true,
+        "git": true,
+        "git status": true,
+        "rm": true,
+        "del": true,
+    },
+    "github.copilot.chat.agent.terminal.denyList": {
+        "rm -rf": true,
+        "del /f /s /q": true,
+        "git reset --hard": true,
+        "git clean -fdx": true,
+        "git checkout -- .": true,
+        "sudo": true
     },
 }

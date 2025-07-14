@@ -12,7 +12,7 @@ import sys
 from .__init__ import __version__, __description__, build_date
 from .config import load_config, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
-from .util import ip
+from . import ip
 from .cache import Cache
 
 logger = getLogger()
@@ -88,6 +88,9 @@ def run(config):
     """
     Run the DDNS update process
     """
+    # 设置IP模块的SSL验证配置
+    ip.ssl_verify = config.ssl
+
     # dns provider class
     provider_class = get_provider_class(config.dns)
     dns = provider_class(
