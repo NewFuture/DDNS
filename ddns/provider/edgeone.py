@@ -60,10 +60,11 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, str, str, str, str, int, str | None, dict) -> bool
         """创建新的加速域名记录 https://cloud.tencent.com/document/api/1552/86338"""
         domain = join_domain(subdomain, main_domain)
-        origin = {"OriginType": "ip_domain", "Origin": value}  # type: Any
+        origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
         res = self._request("CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra)
         if res and "Response" in res:
             self.logger.info("Acceleration domain created (%s)", res.get("Response", {}).get("RequestId"))
+            
             return True
         return False
 
@@ -72,7 +73,7 @@ class EdgeOneProvider(TencentCloudProvider):
         domain = old_record.get("DomainName")
         # 构建源站信息
         backup = old_record.get("OriginDetail", {}).get("BackupOrigin", "")
-        origin = {"OriginType": "ip_domain", "Origin": value, "BackupOrigin": backup}  # type: Any
+        origin = {"OriginType": "IP_DOMAIN", "Origin": value, "BackupOrigin": backup}  # type: Any
         response = self._request("ModifyAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin)
 
         if response:
