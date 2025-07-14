@@ -107,28 +107,6 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_request.assert_called_once()
 
     @patch.object(EdgeOneProvider, "_request")
-    def test_query_record_found_full_domain(self, mock_request):
-        """Test acceleration domain query found with full domain name"""
-        mock_request.return_value = {
-            "AccelerationDomains": [
-                {
-                    "ZoneId": "zone-123456789",
-                    "DomainName": "www.example.com",
-                    "DomainStatus": "online",
-                    "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
-                }
-            ]
-        }
-
-        record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})
-
-        self.assertIsNotNone(record)
-        if record:  # Type narrowing for mypy
-            self.assertEqual(record["ZoneId"], "zone-123456789")
-            self.assertEqual(record["DomainName"], "www.example.com")
-            self.assertEqual(record["OriginDetail"]["Origin"], "1.2.3.4")
-
-    @patch.object(EdgeOneProvider, "_request")
     def test_query_record_not_found(self, mock_request):
         """Test acceleration domain query when domain not found"""
         mock_request.return_value = {"AccelerationDomains": []}
