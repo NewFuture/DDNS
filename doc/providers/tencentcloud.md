@@ -29,7 +29,7 @@
 
 ##### 从DNSPod获取
 
-最为简单快捷快速获取
+最为简单快捷地获取
 
 1. 登录 [DNSPod控制台](https://console.dnspod.cn/)
 2. 进入“用户中心” > “API密钥”或访问 <https://console.dnspod.cn/account/token>
