@@ -40,7 +40,7 @@
   - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
   - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md)) ⚡
   - [阿里云边缘安全加速(ESA)](https://esa.console.aliyun.com/) ([配置指南](doc/providers/aliesa.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) ([配置指南](doc/providers/dnscom.md)) (@loftor-git)
+  - [DNS.COM](https://www.dns.com/) ([配置指南](doc/providers/51dns.md)) (@loftor-git)
   - [DNSPOD 国际版](https://www.dnspod.com/) ([配置指南](doc/providers/dnspod_com.md))
   - [CloudFlare](https://www.cloudflare.com/) ([配置指南](doc/providers/cloudflare.md)) (@tongyifan)
   - [HE.net](https://dns.he.net/) ([配置指南](doc/providers/he.md)) (@NN708) (不支持自动创建记录)
@@ -120,7 +120,7 @@
    - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
    - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
    - **阿里云边缘安全加速(ESA)**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/aliesa.md)
-   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [详细配置文档](doc/providers/dnscom.md)
+   - **51DNS(dns.com)**: [API Key/Secret](https://www.dns.com/member/apiSet) | [详细配置文档](doc/providers/51dns.md)
    - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [详细配置文档](doc/providers/dnspod_com.md)
    - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**） | [详细配置文档](doc/providers/cloudflare.md)
    - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)

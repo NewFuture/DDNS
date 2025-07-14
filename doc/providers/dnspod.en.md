@@ -1,20 +1,21 @@
 # DNSPod China Configuration Guide
 
-> For Global DNSPod, see [DNSPod Global Configuration Guide](dnspod_com.en.md).
+> For International DNSPod, see [DNSPod Global Configuration Guide](dnspod_com.en.md).
 
 ## Overview
 
-DNSPod China (dnspod.cn) is a DNS service provider, widely used in mainland China. This DDNS project supports two authentication methods to connect to DNSPod:
+DNSPod (dnspod.cn) is an authoritative DNS resolution service under Tencent Cloud, widely used in mainland China, supporting dynamic DNS record creation and updates. This DDNS project supports multiple authentication methods to connect to DNSPod for dynamic DNS record management.
 
-1. **API Token** (Recommended)
-2. **Email + Password** (Legacy)
-3. AccessKey (Tencent Cloud DNSPod) [Reference](tencentcloud.md)
+Official Links:
 
-## Authentication Methods
+- Official Website: <https://www.dnspod.cn/>
+- Service Console: <https://console.dnspod.cn/>
 
-### 1. API Token (Recommended)
+## Authentication Information
 
-The API Token method is more secure and is the recommended integration method by DNSPod.
+### 1. API Token Authentication (Recommended)
+
+API Token method is more secure and is the recommended integration method by DNSPod.
 
 #### Obtaining API Token
 
@@ -26,89 +27,120 @@ The API Token method is more secure and is the recommended integration method by
 ```json
 {
     "dns": "dnspod",
-    "id": "123456",
-    "token": "abcdef1234567890abcdef1234567890"
+    "id": "123456",            // DNSPod API Token ID
+    "token": "Your-API-TOKEN"  // DNSPod API Token Secret
 }
 ```
 
-- `id`: API Token ID
-- `token`: API Token secret
-- `dns`: Must be `"dnspod"`
-
-### 2. Email + Password (Legacy)
+### 2. Email Password Authentication (Not Recommended)
 
 Uses DNSPod account email and password. Lower security, only recommended for special scenarios.
 
 ```json
 {
-    "id": "your-email@example.com",
-    "token": "your-account-password",
-    "dns": "dnspod"
+    "dns": "dnspod",
+    "id": "your-email@example.com",  // DNSPod account email
+    "token": "your-account-password" // DNSPod account password
 }
 ```
 
-- `id`: DNSPod account email
-- `token`: DNSPod account password
-- `dns`: Must be `"dnspod"`
+### 3. Tencent Cloud AccessKey Method
+
+For users using Tencent Cloud AccessKey, please refer to [Tencent Cloud DNSPod Configuration Guide](tencentcloud.en.md).
 
 ## Complete Configuration Example
 
 ```json
 {
-  "id": "123456",
-  "token": "abcdef1234567890abcdef1234567890abcdef12",
-  "dns": "dnspod",
-  "index4": ["public"],
-  "index6": ["public"],
-  "ipv4": ["home.example.com"],
-  "ipv6": ["home.example.com", "nas.example.com"],
-  "line": "默认",
-  "ttl": 600
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "dns": "dnspod",                    // Current provider
+    "id": "123456",                     // DNSPod API Token ID
+    "token": "Your-API-TOKEN",           // DNSPod API Token
+    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index6": "public",                     // IPv6 address source
+    "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
+    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains
+    "line": "默认",                          // Resolution line
+    "ttl": 600                              // DNS record TTL (seconds)
 }
 ```
 
-## Optional Parameters
+### Parameter Description
 
-| Parameter | Description               | Type    | Range/Options                             | Default |
-|-----------|---------------------------|---------|-------------------------------------------|---------|
-| `ttl`     | Time To Live (seconds)    | Integer | 1-604800                                | 600     |
-| `line`    | DNS line/route            | String  | "默认"、"电信"、"联通"、"移动" etc. | "默认" |
+| Parameter | Description | Type | Range/Options | Default | Parameter Type |
+| :-------: | :---------- | :--- | :------------ | :------ | :------------- |
+| dns | Provider identifier | String | `dnspod` | None | Provider Parameter |
+| id | Authentication ID | String | DNSPod API Token ID or email | None | Provider Parameter |
+| token | Authentication key | String | DNSPod API Token secret or password | None | Provider Parameter |
+| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
+| ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
+| line | Resolution line | String | [Reference below](#line) | `默认` | Provider Parameter |
+| ttl | TTL time | Integer (seconds) | [Reference below](#ttl) | `600` | Provider Parameter |
+| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
+| cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
+| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Config |
 
-> **Note**: Supported values for `ttl` and `line` may vary by service plan.
+> **Parameter Type Description**:
+>
+> - **Common Config**: Standard DNS configuration parameters applicable to all supported DNS providers
+> - **Common Network**: Network setting parameters applicable to all supported DNS providers
+> - **Provider Parameter**: Supported by current provider, values related to current provider
+> **Note**: `ttl` and `line` supported values may vary by service plan.
+
+### ttl
+
+The `ttl` parameter specifies the Time To Live (TTL) of DNS records in seconds. DNSPod supports TTL range from 1 to 604800 seconds (7 days). If not set, the default value is used.
+
+| Plan Type | Supported TTL Range (seconds) |
+| --------- | :---------------------------: |
+| Free | 600 - 604800 |
+| Professional | 60 - 604800 |
+| Enterprise | 1 - 604800 |
+| Premium | 1 - 604800 |
+
+> Reference: [DNSPod TTL Documentation](https://docs.dnspod.cn/dns/help-ttl/)
+
+### line
+
+The `line` parameter specifies DNS resolution lines. DNSPod supported lines:
+
+| Line Identifier | Description |
+| :-------------- | :---------- |
+| 默认 | Default |
+| 电信 | China Telecom |
+| 联通 | China Unicom |
+| 移动 | China Mobile |
+| 教育网 | China Education Network |
+| 搜索引擎 | Search Engine |
+| 境外 | Overseas |
+
+> More lines reference: [DNSPod Resolution Line Documentation](https://docs.dnspod.cn/dns/dns-record-line)
 
 ## Troubleshooting
 
-### Common Issues
-
-#### "Authentication Failed"
-
-- Check if API Token or email/password are correct
-- Confirm domain management permissions
-
-#### "Domain Not Found"
-
-- Domain has been added to DNSPod account
-- Configuration spelling is correct
-- Domain is in active state
-
-#### "Record Creation Failed"
-
-- Check if subdomain has conflicting records
-- TTL is reasonable
-- Has modification permissions
-
 ### Debug Mode
 
-Enable debug logging:
+Enable debug logging to view detailed information:
 
 ```sh
-ddns --debug
+ddns -c config.json --debug
 ```
+
+### Common Issues
+
+- **Authentication Failed**: Check if API Token or email/password are correct, confirm domain management permissions
+- **Domain Not Found**: Ensure domain has been added to DNSPod account, configuration spelling is correct, domain is in active state
+- **Record Creation Failed**: Check if subdomain has conflicting records, TTL settings are reasonable, confirm modification permissions
+- **Request Rate Limit**: DNSPod has API call rate limits, reduce request frequency
 
 ## Support and Resources
 
-- [DNSPod Documentation](https://docs.dnspod.cn/)
-- [API Reference](https://docs.dnspod.cn/api/)
-- [Tencent Cloud DNSPod (AccessKey)](./tencentcloud.en.md) (DNSPod's AccessKey method)
+- [DNSPod Product Documentation](https://docs.dnspod.cn/)
+- [DNSPod API Reference](https://docs.dnspod.cn/api/)
+- [DNSPod Console](https://console.dnspod.cn/)
+- [Tencent Cloud DNSPod (AccessKey Method)](./tencentcloud.en.md)
 
-> It is recommended to use the API Token method for improved security and management convenience.
+> **Recommendation**: Use API Token method to improve security and management convenience, avoid using email/password method.

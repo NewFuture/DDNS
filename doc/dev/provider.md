@@ -106,7 +106,8 @@ class MySimpleProvider(SimpleProvider):
             raise ValueError("Invalid API token format")
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
-        """更新DNS记录 - 必须实现"""
+        # type: (str, str, str, int | None, str | None) -> bool
+        """更新或创建DNS记录 https://doc.simpledns.com/update"""
         # logic to update DNS record
 ```
 
@@ -139,36 +140,35 @@ class MyProvider(BaseProvider):
 
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
-        """查询主域名的Zone ID"""
-        # 精确查找 或者 list匹配
+        """查询Zone信息 ZoneId https://doc.exmaple.com/api/query_zone"""
+        res = self._request("ZoneInfo", key=value...)
+        ...
+        self.logger.debug("domain not found for: %s", domain)
+        return None
 
-    def _query_record(self, zone_id, subdomain, main_domain, record_type, line=None, extra=None):
-        # type: (str, str, str, str, str | None, dict | None) -> Any
-        """查询现有DNS记录"""
+    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
+        # type: (str, str, str, str, str | None, dict) -> dict | None
+        """查询记录信息 https://doc.exmaple.com/api/list_records"""
+        res = self._request("DescribeRecords", ZoneId=zone_id, Key=value...)
+        ...
+        self.logger.warning("No record found for: %s", res)
+        return None
 
+    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
+        # type: (str, str, str, str, str, int, str | None, dict) -> bool
+        """创建新record https://doc.exmaple.com/api/create_record"""
+        res = self._request("CreateRecord", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra)
+        ...
+        self.logger.error("Failed to create record: %s", res)
+        return False
 
-    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict | None) -> bool
-        """创建新的DNS记录"""
-
-    def _update_record(self, zone_id, old_record, value, record_type, ttl=None, line=None, extra=None):
-        # type: (str, dict, str, str, int | str | None, str | None, dict | None) -> bool
-        """更新现有DNS记录"""
-
-    
-    def _request(self, action, **params):
-        # type: (str, **(str | int | bytes | bool | None)) -> dict
-        """[推荐]封装通用请求逻辑，处理认证和公共参数"""
-        # 构建请求参数
-        request_params = {
-            "Action": action,
-            "Version": "2023-01-01",
-            "AccessKeyId": self.token,
-            **{k: v for k, v in params.items() if v is not None}
-        }
-
-        res = self._http("POST", "/", params=request_params, headers=headers)
-        return res.get("data", {})
+    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
+        # type: (str, Any, str, str, int, str | None, dict) -> bool
+        """更新record https://doc.exmaple.com/api/update_record"""
+        res = self._request("ModifyRecord", ZoneId=zone_id, DomainName=domain, OriginInfo=origin)
+        ...
+        self.logger.error("Failed to update record: %s", res)
+        return False
 ```
 
 ---

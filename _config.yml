@@ -8,3 +8,6 @@ kramdown:
 
 plugins:
   - jekyll-mentions
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-redirect-from
