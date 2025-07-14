@@ -1,5 +1,4 @@
 markdown: kramdown
-remote_theme: "jekyll/minima"
 
 favicon: /doc/img/ddns.svg
 site_favicon: /doc/img/ddns.svg
