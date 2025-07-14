@@ -18,6 +18,11 @@ This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS 
 Follow the steps below to add a new DNS provider:
 - [Python coding standards](./instructions/python.instructions.md)
 - [Provider development guide](../doc/dev/provider.md)
+- Provider documentation template:[aliyun]](../doc/provider/aliyun.md) and [dnspod](../doc/provider/dnspod.md)
+  - keep the template structure and fill in the required information
+  - remove the not applicable sections or fields
+  - in english doc linke the documentation to the english version documentations
+  - don't change the ref link `[参考](../json.md#ipv4-ipv6)` in the template. In english documentation, use the english version link `[Reference](../json.en.md#ipv4-ipv6)`
 
 ## Repository Structure
 - `ddns/`: Main application code

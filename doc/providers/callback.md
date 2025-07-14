@@ -4,26 +4,41 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 
 ## 基本配置
 
-### 配置参数
-
 | 参数 | 说明 | 必填 | 示例 |
 |------|------|------|------|
-| `id` | 回调URL地址，支持变量替换 | ✅ | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
+| `id` | 回调URL地址，支持变量替换 | - | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
 | `token` | POST 请求参数（JSON对象或JSON字符串），为空时使用GET请求 | 可选 | `{"api_key": "your_key"}` 或 `"{\"api_key\": \"your_key\"}"` |
-| `endpoint` | 可选，API端点地址，默认为 `空` | 可选 | `https://api.example.com/ddns` |
+| `endpoint` | 可选，API端点地址，不会参与变量替换 | - | `https://api.example.com/ddns` |
 | `dns` | 固定值 `"callback"`，表示使用回调方式 | ✅ | `"callback"` |
 
-### 最小配置示例
+## 完整配置示例
 
 ```json
 {
-    "id": "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__",
-    "token": "",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
-    "ipv4": ["sub.example.com"],
-    "index4": ["default"]
+    "endpoint": "https://api.example.com", // endpoint 可以和 Id 参数合并
+    "id": "/ddns?domain=__DOMAIN__&ip=__IP__", //  endpoint 可以和 Id 不能同时为空
+    "token": "", // 空字符串表示使用 GET 请求， 有值时使用 POST 请求
+    "index4": ["url:http://api.ipify.cn", "public"],
+    "index6": "public",
+    "ipv4": "ddns.newfuture.cc",
+    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"]
 }
 ```
+
+### 参数说明
+
+| 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
+| :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
+| index4  | IPv4 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)  | `default` | 公用配置   |
+| index6  | IPv6 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)   | `default` | 公用配置   |
+| ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| proxy   | 代理设置      | 数组           | [参考配置](../json.md#proxy)        | 无        | 公用网络   |
+| ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
+| cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
+| log     | 日志配置      | 对象           | [参考配置](../json.md#log)             | 无        | 公用配置   |
 
 ## 请求方式
 
@@ -36,40 +51,40 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 
 ```json
 {
-    "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
-    "token": "",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
-    "ipv4": ["sub.example.com"],
-    "index4": ["default"]
+    "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
+    "index4": ["url:http://api.ipify.cn", "public"],
+    "ipv4": "ddns.newfuture.cc",
 }
 ```
 
 ```http
-GET https://api.example.com/update?domain=sub.example.com&ip=192.168.1.100&type=A
+GET https://api.example.com/update?domain=ddns.newfuture.cc&ip=192.168.1.100&type=A
 ```
 
 ### POST 请求示例
 
 ```json
 {
-    "id": "https://api.example.com/update",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "callback",
+    "endpoint": "https://api.example.com",
     "token": {
         "api_key": "your_secret_key",
         "domain": "__DOMAIN__",
         "value": "__IP__"
     },
-    "dns": "callback",
-    "ipv4": ["sub.example.com"],
-    "index4": ["default"]
+    "index4": ["url:http://api.ipify.cn", "public"],
+    "ipv4": "ddns.newfuture.cc",
 }
-
 ```http
-POST https://api.example.com/update
+POST https://api.example.com
 Content-Type: application/json
 
 {
   "api_key": "your_secret_key",
-  "domain": "sub.example.com",
+  "domain": "ddns.newfuture.cc",
   "value": "192.168.1.100",
 }
 ```
@@ -95,7 +110,8 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 
 ```json
 {
-    "id": "https://hooks.example.com/ddns",
+    "enpodit": "https://hooks.example.com",
+    "id":"/webhook",
     "token": {
         "event": "ddns_update",
         "domain": "__DOMAIN__",
@@ -120,32 +136,7 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 }
 ```
 
-## 错误处理
-
-Callback Provider 会记录详细的日志信息：
-
-- **成功**：记录回调结果
-- **失败**：记录错误信息和原因
-- **空响应**：记录警告信息
-
-### 安全考虑
-
-1. **HTTPS**: 建议使用 HTTPS 协议保护数据传输
-2. **认证**: 在 token 中包含必要的认证信息
-3. **验证**: 服务端应验证请求的合法性
-4. **日志**: 避免在日志中暴露敏感信息
-
 ## 故障排除
-
-### 常见问题
-
-1. **URL无效**: 确保 `id` 包含完整的HTTP/HTTPS URL
-2. **JSON格式错误**: 检查 `token` 的JSON格式是否正确
-   - 对象格式：`{"key": "value"}`
-   - 字符串格式：`"{\"key\": \"value\"}"`（注意转义双引号）
-3. **变量未替换**: 确保变量名拼写正确（注意双下划线）
-4. **请求失败**: 检查目标服务器是否可访问
-5. **认证失败**: 验证API密钥或认证信息是否正确
 
 ### 调试方法
 

@@ -1,76 +1,78 @@
 # HE.net (Hurricane Electric) 配置指南
 
-> ⚠️ **重要提示：此provider等待验证**
->
-> HE.net缺少充分的真实环境测试，在使用前请仔细测试。如果您使用过程中遇到问题，请及时在 [GitHub Issues](https://github.com/NewFuture/DDNS/issues) 中反馈。
-
 ## 概述
 
-Hurricane Electric (HE.net) 是提供免费DNS托管服务的知名网络服务商，支持动态DNS更新。本 DDNS 项目支持通过HE.net的动态DNS密码进行认证。
+Hurricane Electric (HE.net) 是知名的网络服务商，提供免费的 DNS 托管服务，支持动态 DNS 记录更新。本 DDNS 项目通过 HE.net 的动态 DNS 密码进行认证。
 
-**重要限制**：HE.net **不支持自动创建记录**，必须先在HE.net控制面板中手动创建DNS记录。
+> ⚠️ **注意**：HE.net Provider 目前处于**待验证**状态，缺少充分的真实环境测试。请通过 [GitHub Issues](https://github.com/NewFuture/DDNS/issues) 反馈。
 
-## 认证方式
+**重要限制**：HE.net **不支持自动创建记录**，必须先在 HE.net 控制面板中手动创建 DNS 记录。
 
-### 动态DNS密码认证
+官网链接：
 
-HE.net使用专门的动态DNS密码进行认证，不使用账户登录密码。
+- 官方网站：<https://he.net/>
+- 服务商控制台：<https://dns.he.net/>
 
-#### 获取动态DNS密码
+## 认证信息
 
-1. 登录 [HE.net DNS管理](https://dns.he.net/)
-2. 选择要管理的域名
-3. 找到需要动态更新的记录
-4. 点击记录旁边的 **Generate a DDNS key** 或 **Enable entry for DDNS**
-5. 记录生成的DDNS密码
+### 动态 DNS 密码认证
+
+HE.net 使用专门的动态 DNS 密码进行认证，不使用账户登录密码。
+
+需要提前创建DNS记录和开启DNS
+
+1. 在 [HE.net DNS 管理面板](https://dns.he.net)中选择要管理的域名
+2. **创建DNS记录**：手动创建 A (ipv4)或 AAAA (ipv6)记录
+3. **启用DDNS**：为记录启用动态 DNS 功能
+4. **获取密码**：点击旁边的 `Generate a DDNS key` 或 `Enable entry for DDNS`
 
 ```json
 {
     "dns": "he",
-    "token": "your_ddns_password"
+    "token": "your_ddns_key" // HE.net 动态 DNS 密码,不需要ID
 }
 ```
-
-- `token`：HE.net动态DNS密码
-- `dns`：固定为 `"he"`
-- `id`：**不需要设置**（HE.net不使用用户ID）
 
 ## 完整配置示例
 
 ```json
 {
-    "token": "your_ddns_password",
-    "dns": "he",
-    "index4": ["public"],
-    "index6": ["public"],
-    "ipv4": ["home.example.com", "server.example.com"],
-    "ipv6": ["home-v6.example.com"],
-    "ttl": 300
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "dns": "he",                        // 当前服务商
+    "token": "your_ddns_key",      // HE.net 动态 DNS 密码
+    "index4": ["public", 0],       // IPv4地址来源, 与A记录值对应
+    "ipv4": "ddns.newfuture.cc"    // IPv4 域名, 与A记录对应
 }
 ```
 
-## 可选参数
+### 参数说明
 
-| 参数   | 说明             | 范围         | 默认值 | 备注                       |
-|--------|------------------|--------------|--------|----------------------------|
-| `ttl`  | DNS记录生存时间  | 300-86400秒  | 自动    | 实际TTL由HE.net记录决定    |
+| 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
+| :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
+| dns     | 服务商标识   | 字符串         | `he`                               | 无        | 服务商参数 |
+| token   | 认证密钥     | 字符串         | HE.net DDNS 密码               | 无        | 服务商参数 |
+| index4  | IPv4 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)  | `default` | 公用配置   |
+| index6  | IPv6 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)   | `default` | 公用配置   |
+| ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| proxy   | 代理设置      | 数组           | [参考配置](../json.md#proxy)        | 无        | 公用网络   |
+| ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
+| cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
+| log     | 日志配置      | 对象           | [参考配置](../json.md#log)             | 无        | 公用配置   |
+
+> **参数类型说明**：  
+>
+> - **公用配置**：所有支持的DNS服务商均适用的标准DNS配置参数  
+> - **公用网络**：所有支持的DNS服务商均适用的网络设置参数参数  
+> - **服务商参数**：前服务商支持,值与当前服务商相关
+>
+> **注意**：HE.net 不支持 `id` 参数，仅使用 `token` (DDNS Key)进行认证; ttl固定为300s。
 
 ## 使用限制
 
-### 重要限制
-
-- ❌ **不支持自动创建记录**：必须先在HE.net控制面板中手动创建DNS记录
-- ⚠️ **仅支持更新**：只能更新现有记录的IP地址，不能创建新记录
-- 🔑 **专用密码**：每个记录都有独立的DDNS密码
-
-### 使用步骤
-
-1. **创建DNS记录**：在HE.net控制面板中手动创建A或AAAA记录
-2. **启用DDNS**：为记录启用动态DNS功能
-3. **获取密码**：记录每个记录的DDNS密码
-4. **配置DDNS**：使用对应的密码配置动态DNS客户端
-
-可以在 [HE.net DNS管理](https://dns.he.net/) 中查看和管理域名。
+- ❌ **不支持自动创建记录**：必须先在 HE.net 控制面板中手动创建 DNS 记录
+- ⚠️ **仅支持更新**：只能更新现有记录的 IP 地址，不能创建新记录
+- 🔑 **专用密码**：每个记录都有独立的 DDNS 密码
 
 ## 故障排除
 
@@ -79,31 +81,32 @@ HE.net使用专门的动态DNS密码进行认证，不使用账户登录密码�
 启用调试日志查看详细信息：
 
 ```sh
-ddns --debug
+ddns -c config.json --debug
 ```
 
-### HE.net响应代码
+### 常见问题
 
-| 响应 | 含义 | 状态 |
-|------|------|------|
-| `good <ip>` | 更新成功 | ✅ |
-| `nochg <ip>` | IP地址无变化 | ✅ |
-| `nohost` | 主机名不存在或未启用DDNS | ❌ |
-| `badauth` | 认证失败 | ❌ |
-| `badagent` | 客户端被禁用 | ❌ |
-| `abuse` | 更新过于频繁 | ❌ |
+- **认证失败**：检查动态 DNS 密码是否正确，确认记录已启用 DDNS 功能
+- **域名未找到**：确保记录已在 HE.net 控制面板中手动创建，域名拼写无误
+- **记录更新失败**：检查记录是否已启用动态 DNS，确认密码对应正确的记录
+- **请求频率限制**：HE.net 建议更新间隔不少于 5 分钟，避免频繁更新
 
-## API限制
+### HE.net 响应代码
 
-- **更新频率**：建议间隔不少于5分钟
-- **记录数量**：免费账户支持多个域名和记录
-- **响应格式**：纯文本响应，非JSON格式
+| 响应代码        | 说明             | 解决方案           |
+| :------------- | :--------------- | :----------------- |
+| `good <ip>`    | 更新成功         | 操作成功           |
+| `nochg <ip>`   | IP地址无变化     | 操作成功           |
+| `nohost`       | 主机名不存在     | 检查记录和DDNS设置 |
+| `badauth`      | 认证失败         | 检查动态DNS密码    |
+| `badagent`     | 客户端被禁用     | 联系HE.net支持    |
+| `abuse`        | 更新过于频繁     | 增加更新间隔       |
 
 ## 支持与资源
 
-- [HE.net官网](https://he.net/)
-- [HE.net DNS管理](https://dns.he.net/)
-- [HE.net DDNS文档](https://dns.he.net/docs.html)
-- [HE.net技术支持](https://he.net/contact.html)
+- [HE.net 官网](https://he.net/)
+- [HE.net DNS 管理](https://dns.he.net/)
+- [HE.net DDNS 文档](https://dns.he.net/docs.html)
+- [HE.net 技术支持](https://he.net/contact.html)
 
-> HE.net是专业的网络服务商，提供稳定的DNS托管服务。使用前请确保已在控制面板中正确配置DNS记录并启用DDNS功能。
+> ⚠️ **待验证状态**：HE.net Provider 缺少充分的真实环境测试，建议在生产环境使用前进行充分测试。如遇问题请通过 [GitHub Issues](https://github.com/NewFuture/DDNS/issues) 反馈。
