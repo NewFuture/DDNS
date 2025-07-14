@@ -13,8 +13,6 @@ class EdgeOneProvider(TencentCloudProvider):
     """
     腾讯云 EdgeOne API 提供商
     Tencent Cloud EdgeOne API Provider
-    API Version: 2022-09-01
-    Documentation: https://cloud.tencent.com/document/api/1552/80731
     """
 
     endpoint = "https://teo.tencentcloudapi.com"
@@ -64,7 +62,7 @@ class EdgeOneProvider(TencentCloudProvider):
         res = self._request("CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra)
         if res and "Response" in res:
             self.logger.info("Acceleration domain created (%s)", res.get("Response", {}).get("RequestId"))
-            
+
             return True
         return False
 
