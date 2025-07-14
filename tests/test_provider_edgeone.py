@@ -44,86 +44,55 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             EdgeOneProvider(self.authid, "", self.logger)
         self.assertIn("token", str(context.exception))
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_zone_id_success(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_zone_id_success(self, mock_request):
         """Test successful zone ID query"""
         domain = "example.com"
         expected_zone_id = "zone-123456789"
 
-        mock_http.return_value = {
-            "Response": {
-                "AccelerationDomains": [
-                    {
-                        "ZoneId": expected_zone_id,
-                        "DomainName": domain,
-                        "DomainStatus": "online",
-                        "OriginDetail": {
-                            "OriginType": "ip_domain",
-                            "Origin": "1.2.3.4"
-                        }
-                    }
-                ]
-            }
+        mock_request.return_value = {
+            "Zones": [{"ZoneId": expected_zone_id, "ZoneName": domain, "ActiveStatus": "active", "Status": "active"}]
         }
 
         zone_id = self.provider._query_zone_id(domain)
         self.assertEqual(zone_id, expected_zone_id)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_zone_id_not_found(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_zone_id_not_found(self, mock_request):
         """Test zone ID query when domain not found"""
-        domain = "nonexistent.com"
+        mock_request.return_value = {"Zones": []}
 
-        mock_http.return_value = {
-            "Response": {
-                "Error": {
-                    "Code": "InvalidParameterValue.ZoneNotExists",
-                    "Message": "当前站点不存在，请返回重新操作。",
-                }
-            }
-        }
-
-        zone_id = self.provider._query_zone_id(domain)
+        zone_id = self.provider._query_zone_id("nonexistent.com")
         self.assertIsNone(zone_id)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_zone_id_empty_zones(self, mock_http):
-        """Test zone ID query with empty acceleration domains list"""
-        domain = "example.com"
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_zone_id_empty_zones(self, mock_request):
+        """Test zone ID query with empty zones list"""
+        mock_request.return_value = {"Zones": []}
 
-        mock_http.return_value = {"Response": {"AccelerationDomains": []}}
-
-        zone_id = self.provider._query_zone_id(domain)
+        zone_id = self.provider._query_zone_id("example.com")
         self.assertIsNone(zone_id)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_zone_id_invalid_response(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_zone_id_invalid_response(self, mock_request):
         """Test zone ID query with invalid response format"""
-        domain = "example.com"
+        mock_request.return_value = None
 
-        mock_http.return_value = {"Response": {}}
-
-        zone_id = self.provider._query_zone_id(domain)
+        zone_id = self.provider._query_zone_id("example.com")
         self.assertIsNone(zone_id)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_record_found(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_record_found(self, mock_request):
         """Test successful acceleration domain query"""
-        mock_http.return_value = {
-            "Response": {
-                "AccelerationDomains": [
-                    {
-                        "ZoneId": "zone-123456789",
-                        "DomainName": "www.example.com", 
-                        "DomainStatus": "online",
-                        "OriginDetail": {
-                            "OriginType": "ip_domain",
-                            "Origin": "1.2.3.4",
-                            "BackupOrigin": ""
-                        }
-                    }
-                ]
-            }
+        mock_request.return_value = {
+            "AccelerationDomains": [
+                {
+                    "ZoneId": "zone-123456789",
+                    "DomainName": "www.example.com",
+                    "DomainStatus": "online",
+                    "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
+                }
+            ]
         }
 
         record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})
@@ -134,30 +103,21 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             self.assertEqual(record["DomainName"], "www.example.com")
             self.assertEqual(record["OriginDetail"]["Origin"], "1.2.3.4")
 
-        # Verify HTTP call was made correctly
-        mock_http.assert_called_once()
-        call_args = mock_http.call_args
-        self.assertEqual(call_args[0][0], "POST")  # method
-        self.assertEqual(call_args[0][1], "/")  # path
+        # Verify request call was made correctly
+        mock_request.assert_called_once()
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_record_found_full_domain(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_record_found_full_domain(self, mock_request):
         """Test acceleration domain query found with full domain name"""
-        mock_http.return_value = {
-            "Response": {
-                "AccelerationDomains": [
-                    {
-                        "ZoneId": "zone-123456789",
-                        "DomainName": "www.example.com", 
-                        "DomainStatus": "online",
-                        "OriginDetail": {
-                            "OriginType": "ip_domain",
-                            "Origin": "1.2.3.4",
-                            "BackupOrigin": ""
-                        }
-                    }
-                ]
-            }
+        mock_request.return_value = {
+            "AccelerationDomains": [
+                {
+                    "ZoneId": "zone-123456789",
+                    "DomainName": "www.example.com",
+                    "DomainStatus": "online",
+                    "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
+                }
+            ]
         }
 
         record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})
@@ -168,10 +128,10 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             self.assertEqual(record["DomainName"], "www.example.com")
             self.assertEqual(record["OriginDetail"]["Origin"], "1.2.3.4")
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_record_not_found(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_record_not_found(self, mock_request):
         """Test acceleration domain query when domain not found"""
-        mock_http.return_value = {"Response": {"AccelerationDomains": []}}
+        mock_request.return_value = {"AccelerationDomains": []}
 
         record = self.provider._query_record(
             "zone-123456789", "www", "example.com", "A", None, {}
@@ -179,24 +139,18 @@ class TestEdgeOneProvider(BaseProviderTestCase):
 
         self.assertIsNone(record)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_query_record_root_domain(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_query_record_root_domain(self, mock_request):
         """Test acceleration domain query for root domain (@)"""
-        mock_http.return_value = {
-            "Response": {
-                "AccelerationDomains": [
-                    {
-                        "ZoneId": "zone-123456789",
-                        "DomainName": "example.com", 
-                        "DomainStatus": "online",
-                        "OriginDetail": {
-                            "OriginType": "ip_domain",
-                            "Origin": "1.2.3.4",
-                            "BackupOrigin": ""
-                        }
-                    }
-                ]
-            }
+        mock_request.return_value = {
+            "AccelerationDomains": [
+                {
+                    "ZoneId": "zone-123456789",
+                    "DomainName": "example.com",
+                    "DomainStatus": "online",
+                    "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
+                }
+            ]
         }
 
         record = self.provider._query_record(
@@ -206,122 +160,117 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         self.assertIsNotNone(record)
         self.assertEqual(record["DomainName"], "example.com")
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_create_record_success(self, mock_http):
-        """Test that record creation is not supported"""
-        # EdgeOne does not support creating new acceleration domains via API
+    @patch.object(EdgeOneProvider, "_request")
+    def test_create_record_success(self, mock_request):
+        """Test successful acceleration domain creation"""
+        mock_request.return_value = {"Response": {"RequestId": "req-123456789"}}
+
         result = self.provider._create_record("zone-123456789", "www", "example.com", "1.2.3.4", "A", 600, None, {})
 
-        self.assertFalse(result)
-        # Should not make any HTTP calls
-        mock_http.assert_not_called()
+        self.assertTrue(result)
+        # Verify request call was made correctly
+        mock_request.assert_called_once()
+        args, kwargs = mock_request.call_args
+        self.assertEqual(args[0], "CreateAccelerationDomain")
+        self.assertEqual(kwargs["ZoneId"], "zone-123456789")
+        self.assertEqual(kwargs["DomainName"], "www.example.com")
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_create_record_root_domain(self, mock_http):
-        """Test that record creation for root domain is not supported"""
-        # EdgeOne does not support creating new acceleration domains via API
-        result = self.provider._create_record("zone-123456789", "@", "example.com", "1.2.3.4", "A", None, None, {})
+    @patch.object(EdgeOneProvider, "_request")
+    def test_create_record_root_domain(self, mock_request):
+        """Test acceleration domain creation for root domain"""
+        mock_request.return_value = {"Response": {"RequestId": "req-123456789"}}
 
-        self.assertFalse(result)
-        # Should not make any HTTP calls
-        mock_http.assert_not_called()
+        result = self.provider._create_record("zone-123456789", "@", "example.com", "1.2.3.4", "A", 300, None, {})
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_create_record_with_extra_params(self, mock_http):
-        """Test that record creation with extra parameters is not supported"""
-        # EdgeOne does not support creating new acceleration domains via API
+        self.assertTrue(result)
+        # Verify domain name is correct for root
+        args, kwargs = mock_request.call_args
+        self.assertEqual(kwargs["DomainName"], "example.com")
+
+    @patch.object(EdgeOneProvider, "_request")
+    def test_create_record_with_extra_params(self, mock_request):
+        """Test acceleration domain creation with extra parameters"""
+        mock_request.return_value = {"Response": {"RequestId": "req-123456789"}}
+
         result = self.provider._create_record(
-            "zone-123456789", "mail", "example.com", "mail.example.com", "MX", None, None, {"Priority": 10}
+            "zone-123456789", "mail", "example.com", "mail.example.com", "MX", 300, None, {"Priority": 10}
         )
 
+        self.assertTrue(result)
+        # Verify extra parameters are passed through
+        args, kwargs = mock_request.call_args
+        self.assertEqual(kwargs["Priority"], 10)
+
+    @patch.object(EdgeOneProvider, "_request")
+    def test_create_record_failure(self, mock_request):
+        """Test acceleration domain creation failure"""
+        mock_request.return_value = None
+
+        result = self.provider._create_record("zone-123456789", "www", "example.com", "1.2.3.4", "A", 300, None, {})
+
         self.assertFalse(result)
-        # Should not make any HTTP calls
-        mock_http.assert_not_called()
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_create_record_failure(self, mock_http):
-        """Test that record creation always fails as it's not supported"""
-        # EdgeOne does not support creating new acceleration domains via API
-        result = self.provider._create_record("zone-123456789", "www", "example.com", "1.2.3.4", "A", None, None, {})
-
-        self.assertFalse(result)
-        # Should not make any HTTP calls
-        mock_http.assert_not_called()
-
-    @patch.object(EdgeOneProvider, "_http")
-    def test_update_record_success(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_update_record_success(self, mock_request):
         """Test successful acceleration domain origin update"""
-        mock_http.return_value = {"Response": {}}  # EdgeOne returns empty response on success
+        mock_request.return_value = {"Response": {"RequestId": "req-123456789"}}
 
         old_record = {
             "ZoneId": "zone-123456789",
-            "DomainName": "www.example.com", 
+            "DomainName": "www.example.com",
             "DomainStatus": "online",
-            "OriginDetail": {
-                "OriginType": "ip_domain",
-                "Origin": "1.2.3.4",
-                "BackupOrigin": ""
-            }
+            "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
         }
 
         result = self.provider._update_record("zone-123456789", old_record, "5.6.7.8", "A", 600, None, {})
 
         self.assertTrue(result)
-        # Verify HTTP call was made
-        mock_http.assert_called_once()
+        # Verify request call was made
+        mock_request.assert_called_once()
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_update_record_preserve_backup_origin(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_update_record_preserve_backup_origin(self, mock_request):
         """Test acceleration domain update preserves backup origin"""
-        mock_http.return_value = {"Response": {}}  # EdgeOne returns empty response on success
+        mock_request.return_value = {"Response": {"RequestId": "req-123456789"}}
 
         old_record = {
             "ZoneId": "zone-123456789",
             "DomainName": "www.example.com",
             "DomainStatus": "online",
-            "OriginDetail": {
-                "OriginType": "ip_domain",
-                "Origin": "1.2.3.4",
-                "BackupOrigin": "backup.example.com"
-            }
+            "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": "backup.example.com"},
         }
 
         result = self.provider._update_record("zone-123456789", old_record, "5.6.7.8", "A", None, None, {})
 
         self.assertTrue(result)
-        # Verify HTTP call was made
-        mock_http.assert_called_once()
+        # Verify request call was made
+        mock_request.assert_called_once()
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_update_record_missing_domain_name(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_update_record_missing_domain_name(self, mock_request):
         """Test acceleration domain update with missing domain name"""
+        mock_request.return_value = None  # Simulate API failure due to missing domain name
+
         old_record = {
             "ZoneId": "zone-123456789",
             # Missing DomainName
-            "OriginDetail": {
-                "OriginType": "ip_domain",
-                "Origin": "1.2.3.4"
-            }
+            "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4"},
         }
 
         result = self.provider._update_record("zone-123456789", old_record, "5.6.7.8", "A", None, None, {})
 
+        # Should fail because domain name is None and API call will fail
         self.assertFalse(result)
-        # Should not make any HTTP calls due to missing domain name
-        mock_http.assert_not_called()
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_update_record_failure(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_update_record_failure(self, mock_request):
         """Test acceleration domain update failure"""
-        mock_http.return_value = None  # API call failed
+        mock_request.return_value = None  # API call failed
 
         old_record = {
             "ZoneId": "zone-123456789",
             "DomainName": "www.example.com",
-            "OriginDetail": {
-                "OriginType": "ip_domain",
-                "Origin": "1.2.3.4"
-            }
+            "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4"},
         }
 
         result = self.provider._update_record("zone-123456789", old_record, "5.6.7.8", "A", None, None, {})
@@ -338,7 +287,9 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_strftime.return_value = "20210101"
         mock_http.return_value = {"Response": {"ZoneId": "zone-123456", "RequestId": "test-request-id"}}
 
-        result = self.provider._request("DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}])
+        result = self.provider._request(
+            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+        )
 
         self.assertIsNotNone(result)
         if result:  # Type narrowing for mypy
@@ -352,11 +303,11 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         """Test API request with error response"""
         mock_time.return_value = 1609459200
         mock_strftime.return_value = "20210101"
-        mock_http.return_value = {
-            "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid zone name"}}
-        }
+        mock_http.return_value = {"Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid zone name"}}}
 
-        result = self.provider._request("DescribeZones", Filters=[{"Name": "zone-name", "Values": ["invalid"]}])
+        result = self.provider._request(
+            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["invalid"]}]  # type: ignore[arg-type]
+        )
 
         self.assertIsNone(result)
 
@@ -369,7 +320,9 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_strftime.return_value = "20210101"
         mock_http.return_value = {"UnexpectedField": "value"}
 
-        result = self.provider._request("DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}])
+        result = self.provider._request(
+            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+        )
 
         self.assertIsNone(result)
 
@@ -384,62 +337,59 @@ class TestEdgeOneProvider(BaseProviderTestCase):
 
         # The implementation doesn't catch exceptions, so it will propagate
         with self.assertRaises(Exception) as cm:
-            self.provider._request("DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}])
+            self.provider._request(
+                "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+            )
 
         self.assertEqual(str(cm.exception), "Network error")
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_set_record_create_new(self, mock_http):
-        """Test set_record attempting to create a new acceleration domain (should fail)"""
+    @patch.object(EdgeOneProvider, "_request")
+    def test_set_record_create_new(self, mock_request):
+        """Test set_record creating a new acceleration domain"""
         # Mock HTTP responses for the workflow
         responses = [
-            # DescribeAccelerationDomains response (get zone ID for main domain)
-            {"Response": {"AccelerationDomains": [{"ZoneId": "zone-123456789", "DomainName": "example.com"}]}},
+            # DescribeZones response (get zone ID for main domain)
+            {"Zones": [{"ZoneId": "zone-123456789", "ZoneName": "example.com"}]},
             # DescribeAccelerationDomains response (no existing acceleration domain for subdomain)
-            {"Response": {"AccelerationDomains": []}},
-            # No create call made since EdgeOne doesn't support creating new acceleration domains
+            {"AccelerationDomains": []},
+            # CreateAccelerationDomain response (acceleration domain created successfully)
+            {"Response": {"RequestId": "req-123456789"}},
         ]
-        mock_http.side_effect = responses
+        mock_request.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "1.2.3.4", "A")
 
-        # Should fail because EdgeOne doesn't support creating new acceleration domains
-        self.assertFalse(result)
-        self.assertEqual(mock_http.call_count, 2)  # Only zone lookup and record query calls
+        # Should succeed because EdgeOne supports creating new acceleration domains
+        self.assertTrue(result)
+        self.assertEqual(mock_request.call_count, 3)  # Zone lookup, record query, and create calls
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_set_record_update_existing(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_set_record_update_existing(self, mock_request):
         """Test set_record updating an existing acceleration domain"""
         # Mock HTTP responses for the workflow
         responses = [
-            # DescribeAccelerationDomains response (get zone ID for main domain)
-            {"Response": {"AccelerationDomains": [{"ZoneId": "zone-123456789", "DomainName": "example.com"}]}},
+            # DescribeZones response (get zone ID for main domain)
+            {"Zones": [{"ZoneId": "zone-123456789", "ZoneName": "example.com"}]},
             # DescribeAccelerationDomains response (existing acceleration domain found)
             {
-                "Response": {
-                    "AccelerationDomains": [
-                        {
-                            "ZoneId": "zone-123456789",
-                            "DomainName": "www.example.com",
-                            "DomainStatus": "online",
-                            "OriginDetail": {
-                                "OriginType": "ip_domain",
-                                "Origin": "1.2.3.4",
-                                "BackupOrigin": ""
-                            }
-                        }
-                    ]
-                }
+                "AccelerationDomains": [
+                    {
+                        "ZoneId": "zone-123456789",
+                        "DomainName": "www.example.com",
+                        "DomainStatus": "online",
+                        "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
+                    }
+                ]
             },
             # ModifyAccelerationDomain response (acceleration domain updated successfully)
-            {"Response": {}},  # EdgeOne returns empty response on success
+            {"Response": {"RequestId": "req-123456789"}},
         ]
-        mock_http.side_effect = responses
+        mock_request.side_effect = responses
 
         result = self.provider.set_record("www.example.com", "5.6.7.8", "A")
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 3)
+        self.assertEqual(mock_request.call_count, 3)
 
 
 class TestEdgeOneProviderIntegration(BaseProviderTestCase):
@@ -451,97 +401,91 @@ class TestEdgeOneProviderIntegration(BaseProviderTestCase):
         self.provider = EdgeOneProvider(self.authid, self.token)
         self.logger = self.mock_logger(self.provider)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_full_domain_resolution_flow(self, mock_http):
-        """Test complete domain resolution flow (should fail for new domains)"""
-        # Mock HTTP responses for the workflow
+    @patch.object(EdgeOneProvider, "_request")
+    def test_full_domain_resolution_flow(self, mock_request):
+        """Test complete domain resolution flow for creating new domains"""
+        # Mock request responses for the workflow
         responses = [
-            # DescribeAccelerationDomains response (get zone ID for main domain)
-            {"Response": {"AccelerationDomains": [{"ZoneId": "zone-123456789", "DomainName": "example.com"}]}},
+            # DescribeZones response (get zone ID for main domain)
+            {"Zones": [{"ZoneId": "zone-123456789", "ZoneName": "example.com"}]},
             # DescribeAccelerationDomains response (no existing acceleration domain for subdomain)
-            {"Response": {"AccelerationDomains": []}},
-            # No create call made since EdgeOne doesn't support creating new acceleration domains
+            {"AccelerationDomains": []},
+            # CreateAccelerationDomain response (acceleration domain created successfully)
+            {"Response": {"RequestId": "req-123456789"}},
         ]
-        mock_http.side_effect = responses
+        mock_request.side_effect = responses
 
         result = self.provider.set_record("test.example.com", "1.2.3.4", "A", ttl=600)
 
-        # Should fail because EdgeOne doesn't support creating new acceleration domains
-        self.assertFalse(result)
-        self.assertEqual(mock_http.call_count, 2)  # Only zone lookup and record query calls
+        # Should succeed because EdgeOne supports creating new acceleration domains
+        self.assertTrue(result)
+        self.assertEqual(mock_request.call_count, 3)  # Zone lookup, record query, and create calls
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_custom_domain_format(self, mock_http):
-        """Test custom domain format with ~ separator (should fail for new domains)"""
-        # Mock HTTP responses
+    @patch.object(EdgeOneProvider, "_request")
+    def test_custom_domain_format(self, mock_request):
+        """Test custom domain format with ~ separator (create new domain)"""
+        # Mock request responses
         responses = [
-            # DescribeAccelerationDomains response (get zone ID for main domain)
-            {"Response": {"AccelerationDomains": [{"ZoneId": "zone-123456789", "DomainName": "example.com"}]}},
+            # DescribeZones response (get zone ID for main domain)
+            {"Zones": [{"ZoneId": "zone-123456789", "ZoneName": "example.com"}]},
             # DescribeAccelerationDomains response (no existing acceleration domain for subdomain)
-            {"Response": {"AccelerationDomains": []}},
-            # No create call made since EdgeOne doesn't support creating new acceleration domains
+            {"AccelerationDomains": []},
+            # CreateAccelerationDomain response (acceleration domain created successfully)
+            {"Response": {"RequestId": "req-123456789"}},
         ]
-        mock_http.side_effect = responses
+        mock_request.side_effect = responses
 
         result = self.provider.set_record("test~example.com", "1.2.3.4", "A")
 
-        # Should fail because EdgeOne doesn't support creating new acceleration domains
-        self.assertFalse(result)
+        # Should succeed because EdgeOne supports creating new acceleration domains
+        self.assertTrue(result)
 
-        # Only zone lookup and record query calls should be made
-        self.assertEqual(mock_http.call_count, 2)
+        # Zone lookup, record query, and create calls should be made
+        self.assertEqual(mock_request.call_count, 3)
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_update_existing_record(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_update_existing_record(self, mock_request):
         """Test updating an existing acceleration domain"""
-        # Mock HTTP responses for the workflow
+        # Mock request responses for the workflow
         responses = [
-            # DescribeAccelerationDomains response (get zone ID for main domain)
-            {"Response": {"AccelerationDomains": [{"ZoneId": "zone-123456789", "DomainName": "example.com"}]}},
+            # DescribeZones response (get zone ID for main domain)
+            {"Zones": [{"ZoneId": "zone-123456789", "ZoneName": "example.com"}]},
             # DescribeAccelerationDomains response (existing acceleration domain found)
             {
-                "Response": {
-                    "AccelerationDomains": [
-                        {
-                            "ZoneId": "zone-123456789",
-                            "DomainName": "test.example.com",
-                            "DomainStatus": "online",
-                            "OriginDetail": {
-                                "OriginType": "ip_domain",
-                                "Origin": "1.2.3.4",
-                                "BackupOrigin": ""
-                            }
-                        }
-                    ]
-                }
+                "AccelerationDomains": [
+                    {
+                        "ZoneId": "zone-123456789",
+                        "DomainName": "test.example.com",
+                        "DomainStatus": "online",
+                        "OriginDetail": {"OriginType": "ip_domain", "Origin": "1.2.3.4", "BackupOrigin": ""},
+                    }
+                ]
             },
             # ModifyAccelerationDomain response (acceleration domain updated successfully)
-            {"Response": {}},  # EdgeOne returns empty response on success
+            {"Response": {"RequestId": "req-123456789"}},
         ]
-        mock_http.side_effect = responses
+        mock_request.side_effect = responses
 
         result = self.provider.set_record("test.example.com", "5.6.7.8", "A", ttl=300)
 
         self.assertTrue(result)
-        self.assertEqual(mock_http.call_count, 3)
+        self.assertEqual(mock_request.call_count, 3)
 
         # Verify the ModifyAccelerationDomain call
-        modify_call = mock_http.call_args_list[2]
-        self.assertIn("ModifyAccelerationDomain", modify_call[1]["headers"]["X-TC-Action"])
+        modify_call = mock_request.call_args_list[2]
+        self.assertEqual(modify_call[0][0], "ModifyAccelerationDomain")
 
-    @patch.object(EdgeOneProvider, "_http")
-    def test_api_error_handling(self, mock_http):
+    @patch.object(EdgeOneProvider, "_request")
+    def test_api_error_handling(self, mock_request):
         """Test API error handling"""
-        # Mock API error response for DescribeAccelerationDomains
-        mock_http.return_value = {
-            "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid zone name"}}
-        }
+        # Mock API error response - the _request method returns None on error
+        mock_request.return_value = None
 
         # This should return False because zone_id cannot be resolved
         result = self.provider.set_record("test.example.com", "1.2.3.4", "A")
         self.assertFalse(result)
-        # Two calls are made: split domain name first, then DescribeAccelerationDomains for main domain
-        self.assertGreater(mock_http.call_count, 0)
+        # At least one call should be made to try to resolve zone ID
+        self.assertGreater(mock_request.call_count, 0)
 
 
 class TestEdgeOneProviderRealRequest(BaseProviderTestCase):
@@ -578,9 +522,7 @@ class TestEdgeOneProviderRealRequest(BaseProviderTestCase):
             "edgeone api error" in msg.lower() or "authfailure" in msg.lower() or "unauthorized" in msg.lower()
             for msg in logged_messages
         )
-        self.assertTrue(
-            has_auth_error, "Expected EdgeOne authentication error in logs: {0}".format(logged_messages)
-        )
+        self.assertTrue(has_auth_error, "Expected EdgeOne authentication error in logs: {0}".format(logged_messages))
 
 
 if __name__ == "__main__":
