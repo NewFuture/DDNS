@@ -1,5 +1,5 @@
 ---
-redirect_to: 51dns.md
+redirect_to: /doc/providers/51dns.html
 ---
 
 # DNS.COM 配置指南
@@ -8,6 +8,3 @@ redirect_to: 51dns.md
 
 如果页面未自动跳转，请点击：[51DNS 配置指南](51dns.md)
 
-<script>
-window.location.href = '51dns.html';
-</script>
