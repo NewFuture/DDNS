@@ -2,101 +2,132 @@
 
 ## Overview
 
-Alibaba Cloud Edge Security Acceleration (ESA) is an edge security acceleration service provided by Alibaba Cloud, supporting CDN acceleration and edge security protection. This DDNS project supports ESA DNS record management through Alibaba Cloud AccessKey.
+Alibaba Cloud Edge Security Acceleration (ESA) is an edge security acceleration service provided by Alibaba Cloud, supporting dynamic management of DNS records. This DDNS project uses AccessKey ID and AccessKey Secret to update ESA DNS records.
 
-## Authentication
+Official Links:
 
-### AccessKey Authentication
+- Official Website: <https://www.alibabacloud.com/product/esa>
+- Service Console: <https://esa.console.aliyun.com/>
 
-ESA API uses the same AccessKey authentication as other [Alibaba Cloud services](alidns.en.md), requiring AccessKey ID and AccessKey Secret.
+## Authentication Information
+
+### AccessKey Authentication (Recommended)
+
+Use Alibaba Cloud AccessKey ID and AccessKey Secret for authentication.
+
+#### Obtaining Authentication Information
+
+1. Login to [Alibaba Cloud Console](https://console.aliyun.com/)
+2. Navigate to "Resource Access Management (RAM)" > "Users"
+3. Create or view AccessKey in user details page
+4. Copy the generated **AccessKey ID** and **AccessKey Secret**, please keep them safe
+5. Ensure the account has Edge Security Acceleration (`AliyunESAFullAccess`) permissions
 
 ```json
 {
-    "id": "your_access_key_id",
-    "token": "your_access_key_secret",
-    "dns": "aliesa"
+    "dns": "aliesa",
+    "id": "your_access_key_id",      // AccessKey ID
+    "token": "your_access_key_secret" // AccessKey Secret
 }
 ```
 
 ## Permission Requirements
 
-Ensure the Alibaba Cloud account has the following ESA permissions:
+Ensure the Alibaba Cloud account has the following permissions:
 
-Recommended `AliyunESAFullAccess` includes all the permissions below:
+- **AliyunESAFullAccess**: Full access to Edge Security Acceleration (Recommended)
+- **ESA Site Query Permission + ESA DNS Record Management Permission**: Fine-grained permission control
 
-- **ESA Site Query Permission**: Used to query site IDs (`esa:ListSites`)
-- **ESA DNS Record Management Permission**: Used to query, create, and update DNS records (`esa:ListRecords`, `esa:CreateRecord`, `esa:UpdateRecord`)
-
-It's recommended to create a dedicated RAM sub-account with only the necessary ESA permissions.
+You can view and configure permissions in the [RAM Console](https://ram.console.aliyun.com/).
 
 ## Complete Configuration Example
 
 ```json
 {
-    "id": "LTAI4xxx",
-    "token": "xxx",
-    "dns": "aliesa",
-    "ipv4": ["www.example.com", "api.example.com"],
-    "ipv6": ["www6.example.com"],
-    "index4": ["public"],
-    "index6": ["public"]
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "dns": "aliesa",                    // Current provider
+    "id": "your_access_key_id",              // AccessKey ID
+    "token": "your_access_key_secret",              // AccessKey Secret
+    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index6": "public",                     // IPv6 address source
+    "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
+    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains
+    "endpoint": "https://esa.cn-hangzhou.aliyuncs.com",   // API endpoint
+    "ttl": 600                                 // DNS record TTL (seconds)
 }
 ```
 
-## Optional Parameters
+### Parameter Description
 
-| Parameter   | Description                   | Type          | Default                            | Example                                 |
-|-------------|-------------------------------|---------------|------------------------------------|-----------------------------------------|
-| `ttl`       | DNS record TTL value          | Integer       | 1 (auto)                           | 600                                     |
-| `endpoint`  | Custom API endpoint URL       | String        | `https://esa.cn-hangzhou.aliyuncs.com` | `https://esa.ap-southeast-1.aliyuncs.com` |
+| Parameter | Description | Type | Range/Options | Default | Parameter Type |
+| :-------: | :---------- | :--- | :------------ | :------ | :------------- |
+| dns | Provider identifier | String | `aliesa` | None | Provider Parameter |
+| id | Authentication ID | String | Alibaba Cloud AccessKey ID | None | Provider Parameter |
+| token | Authentication key | String | Alibaba Cloud AccessKey Secret | None | Provider Parameter |
+| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
+| ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
+| endpoint | API endpoint | URL | [See below](#endpoint) | `https://esa.cn-hangzhou.aliyuncs.com` | Provider Parameter |
+| ttl | TTL time | Integer (seconds) | 1-86400 | None | Provider Parameter |
+| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| ssl | SSL verification | Boolean/String | `auto`, `true`, `false` | `auto` | Common Network |
+| cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
+| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Config |
 
-### Custom Regional Endpoint
+> **Parameter Type Description**:
+>
+> - **Common Config**: Standard DNS configuration parameters applicable to all supported DNS providers
+> - **Common Network**: Network setting parameters applicable to all supported DNS providers  
+> - **Provider Parameter**: Supported by current provider, values related to current provider
 
-When you need to access ESA services in specific regions, you can configure a custom endpoint address:
+### endpoint
 
-#### China Regions
+Alibaba Cloud ESA supports multiple regional endpoints, you can choose the optimal node based on region and network environment:
 
-- **East China 1 (Hangzhou)**: `https://esa.cn-hangzhou.aliyuncs.com` (Default, Recommended)
+#### China Mainland Nodes
 
-#### International Regions
+- **East China (Hangzhou)**: `https://esa.cn-hangzhou.aliyuncs.com` (Default)
+
+#### International Nodes
 
 - **Asia Pacific Southeast 1 (Singapore)**: `https://esa.ap-southeast-1.aliyuncs.com`
 
 ## Troubleshooting
 
-### Common Issues
-
-#### "Site not found for domain"
-
-- Check if the domain has been added to ESA service
-- Confirm domain format is correct (no protocol prefix)
-- Verify AccessKey permissions
-
-#### "Failed to create/update record"
-
-- Check if DNS record type is supported
-- Confirm record value format is correct
-- Verify TTL value is within allowed range
-
-#### "API call failed"
-
-- Check if AccessKey ID and Secret are correct
-- Confirm network connection is normal
-- View detailed error logs
-
 ### Debug Mode
 
-Enable debug mode to view detailed API interaction information:
+Enable debug logging to view detailed information:
 
 ```sh
 ddns -c config.json --debug
 ```
 
+### Common Issues
+
+#### "Site not found for domain"
+
+- Check if the domain has been added to the ESA service
+- Confirm the domain format is correct (without protocol prefix)
+- Verify AccessKey permissions
+
+#### "Failed to create/update record"
+
+- Check if the DNS record type is supported
+- Confirm the record value format is correct
+- Verify the TTL value is within the allowed range
+
+#### "API call failed"
+
+- Check if AccessKey ID and Secret are correct
+- Confirm network connectivity is normal
+- View detailed error logs
+
 ## Support and Resources
 
-- [Alibaba Cloud ESA Product Documentation](https://help.aliyun.com/product/122312.html)
-- [Alibaba Cloud ESA API Documentation](https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-overview)
+- [Alibaba Cloud ESA Product Documentation](https://www.alibabacloud.com/help/en/esa)
 - [Alibaba Cloud ESA Console](https://esa.console.aliyun.com/)
-- [Alibaba Cloud Technical Support](https://selfservice.console.aliyun.com/ticket)
+- [Alibaba Cloud Technical Support](https://www.alibabacloud.com/support)
+- [GitHub Issues](https://github.com/NewFuture/DDNS/issues)
 
-> It's recommended to use RAM sub-accounts with only necessary ESA permissions to improve security. Regularly rotate AccessKeys to ensure account security.
+> **Recommendation**: Use RAM sub-accounts and regularly rotate AccessKeys to improve account security.

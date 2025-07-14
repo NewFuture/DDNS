@@ -1,129 +1,106 @@
-# HE.net (Hurricane Electric) Configuration Guide English Documentation
-
-> ⚠️ **Important Note: This provider is awaiting verification**
->
-> HE.net lacks sufficient real-world testing. Please test carefully before use. If you encounter issues, please report them in [GitHub Issues](https://github.com/NewFuture/DDNS/issues).
+# HE.net (Hurricane Electric) Configuration Guide
 
 ## Overview
 
-Hurricane Electric (HE.net) is a well-known network service provider offering free DNS hosting services with dynamic DNS update support. This DDNS project supports authentication through HE.net's dynamic DNS password.
+Hurricane Electric (HE.net) is a well-known network service provider offering free DNS hosting services with dynamic DNS record update support. This DDNS project authenticates through HE.net's dynamic DNS password.
+
+> ⚠️ **Important Note**: HE.net Provider is currently in **verification pending** status, lacking sufficient real-world testing. Please provide feedback through [GitHub Issues](https://github.com/NewFuture/DDNS/issues).
 
 **Important Limitation**: HE.net **does not support automatic record creation** - you must manually create DNS records in the HE.net control panel first.
 
-## Authentication Methods
+Official Links:
+
+- Official Website: <https://he.net/>
+- Provider Console: <https://dns.he.net/>
+
+## Authentication Information
 
 ### Dynamic DNS Password Authentication
 
 HE.net uses a dedicated dynamic DNS password for authentication, not your account login password.
 
-#### Obtaining Dynamic DNS Password
+DNS records and DNS must be created in advance
 
-1. Log in to [HE.net DNS Management](https://dns.he.net/)
-2. Select the domain you want to manage
-3. Find the record you need to update dynamically
-4. Click **Generate a DDNS key** or **Enable entry for DDNS** next to the record
-5. Record the generated DDNS password
-
-#### Configuration Example
+1. Select the domain you want to manage in [HE.net DNS Management Panel](https://dns.he.net)
+2. **Create DNS Record**: Manually create A (IPv4) or AAAA (IPv6) records
+3. **Enable DDNS**: Enable dynamic DNS functionality for the record
+4. **Get Password**: Click `Generate a DDNS key` or `Enable entry for DDNS` next to the record
 
 ```json
 {
     "dns": "he",
-    "token": "your_ddns_password"
+    "token": "your_ddns_key" // HE.net dynamic DNS password, no ID required
 }
 ```
-
-- `token`: HE.net dynamic DNS password
-- `dns`: Fixed as `"he"`
-- `id`: **Not required** (HE.net doesn't use user ID)
 
 ## Complete Configuration Example
 
 ```json
 {
-  "token": "your_ddns_password",
-  "dns": "he",
-  "index4": ["public"],
-  "index6": ["public"],
-  "ipv4": ["home.example.com", "server.example.com"],
-  "ipv6": ["home-v6.example.com"],
-  "ttl": 300
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "dns": "he",                        // Current provider
+    "token": "your_ddns_key",      // HE.net dynamic DNS password
+    "index4": ["public", 0],       // IPv4 address source, corresponds to A record value
+    "ipv4": "ddns.newfuture.cc"    // IPv4 domain, corresponds to A record
 }
 ```
 
-## Optional Parameters
+### Parameter Description
 
-| Parameter | Description              | Range        | Default | Notes                                      |
-|-----------|--------------------------|--------------|---------|--------------------------------------------|
-| `ttl`     | DNS record TTL (seconds) | 300 - 86400  | auto    | Actual TTL determined by HE.net record settings |
+| Parameter | Description      | Type           | Value Range/Options                     | Default   | Parameter Type |
+| :-------: | :--------------- | :------------- | :------------------------------------- | :-------- | :------------- |
+| dns       | Provider ID      | String         | `he`                                   | None      | Provider Param |
+| token     | Authentication   | String         | HE.net DDNS password                   | None      | Provider Param |
+| index4    | IPv4 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index6    | IPv6 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| ipv4      | IPv4 Domain      | Array          | Domain list                            | None      | Common Config  |
+| ipv6      | IPv6 Domain      | Array          | Domain list                            | None      | Common Config  |
+| proxy     | Proxy Settings   | Array          | [Reference](../json.en.md#proxy)      | None      | Common Network |
+| ssl       | SSL Verification | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
+| cache     | Cache Settings   | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
+| log       | Log Config       | Object         | [Reference](../json.en.md#log)        | None      | Common Config  |
+
+> **Parameter Type Description**:
+>
+> - **Common Config**: Standard DNS configuration parameters applicable to all supported DNS providers
+> - **Common Network**: Network setting parameters applicable to all supported DNS providers
+> - **Provider Param**: Supported by current provider, values related to current provider
+>
+> **Note**: HE.net does not support `id` parameter, only uses `token` (DDNS Key) for authentication; TTL is fixed at 300s.
 
 ## Usage Limitations
 
-### Important Limitations
-
-- ❌ **Does not support automatic record creation**: You must manually create DNS records in the HE.net control panel first
-- ⚠️ **Update only**: Can only update the IP address of existing records, cannot create new records
+- ❌ **Does not support automatic record creation**: Must manually create DNS records in HE.net control panel first
+- ⚠️ **Update only**: Can only update IP addresses of existing records, cannot create new records
 - 🔑 **Dedicated password**: Each record has an independent DDNS password
-
-### Usage Steps
-
-1. **Create DNS record**: Manually create A or AAAA records in the HE.net control panel
-2. **Enable DDNS**: Enable dynamic DNS functionality for the record
-3. **Get password**: Record the DDNS password for each record
-4. **Configure DDNS**: Use the corresponding password to configure the dynamic DNS client
 
 ## Troubleshooting
 
-### Common Issues
-
-#### "Authentication Failed" or No Response
-
-- Check if the DDNS password is correct
-- Confirm that dynamic DNS functionality is enabled for the record
-- Verify that the domain and subdomain spelling is correct
-
-#### "Record Not Found"
-
-- Confirm that the corresponding DNS record has been created in the HE.net control panel
-- Check if the record type matches (A record for IPv4, AAAA record for IPv6)
-- Verify that the domain status in HE.net is normal
-
-#### "Update Failed"
-
-- Check if network connection is normal
-- Confirm that the IP address format is correct
-- Verify that the target record has DDNS functionality enabled
-
-#### "Rate Limiting"
-
-- HE.net has limits on update frequency, recommend at least 5-minute intervals
-- Avoid frequent unnecessary updates
-- Check if other programs are simultaneously updating the same record
-
 ### Debug Mode
 
-Enable debug logging to see detailed information:
+Enable debug logging to view detailed information:
 
 ```sh
-ddns --debug
+ddns -c config.json --debug
 ```
+
+### Common Issues
+
+- **Authentication Failed**: Check if dynamic DNS password is correct, confirm record has DDNS functionality enabled
+- **Domain Not Found**: Ensure record has been manually created in HE.net control panel, check domain spelling
+- **Record Update Failed**: Check if record has dynamic DNS enabled, confirm password corresponds to correct record
+- **Request Rate Limiting**: HE.net recommends update intervals of no less than 5 minutes, avoid frequent updates
 
 ### HE.net Response Codes
 
-| Response | Meaning | Status |
-|----------|---------|---------|
-| `good <ip>` | Update successful | ✅ |
-| `nochg <ip>` | IP address unchanged | ✅ |
-| `nohost` | Hostname doesn't exist or DDNS not enabled | ❌ |
-| `badauth` | Authentication failed | ❌ |
-| `badagent` | Client disabled | ❌ |
-| `abuse` | Updates too frequent | ❌ |
-
-## API Limitations
-
-- **Update frequency**: Recommend intervals of no less than 5 minutes
-- **Record count**: Free accounts support multiple domains and records
-- **Response format**: Plain text response, not JSON format
+| Response Code   | Description           | Solution                    |
+| :-------------- | :-------------------- | :-------------------------- |
+| `good <ip>`     | Update successful     | Operation successful        |
+| `nochg <ip>`    | IP address unchanged  | Operation successful        |
+| `nohost`        | Hostname doesn't exist| Check record and DDNS setup |
+| `badauth`       | Authentication failed | Check dynamic DNS password  |
+| `badagent`      | Client disabled       | Contact HE.net support     |
+| `abuse`         | Updates too frequent  | Increase update interval    |
 
 ## Support and Resources
 
@@ -132,4 +109,4 @@ ddns --debug
 - [HE.net DDNS Documentation](https://dns.he.net/docs.html)
 - [HE.net Technical Support](https://he.net/contact.html)
 
-> HE.net is a professional network service provider offering stable DNS hosting services. Please ensure you have correctly configured DNS records in the control panel and enabled DDNS functionality before use.
+> ⚠️ **Verification Pending Status**: HE.net Provider lacks sufficient real-world testing. It is recommended to conduct thorough testing before using in production environments. If you encounter issues, please provide feedback through [GitHub Issues](https://github.com/NewFuture/DDNS/issues).

@@ -1,137 +1,105 @@
-# Tencent Cloud DNS Configuration Guide
+# TencentCloud DNS (TencentCloud DNSPod) Configuration Guide
 
 ## Overview
 
-Tencent Cloud DNS (TencentCloud DNSPod) is a professional DNS resolution service provided by Tencent Cloud, suitable for users who need high availability and high-performance DNS resolution. This DDNS project supports authentication through Tencent Cloud API keys.
+TencentCloud DNS (TencentCloud DNSPod) is a professional DNS resolution service provided by Tencent Cloud, featuring high availability and high performance, supporting dynamic DNS record creation and updates. This DDNS project uses SecretId and SecretKey for API authentication.
 
-## Authentication Method
+Official links:
+
+- Official website: <https://cloud.tencent.com/product/dns>
+- Service console: <https://console.cloud.tencent.com/dnspod>
+
+## Authentication
 
 ### API Key Authentication
 
-Tencent Cloud DNS uses SecretId and SecretKey for API authentication, which is the most secure and recommended authentication method.
+TencentCloud DNS uses `SecretId` and `SecretKey` for API authentication, which is the most secure and recommended authentication method.
 
-#### How to Obtain API Keys
+#### Obtaining API Keys
+
+```json
+{
+    "dns": "tencentcloud",
+    "id": "Your_Secret_Id",     // TencentCloud SecretId
+    "token": "Your_Secret_Key"  // TencentCloud SecretKey
+}
+```
+
+There are two ways to obtain API keys:
 
 ##### From DNSPod
 
-1. **Login to DNSPod Console**
-    - Visit [DNSPod Console](https://console.dnspod.cn/)
-    - Sign in with your DNSPod account
+The simplest and quickest way to obtain keys
 
-2. **Go to API Key Management**
-    - Visit [API Key Management](https://console.dnspod.cn/account/token)
+1. Log in to [DNSPod Console](https://console.dnspod.cn/)
+2. Navigate to "User Center" > "API Keys" or visit <https://console.dnspod.cn/account/token>
+3. Click "Create Key", fill in the description, select domain management permissions, and complete creation
 
-3. **Create a New Secret Key**
-    - Click the "Create Key" button
-    - Enter a descriptive name (e.g., "DDNS Host")
-    - Select appropriate permissions (domain management permission required)
-    - Click "Confirm" to create
+##### From TencentCloud
 
-##### From Tencent Cloud
+1. Log in to [TencentCloud Console](https://console.cloud.tencent.com/)
+2. Visit [API Key Management](https://console.cloud.tencent.com/cam/capi)
+3. Click "Create Key" button
+4. Copy the generated **SecretId** and **SecretKey**, please keep them safe
+5. Ensure the account has DNSPod-related permissions
 
-1. **Login to Tencent Cloud Console**
-    - Visit [Tencent Cloud Console](https://console.cloud.tencent.com/)
-    - Sign in with your Tencent Cloud account
-
-2. **Go to API Key Management**
-    - Visit [API Key Management](https://console.cloud.tencent.com/cam/capi)
-    - Click "Create Key" button
-
-3. **Create New API Key**
-    - Click the "Create Key" button
-    - Copy the generated **SecretId** and **SecretKey**
-    - **Important**: Save both values securely, as they provide full access to your account
-
-4. **Verify Permissions**
-    - Ensure your account has DNSPod related permissions
-    - Check [Access Management Console](https://console.cloud.tencent.com/cam/policy) if needed
-
-#### Configuration Using API Keys
+## Complete Configuration Example
 
 ```json
 {
-  "dns": "tencentcloud",
-  "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "dns": "tencentcloud",              // Current provider
+    "id": "Your_Secret_Id",     // TencentCloud SecretId
+    "token": "Your_Secret_Key", // TencentCloud SecretKey
+    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index6": "public",                     // IPv6 address source
+    "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
+    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains
+    "endpoint": "https://dnspod.tencentcloudapi.com", // API endpoint
+    "line": "默认",                          // Resolution line
+    "ttl": 600                              // DNS record TTL (seconds)
 }
 ```
 
-**Parameters:**
+### Parameter Description
 
-- `id`: Your Tencent Cloud SecretId
-- `token`: Your Tencent Cloud SecretKey
-- `dns`: Must be set to `"tencentcloud"`
+| Parameter | Description | Type | Value Range/Options | Default | Parameter Type |
+| :-------: | :---------- | :--- | :------------------ | :------ | :------------- |
+| dns | Provider identifier | String | `tencentcloud` | None | Provider Parameter |
+| id | Authentication ID | String | TencentCloud SecretId | None | Provider Parameter |
+| token | Authentication key | String | TencentCloud SecretKey | None | Provider Parameter |
+| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Configuration |
+| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Configuration |
+| ipv4 | IPv4 domains | Array | Domain list | None | Common Configuration |
+| ipv6 | IPv6 domains | Array | Domain list | None | Common Configuration |
+| endpoint | API endpoint | URL | [See below](#endpoint) | `https://dnspod.tencentcloudapi.com` | Provider Parameter |
+| line | Resolution line | String | [See below](#line) | `默认` | Provider Parameter |
+| ttl | TTL time | Integer (seconds) | [See below](#ttl) | `600` | Provider Parameter |
+| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
+| cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Configuration |
+| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Configuration |
 
-## Complete Configuration Examples
+> **Parameter Type Description**:  
+>
+> - **Common Configuration**: Standard DNS configuration parameters applicable to all supported DNS providers
+> - **Common Network**: Network setting parameters applicable to all supported DNS providers
+> - **Provider Parameter**: Supported by current provider, values related to current provider
+>
+> ### endpoint
 
-### Basic Configuration
+TencentCloud DNSPod API supports multiple regional endpoints, allowing you to choose the optimal node based on your network environment:
 
-```json
-{
-  "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "dns": "tencentcloud",
-  "ipv6": ["home.example.com", "server.example.com"],
-  "index6": ["default"]
-}
-```
+#### Domestic Nodes
 
-### Configuration with Optional Parameters
-
-```json
-{
-  "id": "AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "dns": "tencentcloud",
-  "endpoint": "https://dnspod.ap-singapore.tencentcloudapi.com",
-  "index4": ["default"],
-  "index6": ["default"],
-  "ipv4": ["example.com"],
-  "ipv6": ["dynamic.mydomain.com"],
-  "ttl": 600
-}
-```
-
-## Optional Configuration Parameters
-
-### TTL (Time To Live)
-
-```json
-{
-  "ttl": 300
-}
-```
-
-### Line Type (ISP Route)
-
-```json
-{
-  "line": "默认"
-}
-```
-
-- **Options**: "默认" (Default), "电信" (China Telecom), "联通" (China Unicom), "移动" (China Mobile), "教育网" (Education Network), etc.
-- **Default**: "默认" (Default line)
-
-### Custom API Endpoint
-
-```json
-{
-  "endpoint": "https://dnspod.tencentcloudapi.com"
-}
-```
-
-Tencent Cloud DNSPod API supports multiple regional endpoints for optimal network performance:
-
-#### China Regions
-
+- **Default (Recommended)**: `https://dnspod.tencentcloudapi.com`
 - **South China (Guangzhou)**: `https://dnspod.ap-guangzhou.tencentcloudapi.com`
 - **East China (Shanghai)**: `https://dnspod.ap-shanghai.tencentcloudapi.com`
 - **North China (Beijing)**: `https://dnspod.ap-beijing.tencentcloudapi.com`
-- **Southwest China (Chengdu)**: `https://dnspod.ap-chengdu.tencentcloudapi.com`
-- **Hong Kong**: `https://dnspod.ap-hongkong.tencentcloudapi.com`
+- **Southwest (Chengdu)**: `https://dnspod.ap-chengdu.tencentcloudapi.com`
+- **Hong Kong, Macao and Taiwan (Hong Kong)**: `https://dnspod.ap-hongkong.tencentcloudapi.com`
 
-#### International Regions
+#### Overseas Nodes
 
 - **Asia Pacific Southeast (Singapore)**: `https://dnspod.ap-singapore.tencentcloudapi.com`
 - **Asia Pacific Southeast (Bangkok)**: `https://dnspod.ap-bangkok.tencentcloudapi.com`
@@ -142,71 +110,73 @@ Tencent Cloud DNSPod API supports multiple regional endpoints for optimal networ
 - **US West (Silicon Valley)**: `https://dnspod.na-siliconvalley.tencentcloudapi.com`
 - **Europe (Frankfurt)**: `https://dnspod.eu-frankfurt.tencentcloudapi.com`
 
-> **Note**: It's recommended to use the default endpoint `https://dnspod.tencentcloudapi.com`, as Tencent Cloud automatically routes to the optimal node. Specify regional endpoints only in special network environments.
+> **Note**: It is recommended to use the default endpoint `https://dnspod.tencentcloudapi.com`, as TencentCloud will automatically route to the optimal node. Only specify specific regional endpoints under special network conditions.
 
-## Permission Requirements
+### ttl
 
-Ensure the Tencent Cloud account has the following permissions:
+The `ttl` parameter specifies the Time To Live (TTL) of DNS records in seconds. TencentCloud DNSPod supports a TTL range from 1 to 604800 seconds (7 days). If not set, the default value is used.
 
-- **DNSPod**: Domain resolution management permissions
-- **QcloudDNSPodFullAccess**: Full DNSPod access permission (recommended)
+| Plan Type | Supported TTL Range (seconds) |
+| :-------- | :---------------------------- |
+| Free | 600 ~ 604800 |
+| Professional | 60 ~ 604800 |
+| Enterprise | 1 ~ 604800 |
+| Premium | 1 ~ 604800 |
 
-You can view and configure permissions in the [Access Management Console](https://console.cloud.tencent.com/cam/policy).
+> Reference: TencentCloud [DNS TTL Documentation](https://cloud.tencent.com/document/product/302/9072)
+
+### line
+
+The `line` parameter specifies DNS resolution lines. TencentCloud DNSPod supported lines:
+
+| Line Identifier | Description |
+| :-------------- | :---------- |
+| 默认 | Default |
+| 电信 | China Telecom |
+| 联通 | China Unicom |
+| 移动 | China Mobile |
+| 教育网 | China Education Network |
+| 境外 | Overseas |
+
+> More lines reference: TencentCloud [DNS Resolution Lines Documentation](https://cloud.tencent.com/document/product/302/8643)
 
 ## Troubleshooting
 
-### Common Issues
-
-#### "Signature Error" or "Authentication Failed"
-
-- Check if SecretId and SecretKey are correct
-- Verify the keys haven't expired
-- Confirm account has sufficient permissions
-
-#### "Domain Not Found" Error
-
-- Verify the domain is added to Tencent Cloud DNSPod
-- Check domain spelling in configuration
-- Ensure domain status is normal
-
-#### "Record Operation Failed"
-
-- Check if subdomain has conflicting records
-- Verify TTL value is within acceptable range
-- Confirm line type setting is correct
-
-#### "API Call Limit Exceeded"
-
-- Tencent Cloud API has rate limiting
-- Increase update intervals appropriately
-- Check if other programs are calling the API simultaneously
-
 ### Debug Mode
 
-Enable debug logging to see detailed information:
+Enable debug logging to view detailed information:
 
 ```sh
-ddns --debug
+ddns -c config.json --debug
 ```
+
+### Common Issues
+
+- **Signature Error**: Check if SecretId and SecretKey are correct, confirm the keys haven't expired
+- **Domain Not Found**: Ensure the domain has been added to TencentCloud DNSPod, configuration spelling is correct, domain is active
+- **Record Creation Failed**: Check if subdomain has conflicting records, TTL settings are reasonable, confirm modification permissions
+- **API Call Limit Exceeded**: TencentCloud API has call frequency limits, reduce request frequency
 
 ### Common Error Codes
 
-- **AuthFailure.SignatureExpire**: Signature expired
-- **AuthFailure.SecretIdNotFound**: SecretId does not exist
-- **ResourceNotFound.NoDataOfRecord**: Record does not exist
-- **LimitExceeded.RequestLimitExceeded**: Request frequency exceeded
+| Error Code | Description | Solution |
+| :--------- | :---------- | :------- |
+| AuthFailure.SignatureExpire | Signature expired | Check system time |
+| AuthFailure.SecretIdNotFound | SecretId not found | Check key configuration |
+| ResourceNotFound.NoDataOfRecord | Record does not exist | Check record settings |
+| LimitExceeded.RequestLimitExceeded | Request frequency exceeded | Reduce request frequency |
 
 ## API Limitations
 
-- **Request Rate**: Default 20 requests per second
+- **Request Frequency**: Default 20 requests per second
 - **Single Query**: Maximum 3000 records returned
-- **Domain Count**: Limited based on service plan
+- **Domain Count**: Limited by plan type
 
 ## Support and Resources
 
-- **Tencent Cloud DNSPod Documentation**: <https://cloud.tencent.com/document/product/1427>
-- **Tencent Cloud DNSPod API Reference**: <https://cloud.tencent.com/document/api/1427>
-- **Tencent Cloud Console**: <https://console.cloud.tencent.com/dnspod>
-- **Tencent Cloud Technical Support**: <https://cloud.tencent.com/document/product/282>
+- [TencentCloud DNSPod Product Documentation](https://cloud.tencent.com/document/product/1427)
+- [TencentCloud DNSPod V3 API Documentation](https://cloud.tencent.com/document/api/1427)
+- [TencentCloud DNSPod Console](https://console.cloud.tencent.com/dnspod)
+- [TencentCloud Technical Support](https://cloud.tencent.com/online-service)
 
-> It is recommended to use sub-account API keys and grant only the necessary DNSPod permissions to improve security.
+> **Recommendation**: It is recommended to use sub-account API keys and grant only necessary DNSPod permissions to improve security. Regularly rotate API keys to ensure account security.
