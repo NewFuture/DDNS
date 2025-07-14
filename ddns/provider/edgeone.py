@@ -51,7 +51,7 @@ class EdgeOneProvider(TencentCloudProvider):
                     self.logger.debug("Found acceleration domain: %s", domain_info)
                     return domain_info
 
-        self.logger.debug("No acceleration domain found for: %s", domain)
+        self.logger.warning("No acceleration domain found for: %s, response: %s", domain, response)
         return None
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
@@ -64,6 +64,7 @@ class EdgeOneProvider(TencentCloudProvider):
             self.logger.info("Acceleration domain created (%s)", res.get("Response", {}).get("RequestId"))
 
             return True
+        self.logger.error("Failed to create acceleration domain, response: %s", res)
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
@@ -77,5 +78,5 @@ class EdgeOneProvider(TencentCloudProvider):
         if response:
             self.logger.info("Acceleration domain updated (%s)", response.get("Response", {}).get("RequestId"))
             return True
-        self.logger.error("Failed to update acceleration domain origin")
+        self.logger.error("Failed to update acceleration domain origin, response: %s", response)
         return False

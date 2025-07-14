@@ -41,7 +41,7 @@ def get_provider_class(provider_name):
         # tencent cloud edgeone
         "edgeone": EdgeOneProvider,
         "teo": EdgeOneProvider,  # 兼容teo (EdgeOne产品的API名称)
-        "edge": EdgeOneProvider,  # 兼容edge
+        "tencentedgeone": EdgeOneProvider,  # 兼容tencentedgeone
         # cloudflare
         "cloudflare": CloudflareProvider,
         # aliyun alidns
