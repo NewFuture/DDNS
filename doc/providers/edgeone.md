@@ -7,6 +7,7 @@
 官网链接：
 
 - 官方网站：<https://cloud.tencent.com/product/teo>
+- EdgeOne 国际版：<https://edgeone.ai>
 - 服务商控制台：<https://console.cloud.tencent.com/edgeone>
 
 ## 认证信息
@@ -14,6 +15,8 @@
 ### SecretId/SecretKey 认证
 
 使用腾讯云 SecretId 和 SecretKey 进行认证，与腾讯云 DNS 使用相同的认证方式。
+
+> 与[腾讯云 DNS](tencentcloud.md) 相同，EdgeOne 使用 SecretId 和 SecretKey 进行认证。但是权限要求不同，需要确保账号具有 EdgeOne 的操作权限。
 
 #### 获取认证信息
 
@@ -23,11 +26,11 @@
 4. 复制生成的 **SecretId** 和 **SecretKey**，请妥善保存
 5. 确保账号具有 EdgeOne 的操作权限
 
-```json
+```jsonc
 {
     "dns": "edgeone",
-    "id": "SecretId",          // 腾讯云 SecretId
-    "token": "SecretKey"       // 腾讯云 SecretKey
+    "id": "SecretId",     // 腾讯云 SecretId
+    "token": "SecretKey"  // 腾讯云 SecretKey
 }
 ```
 
@@ -42,7 +45,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "edgeone",                       // 当前服务商
@@ -51,8 +54,8 @@
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.newfuture.cc"],          // IPv4 域名
-    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 域名
-    "ttl": 600                              // DNS记录TTL（秒）
+    "ipv6": ["ipv6.ddns.newfuture.cc"],     // IPv6 域名
+    "endpoint": "https://teo.tencentcloudapi.com" // API端点
 }
 ```
 
@@ -60,14 +63,14 @@
 
 | 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
 | :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
-| dns     | 服务商标识   | 字符串         | `edgeone`、`teo`、`tencentedgeone` | 无        | 服务商参数 |
+| dns     | 服务商标识   | 字符串         | `edgeone`                          | 无        | 服务商参数 |
 | id      | 认证 ID      | 字符串         | 腾讯云 SecretId                    | 无        | 服务商参数 |
 | token   | 认证密钥     | 字符串         | 腾讯云 SecretKey                   | 无        | 服务商参数 |
 | index4  | IPv4 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)  | `default` | 公用配置   |
 | index6  | IPv6 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)   | `default` | 公用配置   |
 | ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
-| ttl     | TTL 时间      | 整数（秒）     | [参考下方](#ttl)                   | 无        | 服务商参数 |
+| endpoint| API 端点      | URL            | [参考下方](#endpoint)              | `https://teo.tencentcloudapi.com` | 服务商参数 |
 | proxy   | 代理设置      | 数组           | [参考配置](../json.md#proxy)        | 无        | 公用网络   |
 | ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
 | cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
@@ -78,25 +81,22 @@
 > - **公用配置**：所有支持的DNS服务商均适用的标准DNS配置参数  
 > - **公用网络**：所有支持的DNS服务商均适用的网络设置参数  
 > - **服务商参数**：当前服务商支持,值与当前服务商相关
+>
+> EdgeOne 的 TTL 实际的缓存策略由 EdgeOne 平台管理。
 
-### ttl
+### endpoint
 
-EdgeOne 的 TTL 配置主要用于配置说明，实际的缓存策略由 EdgeOne 平台管理。
+腾讯云 EdgeOne 支持国内和国际版API端点，可根据区域和账号类型选择：
 
-## 使用说明
+#### 国内版
 
-EdgeOne DDNS 支持通过更新加速域名的源站 IP 地址来实现动态 DNS 功能。与传统 DNS 记录管理不同，EdgeOne 管理的是加速域名和其对应的源站配置。
+- **默认（推荐）**：`https://teo.tencentcloudapi.com`
 
-### 支持的域名格式
+#### 国际版
 
-- **完整域名**：`www.example.com`、`api.example.com`
-- **根域名**：支持使用 `@` 表示根域名
+- **国际版**：`https://teo.intl.tencentcloudapi.com`
 
-### 工作原理
-
-1. 查询 EdgeOne 站点信息获取 ZoneId
-2. 查询现有的加速域名配置
-3. 更新或创建加速域名的源站 IP 地址
+> **注意**：请根据您的腾讯云账号类型选择对应的端点。国内账号使用国内版端点，国际账号使用国际版端点。如果不确定，建议使用默认的国内版端点。
 
 ## 故障排除
 

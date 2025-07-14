@@ -19,6 +19,7 @@
 | `namesilo` | [NameSilo](https://www.namesilo.com/) | [namesilo 中文文档](namesilo.md) | [namesilo English Doc](namesilo.en.md) | ⚠️ 等待验证 |
 | `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](noip.en.md) | 不支持自动创建记录 |
 | `tencentcloud` | [腾讯云 DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | 腾讯云DNSPod服务 |
+| `edgeone` | [腾讯云 EdgeOne](https://cloud.tencent.com/product/teo) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | 腾讯云边缘安全加速平台 |
 
 > 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
 
@@ -47,6 +48,9 @@ ddns --dns cloudflare --id user@example.com --token your_api_key --ipv4 ddns.new
 
 # Cloudflare (使用Token)
 ddns --dns cloudflare --token your_api_token --ipv4 ddns.newfuture.cc
+
+# 腾讯云EdgeOne
+ddns --dns edgeone --id your_secret_id --token your_secret_key --ipv4 ddns.newfuture.cc
 
 # No-IP
 ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.cc

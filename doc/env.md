@@ -13,7 +13,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 
 | 环境变量               | 参数格式                                                                                             | 描述                              | 示例                                                     |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------|----------------------------------------------------------|
-| `DDNS_DNS`             | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](./providers/README.md) | `DDNS_DNS=cloudflare`                                    |
+| `DDNS_DNS`             | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`edgeone`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](./providers/README.md) | `DDNS_DNS=cloudflare`                                    |
 | `DDNS_ID`              | 依 DNS 服务商而定                                                                                   | API 账号 或 ID                    | `DDNS_ID="user@example.com"`                             |
 | `DDNS_TOKEN`           | 依 DNS 服务商而定                                                                                   | API 授权令牌或 Secret             | `DDNS_TOKEN="abcdef123456"`                              |
 | `DDNS_ENDPOINT`        | URL（http 或 https 协议）                                                                           | 自定义 API 地址                   | `DDNS_ENDPOINT=https://api.dns.cn`                       |
@@ -42,7 +42,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 - **类型**: 字符串
 - **必需**: 否
 - **默认值**: `dnspod`
-- **可选值**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `he`, `huaweidns`, `noip`, `tencentcloud`
+- **可选值**: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod`, `dnspod_com`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud`
 - **说明**: DNS 服务提供商
 - **示例**:
 
@@ -58,6 +58,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   export DDNS_DNS="huaweidns"     # 华为云 DNS
   export DDNS_DNS="noip"          # NoIP
   export DDNS_DNS="tencentcloud"  # 腾讯云 DNS
+  export DDNS_DNS="edgeone"       # 腾讯云 EdgeOne
   export DDNS_DNS="callback"      # 自定义回调
   export DDNS_DNS="debug"         # 调试模式
   ```

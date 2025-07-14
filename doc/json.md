@@ -42,7 +42,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 |  键名    |        类型        | 必需 |   默认值    |    参数说明          | 备注                                                                                                         |
 | :------: | :----------------: | :--: | :---------: | :---------------: | ------------------------------------------------------------------------------------------------------------ |
-|  dns     |       string       |  否  |     无      |    DNS服务商      | 可选值: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, he, huaweidns, namesilo, noip, tencentcloud |
+|  dns     |       string       |  否  |     无      |    DNS服务商      | 可选值: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, edgeone, he, huaweidns, namesilo, noip, tencentcloud |
 |   id     |       string       |  是  |     无      |   API 访问 ID    | 请根据服务商说明配置(如 AccessKeyID)  |
 |  token   |       string       |  是  |     无      |  API 授权令牌     | 请根据服务商说明配置(如 AccessSecret)  |
 | endpoint |       string       |  否  |     无      |   API端点URL      | 用于自定义或私有部署的API地址，为空时使用默认端点                                                           |

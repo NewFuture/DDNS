@@ -27,7 +27,7 @@ python -m ddns -h
 | `-c, --config`  |    String   | Specify the path to the configuration file                                                                                                                                | `--config config.json`                                   |
 | `--new-config`  | Flag/String | Generate a new config file (optional file path)                                                                                                                           | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       |     Flag    | Enable debug mode                                                                                                                                                         | `--debug`                                                |
-| `--dns`         |    Choice   | [DNS Providers](providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--dns`         |    Choice   | [DNS Providers](providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
 | `--endpoint`    |    String   | Custom API endpoint URL (useful for self-hosted services)                                                                                                                 | `--endpoint https://api.private.com`                     |
 | `--id`          |    String   | API Access ID, email, or Access Key                                                                                                                                       | `--id user@example.com`                                  |
 | `--token`       |    String   | API token or secret key                                                                                                                                                   | `--token abcdef123456`                                   |
@@ -66,6 +66,7 @@ DDNS supports the following DNS providers:
 - **huaweidns**: Huawei Cloud DNS
 - **noip**: No-IP Dynamic DNS
 - **tencentcloud**: Tencent Cloud DNS
+- **edgeone**: Tencent Cloud EdgeOne
 
 ## IP Detection Methods
 

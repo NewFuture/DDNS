@@ -2,10 +2,11 @@
 
 ## Overview
 
-Tencent Cloud EdgeOne (边缘安全速平台) is an edge computing and acceleration service provided by Tencent Cloud, supporting dynamic management of acceleration domain origin server IP addresses. This DDNS project dynamically updates origin server IP addresses of acceleration domains through the EdgeOne API.
+Tencent Cloud EdgeOne is an edge computing and acceleration service provided by Tencent Cloud, supporting dynamic management of acceleration domain origin server IP addresses. This DDNS project dynamically updates origin server IP addresses of acceleration domains through the EdgeOne API.
 
 Official Links:
 
+- EdgeOne International: <https://edgeone.ai>
 - Official Website: <https://cloud.tencent.com/product/teo>
 - Service Console: <https://console.cloud.tencent.com/edgeone>
 
@@ -15,6 +16,8 @@ Official Links:
 
 Uses Tencent Cloud SecretId and SecretKey for authentication, same as Tencent Cloud DNS.
 
+> Same as [Tencent Cloud DNS](tencentcloud.en.md), EdgeOne uses SecretId and SecretKey for authentication. However, the permission requirements are different, and you need to ensure that the account has EdgeOne operation permissions.
+
 #### Getting Authentication Information
 
 1. Log in to [Tencent Cloud Console](https://console.cloud.tencent.com/)
@@ -23,7 +26,7 @@ Uses Tencent Cloud SecretId and SecretKey for authentication, same as Tencent Cl
 4. Copy the generated **SecretId** and **SecretKey**, keep them secure
 5. Ensure the account has EdgeOne operation permissions
 
-```json
+```jsonc
 {
     "dns": "edgeone",
     "id": "SecretId",          // Tencent Cloud SecretId
@@ -42,7 +45,7 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "edgeone",                       // Current provider
@@ -51,8 +54,8 @@ Permissions can be viewed and configured in [Access Management](https://console.
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],          // IPv4 domains
-    "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains
-    "ttl": 600                              // DNS record TTL (seconds)
+    "ipv6": ["ipv6.ddns.newfuture.cc"],     // IPv6 domains
+    "endpoint": "https://teo.intl.tencentcloudapi.com" // API endpoint
 }
 ```
 
@@ -60,14 +63,14 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 | Parameter | Description       | Type           | Value Range/Options                    | Default   | Parameter Type |
 | :-------: | :---------------- | :------------- | :------------------------------------- | :-------- | :------------- |
-| dns       | Provider ID       | String         | `edgeone`, `teo`, `tencentedgeone`     | None      | Provider       |
+| dns       | Provider ID       | String         | `edgeone`                              | None      | Provider       |
 | id        | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
 | token     | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
 | index4    | IPv4 Source       | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
 | index6    | IPv6 Source       | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
 | ipv4      | IPv4 Domains      | Array          | Domain list                            | None      | Common Config  |
 | ipv6      | IPv6 Domains      | Array          | Domain list                            | None      | Common Config  |
-| ttl       | TTL Time          | Integer (sec)  | [Reference below](#ttl)                | None      | Provider       |
+| endpoint  | API Endpoint      | URL            | [Reference below](#endpoint)           | `https://teo.tencentcloudapi.com` | Provider  |
 | proxy     | Proxy Settings    | Array          | [Reference](../json.en.md#proxy)       | None      | Common Network |
 | ssl       | SSL Verification  | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
 | cache     | Cache Settings    | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
@@ -78,25 +81,22 @@ Permissions can be viewed and configured in [Access Management](https://console.
 > - **Common Config**: Standard DNS configuration parameters applicable to all supported DNS providers  
 > - **Common Network**: Network setting parameters applicable to all supported DNS providers  
 > - **Provider**: Parameters specific to the current provider
+>
+> EdgeOne TTL actual caching strategy is managed by the EdgeOne platform.
 
-### ttl
+### endpoint
 
-EdgeOne TTL configuration is mainly used for configuration documentation. The actual caching strategy is managed by the EdgeOne platform.
+Tencent Cloud EdgeOne supports domestic and international API endpoints, which can be selected based on region and account type:
 
-## Usage Instructions
+#### Domestic Version
 
-EdgeOne DDNS implements dynamic DNS functionality by updating the origin server IP addresses of acceleration domains. Unlike traditional DNS record management, EdgeOne manages acceleration domains and their corresponding origin server configurations.
+- **Default (Recommended)**: `https://teo.tencentcloudapi.com`
 
-### Supported Domain Formats
+#### International Version
 
-- **Complete domains**: `www.example.com`, `api.example.com`
-- **Root domain**: Supports using `@` to represent root domain
+- **International**: `https://teo.intl.tencentcloudapi.com`
 
-### Working Principle
-
-1. Query EdgeOne site information to get ZoneId
-2. Query existing acceleration domain configurations
-3. Update or create origin server IP addresses for acceleration domains
+> **Note**: Please choose the corresponding endpoint according to your Tencent Cloud account type. Domestic accounts use the domestic endpoint, and international accounts use the international endpoint. If you are unsure, it is recommended to use the default domestic endpoint.
 
 ## Troubleshooting
 

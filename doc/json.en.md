@@ -42,7 +42,7 @@ Configuration Parameters Table
 
 | Key Name | Type | Required | Default Value | Parameter Description | Notes |
 | :------: | :--: | :------: | :-----------: | :------------------: | ----- |
-| dns | string | No | None | DNS Provider | Available values: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, he, huaweidns, namesilo, noip, tencentcloud |
+| dns | string | No | None | DNS Provider | Available values: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, edgeone, he, huaweidns, namesilo, noip, tencentcloud |
 | id | string | Yes | None | API Access ID | Configure according to provider documentation (e.g., AccessKeyID) |
 | token | string | Yes | None | API Authorization Token | Configure according to provider documentation (e.g., AccessSecret) |
 | endpoint | string | No | None | API Endpoint URL | For custom or private deployment API addresses, uses default endpoint when empty |
