@@ -96,11 +96,11 @@ class TestMultiConfig(unittest.TestCase):
                 self.assertEqual(configs[0].dns, "cloudflare")
                 self.assertEqual(configs[1].dns, "dnspod")
 
-    def test_env_multiple_configs(self):
-        """Test environment variable support for multiple config files"""
+    def test_env_multiple_configs_integration(self):
+        """Test environment variable support for multiple config files using real CLI/env loading"""
         # Create two config files
-        config1_data = {"dns": "cloudflare", "id": "test1@example.com", "token": "secret1"}
-        config2_data = {"dns": "dnspod", "id": "test2@example.com", "token": "secret2"}
+        config1_data = {"dns": "debug", "id": "test1@example.com", "token": "secret1"}
+        config2_data = {"dns": "debug", "id": "test2@example.com", "token": "secret2"}
         
         config1_path = os.path.join(self.temp_dir, "config1.json")
         config2_path = os.path.join(self.temp_dir, "config2.json")
@@ -110,30 +110,34 @@ class TestMultiConfig(unittest.TestCase):
         with open(config2_path, "w") as f:
             json.dump(config2_data, f)
         
-        # Mock sys.argv to avoid argparse conflicts
-        sys.argv = ["ddns"]
-        
-        with patch("ddns.config.cli.load_config") as mock_cli:
-            mock_cli.return_value = {}
+        # Test via environment variable
+        old_env = os.environ.get("DDNS_CONFIG")
+        try:
+            os.environ["DDNS_CONFIG"] = "{},{}".format(config1_path, config2_path)
+            sys.argv = ["ddns"]
             
-            with patch("ddns.config.env.load_config") as mock_env:
-                mock_env.return_value = {"config": [config1_path, config2_path]}
-                
-                configs = load_configs("test", "1.0", "2023-01-01")
-                
-                self.assertEqual(len(configs), 2)
-                self.assertEqual(configs[0].dns, "cloudflare")
-                self.assertEqual(configs[1].dns, "dnspod")
+            configs = load_configs("test", "1.0", "2023-01-01")
+            
+            self.assertEqual(len(configs), 2)
+            self.assertEqual(configs[0].dns, "debug")
+            self.assertEqual(configs[1].dns, "debug")
+            self.assertEqual(configs[0].id, "test1@example.com")
+            self.assertEqual(configs[1].id, "test2@example.com")
+        finally:
+            if old_env is not None:
+                os.environ["DDNS_CONFIG"] = old_env
+            elif "DDNS_CONFIG" in os.environ:
+                del os.environ["DDNS_CONFIG"]
 
-    def test_mixed_single_and_array_configs(self):
-        """Test mixing single object configs and array configs"""
+    def test_mixed_single_and_array_configs_integration(self):
+        """Test mixing single object configs and array configs using real loading"""
         # Single config file
-        single_config_data = {"dns": "cloudflare", "id": "test1@example.com", "token": "secret1"}
+        single_config_data = {"dns": "debug", "id": "test1@example.com", "token": "secret1"}
         
         # Array config file
         array_config_data = [
-            {"dns": "dnspod", "id": "test2@example.com", "token": "secret2"},
-            {"dns": "alidns", "id": "test3@example.com", "token": "secret3"}
+            {"dns": "debug", "id": "test2@example.com", "token": "secret2"},
+            {"dns": "debug", "id": "test3@example.com", "token": "secret3"}
         ]
         
         single_config_path = os.path.join(self.temp_dir, "single.json")
@@ -144,21 +148,18 @@ class TestMultiConfig(unittest.TestCase):
         with open(array_config_path, "w") as f:
             json.dump(array_config_data, f)
         
-        # Mock sys.argv to avoid argparse conflicts
-        sys.argv = ["ddns"]
+        # Test via CLI arguments
+        sys.argv = ["ddns", "-c", single_config_path, "-c", array_config_path]
         
-        with patch("ddns.config.cli.load_config") as mock_cli:
-            mock_cli.return_value = {"config": [single_config_path, array_config_path]}
-            
-            with patch("ddns.config.env.load_config") as mock_env:
-                mock_env.return_value = {}
-                
-                configs = load_configs("test", "1.0", "2023-01-01")
-                
-                self.assertEqual(len(configs), 3)
-                self.assertEqual(configs[0].dns, "cloudflare")
-                self.assertEqual(configs[1].dns, "dnspod")
-                self.assertEqual(configs[2].dns, "alidns")
+        configs = load_configs("test", "1.0", "2023-01-01")
+        
+        self.assertEqual(len(configs), 3)
+        self.assertEqual(configs[0].dns, "debug")
+        self.assertEqual(configs[1].dns, "debug")
+        self.assertEqual(configs[2].dns, "debug")
+        self.assertEqual(configs[0].id, "test1@example.com")
+        self.assertEqual(configs[1].id, "test2@example.com")
+        self.assertEqual(configs[2].id, "test3@example.com")
 
     def test_nested_object_flattening_in_array(self):
         """Test that nested objects are properly flattened in array configs"""
