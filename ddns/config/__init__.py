@@ -13,7 +13,7 @@ import logging
 from .cli import load_config as load_cli_config
 from .file import load_config as load_file_config, save_config
 from .env import load_config as load_env_config
-from .config import Config
+from .config import Config, split_array_string
 
 
 def _get_config_paths(config_paths):
@@ -104,7 +104,7 @@ Copyright (c) NewFuture (MIT License)
 
     # 获取配置文件路径列表
     cli_config_paths = cli_config.get("config", [])
-    env_config_paths = env_config.get("config", [])
+    env_config_paths = split_array_string(env_config.get("config", []))
     
     # 合并CLI和环境变量中的配置文件路径
     if cli_config_paths:

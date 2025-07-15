@@ -77,11 +77,7 @@ def load_config(prefix="DDNS_"):
             config_key = lower_key[len(prefix) :].replace(".", "_")  # noqa: E203
 
         if config_key:
-            if config_key == "config":
-                # 特殊处理 config 参数，支持逗号分隔的多个文件
-                env_vars[config_key] = [f.strip() for f in value.split(",") if f.strip()]
-            else:
-                env_vars[config_key] = _try_parse_array(value, key=key)
+            env_vars[config_key] = _try_parse_array(value, key=key)
 
     # 如果没有DDNS_PROXY但有HTTP代理，使用HTTP代理
     if "proxy" not in env_vars and len(proxy_values) > len("DIRECT;"):

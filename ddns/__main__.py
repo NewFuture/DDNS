@@ -118,9 +118,15 @@ def main():
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）
         config = configs[0]
-        run(config)
+        # 设置日志级别
+        logger.setLevel(config.log_level)
+        success = run(config)
+        if not success:
+            sys.exit(1)
     else:
         # 多个配置，使用新的批处理逻辑
+        # 设置日志级别
+        logger.setLevel(configs[0].log_level)
         overall_success = True
         for i, config in enumerate(configs):
             logger.info("Running configuration %d/%d", i + 1, len(configs))
