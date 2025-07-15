@@ -567,6 +567,87 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(loaded_config["metadata_author"], "test")
         self.assertTrue(loaded_config["metadata_enabled"])
 
+    def test_load_config_object_with_configs_array(self):
+        """Test loading configuration with object containing configs array (recommended format)"""
+        config_data = {
+            "configs": [
+                {
+                    "dns": "cloudflare",
+                    "id": "user1@example.com",
+                    "token": "token1",
+                    "ttl": 300
+                },
+                {
+                    "dns": "dnspod",
+                    "id": "user2@example.com",
+                    "token": "token2",
+                    "ttl": 600
+                }
+            ]
+        }
+
+        config_file = self.create_test_file("object_configs.json", config_data)
+        loaded_configs = load_config(config_file)
+
+        # Should return a list of configs
+        self.assertIsInstance(loaded_configs, list)
+        self.assertEqual(len(loaded_configs), 2)
+
+        # Test first config
+        self.assertEqual(loaded_configs[0]["dns"], "cloudflare")
+        self.assertEqual(loaded_configs[0]["id"], "user1@example.com")
+        self.assertEqual(loaded_configs[0]["token"], "token1")
+        self.assertEqual(loaded_configs[0]["ttl"], 300)
+
+        # Test second config
+        self.assertEqual(loaded_configs[1]["dns"], "dnspod")
+        self.assertEqual(loaded_configs[1]["id"], "user2@example.com")
+        self.assertEqual(loaded_configs[1]["token"], "token2")
+        self.assertEqual(loaded_configs[1]["ttl"], 600)
+
+    def test_load_config_object_with_configs_array_nested(self):
+        """Test loading object configs format with nested objects"""
+        config_data = {
+            "configs": [
+                {
+                    "dns": "cloudflare",
+                    "id": "test@example.com",
+                    "token": "secret123",
+                    "log": {
+                        "level": "DEBUG",
+                        "file": "/tmp/ddns.log"
+                    },
+                    "ssl": {
+                        "verify": True,
+                        "cert_path": "/path/to/cert.pem"
+                    }
+                }
+            ]
+        }
+
+        config_file = self.create_test_file("object_configs_nested.json", config_data)
+        loaded_configs = load_config(config_file)
+
+        # Should return a list with one config
+        self.assertIsInstance(loaded_configs, list)
+        self.assertEqual(len(loaded_configs), 1)
+
+        config = loaded_configs[0]
+        # Check basic fields
+        self.assertEqual(config["dns"], "cloudflare")
+        self.assertEqual(config["id"], "test@example.com")
+        self.assertEqual(config["token"], "secret123")
+
+        # Check flattened nested objects
+        self.assertEqual(config["log_level"], "DEBUG")
+        self.assertEqual(config["log_file"], "/tmp/ddns.log")
+        self.assertTrue(config["ssl_verify"])
+        self.assertEqual(config["ssl_cert_path"], "/path/to/cert.pem")
+
+        # Original nested objects should not exist
+        self.assertNotIn("log", config)
+        self.assertNotIn("ssl", config)
+
 
 if __name__ == "__main__":
     unittest.main()
