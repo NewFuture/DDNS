@@ -110,8 +110,32 @@ def main():
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     logger.name = "ddns"
-    config = load_config(__description__, __version__, build_date)
-    run(config)
+    
+    # 始终使用多配置加载器，它会自动处理单个和多个配置
+    from .config import load_configs
+    configs = load_configs(__description__, __version__, build_date)
+    
+    if len(configs) == 1:
+        # 单个配置，使用原有逻辑（向后兼容）
+        config = configs[0]
+        run(config)
+    else:
+        # 多个配置，使用新的批处理逻辑
+        overall_success = True
+        for i, config in enumerate(configs):
+            logger.info("Running configuration %d/%d", i + 1, len(configs))
+            success = run(config)
+            if not success:
+                overall_success = False
+                logger.error("Configuration %d failed", i + 1)
+            else:
+                logger.info("Configuration %d completed successfully", i + 1)
+        
+        if not overall_success:
+            logger.error("Some configurations failed")
+            sys.exit(1)
+        else:
+            logger.info("All configurations completed successfully")
 
 
 if __name__ == "__main__":

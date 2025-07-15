@@ -194,7 +194,7 @@ class TestCliConfig(unittest.TestCase):
 
         sys.argv = ["ddns", "--config", "/path/to/config.json"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
-        self.assertEqual(config["config"], "/path/to/config.json")
+        self.assertEqual(config["config"], ["/path/to/config.json"])
 
     def test_load_config_index_rules(self):
         sys.argv = [
@@ -397,9 +397,20 @@ class TestCliConfig(unittest.TestCase):
             "~/.ssl/cert.pem",
         ]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
-        self.assertEqual(config["config"], "/absolute/path/config.json")
+        self.assertEqual(config["config"], ["/absolute/path/config.json"])
         self.assertEqual(config["log_file"], "./relative/path/ddns.log")
         self.assertEqual(config["ssl"], "~/.ssl/cert.pem")
+
+        # Test multiple configs
+        sys.argv = [
+            "ddns",
+            "--config",
+            "/path/to/config1.json",
+            "--config", 
+            "/path/to/config2.json",
+        ]
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+        self.assertEqual(config["config"], ["/path/to/config1.json", "/path/to/config2.json"])
 
         # Test numeric strings
         sys.argv = ["ddns", "--id", "123456", "--token", "987654321", "--line", "100"]

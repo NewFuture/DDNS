@@ -11,16 +11,17 @@ from ..util.comment import remove_comment
 
 
 def load_config(config_path):
-    # type: (str) -> dict
+    # type: (str) -> dict|list[dict]
     """
-    加载配置文件并返回配置字典。
+    加载配置文件并返回配置字典或配置字典数组。
+    对于单个对象返回dict，对于数组返回list[dict]。
     优先尝试JSON解析，失败后尝试AST解析。
 
     Args:
         config_path (str): 配置文件路径
 
     Returns:
-        dict: 配置字典
+        dict|list[dict]: 配置字典或配置字典数组
 
     Raises:
         Exception: 当配置文件加载失败时抛出异常
@@ -54,15 +55,31 @@ def load_config(config_path):
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
-    # flatten the config if it contains nested structures
-    flat_config = {}
-    for k, v in config.items():
-        if isinstance(v, dict):
-            for subk, subv in v.items():
-                flat_config["{}_{}".format(k, subk)] = subv
-        else:
-            flat_config[k] = v
-    return flat_config
+    
+    # 处理配置格式：数组或单个对象
+    if isinstance(config, list):
+        # 处理数组格式，展平每个配置项
+        result = []
+        for config_item in config:
+            flat_config = {}
+            for k, v in config_item.items():
+                if isinstance(v, dict):
+                    for subk, subv in v.items():
+                        flat_config["{}_{}".format(k, subk)] = subv
+                else:
+                    flat_config[k] = v
+            result.append(flat_config)
+        return result
+    else:
+        # 处理单个对象格式，展平嵌套结构（保持原有逻辑）
+        flat_config = {}
+        for k, v in config.items():
+            if isinstance(v, dict):
+                for subk, subv in v.items():
+                    flat_config["{}_{}".format(k, subk)] = subv
+            else:
+                flat_config[k] = v
+        return flat_config
 
 
 def save_config(config_path, config):

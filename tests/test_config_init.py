@@ -68,9 +68,10 @@ class TestConfigInit(unittest.TestCase):
 
     def test_module_exports(self):
         """Test that module exports are correct"""
-        expected_exports = ["load_config", "Config"]
+        expected_exports = ["load_config", "load_configs", "Config"]
         self.assertEqual(ddns.config.__all__, expected_exports)
         self.assertTrue(hasattr(ddns.config, "load_config"))
+        self.assertTrue(hasattr(ddns.config, "load_configs"))
         self.assertTrue(hasattr(ddns.config, "Config"))
         self.assertEqual(ddns.config.load_config, load_config)
         self.assertEqual(ddns.config.Config, Config)
