@@ -24,9 +24,9 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         # type: (str, dict) -> str
         """Helper method to create a test file with given content"""
         file_path = os.path.join(self.temp_dir, filename)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, "w") as f:
             if isinstance(content, dict):
-                f.write(json.dumps(content, indent=2, ensure_ascii=False))
+                f.write(json.dumps(content, indent=2))
             else:
                 f.write(content)
         return file_path
@@ -63,7 +63,8 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
                 }
             ]
         }
-        providers_file = self.create_test_file("providers.json", providers_config)
+        providers_file = self.create_test_file("providers.json",
+                                               providers_config)
 
         # Mock sys.argv to control CLI parsing
         import sys
@@ -89,23 +90,28 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(all_configs[1].token, "provider_token1")
             self.assertEqual(all_configs[1].ipv4, ["provider1.example.com"])
             self.assertEqual(all_configs[1].ttl, 300)
-            self.assertEqual(all_configs[1].ssl, "auto")  # Inherited from global
-            self.assertEqual(all_configs[1].cache, True)  # Inherited from global
+            # Inherited from global
+            self.assertEqual(all_configs[1].ssl, "auto")
+            # Inherited from global
+            self.assertEqual(all_configs[1].cache, True)
 
             # Test second provider config
             self.assertEqual(all_configs[2].dns, "debug")
             self.assertEqual(all_configs[2].token, "provider_token2")
             self.assertEqual(all_configs[2].ipv4, ["provider2.example.com"])
             self.assertEqual(all_configs[2].ttl, 600)
-            self.assertEqual(all_configs[2].ssl, "auto")  # Inherited from global
-            self.assertEqual(all_configs[2].cache, True)  # Inherited from global
+            # Inherited from global
+            self.assertEqual(all_configs[2].ssl, "auto")
+            # Inherited from global
+            self.assertEqual(all_configs[2].cache, True)
 
         finally:
             # Restore original argv
             sys.argv = original_argv
 
     def test_v41_backward_compatibility(self):
-        """Test that v4.1 format is backward compatible with existing single config"""
+        """Test that v4.1 format is backward compatible with existing
+        single config"""
         # Create a traditional single config
         old_config = {
             "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
@@ -151,11 +157,11 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
         # Load it back and check schema
         loaded = load_config(save_file)
-        self.assertEqual(loaded["$schema"], "https://ddns.newfuture.cc/schema/v4.1.json")
+        expected_schema = "https://ddns.newfuture.cc/schema/v4.1.json"
+        self.assertEqual(loaded["$schema"], expected_schema)
         self.assertEqual(loaded["dns"], "debug")
         self.assertEqual(loaded["token"], "test")
 
 
 if __name__ == "__main__":
     unittest.main()
-
