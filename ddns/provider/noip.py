@@ -4,12 +4,7 @@ No-IP (noip.com) Dynamic DNS API
 @author: GitHub Copilot
 """
 
-from ._base import SimpleProvider, TYPE_FORM
-
-try:
-    from ._base import quote
-except ImportError:
-    from ..util.http import quote
+from ._base import SimpleProvider, TYPE_FORM, quote
 
 
 class NoipProvider(SimpleProvider):
@@ -28,12 +23,22 @@ class NoipProvider(SimpleProvider):
 
     def _validate(self):
         """
-        Validate authentication credentials for No-IP
+        Validate authentication credentials for No-IP and set up auth endpoint
         """
         if not self.id:
             raise ValueError("No-IP requires username as 'id'")
         if not self.token:
             raise ValueError("No-IP requires password as 'token'")
+        
+        # URL encode username and password to handle special characters
+        username_encoded = quote(self.id, safe="")
+        password_encoded = quote(self.token, safe="")
+        
+        # Extract domain from endpoint and create auth endpoint
+        protocol, domain = self.endpoint.split("://", 1)
+        self.auth_endpoint = "{0}://{1}:{2}@{3}".format(
+            protocol, username_encoded, password_encoded, domain
+        )
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
@@ -63,31 +68,11 @@ class NoipProvider(SimpleProvider):
         # Prepare request parameters
         params = {"hostname": domain, "myip": value}
 
-        # Prepare URL with embedded authentication
-        # URL encode username and password to handle special characters
-        username_encoded = quote(self.id, safe="")
-        password_encoded = quote(self.token, safe="")
-
-        # Construct endpoint with embedded credentials
-        # Split the original endpoint to get the domain part
-        if "://" in self.endpoint:
-            protocol, domain_path = self.endpoint.split("://", 1)
-            if "/" in domain_path:
-                endpoint_domain = domain_path.split("/", 1)[0]
-            else:
-                endpoint_domain = domain_path
-        else:
-            # Fallback for malformed endpoints
-            endpoint_domain = "dynupdate.no-ip.com"
-            protocol = "https"
-
-        auth_endpoint = "{0}://{1}:{2}@{3}".format(protocol, username_encoded, password_encoded, endpoint_domain)
-
         try:
             # Use GET request as it's the most common method for DDNS
             # Temporarily change endpoint to include auth credentials
             original_endpoint = self.endpoint
-            self.endpoint = auth_endpoint
+            self.endpoint = self.auth_endpoint
             response = self._http("GET", "/nic/update", queries=params)
             # Restore original endpoint
             self.endpoint = original_endpoint

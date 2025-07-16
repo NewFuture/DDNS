@@ -10,6 +10,7 @@ import sys
 from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
+    quote,
 )
 
 # Python 2/3 compatibility
@@ -267,7 +268,6 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_basic_auth_with_url_embedding(self):
         """测试URL嵌入式基本认证格式"""
-        from ddns.util.http import quote
 
         # 测试不同场景的URL嵌入认证格式
         test_cases = [
@@ -303,26 +303,32 @@ class TestSendHttpRequest(unittest.TestCase):
                 "Failed for username={}, password={}".format(case["username"], case["password"]),
             )
 
-    def test_basic_auth_url_format(self):
-        """测试基本认证URL格式的正确性"""
-        from ddns.util.http import quote
-
-        # 测试URL编码是否正确处理特殊字符
-        username = "test@user"
-        password = "pass!word"
-
+    def test_basic_auth_with_httpbin(self):
+        """测试基本认证URL格式是否正确"""
+        # 简单测试URL编码和格式，不实际发送网络请求
+        username = "test@user.com"
+        password = "p@ss!word"
+        
+        # URL编码用户名和密码
         username_encoded = quote(username, safe="")
         password_encoded = quote(password, safe="")
-
+        
         # 验证编码结果
-        self.assertEqual(username_encoded, "test%40user")
-        self.assertEqual(password_encoded, "pass%21word")
-
-        # 构建认证URL
-        auth_url = "https://{0}:{1}@example.com".format(username_encoded, password_encoded)
-
-        expected_url = "https://test%40user:pass%21word@example.com"
+        self.assertEqual(username_encoded, "test%40user.com")
+        self.assertEqual(password_encoded, "p%40ss%21word")
+        
+        # 构建基本认证URL
+        auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
+            username_encoded, password_encoded, "testuser", "testpass"
+        )
+        
+        expected_url = "https://test%40user.com:p%40ss%21word@httpbin.org/basic-auth/testuser/testpass"
         self.assertEqual(auth_url, expected_url)
+        
+        # 验证URL格式符合RFC标准
+        self.assertIn("://", auth_url)
+        self.assertIn("@", auth_url)
+        self.assertNotIn(" ", auth_url)  # 确保没有未编码的空格
 
 
 if __name__ == "__main__":
