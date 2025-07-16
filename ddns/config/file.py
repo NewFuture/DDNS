@@ -10,44 +10,14 @@ from sys import stderr, stdout
 from ..util.comment import remove_comment
 
 
-def _parse_config_content(config_path, content):
-    # type: (str, str) -> dict|list[dict]
-    """Parse config content with JSON and AST fallback."""
-    # 移除注释后尝试JSON解析
-    content_without_comments = remove_comment(content)
-    try:
-        config = json_decode(content_without_comments)
-    except (ValueError, SyntaxError) as json_error:
-        # JSON解析失败，尝试AST解析
-        try:
-            config = literal_eval(content)
-            stdout.write("Successfully loaded config file with AST parser: %s\n" % config_path)
-        except (ValueError, SyntaxError) as ast_error:
-            if config_path.endswith(".json"):
-                stderr.write("JSON parsing failed for %s\n" % (config_path))
-                raise json_error
-
-            stderr.write(
-                "Both JSON and AST parsing failed for %s.\nJSON: %s\nAST: %s\n" % (config_path, json_error, ast_error)
-            )
-            raise ast_error
-    return config
-
 
 def _process_v41_providers_format(config):
     # type: (dict) -> list[dict]
     """Process v4.1 providers format and return list of configs."""
     result = []
-    global_config = {}
-
+    
     # 提取全局配置（除providers之外的所有配置）
-    for k, v in config.items():
-        if k != "providers":
-            if isinstance(v, dict):
-                for subk, subv in v.items():
-                    global_config["{}_{}".format(k, subk)] = subv
-            else:
-                global_config[k] = v
+    global_config = _flatten_single_config(config, exclude_keys=["providers"])
 
     # 检查providers和dns字段不能同时使用
     if global_config.get("dns"):
@@ -77,11 +47,15 @@ def _process_v41_providers_format(config):
     return result
 
 
-def _flatten_single_config(config):
-    # type: (dict) -> dict
-    """Flatten a single config object."""
+def _flatten_single_config(config, exclude_keys=None):
+    # type: (dict, list[str]|None) -> dict
+    """Flatten a single config object with optional key exclusion."""
+    if exclude_keys is None:
+        exclude_keys = []
     flat_config = {}
     for k, v in config.items():
+        if k in exclude_keys:
+            continue
         if isinstance(v, dict):
             for subk, subv in v.items():
                 flat_config["{}_{}".format(k, subk)] = subv
@@ -110,7 +84,25 @@ def load_config(config_path):
         with open(config_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        config = _parse_config_content(config_path, content)
+        # 移除注释后尝试JSON解析
+        content_without_comments = remove_comment(content)
+        try:
+            config = json_decode(content_without_comments)
+        except (ValueError, SyntaxError) as json_error:
+            # JSON解析失败，尝试AST解析
+            try:
+                config = literal_eval(content)
+                stdout.write("Successfully loaded config file with AST parser: %s\n" % config_path)
+            except (ValueError, SyntaxError) as ast_error:
+                if config_path.endswith(".json"):
+                    stderr.write("JSON parsing failed for %s\n" % (config_path))
+                    raise json_error
+
+                stderr.write(
+                    "Both JSON and AST parsing failed for %s\nJSON Error: %s\nAST Error: %s\n"
+                    % (config_path, json_error, ast_error)
+                )
+                raise ast_error
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise

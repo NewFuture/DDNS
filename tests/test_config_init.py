@@ -5,6 +5,7 @@ Unit tests for ddns.config.__init__ module
 """
 
 from __init__ import unittest, patch, MagicMock
+from unittest.mock import call
 import os
 import tempfile
 import shutil
@@ -238,15 +239,12 @@ class TestConfigInit(unittest.TestCase):
             # Should create both main config and global config 
             self.assertEqual(mock_config_class.call_count, 2)
             
-            # Check that first call creates main config with JSON config
-            mock_config_class.assert_any_call(
-                cli_config=cli_config, json_config=json_config, env_config=env_config
-            )
-            
-            # Check that second call creates global config for logging (empty JSON config)
-            mock_config_class.assert_any_call(
-                cli_config=cli_config, json_config={}, env_config=env_config
-            )
+            # Both calls should use the same parameters when there's only one config file
+            expected_calls = [
+                call(cli_config=cli_config, json_config=json_config, env_config=env_config),
+                call(cli_config=cli_config, json_config=json_config, env_config=env_config)
+            ]
+            mock_config_class.assert_has_calls(expected_calls, any_order=True)
             self.assertEqual(result, mock_config_instance)
 
     @patch("ddns.config.load_env_config")

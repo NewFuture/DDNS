@@ -44,10 +44,12 @@ def _get_config_paths(config_paths):
     return config_paths
 
 
-def _setup_logging(cli_config, env_config):
-    # type: (dict, dict) -> logging.Logger
+def _setup_logging(cli_config, env_config, all_json_configs):
+    # type: (dict, dict, list[dict]) -> logging.Logger
     """Setup logging configuration and return logger."""
-    global_conf = Config(cli_config=cli_config, json_config={}, env_config=env_config)
+    # Include global config from config file when there's only one config
+    json_config = all_json_configs[0] if len(all_json_configs) == 1 else {}
+    global_conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
     log_format = global_conf.log_format  # type: str  # type: ignore
     if log_format:
         # A custom log format is already set; no further action is required.
@@ -84,20 +86,6 @@ def _load_json_configs(config_paths):
     return all_json_configs
 
 
-def _handle_no_config(cli_config, config_paths, all_json_configs, env_config, logger):
-    # type: (dict, list[str], list[dict], dict, logging.Logger) -> None
-    """Handle case when no configuration is provided."""
-    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1
-                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
-
-    if no_config:
-        # 没有配置时生成默认配置文件
-        logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
-        logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
-        default_config_path = config_paths[0] if config_paths else "config.json"
-        save_config(default_config_path, cli_config)
-        logger.info("No config file found, generated default config at `%s`.", default_config_path)
-        sys.exit(1)
 
 
 def _validate_configs(configs, logger):
@@ -154,10 +142,20 @@ Copyright (c) NewFuture (MIT License)
         configs.append(conf)
 
     # 设置日志
-    logger = _setup_logging(cli_config, env_config)
+    logger = _setup_logging(cli_config, env_config, all_json_configs)
 
-    # 处理无配置情况
-    _handle_no_config(cli_config, config_paths, all_json_configs, env_config, logger)
+    # 处理无配置情况 - inline _handle_no_config logic
+    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1
+                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
+
+    if no_config:
+        # 没有配置时生成默认配置文件
+        logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
+        logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
+        default_config_path = config_paths[0] if config_paths else "config.json"
+        save_config(default_config_path, cli_config)
+        logger.info("No config file found, generated default config at `%s`.", default_config_path)
+        sys.exit(1)
 
     # 记录配置加载情况
     if config_paths:
