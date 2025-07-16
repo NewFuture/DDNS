@@ -98,26 +98,30 @@ Copyright (c) NewFuture (MIT License)
         conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
         configs.append(conf)
 
-    # 使用第一个配置来设置日志系统
-    first_conf = configs[0]
-    log_format = first_conf.log_format  # type: str  # type: ignore
+    # 使用全局日志设置
+    global_conf = Config(cli_config=cli_config, json_config={}, env_config=env_config)
+    log_format = global_conf.log_format  # type: str  # type: ignore
     if log_format:
         # A custom log format is already set; no further action is required.
         pass
-    elif first_conf.log_level < logging.INFO:
+    elif global_conf.log_level < logging.INFO:
         # Override log format in debug mode to include filename and line number for detailed debugging
         log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
-    elif first_conf.log_level > logging.INFO:
+    elif global_conf.log_level > logging.INFO:
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
     logging.basicConfig(
-        level=first_conf.log_level, format=log_format, datefmt=first_conf.log_datefmt, filename=first_conf.log_file
+        level=global_conf.log_level, format=log_format, datefmt=global_conf.log_datefmt, filename=global_conf.log_file
     )
     logger = logging.getLogger().getChild("config")  # type: logging.Logger
 
-    if len(cli_config) <= 1 and len(all_json_configs) == 1 and len(all_json_configs[0]) == 0 and len(env_config) == 0:
-        # No configuration provided, use CLI and environment variables only
+    # 检查是否没有任何有效配置
+    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1 
+                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
+    
+    if no_config:
+        # 没有配置时生成默认配置文件
         logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
         logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
         default_config_path = config_paths[0] if config_paths else "config.json"
@@ -125,16 +129,15 @@ Copyright (c) NewFuture (MIT License)
         logger.info("No config file found, generated default config at `%s`.", default_config_path)
         sys.exit(1)
 
-    # logger 初始化之后再开始记log
+    # 记录配置加载情况
     if config_paths:
         logger.info("load config: %s", config_paths)
     else:
         logger.debug("No config file specified, using CLI and environment variables only.")
 
     # 仅在没有配置文件且开启debug时自动设置debug provider
-    if not config_paths and cli_config.get("debug"):
-        if len(configs) == 1 and not configs[0].dns:
-            configs[0].dns = "debug"
+    if not config_paths and cli_config.get("debug") and len(configs) == 1 and not configs[0].dns:
+        configs[0].dns = "debug"
 
     # 验证每个配置都有DNS provider
     for i, conf in enumerate(configs):

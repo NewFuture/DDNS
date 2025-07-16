@@ -26,16 +26,11 @@ def load_config(config_path):
     Raises:
         Exception: 当配置文件加载失败时抛出异常
     """
-    content = ""
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             content = f.read()
-    except Exception as e:
-        stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
-        raise
-    # 移除注释后尝试JSON解析
-    try:
-        # 移除单行注释（# 和 // 风格）
+        
+        # 移除注释后尝试JSON解析
         content_without_comments = remove_comment(content)
         config = json_decode(content_without_comments)
     except (ValueError, SyntaxError) as json_error:
@@ -57,7 +52,7 @@ def load_config(config_path):
         raise
 
     # 处理配置格式：v4.1 providers格式、对象包含configs数组、或单个对象
-    if isinstance(config, dict) and "providers" in config and isinstance(config["providers"], list):
+    if "providers" in config and isinstance(config["providers"], list):
         # 处理v4.1格式：providers数组包含多个DNS提供商（推荐格式）
         result = []
         global_config = {}
@@ -95,19 +90,6 @@ def load_config(config_path):
                 else:
                     flat_config[k] = v
             
-            result.append(flat_config)
-        return result
-    elif isinstance(config, dict) and "configs" in config and isinstance(config["configs"], list):
-        # 处理对象包含configs数组的格式（保持向后兼容）
-        result = []
-        for config_item in config["configs"]:
-            flat_config = {}
-            for k, v in config_item.items():
-                if isinstance(v, dict):
-                    for subk, subv in v.items():
-                        flat_config["{}_{}".format(k, subk)] = subv
-                else:
-                    flat_config[k] = v
             result.append(flat_config)
         return result
     else:

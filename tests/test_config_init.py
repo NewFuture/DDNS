@@ -226,12 +226,26 @@ class TestConfigInit(unittest.TestCase):
 
         with patch("ddns.config.Config") as mock_config_class:
             mock_config_instance = MagicMock()
+            mock_config_instance.log_format = None  # No custom format
+            mock_config_instance.log_level = 20  # INFO level
+            mock_config_instance.log_datefmt = "%Y-%m-%dT%H:%M:%S"
+            mock_config_instance.log_file = None  # No log file
+            mock_config_instance.dns = "cloudflare"  # Has DNS provider
             mock_config_class.return_value = mock_config_instance
 
             result = load_configs(self.test_description, self.test_version, self.test_date)[0]
 
-            mock_config_class.assert_called_once_with(
+            # Should create both main config and global config 
+            self.assertEqual(mock_config_class.call_count, 2)
+            
+            # Check that first call creates main config with JSON config
+            mock_config_class.assert_any_call(
                 cli_config=cli_config, json_config=json_config, env_config=env_config
+            )
+            
+            # Check that second call creates global config for logging (empty JSON config)
+            mock_config_class.assert_any_call(
+                cli_config=cli_config, json_config={}, env_config=env_config
             )
             self.assertEqual(result, mock_config_instance)
 
