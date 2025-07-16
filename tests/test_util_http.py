@@ -305,8 +305,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_basic_auth_with_httpbin(self):
         """Test basic auth URL format and verification with URL-embedded authentication"""
-        from ddns.util.http import send_http_request
-        from urllib.error import URLError
+        from ddns.util.http import send_http_request, URLError
 
         # Test with special credentials containing @ and . characters
         special_username = "user@test.com"
