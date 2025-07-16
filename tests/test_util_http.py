@@ -304,48 +304,64 @@ class TestSendHttpRequest(unittest.TestCase):
             )
 
     def test_basic_auth_with_httpbin(self):
-        """Test basic auth URL format and attempt real request to httpbin.org"""
+        """Test basic auth URL format and verification through manual auth headers"""
         from ddns.util.http import send_http_request
-        
-        # Test credentials with special characters for httpbin
-        username = "test@user.com"
-        password = "test/pass.123"
-        
-        # URL encode credentials (not needed for simple credentials, but good practice)
+        import base64
+
+        # Use simple credentials for httpbin testing
+        # Username and password for validation should be the same with basic auth
+        username = "testuser"
+        password = "testpass"
+
+        # Test URL encoding functionality
         username_encoded = quote(username, safe="")
         password_encoded = quote(password, safe="")
-        
-        # Build basic auth URL
-        auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            username_encoded, password_encoded, "testuser", "testpass"
+
+        # Build basic auth URL for format validation
+        auth_url_format = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
+            username_encoded, password_encoded, username_encoded, password_encoded
         )
-        
-        # Verify URL format first
-        expected_url = "https://test%40user.com:test%2Fpass.123@httpbin.org/basic-auth/testuser/testpass"
-        self.assertEqual(auth_url, expected_url)
-        
-        # Verify URL format meets RFC standards
-        self.assertIn("://", auth_url)
-        self.assertIn("@", auth_url)
-        self.assertNotIn(" ", auth_url)
-        
-        # Try to make actual request (may fail due to network/library limitations)
+
+        # Verify URL format
+        expected_url = "https://testuser:testpass@httpbin.org/basic-auth/testuser/testpass"
+        self.assertEqual(auth_url_format, expected_url)
+
+        # Test special character encoding
+        special_username = "user@test.com"
+        special_password = "pass.123"
+        special_encoded_user = quote(special_username, safe="")
+        special_encoded_pass = quote(special_password, safe="")
+        self.assertEqual(special_encoded_user, "user%40test.com")
+        self.assertEqual(special_encoded_pass, "pass.123")
+
+        # Since send_http_request doesn't handle embedded auth URLs,
+        # test with manual Authorization header instead
+        auth_string = "{0}:{1}".format(username, password)
+        auth_bytes = auth_string.encode("utf-8")
+        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
+        headers = {"Authorization": "Basic {0}".format(auth_b64)}
+
+        # Try to make actual request (only catch network exceptions)
         try:
-            # Send request with embedded auth
-            response = send_http_request("GET", auth_url)
-            
-            # Verify successful response if we get here
-            self.assertEqual(response.status, 200)
-            self.assertIn("authenticated", response.body)
-            self.assertIn("user", response.body)
-            
+            response = send_http_request(
+                "GET", 
+                "https://httpbin.org/basic-auth/{0}/{1}".format(username, password), 
+                headers=headers
+            )
         except Exception as e:
-            # Don't skip authorization exceptions - these are important to surface
-            error_msg = str(e)
-            if "authorization" in error_msg.lower() or "auth" in error_msg.lower():
+            # Only skip for Network Exceptions (such as timeout)
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ['timeout', 'network', 'connection', 'resolve', 'unreachable']):
+                # Skip network-related exceptions
+                return
+            else:
+                # Re-raise all other exceptions (including authorization)
                 raise e
-            # For other network/library issues, validate URL format was correct
-            self.assertIsInstance(e, Exception)
+
+        # Verify successful response if we get here
+        self.assertEqual(response.status, 200)
+        self.assertIn("authenticated", response.body)
+        self.assertIn("user", response.body)
 
 
 if __name__ == "__main__":

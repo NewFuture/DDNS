@@ -28,12 +28,12 @@ class NoipProvider(SimpleProvider):
         # Check endpoint first
         if not self.endpoint or "://" not in self.endpoint:
             raise ValueError("API endpoint must be defined and contain protocol")
-        
+
         if not self.id:
             raise ValueError("No-IP requires username as 'id'")
         if not self.token:
             raise ValueError("No-IP requires password as 'token'")
-        
+
         # Update endpoint with URL-encoded auth credentials
         protocol, domain = self.endpoint.split("://", 1)
         self.endpoint = "{0}://{1}:{2}@{3}".format(
