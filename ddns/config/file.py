@@ -10,7 +10,6 @@ from sys import stderr, stdout
 from ..util.comment import remove_comment
 
 
-
 def _process_multi_providers_format(config):
     # type: (dict) -> list[dict]
     """Process v4.1 providers format and return list of configs."""
@@ -35,7 +34,7 @@ def _process_multi_providers_format(config):
 
         # 直接设置dns字段为provider的name
         flat_config["dns"] = provider_config.get("name")
-        provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
+        provider_flat = _flatten_single_config(flat_config, exclude_keys=["name"])
         result.append(provider_flat)
     return result
 
