@@ -57,7 +57,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
                 },
                 {
                     "name": "debug",
-                    "token": "provider_token2", 
+                    "token": "provider_token2",
                     "ipv4": ["provider2.example.com"],
                     "ttl": 600
                 }
@@ -68,30 +68,30 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         # Mock sys.argv to control CLI parsing
         import sys
         original_argv = sys.argv
-        
+
         try:
             # Set fake argv with our config files
             sys.argv = ["ddns", "-c", single_file, "-c", providers_file]
-            
+
             # Load all configs
             all_configs = load_configs("test", "1.0.0", "2025-01-01")
-            
+
             # Should have 3 total configs: 1 single + 2 from providers
             self.assertEqual(len(all_configs), 3)
-            
+
             # Test single config
             self.assertEqual(all_configs[0].dns, "cloudflare")
             self.assertEqual(all_configs[0].id, "single@example.com")
             self.assertEqual(all_configs[0].ssl, True)
-            
+
             # Test first provider config
-            self.assertEqual(all_configs[1].dns, "debug") 
+            self.assertEqual(all_configs[1].dns, "debug")
             self.assertEqual(all_configs[1].token, "provider_token1")
             self.assertEqual(all_configs[1].ipv4, ["provider1.example.com"])
             self.assertEqual(all_configs[1].ttl, 300)
             self.assertEqual(all_configs[1].ssl, "auto")  # Inherited from global
             self.assertEqual(all_configs[1].cache, True)  # Inherited from global
-            
+
             # Test second provider config
             self.assertEqual(all_configs[2].dns, "debug")
             self.assertEqual(all_configs[2].token, "provider_token2")
@@ -99,7 +99,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(all_configs[2].ttl, 600)
             self.assertEqual(all_configs[2].ssl, "auto")  # Inherited from global
             self.assertEqual(all_configs[2].cache, True)  # Inherited from global
-            
+
         finally:
             # Restore original argv
             sys.argv = original_argv
@@ -120,13 +120,13 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         # Mock sys.argv to control CLI parsing
         import sys
         original_argv = sys.argv
-        
+
         try:
             # Set fake argv with our config file
             sys.argv = ["ddns", "-c", old_file]
-            
+
             configs = load_configs("test", "1.0.0", "2025-01-01")
-            
+
             # Should load exactly one config
             self.assertEqual(len(configs), 1)
             config = configs[0]
@@ -134,21 +134,21 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(config.id, "old@example.com")
             self.assertEqual(config.token, "old_token")
             self.assertEqual(config.ssl, "auto")
-            
+
         finally:
             sys.argv = original_argv
 
     def test_v41_schema_reference(self):
         """Test that save_config uses v4.1 schema by default"""
         from ddns.config.file import save_config, load_config
-        
+
         test_config = {"dns": "debug", "token": "test"}
         save_file = os.path.join(self.temp_dir, "new_config.json")
-        
+
         # Save config
         result = save_config(save_file, test_config)
         self.assertTrue(result)
-        
+
         # Load it back and check schema
         loaded = load_config(save_file)
         self.assertEqual(loaded["$schema"], "https://ddns.newfuture.cc/schema/v4.1.json")
@@ -158,3 +158,4 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

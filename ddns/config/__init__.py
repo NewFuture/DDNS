@@ -44,6 +44,73 @@ def _get_config_paths(config_paths):
     return config_paths
 
 
+def _setup_logging(cli_config, env_config):
+    # type: (dict, dict) -> logging.Logger
+    """Setup logging configuration and return logger."""
+    global_conf = Config(cli_config=cli_config, json_config={}, env_config=env_config)
+    log_format = global_conf.log_format  # type: str  # type: ignore
+    if log_format:
+        # A custom log format is already set; no further action is required.
+        pass
+    elif global_conf.log_level < logging.INFO:
+        # Override log format in debug mode to include filename and line number for detailed debugging
+        log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
+    elif global_conf.log_level > logging.INFO:
+        log_format = "%(asctime)s %(levelname)s: %(message)s"
+    else:
+        log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
+    logging.basicConfig(
+        level=global_conf.log_level, format=log_format, datefmt=global_conf.log_datefmt, filename=global_conf.log_file
+    )
+    return logging.getLogger().getChild("config")  # type: logging.Logger
+
+
+def _load_json_configs(config_paths):
+    # type: (list[str]) -> list[dict]
+    """Load all JSON configurations from config paths."""
+    all_json_configs = []
+    if config_paths:
+        for config_path in config_paths:
+            json_configs = load_file_config(config_path)
+            if isinstance(json_configs, list):
+                all_json_configs.extend(json_configs)
+            else:
+                all_json_configs.append(json_configs)
+
+    # 如果没有找到任何配置文件或JSON配置，创建一个空配置
+    if not all_json_configs:
+        all_json_configs = [{}]
+
+    return all_json_configs
+
+
+def _handle_no_config(cli_config, config_paths, all_json_configs, env_config, logger):
+    # type: (dict, list[str], list[dict], dict, logging.Logger) -> None
+    """Handle case when no configuration is provided."""
+    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1
+                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
+
+    if no_config:
+        # 没有配置时生成默认配置文件
+        logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
+        logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
+        default_config_path = config_paths[0] if config_paths else "config.json"
+        save_config(default_config_path, cli_config)
+        logger.info("No config file found, generated default config at `%s`.", default_config_path)
+        sys.exit(1)
+
+
+def _validate_configs(configs, logger):
+    # type: (list[Config], logging.Logger) -> None
+    """Validate that all configs have DNS providers."""
+    for i, conf in enumerate(configs):
+        if not conf.dns:
+            logger.critical(
+                "No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1
+            )
+            sys.exit(2)
+
+
 def load_configs(description, version, date):
     # type: (str, str, str) -> list[Config]
     """
@@ -75,22 +142,10 @@ Copyright (c) NewFuture (MIT License)
 
     # 获取配置文件路径列表
     config_paths = split_array_string(cli_config.get("config", env_config.get("config", [])))
-
     config_paths = _get_config_paths(config_paths)
 
     # 加载所有配置文件
-    all_json_configs = []
-    if config_paths:
-        for config_path in config_paths:
-            json_configs = load_file_config(config_path)
-            if isinstance(json_configs, list):
-                all_json_configs.extend(json_configs)
-            else:
-                all_json_configs.append(json_configs)
-
-    # 如果没有找到任何配置文件或JSON配置，创建一个空配置
-    if not all_json_configs:
-        all_json_configs = [{}]
+    all_json_configs = _load_json_configs(config_paths)
 
     # 为每个JSON配置创建Config对象
     configs = []
@@ -98,36 +153,11 @@ Copyright (c) NewFuture (MIT License)
         conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
         configs.append(conf)
 
-    # 使用全局日志设置
-    global_conf = Config(cli_config=cli_config, json_config={}, env_config=env_config)
-    log_format = global_conf.log_format  # type: str  # type: ignore
-    if log_format:
-        # A custom log format is already set; no further action is required.
-        pass
-    elif global_conf.log_level < logging.INFO:
-        # Override log format in debug mode to include filename and line number for detailed debugging
-        log_format = "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
-    elif global_conf.log_level > logging.INFO:
-        log_format = "%(asctime)s %(levelname)s: %(message)s"
-    else:
-        log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
-    logging.basicConfig(
-        level=global_conf.log_level, format=log_format, datefmt=global_conf.log_datefmt, filename=global_conf.log_file
-    )
-    logger = logging.getLogger().getChild("config")  # type: logging.Logger
+    # 设置日志
+    logger = _setup_logging(cli_config, env_config)
 
-    # 检查是否没有任何有效配置
-    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1 
-                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
-    
-    if no_config:
-        # 没有配置时生成默认配置文件
-        logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
-        logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
-        default_config_path = config_paths[0] if config_paths else "config.json"
-        save_config(default_config_path, cli_config)
-        logger.info("No config file found, generated default config at `%s`.", default_config_path)
-        sys.exit(1)
+    # 处理无配置情况
+    _handle_no_config(cli_config, config_paths, all_json_configs, env_config, logger)
 
     # 记录配置加载情况
     if config_paths:
@@ -140,12 +170,7 @@ Copyright (c) NewFuture (MIT License)
         configs[0].dns = "debug"
 
     # 验证每个配置都有DNS provider
-    for i, conf in enumerate(configs):
-        if not conf.dns:
-            logger.critical(
-                "No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1
-            )
-            sys.exit(2)
+    _validate_configs(configs, logger)
 
     return configs
 
@@ -154,3 +179,4 @@ __all__ = [
     "load_configs",
     "Config",
 ]
+

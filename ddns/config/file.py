@@ -10,6 +10,86 @@ from sys import stderr, stdout
 from ..util.comment import remove_comment
 
 
+def _parse_config_content(config_path, content):
+    # type: (str, str) -> dict|list[dict]
+    """Parse config content with JSON and AST fallback."""
+    # 移除注释后尝试JSON解析
+    content_without_comments = remove_comment(content)
+    try:
+        config = json_decode(content_without_comments)
+    except (ValueError, SyntaxError) as json_error:
+        # JSON解析失败，尝试AST解析
+        try:
+            config = literal_eval(content)
+            stdout.write("Successfully loaded config file with AST parser: %s\n" % config_path)
+        except (ValueError, SyntaxError) as ast_error:
+            if config_path.endswith(".json"):
+                stderr.write("JSON parsing failed for %s\n" % (config_path))
+                raise json_error
+
+            stderr.write(
+                "Both JSON and AST parsing failed for %s.\nJSON: %s\nAST: %s\n" % (config_path, json_error, ast_error)
+            )
+            raise ast_error
+    return config
+
+
+def _process_v41_providers_format(config):
+    # type: (dict) -> list[dict]
+    """Process v4.1 providers format and return list of configs."""
+    result = []
+    global_config = {}
+
+    # 提取全局配置（除providers之外的所有配置）
+    for k, v in config.items():
+        if k != "providers":
+            if isinstance(v, dict):
+                for subk, subv in v.items():
+                    global_config["{}_{}".format(k, subk)] = subv
+            else:
+                global_config[k] = v
+
+    # 检查providers和dns字段不能同时使用
+    if global_config.get("dns"):
+        stderr.write("Error: 'providers' and 'dns' fields cannot be used simultaneously in config file!\n")
+        raise ValueError("providers and dns fields conflict")
+
+    # 为每个provider创建独立配置
+    for provider_config in config["providers"]:
+        # 验证provider必须有name字段
+        if "name" not in provider_config:
+            stderr.write("Error: Each provider must have a 'name' field!\n")
+            raise ValueError("provider missing name field")
+
+        flat_config = global_config.copy()  # 从全局配置开始
+
+        # 添加provider特定配置，name字段映射为dns
+        for k, v in provider_config.items():
+            if k == "name":
+                flat_config["dns"] = v  # name映射为dns
+            elif isinstance(v, dict):
+                for subk, subv in v.items():
+                    flat_config["{}_{}".format(k, subk)] = subv
+            else:
+                flat_config[k] = v
+
+        result.append(flat_config)
+    return result
+
+
+def _flatten_single_config(config):
+    # type: (dict) -> dict
+    """Flatten a single config object."""
+    flat_config = {}
+    for k, v in config.items():
+        if isinstance(v, dict):
+            for subk, subv in v.items():
+                flat_config["{}_{}".format(k, subk)] = subv
+        else:
+            flat_config[k] = v
+    return flat_config
+
+
 def load_config(config_path):
     # type: (str) -> dict|list[dict]
     """
@@ -29,79 +109,17 @@ def load_config(config_path):
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             content = f.read()
-        
-        # 移除注释后尝试JSON解析
-        content_without_comments = remove_comment(content)
-        config = json_decode(content_without_comments)
-    except (ValueError, SyntaxError) as json_error:
-        # JSON解析失败，尝试AST解析
-        try:
-            config = literal_eval(content)
-            stdout.write("Successfully loaded config file with AST parser: %s\n" % config_path)
-        except (ValueError, SyntaxError) as ast_error:
-            if config_path.endswith(".json"):
-                stderr.write("JSON parsing failed for %s\n" % (config_path))
-                raise json_error
 
-            stderr.write(
-                "Both JSON and AST parsing failed for %s.\nJSON: %s\nAST: %s\n" % (config_path, json_error, ast_error)
-            )
-            raise ast_error
+        config = _parse_config_content(config_path, content)
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
 
-    # 处理配置格式：v4.1 providers格式、对象包含configs数组、或单个对象
+    # 处理配置格式：v4.1 providers格式或单个对象
     if "providers" in config and isinstance(config["providers"], list):
-        # 处理v4.1格式：providers数组包含多个DNS提供商（推荐格式）
-        result = []
-        global_config = {}
-        
-        # 提取全局配置（除providers之外的所有配置）
-        for k, v in config.items():
-            if k != "providers":
-                if isinstance(v, dict):
-                    for subk, subv in v.items():
-                        global_config["{}_{}".format(k, subk)] = subv
-                else:
-                    global_config[k] = v
-        
-        # 检查providers和dns字段不能同时使用
-        if "dns" in global_config:
-            stderr.write("Error: 'providers' and 'dns' fields cannot be used simultaneously in config file!\n")
-            raise ValueError("providers and dns fields conflict")
-        
-        # 为每个provider创建独立配置
-        for provider_config in config["providers"]:
-            # 验证provider必须有name字段
-            if "name" not in provider_config:
-                stderr.write("Error: Each provider must have a 'name' field!\n")
-                raise ValueError("provider missing name field")
-            
-            flat_config = global_config.copy()  # 从全局配置开始
-            
-            # 添加provider特定配置，name字段映射为dns
-            for k, v in provider_config.items():
-                if k == "name":
-                    flat_config["dns"] = v  # name映射为dns
-                elif isinstance(v, dict):
-                    for subk, subv in v.items():
-                        flat_config["{}_{}".format(k, subk)] = subv
-                else:
-                    flat_config[k] = v
-            
-            result.append(flat_config)
-        return result
+        return _process_v41_providers_format(config)
     else:
-        # 处理单个对象格式，展平嵌套结构（保持原有逻辑）
-        flat_config = {}
-        for k, v in config.items():
-            if isinstance(v, dict):
-                for subk, subv in v.items():
-                    flat_config["{}_{}".format(k, subk)] = subv
-            else:
-                flat_config[k] = v
-        return flat_config
+        return _flatten_single_config(config)
 
 
 def save_config(config_path, config):
@@ -152,3 +170,4 @@ def save_config(config_path, config):
     except Exception:
         stderr.write("Cannot open config file to write: `%s`!\n" % config_path)
         raise
+
