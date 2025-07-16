@@ -32,7 +32,7 @@ def _process_multi_providers(config):
 
         flat_config = global_config.copy()  # 从全局配置开始
         provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
-        flat_config['dns'] = provider_config.get("name")
+        flat_config["dns"] = provider_config.get("name")
         flat_config.update(provider_flat)
         result.append(flat_config)
     return result
@@ -72,7 +72,7 @@ def load_config(config_path):
         Exception: 当配置文件加载失败时抛出异常
     """
     try:
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # 移除注释后尝试JSON解析
@@ -131,7 +131,7 @@ def save_config(config_path, config):
         "ipv6": config.get("ipv6", []),
         "index6": config.get("index6", []),
         "ttl": config.get("ttl", 600),
-        "line": config.get("line", None),
+        "line": config.get("line"),
         "proxy": config.get("proxy", []),
         "cache": config.get("cache", True),
         "ssl": config.get("ssl", "auto"),
@@ -143,7 +143,7 @@ def save_config(config_path, config):
         },
     }
     try:
-        with open(config_path, "w") as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             content = json_encode(config, indent=2, ensure_ascii=False)
             # Python 2 兼容性：检查是否需要解码
             if hasattr(content, "decode"):
@@ -153,4 +153,3 @@ def save_config(config_path, config):
     except Exception:
         stderr.write("Cannot open config file to write: `%s`!\n" % config_path)
         raise
-

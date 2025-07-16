@@ -130,15 +130,16 @@ Copyright (c) NewFuture (MIT License)
     all_json_configs = _load_json_configs(config_paths)
 
     # 为每个JSON配置创建Config对象
-    configs = [Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
-               for json_config in all_json_configs]
+    configs = [
+        Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
+        for json_config in all_json_configs
+    ]
 
     # 设置日志
     logger = _setup_logging(cli_config, env_config, all_json_configs)
 
     # 处理无配置情况 - inline _handle_no_config logic
-    if (len(cli_config) <= 1 and len(all_json_configs) == 1 and
-        len(all_json_configs[0]) == 0 and len(env_config) == 0):
+    if len(cli_config) <= 1 and len(all_json_configs) == 1 and not all_json_configs[0] and not env_config:
         # 没有配置时生成默认配置文件
         logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
         logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
@@ -167,4 +168,3 @@ __all__ = [
     "load_configs",
     "Config",
 ]
-

@@ -1,4 +1,5 @@
 # coding=utf-8
+# type: ignore[index,operator,assignment]
 """
 Unit tests for ddns.config.file module
 @author: GitHub Copilot
@@ -567,36 +568,29 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(loaded_config["metadata_author"], "test")
         self.assertTrue(loaded_config["metadata_enabled"])
 
-
-
-
-
     def test_load_config_v41_providers_format(self):
         """Test loading configuration with v4.1 providers format"""
         config_data = {
             "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "ssl": "auto",
             "cache": True,
-            "log": {
-                "level": "INFO",
-                "file": "/var/log/ddns.log"
-            },
+            "log": {"level": "INFO", "file": "/var/log/ddns.log"},
             "providers": [
                 {
                     "name": "cloudflare",
                     "id": "user1@example.com",
                     "token": "token1",
                     "ipv4": ["test1.example.com"],
-                    "ttl": 300
+                    "ttl": 300,
                 },
                 {
                     "name": "dnspod",
                     "id": "user2@example.com",
                     "token": "token2",
                     "ipv4": ["test2.example.com"],
-                    "ttl": 600
-                }
-            ]
+                    "ttl": 600,
+                },
+            ],
         }
 
         config_file = self.create_test_file("v41_providers.json", config_data)
@@ -644,12 +638,7 @@ class TestConfigFile(unittest.TestCase):
         try:
             config_data = {
                 "dns": "cloudflare",  # Should conflict with providers
-                "providers": [
-                    {
-                        "name": "dnspod",
-                        "token": "test_token"
-                    }
-                ]
+                "providers": [{"name": "dnspod", "token": "test_token"}],
             }
 
             config_file = self.create_test_file("conflict.json", config_data)
@@ -677,7 +666,7 @@ class TestConfigFile(unittest.TestCase):
                 "providers": [
                     {
                         "id": "test@example.com",
-                        "token": "test_token"
+                        "token": "test_token",
                         # Missing "name" field
                     }
                 ]
@@ -700,13 +689,7 @@ class TestConfigFile(unittest.TestCase):
         """Test loading configuration with single provider in v4.1 format"""
         config_data = {
             "ssl": False,
-            "providers": [
-                {
-                    "name": "debug",
-                    "token": "dummy_token",
-                    "ipv4": ["test.example.com"]
-                }
-            ]
+            "providers": [{"name": "debug", "token": "dummy_token", "ipv4": ["test.example.com"]}],
         }
 
         config_file = self.create_test_file("single_provider.json", config_data)
@@ -727,15 +710,8 @@ class TestConfigFile(unittest.TestCase):
         config_data = {
             "cache": True,
             "providers": [
-                {
-                    "name": "cloudflare",
-                    "token": "test_token",
-                    "custom": {
-                        "setting1": "value1",
-                        "setting2": "value2"
-                    }
-                }
-            ]
+                {"name": "cloudflare", "token": "test_token", "custom": {"setting1": "value1", "setting2": "value2"}}
+            ],
         }
 
         config_file = self.create_test_file("providers_nested.json", config_data)
