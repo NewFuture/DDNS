@@ -216,7 +216,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     except ssl.SSLError:
         if verify_ssl == "auto":
             logger.warning("SSL verification failed, switching to unverified connection %s", url)
-            return send_http_request(method, original_url, body, headers, proxy, False)
+            return send_http_request(method, url, body, headers, proxy, False)
         else:
             raise
 
