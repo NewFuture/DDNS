@@ -25,8 +25,11 @@ def str_bool(v):
     if v is None:
         return False
     if not isinstance(v, str):
-        # For non-string types, convert to string first
-        return bool(v)
+        if isinstance(v, bytes):
+            v = v.decode("utf-8")
+        else:
+            # For non-string types, convert to string first
+            return bool(v)
     if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
     elif v.lower() in ("no", "false", "f", "n", "0"):

@@ -66,7 +66,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             sys.argv = ["ddns", "-c", single_file, "-c", providers_file]
 
             # Load all configs
-            all_configs = load_configs("test", "1.0.0", "2025-01-01")
+            all_configs = load_configs("test", "1.0.0", "2025-07-17")
 
             # Should have 3 total configs: 1 single + 2 from providers
             self.assertEqual(len(all_configs), 3)
@@ -131,10 +131,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(config.dns, "cloudflare")
             self.assertEqual(config.id, "old@example.com")
             self.assertEqual(config.token, "old_token")
-            # Handle Python 2.7 compatibility
-            ssl_value = config.ssl
-            # In Python 2.7, this might be True instead of "auto" due to unicode handling
-            self.assertEqual(str(ssl_value), "auto")
+            self.assertEqual(str(config.ssl), "auto")
 
         finally:
             sys.argv = original_argv
