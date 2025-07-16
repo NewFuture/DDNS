@@ -10,7 +10,7 @@ from sys import stderr, stdout
 from ..util.comment import remove_comment
 
 
-def _process_multi_providers_format(config):
+def _process_multi_providers(config):
     # type: (dict) -> list[dict]
     """Process v4.1 providers format and return list of configs."""
     result = []
@@ -26,15 +26,13 @@ def _process_multi_providers_format(config):
     # 为每个provider创建独立配置
     for provider_config in config["providers"]:
         # 验证provider必须有name字段
-        if "name" not in provider_config:
+        if not provider_config.get("name"):
             stderr.write("Error: Each provider must have a 'name' field!\n")
             raise ValueError("provider missing name field")
 
         flat_config = global_config.copy()  # 从全局配置开始
-
-        # 直接设置dns字段为provider的name
-        flat_config["dns"] = provider_config.get("name")
-        provider_flat = _flatten_single_config(flat_config, exclude_keys=["name"])
+        provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
+        flat_config.update(provider_flat, dns=provider_config.get("name"))
         result.append(provider_flat)
     return result
 
@@ -101,7 +99,7 @@ def load_config(config_path):
 
     # 处理配置格式：v4.1 providers格式或单个对象
     if "providers" in config and isinstance(config["providers"], list):
-        return _process_multi_providers_format(config)
+        return _process_multi_providers(config)
     else:
         return _flatten_single_config(config)
 
