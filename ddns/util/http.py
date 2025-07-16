@@ -14,14 +14,14 @@ import os
 
 try:  # python 3
     from urllib.request import Request, HTTPSHandler, ProxyHandler, build_opener, OpenerDirector  # noqa: F401
+    from urllib.request import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
     from urllib.parse import quote, urlencode, urlparse
     from urllib.error import HTTPError, URLError
-    import base64
 except ImportError:  # python 2
     from urllib2 import Request, HTTPSHandler, ProxyHandler, build_opener, HTTPError, URLError  # type: ignore[no-redef]
+    from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler  # type: ignore[no-redef]
     from urllib import urlencode, quote  # type: ignore[no-redef]
     from urlparse import urlparse  # type: ignore[no-redef]
-    import base64
 
 __all__ = [
     "send_http_request",
@@ -127,13 +127,16 @@ def _load_system_ca_certs(ssl_context):
                 logger.info("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
-def _create_opener(proxy, verify_ssl):
-    # type: (str | None, bool | str) -> OpenerDirector
+def _create_opener(proxy, verify_ssl, auth_handler=None):
+    # type: (str | None, bool | str, HTTPBasicAuthHandler | None) -> OpenerDirector
     """创建URL打开器，支持代理和SSL配置"""
     handlers = []
 
     if proxy:
         handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
+
+    if auth_handler:
+        handlers.append(auth_handler)
 
     ssl_context = _create_ssl_context(verify_ssl)
     if ssl_context:
@@ -162,10 +165,14 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
     """
+    # 保存原始URL用于可能的递归调用
+    original_url = url
+
     # 解析URL以检查是否包含嵌入式认证信息
     parsed_url = urlparse(url)
-    
-    # 如果URL包含认证信息，提取并转换为Authorization头
+    auth_handler = None
+
+    # 如果URL包含认证信息，使用urllib的内置认证机制
     if parsed_url.username and parsed_url.password:
         # 构建不包含认证信息的URL
         clean_netloc = parsed_url.hostname
@@ -178,19 +185,12 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
             clean_url += "?" + parsed_url.query
         if parsed_url.fragment:
             clean_url += "#" + parsed_url.fragment
-        
-        # 创建Authorization头
-        auth_string = "{0}:{1}".format(parsed_url.username, parsed_url.password)
-        auth_bytes = auth_string.encode("utf-8")
-        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
-        
-        # 添加Authorization头到headers
-        if headers is None:
-            headers = {}
-        else:
-            headers = dict(headers)  # 创建副本以避免修改原始字典
-        headers["Authorization"] = "Basic {0}".format(auth_b64)
-        
+
+        # 使用urllib的内置认证机制
+        password_mgr = HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, clean_url, parsed_url.username, parsed_url.password)
+        auth_handler = HTTPBasicAuthHandler(password_mgr)
+
         url = clean_url
 
     # 准备请求
@@ -205,7 +205,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
             req.add_header(key, value)
 
     # 创建opener并发送请求
-    opener = _create_opener(proxy, verify_ssl)
+    opener = _create_opener(proxy, verify_ssl, auth_handler)
 
     try:
         response = opener.open(req)
@@ -223,7 +223,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     except ssl.SSLError:
         if verify_ssl == "auto":
             logger.warning("SSL verification failed, switching to unverified connection %s", url)
-            return send_http_request(method, url, body, headers, proxy, False)
+            return send_http_request(method, original_url, body, headers, proxy, False)
         else:
             raise
 

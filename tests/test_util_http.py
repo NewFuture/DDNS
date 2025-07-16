@@ -306,37 +306,36 @@ class TestSendHttpRequest(unittest.TestCase):
     def test_basic_auth_with_httpbin(self):
         """Test basic auth URL format and verification with URL-embedded authentication"""
         from ddns.util.http import send_http_request
-        
+        from urllib.error import URLError
+
         # Test URL encoding functionality with special characters
         special_username = "user@test.com"
         special_password = "pass/wo.rd"
         username_encoded = quote(special_username, safe="")
         password_encoded = quote(special_password, safe="")
-        
+
         # Verify URL encoding of special characters
         self.assertEqual(username_encoded, "user%40test.com")
         self.assertEqual(password_encoded, "pass%2Fwo.rd")
-        
-        # For actual HTTP test, use simple credentials that httpbin can handle
-        test_username = "testuser"
-        test_password = "testpass"
-        
-        # Test URL-embedded auth (send_http_request with urllib should handle it)
+
+        # Test with simple credentials that httpbin can definitely handle
+        simple_username = "testuser"
+        simple_password = "testpass"
         auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            test_username, test_password, test_username, test_password
+            simple_username, simple_password, simple_username, simple_password
         )
-        
+
         # Try to make actual request (only catch send_http_request specific exceptions)
         try:
             response = send_http_request("GET", auth_url)
-            # Verify successful response if we get here
-            self.assertEqual(response.status, 200)
-            self.assertIn("authenticated", response.body)
-            self.assertIn("user", response.body)
         except (URLError, OSError, IOError) as e:
             # Only skip for Network Exceptions (timeout, connection, etc.)
-            import unittest
             raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
+
+        # Verify successful response if we get here
+        self.assertEqual(response.status, 200)
+        self.assertIn("authenticated", response.body)
+        self.assertIn("user", response.body)
 
 
 if __name__ == "__main__":
