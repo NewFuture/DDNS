@@ -129,14 +129,17 @@ Copyright (c) NewFuture (MIT License)
     else:
         logger.debug("No config file specified, using CLI and environment variables only.")
 
+    # 仅在没有配置文件且开启debug时自动设置debug provider
+    if not config_paths and cli_config.get("debug"):
+        for conf in configs:
+            if not conf.dns:
+                conf.dns = "debug"
+
     # 验证每个配置都有DNS provider
     for i, conf in enumerate(configs):
         if not conf.dns:
-            if not config_paths and cli_config.get("debug"):
-                conf.dns = "debug"
-            else:
-                logger.critical("No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1)
-                sys.exit(2)
+            logger.critical("No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1)
+            sys.exit(2)
 
     return configs
 

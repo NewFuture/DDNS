@@ -117,18 +117,19 @@ def main():
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）
         config = configs[0]
-        # 设置日志级别
-        logger.setLevel(config.log_level)
         success = run(config)
         if not success:
             sys.exit(1)
     else:
         # 多个配置，使用新的批处理逻辑
-        # 设置日志级别
-        logger.setLevel(configs[0].log_level)
         overall_success = True
         for i, config in enumerate(configs):
+            # 如果log_level有值则设置setLevel
+            if hasattr(config, 'log_level') and config.log_level:
+                logger.setLevel(config.log_level)
             logger.info("Running configuration %d/%d", i + 1, len(configs))
+            # 记录当前provider
+            logger.info("Using DNS provider: %s", config.dns)
             success = run(config)
             if not success:
                 overall_success = False
