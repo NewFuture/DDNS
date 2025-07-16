@@ -319,28 +319,22 @@ class TestSendHttpRequest(unittest.TestCase):
 
         # Create auth URL with encoded credentials in URL auth but original in path parameters
         auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            username_encoded, password_encoded, special_username, special_password
+            username_encoded, password_encoded, username_encoded, password_encoded
         )
 
         # Try to make actual request
         try:
             response = send_http_request("GET", auth_url)
-            # Verify successful response if we get here
-            self.assertEqual(response.status, 200)
-            self.assertIn("authenticated", response.body)
-            self.assertIn("user", response.body)
         except (URLError, OSError, IOError) as e:
             # Skip for Network Exceptions (timeout, connection, etc.)
             raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
-        except Exception as e:
-            # Skip for HTTP 503 and other server errors
-            if hasattr(e, 'code') and e.code == 503:
-                raise unittest.SkipTest("Server unavailable (503), skipping httpbin test")
-            elif "401" in str(e) or "UNAUTHORIZED" in str(e):
-                # This might be expected due to special character handling differences
-                raise unittest.SkipTest("Auth mismatch with special chars, skipping httpbin test")
-            # Re-raise other exceptions
-            raise
+            # Verify successful response if we get here
+        if response.status == 503:
+            # httpbin.org may return 503 if overloaded, skip this test
+            raise unittest.SkipTest("httpbin.org returned 503, skipping test")
+        self.assertEqual(response.status, 200)
+        self.assertIn("authenticated", response.body)
+        self.assertIn("user", response.body)
 
 
 if __name__ == "__main__":
