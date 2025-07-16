@@ -14,11 +14,14 @@ import os
 
 try:  # python 3
     from urllib.request import Request, HTTPSHandler, ProxyHandler, build_opener, OpenerDirector  # noqa: F401
-    from urllib.parse import quote, urlencode
+    from urllib.parse import quote, urlencode, urlparse
     from urllib.error import HTTPError, URLError
+    import base64
 except ImportError:  # python 2
     from urllib2 import Request, HTTPSHandler, ProxyHandler, build_opener, HTTPError, URLError  # type: ignore[no-redef]
     from urllib import urlencode, quote  # type: ignore[no-redef]
+    from urlparse import urlparse  # type: ignore[no-redef]
+    import base64
 
 __all__ = [
     "send_http_request",
@@ -159,6 +162,37 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
     """
+    # 解析URL以检查是否包含嵌入式认证信息
+    parsed_url = urlparse(url)
+    
+    # 如果URL包含认证信息，提取并转换为Authorization头
+    if parsed_url.username and parsed_url.password:
+        # 构建不包含认证信息的URL
+        clean_netloc = parsed_url.hostname
+        if parsed_url.port:
+            clean_netloc += ":" + str(parsed_url.port)
+        clean_url = "{0}://{1}{2}".format(parsed_url.scheme, clean_netloc, parsed_url.path)
+        if parsed_url.params:
+            clean_url += ";" + parsed_url.params
+        if parsed_url.query:
+            clean_url += "?" + parsed_url.query
+        if parsed_url.fragment:
+            clean_url += "#" + parsed_url.fragment
+        
+        # 创建Authorization头
+        auth_string = "{0}:{1}".format(parsed_url.username, parsed_url.password)
+        auth_bytes = auth_string.encode("utf-8")
+        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
+        
+        # 添加Authorization头到headers
+        if headers is None:
+            headers = {}
+        else:
+            headers = dict(headers)  # 创建副本以避免修改原始字典
+        headers["Authorization"] = "Basic {0}".format(auth_b64)
+        
+        url = clean_url
+
     # 准备请求
     if isinstance(body, str):
         body = body.encode("utf-8")

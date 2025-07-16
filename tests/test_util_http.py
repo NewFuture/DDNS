@@ -304,64 +304,39 @@ class TestSendHttpRequest(unittest.TestCase):
             )
 
     def test_basic_auth_with_httpbin(self):
-        """Test basic auth URL format and verification through manual auth headers"""
+        """Test basic auth URL format and verification with URL-embedded authentication"""
         from ddns.util.http import send_http_request
-        import base64
-
-        # Use simple credentials for httpbin testing
-        # Username and password for validation should be the same with basic auth
-        username = "testuser"
-        password = "testpass"
-
-        # Test URL encoding functionality
-        username_encoded = quote(username, safe="")
-        password_encoded = quote(password, safe="")
-
-        # Build basic auth URL for format validation
-        auth_url_format = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            username_encoded, password_encoded, username_encoded, password_encoded
-        )
-
-        # Verify URL format
-        expected_url = "https://testuser:testpass@httpbin.org/basic-auth/testuser/testpass"
-        self.assertEqual(auth_url_format, expected_url)
-
-        # Test special character encoding
+        
+        # Test URL encoding functionality with special characters
         special_username = "user@test.com"
-        special_password = "pass.123"
-        special_encoded_user = quote(special_username, safe="")
-        special_encoded_pass = quote(special_password, safe="")
-        self.assertEqual(special_encoded_user, "user%40test.com")
-        self.assertEqual(special_encoded_pass, "pass.123")
-
-        # Since send_http_request doesn't handle embedded auth URLs,
-        # test with manual Authorization header instead
-        auth_string = "{0}:{1}".format(username, password)
-        auth_bytes = auth_string.encode("utf-8")
-        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
-        headers = {"Authorization": "Basic {0}".format(auth_b64)}
-
-        # Try to make actual request (only catch network exceptions)
+        special_password = "pass/wo.rd"
+        username_encoded = quote(special_username, safe="")
+        password_encoded = quote(special_password, safe="")
+        
+        # Verify URL encoding of special characters
+        self.assertEqual(username_encoded, "user%40test.com")
+        self.assertEqual(password_encoded, "pass%2Fwo.rd")
+        
+        # For actual HTTP test, use simple credentials that httpbin can handle
+        test_username = "testuser"
+        test_password = "testpass"
+        
+        # Test URL-embedded auth (send_http_request with urllib should handle it)
+        auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
+            test_username, test_password, test_username, test_password
+        )
+        
+        # Try to make actual request (only catch send_http_request specific exceptions)
         try:
-            response = send_http_request(
-                "GET", 
-                "https://httpbin.org/basic-auth/{0}/{1}".format(username, password), 
-                headers=headers
-            )
-        except Exception as e:
-            # Only skip for Network Exceptions (such as timeout)
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['timeout', 'network', 'connection', 'resolve', 'unreachable']):
-                # Skip network-related exceptions
-                return
-            else:
-                # Re-raise all other exceptions (including authorization)
-                raise e
-
-        # Verify successful response if we get here
-        self.assertEqual(response.status, 200)
-        self.assertIn("authenticated", response.body)
-        self.assertIn("user", response.body)
+            response = send_http_request("GET", auth_url)
+            # Verify successful response if we get here
+            self.assertEqual(response.status, 200)
+            self.assertIn("authenticated", response.body)
+            self.assertIn("user", response.body)
+        except (URLError, OSError, IOError) as e:
+            # Only skip for Network Exceptions (timeout, connection, etc.)
+            import unittest
+            raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
 
 
 if __name__ == "__main__":
