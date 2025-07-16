@@ -236,9 +236,9 @@ class TestConfigInit(unittest.TestCase):
 
             result = load_configs(self.test_description, self.test_version, self.test_date)[0]
 
-            # Should create both main config and global config 
+            # Should create both main config and global config
             self.assertEqual(mock_config_class.call_count, 2)
-            
+
             # Both calls should use the same parameters when there's only one config file
             expected_calls = [
                 call(cli_config=cli_config, json_config=json_config, env_config=env_config),

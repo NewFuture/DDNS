@@ -591,7 +591,7 @@ class TestConfigFile(unittest.TestCase):
                 },
                 {
                     "name": "dnspod",
-                    "id": "user2@example.com", 
+                    "id": "user2@example.com",
                     "token": "token2",
                     "ipv4": ["test2.example.com"],
                     "ttl": 600
@@ -613,7 +613,7 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(config1["token"], "token1")
         self.assertEqual(config1["ipv4"], ["test1.example.com"])
         self.assertEqual(config1["ttl"], 300)
-        
+
         # Test global configs are inherited
         self.assertEqual(config1["ssl"], "auto")
         self.assertTrue(config1["cache"])
@@ -627,7 +627,7 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(config2["token"], "token2")
         self.assertEqual(config2["ipv4"], ["test2.example.com"])
         self.assertEqual(config2["ttl"], 600)
-        
+
         # Test global configs are inherited in second config too
         self.assertEqual(config2["ssl"], "auto")
         self.assertTrue(config2["cache"])
@@ -637,7 +637,7 @@ class TestConfigFile(unittest.TestCase):
     def test_load_config_v41_providers_conflict_with_dns(self):
         """Test loading configuration where providers and dns fields conflict"""
         import ddns.config.file
-        
+
         original_stderr = ddns.config.file.stderr
         ddns.config.file.stderr = self.stderr_capture
 
@@ -653,12 +653,12 @@ class TestConfigFile(unittest.TestCase):
             }
 
             config_file = self.create_test_file("conflict.json", config_data)
-            
+
             with self.assertRaises(ValueError) as context:
                 load_config(config_file)
-            
+
             self.assertIn("providers and dns fields conflict", str(context.exception))
-            
+
             # Verify error message in stderr
             stderr_output = self.stderr_capture.getvalue()
             self.assertIn("'providers' and 'dns' fields cannot be used simultaneously", stderr_output)
@@ -668,7 +668,7 @@ class TestConfigFile(unittest.TestCase):
     def test_load_config_v41_providers_missing_name(self):
         """Test loading configuration where provider is missing name field"""
         import ddns.config.file
-        
+
         original_stderr = ddns.config.file.stderr
         ddns.config.file.stderr = self.stderr_capture
 
@@ -684,12 +684,12 @@ class TestConfigFile(unittest.TestCase):
             }
 
             config_file = self.create_test_file("missing_name.json", config_data)
-            
+
             with self.assertRaises(ValueError) as context:
                 load_config(config_file)
-            
+
             self.assertIn("provider missing name field", str(context.exception))
-            
+
             # Verify error message in stderr
             stderr_output = self.stderr_capture.getvalue()
             self.assertIn("Each provider must have a 'name' field", stderr_output)
@@ -748,7 +748,7 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(config["dns"], "cloudflare")
         self.assertEqual(config["token"], "test_token")
         self.assertTrue(config["cache"])
-        
+
         # Test nested objects in provider config are flattened
         self.assertEqual(config["custom_setting1"], "value1")
         self.assertEqual(config["custom_setting2"], "value2")

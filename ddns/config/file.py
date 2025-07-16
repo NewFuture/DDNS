@@ -34,7 +34,7 @@ def _process_multi_providers(config):
         provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
         flat_config['dns'] = provider_config.get("name")
         flat_config.update(provider_flat)
-        result.append(provider_flat)
+        result.append(flat_config)
     return result
 
 

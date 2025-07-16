@@ -406,7 +406,7 @@ class TestCliConfig(unittest.TestCase):
             "ddns",
             "--config",
             "/path/to/config1.json",
-            "--config", 
+            "--config",
             "/path/to/config2.json",
         ]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
