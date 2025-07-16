@@ -4,8 +4,7 @@ No-IP (noip.com) Dynamic DNS API
 @author: GitHub Copilot
 """
 
-import base64
-from ._base import SimpleProvider, TYPE_FORM
+from ._base import SimpleProvider, TYPE_FORM, quote
 
 
 class NoipProvider(SimpleProvider):
@@ -24,12 +23,22 @@ class NoipProvider(SimpleProvider):
 
     def _validate(self):
         """
-        Validate authentication credentials for No-IP
+        Validate authentication credentials for No-IP and update endpoint with auth
         """
+        # Check endpoint first
+        if not self.endpoint or "://" not in self.endpoint:
+            raise ValueError("API endpoint must be defined and contain protocol")
+
         if not self.id:
             raise ValueError("No-IP requires username as 'id'")
         if not self.token:
             raise ValueError("No-IP requires password as 'token'")
+
+        # Update endpoint with URL-encoded auth credentials
+        protocol, domain = self.endpoint.split("://", 1)
+        self.endpoint = "{0}://{1}:{2}@{3}".format(
+            protocol, quote(self.id, safe=""), quote(self.token, safe=""), domain
+        )
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """
@@ -59,21 +68,10 @@ class NoipProvider(SimpleProvider):
         # Prepare request parameters
         params = {"hostname": domain, "myip": value}
 
-        # Prepare HTTP Basic Authentication headers
-        auth_string = "{0}:{1}".format(self.id, self.token)
-        if not isinstance(auth_string, bytes):  # Python 3
-            auth_bytes = auth_string.encode("utf-8")
-        else:  # Python 2
-            auth_bytes = auth_string
-
-        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
-        headers = {
-            "Authorization": "Basic {0}".format(auth_b64),
-        }
-
         try:
             # Use GET request as it's the most common method for DDNS
-            response = self._http("GET", "/nic/update", queries=params, headers=headers)
+            # Endpoint already includes auth credentials from _validate()
+            response = self._http("GET", "/nic/update", queries=params)
 
             if response is not None:
                 response_str = str(response).strip()

@@ -89,7 +89,7 @@ You can view and configure permissions in the [RAM Console](https://ram.console.
 
 Alibaba Cloud DNS supports multiple regional endpoints, you can choose the optimal node based on region and network environment:
 
-#### China Mainland Nodes
+#### China Mainland Endpoints
 
 - **Default (Recommended)**: `https://alidns.aliyuncs.com`
 - **East China 1 (Hangzhou)**: `https://alidns.cn-hangzhou.aliyuncs.com`
@@ -100,7 +100,7 @@ Alibaba Cloud DNS supports multiple regional endpoints, you can choose the optim
 - **South China 1 (Shenzhen)**: `https://alidns.cn-shenzhen.aliyuncs.com`
 - **Southwest 1 (Chengdu)**: `https://alidns.cn-chengdu.aliyuncs.com`
 
-#### Interna Nodes
+#### International Endpoints
 
 - **Asia Pacific Southeast 1 (Singapore)**: `https://alidns.ap-southeast-1.aliyuncs.com`
 - **Asia Pacific Southeast 2 (Sydney)**: `https://alidns.ap-southeast-2.aliyuncs.com`

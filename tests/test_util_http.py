@@ -10,6 +10,7 @@ import sys
 from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
+    quote,
 )
 
 # Python 2/3 compatibility
@@ -264,6 +265,76 @@ class TestSendHttpRequest(unittest.TestCase):
 
         except Exception as e:
             self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_basic_auth_with_url_embedding(self):
+        """测试URL嵌入式基本认证格式"""
+
+        # 测试不同场景的URL嵌入认证格式
+        test_cases = [
+            {
+                "username": "user",
+                "password": "pass",
+                "domain": "example.com",
+                "expected": "https://user:pass@example.com",
+            },
+            {
+                "username": "test@email.com",
+                "password": "password!",
+                "domain": "api.service.com",
+                "expected": "https://test%40email.com:password%21@api.service.com",
+            },
+            {
+                "username": "user+tag",
+                "password": "p@ss w0rd",
+                "domain": "subdomain.example.org",
+                "expected": "https://user%2Btag:p%40ss%20w0rd@subdomain.example.org",
+            },
+        ]
+
+        for case in test_cases:
+            username_encoded = quote(case["username"], safe="")
+            password_encoded = quote(case["password"], safe="")
+
+            auth_url = "https://{0}:{1}@{2}".format(username_encoded, password_encoded, case["domain"])
+
+            self.assertEqual(
+                auth_url,
+                case["expected"],
+                "Failed for username={}, password={}".format(case["username"], case["password"]),
+            )
+
+    def test_basic_auth_with_httpbin(self):
+        """Test basic auth URL format and verification with URL-embedded authentication"""
+        from ddns.util.http import send_http_request, URLError
+
+        # Test with special credentials containing @ and . characters
+        special_username = "user@test.com"
+        special_password = "passwo.rd"
+        username_encoded = quote(special_username, safe="")
+        password_encoded = quote(special_password, safe="")
+
+        # Verify URL encoding of special characters
+        self.assertEqual(username_encoded, "user%40test.com")
+        self.assertEqual(password_encoded, "passwo.rd")
+
+        # Create auth URL with encoded credentials in URL auth but original in path parameters
+        auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
+            username_encoded, password_encoded, username_encoded, password_encoded
+        )
+
+        # Try to make actual request
+        try:
+            response = send_http_request("GET", auth_url)
+        except (URLError, OSError, IOError) as e:
+            # Skip for Network Exceptions (timeout, connection, etc.)
+            raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
+            # Verify successful response if we get here
+        if response.status > 500:
+            # httpbin.org may return 500 if overloaded, skip this test
+            raise unittest.SkipTest("httpbin.org returned 500, skipping test")
+        self.assertEqual(response.status, 200)
+        self.assertIn("authenticated", response.body)
+        self.assertIn("user", response.body)
 
 
 if __name__ == "__main__":
