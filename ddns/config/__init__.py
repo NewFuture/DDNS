@@ -33,14 +33,14 @@ def _get_config_paths(config_paths):
             if os.path.exists(p):
                 return [p]
         return []
-    
+
     # 验证所有路径都存在
     for config_path in config_paths:
         if not os.path.exists(config_path):
             sys.stderr.write("Config file `%s` does not exist!\n" % config_path)
             sys.stdout.write("Please check the path or use `--new-config` to create new one.\n")
             sys.exit(1)
-    
+
     return config_paths
 
 
@@ -75,9 +75,9 @@ Copyright (c) NewFuture (MIT License)
 
     # 获取配置文件路径列表
     config_paths = split_array_string(cli_config.get("config", env_config.get("config", [])))
-    
+
     config_paths = _get_config_paths(config_paths)
-    
+
     # 加载所有配置文件
     all_json_configs = []
     if config_paths:
@@ -87,7 +87,7 @@ Copyright (c) NewFuture (MIT License)
                 all_json_configs.extend(json_configs)
             else:
                 all_json_configs.append(json_configs)
-    
+
     # 如果没有找到任何配置文件或JSON配置，创建一个空配置
     if not all_json_configs:
         all_json_configs = [{}]
@@ -111,7 +111,9 @@ Copyright (c) NewFuture (MIT License)
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
-    logging.basicConfig(level=first_conf.log_level, format=log_format, datefmt=first_conf.log_datefmt, filename=first_conf.log_file)
+    logging.basicConfig(
+        level=first_conf.log_level, format=log_format, datefmt=first_conf.log_datefmt, filename=first_conf.log_file
+    )
     logger = logging.getLogger().getChild("config")  # type: logging.Logger
 
     if len(cli_config) <= 1 and len(all_json_configs) == 1 and len(all_json_configs[0]) == 0 and len(env_config) == 0:
@@ -137,7 +139,9 @@ Copyright (c) NewFuture (MIT License)
     # 验证每个配置都有DNS provider
     for i, conf in enumerate(configs):
         if not conf.dns:
-            logger.critical("No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1)
+            logger.critical(
+                "No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1
+            )
             sys.exit(2)
 
     return configs

@@ -55,7 +55,7 @@ def load_config(config_path):
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
-    
+
     # 处理配置格式：对象包含configs数组、或单个对象
     if isinstance(config, dict) and "configs" in config and isinstance(config["configs"], list):
         # 处理对象包含configs数组的格式（推荐格式）

@@ -110,10 +110,10 @@ def main():
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     logger.name = "ddns"
-    
+
     # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
-    
+
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）
         config = configs[0]
@@ -125,7 +125,7 @@ def main():
         overall_success = True
         for i, config in enumerate(configs):
             # 如果log_level有值则设置setLevel
-            if hasattr(config, 'log_level') and config.log_level:
+            if hasattr(config, "log_level") and config.log_level:
                 logger.setLevel(config.log_level)
             logger.info("Running configuration %d/%d", i + 1, len(configs))
             # 记录当前provider
@@ -136,7 +136,7 @@ def main():
                 logger.error("Configuration %d failed", i + 1)
             else:
                 logger.info("Configuration %d completed successfully", i + 1)
-        
+
         if not overall_success:
             logger.error("Some configurations failed")
             sys.exit(1)
