@@ -10,7 +10,7 @@ from logging import getLogger
 import sys
 
 from .__init__ import __version__, __description__, build_date
-from .config import load_config, Config  # noqa: F401
+from .config import load_configs, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
 from . import ip
 from .cache import Cache
@@ -111,8 +111,7 @@ def main():
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     logger.name = "ddns"
     
-    # 始终使用多配置加载器，它会自动处理单个和多个配置
-    from .config import load_configs
+    # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
     
     if len(configs) == 1:

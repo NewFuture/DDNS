@@ -17,7 +17,7 @@ from .config import Config, split_array_string
 
 
 def _get_config_paths(config_paths):
-    # type: (list[str] | str | None) -> list[str]
+    # type: (list[str] | None) -> list[str]
     """
     获取配置文件路径列表，支持多个配置文件
     """
@@ -34,43 +34,14 @@ def _get_config_paths(config_paths):
                 return [p]
         return []
     
-    # 处理单个路径或路径列表
-    if isinstance(config_paths, str):
-        paths = [config_paths]
-    else:
-        paths = config_paths
-    
     # 验证所有路径都存在
-    result = []
-    for config_path in paths:
+    for config_path in config_paths:
         if not os.path.exists(config_path):
             sys.stderr.write("Config file `%s` does not exist!\n" % config_path)
             sys.stdout.write("Please check the path or use `--new-config` to create new one.\n")
             sys.exit(1)
-        result.append(config_path)
     
-    return result
-
-
-def load_config(description, version, date):
-    # type: (str, str, str) -> Config
-    """
-    Load and merge configuration from CLI, JSON, and environment variables.
-    Returns a single Config object for backward compatibility.
-
-    This function loads configuration from all three sources and returns a
-    Config object that provides easy access to merged configuration values.
-
-    Args:
-        description (str): The program description for the CLI parser.
-        version (str): The program version for the CLI parser.
-        date (str): The program release date for the CLI parser.
-
-    Returns:
-        Config: A Config object with merged configuration from all sources.
-    """
-    configs = load_configs(description, version, date)
-    return configs[0]  # Return first config for backward compatibility
+    return config_paths
 
 
 def load_configs(description, version, date):
@@ -103,16 +74,7 @@ Copyright (c) NewFuture (MIT License)
     env_config = load_env_config()
 
     # 获取配置文件路径列表
-    cli_config_paths = cli_config.get("config", [])
-    env_config_paths = split_array_string(env_config.get("config", []))
-    
-    # 合并CLI和环境变量中的配置文件路径
-    if cli_config_paths:
-        config_paths = cli_config_paths
-    elif env_config_paths:
-        config_paths = env_config_paths
-    else:
-        config_paths = []
+    config_paths = split_array_string(cli_config.get("config", env_config.get("config", [])))
     
     config_paths = _get_config_paths(config_paths)
     
@@ -170,7 +132,7 @@ Copyright (c) NewFuture (MIT License)
     # 验证每个配置都有DNS provider
     for i, conf in enumerate(configs):
         if not conf.dns:
-            if cli_config.get("debug"):
+            if not config_paths and cli_config.get("debug"):
                 conf.dns = "debug"
             else:
                 logger.critical("No DNS provider specified in config %d! Please set `dns` in config or use `--dns` CLI option.", i + 1)
@@ -180,7 +142,6 @@ Copyright (c) NewFuture (MIT License)
 
 
 __all__ = [
-    "load_config",
     "load_configs",
     "Config",
 ]

@@ -11,7 +11,7 @@ import shutil
 import json
 import sys
 import ddns.config
-from ddns.config import load_config, Config
+from ddns.config import load_configs, Config
 from io import StringIO, BytesIO  # For capturing stdout in Python2 and Python3
 
 
@@ -68,12 +68,11 @@ class TestConfigInit(unittest.TestCase):
 
     def test_module_exports(self):
         """Test that module exports are correct"""
-        expected_exports = ["load_config", "load_configs", "Config"]
+        expected_exports = ["load_configs", "Config"]
         self.assertEqual(ddns.config.__all__, expected_exports)
-        self.assertTrue(hasattr(ddns.config, "load_config"))
         self.assertTrue(hasattr(ddns.config, "load_configs"))
         self.assertTrue(hasattr(ddns.config, "Config"))
-        self.assertEqual(ddns.config.load_config, load_config)
+        self.assertEqual(ddns.config.load_configs, load_configs)
         self.assertEqual(ddns.config.Config, Config)
 
     def test_load_config_basic_integration(self):
@@ -86,7 +85,8 @@ class TestConfigInit(unittest.TestCase):
 
         # Test loading with CLI args
         with patch("sys.argv", ["ddns", "--config", config_path, "--id", "test_id"]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertIsInstance(result, Config)
             self.assertEqual(result.dns, "debug")
             self.assertEqual(result.id, "test_id")  # CLI overrides
@@ -135,7 +135,8 @@ class TestConfigInit(unittest.TestCase):
             json.dump(config_content, f)
 
         with patch("sys.argv", ["ddns", "--config", config_path]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertEqual(result.dns, "cloudflare")
             self.assertEqual(result.id, "custom_id")
 
@@ -147,7 +148,8 @@ class TestConfigInit(unittest.TestCase):
 
         with patch.dict(os.environ, {"DDNS_CONFIG": env_config_path}):
             with patch("sys.argv", ["ddns"]):
-                result = load_config(self.test_description, self.test_version, self.test_date)
+                results = load_configs(self.test_description, self.test_version, self.test_date)
+                result = results[0]
                 self.assertEqual(result.dns, "alidns")
                 self.assertEqual(result.id, "env_id")
 
@@ -175,7 +177,7 @@ class TestConfigInit(unittest.TestCase):
             mock_exists.side_effect = lambda path: path == config_path
             mock_json.return_value = {"id": "{}_id".format(location_type)}
 
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            result = load_configs(self.test_description, self.test_version, self.test_date)[0]
             mock_json.assert_called_with(config_path)
             self.assertEqual(result.id, "{}_id".format(location_type))
 
@@ -183,14 +185,15 @@ class TestConfigInit(unittest.TestCase):
         """Test load_config when config files don't exist"""
         # Test case 1: No config file but provide minimal CLI args
         with patch("sys.argv", ["ddns", "--dns", "debug", "--id", "test", "--token", "test"]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertEqual(result.dns, "debug")
             self.assertEqual(result.id, "test")
 
         # Test case 2: Specified config file doesn't exist should exit
         with patch("sys.argv", ["ddns", "--config", "/nonexistent/config.json", "--dns", "debug"]):
             with self.assertRaises(SystemExit):
-                load_config(self.test_description, self.test_version, self.test_date)
+                load_configs(self.test_description, self.test_version, self.test_date)
 
     def test_load_config_doc_string_format_integration(self):
         """Test that doc string is properly formatted with version and date"""
@@ -201,7 +204,8 @@ class TestConfigInit(unittest.TestCase):
             json.dump(config_content, f)
 
         with patch("sys.argv", ["ddns", "--config", config_path]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertIsInstance(result, Config)
             self.assertEqual(result.dns, "debug")
 
@@ -224,7 +228,7 @@ class TestConfigInit(unittest.TestCase):
             mock_config_instance = MagicMock()
             mock_config_class.return_value = mock_config_instance
 
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            result = load_configs(self.test_description, self.test_version, self.test_date)[0]
 
             mock_config_class.assert_called_once_with(
                 cli_config=cli_config, json_config=json_config, env_config=env_config
@@ -253,7 +257,8 @@ class TestConfigInit(unittest.TestCase):
         mock_env.return_value = {"proxy": ["http://proxy.corp.com:8080"], "line": "default"}
         mock_exists.return_value = True
 
-        result = load_config(self.test_description, self.test_version, self.test_date)
+        results = load_configs(self.test_description, self.test_version, self.test_date)
+        result = results[0]
 
         self.assertIsInstance(result, Config)
         # CLI overrides
@@ -278,12 +283,14 @@ class TestConfigInit(unittest.TestCase):
             json.dump(config_content, f)
 
         with patch("sys.argv", ["ddns", "--config", config_path]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertIsInstance(result, Config)
 
         # Test case 2: Empty string parameters but provide CLI DNS - no config files exist
         with patch("sys.argv", ["ddns", "--dns", "debug", "--id", "test", "--token", "test"]):
-            result = load_config("", "", "")
+            results = load_configs("", "", "")
+            result = results[0]
             self.assertIsInstance(result, Config)
 
         # Test case 3: Empty configurations should cause exit (edge case)
@@ -291,7 +298,7 @@ class TestConfigInit(unittest.TestCase):
         with patch("ddns.config.load_env_config", return_value={}):  # Empty env config
             with patch("sys.argv", ["ddns"]):  # No arguments at all
                 with self.assertRaises(SystemExit) as cm:
-                    load_config(self.test_description, self.test_version, self.test_date)
+                    load_configs(self.test_description, self.test_version, self.test_date)
                 self.assertEqual(cm.exception.code, 1)  # Should exit with error code 1
 
     def test_config_file_discovery_integration(self):
@@ -319,7 +326,8 @@ class TestConfigInit(unittest.TestCase):
 
         # Test that it can be auto-discovered when no explicit config is provided
         with patch("sys.argv", ["ddns"]):
-            result = load_config(self.test_description, self.test_version, self.test_date)
+            results = load_configs(self.test_description, self.test_version, self.test_date)
+            result = results[0]
             self.assertEqual(result.dns, "debug")
             self.assertEqual(result.id, "auto@example.com")
             self.assertEqual(result.token, "auto123")
