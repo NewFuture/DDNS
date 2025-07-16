@@ -318,11 +318,13 @@ class TestSendHttpRequest(unittest.TestCase):
         self.assertEqual(username_encoded, "user%40test.com")
         self.assertEqual(password_encoded, "pass%2Fwo.rd")
 
-        # Test with simple credentials that httpbin can definitely handle
-        simple_username = "testuser"
-        simple_password = "testpass"
+        # Test with special credentials for real test
+        special_username = "user@test.com"
+        special_password = "passwo.rd"
+        username_encoded = quote(special_username, safe="")
+        password_encoded = quote(special_password, safe="")
         auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            simple_username, simple_password, simple_username, simple_password
+            username_encoded, password_encoded, special_username, special_password
         )
 
         # Try to make actual request (only catch send_http_request specific exceptions)

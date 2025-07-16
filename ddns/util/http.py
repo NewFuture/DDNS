@@ -165,26 +165,19 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
     """
-    # 保存原始URL用于可能的递归调用
-    original_url = url
-
     # 解析URL以检查是否包含嵌入式认证信息
     parsed_url = urlparse(url)
     auth_handler = None
 
     # 如果URL包含认证信息，使用urllib的内置认证机制
     if parsed_url.username and parsed_url.password:
-        # 构建不包含认证信息的URL
+        # 构建不包含认证信息的URL - 简化逻辑
         clean_netloc = parsed_url.hostname
         if parsed_url.port:
             clean_netloc += ":" + str(parsed_url.port)
         clean_url = "{0}://{1}{2}".format(parsed_url.scheme, clean_netloc, parsed_url.path)
-        if parsed_url.params:
-            clean_url += ";" + parsed_url.params
         if parsed_url.query:
             clean_url += "?" + parsed_url.query
-        if parsed_url.fragment:
-            clean_url += "#" + parsed_url.fragment
 
         # 使用urllib的内置认证机制
         password_mgr = HTTPPasswordMgrWithDefaultRealm()
