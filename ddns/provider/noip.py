@@ -26,22 +26,18 @@ class NoipProvider(SimpleProvider):
         Validate authentication credentials for No-IP and update endpoint with auth
         """
         # Check endpoint first
-        if not self.endpoint:
-            raise ValueError("API endpoint must be defined")
+        if not self.endpoint or "://" not in self.endpoint:
+            raise ValueError("API endpoint must be defined and contain protocol")
         
         if not self.id:
             raise ValueError("No-IP requires username as 'id'")
         if not self.token:
             raise ValueError("No-IP requires password as 'token'")
         
-        # URL encode username and password to handle special characters
-        username_encoded = quote(self.id, safe="")
-        password_encoded = quote(self.token, safe="")
-        
-        # Extract domain from endpoint and update endpoint with auth credentials
+        # Update endpoint with URL-encoded auth credentials
         protocol, domain = self.endpoint.split("://", 1)
         self.endpoint = "{0}://{1}:{2}@{3}".format(
-            protocol, username_encoded, password_encoded, domain
+            protocol, quote(self.id, safe=""), quote(self.token, safe=""), domain
         )
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):

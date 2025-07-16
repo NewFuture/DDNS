@@ -307,9 +307,9 @@ class TestSendHttpRequest(unittest.TestCase):
         """Test basic auth URL format and attempt real request to httpbin.org"""
         from ddns.util.http import send_http_request
         
-        # Test credentials for httpbin
-        username = "testuser"
-        password = "testpass"
+        # Test credentials with special characters for httpbin
+        username = "test@user.com"
+        password = "test/pass.123"
         
         # URL encode credentials (not needed for simple credentials, but good practice)
         username_encoded = quote(username, safe="")
@@ -317,11 +317,11 @@ class TestSendHttpRequest(unittest.TestCase):
         
         # Build basic auth URL
         auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-            username_encoded, password_encoded, username, password
+            username_encoded, password_encoded, "testuser", "testpass"
         )
         
         # Verify URL format first
-        expected_url = "https://testuser:testpass@httpbin.org/basic-auth/testuser/testpass"
+        expected_url = "https://test%40user.com:test%2Fpass.123@httpbin.org/basic-auth/testuser/testpass"
         self.assertEqual(auth_url, expected_url)
         
         # Verify URL format meets RFC standards
@@ -340,11 +340,12 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIn("user", response.body)
             
         except Exception as e:
-            # If network request fails, that's ok - we've validated URL format
-            # This could fail due to network issues, urllib limitations, etc.
+            # Don't skip authorization exceptions - these are important to surface
             error_msg = str(e)
-            self.assertIsInstance(e, Exception)  # Just verify we caught an exception
-            # Log but don't fail the test since URL format validation is the main goal
+            if "authorization" in error_msg.lower() or "auth" in error_msg.lower():
+                raise e
+            # For other network/library issues, validate URL format was correct
+            self.assertIsInstance(e, Exception)
 
 
 if __name__ == "__main__":
