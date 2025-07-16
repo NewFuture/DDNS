@@ -32,7 +32,8 @@ def _process_multi_providers(config):
 
         flat_config = global_config.copy()  # 从全局配置开始
         provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
-        flat_config.update(provider_flat, dns=provider_config.get("name"))
+        flat_config['dns'] = provider_config.get("name")
+        flat_config.update(provider_flat)
         result.append(provider_flat)
     return result
 
