@@ -4,7 +4,6 @@ No-IP (noip.com) Dynamic DNS API
 @author: GitHub Copilot
 """
 
-import base64
 from ._base import SimpleProvider, TYPE_FORM
 
 
@@ -59,21 +58,25 @@ class NoipProvider(SimpleProvider):
         # Prepare request parameters
         params = {"hostname": domain, "myip": value}
 
-        # Prepare HTTP Basic Authentication headers
-        auth_string = "{0}:{1}".format(self.id, self.token)
-        if not isinstance(auth_string, bytes):  # Python 3
-            auth_bytes = auth_string.encode("utf-8")
-        else:  # Python 2
-            auth_bytes = auth_string
-
-        auth_b64 = base64.b64encode(auth_bytes).decode("ascii")
-        headers = {
-            "Authorization": "Basic {0}".format(auth_b64),
-        }
+        # Prepare URL with embedded authentication
+        # URL encode username and password to handle special characters  
+        from ..util.http import quote
+        username_encoded = quote(self.id, safe="")
+        password_encoded = quote(self.token, safe="")
+        
+        # Construct endpoint with embedded credentials
+        auth_endpoint = "https://{0}:{1}@dynupdate.no-ip.com".format(
+            username_encoded, password_encoded
+        )
 
         try:
             # Use GET request as it's the most common method for DDNS
-            response = self._http("GET", "/nic/update", queries=params, headers=headers)
+            # Temporarily change endpoint to include auth credentials
+            original_endpoint = self.endpoint
+            self.endpoint = auth_endpoint
+            response = self._http("GET", "/nic/update", queries=params)
+            # Restore original endpoint
+            self.endpoint = original_endpoint
 
             if response is not None:
                 response_str = str(response).strip()
