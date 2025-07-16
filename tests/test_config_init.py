@@ -1,15 +1,12 @@
 # coding=utf-8
+# type: ignore[index,operator,assignment]
 """
 Unit tests for ddns.config.__init__ module
 @author: GitHub Copilot
 """
 
-from __init__ import unittest, patch, MagicMock
+from __init__ import unittest, patch, MagicMock, call
 
-try:
-    from unittest.mock import call
-except ImportError:  # Python 2
-    from mock import call  # type: ignore
 import os
 import tempfile
 import shutil
@@ -246,7 +243,7 @@ class TestConfigInit(unittest.TestCase):
             # Both calls should use the same parameters when there's only one config file
             expected_calls = [
                 call(cli_config=cli_config, json_config=json_config, env_config=env_config),
-                call(cli_config=cli_config, json_config=json_config, env_config=env_config)
+                call(cli_config=cli_config, json_config=json_config, env_config=env_config),
             ]
             mock_config_class.assert_has_calls(expected_calls, any_order=True)
             self.assertEqual(result, mock_config_instance)

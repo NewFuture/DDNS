@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+# type: ignore[index,operator,assignment]
 """
 Integration test for all config formats including v4.1 providers
 @author: GitHub Copilot
@@ -39,7 +40,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "id": "single@example.com",
             "token": "single_token",
             "ipv4": ["single.example.com"],
-            "ssl": True
+            "ssl": True,
         }
         single_file = self.create_test_file("single.json", single_config)
 
@@ -49,25 +50,15 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "ssl": "auto",
             "cache": True,
             "providers": [
-                {
-                    "name": "debug",
-                    "token": "provider_token1",
-                    "ipv4": ["provider1.example.com"],
-                    "ttl": 300
-                },
-                {
-                    "name": "debug",
-                    "token": "provider_token2",
-                    "ipv4": ["provider2.example.com"],
-                    "ttl": 600
-                }
-            ]
+                {"name": "debug", "token": "provider_token1", "ipv4": ["provider1.example.com"], "ttl": 300},
+                {"name": "debug", "token": "provider_token2", "ipv4": ["provider2.example.com"], "ttl": 600},
+            ],
         }
-        providers_file = self.create_test_file("providers.json",
-                                               providers_config)
+        providers_file = self.create_test_file("providers.json", providers_config)
 
         # Mock sys.argv to control CLI parsing
         import sys
+
         original_argv = sys.argv
 
         try:
@@ -90,8 +81,8 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(all_configs[1].token, "provider_token1")
             self.assertEqual(all_configs[1].ipv4, ["provider1.example.com"])
             self.assertEqual(all_configs[1].ttl, 300)
-            # Inherited from global
-            self.assertEqual(all_configs[1].ssl, "auto")
+            # Inherited from global - handle Python 2.7 unicode strings
+            self.assertEqual(str(all_configs[1].ssl), "auto")
             # Inherited from global
             self.assertEqual(all_configs[1].cache, True)
 
@@ -100,8 +91,8 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(all_configs[2].token, "provider_token2")
             self.assertEqual(all_configs[2].ipv4, ["provider2.example.com"])
             self.assertEqual(all_configs[2].ttl, 600)
-            # Inherited from global
-            self.assertEqual(all_configs[2].ssl, "auto")
+            # Inherited from global - handle Python 2.7 unicode strings
+            self.assertEqual(str(all_configs[2].ssl), "auto")
             # Inherited from global
             self.assertEqual(all_configs[2].cache, True)
 
@@ -119,12 +110,13 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "id": "old@example.com",
             "token": "old_token",
             "ipv4": ["old.example.com"],
-            "ssl": "auto"
+            "ssl": "auto",
         }
         old_file = self.create_test_file("old_format.json", old_config)
 
         # Mock sys.argv to control CLI parsing
         import sys
+
         original_argv = sys.argv
 
         try:
@@ -139,7 +131,10 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(config.dns, "cloudflare")
             self.assertEqual(config.id, "old@example.com")
             self.assertEqual(config.token, "old_token")
-            self.assertEqual(config.ssl, "auto")
+            # Handle Python 2.7 compatibility 
+            ssl_value = config.ssl
+            # In Python 2.7, this might be True instead of "auto" due to unicode handling
+            self.assertIn(ssl_value, ["auto", u"auto"])
 
         finally:
             sys.argv = original_argv
@@ -175,10 +170,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "ipv4": ["v40.example.com"],
             "ttl": 300,
             "ssl": True,
-            "log": {
-                "level": "DEBUG",
-                "file": "test.log"
-            }
+            "log": {"level": "DEBUG", "file": "test.log"},
         }
         v40_file = self.create_test_file("v40_config.json", v40_config)
 
@@ -204,10 +196,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "ssl": "auto",
             "ttl": 600,
             "cache": False,
-            "log": {
-                "level": "INFO",
-                "format": "[%(levelname)s] %(message)s"
-            },
+            "log": {"level": "INFO", "format": "[%(levelname)s] %(message)s"},
             "providers": [
                 {
                     "name": "cloudflare",
@@ -215,18 +204,16 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
                     "token": "cf_token",
                     "ipv4": ["cf.example.com"],
                     "ttl": 300,  # Override global ttl
-                    "ssl": True   # Override global ssl
+                    "ssl": True,  # Override global ssl
                 },
                 {
                     "name": "debug",
                     "token": "debug_token",
                     "ipv4": ["debug.example.com"],
                     # Uses global ttl and ssl
-                    "log": {
-                        "level": "DEBUG"  # Override log level
-                    }
-                }
-            ]
+                    "log": {"level": "DEBUG"},  # Override log level
+                },
+            ],
         }
         complex_file = self.create_test_file("complex_v41.json", complex_config)
 
@@ -260,14 +247,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         from ddns.config.file import load_config
 
         # Test providers without name field
-        invalid_config1 = {
-            "providers": [
-                {
-                    "id": "missing_name@example.com",
-                    "token": "token"
-                }
-            ]
-        }
+        invalid_config1 = {"providers": [{"id": "missing_name@example.com", "token": "token"}]}
         invalid_file1 = self.create_test_file("invalid1.json", invalid_config1)
 
         with self.assertRaises(ValueError) as cm:
@@ -275,15 +255,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertIn("provider missing name field", str(cm.exception))
 
         # Test dns and providers conflict
-        invalid_config2 = {
-            "dns": "cloudflare",
-            "providers": [
-                {
-                    "name": "debug",
-                    "token": "token"
-                }
-            ]
-        }
+        invalid_config2 = {"dns": "cloudflare", "providers": [{"name": "debug", "token": "token"}]}
         invalid_file2 = self.create_test_file("invalid2.json", invalid_config2)
 
         with self.assertRaises(ValueError) as cm:
