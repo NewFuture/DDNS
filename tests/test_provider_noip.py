@@ -24,13 +24,15 @@ class TestNoipProvider(BaseProviderTestCase):
         provider = NoipProvider(self.authid, self.token)
         self.assertEqual(provider.id, self.authid)
         self.assertEqual(provider.token, self.token)
-        self.assertEqual(provider.endpoint, "https://dynupdate.no-ip.com")
+        # After validation, endpoint should include authentication
+        self.assertEqual(provider.endpoint, "https://test_username:test_password@dynupdate.no-ip.com")
         self.assertFalse(provider.decode_response)
 
     def test_class_constants(self):
         """Test NoipProvider class constants"""
         provider = NoipProvider(self.authid, self.token)
-        self.assertEqual(provider.endpoint, "https://dynupdate.no-ip.com")
+        # After validation, endpoint should include authentication
+        self.assertEqual(provider.endpoint, "https://test_username:test_password@dynupdate.no-ip.com")
         self.assertFalse(provider.decode_response)
         self.assertIsNone(provider.accept)
         # ContentType should be form-encoded

@@ -23,8 +23,12 @@ class NoipProvider(SimpleProvider):
 
     def _validate(self):
         """
-        Validate authentication credentials for No-IP and set up auth endpoint
+        Validate authentication credentials for No-IP and update endpoint with auth
         """
+        # Check endpoint first
+        if not self.endpoint:
+            raise ValueError("API endpoint must be defined")
+        
         if not self.id:
             raise ValueError("No-IP requires username as 'id'")
         if not self.token:
@@ -34,9 +38,9 @@ class NoipProvider(SimpleProvider):
         username_encoded = quote(self.id, safe="")
         password_encoded = quote(self.token, safe="")
         
-        # Extract domain from endpoint and create auth endpoint
+        # Extract domain from endpoint and update endpoint with auth credentials
         protocol, domain = self.endpoint.split("://", 1)
-        self.auth_endpoint = "{0}://{1}:{2}@{3}".format(
+        self.endpoint = "{0}://{1}:{2}@{3}".format(
             protocol, username_encoded, password_encoded, domain
         )
 
@@ -70,12 +74,8 @@ class NoipProvider(SimpleProvider):
 
         try:
             # Use GET request as it's the most common method for DDNS
-            # Temporarily change endpoint to include auth credentials
-            original_endpoint = self.endpoint
-            self.endpoint = self.auth_endpoint
+            # Endpoint already includes auth credentials from _validate()
             response = self._http("GET", "/nic/update", queries=params)
-            # Restore original endpoint
-            self.endpoint = original_endpoint
 
             if response is not None:
                 response_str = str(response).strip()
