@@ -329,9 +329,9 @@ class TestSendHttpRequest(unittest.TestCase):
             # Skip for Network Exceptions (timeout, connection, etc.)
             raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
             # Verify successful response if we get here
-        if response.status == 503:
-            # httpbin.org may return 503 if overloaded, skip this test
-            raise unittest.SkipTest("httpbin.org returned 503, skipping test")
+        if response.status > 500:
+            # httpbin.org may return 500 if overloaded, skip this test
+            raise unittest.SkipTest("httpbin.org returned 500, skipping test")
         self.assertEqual(response.status, 200)
         self.assertIn("authenticated", response.body)
         self.assertIn("user", response.body)
