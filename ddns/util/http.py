@@ -9,9 +9,9 @@ Provides common HTTP functionality including redirect following support.
 """
 
 from logging import getLogger
+from re import compile
 import ssl
 import os
-import re
 
 try:  # python 3
     from urllib.request import HTTPBasicAuthHandler, BaseHandler, OpenerDirector  # noqa: F401
@@ -33,7 +33,7 @@ __all__ = [
 ]
 
 logger = getLogger().getChild(__name__)
-_AUTH_URL_RE = re.compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
+_AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
 
 
 class HttpResponse(object):

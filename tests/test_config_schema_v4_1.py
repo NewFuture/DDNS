@@ -131,10 +131,10 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(config.dns, "cloudflare")
             self.assertEqual(config.id, "old@example.com")
             self.assertEqual(config.token, "old_token")
-            # Handle Python 2.7 compatibility 
+            # Handle Python 2.7 compatibility
             ssl_value = config.ssl
             # In Python 2.7, this might be True instead of "auto" due to unicode handling
-            self.assertIn(ssl_value, ["auto", u"auto"])
+            self.assertEqual(str(ssl_value), "auto")
 
         finally:
             sys.argv = original_argv
