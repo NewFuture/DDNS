@@ -1,4 +1,5 @@
 # coding=utf-8
+# type: ignore[index,operator,assignment]
 """
 Unit tests for multi-config functionality
 @author: GitHub Copilot
@@ -22,15 +23,12 @@ class TestMultiConfig(unittest.TestCase):
         sys.argv = self.original_argv
         # Clean up temp directory
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_file_loader_single_object(self):
         """Test that file loader works with single object configs"""
-        config_data = {
-            "dns": "cloudflare",
-            "id": "test@example.com",
-            "token": "secret123"
-        }
+        config_data = {"dns": "cloudflare", "id": "test@example.com", "token": "secret123"}
 
         config_path = os.path.join(self.temp_dir, "single_config.json")
         with open(config_path, "w") as f:
@@ -107,4 +105,3 @@ class TestMultiConfig(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
