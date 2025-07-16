@@ -6,6 +6,11 @@ No-IP (noip.com) Dynamic DNS API
 
 from ._base import SimpleProvider, TYPE_FORM
 
+try:
+    from ._base import quote
+except ImportError:
+    from ..util.http import quote
+
 
 class NoipProvider(SimpleProvider):
     """
@@ -59,15 +64,24 @@ class NoipProvider(SimpleProvider):
         params = {"hostname": domain, "myip": value}
 
         # Prepare URL with embedded authentication
-        # URL encode username and password to handle special characters  
-        from ..util.http import quote
+        # URL encode username and password to handle special characters
         username_encoded = quote(self.id, safe="")
         password_encoded = quote(self.token, safe="")
-        
+
         # Construct endpoint with embedded credentials
-        auth_endpoint = "https://{0}:{1}@dynupdate.no-ip.com".format(
-            username_encoded, password_encoded
-        )
+        # Split the original endpoint to get the domain part
+        if "://" in self.endpoint:
+            protocol, domain_path = self.endpoint.split("://", 1)
+            if "/" in domain_path:
+                endpoint_domain = domain_path.split("/", 1)[0]
+            else:
+                endpoint_domain = domain_path
+        else:
+            # Fallback for malformed endpoints
+            endpoint_domain = "dynupdate.no-ip.com"
+            protocol = "https"
+
+        auth_endpoint = "{0}://{1}:{2}@{3}".format(protocol, username_encoded, password_encoded, endpoint_domain)
 
         try:
             # Use GET request as it's the most common method for DDNS

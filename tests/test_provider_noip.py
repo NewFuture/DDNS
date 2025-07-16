@@ -302,18 +302,18 @@ class TestNoipProvider(BaseProviderTestCase):
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = "good 1.2.3.4"
-            
+
             # Capture the original endpoint to verify it gets restored
             original_endpoint = provider.endpoint
-            
+
             provider.set_record("test.com", "1.2.3.4")
 
             # Check that _http was called
             mock_http.assert_called_once()
-            
+
             # Verify that endpoint was restored after the call
             self.assertEqual(provider.endpoint, original_endpoint)
-            
+
             # The actual authentication happens via URL embedding
             # We can't easily test the temporary endpoint change without
             # more complex mocking, but we can verify the method was called

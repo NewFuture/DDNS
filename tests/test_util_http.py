@@ -265,6 +265,65 @@ class TestSendHttpRequest(unittest.TestCase):
         except Exception as e:
             self.skipTest("Network unavailable: {}".format(str(e)))
 
+    def test_basic_auth_with_url_embedding(self):
+        """测试URL嵌入式基本认证格式"""
+        from ddns.util.http import quote
+
+        # 测试不同场景的URL嵌入认证格式
+        test_cases = [
+            {
+                "username": "user",
+                "password": "pass",
+                "domain": "example.com",
+                "expected": "https://user:pass@example.com",
+            },
+            {
+                "username": "test@email.com",
+                "password": "password!",
+                "domain": "api.service.com",
+                "expected": "https://test%40email.com:password%21@api.service.com",
+            },
+            {
+                "username": "user+tag",
+                "password": "p@ss w0rd",
+                "domain": "subdomain.example.org",
+                "expected": "https://user%2Btag:p%40ss%20w0rd@subdomain.example.org",
+            },
+        ]
+
+        for case in test_cases:
+            username_encoded = quote(case["username"], safe="")
+            password_encoded = quote(case["password"], safe="")
+
+            auth_url = "https://{0}:{1}@{2}".format(username_encoded, password_encoded, case["domain"])
+
+            self.assertEqual(
+                auth_url,
+                case["expected"],
+                "Failed for username={}, password={}".format(case["username"], case["password"]),
+            )
+
+    def test_basic_auth_url_format(self):
+        """测试基本认证URL格式的正确性"""
+        from ddns.util.http import quote
+
+        # 测试URL编码是否正确处理特殊字符
+        username = "test@user"
+        password = "pass!word"
+
+        username_encoded = quote(username, safe="")
+        password_encoded = quote(password, safe="")
+
+        # 验证编码结果
+        self.assertEqual(username_encoded, "test%40user")
+        self.assertEqual(password_encoded, "pass%21word")
+
+        # 构建认证URL
+        auth_url = "https://{0}:{1}@example.com".format(username_encoded, password_encoded)
+
+        expected_url = "https://test%40user:pass%21word@example.com"
+        self.assertEqual(auth_url, expected_url)
+
 
 if __name__ == "__main__":
     unittest.main()
