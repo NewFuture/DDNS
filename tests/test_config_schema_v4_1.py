@@ -162,6 +162,134 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertEqual(loaded["dns"], "debug")
         self.assertEqual(loaded["token"], "test")
 
+    def test_v40_to_v41_compatibility(self):
+        """Test v4.0 config is compatible with v4.1 processing"""
+        from ddns.config.file import load_config
+
+        # Create v4.0 schema config
+        v40_config = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+            "dns": "cloudflare",
+            "id": "v40@example.com",
+            "token": "v40_token",
+            "ipv4": ["v40.example.com"],
+            "ttl": 300,
+            "ssl": True,
+            "log": {
+                "level": "DEBUG",
+                "file": "test.log"
+            }
+        }
+        v40_file = self.create_test_file("v40_config.json", v40_config)
+
+        # Load and check it processes correctly
+        loaded = load_config(v40_file)
+        self.assertEqual(loaded["dns"], "cloudflare")
+        self.assertEqual(loaded["id"], "v40@example.com")
+        self.assertEqual(loaded["token"], "v40_token")
+        self.assertEqual(loaded["ipv4"], ["v40.example.com"])
+        self.assertEqual(loaded["ttl"], 300)
+        self.assertEqual(loaded["ssl"], True)
+        # Check flattened log properties
+        self.assertEqual(loaded["log_level"], "DEBUG")
+        self.assertEqual(loaded["log_file"], "test.log")
+
+    def test_v41_providers_complex_inheritance(self):
+        """Test complex inheritance scenarios in v4.1 providers format"""
+        from ddns.config.file import load_config
+
+        # Create complex v4.1 config with nested objects
+        complex_config = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+            "ssl": "auto",
+            "ttl": 600,
+            "cache": False,
+            "log": {
+                "level": "INFO",
+                "format": "[%(levelname)s] %(message)s"
+            },
+            "providers": [
+                {
+                    "name": "cloudflare",
+                    "id": "provider1@example.com",
+                    "token": "cf_token",
+                    "ipv4": ["cf.example.com"],
+                    "ttl": 300,  # Override global ttl
+                    "ssl": True   # Override global ssl
+                },
+                {
+                    "name": "debug",
+                    "token": "debug_token",
+                    "ipv4": ["debug.example.com"],
+                    # Uses global ttl and ssl
+                    "log": {
+                        "level": "DEBUG"  # Override log level
+                    }
+                }
+            ]
+        }
+        complex_file = self.create_test_file("complex_v41.json", complex_config)
+
+        # Load config
+        configs = load_config(complex_file)
+        self.assertEqual(len(configs), 2)
+
+        # Test first provider inheritance and overrides
+        cf_config = configs[0]
+        self.assertEqual(cf_config["dns"], "cloudflare")
+        self.assertEqual(cf_config["id"], "provider1@example.com")
+        self.assertEqual(cf_config["token"], "cf_token")
+        self.assertEqual(cf_config["ttl"], 300)  # Overridden
+        self.assertEqual(cf_config["ssl"], True)  # Overridden
+        self.assertEqual(cf_config["cache"], False)  # Inherited
+        self.assertEqual(cf_config["log_level"], "INFO")  # Inherited
+        self.assertEqual(cf_config["log_format"], "[%(levelname)s] %(message)s")
+
+        # Test second provider inheritance
+        debug_config = configs[1]
+        self.assertEqual(debug_config["dns"], "debug")
+        self.assertEqual(debug_config["token"], "debug_token")
+        self.assertEqual(debug_config["ttl"], 600)  # Inherited
+        self.assertEqual(debug_config["ssl"], "auto")  # Inherited
+        self.assertEqual(debug_config["cache"], False)  # Inherited
+        self.assertEqual(debug_config["log_level"], "DEBUG")  # Overridden
+        self.assertEqual(debug_config["log_format"], "[%(levelname)s] %(message)s")
+
+    def test_v41_providers_error_cases(self):
+        """Test error handling in v4.1 providers format"""
+        from ddns.config.file import load_config
+
+        # Test providers without name field
+        invalid_config1 = {
+            "providers": [
+                {
+                    "id": "missing_name@example.com",
+                    "token": "token"
+                }
+            ]
+        }
+        invalid_file1 = self.create_test_file("invalid1.json", invalid_config1)
+
+        with self.assertRaises(ValueError) as cm:
+            load_config(invalid_file1)
+        self.assertIn("provider missing name field", str(cm.exception))
+
+        # Test dns and providers conflict
+        invalid_config2 = {
+            "dns": "cloudflare",
+            "providers": [
+                {
+                    "name": "debug",
+                    "token": "token"
+                }
+            ]
+        }
+        invalid_file2 = self.create_test_file("invalid2.json", invalid_config2)
+
+        with self.assertRaises(ValueError) as cm:
+            load_config(invalid_file2)
+        self.assertIn("providers and dns fields conflict", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

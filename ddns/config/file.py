@@ -33,15 +33,14 @@ def _process_v41_providers_format(config):
 
         flat_config = global_config.copy()  # 从全局配置开始
 
-        # 使用 _flatten_single_config 处理provider配置
-        provider_flat = _flatten_single_config(provider_config)
+        # 直接设置dns字段为provider的name
+        flat_config["dns"] = provider_config.get("name")
+
+        # 使用 _flatten_single_config 处理provider配置，排除name字段
+        provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
 
         # 将扁平化的provider配置合并到flat_config中
-        for k, v in provider_flat.items():
-            if k == "name":
-                flat_config["dns"] = v  # name字段映射为dns
-            else:
-                flat_config[k] = v
+        flat_config.update(provider_flat)
 
         result.append(flat_config)
     return result
