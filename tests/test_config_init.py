@@ -5,7 +5,11 @@ Unit tests for ddns.config.__init__ module
 """
 
 from __init__ import unittest, patch, MagicMock
-from unittest.mock import call
+
+try:
+    from unittest.mock import call
+except ImportError:  # Python 2
+    from mock import call  # type: ignore
 import os
 import tempfile
 import shutil
