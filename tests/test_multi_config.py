@@ -42,30 +42,6 @@ class TestMultiConfig(unittest.TestCase):
         self.assertEqual(result["id"], "test@example.com")
         self.assertEqual(result["token"], "secret123")
 
-    def test_file_loader_array_config(self):
-        """Test that file loader works with array config format"""
-        config_data = [
-            {
-                "dns": "cloudflare",
-                "id": "test1@example.com",
-                "token": "secret123"
-            },
-            {
-                "dns": "dnspod",
-                "id": "test2@example.com", 
-                "token": "secret456"
-            }
-        ]
-        
-        config_path = os.path.join(self.temp_dir, "array_config.json")
-        with open(config_path, "w") as f:
-            json.dump(config_data, f)
-        
-        result = load_file_config(config_path)
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["dns"], "cloudflare")
-        self.assertEqual(result[1]["dns"], "dnspod")
 
     def test_file_loader_object_with_configs_array(self):
         """Test that file loader works with object containing configs array format (recommended)"""
@@ -156,27 +132,29 @@ class TestMultiConfig(unittest.TestCase):
             elif "DDNS_CONFIG" in os.environ:
                 del os.environ["DDNS_CONFIG"]
 
-    def test_mixed_single_and_array_configs_integration(self):
-        """Test mixing single object configs and array configs using real loading"""
+    def test_mixed_single_and_object_configs_integration(self):
+        """Test mixing single object configs and object configs using real loading"""
         # Single config file
         single_config_data = {"dns": "debug", "id": "test1@example.com", "token": "secret1"}
         
-        # Array config file
-        array_config_data = [
-            {"dns": "debug", "id": "test2@example.com", "token": "secret2"},
-            {"dns": "debug", "id": "test3@example.com", "token": "secret3"}
-        ]
+        # Object configs file (recommended format)
+        object_configs_data = {
+            "configs": [
+                {"dns": "debug", "id": "test2@example.com", "token": "secret2"},
+                {"dns": "debug", "id": "test3@example.com", "token": "secret3"}
+            ]
+        }
         
         single_config_path = os.path.join(self.temp_dir, "single.json")
-        array_config_path = os.path.join(self.temp_dir, "array.json")
+        object_config_path = os.path.join(self.temp_dir, "object_configs.json")
         
         with open(single_config_path, "w") as f:
             json.dump(single_config_data, f)
-        with open(array_config_path, "w") as f:
-            json.dump(array_config_data, f)
+        with open(object_config_path, "w") as f:
+            json.dump(object_configs_data, f)
         
         # Test via CLI arguments
-        sys.argv = ["ddns", "-c", single_config_path, "-c", array_config_path]
+        sys.argv = ["ddns", "-c", single_config_path, "-c", object_config_path]
         
         configs = load_configs("test", "1.0", "2023-01-01")
         
@@ -215,75 +193,40 @@ class TestMultiConfig(unittest.TestCase):
         self.assertEqual(configs[1].id, "test2@example.com")
 
     def test_mixed_all_formats_integration(self):
-        """Test mixing all three config formats together"""
+        """Test mixing single and object configs formats together"""
         # Single config file
         single_config_data = {"dns": "debug", "id": "test1@example.com", "token": "secret1"}
-        
-        # Array config file
-        array_config_data = [
-            {"dns": "debug", "id": "test2@example.com", "token": "secret2"}
-        ]
         
         # Object configs file (recommended format)
         object_configs_data = {
             "configs": [
-                {"dns": "debug", "id": "test3@example.com", "token": "secret3"},
-                {"dns": "debug", "id": "test4@example.com", "token": "secret4"}
+                {"dns": "debug", "id": "test2@example.com", "token": "secret2"},
+                {"dns": "debug", "id": "test3@example.com", "token": "secret3"}
             ]
         }
         
         single_config_path = os.path.join(self.temp_dir, "single.json")
-        array_config_path = os.path.join(self.temp_dir, "array.json")
         object_config_path = os.path.join(self.temp_dir, "object_configs.json")
         
         with open(single_config_path, "w") as f:
             json.dump(single_config_data, f)
-        with open(array_config_path, "w") as f:
-            json.dump(array_config_data, f)
         with open(object_config_path, "w") as f:
             json.dump(object_configs_data, f)
         
         # Test via CLI arguments
-        sys.argv = ["ddns", "-c", single_config_path, "-c", array_config_path, "-c", object_config_path]
+        sys.argv = ["ddns", "-c", single_config_path, "-c", object_config_path]
         
         configs = load_configs("test", "1.0", "2023-01-01")
         
-        self.assertEqual(len(configs), 4)
+        self.assertEqual(len(configs), 3)
         self.assertEqual(configs[0].dns, "debug")
         self.assertEqual(configs[1].dns, "debug")
         self.assertEqual(configs[2].dns, "debug")
-        self.assertEqual(configs[3].dns, "debug")
         self.assertEqual(configs[0].id, "test1@example.com")
         self.assertEqual(configs[1].id, "test2@example.com")
         self.assertEqual(configs[2].id, "test3@example.com")
-        self.assertEqual(configs[3].id, "test4@example.com")
 
-    def test_nested_object_flattening_in_array(self):
-        """Test that nested objects are properly flattened in array configs"""
-        config_data = [
-            {
-                "dns": "cloudflare",
-                "id": "test@example.com",
-                "token": "secret123",
-                "log": {
-                    "level": "DEBUG",
-                    "file": "/tmp/ddns.log"
-                }
-            }
-        ]
-        
-        config_path = os.path.join(self.temp_dir, "nested_array.json")
-        with open(config_path, "w") as f:
-            json.dump(config_data, f)
-        
-        result = load_file_config(config_path)
-        self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 1)
-        
-        config = result[0]
-        self.assertEqual(config["dns"], "cloudflare")
-        self.assertEqual(config["log_level"], "DEBUG")
-        self.assertEqual(config["log_file"], "/tmp/ddns.log")
+
 
     def test_nested_object_flattening_in_object_configs(self):
         """Test that nested objects are properly flattened in object configs format"""

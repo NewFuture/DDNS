@@ -56,21 +56,8 @@ def load_config(config_path):
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
     
-    # 处理配置格式：数组、对象包含configs数组、或单个对象
-    if isinstance(config, list):
-        # 处理数组格式，展平每个配置项（保持向后兼容）
-        result = []
-        for config_item in config:
-            flat_config = {}
-            for k, v in config_item.items():
-                if isinstance(v, dict):
-                    for subk, subv in v.items():
-                        flat_config["{}_{}".format(k, subk)] = subv
-                else:
-                    flat_config[k] = v
-            result.append(flat_config)
-        return result
-    elif isinstance(config, dict) and "configs" in config and isinstance(config["configs"], list):
+    # 处理配置格式：对象包含configs数组、或单个对象
+    if isinstance(config, dict) and "configs" in config and isinstance(config["configs"], list):
         # 处理对象包含configs数组的格式（推荐格式）
         result = []
         for config_item in config["configs"]:

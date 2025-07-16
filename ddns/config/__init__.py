@@ -131,9 +131,8 @@ Copyright (c) NewFuture (MIT License)
 
     # 仅在没有配置文件且开启debug时自动设置debug provider
     if not config_paths and cli_config.get("debug"):
-        for conf in configs:
-            if not conf.dns:
-                conf.dns = "debug"
+        if len(configs) == 1 and not configs[0].dns:
+            configs[0].dns = "debug"
 
     # 验证每个配置都有DNS provider
     for i, conf in enumerate(configs):
