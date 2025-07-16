@@ -11,14 +11,18 @@ Provides common HTTP functionality including redirect following support.
 from logging import getLogger
 import ssl
 import os
+import re
 
 try:  # python 3
-    from urllib.request import Request, HTTPSHandler, ProxyHandler, build_opener, OpenerDirector  # noqa: F401
-    from urllib.parse import quote, urlencode
+    from urllib.request import HTTPBasicAuthHandler, BaseHandler, OpenerDirector  # noqa: F401
+    from urllib.request import HTTPPasswordMgrWithDefaultRealm, Request, HTTPSHandler, ProxyHandler, build_opener
+    from urllib.parse import quote, urlencode, unquote
     from urllib.error import HTTPError, URLError
 except ImportError:  # python 2
     from urllib2 import Request, HTTPSHandler, ProxyHandler, build_opener, HTTPError, URLError  # type: ignore[no-redef]
-    from urllib import urlencode, quote  # type: ignore[no-redef]
+    from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler  # type: ignore[no-redef]
+    from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+
 
 __all__ = [
     "send_http_request",
@@ -29,6 +33,7 @@ __all__ = [
 ]
 
 logger = getLogger().getChild(__name__)
+_AUTH_URL_RE = re.compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
 
 
 class HttpResponse(object):
@@ -124,13 +129,16 @@ def _load_system_ca_certs(ssl_context):
                 logger.info("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
-def _create_opener(proxy, verify_ssl):
-    # type: (str | None, bool | str) -> OpenerDirector
+def _create_opener(proxy, verify_ssl, auth_handler=None):
+    # type: (str | None, bool | str, BaseHandler | None) -> OpenerDirector
     """创建URL打开器，支持代理和SSL配置"""
     handlers = []
 
     if proxy:
         handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
+
+    if auth_handler:
+        handlers.append(auth_handler)
 
     ssl_context = _create_ssl_context(verify_ssl)
     if ssl_context:
@@ -139,18 +147,23 @@ def _create_opener(proxy, verify_ssl):
     return build_opener(*handlers)
 
 
-def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str) -> HttpResponse
+def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证
 
     Args:
         method (str): HTTP方法，如GET、POST等
-        url (str): 请求的URL
+        url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
         body (str | bytes | None): 请求体
         headers (dict[str, str] | None): 请求头
-        proxy (str | None): 代理地址
+        proxy (str | None): 代理地址，格式为 http://proxy:port
         verify_ssl (bool | str): SSL验证配置
+                                - True: 启用标准SSL验证
+                                - False: 禁用SSL验证
+                                - "auto": 启用验证，失败时自动回退到不验证
+                                - str: 自定义CA证书文件路径
+        auth_handler (BaseHandler | None): 自定义认证处理器
 
     Returns:
         HttpResponse: 响应对象
@@ -159,6 +172,18 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
     """
+    # 解析URL以检查是否包含嵌入式认证信息
+
+    # 使用正则表达式直接提取用户名和密码
+    m = _AUTH_URL_RE.match(url)
+    if m:
+        protocol, username, password, rest = m.groups()
+        clean_url = protocol + rest
+        password_mgr = HTTPPasswordMgrWithDefaultRealm()  # 使用urllib的内置认证机制
+        password_mgr.add_password(None, clean_url, unquote(username), unquote(password))
+        auth_handler = HTTPBasicAuthHandler(password_mgr)
+        url = clean_url
+
     # 准备请求
     if isinstance(body, str):
         body = body.encode("utf-8")
@@ -171,7 +196,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
             req.add_header(key, value)
 
     # 创建opener并发送请求
-    opener = _create_opener(proxy, verify_ssl)
+    opener = _create_opener(proxy, verify_ssl, auth_handler)
 
     try:
         response = opener.open(req)
@@ -189,7 +214,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     except ssl.SSLError:
         if verify_ssl == "auto":
             logger.warning("SSL verification failed, switching to unverified connection %s", url)
-            return send_http_request(method, url, body, headers, proxy, False)
+            return send_http_request(method, url, body, headers, proxy, False, auth_handler)
         else:
             raise
 
