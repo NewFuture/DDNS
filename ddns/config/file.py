@@ -15,7 +15,7 @@ def _process_v41_providers_format(config):
     # type: (dict) -> list[dict]
     """Process v4.1 providers format and return list of configs."""
     result = []
-    
+
     # 提取全局配置（除providers之外的所有配置）
     global_config = _flatten_single_config(config, exclude_keys=["providers"])
 
@@ -33,13 +33,13 @@ def _process_v41_providers_format(config):
 
         flat_config = global_config.copy()  # 从全局配置开始
 
-        # 添加provider特定配置，name字段映射为dns
-        for k, v in provider_config.items():
+        # 使用 _flatten_single_config 处理provider配置
+        provider_flat = _flatten_single_config(provider_config)
+
+        # 将扁平化的provider配置合并到flat_config中
+        for k, v in provider_flat.items():
             if k == "name":
-                flat_config["dns"] = v  # name映射为dns
-            elif isinstance(v, dict):
-                for subk, subv in v.items():
-                    flat_config["{}_{}".format(k, subk)] = subv
+                flat_config["dns"] = v  # name字段映射为dns
             else:
                 flat_config[k] = v
 
@@ -81,7 +81,7 @@ def load_config(config_path):
         Exception: 当配置文件加载失败时抛出异常
     """
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, "r") as f:
             content = f.read()
 
         # 移除注释后尝试JSON解析
@@ -152,7 +152,7 @@ def save_config(config_path, config):
         },
     }
     try:
-        with open(config_path, "w", encoding="utf-8") as f:
+        with open(config_path, "w") as f:
             content = json_encode(config, indent=2, ensure_ascii=False)
             # Python 2 兼容性：检查是否需要解码
             if hasattr(content, "decode"):

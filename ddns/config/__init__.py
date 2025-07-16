@@ -71,21 +71,15 @@ def _load_json_configs(config_paths):
     # type: (list[str]) -> list[dict]
     """Load all JSON configurations from config paths."""
     all_json_configs = []
-    if config_paths:
-        for config_path in config_paths:
-            json_configs = load_file_config(config_path)
-            if isinstance(json_configs, list):
-                all_json_configs.extend(json_configs)
-            else:
-                all_json_configs.append(json_configs)
+    for config_path in config_paths:
+        json_configs = load_file_config(config_path)
+        if isinstance(json_configs, list):
+            all_json_configs.extend(json_configs)
+        else:
+            all_json_configs.append(json_configs)
 
     # 如果没有找到任何配置文件或JSON配置，创建一个空配置
-    if not all_json_configs:
-        all_json_configs = [{}]
-
-    return all_json_configs
-
-
+    return all_json_configs or [{}]
 
 
 def _validate_configs(configs, logger):
@@ -136,19 +130,15 @@ Copyright (c) NewFuture (MIT License)
     all_json_configs = _load_json_configs(config_paths)
 
     # 为每个JSON配置创建Config对象
-    configs = []
-    for json_config in all_json_configs:
-        conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
-        configs.append(conf)
+    configs = [Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
+               for json_config in all_json_configs]
 
     # 设置日志
     logger = _setup_logging(cli_config, env_config, all_json_configs)
 
     # 处理无配置情况 - inline _handle_no_config logic
-    no_config = (len(cli_config) <= 1 and len(all_json_configs) == 1
-                and len(all_json_configs[0]) == 0 and len(env_config) == 0)
-
-    if no_config:
+    if (len(cli_config) <= 1 and len(all_json_configs) == 1 and
+        len(all_json_configs[0]) == 0 and len(env_config) == 0):
         # 没有配置时生成默认配置文件
         logger.warning("[deprecated] auto gernerate config file will be deprecated in future versions.")
         logger.warning("usage:\n  `ddns --new-config` to generate a new config.\n  `ddns -h` for help.")
