@@ -11,7 +11,7 @@ from ..util.comment import remove_comment
 
 
 
-def _process_v41_providers_format(config):
+def _process_multi_providers_format(config):
     # type: (dict) -> list[dict]
     """Process v4.1 providers format and return list of configs."""
     result = []
@@ -35,14 +35,8 @@ def _process_v41_providers_format(config):
 
         # 直接设置dns字段为provider的name
         flat_config["dns"] = provider_config.get("name")
-
-        # 使用 _flatten_single_config 处理provider配置，排除name字段
         provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
-
-        # 将扁平化的provider配置合并到flat_config中
-        flat_config.update(provider_flat)
-
-        result.append(flat_config)
+        result.append(provider_flat)
     return result
 
 
@@ -108,7 +102,7 @@ def load_config(config_path):
 
     # 处理配置格式：v4.1 providers格式或单个对象
     if "providers" in config and isinstance(config["providers"], list):
-        return _process_v41_providers_format(config)
+        return _process_multi_providers_format(config)
     else:
         return _flatten_single_config(config)
 
