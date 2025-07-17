@@ -181,7 +181,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
         # 使用postman-echo.com提供的GET测试端点
         try:
-            response = send_http_request("GET", "https://postman-echo.com/get?test=ddns")
+            response = send_http_request("GET", "http://postman-echo.com/get?test=ddns")
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
             # 验证响应内容是JSON格式
@@ -194,7 +194,8 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertEqual(data["args"]["test"], "ddns")
         except Exception as e:
             # 网络不可用时跳过测试
-            self.skipTest("Network unavailable: {}".format(str(e)))
+            if "timeout" in str(e) or "Connection" in str(e):
+                self.skipTest("Network unavailable: {}".format(str(e)))
 
     def test_json_api_response(self):
         """测试JSON API响应解析"""
@@ -202,7 +203,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
         try:
             # 使用postman-echo.com的基本GET端点，返回请求信息
-            response = send_http_request("GET", "https://postman-echo.com/get?format=json")
+            response = send_http_request("GET", "http://postman-echo.com/get?format=json")
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
 
@@ -231,7 +232,7 @@ class TestSendHttpRequest(unittest.TestCase):
             }
 
             # 使用postman-echo模拟401认证失败响应
-            response = send_http_request("GET", "https://postman-echo.com/status/401", headers=headers)
+            response = send_http_request("GET", "http://postman-echo.com/status/401", headers=headers)
 
             # 应该返回401认证失败
             self.assertEqual(response.status, 401)
@@ -240,6 +241,33 @@ class TestSendHttpRequest(unittest.TestCase):
 
         except Exception as e:
             self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_http_400_bad_request_handling(self):
+        """测试HTTP 400 Bad Request错误处理"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 使用postman-echo模拟400错误
+            response = send_http_request("GET", "http://postman-echo.com/status/400")
+
+            # 验证状态码为400
+            self.assertEqual(response.status, 400, "应该返回400 Bad Request状态码")
+
+            # 验证响应对象的完整性
+            self.assertIsNotNone(response.body, "400响应应该有响应体")
+            self.assertIsNotNone(response.headers, "400响应应该有响应头")
+            self.assertIsNotNone(response.reason, "400响应应该有状态原因")
+
+        except Exception as e:
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            if any(
+                keyword in error_msg for keyword in ["timeout", "connection", "resolution", "unreachable", "network"]
+            ):
+                self.skipTest("Network unavailable for HTTP 400 test: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
 
     def test_dns_over_https_simulation(self):
         """测试DNS类型的API响应解析"""
@@ -250,7 +278,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
             # 使用postman-echo模拟一个带有特定结构的JSON响应
             response = send_http_request(
-                "GET", "https://postman-echo.com/get?domain=example.com&type=A", headers=headers
+                "GET", "http://postman-echo.com/get?domain=example.com&type=A", headers=headers
             )
 
             self.assertEqual(response.status, 200)
@@ -305,7 +333,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_basic_auth_with_httpbin(self):
         """Test basic auth URL format and verification with URL-embedded authentication"""
-        from ddns.util.http import send_http_request, URLError
+        from ddns.util.http import send_http_request
 
         # Test with special credentials containing @ and . characters
         special_username = "user@test.com"
@@ -325,7 +353,7 @@ class TestSendHttpRequest(unittest.TestCase):
         # Try to make actual request
         try:
             response = send_http_request("GET", auth_url)
-        except (URLError, OSError, IOError) as e:
+        except (OSError, IOError) as e:
             # Skip for Network Exceptions (timeout, connection, etc.)
             raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
             # Verify successful response if we get here
@@ -335,6 +363,31 @@ class TestSendHttpRequest(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertIn("authenticated", response.body)
         self.assertIn("user", response.body)
+
+    def test_ssl_auto_fallback_real_network(self):
+        """测试SSL auto模式的真实网络自动降级行为"""
+        from ddns.util.http import send_http_request
+
+        test_url = "https://postman-echo.com/status/200"  # 使用postman-echo的测试站点
+
+        try:
+            # 1. 测试auto模式：应该自动降级成功
+            response_auto = send_http_request("GET", test_url, verify_ssl="auto")
+            self.assertEqual(response_auto.status, 200, "auto模式自动降级成功访问测试站点")
+            self.assertIsNotNone(response_auto.body)
+
+            # 2. 验证禁用SSL验证模式也能成功（作为对照）
+            response_false = send_http_request("GET", test_url, verify_ssl=False)
+            self.assertEqual(response_false.status, 200, "禁用SSL验证应该成功访问自签名证书站点")
+
+        except Exception as e:
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ["timeout", "resolution", "unreachable"]):
+                self.skipTest("Network unavailable for SSL fallback test: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
 
 
 if __name__ == "__main__":

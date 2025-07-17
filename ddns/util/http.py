@@ -14,26 +14,28 @@ import ssl
 import os
 
 try:  # python 3
-    from urllib.request import HTTPBasicAuthHandler, BaseHandler, OpenerDirector  # noqa: F401
-    from urllib.request import HTTPPasswordMgrWithDefaultRealm, Request, HTTPSHandler, ProxyHandler, build_opener
+    from urllib.request import ProxyHandler, HTTPSHandler, BaseHandler, OpenerDirector, build_opener  # noqa: F401
+    from urllib.request import Request, HTTPPasswordMgrWithDefaultRealm, HTTPDefaultErrorHandler, HTTPBasicAuthHandler
     from urllib.parse import quote, urlencode, unquote
-    from urllib.error import HTTPError, URLError
 except ImportError:  # python 2
-    from urllib2 import Request, HTTPSHandler, ProxyHandler, build_opener, HTTPError, URLError  # type: ignore[no-redef]
-    from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler  # type: ignore[no-redef]
+    from urllib2 import Request, HTTPSHandler, ProxyHandler, HTTPDefaultErrorHandler  # type: ignore[no-redef]
+    from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, build_opener  # type: ignore[no-redef]
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
 
 
-__all__ = [
-    "send_http_request",
-    "HttpResponse",
-    "quote",
-    "urlencode",
-    "URLError",
-]
+__all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
 
 logger = getLogger().getChild(__name__)
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
+
+
+class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
+    """自定义HTTP错误处理器，处理所有HTTP错误状态码，返回响应而不抛出异常"""
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+        """处理所有HTTP错误状态码，返回响应而不抛出异常"""
+        logger.warning("HTTP error %s: %s", code, msg)
+        return fp
 
 
 class HttpResponse(object):
@@ -87,7 +89,7 @@ def _create_ssl_context(verify_ssl):
         try:
             ssl_context.load_verify_locations(verify_ssl)  # type: ignore[arg-type]
         except Exception as e:
-            logger.error("Failed to load CA certificate from %s: %s", verify_ssl, e)
+            logger.exception("Failed to load CA certificate from %s: %s", verify_ssl, e)
             return None
     else:
         # 默认验证，尝试加载系统证书
@@ -115,8 +117,24 @@ def _load_system_ca_certs(ssl_context):
 
     # Windows额外路径
     if os.name == "nt":
+
+        # Git for Windows
         ca_paths.append("C:\\Program Files\\Git\\mingw64\\ssl\\cert.pem")
+        ca_paths.append("C:\\Program Files (x86)\\Git\\mingw32\\ssl\\cert.pem")
+        ca_paths.append("C:\\Program Files (x86)\\Git\\mingw64\\ssl\\cert.pem")
+
+        # OpenSSL
         ca_paths.append("C:\\Program Files\\OpenSSL\\ssl\\cert.pem")
+        ca_paths.append("C:\\Program Files (x86)\\OpenSSL\\ssl\\cert.pem")
+        ca_paths.append("C:\\OpenSSL\\ssl\\cert.pem")
+
+        # MSYS2
+        ca_paths.append("C:\\msys64\\usr\\ssl\\cert.pem")
+        ca_paths.append("C:\\msys32\\usr\\ssl\\cert.pem")
+
+        # Cygwin
+        ca_paths.append("C:\\cygwin64\\usr\\ssl\\cert.pem")
+        ca_paths.append("C:\\cygwin\\usr\\ssl\\cert.pem")
 
     loaded_count = 0
     for ca_path in ca_paths:
@@ -132,7 +150,7 @@ def _load_system_ca_certs(ssl_context):
 def _create_opener(proxy, verify_ssl, auth_handler=None):
     # type: (str | None, bool | str, BaseHandler | None) -> OpenerDirector
     """创建URL打开器，支持代理和SSL配置"""
-    handlers = []
+    handlers = [NoHTTPErrorProcessor()]  # type: list[BaseHandler]
 
     if proxy:
         handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
@@ -203,17 +221,16 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         response_headers = response.info()
         raw_body = response.read()
         decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
-        return HttpResponse(response.getcode(), getattr(response, "msg", ""), response_headers, decoded_body)
-    except HTTPError as e:
-        # 记录HTTP错误并读取响应体用于调试
-        response_headers = getattr(e, "headers", {})
-        raw_body = e.read()
-        decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
-        logger.error("HTTP error %s: %s for %s", e.code, getattr(e, "reason", str(e)), url)
-        return HttpResponse(e.code, getattr(e, "reason", str(e)), response_headers, decoded_body)
-    except ssl.SSLError:
-        if verify_ssl == "auto":
-            logger.warning("SSL verification failed, switching to unverified connection %s", url)
+        status_code = response.getcode()
+        reason = getattr(response, "msg", "")
+        return HttpResponse(status_code, reason, response_headers, decoded_body)
+    except Exception as e:
+        # 检查是否是local issuer certificate SSL错误
+        if (
+            verify_ssl == "auto"
+            and "certificate verify failed: unable to get local issuer certificate" in str(e).lower()
+        ):
+            logger.warning("unable to get local issuer certificate, switching to unverified connection %s", url)
             return send_http_request(method, url, body, headers, proxy, False, auth_handler)
         else:
             raise
