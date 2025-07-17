@@ -13,7 +13,7 @@
     "ttl": 300,
     "proxy": null,
     "cache": false, // Disable caching for NoIP
-    "ssl": "auto",
+    "ssl": false,
     "log": {
         "level": "DEBUG",
         "datefmt": "%m-%d %H:%M:%S"
