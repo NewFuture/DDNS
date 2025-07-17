@@ -63,7 +63,11 @@ class SSLAutoFallbackHandler(HTTPSHandler):  # type: ignore[misc]
         # type: (bool | str) -> None
         self._verify_ssl = verify_ssl
         ssl_context = self._get_ssl_context()
-        super(SSLAutoFallbackHandler, self).__init__(context=ssl_context)
+        # 兼容性：优先使用context参数，失败时降级
+        try:  # python 3 / python 2.7.9+
+            HTTPSHandler.__init__(self, context=ssl_context)
+        except (TypeError, AttributeError):  # python 2.7.8-
+            HTTPSHandler.__init__(self)
 
     def _get_ssl_context(self):
         # type: () -> ssl.SSLContext | None
@@ -71,6 +75,8 @@ class SSLAutoFallbackHandler(HTTPSHandler):  # type: ignore[misc]
         # 缓存键
         cache_key = "default"
         if not self._verify_ssl:
+            if not hasattr(ssl, "_create_unverified_context"):
+                return None
             cache_key = "unverified"
             if cache_key not in self._ssl_cache:
                 self._ssl_cache[cache_key] = ssl._create_unverified_context()
@@ -90,14 +96,18 @@ class SSLAutoFallbackHandler(HTTPSHandler):  # type: ignore[misc]
     def https_open(self, req):
         """处理HTTPS请求，自动处理SSL错误"""
         try:
-            return super(SSLAutoFallbackHandler, self).https_open(req)
+            return HTTPSHandler.https_open(self, req)
         except Exception as e:
             # SSL auto模式：只处理 unable to get local issuer certificate 错误
             if self._verify_ssl == "auto" and "unable to get local issuer certificate" in str(e).lower():
                 msg = "unable to get local issuer certificate, switching to unverified connection for %s"
                 logger.warning(msg, req.get_full_url())
                 self._verify_ssl = False
-                temp_handler = HTTPSHandler(context=self._get_ssl_context())  # 不验证SSL重试
+                # 创建不验证SSL的临时处理器重试
+                try:  # python 3 / python 2.7.9+
+                    temp_handler = HTTPSHandler(context=self._get_ssl_context())
+                except (TypeError, AttributeError):  # python 2.7.8-
+                    temp_handler = HTTPSHandler()
                 return temp_handler.https_open(req)
             else:
                 raise
