@@ -11,8 +11,19 @@ import shutil
 import os
 import json
 import io
-from io import StringIO
+import sys
 from ddns.config.file import load_config, save_config
+
+# Python 2/3 compatibility
+if sys.version_info[0] >= 3:
+    from io import StringIO
+
+    unicode = str
+else:
+    try:
+        from StringIO import StringIO
+    except ImportError:
+        from io import StringIO
 
 FileNotFoundError = globals().get("FileNotFoundError", IOError)
 PermissionError = globals().get("PermissionError", IOError)
@@ -27,6 +38,7 @@ class TestConfigFile(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.temp_dir, ignore_errors=True)
 
         # Capture stdout and stderr output for testing
+        # Use unicode-compatible StringIO for Python 2/3 compatibility
         self.stdout_capture = StringIO()
         self.stderr_capture = StringIO()
         self.original_stdout = __import__("sys").stdout
