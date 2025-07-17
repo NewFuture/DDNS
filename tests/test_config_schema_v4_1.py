@@ -196,7 +196,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "log": {"level": "INFO", "format": "[%(levelname)s] %(message)s"},
             "providers": [
                 {
-                    "name": "cloudflare",
+                    "provider": "cloudflare",
                     "id": "provider1@example.com",
                     "token": "cf_token",
                     "ipv4": ["cf.example.com"],

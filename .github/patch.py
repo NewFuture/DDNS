@@ -86,7 +86,7 @@ def add_nuitka_include_modules(pyfile):
     return True
 
 
-def remove_python2_compatibility(pyfile):
+def remove_python2_compatibility(pyfile):  # noqa: C901
     """
     自动将所有 try-except python2/3 兼容导入替换为 python3 only 导入，并显示处理日志
     删除指定文件中的 python2 兼容代码，逐行处理

@@ -577,14 +577,14 @@ class TestConfigFile(unittest.TestCase):
             "log": {"level": "INFO", "file": "/var/log/ddns.log"},
             "providers": [
                 {
-                    "name": "cloudflare",
+                    "provider": "cloudflare",
                     "id": "user1@example.com",
                     "token": "token1",
                     "ipv4": ["test1.example.com"],
                     "ttl": 300,
                 },
                 {
-                    "name": "dnspod",
+                    "provider": "dnspod",
                     "id": "user2@example.com",
                     "token": "token2",
                     "ipv4": ["test2.example.com"],
@@ -638,7 +638,7 @@ class TestConfigFile(unittest.TestCase):
         try:
             config_data = {
                 "dns": "cloudflare",  # Should conflict with providers
-                "providers": [{"name": "dnspod", "token": "test_token"}],
+                "providers": [{"provider": "dnspod", "token": "test_token"}],
             }
 
             config_file = self.create_test_file("conflict.json", config_data)
@@ -667,7 +667,7 @@ class TestConfigFile(unittest.TestCase):
                     {
                         "id": "test@example.com",
                         "token": "test_token",
-                        # Missing "name" field
+                        # Missing "provider" field
                     }
                 ]
             }
@@ -677,11 +677,11 @@ class TestConfigFile(unittest.TestCase):
             with self.assertRaises(ValueError) as context:
                 load_config(config_file)
 
-            self.assertIn("provider missing name field", str(context.exception))
+            self.assertIn("provider missing provider field", str(context.exception))
 
             # Verify error message in stderr
             stderr_output = self.stderr_capture.getvalue()
-            self.assertIn("Each provider must have a 'name' field", stderr_output)
+            self.assertIn("Each provider must have a 'provider' field", stderr_output)
         finally:
             ddns.config.file.stderr = original_stderr
 
@@ -710,7 +710,11 @@ class TestConfigFile(unittest.TestCase):
         config_data = {
             "cache": True,
             "providers": [
-                {"name": "cloudflare", "token": "test_token", "custom": {"setting1": "value1", "setting2": "value2"}}
+                {
+                    "provider": "cloudflare",
+                    "token": "test_token",
+                    "custom": {"setting1": "value1", "setting2": "value2"},
+                }
             ],
         }
 
