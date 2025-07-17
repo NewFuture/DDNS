@@ -6,9 +6,9 @@
   - 内置定时任务，默认每 5 分钟自动更新一次
   - 无需外部依赖，开箱即用, 性能优化，资源占用低
 - 配置方式:
-  - [CLI 命令行参数](cli.md)
-  - [JSON 配置文件](json.md)
-  - [Env 环境变量](env.md)
+  - [CLI 命令行参数](config/cli.md)
+  - [JSON 配置文件](config/json.md)
+  - [Env 环境变量](config/env.md)
 
 ## 镜像说明
 
@@ -56,7 +56,7 @@ DDNS Docker 镜像支持三种配置方式：命令行，环境变量和配置�
 
 ### 使用命令行参数 CLI
 
-可以参考[命令行参数说明](cli.md)获取详细的参数列表。
+可以参考[命令行参数说明](config/cli.md)获取详细的参数列表。
 此时 `docker run -v /local/config/:/ddns/  --name=ddns --network=host newfuture/ddns` 就相当于 `ddns` 命令行，不会执行定时任务。
 
 此方式适合需要一次性运行或调试的场景, 参数与 DDNS 命令行参数一致。
@@ -79,7 +79,7 @@ docker run -d -v /host/config/:/ddns/ newfuture/ddns
 ```
 
 其中 `/host/config/` 是您本地包含 `config.json` 的目录。
-详见 `config.json` 的内容可以参考 [JSON 配置文件说明](json.md)。
+详见 `config.json` 的内容可以参考 [JSON 配置文件说明](config/json.md)。
 
 ### 使用环境变量 ENV
 
@@ -99,7 +99,7 @@ docker run -d \
   newfuture/ddns
 ```
 
-想要了解所有支持的环境变量，请参考[环境变量配置说明](env.md)。
+想要了解所有支持的环境变量，请参考[环境变量配置说明](config/env.md)。
 
 ## 网络模式
 
@@ -293,6 +293,6 @@ RUN chmod +x /bin/custom-script.sh
 
 - [DDNS GitHub 主页](https://github.com/NewFuture/DDNS)
 - [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
-- [环境变量配置详情](env.md)
-- [JSON 配置文件详情](json.md)
-- [命令行参数详情](cli.md)
+- [环境变量配置详情](config/env.md)
+- [JSON 配置文件详情](config/json.md)
+- [命令行参数详情](config/cli.md)

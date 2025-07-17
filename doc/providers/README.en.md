@@ -11,7 +11,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `callback` | Custom API (Webhook) | [callback 中文文档](callback.md) | [callback English Doc](callback.en.md) | Custom HTTP API |
 | `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](cloudflare.md) | [cloudflare English Doc](cloudflare.en.md) | Global CDN and DNS service |
 | `debug` | Debug Provider | [debug 中文文档](debug.md) | [debug English Doc](debug.en.md) | IP address printing for debugging |
-| `dnscom` | [DNS.COM](https://www.dns.com/) | [51dns 中文文档](51dns.md) | [dnscom English Doc](51dns.en.md) | ⚠️ Pending verification |
+| `dnscom` | [DNS.COM](https://www.dns.com/) | [51dns 中文文档](51dns.md) | [51DNS English Doc](51dns.en.md) | ⚠️ Pending verification |
 | `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](dnspod_com.md) | [dnspod_com English Doc](dnspod_com.en.md) | ⚠️ Pending verification |
 | `dnspod` | [DNSPod China](https://www.dnspod.cn/) | [dnspod 中文文档](dnspod.md) | [dnspod English Doc](dnspod.en.md) | Largest DNS provider in China |
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](he.en.md) | ⚠️ Pending verification, no auto-record creation |
@@ -26,14 +26,14 @@ This directory contains detailed configuration guides for various DNS providers.
 
 Most providers support automatic creation of non-existent DNS records, with exceptions:
 
-- ❌ **he**: Does not support automatic record creation, records must be manually created in the control panel
-- ❌ **noip**: Does not support automatic record creation, records must be manually created in the control panel
+- �?**he**: Does not support automatic record creation, records must be manually created in the control panel
+- �?**noip**: Does not support automatic record creation, records must be manually created in the control panel
 
 ## 📝 Configuration Examples
 
 ### Command Line Configuration
 
-[CLI provides command line configuration](../cli.en.md), here are some common command line examples:
+[CLI provides command line configuration](../config/cli.en.md), here are some common command line examples:
 
 ```bash
 # DNSPod China
@@ -54,7 +54,9 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 
 ### JSON Configuration File
 
-[JSON configuration file](../json.en.md) provides a more flexible configuration method, here are some common JSON configuration examples:
+[JSON configuration file](../config/json.en.md) provides a more flexible configuration method, here are some common JSON configuration examples:
+
+#### Traditional Single-Provider Format
 
 ```json
 {
@@ -68,9 +70,73 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 }
 ```
 
+#### Multi-Provider Format
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+  "ssl": "auto",
+  "cache": true,
+  "log": {"level": "INFO"},
+  "providers": [
+    {
+      "name": "cloudflare",
+      "id": "user@example.com",
+      "token": "cloudflare-token",
+      "ipv4": ["cf.example.com"],
+      "ttl": 300
+    },
+    {
+      "name": "dnspod", 
+      "id": "12345",
+      "token": "dnspod-token",
+      "ipv4": ["dnspod.example.com"],
+      "ttl": 600
+    }
+  ]
+}
+```
+
+### Multiple Configuration Files Method
+
+#### Command Line Specification
+
+```bash
+# Use multiple independent configuration files
+ddns -c cloudflare.json -c dnspod.json -c alidns.json
+
+# Use environment variable to specify multiple configuration files
+export DDNS_CONFIG="cloudflare.json,dnspod.json,alidns.json"
+ddns
+```
+
+#### Multiple Configuration Files Example
+
+**cloudflare.json**:
+
+```json
+{
+  "dns": "cloudflare",
+  "id": "user@example.com",
+  "token": "your-cloudflare-token",
+  "ipv4": ["cf.example.com"]
+}
+```
+
+**dnspod.json**:
+
+```json
+{
+  "dns": "dnspod",
+  "id": "12345", 
+  "token": "your-dnspod-token",
+  "ipv4": ["dnspod.example.com"]
+}
+```
+
 ### Environment Variable Configuration
 
-[Environment variable configuration](../env.en.md) provides another configuration method, here are some common environment variable examples:
+[Environment variable configuration](../config/env.en.md) provides another configuration method, here are some common environment variable examples:
 
 ```bash
 export DDNS_DNS=dnspod
@@ -83,9 +149,9 @@ ddns --debug
 
 ## 📚 Related Documentation
 
-- [Command Line Configuration](../cli.en.md) - Detailed command line parameter documentation
-- [JSON Configuration](../json.en.md) - JSON configuration file format documentation
-- [Environment Variable Configuration](../env.en.md) - Environment variable configuration method
+- [Command Line Configuration](../config/cli.en.md) - Detailed command line parameter documentation
+- [JSON Configuration](../config/json.en.md) - JSON configuration file format documentation
+- [Environment Variable Configuration](../config/env.en.md) - Environment variable configuration method
 - [Provider Development Guide](../dev/provider.en.md) - How to develop new providers
 - [JSON Schema](../../schema/v4.0.json) - Configuration file validation schema
 

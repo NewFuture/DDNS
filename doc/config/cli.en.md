@@ -20,24 +20,63 @@ python -m ddns -h
 
 ## Parameter List
 
+### List Parameter Usage
+
+For list-type parameters that support multiple values (such as `--ipv4`, `--ipv6`, `--index4`, `--index6`, `--proxy`, etc.), you can specify multiple values using the following two methods:
+
+#### Method 1: Repeat Parameter Names (Recommended)
+
+```bash
+ddns --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com
+ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
+ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+```
+
+#### Method 2: Space-Separated
+
+```bash
+ddns --ipv4 example.com www.example.com api.example.com
+ddns --index4 public 0 "regex:192\\.168\\..*"
+ddns --proxy 127.0.0.1:1080 DIRECT
+```
+
+#### Parameters with Spaces
+
+If parameter values contain spaces, use quotes:
+
+```bash
+ddns --line "China Telecom" "China Unicom" "China Mobile"
+ddns --index4 "url:http://ip.example.com/api?type=ipv4" public
+```
+
+#### Unsupported Usage
+
+```bash
+# ❌ Comma-separated not supported
+ddns --ipv4 "example.com,www.example.com"
+ddns --ipv4=example.com,www.example.com
+```
+
+### Parameter Details
+
 | Parameter          |     Type    | Description                                                                                                                                                               | Example                                                  |
 | --------------- | :---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `-h, --help`    |     Flag    | Show help message and exit                                                                                                                                                | `--help`                                                 |
 | `-v, --version` |     Flag    | Show version information and exit                                                                                                                                         | `--version`                                              |
-| `-c, --config`  |    String   | Specify the path to the configuration file                                                                                                                                | `--config config.json`                                   |
+| `-c, --config`  | String List | Specify configuration file path, supports multiple config files                                                                                              | `--config config.json` or `--config config1.json --config config2.json`                                   |
 | `--new-config`  | Flag/String | Generate a new config file (optional file path)                                                                                                                           | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       |     Flag    | Enable debug mode                                                                                                                                                         | `--debug`                                                |
-| `--dns`         |    Choice   | [DNS Providers](providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--dns`         |    Choice   | [DNS Providers](../providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
 | `--endpoint`    |    String   | Custom API endpoint URL (useful for self-hosted services)                                                                                                                 | `--endpoint https://api.private.com`                     |
 | `--id`          |    String   | API Access ID, email, or Access Key                                                                                                                                       | `--id user@example.com`                                  |
 | `--token`       |    String   | API token or secret key                                                                                                                                                   | `--token abcdef123456`                                   |
-| `--ipv4`        | String List | List of domain names for IPv4, repeat the option for multiple domains                                                                                                     | `--ipv4 test.com --ipv4 4.test.com`                      |
-| `--ipv6`        | String List | List of domain names for IPv6, repeat the option for multiple domains                                                                                                     | `--ipv6 test.com`                                        |
-| `--index4`      |     List    | Methods to retrieve IPv4 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public` <br> `--index4 "regex:192\\.168\\..*"` |
-| `--index6`      |     List    | Methods to retrieve IPv6 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0` <br> `--index6 public`                      |
+| `--ipv4`        | String List | List of domain names for IPv4, supports repeated parameters or space-separated                                                                                                     | `--ipv4 test.com 4.test.com` or `--ipv4 test.com --ipv4 4.test.com`                      |
+| `--ipv6`        | String List | List of domain names for IPv6, supports repeated parameters or space-separated                                                                                                     | `--ipv6 test.com` or `--ipv6 test.com ipv6.test.com`                                        |
+| `--index4`      |     List    | Methods to retrieve IPv4 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public 0` or `--index4 public --index4 "regex:192\\.168\\..*"` |
+| `--index6`      |     List    | Methods to retrieve IPv6 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0 public` or `--index6 0 --index6 public`                      |
 | `--ttl`         |   Integer   | DNS record TTL time in seconds                                                                                                                                            | `--ttl 600`                                              |
 | `--line`        |    String   | DNS resolution line (e.g. ISP line)                                                                                                                                       | `--line 电信` <br> `--line telecom`                        |
-| `--proxy`       | String List | HTTP proxy settings, format: IP\:Port or `DIRECT`                                                                                                                         | `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--proxy`       | String List | HTTP proxy settings, format: IP\:Port or `DIRECT`                                                                                                                         | `--proxy 127.0.0.1:1080 DIRECT` or `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
 | `--cache`       | Flag/String | Enable cache or specify custom cache path                                                                                                                                 | `--cache` <br> `--cache=/path/to/cache`                  |
 | `--no-cache`    |     Flag    | Disable cache (equivalent to `--cache=false`)                                                                                                                             | `--no-cache`                                             |
 | `--ssl`         |    String   | SSL certificate verification: true, false, auto, or file path                                                                                                             | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`         |
@@ -98,164 +137,117 @@ ddns --dns cloudflare --index4 "cmd:hostname -I | awk '{print $1}'"
 
 ## Usage Examples
 
-### Basic Usage
+### Basic Configuration File Usage
 
 ```bash
-# Update IPv4 record for a single domain
-ddns --dns cloudflare --id user@example.com --token your_token --ipv4 example.com
+# Use default configuration file
+ddns
 
-# Update both IPv4 and IPv6 records
-ddns --dns cloudflare --id user@example.com --token your_token \
-     --ipv4 example.com --ipv6 example.com
+# Use specified configuration file
+ddns -c /path/to/config.json
 
-# Use debug mode to see detailed output
-ddns --debug --dns cloudflare --id user@example.com --token your_token --ipv4 example.com
+# Use multiple configuration files
+ddns -c cloudflare.json -c dnspod.json
+
+# Generate new configuration file
+ddns --new-config config.json
 ```
 
-### Multiple Domains
+### Command Line Configuration
 
 ```bash
-# Update multiple domains
-ddns --dns cloudflare --id user@example.com --token your_token \
-     --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com
+# Simplest configuration - DNSPod
+ddns --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com
 
-# Mix IPv4 and IPv6 domains
-ddns --dns cloudflare --id user@example.com --token your_token \
-     --ipv4 example.com --ipv4 www.example.com \
-     --ipv6 ipv6.example.com
+# Cloudflare with API token
+ddns --dns cloudflare --token your_api_token --ipv4 example.com
+
+# Enable debug mode
+ddns --dns cloudflare --token API_TOKEN --ipv4 example.com --debug
+
+# Multiple domains (space-separated)
+ddns --dns cloudflare --token API_TOKEN \
+     --ipv4 example.com www.example.com --ipv6 example.com
+
+# Multiple domains (repeated parameters)
+ddns --dns cloudflare --token API_TOKEN \
+     --ipv4 example.com --ipv4 www.example.com --ipv6 example.com
 ```
 
 ### Provider-Specific Examples
 
-#### Cloudflare
-
 ```bash
-# Using email + API key
-ddns --dns cloudflare --id user@example.com --token your_api_key --ipv4 example.com
-
-# Using API token only (recommended)
-ddns --dns cloudflare --token your_api_token --ipv4 example.com
-```
-
-#### DNSPod
-
-```bash
-ddns --dns dnspod --id 12345 --token your_token --ipv4 example.com
-```
-
-#### Alibaba Cloud DNS
-
-```bash
+# Alibaba Cloud DNS
 ddns --dns alidns --id your_access_key --token your_secret_key --ipv4 example.com
-```
 
-#### Alibaba Cloud ESA
+# Huawei Cloud DNS  
+ddns --dns huaweidns --id your_access_key --token your_secret_key --ipv4 example.com
 
-```bash
-ddns --dns aliesa --id your_access_key --token your_secret_key --ipv4 example.com
-```
-
-#### No-IP
-
-```bash
+# No-IP
 ddns --dns noip --id your_username --token your_password --ipv4 example.com
-```
 
-#### Custom Callback
-
-```bash
-# GET request callback
+# Custom Callback (GET request)
 ddns --dns callback --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__" --ipv4 example.com
-
-# POST request callback
-ddns --dns callback \
-     --id "https://api.example.com/ddns" \
-     --token '{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__"}' \
-     --ipv4 example.com
 ```
 
 ### Advanced Configuration
 
-#### Custom TTL and Line
-
 ```bash
-# Set custom TTL (10 minutes)
-ddns --dns dnspod --id 12345 --token your_token --ipv4 example.com --ttl 600
+# Complete configuration with proxy, TTL, and custom IP detection (space-separated)
+ddns --dns cloudflare --token API_TOKEN \
+     --ipv4 example.com www.example.com \
+     --index4 public "regex:2001:.*" \
+     --ttl 300 --proxy 127.0.0.1:1080 DIRECT \
+     --cache=/var/cache/ddns.cache \
+     --log_level=INFO --log_file=/var/log/ddns.log
 
-# Specify ISP line
-ddns --dns dnspod --id 12345 --token your_token --ipv4 example.com --line "电信"
+# Complete configuration (repeated parameters)
+ddns --dns cloudflare --token API_TOKEN \
+     --ipv4 example.com --ipv4 www.example.com \
+     --index4 public --index6 "regex:2001:.*" \
+     --ttl 300 --proxy 127.0.0.1:1080 --proxy DIRECT \
+     --cache=/var/cache/ddns.cache \
+     --log_level=INFO --log_file=/var/log/ddns.log
+
+# ISP line configuration (for Chinese providers)
+ddns --dns dnspod --id 12345 --token mytokenkey \
+     --ipv4 telecom.example.com --line 电信
+
+# Disable cache and SSL verification
+ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
+     --ipv4 example.com --no-cache --no-ssl
 ```
 
-#### Proxy Configuration
+## Important Notes
 
-```bash
-# Use HTTP proxy
-ddns --dns cloudflare --token your_token --ipv4 example.com --proxy 127.0.0.1:1080
+1. **Command Line Parameter Priority**: Command line arguments have the highest priority and will override settings in configuration files and environment variables.
 
-# Use multiple proxies with fallback
-ddns --dns cloudflare --token your_token --ipv4 example.com \
-     --proxy 127.0.0.1:1080 --proxy DIRECT
-```
+2. **Quote Usage**: For parameter values that contain spaces or special characters, please use quotes, for example: `--log_format="%(asctime)s: %(message)s"`.
 
-#### Custom Endpoint
+3. **List Parameter Configuration**: For multi-value parameters (such as `--ipv4`, `--ipv6`, `--index4`, `--index6`, `--proxy`, etc.), two specification methods are supported:
 
-```bash
-# Use custom API endpoint
-ddns --dns cloudflare --token your_token --ipv4 example.com \
-     --endpoint https://api.private-cloudflare.com
+   ```bash
+   # ✅ Method 1: Repeat parameter names (recommended)
+   ddns --ipv4 example.com --ipv4 sub.example.com --ipv4 api.example.com
+   ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
+   ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+   
+   # ✅ Method 2: Space-separated
+   ddns --ipv4 example.com sub.example.com api.example.com
+   ddns --index4 public 0 "regex:192\\.168\\..*"
+   ddns --proxy 127.0.0.1:1080 DIRECT
+   
+   # ✅ Parameter values with spaces use quotes
+   ddns --line "China Telecom" "China Unicom"
+   
+   # ❌ Incorrect usage - not supported
+   ddns --ipv4 "example.com,sub.example.com"    # Comma-separated not supported
+   ddns --ipv4=example.com,sub.example.com      # Equals + comma not supported
+   ```
 
-# Alibaba Cloud ESA with custom region
-ddns --dns aliesa --id your_access_key --token your_secret_key --ipv4 example.com \
-     --endpoint https://esa.ap-southeast-1.aliyuncs.com
+4. **Debug Mode**: The `--debug` parameter is only effective as a command line argument; debug settings in configuration files will be ignored.
 
-# No-IP compatible service
-ddns --dns noip --id your_username --token your_password --ipv4 example.com \
-     --endpoint https://your-ddns-server.com
-```
-
-#### Cache and SSL Settings
-
-```bash
-# Disable cache
-ddns --dns cloudflare --token your_token --ipv4 example.com --no-cache
-
-# Custom cache file
-ddns --dns cloudflare --token your_token --ipv4 example.com --cache /tmp/ddns.cache
-
-# Disable SSL verification
-ddns --dns cloudflare --token your_token --ipv4 example.com --no-ssl
-
-# Use custom CA certificate
-ddns --dns cloudflare --token your_token --ipv4 example.com --ssl /path/to/ca.pem
-```
-
-### Configuration File Generation
-
-```bash
-# Generate default config file
-ddns --new-config
-
-# Generate config with specific filename
-ddns --new-config=my-config.json
-
-# Generate config with initial values
-ddns --new-config --dns cloudflare --id user@example.com --token your_token
-```
-
-### Logging Configuration
-
-```bash
-# Set log level
-ddns --dns cloudflare --token your_token --ipv4 example.com --log_level DEBUG
-
-# Save logs to file
-ddns --dns cloudflare --token your_token --ipv4 example.com --log_file /var/log/ddns.log
-
-# Custom log format
-ddns --dns cloudflare --token your_token --ipv4 example.com \
-     --log_format "%(asctime)s: %(message)s" \
-     --log_datefmt "%Y-%m-%d %H:%M:%S"
-```
+5. **Regular Expressions**: When using regular expressions, special characters need to be properly escaped. It's recommended to use quotes, for example: `--index4 "regex:192\\.168\\..*"`.
 
 ## Configuration Priority
 
@@ -271,5 +263,5 @@ This means command line arguments will override any settings in configuration fi
 
 - [Environment Variables Configuration](env.en.md)
 - [JSON Configuration File](json.en.md)
-- [Docker Usage](docker.en.md)
-- [Provider-specific Configuration](providers/)
+- [Docker Usage](../docker.en.md)
+- [Provider-specific Configuration](../providers/)

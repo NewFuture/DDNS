@@ -6,10 +6,10 @@ Callback Provider is a universal custom callback interface that allows you to fo
 
 | Parameter | Description | Required | Example |
 |-----------|-------------|----------|---------|
-| `id` | Callback URL address with variable substitution support | ✅ | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
+| `id` | Callback URL address with variable substitution support | �?| `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
 | `token` | POST request parameters (JSON object or JSON string), empty for GET requests | Optional | `{"api_key": "your_key"}` or `"{\"api_key\": \"your_key\"}"` |
 | `endpoint` | Optional API endpoint address, will not participate in variable substitution | Optional | `https://api.example.com/ddns` |
-| `dns` | Fixed value `"callback"`, indicates using callback method | ✅ | `"callback"` |
+| `dns` | Fixed value `"callback"`, indicates using callback method | �?| `"callback"` |
 
 ## Complete Configuration Example
 
@@ -31,14 +31,14 @@ Callback Provider is a universal custom callback interface that allows you to fo
 
 | Parameter | Description | Type | Range/Options | Default | Parameter Type |
 | :-------: | :---------- | :--- | :------------ | :------ | :------------- |
-| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
-| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
-| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
-| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Config |
+| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Config |
 
 ## Request Methods
 
@@ -164,6 +164,6 @@ curl -X POST "https://httpbin.org/post" \
 ## Related Links
 
 - [DDNS Project Homepage](../../README.md)
-- [Configuration File Format](../json.en.md)
-- [Command Line Usage](../cli.en.md)
+- [Configuration File Format](../config/json.en.md)
+- [Command Line Usage](../config/cli.en.md)
 - [Developer Guide](../dev/provider.en.md)

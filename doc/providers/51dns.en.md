@@ -53,16 +53,16 @@ Official Website: <https://www.51dns.com/>
 | dns       | Provider ID      | String         | `dnscom`                           | None      | Provider       |
 | id        | Authentication ID| String         | 51DNS API Key                      | None      | Provider       |
 | token     | Authentication Key| String        | 51DNS Secret Key                   | None      | Provider       |
-| index4    | IPv4 source      | Array          | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config  |
-| index6    | IPv6 source      | Array          | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config  |
+| index4    | IPv4 source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config  |
+| index6    | IPv6 source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config  |
 | ipv4      | IPv4 domains     | Array          | Domain list                        | None      | Common Config  |
 | ipv6      | IPv6 domains     | Array          | Domain list                        | None      | Common Config  |
 | line      | Resolution line  | String         | [See below](#line)                 | `1`       | Provider       |
 | ttl       | TTL time         | Integer (seconds) | [See below](#ttl)               | `600`     | Provider       |
-| proxy     | Proxy settings   | Array          | [Reference](../json.en.md#proxy)   | None      | Common Network |
+| proxy     | Proxy settings   | Array          | [Reference](../config/json.en.md#proxy)   | None      | Common Network |
 | ssl       | SSL verification | Boolean/String | `"auto"`, `true`, `false`          | `auto`    | Common Network |
 | cache     | Cache settings   | Boolean/String | `true`, `false`, `filepath`        | `true`    | Common Config  |
-| log       | Log configuration| Object         | [Reference](../json.en.md#log)     | None      | Common Config  |
+| log       | Log configuration| Object         | [Reference](../config/json.en.md#log)     | None      | Common Config  |
 
 > **Parameter Type Description**:  
 >

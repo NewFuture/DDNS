@@ -64,16 +64,16 @@ You can view and configure permissions in the [RAM Console](https://ram.console.
 | dns | Provider identifier | String | `aliesa` | None | Provider Parameter |
 | id | Authentication ID | String | Alibaba Cloud AccessKey ID | None | Provider Parameter |
 | token | Authentication key | String | Alibaba Cloud AccessKey Secret | None | Provider Parameter |
-| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
-| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
 | endpoint | API endpoint | URL | [See below](#endpoint) | `https://esa.cn-hangzhou.aliyuncs.com` | Provider Parameter |
 | ttl | TTL time | Integer (seconds) | 1-86400 | None | Provider Parameter |
-| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `auto`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
-| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Config |
+| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Config |
 
 > **Parameter Type Description**:
 >

@@ -13,6 +13,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 
 | Environment Variable     | Accepted Values                                                                                     | Description                              | Example                                                     |
 |--------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------|-------------------------------------------------------------|
+| `DDNS_CONFIG`            | File path, supports comma or semicolon-separated multiple paths                                    | Specify config file path, supports multiple files | `DDNS_CONFIG="config.json"` or `DDNS_CONFIG="cloudflare.json,dnspod.json"` |
 | `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
 | `DDNS_ID`                | Depends on the provider                                                                              | API account or ID                        | `DDNS_ID="user@example.com"`                                |
 | `DDNS_TOKEN`             | Depends on the provider                                                                              | API token or secret                      | `DDNS_TOKEN="abcdef123456"`                                 |
@@ -31,8 +32,27 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_LOG_FORMAT`        | Python logging format string                                                                         | Log format template                       | `DDNS_LOG_FORMAT="%(message)s"`                             |
 | `DDNS_LOG_DATEFMT`       | Date-time format string                                                                              | Log timestamp format                      | `DDNS_LOG_DATEFMT="%m-%d %H:%M"`                            |
 
-
 ## Basic Configuration Parameters
+
+### Configuration File Path
+
+#### DDNS_CONFIG
+
+- **Type**: String
+- **Required**: No
+- **Default**: Search in default paths (`config.json`, `~/.ddns/config.json`, etc.)
+- **Format**: Single file path or multiple file paths (separated by commas or semicolons)
+- **Description**: Specify configuration file path, supports multiple configuration files
+- **Examples**:
+
+  ```bash
+  # Single configuration file
+  export DDNS_CONFIG="config.json"
+  export DDNS_CONFIG="/path/to/ddns.json"
+  
+  # Multiple configuration files 
+  export DDNS_CONFIG="/etc/ddns/cloudflare.json,./dnspod.json"
+  ```
 
 ### Authentication Information
 

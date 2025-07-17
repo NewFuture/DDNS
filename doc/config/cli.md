@@ -20,24 +20,63 @@ python3 -m ddns -h
 
 ## 参数列表
 
+### 列表参数说明
+
+对于支持多个值的列表类型参数（如 `--ipv4`、`--ipv6`、`--index4`、`--index6`、`--proxy` 等），在命令行中支持以下两种方式指定多个值：
+
+#### 方式一：重复参数名（推荐）
+
+```bash
+ddns --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com
+ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
+ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+```
+
+#### 方式二：空格分隔
+
+```bash
+ddns --ipv4 example.com www.example.com api.example.com
+ddns --index4 public 0 "regex:192\\.168\\..*"
+ddns --proxy 127.0.0.1:1080 DIRECT
+```
+
+#### 包含空格的参数值
+
+如果参数值本身包含空格，请使用引号包围：
+
+```bash
+ddns --line "中国电信" "中国联通" "中国移动"
+ddns --index4 "url:http://ip.example.com/api?type=ipv4" public
+```
+
+#### 不支持的用法
+
+```bash
+# ❌ 不支持逗号分隔
+ddns --ipv4 "example.com,www.example.com"
+ddns --ipv4=example.com,www.example.com
+```
+
+### 参数详表
+
 | 参数              | 类型       | 描述                                                                                                                                       | 示例                                                       |
 | --------------- | :-----: | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `-h, --help`    | 标志       | 显示帮助信息并退出                                                                                                                                | `--help`                                                 |
 | `-v, --version` | 标志       | 显示版本信息并退出                                                                                                                                | `--version`                                              |
-| `-c, --config`  | 字符串      | 指定配置文件路径                                                                                                                                 | `--config config.json`                                   |
+| `-c, --config`  | 字符串列表      | 指定配置文件路径，支持多个配置文件                                                                                                                                 | `--config config.json` <br> `--config config1.json --config config2.json`                                   |
 | `--new-config`  | 标志/字符串   | 生成新的配置文件（可指定路径）                                                                                                                          | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       | 标志       | 开启调试模式                                                                                                                                   | `--debug`                                                |
 | `--dns`         | 选择项      | [DNS服务提供商](providers/README.md)包括：<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
 | `--endpoint`    | 字符串      | 自定义API 端点 URL(更换服务节点)                                                                                                            | `--endpoint https://api.private.com`                     |
 | `--id`          | 字符串      | API 访问 ID、邮箱或 Access ID                                                                                                                 | `--id user@example.com`                                  |
 | `--token`       | 字符串      | API 授权令牌或密钥（Secret Key）                                                                                                                  | `--token abcdef123456`                                   |
-| `--ipv4`        | 字符串列表    | IPv4 域名列表，多个域名重复使用参数                                                                                                                     | `--ipv4 test.com --ipv4 4.test.com`              |
-| `--ipv6`        | 字符串列表    | IPv6 域名列表，多个域名重复使用参数                                                                                                                     | `--ipv6 test.com`                                     |
-| `--index4`      | 列表 | IPv4 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public` <br> `--index4 "regex:192\\.168\\..*"` |
-| `--index6`      | 列表 | IPv6 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0` <br> `--index6 public`                      |
+| `--ipv4`        | 字符串列表    | IPv4 域名列表，支持重复参数或空格分隔                                                                                                                     | `--ipv4 test.com 4.test.com` 或 `--ipv4 test.com --ipv4 4.test.com`              |
+| `--ipv6`        | 字符串列表    | IPv6 域名列表，支持重复参数或空格分隔                                                                                                                     | `--ipv6 test.com` 或 `--ipv6 test.com ipv6.test.com`                                     |
+| `--index4`      | 列表 | IPv4 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index4 public 0` 或 `--index4 public --index4 "regex:192\\.168\\..*"` |
+| `--index6`      | 列表 | IPv6 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0 public` 或 `--index6 0 --index6 public`                      |
 | `--ttl`         | 整数       | DNS 解析记录的 TTL 时间（秒）                                                                                                                      | `--ttl 600`                                              |
 | `--line`        | 字符串      | 解析线路(部分provider支持)，如 ISP线路                                                                                                                         | `--line 电信` <br> `--line telecom`                        |
-| `--proxy`       | 字符串列表    | HTTP 代理设置，可用格式：IP:端口 或 `DIRECT`                                                                                                   | `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--proxy`       | 字符串列表    | HTTP 代理设置，可用格式：IP:端口 或 `DIRECT`                                                                                                   | `--proxy 127.0.0.1:1080 DIRECT` 或 `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
 | `--cache`       | 标志/字符串   | 是否启用缓存或自定义缓存路径                                                                                                                           | `--cache` <br> `--cache=/path/to/cache`        |
 | `--no-cache`    | 标志       | 禁用缓存（等效于 `--cache=false`）                                                                                                                | `--no-cache`                                             |
 | `--ssl`         | 字符串      | SSL 证书验证方式，支持：true, false, auto, 文件路径                                                                                                    | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`             |
@@ -49,6 +88,20 @@ python3 -m ddns -h
 
 > **注意**: 其中`--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`为命令行独有参数。
 
+## 配置文件
+
+### `-c FILE`
+
+`-c`是`--config`的简写形式，用于指定配置文件路径。可以使用多个`-c`参数来加载多个配置文件。
+
+```bash
+
+ddns -c config.json 
+
+# 多配置文件
+ddns -c cloudflare.json -c dnspod.json 
+
+```
 
 ## DNS服务配置参数
 
@@ -226,7 +279,7 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
 
 ## 常用命令示例
 
-### 使用配置文件
+### 基本使用
 
 ```bash
 # 使用默认配置文件
@@ -234,154 +287,90 @@ ddns
 
 # 使用指定配置文件
 ddns -c /path/to/config.json
-```
 
-### 命令行临时修改配置
-
-```bash
-# 启用调试模式
-ddns --debug
-
-# 使用指定配置文件并启用调试模式
-ddns -c /path/to/config.json --debug
-
-# 更新特定域名的IPv4地址（多个域名）
-ddns --ipv4 example.com --ipv4 www.example.com
-
-# 设置为阿里云DNS并提供认证信息
-ddns --dns alidns --id YOUR_ACCESS_KEY_ID --token YOUR_ACCESS_KEY_SECRET
-```
-
-### 高级用法示例
-
-```bash
-# 使用公网IP和特定的网络配置
-ddns --ipv4 example.com --index4 public --ttl 600 --proxy 127.0.0.1:1080
-
-# 自定义日志配置
-ddns --log_level=DEBUG --log_file=./ddns.log --log_format="%(asctime)s - %(levelname)s: %(message)s"
-
-# 完整配置示例
-ddns --dns cloudflare --id user@example.com --token API_TOKEN \
-     --ipv4 example.com --ipv4 www.example.com --ipv6 example.com \
-     --index4 public --index6 "regex:2001:.*" \
-     --ttl 300 --proxy 127.0.0.1:1080 --proxy DIRECT \
-     --cache=/var/cache/ddns.cache \
-     --log_level=INFO --log_file=/var/log/ddns.log
-```
-
-## 完整使用示例
-
-### 基本配置示例
-
-```bash
-# 最简单的配置 - DNSPod国内版
-ddns --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com
+# 使用多个配置文件
+ddns -c cloudflare.json -c dnspod.json
 
 # 生成新的配置文件
 ddns --new-config config.json
-
-# 使用指定配置文件
-ddns -c /path/to/config.json
-
-# 查看版本信息
-ddns --version
 ```
 
-### 不同DNS提供商示例
+### 直接命令行配置
 
 ```bash
-# CloudFlare
-ddns --dns cloudflare --id user@example.com --token your_api_token --ipv4 example.com
+# 最简单的配置
+ddns --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com
 
-# 阿里云DNS
-ddns --dns alidns --id your_access_key_id --token your_access_key_secret --ipv4 example.com
+# 启用调试模式
+ddns --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com --debug
 
-# 阿里云ESA（自定义端点）
-ddns --dns aliesa --id your_access_key_id --token your_access_key_secret --endpoint https://esa.ap-southeast-1.aliyuncs.com --ipv4 example.com
+# 多域名配置（空格分隔）
+ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+     --ipv4 example.com www.example.com --ipv6 example.com
 
-# 华为云DNS
-ddns --dns huaweidns --id your_access_key --token your_secret_key --ipv4 example.com
-
-# HE.net（无需id）
-ddns --dns he --token your_password --ipv4 example.com
-
-# DNS.COM/51DNS
-ddns --dns dnscom --id your_user_id --token your_api_token --ipv4 example.com
-
-# 腾讯云DNS
-ddns --dns tencentcloud --id your_secret_id --token your_secret_key --ipv4 example.com
-
-# 腾讯云 EdgeOne
-ddns --dns edgeone --id your_secret_id --token your_secret_key --ipv4 example.com
-
-# NoIP
-ddns --dns noip --id your_username --token your_password --ipv4 example.com
-
-# NoIP（自定义端点）
-ddns --dns noip --id your_username --token your_password --endpoint https://your-ddns-server.com --ipv4 example.com
+# 多域名配置（重复参数）
+ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+     --ipv4 example.com --ipv4 www.example.com --ipv6 example.com
 ```
 
 ### 高级配置示例
 
 ```bash
-# 多域名、多IP获取方式
+# 完整配置示例（包含代理、TTL、IP获取方式等） - 使用空格分隔
 ddns --dns cloudflare --id user@example.com --token API_TOKEN \
-     --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com \
-     --ipv6 example.com --ipv6 ipv6.example.com \
-     --index4 public --index4 "regex:192\\.168\\.1\\..*" \
-     --index6 public --index6 0
+     --ipv4 example.com www.example.com \
+     --index4 public "regex:2001:.*" \
+     --ttl 300 --proxy 127.0.0.1:1080 DIRECT \
+     --cache=/var/cache/ddns.cache \
+     --log_level=INFO --log_file=/var/log/ddns.log
 
-# 使用代理和自定义TTL
-ddns --dns dnspod --id 12345 --token mytokenkey \
-     --index4 public --ipv4 example.com --ttl 300 \
-     --proxy 127.0.0.1:1080 --proxy DIRECT
+# 完整配置示例 - 使用重复参数
+ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+     --ipv4 example.com --ipv4 www.example.com \
+     --index4 public --index6 "regex:2001:.*" \
+     --ttl 300 --proxy 127.0.0.1:1080 --proxy DIRECT \
+     --cache=/var/cache/ddns.cache \
+     --log_level=INFO --log_file=/var/log/ddns.log
 
+# 使用线路解析
 ddns --dns dnspod --id 12345 --token mytokenkey \
      --ipv4 telecom.example.com --line 电信
 
-
-# 调试模式
-ddns --debug ...
-
 # 禁用缓存和SSL验证
-ddns --no-cache --no-ssl ...
-```
-
-### 自定义回调示例
-
-```bash
-# GET方式回调
-ddns --dns callback \
-     --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__&ttl=__TTL__" \
-     --token "" \
-     --ipv4 example.com --index4 public
-
-# POST方式回调
-ddns --dns callback \
-     --id "https://api.example.com/ddns" \
-     --token '{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__", "type": "__RECORDTYPE__"}' \
-     --ipv4 example.com --ipv6 example.com
-```
-
-### 日志配置示例
-
-```bash
-# 详细日志配置
-ddns --dns cloudflare --id user@example.com --token API_TOKEN \
-     --ipv4 example.com  --index4 public \
-     --log_level=DEBUG \
-     --log_file=/var/log/ddns.log \
-     --log_format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s" \
-     --log_datefmt="%Y-%m-%d %H:%M:%S"
-
-# 简单调试
-ddns --debug --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com
+ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
+     --ipv4 example.com --no-cache --no-ssl
 ```
 
 ## 注意事项
 
-1. 命令行参数具有最高优先级，会覆盖配置文件和环境变量中的设置。
-2. 对于需要空格的参数值，请使用引号包围，例如：`--log_format="%(asctime)s: %(message)s"`。
-3. 对于多值参数（如`--ipv4`、`--index4`、`--proxy`等），请重复使用参数标识，例如：`--ipv4 example.com --ipv4 sub.example.com`。
-4. `--debug`参数仅在命令行中有效，配置文件中的debug设置将被忽略。
+### 优先级
+
+**命令行参数优先级**: 命令行参数具有最高优先级，会覆盖配置文件和环境变量中的设置。
+
+### 引号
+
+**引号使用**: 对于需要空格或特殊字符的参数值，请使用引号包围，例如：`--log_format="%(asctime)s: %(message)s"`。
+
+### 列表参数
+
+**列表参数配置**: 对于多值参数（如`--ipv4`、`--ipv6`、`--index4`、`--index6`、`--proxy`等），支持两种指定方式：
+
+   ```bash
+   # ✅ 方式一：重复参数名（推荐）
+   ddns --ipv4 example.com --ipv4 sub.example.com --ipv4 api.example.com
+   ddns --index4=public --index4=0 --index4="regex:192\\.168\\..*"
+
+   # ✅ 方式二：空格分隔
+   ddns --ipv4 example.com sub.example.com api.example.com
+   ddns --index4 public 0 "regex:192\\.168\\..*"
+   
+   ddns --ipv4=example.com,sub.example.com      # 不支持等号加逗号
+   ```
+
+### 调试模式
+
+**调试模式**: `--debug`参数仅在命令行中有效，配置文件中的debug设置将被忽略。
+
+### 正则表达式
+
+**正则表达式**: 使用正则表达式时需要适当转义特殊字符，建议使用引号包围，例如：`--index4 "regex:192\\.168\\..*"`。

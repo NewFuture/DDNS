@@ -22,6 +22,12 @@ ddns --dns dnspod --ipv4 ddns.newfuture.cc --new-config config.json
 ddns -c /path/to/config.json
 # 或者使用Python源码
 python -m ddns -c /path/to/config.json
+
+# 使用多个配置文件
+ddns -c cloudflare.json -c dnspod.json
+# 或通过环境变量
+export DDNS_CONFIG="cloudflare.json,dnspod.json"
+ddns
 ```
 
 ## JSON模式
@@ -48,8 +54,8 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 | endpoint |       string       |  否  |     无      |   API端点URL      | 用于自定义或私有部署的API地址，为空时使用默认端点                                                           |
 |  ipv4    |       array        |  否  |    `[]`     |   IPv4域名列表    |  |
 |  ipv6    |       array        |  否  |    `[]`     |   IPv6域名列表    | |
-| index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | [详见下方说明](#ipv4-ipv6)|
-| index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | [详见下方说明](#ipv4-ipv6)|
+| index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | [详见下方说明](#index4-index6)|
+| index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | [详见下方说明](#index4-index6)|
 |  ttl     |       number       |  否  |   `null`    | DNS TTL时间     | 单位为秒，不设置则采用DNS默认策略|
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定 |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
@@ -178,6 +184,8 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ## 配置示例
 
+### 单Provider格式
+
 ```json
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
@@ -199,6 +207,50 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   }
 }
 ```
+
+### 多Provider格式
+
+从v4.1.0版本开始，支持在单个配置文件中定义多个DNS Provider，使用新的 `providers` 数组格式：
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+  "ssl": "auto",
+  "cache": true,
+  "log": {"level": "INFO", "file": "/var/log/ddns.log"},
+  "providers": [
+    {
+      "name": "cloudflare",
+      "id": "user1@example.com",
+      "token": "cloudflare-token",
+      "ipv4": ["test1.example.com"],
+      "ttl": 300
+    },
+    {
+      "name": "dnspod",
+      "id": "user2@example.com",
+      "token": "dnspod-token",
+      "ipv4": ["test2.example.com"],
+      "ttl": 600
+    }
+  ]
+}
+```
+
+#### v4.1格式特性
+
+* **全局配置继承**: `providers` 外的所有配置项（如 `ssl`, `cache`, `log` 等）作为全局设置，会被所有provider继承
+* **provider覆盖**: 每个provider内的配置可以覆盖相应的全局设置
+* **name字段**: 必须字段，指定DNS服务商类型（等同于传统格式中的 `dns` 字段）
+* **完整兼容**: 支持所有传统格式中的配置参数
+* **嵌套对象扁平化**: provider内的嵌套对象会被自动扁平化处理
+
+#### 冲突检查
+
+* `providers` 和 `dns` 字段不能同时存在
+* 多providers时，不能在全局配置中使用 `ipv4` 或 `ipv6` 字段
+  * 每个provider必须包含 `name` 字段
+  * 外层(global)不得包含 `ipv4`或者 `ipv6` 字段
 
 ## 配置优先级和字段覆盖关系
 

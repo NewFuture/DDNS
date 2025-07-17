@@ -51,14 +51,14 @@ DNS records and DNS must be created in advance
 | :-------: | :--------------- | :------------- | :------------------------------------- | :-------- | :------------- |
 | dns       | Provider ID      | String         | `he`                                   | None      | Provider Param |
 | token     | Authentication   | String         | HE.net DDNS password                   | None      | Provider Param |
-| index4    | IPv4 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
-| index6    | IPv6 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index4    | IPv4 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index6    | IPv6 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
 | ipv4      | IPv4 Domain      | Array          | Domain list                            | None      | Common Config  |
 | ipv6      | IPv6 Domain      | Array          | Domain list                            | None      | Common Config  |
-| proxy     | Proxy Settings   | Array          | [Reference](../json.en.md#proxy)      | None      | Common Network |
+| proxy     | Proxy Settings   | Array          | [Reference](../config/json.en.md#proxy)      | None      | Common Network |
 | ssl       | SSL Verification | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
 | cache     | Cache Settings   | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
-| log       | Log Config       | Object         | [Reference](../json.en.md#log)        | None      | Common Config  |
+| log       | Log Config       | Object         | [Reference](../config/json.en.md#log)        | None      | Common Config  |
 
 > **Parameter Type Description**:
 >
@@ -70,7 +70,7 @@ DNS records and DNS must be created in advance
 
 ## Usage Limitations
 
-- ❌ **Does not support automatic record creation**: Must manually create DNS records in HE.net control panel first
+- �?**Does not support automatic record creation**: Must manually create DNS records in HE.net control panel first
 - ⚠️ **Update only**: Can only update IP addresses of existing records, cannot create new records
 - 🔑 **Dedicated password**: Each record has an independent DDNS password
 

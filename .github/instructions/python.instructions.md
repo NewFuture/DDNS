@@ -245,7 +245,7 @@ if response is None:
 
 - **API Changes**: Update docstrings and `doc/dev/provider.md` for provider interface changes
 - **Configuration Changes**: Update JSON schemas in `schema/` directory
-- **User-Facing Changes**: Update CLI documentation in `doc/cli.md`
+- **User-Facing Changes**: Update CLI documentation in `doc/config/cli.md`
 - **Examples**: Keep code examples in documentation synchronized with actual implementation
 
 ### Terminal Usage Guidelines for Copilot Agent

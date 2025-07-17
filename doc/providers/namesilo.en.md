@@ -20,7 +20,7 @@ NameSilo uses API Key for authentication, which is the only authentication metho
 #### Obtaining Authentication Information
 
 1. Log in to [NameSilo Console](https://www.namesilo.com/account_home.php)
-2. Go to "Account Options" â†’ "API Manager" or visit <https://www.namesilo.com/account/api-manager>
+2. Go to "Account Options" â†?"API Manager" or visit <https://www.namesilo.com/account/api-manager>
 3. Generate a new API Key
 
 > **Note**: The API Key has full account permissions. Please keep it secure and do not share it with others.
@@ -53,15 +53,15 @@ NameSilo uses API Key for authentication, which is the only authentication metho
 | :-------: | :--------------- | :------------- | :------------------------------------- | :-------- | :------------- |
 | dns       | Provider ID      | String         | `namesilo`                             | None      | Provider Param |
 | token     | Authentication Key| String        | NameSilo API Key                       | None      | Provider Param |
-| index4    | IPv4 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
-| index6    | IPv6 Source      | Array          | [Reference](../json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index4    | IPv4 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index6    | IPv6 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
 | ipv4      | IPv4 Domain      | Array          | Domain list                            | None      | Common Config  |
 | ipv6      | IPv6 Domain      | Array          | Domain list                            | None      | Common Config  |
 | ttl       | TTL Time         | Integer (seconds)| 300 ~ 2592000                       | `7200`    | Provider Param |
-| proxy     | Proxy Settings   | Array          | [Reference](../json.en.md#proxy)      | None      | Common Network |
+| proxy     | Proxy Settings   | Array          | [Reference](../config/json.en.md#proxy)      | None      | Common Network |
 | ssl       | SSL Verification | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
 | cache     | Cache Settings   | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
-| log       | Log Config       | Object         | [Reference](../json.en.md#log)        | None      | Common Config  |
+| log       | Log Config       | Object         | [Reference](../config/json.en.md#log)        | None      | Common Config  |
 
 > **Parameter Type Description**:
 >

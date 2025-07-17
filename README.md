@@ -19,15 +19,16 @@
   - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - 配置方式:
-  - [命令行参数](/doc/cli.md)
-  - [JSON 配置文件](/doc/json.md)
-  - [环境变量配置](/doc/env.md)
+  - [命令行参数](/doc/config/cli.md)
+  - [JSON 配置文件](/doc/config/json.md) (支持单文件多Provider和多配置文件)
+  - [环境变量配置](/doc/config/env.md)
   - [服务商配置指南](/doc/providers/)
 
 - 域名支持:
   - 多个域名支持
   - 多级域名解析
   - 自动创建新 DNS 记录
+  - 多配置文件和多Provider同时运行
 - IP 类型:
   - 内网 IPv4 / IPv6
   - 公网 IPv4 / IPv6 (支持自定义 API)
@@ -138,9 +139,9 @@
 
 所有字段可通过三种方式进行配置，优先级为：**命令行参数 > JSON配置文件 > 环境变量**
 
-1. [命令行参数](doc/cli.md) `ddns --key=value`（`ddns -h` 查看详情），优先级最高
-2. [JSON 配置文件](doc/json.md)（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
-3. 环境变量 DDNS_ 前缀加上 key 全大写或者全小写，点转下划线（`${ddns_id}` 或 `${DDNS_ID}`，`${DDNS_LOG_LEVEL}`）
+1. [命令行参数](doc/config/cli.md) `ddns --key=value`（`ddns -h` 查看详情），优先级最高
+2. [JSON 配置文件](doc/config/json.md)（值为 null 认为是有效值，会覆盖环境变量的设置，如果没有对应的 key 则会尝试使用环境变量）
+3. [环境变量](doc/config/env.md) DDNS_ 前缀加上 key （`${ddns_id}` 或 `${DDNS_ID}`，`${DDNS_LOG_LEVEL}`）
 
 ### 配置优先级和字段覆盖关系
 
@@ -156,9 +157,9 @@
 - `debug`参数只在命令行中有效，JSON配置文件中的同名设置无效
 - 多值参数（如`ipv4`、`ipv6`等）在命令行中使用方式为重复使用参数，如`--ipv4 domain1 --ipv4 domain2`
 
-各配置方式的详细说明请查看对应文档：[命令行](doc/cli.md)、[JSON配置](doc/json.md)、[环境变量](doc/env.md)、[服务商配置](doc/providers/)
+各配置方式的详细说明请查看对应文档：[命令行](doc/config/cli.md)、[JSON配置](doc/config/json.md)、[环境变量](doc/config/env.md)、[服务商配置](doc/providers/)
 
-> 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/env.md) 了解所有环境变量的详细用法和示例
+> 📖 **环境变量详细配置**: 查看 [环境变量配置文档](doc/config/env.md) 了解所有环境变量的详细用法和示例
 
 <details open>
 <summary markdown="span">config.json 配置文件</summary>
@@ -166,7 +167,7 @@
 - 首次运行会自动生成一个模板配置文件
 - 可以使用 `-c` 使用指定的配置文件（默认读取当前目录的 config.json）
 - 推荐使用 vscode 等支持 JsonSchema 的编辑器编辑配置文件
-- 查看 [JSON配置文件详细文档](doc/json.md) 了解完整的配置选项和示例
+- 查看 [JSON配置文件详细文档](doc/config/json.md) 了解完整的配置选项和示例
 
 ```bash
 ddns -c path/to/config.json
