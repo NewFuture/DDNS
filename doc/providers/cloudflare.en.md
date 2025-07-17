@@ -89,15 +89,15 @@ You can view and configure permissions in [Cloudflare API Token Management](http
 | dns | Provider identifier | String | `cloudflare` | None | Provider Parameter |
 | id | Authentication email | String | Cloudflare account email (Global API Key only) | None | Provider Parameter |
 | token | Authentication key | String | Cloudflare API Token or Global API Key | None | Provider Parameter |
-| index4 | IPv4 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
-| index6 | IPv6 source | Array | [Reference](../json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
 | ttl | TTL time | Integer (seconds) | [Reference below](#ttl) | `300/auto` | Provider Parameter |
-| proxy | Proxy settings | Array | [Reference](../json.en.md#proxy) | None | Common Network |
+| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
-| log | Log configuration | Object | [Reference](../json.en.md#log) | None | Common Config |
+| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Config |
 
 > **Parameter Type Description**:
 >

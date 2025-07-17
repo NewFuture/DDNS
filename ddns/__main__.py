@@ -10,7 +10,7 @@ from logging import getLogger
 import sys
 
 from .__init__ import __version__, __description__, build_date
-from .config import load_config, Config  # noqa: F401
+from .config import load_configs, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
 from . import ip
 from .cache import Cache
@@ -110,8 +110,38 @@ def main():
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     logger.name = "ddns"
-    config = load_config(__description__, __version__, build_date)
-    run(config)
+
+    # 使用多配置加载器，它会自动处理单个和多个配置
+    configs = load_configs(__description__, __version__, build_date)
+
+    if len(configs) == 1:
+        # 单个配置，使用原有逻辑（向后兼容）
+        config = configs[0]
+        success = run(config)
+        if not success:
+            sys.exit(1)
+    else:
+        # 多个配置，使用新的批处理逻辑
+        overall_success = True
+        for i, config in enumerate(configs):
+            # 如果log_level有值则设置setLevel
+            if hasattr(config, "log_level") and config.log_level:
+                logger.setLevel(config.log_level)
+            logger.info("Running configuration %d/%d", i + 1, len(configs))
+            # 记录当前provider
+            logger.info("Using DNS provider: %s", config.dns)
+            success = run(config)
+            if not success:
+                overall_success = False
+                logger.error("Configuration %d failed", i + 1)
+            else:
+                logger.info("Configuration %d completed successfully", i + 1)
+
+        if not overall_success:
+            logger.error("Some configurations failed")
+            sys.exit(1)
+        else:
+            logger.info("All configurations completed successfully")
 
 
 if __name__ == "__main__":

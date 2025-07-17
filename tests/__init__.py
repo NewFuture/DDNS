@@ -8,11 +8,11 @@ import os
 import unittest
 
 try:
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch, MagicMock, call
 except ImportError:  # Python 2
-    from mock import patch, MagicMock  # type: ignore
+    from mock import patch, MagicMock, call  # type: ignore
 
-__all__ = ["patch", "MagicMock", "unittest"]
+__all__ = ["patch", "MagicMock", "unittest", "call"]
 
 # 添加当前目录到 Python 路径，这样就可以直接导入 test_base
 current_dir = os.path.dirname(__file__)

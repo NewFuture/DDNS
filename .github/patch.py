@@ -11,25 +11,6 @@ from datetime import datetime, timezone
 ROOT = "."
 init_py_path = os.path.join(ROOT, "ddns", "__init__.py")
 
-# 匹配 try-except 块，去除导入前缩进，保证import顶格，删除的行用空行代替
-PATTERN = re.compile(
-    r"^[ \t]*try:[^\n]*python 3[^\n]*\n"  # try: # python 3
-    r"((?:[ \t]+[^\n]*\n)+?)"  # python3 导入内容
-    r"^[ \t]*except ImportError:[^\n]*\n"  # except ImportError: # python 2
-    r"((?:[ \t]+from[^\n]*\n|[ \t]+import[^\n]*\n)*)",  # except块内容
-    re.MULTILINE,
-)
-
-
-def dedent_imports_with_blank(import_block, try_block, except_block):
-    """
-    保留python3导入并去除缩进,try/except及except内容用空行代替
-    """
-    try_lines = try_block.count("\n")
-    except_lines = except_block.count("\n")
-    imports = "".join(line.lstrip() for line in import_block.splitlines(keepends=True))
-    return ("\n" * try_lines) + imports + ("\n" * except_lines)
-
 
 def extract_pure_version(version_str):
     """
@@ -105,7 +86,7 @@ def add_nuitka_include_modules(pyfile):
     return True
 
 
-def remove_python2_compatibility(pyfile):
+def remove_python2_compatibility(pyfile):  # noqa: C901
     """
     自动将所有 try-except python2/3 兼容导入替换为 python3 only 导入，并显示处理日志
     删除指定文件中的 python2 兼容代码，逐行处理
@@ -118,28 +99,72 @@ def remove_python2_compatibility(pyfile):
     changed = False
     while i < len(lines):
         line = lines[i]
-        # 匹配 "try: # python3" 或 "try: # python 3"
-        if re.match(r"^[ \t]*try:[^\n]*python ?3", line):
+        # 匹配 "try: # python3" 或 "try: # python 3" (包括更复杂的注释)
+        if re.match(r"^[ \t]*try:[^\n]*python ?3(?:[^\n]*python ?2)?", line):
+            indent_match = re.match(r"^([ \t]*)", line)
+            base_indent = indent_match.group(1) if indent_match else ""
+            try_indent_level = len(base_indent)
             try_block = []
-            except_block = []
             i += 1
-            # 收集try块内容
-            while i < len(lines) and lines[i].startswith((" ", "\t")):
-                try_block.append(lines[i].lstrip())
+
+            # 收集try块内容：只收集缩进比try行更深的行
+            while i < len(lines):
+                current_line = lines[i]
+                # 如果是空行，跳过
+                if current_line.strip() == "":
+                    break
+                # 检查缩进级别
+                current_indent_match = re.match(r"^([ \t]*)", current_line)
+                current_indent = current_indent_match.group(1) if current_indent_match else ""
+                current_indent_level = len(current_indent)
+
+                # 如果缩进不比try行深，说明try块结束了
+                if current_indent_level <= try_indent_level:
+                    break
+
+                try_block.append(current_line)
                 i += 1
+
             # 跳过空行
             while i < len(lines) and lines[i].strip() == "":
                 i += 1
-            # 检查是否存在except块 (不检查具体错误类型，但必须包含python2或python 2)
+
+            # 检查except块 (必须包含python2字样，并且可能包含TypeError或AttributeError)
             if i < len(lines) and re.match(r"^[ \t]*except[^\n]*python ?2", lines[i]):
                 i += 1
                 # 收集except块内容
                 except_block = []
-                while i < len(lines) and lines[i].startswith((" ", "\t")):
-                    except_block.append(lines[i])
+                while i < len(lines):
+                    current_line = lines[i]
+                    # 如果是空行或缩进不比except行深，except块结束
+                    if current_line.strip() == "":
+                        break
+                    current_indent_match = re.match(r"^([ \t]*)", current_line)
+                    current_indent = current_indent_match.group(1) if current_indent_match else ""
+                    current_indent_level = len(current_indent)
+
+                    if current_indent_level <= try_indent_level:
+                        break
+
+                    except_block.append(current_line)
                     i += 1
-                # 添加try块内容，except块用空行替代
-                new_lines.extend(["\n"] + try_block + ["\n"] * (len(except_block) + 1))
+
+                # 处理try块内容：保持原有缩进或去除缩进（根据是否在模块级别）
+                processed_try_block = []
+                for try_line in try_block:
+                    if base_indent == "":  # 模块级别，去除所有缩进
+                        processed_try_block.append(try_line.lstrip())
+                    else:  # 函数/类内部，保持基础缩进
+                        if try_line.strip():
+                            processed_try_block.append(base_indent + try_line.lstrip())
+                        else:
+                            processed_try_block.append(try_line)
+
+                # 保持行号不变：try行用空行替换，except行和except块内容也用空行替换
+                new_lines.append("\n")  # try行替换为空行
+                new_lines.extend(processed_try_block)  # 保留try块内容
+                new_lines.append("\n")  # except行替换为空行
+                new_lines.extend(["\n"] * len(except_block))  # except块内容用空行替换
                 changed = True
             else:
                 # 没有except块，原样保留

@@ -5,7 +5,7 @@
     "token": "TEST", # Token for authentication, can be empty for NoIP
     "endpoint": "https://httpbin.org/base64/Z29vZCAxOTIuMTY4LjEuMQ==?",
     "ipv4": [
-        "test.example.com"
+        "ddns.newfuture.cc"
     ],
     "index4": [
         "public" // 公网IP
@@ -13,6 +13,7 @@
     "ttl": 300,
     "proxy": null,
     "cache": false, // Disable caching for NoIP
+    "ssl": false,
     "log": {
         "level": "DEBUG",
         "datefmt": "%m-%d %H:%M:%S"

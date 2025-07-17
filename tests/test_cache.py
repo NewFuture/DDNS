@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# type: ignore[index,operator,assignment]
 """
 Test cases for cache module
 

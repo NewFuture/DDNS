@@ -114,9 +114,9 @@ class Config(object):
 
 Update the relevant documentation files:
 
-- `doc/cli.en.md` - Add CLI parameter documentation
-- `doc/env.en.md` - Add environment variable documentation  
-- `doc/json.en.md` - Add JSON configuration documentation
+- `doc/config/cli.en.md` - Add CLI parameter documentation
+- `doc/config/env.en.md` - Add environment variable documentation  
+- `doc/config/json.en.md` - Add JSON configuration documentation
 
 ## Configuration Value Processing
 

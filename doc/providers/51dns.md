@@ -53,16 +53,16 @@
 | dns     | 服务商标识   | 字符串         | `dnscom`                           | 无        | 服务商参数 |
 | id      | 认证 ID      | 字符串         | 51DNS API Key                      | 无        | 服务商参数 |
 | token   | 认证密钥     | 字符串         | 51DNS Secret Key                   | 无        | 服务商参数 |
-| index4  | IPv4 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)  | `default` | 公用配置   |
-| index6  | IPv6 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)   | `default` | 公用配置   |
+| index4  | IPv4 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)  | `default` | 公用配置   |
+| index6  | IPv6 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)   | `default` | 公用配置   |
 | ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | line    | 解析线路      | 字符串         | [参考下方](#line)                   | `1`       | 服务商参数 |
 | ttl     | TTL 时间      | 整数（秒）     | [参考下方](#ttl)                    | `600`     | 服务商参数 |
-| proxy   | 代理设置      | 数组           | [参考配置](../json.md#proxy)        | 无        | 公用网络   |
+| proxy   | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
 | ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
 | cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
-| log     | 日志配置      | 对象           | [参考配置](../json.md#log)             | 无        | 公用配置   |
+| log     | 日志配置      | 对象           | [参考配置](../config/json.md#log)             | 无        | 公用配置   |
 
 > **参数类型说明**：  
 >

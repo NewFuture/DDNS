@@ -1,4 +1,5 @@
 # coding=utf-8
+# type: ignore[index,operator,assignment]
 """
 Unit tests for ddns.config.file module
 @author: GitHub Copilot
@@ -10,8 +11,19 @@ import shutil
 import os
 import json
 import io
-from io import StringIO
+import sys
 from ddns.config.file import load_config, save_config
+
+# Python 2/3 compatibility
+if sys.version_info[0] >= 3:
+    from io import StringIO
+
+    unicode = str
+else:
+    try:
+        from StringIO import StringIO
+    except ImportError:
+        from io import StringIO
 
 FileNotFoundError = globals().get("FileNotFoundError", IOError)
 PermissionError = globals().get("PermissionError", IOError)
@@ -26,6 +38,7 @@ class TestConfigFile(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.temp_dir, ignore_errors=True)
 
         # Capture stdout and stderr output for testing
+        # Use unicode-compatible StringIO for Python 2/3 compatibility
         self.stdout_capture = StringIO()
         self.stderr_capture = StringIO()
         self.original_stdout = __import__("sys").stdout
@@ -566,6 +579,172 @@ class TestConfigFile(unittest.TestCase):
         self.assertEqual(loaded_config["metadata_version"], "1.0")
         self.assertEqual(loaded_config["metadata_author"], "test")
         self.assertTrue(loaded_config["metadata_enabled"])
+
+    def test_load_config_v41_providers_format(self):
+        """Test loading configuration with v4.1 providers format"""
+        config_data = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+            "ssl": "auto",
+            "cache": True,
+            "log": {"level": "INFO", "file": "/var/log/ddns.log"},
+            "providers": [
+                {
+                    "provider": "cloudflare",
+                    "id": "user1@example.com",
+                    "token": "token1",
+                    "ipv4": ["test1.example.com"],
+                    "ttl": 300,
+                },
+                {
+                    "provider": "dnspod",
+                    "id": "user2@example.com",
+                    "token": "token2",
+                    "ipv4": ["test2.example.com"],
+                    "ttl": 600,
+                },
+            ],
+        }
+
+        config_file = self.create_test_file("v41_providers.json", config_data)
+        loaded_configs = load_config(config_file)
+
+        # Should return a list of configs
+        self.assertIsInstance(loaded_configs, list)
+        self.assertEqual(len(loaded_configs), 2)
+
+        # Test first provider config
+        config1 = loaded_configs[0]
+        self.assertEqual(config1["dns"], "cloudflare")  # name mapped to dns
+        self.assertEqual(config1["id"], "user1@example.com")
+        self.assertEqual(config1["token"], "token1")
+        self.assertEqual(config1["ipv4"], ["test1.example.com"])
+        self.assertEqual(config1["ttl"], 300)
+
+        # Test global configs are inherited
+        self.assertEqual(config1["ssl"], "auto")
+        self.assertTrue(config1["cache"])
+        self.assertEqual(config1["log_level"], "INFO")
+        self.assertEqual(config1["log_file"], "/var/log/ddns.log")
+
+        # Test second provider config
+        config2 = loaded_configs[1]
+        self.assertEqual(config2["dns"], "dnspod")  # name mapped to dns
+        self.assertEqual(config2["id"], "user2@example.com")
+        self.assertEqual(config2["token"], "token2")
+        self.assertEqual(config2["ipv4"], ["test2.example.com"])
+        self.assertEqual(config2["ttl"], 600)
+
+        # Test global configs are inherited in second config too
+        self.assertEqual(config2["ssl"], "auto")
+        self.assertTrue(config2["cache"])
+        self.assertEqual(config2["log_level"], "INFO")
+        self.assertEqual(config2["log_file"], "/var/log/ddns.log")
+
+    def test_load_config_v41_providers_conflict_with_dns(self):
+        """Test loading configuration where providers and dns fields conflict"""
+        import ddns.config.file
+
+        original_stderr = ddns.config.file.stderr
+        ddns.config.file.stderr = self.stderr_capture
+
+        try:
+            config_data = {
+                "dns": "cloudflare",  # Should conflict with providers
+                "providers": [{"provider": "dnspod", "token": "test_token"}],
+            }
+
+            config_file = self.create_test_file("conflict.json", config_data)
+
+            with self.assertRaises(ValueError) as context:
+                load_config(config_file)
+
+            self.assertIn("providers and dns fields conflict", str(context.exception))
+
+            # Verify error message in stderr
+            stderr_output = self.stderr_capture.getvalue()
+            self.assertIn("'providers' and 'dns' fields cannot be used simultaneously", stderr_output)
+        finally:
+            ddns.config.file.stderr = original_stderr
+
+    def test_load_config_v41_providers_missing_name(self):
+        """Test loading configuration where provider is missing name field"""
+        import ddns.config.file
+
+        original_stderr = ddns.config.file.stderr
+        ddns.config.file.stderr = self.stderr_capture
+
+        try:
+            config_data = {
+                "providers": [
+                    {
+                        "id": "test@example.com",
+                        "token": "test_token",
+                        # Missing "provider" field
+                    }
+                ]
+            }
+
+            config_file = self.create_test_file("missing_name.json", config_data)
+
+            with self.assertRaises(ValueError) as context:
+                load_config(config_file)
+
+            self.assertIn("provider missing provider field", str(context.exception))
+
+            # Verify error message in stderr
+            stderr_output = self.stderr_capture.getvalue()
+            self.assertIn("Each provider must have a 'provider' field", stderr_output)
+        finally:
+            ddns.config.file.stderr = original_stderr
+
+    def test_load_config_v41_providers_single_provider(self):
+        """Test loading configuration with single provider in v4.1 format"""
+        config_data = {
+            "ssl": False,
+            "providers": [{"provider": "debug", "token": "dummy_token", "ipv4": ["test.example.com"]}],
+        }
+
+        config_file = self.create_test_file("single_provider.json", config_data)
+        loaded_configs = load_config(config_file)
+
+        # Should return a list with one config
+        self.assertIsInstance(loaded_configs, list)
+        self.assertEqual(len(loaded_configs), 1)
+
+        config = loaded_configs[0]
+        self.assertEqual(config["dns"], "debug")
+        self.assertEqual(config["token"], "dummy_token")
+        self.assertEqual(config["ipv4"], ["test.example.com"])
+        self.assertFalse(config["ssl"])  # Global config inherited
+
+    def test_load_config_v41_providers_with_nested_objects(self):
+        """Test loading v4.1 providers format with nested objects in providers"""
+        config_data = {
+            "cache": True,
+            "providers": [
+                {
+                    "provider": "cloudflare",
+                    "token": "test_token",
+                    "custom": {"setting1": "value1", "setting2": "value2"},
+                }
+            ],
+        }
+
+        config_file = self.create_test_file("providers_nested.json", config_data)
+        loaded_configs = load_config(config_file)
+
+        self.assertIsInstance(loaded_configs, list)
+        self.assertEqual(len(loaded_configs), 1)
+
+        config = loaded_configs[0]
+        self.assertEqual(config["dns"], "cloudflare")
+        self.assertEqual(config["token"], "test_token")
+        self.assertTrue(config["cache"])
+
+        # Test nested objects in provider config are flattened
+        self.assertEqual(config["custom_setting1"], "value1")
+        self.assertEqual(config["custom_setting2"], "value2")
+        self.assertNotIn("custom", config)
 
 
 if __name__ == "__main__":

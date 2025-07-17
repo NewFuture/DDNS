@@ -19,15 +19,16 @@
   - [Binary files](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - **Configuration Methods:**
-  - [Command Line Arguments](/doc/cli.en.md)
-  - [JSON Configuration File](/doc/json.en.md)
-  - [Environment Variables](/doc/env.en.md)
+  - [Command Line Arguments](/doc/config/cli.en.md)
+  - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider and multiple config files)
+  - [Environment Variables](/doc/config/env.en.md)
   - [Provider Configuration Guide](/doc/providers/)
 
 - **Domain Support:**
   - Multiple domain support
   - Multi-level domain resolution
   - Automatic DNS record creation
+  - Multiple configuration files and multi-provider concurrent execution
 - **IP Types:**
   - Private IPv4 / IPv6
   - Public IPv4 / IPv6 (supports custom API)
@@ -137,8 +138,8 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
 All fields can be configured through three methods, with priority: **Command Line Parameters > JSON Configuration File > Environment Variables**
 
-1. [Command Line Parameters](doc/cli.en.md) `ddns --key=value` (use `ddns -h` for details), highest priority
-2. [JSON Configuration File](doc/json.en.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
+1. [Command Line Parameters](doc/config/cli.en.md) `ddns --key=value` (use `ddns -h` for details), highest priority
+2. [JSON Configuration File](doc/config/json.en.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
 3. Environment Variables with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
 
 ### Configuration Priority and Field Override Relationship

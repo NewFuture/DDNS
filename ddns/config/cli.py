@@ -24,7 +24,7 @@ def str_bool(v):
         return v
     if v is None:
         return False
-    if not isinstance(v, str):
+    if not isinstance(v, str) and not type(v).__name__ == "unicode":
         # For non-string types, convert to string first
         return bool(v)
     if v.lower() in ("yes", "true", "t", "y", "1"):
@@ -123,7 +123,14 @@ def load_config(description, doc, version, date):
         "NOTSET",  # 0
     ]
     parser.add_argument("-v", "--version", action="version", version=version_str)
-    parser.add_argument("-c", "--config", metavar="FILE", help="load config file [配置文件路径]")
+    parser.add_argument(
+        "-c",
+        "--config",
+        nargs="*",
+        action=ExtendAction,
+        metavar="FILE",
+        help="load config file [配置文件路径, 可多次指定]",
+    )
     parser.add_argument("--debug", action="store_true", help="debug mode [开启调试模式]")
     parser.add_argument(
         "--new-config", metavar="FILE", action=NewConfigAction, nargs="?", help="generate new config [生成配置文件]"

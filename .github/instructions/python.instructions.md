@@ -245,7 +245,7 @@ if response is None:
 
 - **API Changes**: Update docstrings and `doc/dev/provider.md` for provider interface changes
 - **Configuration Changes**: Update JSON schemas in `schema/` directory
-- **User-Facing Changes**: Update CLI documentation in `doc/cli.md`
+- **User-Facing Changes**: Update CLI documentation in `doc/config/cli.md`
 - **Examples**: Keep code examples in documentation synchronized with actual implementation
 
 ### Terminal Usage Guidelines for Copilot Agent
@@ -321,3 +321,13 @@ To create a new DNS provider, follow these steps:
 8. **Run all tests** to ensure compatibility and correctness.
 
 For detailed implementation guidance, refer to the provider development guide in `doc/dev/provider.md`.
+
+### Conventional Commits
+
+commit message and pull request title format should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification (`<type>(<scope>): <description>`):
+
+```plaintext
+feat(provider.myprovider): add myprovider support
+fix(util.http): correct authentication logic
+docs(provider.myprovider): update myprovider configuration guide
+```

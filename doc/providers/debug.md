@@ -47,12 +47,12 @@ Debug Provider 不需要任何认证信息，无需配置 `id` 和 `token` 参�
 | 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
 | :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
 | dns     | 服务商标识   | 字符串         | `debug`                            | 无        | 服务商参数 |
-| index4  | IPv4 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)  | `default` | 公用配置   |
-| index6  | IPv6 来源     | 数组           | [参考配置](../json.md#ipv4-ipv6)   | `default` | 公用配置   |
-| proxy   | 代理设置      | 数组           | [参考配置](../json.md#proxy)        | 无        | 公用网络   |
+| index4  | IPv4 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)  | `default` | 公用配置   |
+| index6  | IPv6 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)   | `default` | 公用配置   |
+| proxy   | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
 | ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
 | cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `false`   | 公用配置   |
-| log     | 日志配置      | 对象           | [参考配置](../json.md#log)             | 无        | 公用配置   |
+| log     | 日志配置      | 对象           | [参考配置](../config/json.md#log)             | 无        | 公用配置   |
 
 > **参数类型说明**：  
 >
@@ -92,6 +92,6 @@ Debug Provider 也会模拟一些常见错误场景，帮助测试错误处理�
 ## 支持与资源
 
 - [DDNS 项目文档](../../README.md)
-- [配置文件格式说明](../json.md)
-- [命令行使用指南](../cli.md)
+- [配置文件格式说明](../config/json.md)
+- [命令行使用指南](../config/cli.md)
 - [开发者指南](../dev/provider.md)

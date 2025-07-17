@@ -6,9 +6,9 @@
   - Built-in scheduler, automatic updates every 5 minutes by default
   - No external dependencies, ready to use, optimized performance with low resource usage
 - Configuration Methods:
-  - [CLI Command Line Parameters](cli.en.md)
-  - [JSON Configuration File](json.en.md)
-  - [Environment Variables](env.en.md)
+  - [CLI Command Line Parameters](config/cli.en.md)
+  - [JSON Configuration File](config/json.en.md)
+  - [Environment Variables](config/env.en.md)
 
 ## Image Information
 
@@ -56,7 +56,7 @@ DDNS Docker image supports three configuration methods: command line, environmen
 
 ### Using Command Line Parameters (CLI)
 
-You can refer to the [CLI parameter documentation](cli.en.md) for a detailed parameter list.
+You can refer to the [CLI parameter documentation](config/cli.en.md) for a detailed parameter list.
 In this case, `docker run -v /local/config/:/ddns/ --name=ddns --network=host newfuture/ddns` is equivalent to the `ddns` command line and will not execute scheduled tasks.
 
 This method is suitable for one-time runs or debugging scenarios. Parameters are identical to DDNS command line parameters.
@@ -79,7 +79,7 @@ docker run -d -v /host/config/:/ddns/ newfuture/ddns
 ```
 
 Where `/host/config/` is your local directory containing `config.json`.
-For details on `config.json` content, refer to [JSON Configuration File Documentation](json.en.md).
+For details on `config.json` content, refer to [JSON Configuration File Documentation](config/json.en.md).
 
 ### Using Environment Variables (ENV)
 
@@ -99,7 +99,7 @@ docker run -d \
   newfuture/ddns
 ```
 
-To learn about all supported environment variables, please refer to [Environment Variable Configuration Documentation](env.en.md).
+To learn about all supported environment variables, please refer to [Environment Variable Configuration Documentation](config/env.en.md).
 
 ## Network Modes
 
@@ -293,9 +293,9 @@ RUN chmod +x /bin/custom-script.sh
 
 - [DDNS GitHub Repository](https://github.com/NewFuture/DDNS)
 - [Docker Hub - newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
-- [Environment Variable Configuration Details](env.en.md)
-- [JSON Configuration File Details](json.en.md)
-- [Command Line Parameter Details](cli.en.md)
+- [Environment Variable Configuration Details](config/env.en.md)
+- [JSON Configuration File Details](config/json.en.md)
+- [Command Line Parameter Details](config/cli.en.md)
 
 ## Configuration Examples for Different DNS Providers
 

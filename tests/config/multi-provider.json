@@ -1,0 +1,31 @@
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "ssl": "auto",
+    "cache": false,
+    "log": {
+        "level": "DEBUG"
+    },
+    "providers": [
+        {
+            "provider": "debug",
+            "index4": "default",
+            "ipv4": "test1.example.com",
+            "ttl": 300
+        },
+        {
+            "provider": "debug",
+            "index4": [
+                "public"
+            ],
+            "ipv4": [
+                "test2.example.com"
+            ],
+            "ttl": 600,
+            "cache": true,
+            "endpoint": null,
+            "log": {
+                "level": "INFO"
+            }
+        }
+    ]
+}
