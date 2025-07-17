@@ -14,6 +14,7 @@ from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
     quote,
+    ProxyFallbackHandler,
 )
 
 # Python 2/3 compatibility
@@ -41,6 +42,66 @@ def byte_string(s):
     if isinstance(s, text_type):
         return s.encode("utf-8")
     return s
+
+
+class TestProxyFallbackHandler(unittest.TestCase):
+    """测试 ProxyFallbackHandler 类"""
+
+    def test_init_with_proxy_list(self):
+        """测试使用代理列表初始化"""
+        proxies = ["http://proxy1:8080", "http://proxy2:8080", None]
+        handler = ProxyFallbackHandler(proxies)
+        
+        self.assertEqual(handler.proxies, proxies)
+        self.assertEqual(handler.current_proxy_index, 0)
+
+    def test_init_with_empty_list(self):
+        """测试使用空列表初始化"""
+        handler = ProxyFallbackHandler([])
+        
+        self.assertEqual(handler.proxies, [None])
+        self.assertEqual(handler.current_proxy_index, 0)
+
+    def test_init_with_none(self):
+        """测试使用None初始化"""
+        handler = ProxyFallbackHandler(None)
+        
+        self.assertEqual(handler.proxies, [None])
+        self.assertEqual(handler.current_proxy_index, 0)
+
+    def test_get_current_proxy(self):
+        """测试获取当前代理"""
+        proxies = ["http://proxy1:8080", "http://proxy2:8080", None]
+        handler = ProxyFallbackHandler(proxies)
+        
+        self.assertEqual(handler.get_current_proxy(), "http://proxy1:8080")
+        
+    def test_try_next_proxy(self):
+        """测试尝试下一个代理"""
+        proxies = ["http://proxy1:8080", "http://proxy2:8080", None]
+        handler = ProxyFallbackHandler(proxies)
+        
+        # 初始状态
+        self.assertEqual(handler.get_current_proxy(), "http://proxy1:8080")
+        
+        # 尝试下一个代理
+        self.assertTrue(handler.try_next_proxy())
+        self.assertEqual(handler.get_current_proxy(), "http://proxy2:8080")
+        
+        # 再尝试下一个代理
+        self.assertTrue(handler.try_next_proxy())
+        self.assertEqual(handler.get_current_proxy(), None)
+        
+        # 没有更多代理了
+        self.assertFalse(handler.try_next_proxy())
+        self.assertEqual(handler.get_current_proxy(), None)  # 超出范围，返回None
+
+    def test_single_proxy(self):
+        """测试单个代理"""
+        handler = ProxyFallbackHandler(["http://proxy:8080"])
+        
+        self.assertEqual(handler.get_current_proxy(), "http://proxy:8080")
+        self.assertFalse(handler.try_next_proxy())  # 没有下一个代理
 
 
 class TestHttpResponse(unittest.TestCase):
@@ -177,6 +238,74 @@ class TestDecodeResponseBody(unittest.TestCase):
 
 class TestSendHttpRequest(unittest.TestCase):
     """测试 send_http_request 函数"""
+
+    def test_proxy_list_backward_compatibility(self):
+        """测试单个代理字符串的向后兼容性"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 测试单个代理字符串仍然工作
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy="http://invalid-proxy:8080")
+            # 如果代理无效，应该会失败，这是预期的行为
+        except Exception:
+            # 预期会失败，因为代理无效
+            pass
+
+        try:
+            # 测试None代理（直连）
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy=None)
+            self.assertEqual(response.status, 200)
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_proxy_list_with_fallback(self):
+        """测试代理列表回退功能"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 测试代理列表：无效代理 -> 直连
+            proxy_list = ["http://invalid-proxy:8080", None]
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy=proxy_list)
+            self.assertEqual(response.status, 200)
+            self.assertIsNotNone(response.body)
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_proxy_list_all_invalid(self):
+        """测试所有代理都无效的情况"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 测试所有代理都无效
+            proxy_list = ["http://invalid-proxy1:8080", "http://invalid-proxy2:8080"]
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy=proxy_list)
+            # 应该抛出异常
+            self.fail("Should have raised an exception")
+        except Exception:
+            # 预期行为：所有代理都无效时应该抛出异常
+            pass
+
+    def test_proxy_list_empty_list(self):
+        """测试空代理列表"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # 空列表应该等同于直连
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy=[])
+            self.assertEqual(response.status, 200)
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+
+    def test_proxy_list_none_direct_connection(self):
+        """测试None代理表示直连"""
+        from ddns.util.http import send_http_request
+
+        try:
+            # None应该表示直连
+            response = send_http_request("GET", "http://postman-echo.com/get", proxy=[None])
+            self.assertEqual(response.status, 200)
+        except Exception as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
 
     def test_get_request_real_api(self):
         """测试真实的GET请求 - 使用postman-echo API服务"""

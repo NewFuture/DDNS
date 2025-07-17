@@ -233,19 +233,12 @@ class SimpleProvider(object):
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         response = None  # type: Any
-        for p in self._proxy:
-            if p:
-                self.logger.debug("Using proxy: %s", p)
-            try:
-                response = send_http_request(
-                    method, url, body=body_data, headers=headers, proxy=p, verify_ssl=self._ssl
-                )
-                break  # 成功发送请求，跳出循环
-            except Exception as e:
-                self.logger.warning("Failed to send request: %s", e)
-        if not response:
-            if len(self._proxy) > 1:
-                self.logger.error("Failed to send request via all proxies: %s", self._proxy)
+        try:
+            response = send_http_request(
+                method, url, body=body_data, headers=headers, proxy=self._proxy, verify_ssl=self._ssl
+            )
+        except Exception as e:
+            self.logger.warning("Failed to send request: %s", e)
             raise RuntimeError("Failed to send request to {}".format(url))
         # 处理响应
         status_code = response.status

@@ -53,6 +53,34 @@ class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
         return fp
 
 
+class ProxyFallbackHandler(BaseHandler):  # type: ignore[misc]
+    """代理回退处理器，处理代理列表的逐个尝试"""
+
+    def __init__(self, proxies):
+        # type: (list[str | None]) -> None
+        """
+        初始化代理回退处理器
+
+        Args:
+            proxies (list[str | None]): 代理列表，None表示直连
+        """
+        self.proxies = proxies or [None]
+        self.current_proxy_index = 0
+
+    def get_current_proxy(self):
+        # type: () -> str | None
+        """获取当前使用的代理"""
+        if self.current_proxy_index < len(self.proxies):
+            return self.proxies[self.current_proxy_index]
+        return None
+
+    def try_next_proxy(self):
+        # type: () -> bool
+        """尝试下一个代理，返回是否还有可用代理"""
+        self.current_proxy_index += 1
+        return self.current_proxy_index < len(self.proxies)
+
+
 class SSLAutoFallbackHandler(HTTPSHandler):  # type: ignore[misc]
     """SSL自动降级处理器，处理 unable to get local issuer certificate 错误"""
 
@@ -160,7 +188,7 @@ def _load_system_ca_certs(ssl_context):
 
 
 def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
+    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str | None] | str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证
 
@@ -169,7 +197,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
         body (str | bytes | None): 请求体
         headers (dict[str, str] | None): 请求头
-        proxy (str | None): 代理地址，格式为 http://proxy:port
+        proxy (list[str | None] | str | None): 代理地址列表或单个代理，格式为 http://proxy:port，None表示直连
         verify_ssl (bool | str): SSL验证配置
                                 - True: 启用标准SSL验证
                                 - False: 禁用SSL验证
@@ -194,25 +222,59 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
         auth_handler = HTTPBasicAuthHandler(password_mgr)
         url = clean_url
 
-    # 准备请求
-    if isinstance(body, str):
-        body = body.encode("utf-8")
+    # 准备请求体
+    body_data = None
+    if body is not None:
+        if isinstance(body, str):
+            body_data = body.encode("utf-8")
+        else:
+            body_data = body
 
-    req = Request(url, data=body)
-    req.get_method = lambda: method  # type: ignore[attr-defined]
+    # 处理代理列表：转换单个代理为列表格式
+    proxy_list = []  # type: list[str | None]
+    if proxy is None:
+        proxy_list = [None]
+    elif isinstance(proxy, list):
+        proxy_list = proxy
+    else:
+        proxy_list = [proxy]
 
-    if headers:
-        for key, value in headers.items():
-            req.add_header(key, value)
+    # 使用代理回退处理器尝试每个代理
+    proxy_handler = ProxyFallbackHandler(proxy_list)
+    last_exception = None  # type: Exception | None
 
-    # 创建opener并发送请求
-    handlers = [NoHTTPErrorProcessor(), SSLAutoFallbackHandler(verify_ssl=verify_ssl)]  # type: list[BaseHandler]
-    if proxy:
-        handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
-    if auth_handler:
-        handlers.append(auth_handler)
-    opener = build_opener(*handlers)
-    response = opener.open(req)
+    while True:
+        current_proxy = proxy_handler.get_current_proxy()
+        
+        # 为每次尝试创建新的Request对象，避免状态复用问题
+        req = Request(url, data=body_data)
+        req.get_method = lambda: method  # type: ignore[attr-defined]
+
+        if headers:
+            for key, value in headers.items():
+                req.add_header(key, value)
+        
+        # 创建opener并发送请求
+        handlers = [NoHTTPErrorProcessor(), SSLAutoFallbackHandler(verify_ssl=verify_ssl)]  # type: list[BaseHandler]
+        if current_proxy:
+            handlers.append(ProxyHandler({"http": current_proxy, "https": current_proxy}))
+        if auth_handler:
+            handlers.append(auth_handler)
+        
+        opener = build_opener(*handlers)
+        
+        try:
+            response = opener.open(req)
+            break  # 成功发送请求，跳出循环
+        except Exception as e:
+            last_exception = e
+            logger.warning("Failed to send request%s: %s", 
+                         " via proxy {}".format(current_proxy) if current_proxy else "", e)
+            if not proxy_handler.try_next_proxy():
+                # 没有更多代理可尝试，抛出最后一个异常
+                if len(proxy_list) > 1:
+                    logger.error("Failed to send request via all proxies: %s", proxy_list)
+                raise last_exception or RuntimeError("Failed to send request to {}".format(url))
 
     # 处理响应
     response_headers = response.info()
