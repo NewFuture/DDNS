@@ -53,8 +53,8 @@ class TestHttpResponse(unittest.TestCase):
         self.assertEqual(response.headers, headers)
         self.assertEqual(response.body, '{"test": true}')
 
-    def test_get_header_case_insensitive(self):
-        """测试get_header方法不区分大小写"""
+    def test_headers_get_case_insensitive(self):
+        """测试headers.get方法不区分大小写"""
 
         # 模拟 response.info() 对象，支持不区分大小写的 get 方法
         class MockHeaders:
@@ -71,13 +71,13 @@ class TestHttpResponse(unittest.TestCase):
         headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
-        self.assertEqual(response.get_header("content-type"), "application/json")
-        self.assertEqual(response.get_header("Content-Type"), "application/json")
-        self.assertEqual(response.get_header("CONTENT-TYPE"), "application/json")
-        self.assertEqual(response.get_header("content-length"), "100")
+        self.assertEqual(response.headers.get("content-type"), "application/json")
+        self.assertEqual(response.headers.get("Content-Type"), "application/json")
+        self.assertEqual(response.headers.get("CONTENT-TYPE"), "application/json")
+        self.assertEqual(response.headers.get("content-length"), "100")
 
-    def test_get_header_not_found(self):
-        """测试get_header方法找不到头部时的默认值"""
+    def test_headers_get_not_found(self):
+        """测试headers.get方法找不到头部时的默认值"""
 
         class MockHeaders:
             def __init__(self):
@@ -92,11 +92,11 @@ class TestHttpResponse(unittest.TestCase):
         headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
-        self.assertIsNone(response.get_header("Authorization"))
-        self.assertEqual(response.get_header("Authorization", "default"), "default")
+        self.assertIsNone(response.headers.get("Authorization"))
+        self.assertEqual(response.headers.get("Authorization", "default"), "default")
 
-    def test_get_header_first_match(self):
-        """测试get_header方法返回第一个匹配的头部"""
+    def test_headers_get_first_match(self):
+        """测试headers.get方法返回第一个匹配的头部"""
 
         class MockHeaders:
             def __init__(self):
@@ -111,7 +111,7 @@ class TestHttpResponse(unittest.TestCase):
         headers = MockHeaders()
         response = HttpResponse(200, "OK", headers, "test")
 
-        self.assertEqual(response.get_header("Set-Cookie"), "session=abc")
+        self.assertEqual(response.headers.get("Set-Cookie"), "session=abc")
 
 
 class TestDecodeResponseBody(unittest.TestCase):
