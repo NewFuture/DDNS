@@ -133,9 +133,9 @@ The `line` parameter specifies DNS resolution lines. TencentCloud DNSPod support
 | :-------------- | :---------- |
 | 默认 | Default |
 | 电信 | China Telecom |
-| 联�?| China Unicom |
+| 联通 | China Unicom |
 | 移动 | China Mobile |
-| 教育�?| China Education Network |
+| 教育网 | China Education Network |
 | 境外 | Overseas |
 
 > More lines reference: TencentCloud [DNS Resolution Lines Documentation](https://cloud.tencent.com/document/product/302/8643)

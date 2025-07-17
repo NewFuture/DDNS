@@ -6,10 +6,10 @@ Callback Provider is a universal custom callback interface that allows you to fo
 
 | Parameter | Description | Required | Example |
 |-----------|-------------|----------|---------|
-| `id` | Callback URL address with variable substitution support | �?| `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
+| `id` | Callback URL address with variable substitution support | ✅ | `https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__` |
 | `token` | POST request parameters (JSON object or JSON string), empty for GET requests | Optional | `{"api_key": "your_key"}` or `"{\"api_key\": \"your_key\"}"` |
 | `endpoint` | Optional API endpoint address, will not participate in variable substitution | Optional | `https://api.example.com/ddns` |
-| `dns` | Fixed value `"callback"`, indicates using callback method | �?| `"callback"` |
+| `dns` | Fixed value `"callback"`, indicates using callback method | ✅ | `"callback"` |
 
 ## Complete Configuration Example
 

@@ -26,8 +26,8 @@ This directory contains detailed configuration guides for various DNS providers.
 
 Most providers support automatic creation of non-existent DNS records, with exceptions:
 
-- �?**he**: Does not support automatic record creation, records must be manually created in the control panel
-- �?**noip**: Does not support automatic record creation, records must be manually created in the control panel
+- ⚠️**he**: Does not support automatic record creation, records must be manually created in the control panel
+- ⚠️**noip**: Does not support automatic record creation, records must be manually created in the control panel
 
 ## 📝 Configuration Examples
 

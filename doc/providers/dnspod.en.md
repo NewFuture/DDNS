@@ -111,9 +111,9 @@ The `line` parameter specifies DNS resolution lines. DNSPod supported lines:
 | :-------------- | :---------- |
 | 默认 | Default |
 | 电信 | China Telecom |
-| 联�?| China Unicom |
+| 联通 | China Unicom |
 | 移动 | China Mobile |
-| 教育�?| China Education Network |
+| 教育网 | China Education Network |
 | 搜索引擎 | Search Engine |
 | 境外 | Overseas |
 
