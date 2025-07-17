@@ -23,7 +23,7 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": {
+          "provider": {
             "type": "string",
             "title": "DNS Provider Name",
             "description": "dns服务商:阿里为alidns,阿里ESA为aliesa,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,NameSilo为namesilo,腾讯云为tencentcloud,腾讯云EdgeOne为edgeone,自定义回调为callback",
@@ -191,7 +191,7 @@
           }
         },
         "required": [
-          "name"
+          "provider"
         ],
         "additionalProperties": false
       }

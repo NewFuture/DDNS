@@ -20,19 +20,19 @@ def _process_multi_providers(config):
 
     # 检查providers和dns字段不能同时使用
     if global_config.get("dns"):
-        stderr.write(u"Error: 'providers' and 'dns' fields cannot be used simultaneously in config file!\n")
+        stderr.write("Error: 'providers' and 'dns' fields cannot be used simultaneously in config file!\n")
         raise ValueError("providers and dns fields conflict")
 
     # 为每个provider创建独立配置
     for provider_config in config["providers"]:
-        # 验证provider必须有name字段
-        if not provider_config.get("name"):
-            stderr.write(u"Error: Each provider must have a 'name' field!\n")
-            raise ValueError("provider missing name field")
+        # 验证provider必须有provider字段
+        if not provider_config.get("provider"):
+            stderr.write("Error: Each provider must have a 'provider' field!\n")
+            raise ValueError("provider missing provider field")
 
         flat_config = global_config.copy()  # 从全局配置开始
-        provider_flat = _flatten_single_config(provider_config, exclude_keys=["name"])
-        flat_config["dns"] = provider_config.get("name")
+        provider_flat = _flatten_single_config(provider_config, exclude_keys=["provider"])
+        flat_config["dns"] = provider_config.get("provider")
         flat_config.update(provider_flat)
         result.append(flat_config)
     return result

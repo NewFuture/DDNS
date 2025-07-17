@@ -80,14 +80,14 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
   "log": {"level": "INFO"},
   "providers": [
     {
-      "name": "cloudflare",
+      "provider": "cloudflare",
       "id": "user@example.com",
       "token": "cloudflare-token",
       "ipv4": ["cf.example.com"],
       "ttl": 300
     },
     {
-      "name": "dnspod", 
+      "provider": "dnspod", 
       "id": "12345",
       "token": "dnspod-token",
       "ipv4": ["dnspod.example.com"],

@@ -7,13 +7,13 @@
     },
     "providers": [
         {
-            "name": "debug",
+            "provider": "debug",
             "index4": "default",
             "ipv4": "test1.example.com",
             "ttl": 300
         },
         {
-            "name": "debug",
+            "provider": "debug",
             "index4": [
                 "public"
             ],

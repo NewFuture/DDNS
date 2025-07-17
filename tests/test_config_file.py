@@ -689,7 +689,7 @@ class TestConfigFile(unittest.TestCase):
         """Test loading configuration with single provider in v4.1 format"""
         config_data = {
             "ssl": False,
-            "providers": [{"name": "debug", "token": "dummy_token", "ipv4": ["test.example.com"]}],
+            "providers": [{"provider": "debug", "token": "dummy_token", "ipv4": ["test.example.com"]}],
         }
 
         config_file = self.create_test_file("single_provider.json", config_data)

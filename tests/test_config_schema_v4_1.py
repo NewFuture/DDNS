@@ -50,8 +50,8 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "ssl": "auto",
             "cache": True,
             "providers": [
-                {"name": "debug", "token": "provider_token1", "ipv4": ["provider1.example.com"], "ttl": 300},
-                {"name": "debug", "token": "provider_token2", "ipv4": ["provider2.example.com"], "ttl": 600},
+                {"provider": "debug", "token": "provider_token1", "ipv4": ["provider1.example.com"], "ttl": 300},
+                {"provider": "debug", "token": "provider_token2", "ipv4": ["provider2.example.com"], "ttl": 600},
             ],
         }
         providers_file = self.create_test_file("providers.json", providers_config)
@@ -204,7 +204,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
                     "ssl": True,  # Override global ssl
                 },
                 {
-                    "name": "debug",
+                    "provider": "debug",
                     "token": "debug_token",
                     "ipv4": ["debug.example.com"],
                     # Uses global ttl and ssl
@@ -243,16 +243,16 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         """Test error handling in v4.1 providers format"""
         from ddns.config.file import load_config
 
-        # Test providers without name field
-        invalid_config1 = {"providers": [{"id": "missing_name@example.com", "token": "token"}]}
+        # Test providers without provider field
+        invalid_config1 = {"providers": [{"id": "missing_provider@example.com", "token": "token"}]}
         invalid_file1 = self.create_test_file("invalid1.json", invalid_config1)
 
         with self.assertRaises(ValueError) as cm:
             load_config(invalid_file1)
-        self.assertIn("provider missing name field", str(cm.exception))
+        self.assertIn("provider missing provider field", str(cm.exception))
 
         # Test dns and providers conflict
-        invalid_config2 = {"dns": "cloudflare", "providers": [{"name": "debug", "token": "token"}]}
+        invalid_config2 = {"dns": "cloudflare", "providers": [{"provider": "debug", "token": "token"}]}
         invalid_file2 = self.create_test_file("invalid2.json", invalid_config2)
 
         with self.assertRaises(ValueError) as cm:

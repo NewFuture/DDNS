@@ -220,14 +220,14 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "log": {"level": "INFO", "file": "/var/log/ddns.log"},
   "providers": [
     {
-      "name": "cloudflare",
+      "provider": "cloudflare",
       "id": "user1@example.com",
       "token": "cloudflare-token",
       "ipv4": ["test1.example.com"],
       "ttl": 300
     },
     {
-      "name": "dnspod",
+      "provider": "dnspod",
       "id": "user2@example.com",
       "token": "dnspod-token",
       "ipv4": ["test2.example.com"],
@@ -241,7 +241,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 * **全局配置继承**: `providers` 外的所有配置项（如 `ssl`, `cache`, `log` 等）作为全局设置，会被所有provider继承
 * **provider覆盖**: 每个provider内的配置可以覆盖相应的全局设置
-* **name字段**: 必须字段，指定DNS服务商类型（等同于传统格式中的 `dns` 字段）
+* **provider字段**: 必须字段，指定DNS服务商类型（等同于传统格式中的 `dns` 字段）
 * **完整兼容**: 支持所有传统格式中的配置参数
 * **嵌套对象扁平化**: provider内的嵌套对象会被自动扁平化处理
 
@@ -249,7 +249,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 * `providers` 和 `dns` 字段不能同时存在
 * 多providers时，不能在全局配置中使用 `ipv4` 或 `ipv6` 字段
-  * 每个provider必须包含 `name` 字段
+  * 每个provider必须包含 `provider` 字段
   * 外层(global)不得包含 `ipv4`或者 `ipv6` 字段
 
 ## 配置优先级和字段覆盖关系

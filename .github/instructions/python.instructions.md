@@ -321,3 +321,13 @@ To create a new DNS provider, follow these steps:
 8. **Run all tests** to ensure compatibility and correctness.
 
 For detailed implementation guidance, refer to the provider development guide in `doc/dev/provider.md`.
+
+### Conventional Commits
+
+commit message and pull request title format should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification (`<type>(<scope>): <description>`):
+
+```plaintext
+feat(provider.myprovider): add myprovider support
+fix(util.http): correct authentication logic
+docs(provider.myprovider): update myprovider configuration guide
+```
