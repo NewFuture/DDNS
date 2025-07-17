@@ -28,6 +28,7 @@
             "title": "DNS Provider Name",
             "description": "dns服务商:阿里为alidns,阿里ESA为aliesa,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,NameSilo为namesilo,腾讯云为tencentcloud,腾讯云EdgeOne为edgeone,自定义回调为callback",
             "enum": [
+              "51dns",
               "alidns",
               "aliesa",
               "callback",
@@ -151,11 +152,46 @@
             "title": "DNS Line/Route",
             "description": "DNS线路设置，如电信、联通、移动等，支持中文和英文线路名称",
             "default": null
+          },
+          "cache": {
+            "type": [
+              "string",
+              "boolean"
+            ],
+            "title": "Enable Cache",
+            "description": "是否启用缓存记录以避免频繁更新",
+            "default": true,
+            "examples": [
+              true,
+              false,
+              "/path/to/cache/ddns.cache"
+            ]
+          },
+          "log": {
+            "type": "object",
+            "title": "Log Config",
+            "description": "日志配置，仅支持设置日志级别",
+            "properties": {
+              "level": {
+                "type": "string",
+                "title": "Log Level",
+                "description": "日志级别，如 DEBUG、INFO、WARNING、ERROR、CRITICAL",
+                "default": "INFO",
+                "enum": [
+                  "DEBUG",
+                  "INFO",
+                  "WARNING",
+                  "ERROR",
+                  "CRITICAL"
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
           }
         },
         "required": [
-          "name",
-          "token"
+          "name"
         ],
         "additionalProperties": false
       }
@@ -201,6 +237,7 @@
         "cloudflare"
       ],
       "enum": [
+        "51dns",
         "alidns",
         "aliesa",
         "callback",
@@ -461,19 +498,56 @@
   "not": {
     "allOf": [
       {
-        "required": ["dns"]
+        "required": [
+          "providers"
+        ]
       },
       {
-        "required": ["providers"]
+        "anyOf": [
+          {
+            "required": [
+              "dns"
+            ]
+          },
+          {
+            "required": [
+              "id"
+            ]
+          },
+          {
+            "required": [
+              "token"
+            ]
+          },
+          {
+            "required": [
+              "ipv4"
+            ]
+          },
+          {
+            "required": [
+              "ipv6"
+            ]
+          },
+          {
+            "required": [
+              "endpoint"
+            ]
+          }
+        ]
       }
     ]
   },
   "anyOf": [
     {
-      "required": ["token"]
+      "required": [
+        "token"
+      ]
     },
     {
-      "required": ["providers"]
+      "required": [
+        "providers"
+      ]
     }
   ],
   "additionalProperties": false

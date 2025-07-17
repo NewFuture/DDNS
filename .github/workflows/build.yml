@@ -75,10 +75,10 @@ jobs:
 
       - name: test callback config  
         run: ${{env.PY}} run.py -c tests/config/callback.json
-      - name: test debug config
-        run: ${{env.PY}} -m ddns -c tests/config/debug.json
-      - name: test noip config
-        run: ${{env.PY}} -m ddns -c tests/config/noip.json
+      - name: test multi config
+        run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
+      - name: test debug + noip config
+        run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
@@ -115,10 +115,10 @@ jobs:
 
       - name: test callback config
         run: python3 -m ddns -c tests/config/callback.json
-      - name: test debug config
-        run: python3 -m ddns -c tests/config/debug.json
-      - name: test noip config
-        run: python3 -m ddns -c tests/config/noip.json
+      - name: test multi-provider config
+        run: python3 -m ddns -c tests/config/multi-provider.json
+      - name: test debug and noip config
+        run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -193,10 +193,10 @@ jobs:
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
 
-      - name: test debug config with executable
-        run: ./dist/ddns -c tests/config/debug.json
-      - name: test noip config with executable
-        run: ./dist/ddns -c tests/config/noip.json
+      - name: test multi-provider config with executable
+        run: ./dist/ddns -c tests/config/multi-provider.json
+      - name: test debug + noip config with executable
+        run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
 
       # Upload build result
       - name: Upload Artifacts
@@ -347,12 +347,12 @@ jobs:
             echo "Running test..."
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -v
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
-            echo "Testing with debug config..."
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
-            echo "Testing with callback config..."
+            echo "Testing with debug + noip config..."
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/multi-provider.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
           done
       
       # 上传测试结果和镜像
