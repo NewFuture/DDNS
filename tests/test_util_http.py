@@ -1,12 +1,15 @@
 # coding=utf-8
+# type: ignore[index]
 """
 测试 ddns.util.http 模块
 Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import unittest
-import sys
+from __init__ import unittest, sys
+import json
+import socket
+
 from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
@@ -185,17 +188,14 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
             # 验证响应内容是JSON格式
-            import json
-
             data = json.loads(response.body)
             self.assertIn("args", data)
             self.assertIn("url", data)
             self.assertIn("test", data["args"])
             self.assertEqual(data["args"]["test"], "ddns")
-        except Exception as e:
+        except (socket.timeout, ConnectionError) as e:
             # 网络不可用时跳过测试
-            if "timeout" in str(e) or "Connection" in str(e):
-                self.skipTest("Network unavailable: {}".format(str(e)))
+            self.skipTest("Network unavailable: {}".format(str(e)))
 
     def test_json_api_response(self):
         """测试JSON API响应解析"""
@@ -208,8 +208,6 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIsNotNone(response.body)
 
             # 验证返回的是有效的JSON
-            import json
-
             data = json.loads(response.body)
             # postman-echo返回请求信息对象
             self.assertIn("args", data)
@@ -282,8 +280,6 @@ class TestSendHttpRequest(unittest.TestCase):
             )
 
             self.assertEqual(response.status, 200)
-
-            import json
 
             data = json.loads(response.body)
             # postman-echo返回请求信息，包含args参数
