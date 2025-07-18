@@ -6,14 +6,18 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import unittest, sys
+from __init__ import unittest, sys, patch, MagicMock, call
 import json
 import socket
+import time
 
 from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
     quote,
+    send_http_request,
+    RETRY_STATUS_CODES,
+    CONNECTION_EXCEPTIONS,
 )
 
 # Python 2/3 compatibility
@@ -384,6 +388,186 @@ class TestSendHttpRequest(unittest.TestCase):
             else:
                 # 其他异常重新抛出
                 raise
+
+
+class TestHttpRetry(unittest.TestCase):
+    """测试 HTTP 自动重试功能"""
+
+    def setUp(self):
+        """设置测试环境"""
+        self.mock_time_sleep = patch('ddns.util.http.time.sleep').start()
+        self.addCleanup(patch.stopall)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_retry_on_connection_exceptions(self, mock_send):
+        """测试连接异常时的重试"""
+        # 模拟前两次请求失败，第三次成功
+        mock_send.side_effect = [
+            socket.timeout("Connection timed out"),
+            OSError("Connection reset"),
+            HttpResponse(200, "OK", {}, "success")
+        ]
+        
+        response = send_http_request("GET", "http://example.com", max_retries=2)
+        
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.body, "success")
+        self.assertEqual(mock_send.call_count, 3)
+        
+        # 检查重试间隔：第一次重试等待1秒(2^0)，第二次重试等待2秒(2^1)
+        expected_calls = [call(1), call(2)]
+        self.mock_time_sleep.assert_has_calls(expected_calls)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_retry_on_http_status_codes(self, mock_send):
+        """测试HTTP错误状态码的重试"""
+        # 模拟502错误后成功
+        mock_send.side_effect = [
+            HttpResponse(502, "Bad Gateway", {}, "error"),
+            HttpResponse(200, "OK", {}, "success")
+        ]
+        
+        response = send_http_request("GET", "http://example.com", max_retries=1)
+        
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.body, "success")
+        self.assertEqual(mock_send.call_count, 2)
+        self.mock_time_sleep.assert_called_once_with(1)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_no_retry_on_success(self, mock_send):
+        """测试成功时不重试"""
+        mock_send.return_value = HttpResponse(200, "OK", {}, "success")
+        
+        response = send_http_request("GET", "http://example.com", max_retries=2)
+        
+        self.assertEqual(response.status, 200)
+        self.assertEqual(mock_send.call_count, 1)
+        self.mock_time_sleep.assert_not_called()
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_no_retry_on_non_retryable_status(self, mock_send):
+        """测试非重试状态码不重试"""
+        mock_send.return_value = HttpResponse(404, "Not Found", {}, "error")
+        
+        response = send_http_request("GET", "http://example.com", max_retries=2)
+        
+        self.assertEqual(response.status, 404)
+        self.assertEqual(mock_send.call_count, 1)
+        self.mock_time_sleep.assert_not_called()
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_max_retries_exhausted_exception(self, mock_send):
+        """测试重试次数用尽后抛出异常"""
+        mock_send.side_effect = socket.timeout("Connection timed out")
+        
+        with self.assertRaises(socket.timeout):
+            send_http_request("GET", "http://example.com", max_retries=2)
+        
+        self.assertEqual(mock_send.call_count, 3)  # 原始请求 + 2次重试
+        expected_calls = [call(1), call(2)]
+        self.mock_time_sleep.assert_has_calls(expected_calls)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_max_retries_exhausted_status_code(self, mock_send):
+        """测试重试次数用尽后返回错误响应"""
+        mock_send.return_value = HttpResponse(503, "Service Unavailable", {}, "error")
+        
+        response = send_http_request("GET", "http://example.com", max_retries=1)
+        
+        self.assertEqual(response.status, 503)
+        self.assertEqual(mock_send.call_count, 2)  # 原始请求 + 1次重试
+        self.mock_time_sleep.assert_called_once_with(1)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_exponential_backoff(self, mock_send):
+        """测试指数退避算法"""
+        mock_send.side_effect = [
+            socket.timeout("timeout 1"),
+            socket.timeout("timeout 2"),
+            socket.timeout("timeout 3"),
+            HttpResponse(200, "OK", {}, "success")
+        ]
+        
+        response = send_http_request("GET", "http://example.com", max_retries=3)
+        
+        self.assertEqual(response.status, 200)
+        # 检查等待时间：1秒(2^0), 2秒(2^1), 4秒(2^2)
+        expected_calls = [call(1), call(2), call(4)]
+        self.mock_time_sleep.assert_has_calls(expected_calls)
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_retry_status_codes_coverage(self, mock_send):
+        """测试所有重试状态码"""
+        for status_code in RETRY_STATUS_CODES:
+            with self.subTest(status_code=status_code):
+                mock_send.side_effect = [
+                    HttpResponse(status_code, "Error", {}, "error"),
+                    HttpResponse(200, "OK", {}, "success")
+                ]
+                
+                response = send_http_request("GET", "http://example.com", max_retries=1)
+                
+                self.assertEqual(response.status, 200)
+                self.assertEqual(mock_send.call_count, 2)
+                
+                # 重置mock
+                mock_send.reset_mock()
+                self.mock_time_sleep.reset_mock()
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_connection_exceptions_coverage(self, mock_send):
+        """测试所有连接异常"""
+        test_exceptions = [
+            socket.timeout("timeout"),
+            OSError("OS error"),
+        ]
+        
+        # 添加Python版本特定的异常
+        try:
+            from urllib.error import URLError
+            test_exceptions.append(URLError("URL error"))
+        except ImportError:
+            from urllib2 import URLError  # type: ignore
+            test_exceptions.append(URLError("URL error"))
+        
+        for exception in test_exceptions:
+            with self.subTest(exception=type(exception).__name__):
+                mock_send.side_effect = [
+                    exception,
+                    HttpResponse(200, "OK", {}, "success")
+                ]
+                
+                response = send_http_request("GET", "http://example.com", max_retries=1)
+                
+                self.assertEqual(response.status, 200)
+                self.assertEqual(mock_send.call_count, 2)
+                
+                # 重置mock
+                mock_send.reset_mock()
+                self.mock_time_sleep.reset_mock()
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_no_retry_when_max_retries_zero(self, mock_send):
+        """测试max_retries=0时不重试"""
+        mock_send.side_effect = socket.timeout("timeout")
+        
+        with self.assertRaises(socket.timeout):
+            send_http_request("GET", "http://example.com", max_retries=0)
+        
+        self.assertEqual(mock_send.call_count, 1)
+        self.mock_time_sleep.assert_not_called()
+
+    @patch('ddns.util.http._send_http_request_once')
+    def test_non_retryable_exception_immediate_raise(self, mock_send):
+        """测试非重试异常立即抛出"""
+        mock_send.side_effect = ValueError("invalid value")
+        
+        with self.assertRaises(ValueError):
+            send_http_request("GET", "http://example.com", max_retries=2)
+        
+        self.assertEqual(mock_send.call_count, 1)
+        self.mock_time_sleep.assert_not_called()
 
 
 if __name__ == "__main__":

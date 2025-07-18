@@ -238,7 +238,7 @@ class SimpleProvider(object):
                 self.logger.debug("Using proxy: %s", p)
             try:
                 response = send_http_request(
-                    method, url, body=body_data, headers=headers, proxy=p, verify_ssl=self._ssl
+                    method, url, body=body_data, headers=headers, proxy=p, verify_ssl=self._ssl, max_retries=2
                 )
                 break  # 成功发送请求，跳出循环
             except Exception as e:

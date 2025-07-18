@@ -12,6 +12,8 @@ from logging import getLogger
 from re import compile
 import ssl
 import os
+import socket
+import time
 
 try:  # python 3
     from urllib.request import (  # noqa: F401
@@ -25,6 +27,20 @@ try:  # python 3
         build_opener,
     )
     from urllib.parse import quote, urlencode, unquote
+    from urllib.error import URLError
+    import http.client as http_client
+    # Python 3 specific exceptions
+    CONNECTION_EXCEPTIONS = [URLError, socket.timeout, OSError]
+    # socket.timeout is TimeoutError in Python 3, so no need to add TimeoutError separately
+    try:
+        CONNECTION_EXCEPTIONS.append(ConnectionResetError)
+    except NameError:
+        pass  # ConnectionResetError not available in older Python 3 versions
+    try:
+        CONNECTION_EXCEPTIONS.append(http_client.RemoteDisconnected)
+    except AttributeError:
+        pass  # RemoteDisconnected not available in older Python 3 versions
+    CONNECTION_EXCEPTIONS = tuple(CONNECTION_EXCEPTIONS)
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
         Request,
@@ -34,14 +50,21 @@ except ImportError:  # python 2
         HTTPPasswordMgrWithDefaultRealm,
         HTTPBasicAuthHandler,
         build_opener,
+        URLError,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+    import httplib as http_client  # type: ignore[no-redef]
+    # Python 2 compatible exceptions
+    CONNECTION_EXCEPTIONS = (URLError, socket.timeout, socket.error)
 
 
 __all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
 
 logger = getLogger().getChild(__name__)
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
+
+# HTTP status codes that should trigger retries
+RETRY_STATUS_CODES = (408, 429, 500, 502, 503, 504)
 
 
 class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
@@ -159,10 +182,10 @@ def _load_system_ca_certs(ssl_context):
                 logger.warning("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
-def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
+def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None, max_retries=0):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
-    发送HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证
+    发送HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证，支持自动重试
 
     Args:
         method (str): HTTP方法，如GET、POST等
@@ -176,6 +199,7 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
                                 - "auto": 启用验证，失败时自动回退到不验证
                                 - str: 自定义CA证书文件路径
         auth_handler (BaseHandler | None): 自定义认证处理器
+        max_retries (int): 最大重试次数，默认为0（不重试）
 
     Returns:
         HttpResponse: 响应对象
@@ -183,6 +207,71 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     Raises:
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
+    """
+    last_exception = None
+    last_response = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            response = _send_http_request_once(method, url, body, headers, proxy, verify_ssl, auth_handler)
+            
+            # Check if the response status code indicates a retryable error
+            if response.status in RETRY_STATUS_CODES:
+                last_response = response
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt
+                    logger.warning("HTTP %d error (attempt %d/%d), retrying in %d seconds: %s", 
+                                 response.status, attempt + 1, max_retries + 1, wait_time, response.reason)
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error("HTTP %d error after %d attempts: %s", response.status, max_retries + 1, response.reason)
+                    return response  # Return the final error response
+            else:
+                # Success or non-retryable error
+                return response
+                
+        except CONNECTION_EXCEPTIONS as e:
+            last_exception = e
+            if attempt < max_retries:
+                wait_time = 2 ** attempt
+                logger.warning("Request failed (attempt %d/%d), retrying in %d seconds: %s", 
+                             attempt + 1, max_retries + 1, wait_time, str(e))
+                time.sleep(wait_time)
+            else:
+                logger.error("Request failed after %d attempts: %s", max_retries + 1, str(e))
+                raise
+        except Exception as e:
+            # For other exceptions, don't retry unless they have a retryable status code attribute
+            if hasattr(e, 'code') and e.code in RETRY_STATUS_CODES:  # type: ignore
+                last_exception = e
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt
+                    logger.warning("HTTP %d exception (attempt %d/%d), retrying in %d seconds: %s", 
+                                 e.code, attempt + 1, max_retries + 1, wait_time, str(e))  # type: ignore
+                    time.sleep(wait_time)
+                else:
+                    logger.error("HTTP %d exception after %d attempts: %s", e.code, max_retries + 1, str(e))  # type: ignore
+                    raise
+            else:
+                # Non-retryable exception, re-raise immediately
+                raise
+    
+    # If we get here, return the last response or raise the last exception
+    if last_response:
+        return last_response
+    elif last_exception:
+        raise last_exception
+    else:
+        raise RuntimeError("Request failed after {} attempts".format(max_retries + 1))
+
+
+def _send_http_request_once(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
+    """
+    发送单次HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证（内部函数）
+    
+    This is the original send_http_request logic extracted to a separate function for retry handling.
     """
     # 解析URL以检查是否包含嵌入式认证信息
     m = _AUTH_URL_RE.match(url)

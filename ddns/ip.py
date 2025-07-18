@@ -49,7 +49,7 @@ def _open(url, reg):
     try:
         debug("open: %s", url)
         response = send_http_request(
-            method="GET", url=url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify_ssl=ssl_verify
+            method="GET", url=url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify_ssl=ssl_verify, max_retries=3
         )
         res = response.body
         debug("response: %s", res)
