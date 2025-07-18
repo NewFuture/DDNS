@@ -6,7 +6,6 @@ Test HTTP RetryHandler retry functionality
 
 from __future__ import unicode_literals
 from __init__ import unittest, patch, MagicMock
-import socket
 import logging
 
 from ddns.util.http import (
@@ -44,15 +43,6 @@ class TestRetryHandler(unittest.TestCase):
         """测试默认重试状态码"""
         expected_codes = (408, 429, 500, 502, 503, 504)
         self.assertEqual(RetryHandler.RETRY_CODES, expected_codes)
-
-    def test_retry_exceptions_default(self):
-        """测试默认重试异常"""
-        # 只测试在Python 2/3中都可用的异常
-        expected_exceptions = (URLError, socket.timeout)
-        # 检查前两个异常
-        self.assertEqual(RetryHandler.RETRY_EXCEPTIONS[:2], expected_exceptions)
-        # 检查总数大于等于2
-        self.assertGreaterEqual(len(RetryHandler.RETRY_EXCEPTIONS), 2)
 
     @patch("time.sleep")
     def test_network_error_retry(self, mock_sleep):
@@ -360,6 +350,65 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
                 if any(keyword in error_msg for keyword in network_keywords):
                     self.skipTest("Network unavailable for HTTP 502 retry test: {}".format(str(e)))
+                else:
+                    # 其他异常重新抛出
+                    raise
+
+        finally:
+            # 恢复原始日志设置
+            http_logger.setLevel(original_level)
+            http_logger.handlers = original_handlers
+
+            # 恢复原始日志设置
+            http_logger.setLevel(original_level)
+            http_logger.handlers = original_handlers
+
+    def test_ssl_certificate_error_no_retry_real_case(self):
+        """测试SSL证书错误不触发重试 - 使用真实证书错误案例"""
+        from io import StringIO
+        import ssl
+
+        # 创建日志捕获器
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        handler.setLevel(logging.DEBUG)  # 使用DEBUG级别捕获更多信息
+
+        # 获取http模块的logger
+        http_logger = logging.getLogger("ddns.util.http")
+        original_level = http_logger.level
+        original_handlers = http_logger.handlers[:]
+
+        try:
+            # 设置日志级别和处理器
+            http_logger.setLevel(logging.DEBUG)
+            http_logger.handlers = [handler]
+
+            # 使用expired.badssl.com测试过期证书错误
+            try:
+                # 使用过期证书的网站，强制验证证书
+                request("GET", "https://expired.badssl.com/", retries=3, verify=True)
+
+                # 如果没有抛出异常，说明请求成功了，跳过测试
+                self.skipTest("Expected SSL certificate error was not raised")
+
+            except ssl.SSLError as e:
+                # 这是我们期望的SSL错误
+                # 检查日志输出
+                log_output = log_capture.getvalue()
+
+                # 验证日志中没有重试信息
+                self.assertNotIn("retrying", log_output.lower())
+                self.assertNotIn("retry", log_output.lower())
+
+                # 验证确实是SSL证书错误
+                self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
+
+            except Exception as e:
+                # 网络问题时跳过测试
+                error_msg = str(e).lower()
+                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+                if any(keyword in error_msg for keyword in network_keywords):
+                    self.skipTest("Network unavailable for SSL certificate test: {}".format(str(e)))
                 else:
                     # 其他异常重新抛出
                     raise

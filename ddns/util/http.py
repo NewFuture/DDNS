@@ -27,7 +27,6 @@ try:  # python 3
         Request,
     )
     from urllib.parse import quote, urlencode, unquote
-    from urllib.error import URLError
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
         BaseHandler,
@@ -38,7 +37,6 @@ except ImportError:  # python 2
         HTTPSHandler,
         ProxyHandler,
         Request,
-        URLError,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
 
@@ -225,11 +223,6 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
     handler_order = 100
     RETRY_CODES = (408, 429, 500, 502, 503, 504)
 
-    try:  # Python 3
-        RETRY_EXCEPTIONS = (URLError, socket.timeout, TimeoutError, ConnectionResetError)
-    except NameError:  # Python 2
-        RETRY_EXCEPTIONS = (URLError, socket.timeout, socket.error)
-
     def __init__(self, retries=3):
         # type: (int) -> None
         """
@@ -248,7 +241,6 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
             return None
 
         self._in_retry = True
-
         try:
             for attempt in range(1, self.retries + 1):
                 try:
@@ -262,10 +254,9 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
 
                     return res
 
-                except Exception as e:
-                    # 如果是最后一次尝试，或者不是可重试的异常，抛出错误
-                    if attempt >= self.retries or not isinstance(e, self.RETRY_EXCEPTIONS):
-                        raise
+                except (socket.timeout, socket.gaierror, socket.herror) as e:
+                    if attempt >= self.retries:
+                        raise  # 如果是最后一次尝试，或者不是可重试的异常，抛出错误
 
                     logger.warning("Request failed, retrying %d times: %s", attempt, str(e))
                     time.sleep(attempt**2)
