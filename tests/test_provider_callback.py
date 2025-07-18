@@ -308,9 +308,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         """Add a random delay of 0-3 seconds to avoid rate limiting"""
         if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITHUB_REF_NAME"):
             # In CI environments, use a shorter delay to speed up tests
-            delay = random.uniform(0, 3)
+            delay = random.uniform(0, 2)
         else:
-            delay = random.uniform(0, 0.5)
+            delay = random.uniform(0, 1)
         sleep(delay)
 
     def _assert_callback_result_logged(self, mock_logger, *expected_strings):
@@ -364,7 +364,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
         # Use an invalid URL to test error handling
-        id = "https://httpbin.org/status/500"  # This returns HTTP 500
+        id = "https://httpbin.org/status/400"  # This returns HTTP 400
         provider = CallbackProvider(id, "")
 
         self._random_delay()  # Add random delay before real request

@@ -241,10 +241,6 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
             return None
 
         self._in_retry = True
-        try:
-            from urllib.error import URLError
-        except ImportError:
-            from urllib2 import URLError  # type: ignore[import]
 
         try:
             for attempt in range(1, self.retries + 1):
@@ -266,47 +262,8 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                     logger.warning("Request failed, retrying in %d seconds: %s", attempt, str(e))
                     time.sleep(attempt**2)
                     continue
-
-                except URLError as e:
-                    # 检查URLError是否包含可重试的网络错误
-                    if isinstance(e.reason, (socket.timeout, socket.gaierror, socket.herror)):
-                        if attempt >= self.retries:
-                            raise  # 如果是最后一次尝试，抛出错误
-
-                        logger.warning("Request failed, retrying in %d seconds: %s", attempt, str(e))
-                        time.sleep(attempt**2)
-                        continue
-                    elif hasattr(ssl, 'SSLError') and isinstance(e.reason, ssl.SSLError):
-                        # SSL错误不重试
-                        raise
-                    elif isinstance(e.reason, str):
-                        # 字符串形式的错误，检查是否为SSL错误
-                        if self._is_ssl_error(e.reason):
-                            # SSL错误不重试
-                            raise
-                        else:
-                            # 其他字符串错误都重试
-                            if attempt >= self.retries:
-                                raise  # 如果是最后一次尝试，抛出错误
-
-                            logger.warning("Request failed, retrying in %d seconds: %s", attempt, str(e))
-                            time.sleep(attempt**2)
-                            continue
-                    else:
-                        # 其他类型的URLError不重试
-                        raise
-
         finally:
             self._in_retry = False
-
-    def _is_ssl_error(self, error_msg):
-        # type: (str) -> bool
-        """检查错误消息是否表示SSL错误"""
-        error_msg = error_msg.lower()
-        ssl_keywords = [
-            "ssl", "certificate", "verify", "handshake", "tls"
-        ]
-        return any(keyword in error_msg for keyword in ssl_keywords)
 
 
 def _decode_response_body(raw_body, content_type):
