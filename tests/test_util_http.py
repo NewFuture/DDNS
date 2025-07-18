@@ -299,24 +299,14 @@ class TestSendHttpRequest(unittest.TestCase):
                 "Failed for username={}, password={}".format(case["username"], case["password"]),
             )
 
-    def test_auth_and_redirects_combined(self):
-        """测试认证和重定向功能 - 合并测试"""
+    def test_http_get_redirect(self):
+        """测试HTTP GET重定向处理"""
         from ddns.util.http import request
 
         try:
-            # 测试1: 基本认证URL格式验证
-            special_username = "user@test.com"
-            special_password = "passwo.rd"
-            username_encoded = quote(special_username, safe="")
-            password_encoded = quote(special_password, safe="")
-
-            # 验证URL编码的特殊字符
-            self.assertEqual(username_encoded, "user%40test.com")
-            self.assertEqual(password_encoded, "passwo.rd")
-
-            # 测试2: HTTP重定向处理 - GET重定向
+            # HTTP重定向处理 - GET重定向
             redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
-            response = request("GET", redirect_url, verify=False)
+            response = request("GET", redirect_url, verify=False, retries=3)
 
             # 重定向后应该成功
             self.assertEqual(response.status, 200)
@@ -327,9 +317,24 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIn("url", data)
             self.assertIn("httpbin.org/get", data["url"])
 
-            # 测试3: POST重定向行为（应该转换为GET请求）
+        except Exception as e:
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
+            if any(keyword in error_msg for keyword in network_keywords):
+                self.skipTest("Network unavailable for GET redirect test: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
+
+    def test_http_post_redirect(self):
+        """测试HTTP POST重定向行为（应该转换为GET请求）"""
+        from ddns.util.http import request
+
+        try:
+            redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
             post_data = "test=data&method=POST->GET"
-            response_post = request("POST", redirect_url, data=post_data, verify=False)
+            response_post = request("POST", redirect_url, data=post_data, verify=False, retries=3)
 
             # 重定向后应该成功
             self.assertEqual(response_post.status, 200)
@@ -340,29 +345,49 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIn("url", data_post)
             self.assertIn("httpbin.org/get", data_post["url"])
 
-            # 测试4: 基本认证（如果前面的测试都成功）
-            try:
-                auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-                    username_encoded, password_encoded, username_encoded, password_encoded
-                )
-                response_auth = request("GET", auth_url)
+        except Exception as e:
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
+            if any(keyword in error_msg for keyword in network_keywords):
+                self.skipTest("Network unavailable for POST redirect test: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
 
-                if response_auth.status <= 500:  # 避免httpbin.org过载时的500错误
-                    self.assertEqual(response_auth.status, 200)
-                    self.assertIn("authenticated", response_auth.body)
-                    self.assertIn("user", response_auth.body)
-                else:
-                    self.skipTest("httpbin.org returned 500, skipping auth test")
-            except Exception as auth_e:
-                # 认证测试失败不影响整体测试
-                self.skipTest("Auth test failed: {}".format(str(auth_e)))
+    def test_basic_auth_with_embedded_url(self):
+        """测试URL嵌入式基本认证"""
+        from ddns.util.http import request
+
+        try:
+            # 使用URL编码的用户名和密码
+            special_username = "user@test.com"
+            special_password = "passwo.rd"
+            username_encoded = quote(special_username, safe="")
+            password_encoded = quote(special_password, safe="")
+
+            # 验证URL编码的特殊字符
+            self.assertEqual(username_encoded, "user%40test.com")
+            self.assertEqual(password_encoded, "passwo.rd")
+            # 构建认证URL
+            auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
+                username_encoded, password_encoded, username_encoded, password_encoded
+            )
+            response_auth = request("GET", auth_url, verify=False, retries=2)
+
+            if response_auth.status <= 500:  # 避免httpbin.org过载时的500错误
+                self.assertEqual(response_auth.status, 200)
+                self.assertIn("authenticated", response_auth.body)
+                self.assertIn("user", response_auth.body)
+            else:
+                self.skipTest("httpbin.org returned 500, skipping auth test")
 
         except Exception as e:
             # 网络问题时跳过测试
             error_msg = str(e).lower()
             network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
             if any(keyword in error_msg for keyword in network_keywords):
-                self.skipTest("Network unavailable for auth/redirect test: {}".format(str(e)))
+                self.skipTest("Network unavailable for basic auth test: {}".format(str(e)))
             else:
                 # 其他异常重新抛出
                 raise
