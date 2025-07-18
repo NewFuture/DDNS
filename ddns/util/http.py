@@ -152,11 +152,16 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
         """处理HTTPS请求，自动处理SSL错误"""
         try:
             return HTTPSHandler.https_open(self, req)
-        except Exception as e:
-            # SSL auto模式：只处理 unable to get local issuer certificate 错误
-            if self._verify == "auto" and "unable to get local issuer certificate" in str(e).lower():
-                msg = "unable to get local issuer certificate, switching to unverified connection for %s"
-                logger.warning(msg, req.get_full_url())
+        except ssl.SSLError as e:  # SSL auto模式：处理本地证书错误
+            error_msg = str(e).lower()
+            ssl_errors = (
+                "unable to get local issuer certificate",
+                "basic constraints of ca cert not marked critical",
+            )
+            if self._verify == "auto" and any(error in error_msg for error in ssl_errors):
+                logger.warning(
+                    "SSL error (%s), switching to unverified connection for %s", str(e), req.get_full_url()
+                )
                 self._verify = False
                 # 创建不验证SSL的临时处理器重试
                 try:  # python 3 / python 2.7.9+
