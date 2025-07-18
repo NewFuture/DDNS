@@ -27,8 +27,8 @@ try:  # python 3
         build_opener,
     )
     from urllib.parse import quote, urlencode, unquote
-    from urllib.error import URLError, HTTPError
-    import http.client
+    from urllib.error import URLError
+
     # Python 3 specific exceptions
     RETRY_EXCEPTIONS = (
         URLError,
@@ -46,10 +46,10 @@ except ImportError:  # python 2
         HTTPBasicAuthHandler,
         build_opener,
         URLError,
-        HTTPError,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
     import httplib  # type: ignore[import]
+
     # Python 2 specific exceptions (some may not exist)
     RETRY_EXCEPTIONS = (
         URLError,
@@ -153,7 +153,7 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
         # type: (int, tuple | None) -> None
         """
         初始化重试处理器
-        
+
         Args:
             retries (int): 最大重试次数
             retry_codes (tuple | None): 需要重试的HTTP状态码，默认为RETRY_STATUS_CODES
@@ -177,25 +177,25 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                 temp_handlers = [h for h in self.parent.handlers if not isinstance(h, RetryHandler)]
                 temp_opener = build_opener(*temp_handlers)
                 response = temp_opener.open(req)
-                
+
                 # 检查是否为需要重试的状态码
-                if hasattr(response, 'getcode') and response.getcode() in self.retry_codes:
+                if hasattr(response, "getcode") and response.getcode() in self.retry_codes:
                     if i < self.retries:
-                        wait_time = 2 ** i
+                        wait_time = 2**i
                         logger.warning("HTTP %d error, retrying in %d seconds", response.getcode(), wait_time)
                         time.sleep(wait_time)
                         continue
                     else:
                         logger.error("Request failed after %d retries with HTTP %d", self.retries, response.getcode())
-                
+
                 return response
-                
+
             except Exception as e:
                 # 检查HTTPError状态码
-                if hasattr(e, 'code'):
+                if hasattr(e, "code"):
                     if e.code in self.retry_codes:
                         if i < self.retries:
-                            wait_time = 2 ** i
+                            wait_time = 2**i
                             logger.warning("Request failed, retrying in %d seconds: %s", wait_time, str(e))
                             time.sleep(wait_time)
                             continue
@@ -208,14 +208,14 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                 # 检查网络异常
                 elif isinstance(e, RETRY_EXCEPTIONS):
                     if i < self.retries:
-                        wait_time = 2 ** i
+                        wait_time = 2**i
                         logger.warning("Request failed, retrying in %d seconds: %s", wait_time, str(e))
                         time.sleep(wait_time)
                         continue
                     else:
                         logger.error("Request failed after %d retries: %s", self.retries, str(e))
                         raise
-                
+
                 # 其他异常直接抛出
                 raise
 
@@ -266,14 +266,11 @@ def _load_system_ca_certs(ssl_context):
                 logger.warning("Failed to load CA certificates from %s: %s", ca_path, e)
 
 
-
-
-
 def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=3):
     # type: (str, str, str | bytes | None, dict[str, str] | None, dict[str, str] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
-    
+
     Args:
         method (str): HTTP方法，如GET、POST等
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
@@ -287,10 +284,10 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
                             - str: 自定义CA证书文件路径
         auth (BaseHandler | None): 自定义认证处理器
         retries (int): 最大重试次数，默认3次
-        
+
     Returns:
         HttpResponse: 响应对象
-        
+
     Raises:
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
@@ -320,10 +317,14 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     proxy = None
     if proxies:
         # 优先使用https代理，然后是http代理
-        proxy = proxies.get('https') or proxies.get('http')
+        proxy = proxies.get("https") or proxies.get("http")
 
     # 创建opener并发送请求，包括重试处理器
-    handlers = [NoHTTPErrorProcessor(), SSLAutoFallbackHandler(verify_ssl=verify), RetryHandler(retries=retries)]  # type: list[BaseHandler]
+    handlers = [
+        NoHTTPErrorProcessor(),
+        SSLAutoFallbackHandler(verify_ssl=verify),
+        RetryHandler(retries=retries),
+    ]  # type: list[BaseHandler]
     if proxy:
         handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
     if auth:
