@@ -217,44 +217,27 @@ class TestSendHttpRequest(unittest.TestCase):
         except Exception as e:
             self.skipTest("Network unavailable: {}".format(str(e)))
 
-    def test_provider_api_patterns(self):
-        """测试常见DNS provider API模式"""
+    def test_http_status_codes_and_errors(self):
+        """测试HTTP状态码和错误处理 - 合并多个状态码测试"""
         from ddns.util.http import request
 
         try:
-            # 测试认证失败场景 - 使用postman-echo模拟401错误
+            # 测试401认证失败
             headers = {
                 "Authorization": "Bearer invalid-token",
                 "Content-Type": "application/json",
                 "User-Agent": "DDNS-Client/4.0",
             }
+            response_401 = request("GET", "http://postman-echo.com/status/401", headers=headers)
+            self.assertEqual(response_401.status, 401)
+            self.assertIsNotNone(response_401.body)
 
-            # 使用postman-echo模拟401认证失败响应
-            response = request("GET", "http://postman-echo.com/status/401", headers=headers)
-
-            # 应该返回401认证失败
-            self.assertEqual(response.status, 401)
-            # 401响应可能有空响应体，这是正常的
-            self.assertIsNotNone(response.body)
-
-        except Exception as e:
-            self.skipTest("Network unavailable: {}".format(str(e)))
-
-    def test_http_400_bad_request_handling(self):
-        """测试HTTP 400 Bad Request错误处理"""
-        from ddns.util.http import request
-
-        try:
-            # 使用postman-echo模拟400错误
-            response = request("GET", "http://postman-echo.com/status/400")
-
-            # 验证状态码为400
-            self.assertEqual(response.status, 400, "应该返回400 Bad Request状态码")
-
-            # 验证响应对象的完整性
-            self.assertIsNotNone(response.body, "400响应应该有响应体")
-            self.assertIsNotNone(response.headers, "400响应应该有响应头")
-            self.assertIsNotNone(response.reason, "400响应应该有状态原因")
+            # 测试400 Bad Request
+            response_400 = request("GET", "http://postman-echo.com/status/400")
+            self.assertEqual(response_400.status, 400, "应该返回400 Bad Request状态码")
+            self.assertIsNotNone(response_400.body, "400响应应该有响应体")
+            self.assertIsNotNone(response_400.headers, "400响应应该有响应头")
+            self.assertIsNotNone(response_400.reason, "400响应应该有状态原因")
 
         except Exception as e:
             # 网络问题时跳过测试
@@ -262,31 +245,40 @@ class TestSendHttpRequest(unittest.TestCase):
             if any(
                 keyword in error_msg for keyword in ["timeout", "connection", "resolution", "unreachable", "network"]
             ):
-                self.skipTest("Network unavailable for HTTP 400 test: {}".format(str(e)))
+                self.skipTest("Network unavailable for HTTP status code tests: {}".format(str(e)))
             else:
                 # 其他异常重新抛出
                 raise
 
-    def test_dns_over_https_simulation(self):
-        """测试DNS类型的API响应解析"""
+    def test_dns_over_https_and_ssl_fallback(self):
+        """测试DNS over HTTPS模拟和SSL自动降级 - 合并测试"""
         from ddns.util.http import request
 
         try:
+            # 测试1: DNS over HTTPS模拟
             headers = {"Accept": "application/dns-json", "User-Agent": "DDNS-Test/1.0"}
-
-            # 使用postman-echo模拟一个带有特定结构的JSON响应
             response = request("GET", "http://postman-echo.com/get?domain=example.com&type=A", headers=headers)
-
             self.assertEqual(response.status, 200)
 
             data = json.loads(response.body)
-            # postman-echo返回请求信息，包含args参数
             self.assertIn("args", data)
             self.assertIn("domain", data["args"])
             self.assertEqual(data["args"]["domain"], "example.com")
 
+            # 测试2: SSL auto模式自动降级（复用相同的URL）
+            test_url = "https://postman-echo.com/status/200"
+            response_auto = request("GET", test_url, verify="auto")
+            self.assertEqual(response_auto.status, 200, "auto模式自动降级成功访问测试站点")
+            self.assertIsNotNone(response_auto.body)
+
         except Exception as e:
-            self.skipTest("Network unavailable: {}".format(str(e)))
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ["timeout", "resolution", "unreachable", "network"]):
+                self.skipTest("Network unavailable for DNS/SSL tests: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
 
     def test_basic_auth_with_url_embedding(self):
         """测试URL嵌入式基本认证格式"""
@@ -358,37 +350,12 @@ class TestSendHttpRequest(unittest.TestCase):
         self.assertIn("authenticated", response.body)
         self.assertIn("user", response.body)
 
-    def test_ssl_auto_fallback_real_network(self):
-        """测试SSL auto模式的真实网络自动降级行为"""
-        from ddns.util.http import request
-
-        test_url = "https://postman-echo.com/status/200"  # 使用postman-echo的测试站点
-
-        try:
-            # 1. 测试auto模式：应该自动降级成功
-            response_auto = request("GET", test_url, verify="auto")
-            self.assertEqual(response_auto.status, 200, "auto模式自动降级成功访问测试站点")
-            self.assertIsNotNone(response_auto.body)
-
-            # 2. 验证禁用SSL验证模式也能成功（作为对照）
-            response_false = request("GET", test_url, verify=False)
-            self.assertEqual(response_false.status, 200, "禁用SSL验证应该成功访问自签名证书站点")
-
-        except Exception as e:
-            # 网络问题时跳过测试
-            error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ["timeout", "resolution", "unreachable"]):
-                self.skipTest("Network unavailable for SSL fallback test: {}".format(str(e)))
-            else:
-                # 其他异常重新抛出
-                raise
-
     def test_http_redirects_handling(self):
-        """测试HTTP重定向处理功能"""
+        """测试HTTP重定向处理功能 - 包含GET和POST重定向"""
         from ddns.util.http import request
 
         try:
-            # 测试简单的重定向
+            # 测试1: GET重定向
             redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
             response = request("GET", redirect_url, verify=False)
 
@@ -401,52 +368,34 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIn("url", data)
             self.assertIn("httpbin.org/get", data["url"])
 
+            # 测试2: POST重定向行为（应该转换为GET请求）
+            # 使用URL编码的字符串而不是字典
+            post_data = "test=data&method=POST->GET"
+            response_post = request("POST", redirect_url, data=post_data, verify=False)
+
+            # 重定向后应该成功
+            self.assertEqual(response_post.status, 200)
+            self.assertIsNotNone(response_post.body)
+
+            # 验证最终到达了GET端点
+            data_post = json.loads(response_post.body)
+            self.assertIn("url", data_post)
+            self.assertIn("httpbin.org/get", data_post["url"])
+
+            # 验证method变为GET（因为重定向后POST变为GET）
+            # 注意：重定向后的方法可能不在响应中，所以我们主要验证重定向成功
+            if "method" in data_post:
+                self.assertEqual(data_post.get("method"), "GET")
+            else:
+                # 如果没有method字段，验证我们确实到达了GET端点
+                self.assertIn("httpbin.org/get", data_post["url"])
+
         except Exception as e:
             # 网络问题时跳过测试
             error_msg = str(e).lower()
             network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
             if any(keyword in error_msg for keyword in network_keywords):
                 self.skipTest("Network unavailable for HTTP redirect test: {}".format(str(e)))
-            else:
-                # 其他异常重新抛出
-                raise
-
-    def test_http_post_redirect_behavior(self):
-        """测试POST请求重定向行为 (应该转换为GET请求)"""
-        from ddns.util.http import request
-
-        try:
-            # POST请求到重定向端点 - 应该转换为GET请求
-            redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
-
-            # 发送POST请求，但重定向后应该变为GET
-            # 使用URL编码的字符串而不是字典
-            post_data = "test=data&method=POST->GET"
-            response = request("POST", redirect_url, data=post_data, verify=False)
-
-            # 重定向后应该成功
-            self.assertEqual(response.status, 200)
-            self.assertIsNotNone(response.body)
-
-            # 验证最终到达了GET端点
-            data = json.loads(response.body)
-            self.assertIn("url", data)
-            self.assertIn("httpbin.org/get", data["url"])
-
-            # 验证method变为GET（因为重定向后POST变为GET）
-            # 注意：重定向后的方法可能不在响应中，所以我们主要验证重定向成功
-            if "method" in data:
-                self.assertEqual(data.get("method"), "GET")
-            else:
-                # 如果没有method字段，验证我们确实到达了GET端点
-                self.assertIn("httpbin.org/get", data["url"])
-
-        except Exception as e:
-            # 网络问题时跳过测试
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
-            if any(keyword in error_msg for keyword in network_keywords):
-                self.skipTest("Network unavailable for HTTP POST redirect test: {}".format(str(e)))
             else:
                 # 其他异常重新抛出
                 raise

@@ -238,7 +238,6 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
         Args:
             retries (int): 最大重试次数
         """
-        BaseHandler.__init__(self)
         self.retries = retries or 1
         self._in_retry = False  # 防止递归调用的标志
 
