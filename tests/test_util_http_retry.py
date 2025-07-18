@@ -404,10 +404,24 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
 
             except Exception as e:
-                # 网络问题时跳过测试
+                # 检查是否是SSL相关错误
                 error_msg = str(e).lower()
+                ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]
                 network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                if any(keyword in error_msg for keyword in network_keywords):
+                
+                if any(keyword in error_msg for keyword in ssl_keywords):
+                    # 这是SSL错误，检查日志输出
+                    log_output = log_capture.getvalue()
+                    
+                    # 验证日志中没有重试信息
+                    self.assertNotIn("retrying", log_output.lower())
+                    self.assertNotIn("retry", log_output.lower())
+                    
+                    # 验证确实是SSL证书错误
+                    self.assertIn("certificate", error_msg)
+                    
+                elif any(keyword in error_msg for keyword in network_keywords):
+                    # 网络问题时跳过测试
                     self.skipTest("Network unavailable for SSL certificate test: {}".format(str(e)))
                 else:
                     # 其他异常重新抛出
