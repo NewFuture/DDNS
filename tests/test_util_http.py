@@ -176,15 +176,15 @@ class TestDecodeResponseBody(unittest.TestCase):
 
 
 class TestSendHttpRequest(unittest.TestCase):
-    """测试 send_http_request 函数"""
+    """测试 request 函数"""
 
     def test_get_request_real_api(self):
         """测试真实的GET请求 - 使用postman-echo API服务"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         # 使用postman-echo.com提供的GET测试端点
         try:
-            response = send_http_request("GET", "http://postman-echo.com/get?test=ddns")
+            response = request("GET", "http://postman-echo.com/get?test=ddns")
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
             # 验证响应内容是JSON格式
@@ -199,11 +199,11 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_json_api_response(self):
         """测试JSON API响应解析"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         try:
             # 使用postman-echo.com的基本GET端点，返回请求信息
-            response = send_http_request("GET", "http://postman-echo.com/get?format=json")
+            response = request("GET", "http://postman-echo.com/get?format=json")
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
 
@@ -219,7 +219,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_provider_api_patterns(self):
         """测试常见DNS provider API模式"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         try:
             # 测试认证失败场景 - 使用postman-echo模拟401错误
@@ -230,7 +230,7 @@ class TestSendHttpRequest(unittest.TestCase):
             }
 
             # 使用postman-echo模拟401认证失败响应
-            response = send_http_request("GET", "http://postman-echo.com/status/401", headers=headers)
+            response = request("GET", "http://postman-echo.com/status/401", headers=headers)
 
             # 应该返回401认证失败
             self.assertEqual(response.status, 401)
@@ -242,11 +242,11 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_http_400_bad_request_handling(self):
         """测试HTTP 400 Bad Request错误处理"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         try:
             # 使用postman-echo模拟400错误
-            response = send_http_request("GET", "http://postman-echo.com/status/400")
+            response = request("GET", "http://postman-echo.com/status/400")
 
             # 验证状态码为400
             self.assertEqual(response.status, 400, "应该返回400 Bad Request状态码")
@@ -269,13 +269,13 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_dns_over_https_simulation(self):
         """测试DNS类型的API响应解析"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         try:
             headers = {"Accept": "application/dns-json", "User-Agent": "DDNS-Test/1.0"}
 
             # 使用postman-echo模拟一个带有特定结构的JSON响应
-            response = send_http_request(
+            response = request(
                 "GET", "http://postman-echo.com/get?domain=example.com&type=A", headers=headers
             )
 
@@ -329,7 +329,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_basic_auth_with_httpbin(self):
         """Test basic auth URL format and verification with URL-embedded authentication"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         # Test with special credentials containing @ and . characters
         special_username = "user@test.com"
@@ -348,7 +348,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
         # Try to make actual request
         try:
-            response = send_http_request("GET", auth_url)
+            response = request("GET", auth_url)
         except (OSError, IOError) as e:
             # Skip for Network Exceptions (timeout, connection, etc.)
             raise unittest.SkipTest("Network error, skipping httpbin test: {0}".format(e))
@@ -362,18 +362,18 @@ class TestSendHttpRequest(unittest.TestCase):
 
     def test_ssl_auto_fallback_real_network(self):
         """测试SSL auto模式的真实网络自动降级行为"""
-        from ddns.util.http import send_http_request
+        from ddns.util.http import request
 
         test_url = "https://postman-echo.com/status/200"  # 使用postman-echo的测试站点
 
         try:
             # 1. 测试auto模式：应该自动降级成功
-            response_auto = send_http_request("GET", test_url, verify_ssl="auto")
+            response_auto = request("GET", test_url, verify="auto")
             self.assertEqual(response_auto.status, 200, "auto模式自动降级成功访问测试站点")
             self.assertIsNotNone(response_auto.body)
 
             # 2. 验证禁用SSL验证模式也能成功（作为对照）
-            response_false = send_http_request("GET", test_url, verify_ssl=False)
+            response_false = request("GET", test_url, verify=False)
             self.assertEqual(response_false.status, 200, "禁用SSL验证应该成功访问自签名证书站点")
 
         except Exception as e:

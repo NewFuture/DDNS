@@ -5,7 +5,7 @@ from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
 
-from .util.http import send_http_request, request
+from .util.http import request
 
 # 模块级别的SSL验证配置，默认使用auto模式
 ssl_verify = "auto"

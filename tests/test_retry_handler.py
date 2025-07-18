@@ -214,24 +214,7 @@ class TestRequestFunction(unittest.TestCase):
         handler_types = [type(handler).__name__ for handler in args]
         self.assertIn('ProxyHandler', handler_types)
 
-    def test_backward_compatibility(self):
-        """测试向后兼容性 - send_http_request仍然可用"""
-        from ddns.util.http import send_http_request
-        
-        # 函数应该仍然可调用
-        self.assertTrue(callable(send_http_request))
-        
-        # 测试真实请求确保没有破坏现有功能
-        try:
-            response = send_http_request("GET", "http://postman-echo.com/get?test=backward")
-            self.assertEqual(response.status, 200)
-            self.assertIn("test", response.body)
-        except Exception as e:
-            # 网络问题时跳过
-            if any(keyword in str(e).lower() for keyword in ["timeout", "connection", "network"]):
-                self.skipTest("Network unavailable: {}".format(str(e)))
-            else:
-                raise
+
 
     def test_exponential_backoff_calculation(self):
         """测试指数退避计算"""
