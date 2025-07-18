@@ -16,27 +16,28 @@ import time
 import socket
 
 try:  # python 3
-    from urllib.request import (  # noqa: F401
-        HTTPBasicAuthHandler,
-        HTTPSHandler,
+    from urllib.request import (
         BaseHandler,
-        Request,
-        HTTPPasswordMgrWithDefaultRealm,
-        HTTPDefaultErrorHandler,
-        ProxyHandler,
         build_opener,
+        HTTPBasicAuthHandler,
+        HTTPDefaultErrorHandler,
+        HTTPPasswordMgrWithDefaultRealm,
+        HTTPSHandler,
+        ProxyHandler,
+        Request,
     )
     from urllib.parse import quote, urlencode, unquote
     from urllib.error import URLError
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
-        Request,
-        HTTPSHandler,
-        ProxyHandler,
+        BaseHandler,
+        build_opener,
+        HTTPBasicAuthHandler,
         HTTPDefaultErrorHandler,
         HTTPPasswordMgrWithDefaultRealm,
-        HTTPBasicAuthHandler,
-        build_opener,
+        HTTPSHandler,
+        ProxyHandler,
+        Request,
         URLError,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
