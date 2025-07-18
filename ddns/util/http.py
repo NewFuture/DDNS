@@ -34,7 +34,6 @@ try:  # python 3
         URLError,
         socket.timeout,
         TimeoutError,
-        http.client.RemoteDisconnected,
         ConnectionResetError,
     )
 except ImportError:  # python 2
@@ -164,14 +163,14 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
 
     def http_open(self, req):
         """处理HTTP请求，实现自动重试逻辑"""
-        return self._retry_request(req)
+        return self.default_open(req)
 
     def https_open(self, req):
         """处理HTTPS请求，实现自动重试逻辑"""
-        return self._retry_request(req)
+        return self.default_open(req)
 
-    def _retry_request(self, req):
-        """实际的重试逻辑"""
+    def default_open(self, req):
+        """实际的重试逻辑，处理所有协议"""
         for i in range(self.retries + 1):
             try:
                 # 创建临时opener，不包含RetryHandler以避免递归
@@ -192,21 +191,20 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                 return response
                 
             except Exception as e:
-                # 检查HTTPError
+                # 检查HTTPError状态码
                 if hasattr(e, 'code'):
                     if e.code in self.retry_codes:
                         if i < self.retries:
                             wait_time = 2 ** i
-                            logger.warning("HTTP %d error, retrying in %d seconds: %s", e.code, wait_time, str(e))
+                            logger.warning("Request failed, retrying in %d seconds: %s", wait_time, str(e))
                             time.sleep(wait_time)
                             continue
                         else:
-                            logger.error("Request failed after %d retries with HTTP %d: %s", self.retries, e.code, str(e))
+                            logger.error("Request failed after %d retries: %s", self.retries, str(e))
                             raise
                     else:
-                        # 不重试的HTTP状态码直接抛出
+                        # 非重试状态码，直接抛出
                         raise
-                        
                 # 检查网络异常
                 elif isinstance(e, RETRY_EXCEPTIONS):
                     if i < self.retries:
