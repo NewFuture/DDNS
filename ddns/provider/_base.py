@@ -238,11 +238,7 @@ class SimpleProvider(object):
                 self.logger.debug("Using proxy: %s", p)
             try:
                 # Provider 重试2次
-                response = request(
-                    method, url, data=body_data, headers=headers, 
-                    proxies={'http': p, 'https': p} if p else None, 
-                    verify=self._ssl, retries=2
-                )
+                response = request(method, url, body_data, headers=headers, proxy=p, verify=self._ssl, retries=2)
                 break  # 成功发送请求，跳出循环
             except Exception as e:
                 self.logger.warning("Failed to send request: %s", e)
