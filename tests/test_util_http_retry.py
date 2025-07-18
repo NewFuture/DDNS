@@ -5,6 +5,7 @@ Test HTTP RetryHandler retry functionality
 """
 
 from __future__ import unicode_literals
+import socket
 from __init__ import unittest, patch, MagicMock
 import logging
 
@@ -12,12 +13,6 @@ from ddns.util.http import (
     RetryHandler,
     request,
 )
-
-# Python 2/3 compatibility
-try:
-    from urllib.error import URLError
-except ImportError:
-    from urllib2 import URLError  # type: ignore[import]
 
 
 class TestRetryHandler(unittest.TestCase):
@@ -61,7 +56,7 @@ class TestRetryHandler(unittest.TestCase):
         mock_response.read.return_value = b"success"
 
         # 第一次失败，第二次成功 (retries=2允许最多2次重试)
-        mock_parent.open.side_effect = [URLError("Network error"), mock_response]
+        mock_parent.open.side_effect = [socket.timeout, mock_response]
 
         # 执行测试
         result = self.retry_handler.default_open(mock_req)
@@ -137,10 +132,10 @@ class TestRetryHandler(unittest.TestCase):
         mock_req.timeout = 30
 
         # 所有请求都失败 (retries=2, 最多尝试2次)
-        mock_parent.open.side_effect = [URLError("Persistent error"), URLError("Persistent error")]
+        mock_parent.open.side_effect = [socket.gaierror, socket.timeout]
 
         # 执行测试，期望异常被抛出
-        with self.assertRaises(URLError):
+        with self.assertRaises(socket.timeout):
             self.retry_handler.default_open(mock_req)
 
         # 验证重试次数 (retries=2, 所以最多2次调用)
@@ -408,18 +403,18 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 error_msg = str(e).lower()
                 ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]
                 network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                
+
                 if any(keyword in error_msg for keyword in ssl_keywords):
                     # 这是SSL错误，检查日志输出
                     log_output = log_capture.getvalue()
-                    
+
                     # 验证日志中没有重试信息
                     self.assertNotIn("retrying", log_output.lower())
                     self.assertNotIn("retry", log_output.lower())
-                    
+
                     # 验证确实是SSL证书错误
                     self.assertIn("certificate", error_msg)
-                    
+
                 elif any(keyword in error_msg for keyword in network_keywords):
                     # 网络问题时跳过测试
                     self.skipTest("Network unavailable for SSL certificate test: {}".format(str(e)))
