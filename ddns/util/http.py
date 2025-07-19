@@ -247,7 +247,7 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                     res = self.parent.open(req)
 
                     # 检查是否需要重试
-                    if attempt < self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
+                    if attempt <= self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
                         logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
                         time.sleep(2**attempt)
                         continue
@@ -255,7 +255,7 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                     return res
 
                 except (socket.timeout, socket.gaierror, socket.herror) as e:
-                    if attempt >= self.retries:
+                    if attempt > self.retries:
                         raise  # 如果是最后一次尝试，抛出错误
 
                     logger.warning("Request failed, retrying in %d seconds: %s", 2**attempt, str(e))
