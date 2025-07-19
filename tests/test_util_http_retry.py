@@ -209,19 +209,22 @@ class TestRequestFunction(unittest.TestCase):
         handler_types = [getattr(handler, "__class__", type(handler)).__name__ for handler in args]
         self.assertIn("ProxyHandler", handler_types)
 
-    def test_exponential_backoff_calculation(self):
-        """测试指数退避计算"""
-        # 验证等待时间计算
-        for i in range(5):
-            expected = 2**i
-            self.assertEqual(expected, 2**i)
+    @patch("ddns.util.http.time.sleep")
+    def test_retry_handler_backoff_delays(self, mock_sleep):
+        """测试 RetryHandler 的指数退避延迟"""
+        mock_response = MagicMock()
+        mock_response.getcode.side_effect = [500, 500, 200]  # Simulate failures followed by success
 
-        # 验证常见重试等待时间
-        self.assertEqual(2**0, 1)  # 第一次重试等待1秒
-        self.assertEqual(2**1, 2)  # 第二次重试等待2秒
-        self.assertEqual(2**2, 4)  # 第三次重试等待4秒
-        self.assertEqual(2**3, 8)  # 第四次重试等待8秒
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
 
+        with patch("ddns.util.http.build_opener", return_value=mock_opener):
+            request("GET", "http://example.com", retries=3)
+
+        # 验证 time.sleep 被调用的次数和参数
+        expected_delays = [1, 2, 4]  # Exponential backoff delays
+        actual_delays = [call[0][0] for call in mock_sleep.call_args_list]
+        self.assertEqual(actual_delays, expected_delays)
     @patch("ddns.util.http.build_opener")
     def test_default_retry_counts(self, mock_build_opener):
         """测试默认重试次数"""
