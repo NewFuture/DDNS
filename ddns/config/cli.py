@@ -235,6 +235,29 @@ def load_config(description, doc, version, date):
     parser.add_argument("--log_datefmt", metavar="FORMAT", help="set log date format [日志时间格式]")
     parser.add_argument("--log.datefmt", "--log-datefmt", dest="log_datefmt", help=SUPPRESS)  # 隐藏参数
 
+    # Task management parameters
+    parser.add_argument(
+        "--install-task",
+        dest="install_task",
+        nargs="?",
+        type=int,
+        const=5,
+        metavar="MINUTES",
+        help="install scheduled task [安装定时任务] (default interval: 5 minutes)"
+    )
+    parser.add_argument(
+        "--uninstall-task",
+        dest="uninstall_task", 
+        action="store_true",
+        help="uninstall scheduled task [卸载定时任务]"
+    )
+    parser.add_argument(
+        "--task-status",
+        dest="task_status",
+        action="store_true", 
+        help="show scheduled task status [显示定时任务状态]"
+    )
+
     args = parser.parse_args()
     is_debug = getattr(args, "debug", False)
     if is_debug:
