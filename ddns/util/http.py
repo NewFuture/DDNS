@@ -103,7 +103,7 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
         data = data.encode("utf-8")
 
     req = Request(url, data=data, headers=headers or {})
-    req.method = method.upper()  # 确保方法是大写
+    req.get_method = lambda: method.upper()  # 确保方法是大写
 
     # 创建opener并发送请求，包括重试处理器
     handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
@@ -153,7 +153,7 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
     def https_open(self, req):
         """处理HTTPS请求，自动处理SSL错误"""
         try:
-            return self.do_open(HTTPSConnection, req, context=self._context)
+            return self._open(req)
         except OSError as e:  # SSL auto模式：处理本地证书错误
             ssl_errors = (
                 "unable to get local issuer certificate",
@@ -163,10 +163,17 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
                 logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.full_url)
                 self._verify = False  # 不验证SSL
                 self._context = self._ssl_context()  # 确保上下文已更新
-                return self.do_open(HTTPSConnection, req, context=self._context)
+                return self._open(req)  # 重试请求
             else:
                 logger.debug("error: (%s)", e)
                 raise
+
+    def _open(self, req):
+        try:  # python 3
+            return self.do_open(HTTPSConnection, req, context=self._context)
+        except (TypeError, AttributeError):  # python 2.7.6- Fallback for older Python versions
+            logger.info("Falling back to parent https_open method for compatibility")
+            return HTTPSHandler.https_open(self, req)
 
     def _ssl_context(self):
         # type: () -> ssl.SSLContext | None
@@ -246,7 +253,6 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                 try:
                     res = self.parent.open(req)
 
-                    # 检查是否需要重试
                     if attempt <= self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
                         logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
                         time.sleep(2**attempt)

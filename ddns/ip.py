@@ -49,7 +49,7 @@ def _open(url, reg):
     try:
         debug("open: %s", url)
         # IP 模块重试3次
-        response = request("GET", url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify=ssl_verify, retries=3)
+        response = request("GET", url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify=ssl_verify, retries=2)
         res = response.body
         debug("response: %s", res)
         match = compile(reg).search(res)
