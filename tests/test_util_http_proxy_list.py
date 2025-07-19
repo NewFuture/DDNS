@@ -6,6 +6,7 @@ Test ddns.util.http module proxy list functionality
 
 from __init__ import unittest, patch, MagicMock
 from ddns.util.http import request
+from urllib.request import ProxyHandler
 import socket
 
 
@@ -146,25 +147,19 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
-    def test_proxy_fallback_first_fails_second_succeeds(self, mock_request, mock_build_opener):
+    @patch.object(ProxyHandler, 'proxy_open')
+    def test_proxy_fallback_first_fails_second_succeeds(self, mock_proxy_open):
         """测试第一个代理失败，第二个代理成功的情况"""
         # 模拟响应
         mock_response = MagicMock()
+        mock_response.code = 200  # urllib accesses .code directly
         mock_response.getcode.return_value = 200
         mock_response.info.return_value = {}
         mock_response.read.return_value = b'{"success": true}'
         mock_response.msg = "OK"
 
-        # 第一次调用失败，第二次调用成功
-        mock_opener_fail = MagicMock()
-        mock_opener_fail.open.side_effect = Exception("Proxy connection failed")
-
-        mock_opener_success = MagicMock()
-        mock_opener_success.open.return_value = mock_response
-
-        mock_build_opener.side_effect = [mock_opener_fail, mock_opener_success]
+        # 第一次代理调用失败，第二次代理调用成功
+        mock_proxy_open.side_effect = [Exception("Proxy connection failed"), mock_response]
 
         # 测试代理失败回退
         proxy_list = ["http://proxy1:8080", "http://proxy2:8080"]
@@ -172,16 +167,14 @@ class TestRequestProxyList(unittest.TestCase):
 
         self.assertEqual(result.status, 200)
         self.assertEqual(result.body, '{"success": true}')
-        self.assertEqual(mock_build_opener.call_count, 2)  # 应该调用两次
+        # 验证proxy_open被调用了两次（每个代理一次）
+        self.assertEqual(mock_proxy_open.call_count, 2)
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
-    def test_proxy_fallback_all_fail(self, mock_request, mock_build_opener):
+    @patch.object(ProxyHandler, 'proxy_open')
+    def test_proxy_fallback_all_fail(self, mock_proxy_open):
         """测试所有代理都失败的情况"""
-        # 模拟所有请求都失败
-        mock_opener = MagicMock()
-        mock_opener.open.side_effect = Exception("Connection failed")
-        mock_build_opener.return_value = mock_opener
+        # 模拟所有代理请求都失败
+        mock_proxy_open.side_effect = Exception("Connection failed")
 
         # 测试所有代理都失败
         proxy_list = ["http://proxy1:8080", "http://proxy2:8080"]
@@ -190,7 +183,8 @@ class TestRequestProxyList(unittest.TestCase):
             request("GET", "http://example.com", proxies=proxy_list)
 
         self.assertIn("Connection failed", str(context.exception))
-        self.assertEqual(mock_build_opener.call_count, 2)  # 应该尝试两次
+        # 验证proxy_open被调用了两次（每个代理一次）
+        self.assertEqual(mock_proxy_open.call_count, 2)
 
     def test_real_network_proxy_fallback(self):
         """测试真实网络环境下的代理失败回退（如果网络可用）"""

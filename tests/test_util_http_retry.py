@@ -205,10 +205,10 @@ class TestRequestFunction(unittest.TestCase):
         self.assertEqual(result.status, 200)
         mock_build_opener.assert_called_once()
 
-        # 验证ProxyHandler被添加
+        # 验证ProxiesHandler被添加
         args = mock_build_opener.call_args[0]
         handler_types = [getattr(handler, "__class__", type(handler)).__name__ for handler in args]
-        self.assertIn("ProxyHandler", handler_types)
+        self.assertIn("ProxiesHandler", handler_types)
 
     @patch("time.sleep")
     def test_retry_handler_backoff_delays(self, mock_sleep):
