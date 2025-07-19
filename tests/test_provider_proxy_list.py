@@ -6,6 +6,7 @@ Test provider base class proxy list functionality
 
 from base_test import BaseProviderTestCase, patch, MagicMock
 from ddns.provider._base import SimpleProvider
+from ddns.util.http import HttpResponse
 
 
 class TestSimpleProvider(SimpleProvider):
@@ -27,11 +28,11 @@ class TestProviderProxyList(BaseProviderTestCase):
         # 创建一个包含代理列表的provider
         self.proxy_list = ["http://proxy1:8080", "http://proxy2:8080", None]
 
-    @patch('ddns.util.http.request')
+    @patch('ddns.provider._base.request')
     def test_provider_http_with_proxy_list(self, mock_request):
         """测试Provider使用代理列表发送HTTP请求"""
         # 模拟成功响应
-        mock_response = {"status": "success", "data": "test"}
+        mock_response = HttpResponse(200, "OK", {}, '{"status": "success", "data": "test"}')
         mock_request.return_value = mock_response
 
         # 创建provider并设置代理列表
@@ -40,19 +41,19 @@ class TestProviderProxyList(BaseProviderTestCase):
         # 调用_http方法
         result = provider._http("GET", "/test")
         
-        # 验证结果
-        self.assertEqual(result, mock_response)
+        # 验证结果（应该是解析后的JSON）
+        self.assertEqual(result["status"], "success")
         
         # 验证request被正确调用，传递了proxies参数
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         self.assertEqual(call_args[1]['proxies'], self.proxy_list)
 
-    @patch('ddns.util.http.request')
+    @patch('ddns.provider._base.request')
     def test_provider_http_with_single_proxy_backward_compatibility(self, mock_request):
         """测试Provider单个代理的向后兼容性"""
         # 模拟成功响应
-        mock_response = {"status": "success", "data": "test"}
+        mock_response = HttpResponse(200, "OK", {}, '{"status": "success", "data": "test"}')
         mock_request.return_value = mock_response
 
         # 创建provider并设置单个代理（向后兼容）
@@ -63,18 +64,18 @@ class TestProviderProxyList(BaseProviderTestCase):
         result = provider._http("GET", "/test")
         
         # 验证结果
-        self.assertEqual(result, mock_response)
+        self.assertEqual(result["status"], "success")
         
         # 验证request被正确调用，单个代理被转换为列表
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         self.assertEqual(call_args[1]['proxies'], [single_proxy])
 
-    @patch('ddns.util.http.request')
+    @patch('ddns.provider._base.request')
     def test_provider_http_no_proxy(self, mock_request):
         """测试Provider没有代理时的默认行为"""
         # 模拟成功响应
-        mock_response = {"status": "success", "data": "test"}
+        mock_response = HttpResponse(200, "OK", {}, '{"status": "success", "data": "test"}')
         mock_request.return_value = mock_response
 
         # 创建provider不设置代理
@@ -84,18 +85,18 @@ class TestProviderProxyList(BaseProviderTestCase):
         result = provider._http("GET", "/test")
         
         # 验证结果
-        self.assertEqual(result, mock_response)
+        self.assertEqual(result["status"], "success")
         
         # 验证request被正确调用，使用默认直连
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         self.assertEqual(call_args[1]['proxies'], [None])
 
-    @patch('ddns.util.http.request')
+    @patch('ddns.provider._base.request')
     def test_provider_http_empty_proxy_list(self, mock_request):
         """测试Provider空代理列表时的默认行为"""
         # 模拟成功响应
-        mock_response = {"status": "success", "data": "test"}
+        mock_response = HttpResponse(200, "OK", {}, '{"status": "success", "data": "test"}')
         mock_request.return_value = mock_response
 
         # 创建provider设置空代理列表
@@ -105,14 +106,14 @@ class TestProviderProxyList(BaseProviderTestCase):
         result = provider._http("GET", "/test")
         
         # 验证结果
-        self.assertEqual(result, mock_response)
+        self.assertEqual(result["status"], "success")
         
         # 验证request被正确调用，空列表被转换为默认直连
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         self.assertEqual(call_args[1]['proxies'], [None])
 
-    @patch('ddns.util.http.request')
+    @patch('ddns.provider._base.request')
     def test_provider_http_request_failure_handling(self, mock_request):
         """测试Provider处理请求失败的情况"""
         # 模拟请求失败
