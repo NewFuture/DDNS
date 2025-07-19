@@ -51,14 +51,14 @@ class TestProviderProxyList(BaseProviderTestCase):
 
     @patch('ddns.provider._base.request')
     def test_provider_http_with_single_proxy_backward_compatibility(self, mock_request):
-        """测试Provider单个代理的向后兼容性"""
+        """测试Provider单个代理列表"""
         # 模拟成功响应
         mock_response = HttpResponse(200, "OK", {}, '{"status": "success", "data": "test"}')
         mock_request.return_value = mock_response
 
-        # 创建provider并设置单个代理（向后兼容）
-        single_proxy = "http://single-proxy:8080"
-        provider = TestSimpleProvider(self.authid, self.token, proxy=single_proxy)
+        # 创建provider并设置单个代理列表
+        single_proxy_list = ["http://single-proxy:8080"]
+        provider = TestSimpleProvider(self.authid, self.token, proxy=single_proxy_list)
 
         # 调用_http方法
         result = provider._http("GET", "/test")
@@ -66,10 +66,10 @@ class TestProviderProxyList(BaseProviderTestCase):
         # 验证结果
         self.assertEqual(result["status"], "success")
 
-        # 验证request被正确调用，单个代理被转换为列表
+        # 验证request被正确调用
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        self.assertEqual(call_args[1]['proxies'], [single_proxy])
+        self.assertEqual(call_args[1]['proxies'], single_proxy_list)
 
     @patch('ddns.provider._base.request')
     def test_provider_http_no_proxy(self, mock_request):
@@ -87,10 +87,10 @@ class TestProviderProxyList(BaseProviderTestCase):
         # 验证结果
         self.assertEqual(result["status"], "success")
 
-        # 验证request被正确调用，使用默认直连
+        # 验证request被正确调用
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        self.assertEqual(call_args[1]['proxies'], [None])
+        self.assertEqual(call_args[1]['proxies'], None)
 
     @patch('ddns.provider._base.request')
     def test_provider_http_empty_proxy_list(self, mock_request):
@@ -108,10 +108,10 @@ class TestProviderProxyList(BaseProviderTestCase):
         # 验证结果
         self.assertEqual(result["status"], "success")
 
-        # 验证request被正确调用，空列表被转换为默认直连
+        # 验证request被正确调用
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        self.assertEqual(call_args[1]['proxies'], [None])
+        self.assertEqual(call_args[1]['proxies'], [])
 
     @patch('ddns.provider._base.request')
     def test_provider_http_request_failure_handling(self, mock_request):
@@ -126,26 +126,27 @@ class TestProviderProxyList(BaseProviderTestCase):
         with self.assertRaises(RuntimeError) as context:
             provider._http("GET", "/test")
 
-        self.assertIn("Failed to send request to", str(context.exception))
+        self.assertIn("All proxies failed", str(context.exception))
 
     def test_provider_initialization_with_proxy_types(self):
         """测试Provider初始化时不同代理参数类型的处理"""
-        # 测试字符串代理
-        provider1 = TestSimpleProvider(self.authid, self.token, proxy="http://proxy:8080")
-        self.assertEqual(provider1._proxy, ["http://proxy:8080"])
-
         # 测试代理列表
         proxy_list = ["http://proxy1:8080", "http://proxy2:8080", None]
-        provider2 = TestSimpleProvider(self.authid, self.token, proxy=proxy_list)
-        self.assertEqual(provider2._proxy, proxy_list)
+        provider1 = TestSimpleProvider(self.authid, self.token, proxy=proxy_list)
+        self.assertEqual(provider1._proxy, proxy_list)
+
+        # 测试单项代理列表
+        single_proxy_list = ["http://proxy:8080"]
+        provider2 = TestSimpleProvider(self.authid, self.token, proxy=single_proxy_list)
+        self.assertEqual(provider2._proxy, single_proxy_list)
 
         # 测试None代理
         provider3 = TestSimpleProvider(self.authid, self.token, proxy=None)
-        self.assertEqual(provider3._proxy, [None])
+        self.assertEqual(provider3._proxy, None)
 
         # 测试空列表代理
         provider4 = TestSimpleProvider(self.authid, self.token, proxy=[])
-        self.assertEqual(provider4._proxy, [None])
+        self.assertEqual(provider4._proxy, [])
 
 
 if __name__ == "__main__":

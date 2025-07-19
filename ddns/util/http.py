@@ -26,7 +26,7 @@ try:  # python 3
         ProxyHandler,
         Request,
     )
-    from urllib.parse import quote, urlencode, unquote
+    from urllib.parse import quote, urlencode, unquote, urlparse
     from http.client import HTTPSConnection
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
@@ -40,6 +40,7 @@ except ImportError:  # python 2
         Request,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+    from urlparse import urlparse  # type: ignore[no-redef]
     from httplib import HTTPSConnection  # type: ignore[no-redef]
 
 __all__ = ["request", "HttpResponse", "quote", "urlencode"]
@@ -108,99 +109,48 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     req = Request(url, data=data, headers=headers or {})
     req.get_method = lambda: method.upper()  # 确保方法是大写
 
-    # 使用ProxiesHandler逐个尝试代理列表
-    return ProxiesHandler.try_proxies_and_open(req, proxy_list, verify, auth, retries)
+    # 逐个尝试代理列表
+    last_exception = None
+    
+    for i, current_proxy in enumerate(proxy_list):
+        try:
+            if current_proxy:
+                logger.debug("Trying proxy: %s", current_proxy)
+            else:
+                logger.debug("Trying direct connection (no proxy)")
 
+            # 创建opener并发送请求，包括重试处理器
+            handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
+            if current_proxy:
+                handlers.append(ProxyHandler({urlparse(current_proxy).scheme: current_proxy}))
+            if auth:
+                handlers.append(auth)
 
-class ProxiesHandler(ProxyHandler):
-    """代理列表处理器，基于ProxyHandler实现逐个尝试代理的功能"""
+            opener = build_opener(*handlers)
+            response = opener.open(req)
 
-    def __init__(self, proxy):
-        # type: (str) -> None
-        """
-        初始化代理处理器
-        
-        Args:
-            proxy: 单个代理地址
-        """
-        if proxy:
-            super(ProxiesHandler, self).__init__({"http": proxy, "https": proxy})
-        else:
-            super(ProxiesHandler, self).__init__({})
+            # 处理响应
+            response_headers = response.info()
+            raw_body = response.read()
+            decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
+            status_code = response.getcode()
+            reason = getattr(response, "msg", "")
 
-    def proxy_open(self, req, proxy, type):
-        # type: (Request, str, str) -> object
-        """
-        覆盖ProxyHandler的proxy_open方法
-        
-        Args:
-            req: HTTP请求对象
-            proxy: 代理地址
-            type: 代理类型
-            
-        Returns:
-            响应对象或None
-        """
-        # 调用父类的proxy_open方法
-        return super(ProxiesHandler, self).proxy_open(req, proxy, type)
+            return HttpResponse(status_code, reason, response_headers, decoded_body)
 
-    @staticmethod
-    def try_proxies_and_open(req, proxy_list, verify, auth, retries):
-        # type: (Request, list[str | None], bool | str, BaseHandler | None, int) -> HttpResponse
-        """
-        逐个尝试代理列表并发送请求
-        
-        Args:
-            req: HTTP请求对象
-            proxy_list: 代理列表
-            verify: SSL验证配置
-            auth: 认证处理器
-            retries: 重试次数
-            
-        Returns:
-            HttpResponse: 响应对象
-        """
-        last_exception = None
-        
-        for i, current_proxy in enumerate(proxy_list):
-            try:
-                if current_proxy:
-                    logger.debug("Trying proxy: %s", current_proxy)
-                else:
-                    logger.debug("Trying direct connection (no proxy)")
+        except Exception as e:
+            last_exception = e
+            if i < len(proxy_list) - 1:
+                logger.warning("Proxy failed: %s, trying next proxy: %s", current_proxy or "direct", str(e))
+            else:
+                logger.error("All proxies failed, last error: %s", str(e))
 
-                # 创建opener并发送请求，包括重试处理器
-                handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
-                if current_proxy:
-                    handlers.append(ProxiesHandler(current_proxy))
-                if auth:
-                    handlers.append(auth)
+    # 如果所有代理都失败，抛出最后一个异常
+    if last_exception:
+        raise last_exception
 
-                opener = build_opener(*handlers)
-                response = opener.open(req)
-
-                # 处理响应
-                response_headers = response.info()
-                raw_body = response.read()
-                decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
-                status_code = response.getcode()
-                reason = getattr(response, "msg", "")
-
-                return HttpResponse(status_code, reason, response_headers, decoded_body)
-
-            except Exception as e:
-                last_exception = e
-                if i < len(proxy_list) - 1:
-                    logger.warning("Proxy failed: %s, trying next proxy: %s", current_proxy or "direct", str(e))
-                else:
-                    logger.error("All proxies failed, last error: %s", str(e))
-
-        # 如果所有代理都失败，抛出最后一个异常
-        if last_exception:
-            raise last_exception
-
-        # 理论上不会到达这里
-        raise RuntimeError("No proxy configurations to try")
+    # 理论上不会到达这里
+    raise RuntimeError("No proxy configurations to try")
 
 
 class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
