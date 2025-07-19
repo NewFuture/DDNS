@@ -254,8 +254,8 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
 
                     # 检查是否需要重试
                     if attempt < self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
-                        logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), attempt)
-                        time.sleep(attempt**2)
+                        logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
+                        time.sleep(2**attempt)
                         continue
 
                     return res
