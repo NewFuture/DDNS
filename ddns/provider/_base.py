@@ -124,7 +124,7 @@ class SimpleProvider(object):
         self.token = token
         if endpoint:
             self.endpoint = endpoint
-        
+
         # 处理代理参数：支持单个代理字符串或代理列表
         if proxy is None:
             self._proxy = [None]  # 默认直连
@@ -133,7 +133,7 @@ class SimpleProvider(object):
         else:
             # 单个代理字符串，转换为列表
             self._proxy = [proxy]
-        
+
         self._ssl = verify_ssl
 
         self.options = options
