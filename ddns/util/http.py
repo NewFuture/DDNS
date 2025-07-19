@@ -12,105 +12,40 @@ from logging import getLogger
 from re import compile
 import ssl
 import os
+import time
+import socket
 
 try:  # python 3
-    from urllib.request import (  # noqa: F401
-        HTTPBasicAuthHandler,
-        HTTPSHandler,
+    from urllib.request import (
         BaseHandler,
-        Request,
-        HTTPPasswordMgrWithDefaultRealm,
-        HTTPDefaultErrorHandler,
-        ProxyHandler,
         build_opener,
+        HTTPBasicAuthHandler,
+        HTTPDefaultErrorHandler,
+        HTTPPasswordMgrWithDefaultRealm,
+        HTTPSHandler,
+        ProxyHandler,
+        Request,
     )
     from urllib.parse import quote, urlencode, unquote
+    from http.client import HTTPSConnection
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
-        Request,
-        HTTPSHandler,
-        ProxyHandler,
+        BaseHandler,
+        build_opener,
+        HTTPBasicAuthHandler,
         HTTPDefaultErrorHandler,
         HTTPPasswordMgrWithDefaultRealm,
-        HTTPBasicAuthHandler,
-        build_opener,
+        HTTPSHandler,
+        ProxyHandler,
+        Request,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+    from httplib import HTTPSConnection  # type: ignore[no-redef]
 
+__all__ = ["request", "HttpResponse", "quote", "urlencode"]
 
-__all__ = ["send_http_request", "HttpResponse", "quote", "urlencode"]
-
-logger = getLogger().getChild(__name__)
+logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
-
-
-class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
-    """自定义HTTP错误处理器，处理所有HTTP错误状态码，返回响应而不抛出异常"""
-
-    def http_error_default(self, req, fp, code, msg, hdrs):
-        """处理所有HTTP错误状态码，返回响应而不抛出异常"""
-        logger.warning("HTTP error %s: %s", code, msg)
-        return fp
-
-
-class SSLAutoFallbackHandler(HTTPSHandler):  # type: ignore[misc]
-    """SSL自动降级处理器，处理 unable to get local issuer certificate 错误"""
-
-    # 类级别的SSL上下文缓存
-    _ssl_cache = {}  # type: dict[str, ssl.SSLContext]
-
-    def __init__(self, verify_ssl):
-        # type: (bool | str) -> None
-        self._verify_ssl = verify_ssl
-        ssl_context = self._get_ssl_context()
-        # 兼容性：优先使用context参数，失败时降级
-        try:  # python 3 / python 2.7.9+
-            HTTPSHandler.__init__(self, context=ssl_context)
-        except (TypeError, AttributeError):  # python 2.7.8-
-            HTTPSHandler.__init__(self)
-
-    def _get_ssl_context(self):
-        # type: () -> ssl.SSLContext | None
-        """创建或获取缓存的SSLContext"""
-        # 缓存键
-        cache_key = "default"
-        if not self._verify_ssl:
-            if not hasattr(ssl, "_create_unverified_context"):
-                return None
-            cache_key = "unverified"
-            if cache_key not in self._ssl_cache:
-                self._ssl_cache[cache_key] = ssl._create_unverified_context()
-        elif hasattr(self._verify_ssl, "lower") and self._verify_ssl.lower() not in ("auto", "true"):  # type: ignore
-            cache_key = str(self._verify_ssl)
-            if cache_key not in self._ssl_cache:
-                self._ssl_cache[cache_key] = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=cache_key)
-        elif cache_key not in self._ssl_cache:
-            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            if not ssl_context.get_ca_certs():
-                logger.warning("No system CA certificates found, loading default CA certificates")
-                _load_system_ca_certs(ssl_context)
-            self._ssl_cache[cache_key] = ssl_context
-
-        return self._ssl_cache[cache_key]
-
-    def https_open(self, req):
-        """处理HTTPS请求，自动处理SSL错误"""
-        try:
-            return HTTPSHandler.https_open(self, req)
-        except Exception as e:
-            # SSL auto模式：只处理 unable to get local issuer certificate 错误
-            if self._verify_ssl == "auto" and "unable to get local issuer certificate" in str(e).lower():
-                msg = "unable to get local issuer certificate, switching to unverified connection for %s"
-                logger.warning(msg, req.get_full_url())
-                self._verify_ssl = False
-                # 创建不验证SSL的临时处理器重试
-                try:  # python 3 / python 2.7.9+
-                    temp_handler = HTTPSHandler(context=self._get_ssl_context())
-                except (TypeError, AttributeError):  # python 2.7.8-
-                    temp_handler = HTTPSHandler()
-                return temp_handler.https_open(req)
-            else:
-                raise
 
 
 class HttpResponse(object):
@@ -120,12 +55,6 @@ class HttpResponse(object):
         # type: (int, str, Any, str) -> None
         """
         初始化HTTP响应对象
-
-        Args:
-            status (int): HTTP状态码
-            reason (str): 状态原因短语
-            headers (Any): 响应头对象，直接使用 response.info()
-            body (str): 响应体内容
         """
         self.status = status
         self.reason = reason
@@ -133,49 +62,24 @@ class HttpResponse(object):
         self.body = body
 
 
-def _load_system_ca_certs(ssl_context):
-    # type: (ssl.SSLContext) -> None
-    """加载系统CA证书"""
-    ca_paths = [
-        # Linux/Unix常用路径
-        "/etc/ssl/certs/ca-certificates.crt",  # Debian/Ubuntu
-        "/etc/pki/tls/certs/ca-bundle.crt",  # RedHat/CentOS
-        "/etc/ssl/ca-bundle.pem",  # OpenSUSE
-        "/etc/ssl/cert.pem",  # OpenBSD
-        "/usr/local/share/certs/ca-root-nss.crt",  # FreeBSD
-        "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",  # Fedora/RHEL
-        # macOS路径
-        "/usr/local/etc/openssl/cert.pem",  # macOS with Homebrew
-        "/opt/local/etc/openssl/cert.pem",  # macOS with MacPorts
-    ]
-
-    for ca_path in ca_paths:
-        if os.path.isfile(ca_path):
-            try:
-                ssl_context.load_verify_locations(ca_path)
-                logger.info("Loaded CA certificates from: %s", ca_path)
-                return  # 成功加载后立即返回
-            except Exception as e:
-                logger.warning("Failed to load CA certificates from %s: %s", ca_path, e)
-
-
-def send_http_request(method, url, body=None, headers=None, proxy=None, verify_ssl=True, auth_handler=None):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None) -> HttpResponse # noqa: E501
+def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=None, retries=1):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
-    发送HTTP/HTTPS请求，支持重定向跟随和灵活的SSL验证
+    发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
 
     Args:
         method (str): HTTP方法，如GET、POST等
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
-        body (str | bytes | None): 请求体
-        headers (dict[str, str] | None): 请求头
-        proxy (str | None): 代理地址，格式为 http://proxy:port
-        verify_ssl (bool | str): SSL验证配置
-                                - True: 启用标准SSL验证
-                                - False: 禁用SSL验证
-                                - "auto": 启用验证，失败时自动回退到不验证
-                                - str: 自定义CA证书文件路径
-        auth_handler (BaseHandler | None): 自定义认证处理器
+        data (str | bytes | None): 请求体数据
+        headers (dict[str, str] | None): 请求头字典
+        proxy (str | None): 代理配置
+        verify (bool | str): SSL验证配置
+                            - True: 启用标准SSL验证
+                            - False: 禁用SSL验证
+                            - "auto": 启用验证，失败时自动回退到不验证
+                            - str: 自定义CA证书文件路径
+        auth (BaseHandler | None): 自定义认证处理器
+        retries (int): 最大重试次数，默认1次
 
     Returns:
         HttpResponse: 响应对象
@@ -183,34 +87,31 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     Raises:
         URLError: 如果请求失败
         ssl.SSLError: 如果SSL验证失败
+        ValueError: 如果参数无效
     """
     # 解析URL以检查是否包含嵌入式认证信息
     m = _AUTH_URL_RE.match(url)
     if m:
         protocol, username, password, rest = m.groups()
-        clean_url = protocol + rest
-        password_mgr = HTTPPasswordMgrWithDefaultRealm()  # 使用urllib的内置认证机制
-        password_mgr.add_password(None, clean_url, unquote(username), unquote(password))
-        auth_handler = HTTPBasicAuthHandler(password_mgr)
-        url = clean_url
+        url = protocol + rest
+        password_mgr = HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, url, unquote(username), unquote(password))
+        auth = HTTPBasicAuthHandler(password_mgr)
 
     # 准备请求
-    if isinstance(body, str):
-        body = body.encode("utf-8")
+    if isinstance(data, str):
+        data = data.encode("utf-8")
 
-    req = Request(url, data=body)
-    req.get_method = lambda: method  # type: ignore[attr-defined]
+    req = Request(url, data=data, headers=headers or {})
+    req.get_method = lambda: method.upper()  # 确保方法是大写
 
-    if headers:
-        for key, value in headers.items():
-            req.add_header(key, value)
-
-    # 创建opener并发送请求
-    handlers = [NoHTTPErrorProcessor(), SSLAutoFallbackHandler(verify_ssl=verify_ssl)]  # type: list[BaseHandler]
+    # 创建opener并发送请求，包括重试处理器
+    handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
     if proxy:
         handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
-    if auth_handler:
-        handlers.append(auth_handler)
+    if auth:
+        handlers.append(auth)
+
     opener = build_opener(*handlers)
     response = opener.open(req)
 
@@ -222,6 +123,152 @@ def send_http_request(method, url, body=None, headers=None, proxy=None, verify_s
     reason = getattr(response, "msg", "")
 
     return HttpResponse(status_code, reason, response_headers, decoded_body)
+
+
+class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
+    """自定义HTTP错误处理器，处理所有HTTP错误状态码，返回响应而不抛出异常"""
+
+    def http_error_default(self, req, fp, code, msg, hdrs):
+        """处理所有HTTP错误状态码，返回响应而不抛出异常"""
+        logger.info("HTTP error %s: %s", code, msg)
+        return fp
+
+
+class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
+    """SSL自动降级处理器，处理 unable to get local issuer certificate 错误"""
+
+    # 类级别的SSL上下文缓存
+    _ssl_cache = {}  # type: dict[str, ssl.SSLContext|None]
+
+    def __init__(self, verify):
+        # type: (bool | str) -> None
+        self._verify = verify
+        self._context = self._ssl_context()
+        # 兼容性：优先使用context参数，失败时降级
+        try:  # python 3 / python 2.7.9+
+            HTTPSHandler.__init__(self, context=self._context)
+        except (TypeError, AttributeError):  # python 2.7.8-
+            HTTPSHandler.__init__(self)
+
+    def https_open(self, req):
+        """处理HTTPS请求，自动处理SSL错误"""
+        try:
+            return self._open(req)
+        except OSError as e:  # SSL auto模式：处理本地证书错误
+            ssl_errors = (
+                "unable to get local issuer certificate",
+                "Basic Constraints of CA cert not marked critical",
+            )
+            if self._verify == "auto" and any(err in str(e) for err in ssl_errors):
+                logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.get_full_url())
+                self._verify = False  # 不验证SSL
+                self._context = self._ssl_context()  # 确保上下文已更新
+                return self._open(req)  # 重试请求
+            else:
+                logger.debug("error: (%s)", e)
+                raise
+
+    def _open(self, req):
+        try:  # python 3
+            return self.do_open(HTTPSConnection, req, context=self._context)
+        except (TypeError, AttributeError):  # python 2.7.6- Fallback for older Python versions
+            logger.info("Falling back to parent https_open method for compatibility")
+            return HTTPSHandler.https_open(self, req)
+
+    def _ssl_context(self):
+        # type: () -> ssl.SSLContext | None
+        """创建或获取缓存的SSLContext"""
+        cache_key = "default"  # 缓存键
+        if not self._verify:
+            cache_key = "unverified"
+            if cache_key not in self._ssl_cache:
+                self._ssl_cache[cache_key] = (
+                    ssl._create_unverified_context() if hasattr(ssl, "_create_unverified_context") else None
+                )
+        elif hasattr(self._verify, "lower") and self._verify.lower() not in ("auto", "true"):  # type: ignore
+            cache_key = str(self._verify)
+            if cache_key not in self._ssl_cache:
+                self._ssl_cache[cache_key] = ssl.create_default_context(cafile=cache_key)
+        elif cache_key not in self._ssl_cache:
+            self._ssl_cache[cache_key] = ssl.create_default_context()
+            if not self._ssl_cache[cache_key].get_ca_certs():  # type: ignore
+                logger.info("No system CA certificates found, loading default CA certificates")
+                self._load_system_ca_certs(self._ssl_cache[cache_key])  # type: ignore
+
+        return self._ssl_cache[cache_key]
+
+    def _load_system_ca_certs(self, ssl_context):
+        # type: (ssl.SSLContext) -> None
+        """加载系统CA证书"""
+        ca_paths = [
+            # Linux/Unix常用路径
+            "/etc/ssl/certs/ca-certificates.crt",  # Debian/Ubuntu
+            "/etc/pki/tls/certs/ca-bundle.crt",  # RedHat/CentOS
+            "/etc/ssl/ca-bundle.pem",  # OpenSUSE
+            "/etc/ssl/cert.pem",  # OpenBSD
+            "/usr/local/share/certs/ca-root-nss.crt",  # FreeBSD
+            "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",  # Fedora/RHEL
+            # macOS路径
+            "/usr/local/etc/openssl/cert.pem",  # macOS with Homebrew
+            "/opt/local/etc/openssl/cert.pem",  # macOS with MacPorts
+        ]
+
+        for ca_path in ca_paths:
+            if os.path.isfile(ca_path):
+                try:
+                    ssl_context.load_verify_locations(ca_path)
+                    logger.info("Loaded CA certificates from: %s", ca_path)
+                    return  # 成功加载后立即返回
+                except Exception as e:
+                    logger.warning("Failed to load CA certificates from %s: %s", ca_path, e)
+
+
+class RetryHandler(BaseHandler):  # type: ignore[misc]
+    """HTTP重试处理器，自动重试指定状态码和网络错误"""
+
+    handler_order = 100
+    RETRY_CODES = (408, 429, 500, 502, 503, 504)
+
+    def __init__(self, retries=3):
+        # type: (int) -> None
+        """
+        初始化重试处理器
+
+        Args:
+            retries (int): 最大重试次数
+        """
+        self.retries = retries
+        self._in_retry = False  # 防止递归调用的标志
+
+    def default_open(self, req):
+        """实际的重试逻辑，处理所有协议"""
+        # 防止递归调用
+        if self._in_retry:
+            return None
+
+        self._in_retry = True
+
+        try:
+            for attempt in range(1, self.retries + 2):
+                try:
+                    res = self.parent.open(req)
+
+                    if attempt <= self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
+                        logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
+                        time.sleep(2**attempt)
+                        continue
+
+                    return res
+
+                except (socket.timeout, socket.gaierror, socket.herror) as e:
+                    if attempt > self.retries:
+                        raise  # 如果是最后一次尝试，抛出错误
+
+                    logger.warning("Request failed, retrying in %d seconds: %s", 2**attempt, str(e))
+                    time.sleep(2**attempt)
+                    continue
+        finally:
+            self._in_retry = False
 
 
 def _decode_response_body(raw_body, content_type):

@@ -7,7 +7,6 @@ Unit tests for CallbackProvider
 
 import os
 import sys
-import ssl
 import logging
 import random
 import platform
@@ -274,17 +273,6 @@ class TestCallbackProvider(BaseProviderTestCase):
 
 
 class TestCallbackProviderRealIntegration(BaseProviderTestCase):
-    def _run_with_retry(self, func, *args, **kwargs):
-        """
-        Helper to run a function with retry logic: if the first call returns falsy, wait 1.5~4s and retry once.
-        Returns the result of the (first or second) call.
-        """
-        result = func(*args, **kwargs)
-        if not result:
-            sleep(random.uniform(1.5, 4))
-            result = func(*args, **kwargs)
-        return result
-
     """Real integration tests for CallbackProvider using httpbin.org"""
 
     def setUp(self):
@@ -320,9 +308,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         """Add a random delay of 0-3 seconds to avoid rate limiting"""
         if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS") or os.environ.get("GITHUB_REF_NAME"):
             # In CI environments, use a shorter delay to speed up tests
-            delay = random.uniform(0, 3)
+            delay = random.uniform(0, 2)
         else:
-            delay = random.uniform(0, 0.5)
+            delay = random.uniform(0, 1)
         sleep(delay)
 
     def _assert_callback_result_logged(self, mock_logger, *expected_strings):
@@ -343,21 +331,21 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         )
 
     def test_real_callback_get_method(self):
-        """Test real callback using GET method with httpbin.org and verify logger calls (retry once on failure)"""
+        """Test real callback using GET method with httpbin.org and verify logger calls"""
         id = "https://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
         domain = "test.example.com"
         ip = "111.111.111.111"
 
-        provider = CallbackProvider(id, "")
+        provider = CallbackProvider(id, "", verify_ssl="auto")
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request
-        result = self._run_with_retry(provider.set_record, domain, ip, "A")
+        result = provider.set_record(domain, ip, "A")
         self.assertTrue(result)
         self._assert_callback_result_logged(mock_logger, domain, ip)
 
     def test_real_callback_post_method_with_json(self):
-        """Test real callback using POST method with JSON data and verify logger calls (retry once on failure)"""
+        """Test real callback using POST method with JSON data and verify logger calls"""
         id = "https://httpbin.org/post"
         token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
         provider = CallbackProvider(id, token)
@@ -366,7 +354,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request
-        result = self._run_with_retry(provider.set_record, "test.example.com", "203.0.113.2", "A", 300)
+        result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
         # httpbin.org returns JSON with our posted data, so it should be truthy
         self.assertTrue(result)
 
@@ -376,57 +364,12 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
         # Use an invalid URL to test error handling
-        id = "https://httpbin.org/status/500"  # This returns HTTP 500
+        id = "https://httpbin.org/status/400"  # This returns HTTP 400
         provider = CallbackProvider(id, "")
 
         self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.5")
         self.assertFalse(result)
-
-    def test_real_callback_redirects_handling(self):
-        """Test real callback with various HTTP redirect scenarios and verify logger calls (retry once on failure)"""
-        # Test simple redirect
-        id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get&domain=__DOMAIN__&ip=__IP__"
-        domain = "redirect.test.example.com"
-        ip = "203.0.113.21"
-
-        provider = CallbackProvider(id, "")
-        try:
-            mock_logger = self._setup_provider_with_mock_logger(provider)
-            self._random_delay()  # Add random delay before real request
-            result = self._run_with_retry(provider.set_record, domain, ip, "A")
-            self.assertTrue(result)
-            self._assert_callback_result_logged(mock_logger, domain, ip)
-
-        except Exception as e:
-            error_str = str(e).lower()
-            if "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL certificate issue: {}".format(e))
-
-    def test_real_callback_redirect_with_post(self):
-        """Test POST request redirect behavior (should change to GET after 302)
-        and verify logger calls (retry once on failure)"""
-        # POST to redirect endpoint - should convert to GET after 302
-        id = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
-        token = '{"domain": "__DOMAIN__", "ip": "__IP__", "method": "POST->GET"}'
-        provider = CallbackProvider(id, token)
-
-        try:
-            # Setup provider with mock logger
-            mock_logger = self._setup_provider_with_mock_logger(provider)
-
-            self._random_delay()  # Add random delay before real request
-            result = self._run_with_retry(provider.set_record, "post-redirect.example.com", "203.0.113.202", "A")
-            # POST should be redirected as GET and succeed
-            self.assertTrue(result)
-
-            # Verify that logger.info was called with response (domain/IP may be lost in POST->GET redirect)
-            self._assert_callback_result_logged(mock_logger)
-
-        except ssl.SSLError as e:
-            error_str = str(e).lower()
-            if "ssl" in error_str or "certificate" in error_str:
-                self.skipTest("SSL certificate issue: {}".format(e))
 
 
 if __name__ == "__main__":

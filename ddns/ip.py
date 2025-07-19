@@ -5,7 +5,7 @@ from os import name as os_name, popen
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
 
-from .util.http import send_http_request
+from .util.http import request
 
 # 模块级别的SSL验证配置，默认使用auto模式
 ssl_verify = "auto"
@@ -48,9 +48,8 @@ def local_v4(i=0):  # 本地ipv4地址
 def _open(url, reg):
     try:
         debug("open: %s", url)
-        response = send_http_request(
-            method="GET", url=url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify_ssl=ssl_verify
-        )
+        # IP 模块重试3次
+        response = request("GET", url, headers={"User-Agent": "Mozilla/5.0 ddns"}, verify=ssl_verify, retries=2)
         res = response.body
         debug("response: %s", res)
         match = compile(reg).search(res)

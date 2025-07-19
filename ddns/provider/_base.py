@@ -58,7 +58,7 @@ Defines a unified interface to support extension and adaptation across providers
 from abc import ABCMeta, abstractmethod
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
-from ..util.http import send_http_request, quote, urlencode
+from ..util.http import request, quote, urlencode
 
 TYPE_FORM = "application/x-www-form-urlencoded"
 TYPE_JSON = "application/json"
@@ -237,9 +237,8 @@ class SimpleProvider(object):
             if p:
                 self.logger.debug("Using proxy: %s", p)
             try:
-                response = send_http_request(
-                    method, url, body=body_data, headers=headers, proxy=p, verify_ssl=self._ssl
-                )
+                # Provider 重试2次
+                response = request(method, url, body_data, headers=headers, proxy=p, verify=self._ssl, retries=2)
                 break  # 成功发送请求，跳出循环
             except Exception as e:
                 self.logger.warning("Failed to send request: %s", e)

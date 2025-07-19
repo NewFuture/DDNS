@@ -1,4 +1,5 @@
 # coding=utf-8
+# type: ignore[index]
 """
 Unit tests for NameSilo DNS provider
 @author: NewFuture & Copilot
