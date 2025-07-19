@@ -243,8 +243,12 @@ class SimpleProvider(object):
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         response = None  # type: Any
-        # 直接传递代理列表给request函数
-        response = request(method, url, body_data, headers=headers, proxies=self._proxy, verify=self._ssl, retries=2)
+        try:
+            # 直接传递代理列表给request函数
+            response = request(method, url, body_data, headers=headers, proxies=self._proxy, verify=self._ssl, retries=2)
+        except Exception as e:
+            self.logger.error("Failed to send request via all proxies: %s", self._proxy)
+            raise RuntimeError("Failed to send request to {}".format(url))
         # 处理响应
         status_code = response.status
         if not (200 <= status_code < 300):

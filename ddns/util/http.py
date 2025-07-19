@@ -112,8 +112,37 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     return ProxiesHandler.try_proxies_and_open(req, proxy_list, verify, auth, retries)
 
 
-class ProxiesHandler(object):
+class ProxiesHandler(ProxyHandler):
     """代理列表处理器，基于ProxyHandler实现逐个尝试代理的功能"""
+
+    def __init__(self, proxy):
+        # type: (str) -> None
+        """
+        初始化代理处理器
+        
+        Args:
+            proxy: 单个代理地址
+        """
+        if proxy:
+            super(ProxiesHandler, self).__init__({"http": proxy, "https": proxy})
+        else:
+            super(ProxiesHandler, self).__init__({})
+
+    def proxy_open(self, req, proxy, type):
+        # type: (Request, str, str) -> object
+        """
+        覆盖ProxyHandler的proxy_open方法
+        
+        Args:
+            req: HTTP请求对象
+            proxy: 代理地址
+            type: 代理类型
+            
+        Returns:
+            响应对象或None
+        """
+        # 调用父类的proxy_open方法
+        return super(ProxiesHandler, self).proxy_open(req, proxy, type)
 
     @staticmethod
     def try_proxies_and_open(req, proxy_list, verify, auth, retries):
@@ -143,7 +172,7 @@ class ProxiesHandler(object):
                 # 创建opener并发送请求，包括重试处理器
                 handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
                 if current_proxy:
-                    handlers.append(ProxyHandler({"http": current_proxy, "https": current_proxy}))
+                    handlers.append(ProxiesHandler(current_proxy))
                 if auth:
                     handlers.append(auth)
 
