@@ -237,7 +237,7 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
         Args:
             retries (int): 最大重试次数
         """
-        self.retries = retries if retries is not None else 3
+        self.retries = retries
         self._in_retry = False  # 防止递归调用的标志
 
     def default_open(self, req):
@@ -249,7 +249,7 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
         self._in_retry = True
 
         try:
-            for attempt in range(1, self.retries + 1):
+            for attempt in range(1, self.retries + 2):
                 try:
                     res = self.parent.open(req)
 

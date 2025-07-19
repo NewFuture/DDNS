@@ -26,7 +26,7 @@ class TestRetryHandler(unittest.TestCase):
     """测试 RetryHandler 类"""
 
     def setUp(self):
-        """设置测试"""
+        """设置测试，创建retries=2的RetryHandler（会重试2次，总共最多3次请求）"""
         self.retry_handler = RetryHandler(retries=2)
 
     def test_init_default(self):
@@ -62,7 +62,7 @@ class TestRetryHandler(unittest.TestCase):
         mock_response.getcode.return_value = 200
         mock_response.read.return_value = b"success"
 
-        # 第一次失败，第二次成功 (retries=2允许最多2次重试)
+        # 第一次失败，第二次成功 (retries=2，允许重试2次，总共最多3次请求)
         mock_parent.open.side_effect = [socket.timeout, mock_response]
 
         # 执行测试
@@ -94,7 +94,7 @@ class TestRetryHandler(unittest.TestCase):
         mock_success_response = MagicMock()
         mock_success_response.getcode.return_value = 200
 
-        # 第一次返回500错误，第二次成功
+        # 第一次返回500错误，第二次成功 (retries=2，允许重试2次，总共最多3次请求)
         mock_parent.open.side_effect = [mock_error_response, mock_success_response]
 
         # 执行测试
@@ -138,19 +138,18 @@ class TestRetryHandler(unittest.TestCase):
         mock_req = MagicMock()
         mock_req.timeout = 30
 
-        # 所有请求都失败 (retries=2, 会尝试2次: attempts 1, 2)
-        mock_parent.open.side_effect = [socket.gaierror, socket.timeout]
+        # 所有请求都失败 (retries=2，会重试2次，总共3次请求: attempts 1, 2, 3)
+        # 修复后的RetryHandler会正确抛出最后的异常
+        mock_parent.open.side_effect = [socket.gaierror, socket.timeout, socket.timeout]
 
-        # 执行测试，由于RetryHandler实现的bug，最后的异常会丢失，函数返回None
-        result = self.retry_handler.default_open(mock_req)
+        # 执行测试，期望最后的异常被抛出
+        with self.assertRaises(socket.timeout):
+            self.retry_handler.default_open(mock_req)
 
-        # 由于RetryHandler的实现bug，最后的异常会丢失，函数返回None
-        self.assertIsNone(result)
+        # 验证重试次数 (retries=2，总共3次请求)
+        self.assertEqual(mock_parent.open.call_count, 3)
 
-        # 验证重试次数 (retries=2, 会尝试2次)
-        self.assertEqual(mock_parent.open.call_count, 2)
-
-        # 验证sleep调用次数 (两次失败都会sleep，这是bug)
+        # 验证sleep调用次数 (前两次失败后会sleep)
         self.assertEqual(mock_sleep.call_count, 2)
 
 
