@@ -14,8 +14,8 @@ class TestRequestProxyList(unittest.TestCase):
 
     @patch('ddns.util.http.build_opener')
     @patch('ddns.util.http.Request')
-    def test_request_with_single_proxy_backward_compatibility(self, mock_request, mock_build_opener):
-        """测试单个代理的向后兼容性"""
+    def test_request_with_single_proxy_in_list(self, mock_request, mock_build_opener):
+        """测试单个代理的列表形式"""
         # 模拟响应
         mock_response = MagicMock()
         mock_response.getcode.return_value = 200
@@ -27,8 +27,8 @@ class TestRequestProxyList(unittest.TestCase):
         mock_opener.open.return_value = mock_response
         mock_build_opener.return_value = mock_opener
 
-        # 测试单个代理参数
-        result = request("GET", "http://example.com", proxy="http://proxy:8080")
+        # 测试单个代理以列表形式传入
+        result = request("GET", "http://example.com", proxies=["http://proxy:8080"])
 
         self.assertEqual(result.status, 200)
         self.assertEqual(result.body, '{"success": true}')
@@ -103,8 +103,8 @@ class TestRequestProxyList(unittest.TestCase):
 
     @patch('ddns.util.http.build_opener')
     @patch('ddns.util.http.Request')
-    def test_request_proxy_and_proxies_conflict(self, mock_request, mock_build_opener):
-        """测试proxy和proxies参数冲突时，proxies优先"""
+    def test_request_with_multiple_proxies(self, mock_request, mock_build_opener):
+        """测试多个代理列表"""
         # 模拟响应
         mock_response = MagicMock()
         mock_response.getcode.return_value = 200
@@ -116,9 +116,8 @@ class TestRequestProxyList(unittest.TestCase):
         mock_opener.open.return_value = mock_response
         mock_build_opener.return_value = mock_opener
 
-        # 测试参数冲突时proxies优先
+        # 测试多个代理列表
         result = request("GET", "http://example.com",
-                         proxy="http://single-proxy:8080",
                          proxies=["http://list-proxy1:8080", "http://list-proxy2:8080"])
 
         self.assertEqual(result.status, 200)

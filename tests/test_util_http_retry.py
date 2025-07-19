@@ -200,7 +200,7 @@ class TestRequestFunction(unittest.TestCase):
 
         # 测试代理字符串
         proxy_string = "http://proxy:8080"
-        result = request("GET", "http://example.com", proxy=proxy_string)
+        result = request("GET", "http://example.com", proxies=[proxy_string])
 
         self.assertEqual(result.status, 200)
         mock_build_opener.assert_called_once()
