@@ -90,38 +90,10 @@ def request(method, url, data=None, headers=None, proxy=None, proxies=None, veri
         ssl.SSLError: 如果SSL验证失败
         ValueError: 如果参数无效
     """
-def request(method, url, data=None, headers=None, proxy=None, proxies=None, verify=True, auth=None, retries=1):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
-    """
-    发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
-
-    Args:
-        method (str): HTTP方法，如GET、POST等
-        url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
-        data (str | bytes | None): 请求体数据
-        headers (dict[str, str] | None): 请求头字典
-        proxy (str | None): 单个代理配置（向后兼容）
-        proxies (list[str | None] | None): 代理列表，None表示直连
-        verify (bool | str): SSL验证配置
-                            - True: 启用标准SSL验证
-                            - False: 禁用SSL验证
-                            - "auto": 启用验证，失败时自动回退到不验证
-                            - str: 自定义CA证书文件路径
-        auth (BaseHandler | None): 自定义认证处理器
-        retries (int): 最大重试次数，默认1次
-
-    Returns:
-        HttpResponse: 响应对象
-
-    Raises:
-        URLError: 如果请求失败
-        ssl.SSLError: 如果SSL验证失败
-        ValueError: 如果参数无效
-    """
     # 处理代理列表参数 - 向后兼容单个proxy参数
     proxy_list = []  # type: list[str | None]
     if proxies is not None:
-        proxy_list = proxies
+        proxy_list = proxies if proxies else [None]  # 空列表时使用直连
     elif proxy is not None:
         proxy_list = [proxy]
     else:

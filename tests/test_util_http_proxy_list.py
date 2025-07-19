@@ -127,6 +127,28 @@ class TestRequestProxyList(unittest.TestCase):
 
     @patch('ddns.util.http.build_opener')
     @patch('ddns.util.http.Request')
+    def test_request_with_empty_proxy_list(self, mock_request, mock_build_opener):
+        """测试空代理列表时默认使用直连"""
+        # 模拟响应
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.info.return_value = {}
+        mock_response.read.return_value = b'{"success": true}'
+        mock_response.msg = "OK"
+        
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        # 测试空代理列表
+        result = request("GET", "http://example.com", proxies=[])
+        
+        self.assertEqual(result.status, 200)
+        self.assertEqual(result.body, '{"success": true}')
+        mock_build_opener.assert_called_once()
+
+    @patch('ddns.util.http.build_opener')
+    @patch('ddns.util.http.Request')
     def test_proxy_fallback_first_fails_second_succeeds(self, mock_request, mock_build_opener):
         """测试第一个代理失败，第二个代理成功的情况"""
         # 模拟响应
