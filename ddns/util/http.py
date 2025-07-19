@@ -160,7 +160,7 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
                 "Basic Constraints of CA cert not marked critical",
             )
             if self._verify == "auto" and any(err in str(e) for err in ssl_errors):
-                logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.full_url)
+                logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.get_full_url())
                 self._verify = False  # 不验证SSL
                 self._context = self._ssl_context()  # 确保上下文已更新
                 return self._open(req)  # 重试请求
