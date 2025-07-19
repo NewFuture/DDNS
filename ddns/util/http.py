@@ -27,6 +27,7 @@ try:  # python 3
         Request,
     )
     from urllib.parse import quote, urlencode, unquote
+    from http.client import HTTPSConnection
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
         BaseHandler,
@@ -39,10 +40,11 @@ except ImportError:  # python 2
         Request,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+    from httplib import HTTPSConnection  # type: ignore[no-redef]
 
 __all__ = ["request", "HttpResponse", "quote", "urlencode"]
 
-logger = getLogger().getChild(__name__)
+logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
 
 
@@ -136,63 +138,55 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
     """SSL自动降级处理器，处理 unable to get local issuer certificate 错误"""
 
     # 类级别的SSL上下文缓存
-    _ssl_cache = {}  # type: dict[str, ssl.SSLContext]
+    _ssl_cache = {}  # type: dict[str, ssl.SSLContext|None]
 
     def __init__(self, verify):
         # type: (bool | str) -> None
         self._verify = verify
-        ssl_context = self._get_ssl_context()
+        self._context = self._ssl_context()
         # 兼容性：优先使用context参数，失败时降级
         try:  # python 3 / python 2.7.9+
-            HTTPSHandler.__init__(self, context=ssl_context)
+            HTTPSHandler.__init__(self, context=self._context)
         except (TypeError, AttributeError):  # python 2.7.8-
             HTTPSHandler.__init__(self)
 
     def https_open(self, req):
         """处理HTTPS请求，自动处理SSL错误"""
         try:
-            return HTTPSHandler.https_open(self, req)
-        except ssl.SSLError as e:  # SSL auto模式：处理本地证书错误
-            error_msg = str(e).lower()
+            return self.do_open(HTTPSConnection, req, context=self._context)
+        except OSError as e:  # SSL auto模式：处理本地证书错误
             ssl_errors = (
                 "unable to get local issuer certificate",
-                "basic constraints of ca cert not marked critical",
+                "Basic Constraints of CA cert not marked critical",
             )
-            if self._verify == "auto" and any(error in error_msg for error in ssl_errors):
-                logger.warning(
-                    "SSL error (%s), switching to unverified connection for %s", str(e), req.get_full_url()
-                )
-                self._verify = False
-                # 创建不验证SSL的临时处理器重试
-                try:  # python 3 / python 2.7.9+
-                    temp_handler = HTTPSHandler(context=self._get_ssl_context())
-                except (TypeError, AttributeError):  # python 2.7.8-
-                    temp_handler = HTTPSHandler()
-                return temp_handler.https_open(req)
+            if self._verify == "auto" and any(err in str(e) for err in ssl_errors):
+                logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.full_url)
+                self._verify = False  # 不验证SSL
+                self._context = self._ssl_context()  # 确保上下文已更新
+                return self.do_open(HTTPSConnection, req, context=self._context)
             else:
+                logger.debug("error: (%s)", e)
                 raise
 
-    def _get_ssl_context(self):
+    def _ssl_context(self):
         # type: () -> ssl.SSLContext | None
         """创建或获取缓存的SSLContext"""
-        # 缓存键
-        cache_key = "default"
+        cache_key = "default"  # 缓存键
         if not self._verify:
-            if not hasattr(ssl, "_create_unverified_context"):
-                return None
             cache_key = "unverified"
             if cache_key not in self._ssl_cache:
-                self._ssl_cache[cache_key] = ssl._create_unverified_context()
+                self._ssl_cache[cache_key] = (
+                    ssl._create_unverified_context() if hasattr(ssl, "_create_unverified_context") else None
+                )
         elif hasattr(self._verify, "lower") and self._verify.lower() not in ("auto", "true"):  # type: ignore
             cache_key = str(self._verify)
             if cache_key not in self._ssl_cache:
-                self._ssl_cache[cache_key] = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=cache_key)
+                self._ssl_cache[cache_key] = ssl.create_default_context(cafile=cache_key)
         elif cache_key not in self._ssl_cache:
-            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            if not ssl_context.get_ca_certs():
+            self._ssl_cache[cache_key] = ssl.create_default_context()
+            if not self._ssl_cache[cache_key].get_ca_certs():  # type: ignore
                 logger.info("No system CA certificates found, loading default CA certificates")
-                self._load_system_ca_certs(ssl_context)
-            self._ssl_cache[cache_key] = ssl_context
+                self._load_system_ca_certs(self._ssl_cache[cache_key])  # type: ignore
 
         return self._ssl_cache[cache_key]
 
