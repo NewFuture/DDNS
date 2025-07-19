@@ -88,6 +88,9 @@ ddns --ipv4=example.com,www.example.com
 | `--log_level`   | 字符串      | 日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL                                                                                               | `--log_level=ERROR`                                      |
 | `--log_format`  | 字符串      | 日志格式字符串（`logging`模块格式）                                                                                                                   | `--log_format="%(asctime)s:%(message)s"`                |
 | `--log_datefmt` | 字符串      | 日志日期时间格式                                                                                                                                 | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
+| `--install-task` | 可选整数      | 安装定时任务并设置执行间隔（分钟），默认5分钟                                                                                                              | `--install-task` <br> `--install-task 10`             |
+| `--uninstall-task` | 标志      | 卸载已安装的定时任务                                                                                                                            | `--uninstall-task`                 |
+| `--task-status` | 标志      | 显示定时任务状态信息                                                                                                                            | `--task-status`                     |
 
 > **注意**: 其中`--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`为命令行独有参数。
 
@@ -280,6 +283,92 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
   - `--log_datefmt="%Y-%m-%d %H:%M:%S"`
   - `--log_datefmt="%m-%d %H:%M:%S"`
 
+## 定时任务管理
+
+DDNS 提供了跨平台的定时任务管理功能，可以自动安装和配置系统定时任务，无需手动维护脚本。
+
+### `--install-task [MINUTES]`
+
+安装定时任务，支持设置执行间隔。
+
+- **默认值**: `5`（分钟）
+- **平台支持**:
+  - **Windows**: 使用 Windows Task Scheduler (`schtasks`)
+  - **Linux**: 优先使用 systemd，降级使用 cron
+  - **macOS**: 使用 launchd
+  - **其他 Unix**: 使用 cron
+- **权限要求**:
+  - **Windows**: 需要管理员权限
+  - **Linux systemd**: 需要 root 权限 (`sudo`)
+  - **Linux/Unix cron**: 普通用户权限
+  - **macOS**: 普通用户权限
+- **示例**:
+  - `--install-task` (使用默认5分钟间隔)
+  - `--install-task 10` (设置10分钟间隔)
+  - `--install-task 60` (设置1小时间隔)
+
+```bash
+# 安装默认5分钟间隔的定时任务
+ddns --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com --install-task
+
+# 安装10分钟间隔的定时任务
+ddns --dns dnspod --id 12345 --token mytokenkey --ipv4 example.com --install-task 10
+
+# 使用配置文件安装定时任务
+ddns -c /path/to/config.json --install-task 15
+```
+
+### `--uninstall-task`
+
+卸载已安装的定时任务。
+
+- **功能**: 移除系统中的DDNS定时任务
+- **权限要求**: 与安装时相同
+- **示例**: `--uninstall-task`
+
+```bash
+# 卸载定时任务
+ddns --uninstall-task
+
+# 也可以配合其他参数一起使用（但通常不需要）
+ddns --dns debug --uninstall-task
+```
+
+### `--task-status`
+
+显示定时任务的状态信息。
+
+- **功能**: 查看当前定时任务的安装状态、配置信息等
+- **无需权限**: 查看状态不需要特殊权限
+- **示例**: `--task-status`
+
+```bash
+# 查看定时任务状态
+ddns --task-status --dns debug
+```
+
+### 版本跟踪
+
+定时任务会记录安装时的 DDNS 版本信息，便于后续维护和升级管理。
+
+### 注意事项
+
+1. **权限要求**: 
+   - Windows 和 Linux systemd 需要管理员/root权限
+   - 普通用户推荐使用 cron 方式（Linux）或用户级 launchd（macOS）
+
+2. **配置文件**: 
+   - 安装时会使用当前指定的配置文件
+   - 建议先测试配置正确性再安装定时任务
+
+3. **日志记录**: 
+   - 各平台会自动配置日志输出
+   - 可通过平台特定工具查看执行日志
+
+4. **卸载清理**: 
+   - 卸载时会完全清理相关文件和配置
+   - 如有重要配置建议提前备份
+
 ## 常用命令示例
 
 ### 基本使用
@@ -342,6 +431,36 @@ ddns --dns dnspod --id 12345 --token mytokenkey \
 # 禁用缓存和SSL验证
 ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
      --ipv4 example.com --no-cache --no-ssl
+```
+
+### 定时任务管理示例
+
+```bash
+# 安装定时任务（默认5分钟间隔）
+ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+     --ipv4 example.com --install-task
+
+# 安装定时任务（自定义间隔）
+ddns --dns dnspod --id 12345 --token mytokenkey \
+     --ipv4 example.com --install-task 10
+
+# 使用配置文件安装定时任务
+ddns -c /etc/ddns/config.json --install-task 15
+
+# 查看定时任务状态
+ddns --task-status
+
+# 卸载定时任务
+ddns --uninstall-task
+
+# Linux: 使用 sudo 安装系统级定时任务
+sudo ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+          --ipv4 example.com --install-task 5
+
+# Windows: 以管理员身份运行安装任务
+# 右键点击命令提示符 -> "以管理员身份运行"
+ddns --dns cloudflare --id user@example.com --token API_TOKEN \
+     --ipv4 example.com --install-task 5
 ```
 
 ## 注意事项

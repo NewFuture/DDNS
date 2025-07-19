@@ -114,6 +114,72 @@ def main():
     # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
 
+    # Handle task management commands first
+    if len(configs) == 1:
+        config = configs[0]
+        
+        # Check if task management commands were specified
+        if hasattr(config, 'install_task') and config.install_task is not None:
+            from .task import get_task_manager
+            try:
+                task_manager = get_task_manager(config.install_task)
+                config_path = getattr(config, 'config', None)
+                if isinstance(config_path, list) and config_path:
+                    config_path = config_path[0]
+                
+                success = task_manager.install(config_path)
+                if success:
+                    logger.info("Scheduled task installed successfully")
+                    sys.exit(0)
+                else:
+                    logger.error("Failed to install scheduled task")
+                    sys.exit(1)
+            except Exception as e:
+                logger.error("Error managing scheduled task: %s", e)
+                sys.exit(1)
+        
+        if hasattr(config, 'uninstall_task') and config.uninstall_task:
+            from .task import get_task_manager
+            try:
+                task_manager = get_task_manager()
+                success = task_manager.uninstall()
+                if success:
+                    logger.info("Scheduled task uninstalled successfully")
+                    sys.exit(0)
+                else:
+                    logger.error("Failed to uninstall scheduled task")
+                    sys.exit(1)
+            except Exception as e:
+                logger.error("Error managing scheduled task: %s", e)
+                sys.exit(1)
+        
+        if hasattr(config, 'task_status') and config.task_status:
+            from .task import get_task_manager
+            try:
+                task_manager = get_task_manager()
+                status = task_manager.status()
+                
+                logger.info("=== DDNS Scheduled Task Status ===")
+                logger.info("Platform: %s", status.get('platform', 'Unknown'))
+                logger.info("Installed: %s", "Yes" if status.get('installed', False) else "No")
+                logger.info("Interval: %d minutes", status.get('interval', 5))
+                logger.info("Version: %s", status.get('version', 'Unknown'))
+                
+                # Platform-specific details
+                for key, value in status.items():
+                    if key not in ['platform', 'installed', 'interval', 'version']:
+                        if isinstance(value, dict):
+                            logger.info("%s:", key.replace('_', ' ').title())
+                            for sub_key, sub_value in value.items():
+                                logger.info("  %s: %s", sub_key.replace('_', ' ').title(), sub_value)
+                        else:
+                            logger.info("%s: %s", key.replace('_', ' ').title(), value)
+                
+                sys.exit(0)
+            except Exception as e:
+                logger.error("Error getting task status: %s", e)
+                sys.exit(1)
+
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）
         config = configs[0]

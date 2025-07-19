@@ -100,6 +100,12 @@ class Config(object):
         self.log_file = self._get("log_file", None)  # type: str | None
         self.log_datefmt = self._get("log_datefmt", "%Y-%m-%dT%H:%M:%S")  # type: str | None
 
+        # Task management settings
+        self.install_task = self._get("install_task", None)  # type: int | None
+        self.uninstall_task = self._get("uninstall_task", False)  # type: bool
+        self.task_status = self._get("task_status", False)  # type: bool
+        self.config = self._get("config", None)  # type: str | list[str] | None
+
     def _get(self, key, default=None):
         # type: (str, Any) -> Any
         """
