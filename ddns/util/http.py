@@ -264,8 +264,8 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
                     if attempt >= self.retries:
                         raise  # 如果是最后一次尝试，抛出错误
 
-                    logger.warning("Request failed, retrying in %d seconds: %s", attempt, str(e))
-                    time.sleep(attempt**2)
+                    logger.warning("Request failed, retrying in %d seconds: %s", 2**attempt, str(e))
+                    time.sleep(2**attempt)
                     continue
         finally:
             self._in_retry = False
