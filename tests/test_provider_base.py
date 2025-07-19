@@ -50,7 +50,7 @@ class TestBaseProvider(BaseProviderTestCase):
         self.assertEqual(provider.id, "test_id")
         self.assertEqual(provider.token, "test_token")
         self.assertIsNotNone(provider.logger)
-        self.assertEqual(provider._proxy, [None])  # proxy 初始化为 [None]
+        self.assertEqual(provider._proxy, None)  # proxy 初始化为 None
         self.assertEqual(provider._zone_map, {})
 
     def test_validate_missing_id(self):

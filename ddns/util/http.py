@@ -26,7 +26,7 @@ try:  # python 3
         ProxyHandler,
         Request,
     )
-    from urllib.parse import quote, urlencode, unquote
+    from urllib.parse import quote, urlencode, unquote, urlparse
     from http.client import HTTPSConnection
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
@@ -40,6 +40,7 @@ except ImportError:  # python 2
         Request,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
+    from urlparse import urlparse  # type: ignore[no-redef]
     from httplib import HTTPSConnection  # type: ignore[no-redef]
 
 __all__ = ["request", "HttpResponse", "quote", "urlencode"]
@@ -62,8 +63,80 @@ class HttpResponse(object):
         self.body = body
 
 
-def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=None, retries=1):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
+class ProxiesHandler(ProxyHandler):
+    """代理处理器，支持多个代理地址逐一尝试"""
+    
+    def __init__(self, proxies=None):
+        # type: (list[str | None] | None) -> None
+        """
+        初始化代理处理器
+        
+        Args:
+            proxies (list[str | None] | None): 代理列表，None表示直连
+        """
+        self.proxies_list = proxies or [None]
+        
+        # 为了确保proxy_open被调用，我们设置http和https代理
+        # 使用占位符，实际的代理选择在proxy_open中进行
+        proxy_dict = {'http': 'placeholder', 'https': 'placeholder'}
+        super(ProxiesHandler, self).__init__(proxy_dict)
+    
+    def proxy_open(self, req, proxy, type):
+        # type: (Request, str, str) -> object
+        """
+        重载proxy_open方法，实现多代理逐一尝试
+        
+        Args:
+            req: HTTP请求对象
+            proxy: 代理地址（这个参数会被忽略，使用内部的proxies_list）
+            type: 代理类型
+            
+        Returns:
+            成功的HTTP响应
+            
+        Raises:
+            Exception: 当所有代理都失败时抛出最后一个异常
+        """
+        logger = getLogger(__name__)
+        last_exception = None
+        
+        for i, current_proxy in enumerate(self.proxies_list):
+            try:
+                if current_proxy:
+                    logger.debug("Trying proxy: %s", current_proxy)
+                    # 调用父类的proxy_open方法，使用当前代理
+                    return super(ProxiesHandler, self).proxy_open(req, current_proxy, type)
+                else:
+                    logger.debug("Trying direct connection (no proxy)")
+                    # 直连情况下，我们需要绕过代理直接连接
+                    # 创建一个没有代理的临时处理器链来处理请求
+                    from urllib.request import HTTPHandler, HTTPSHandler
+                    if type == 'https':
+                        handler = HTTPSHandler()
+                    else:
+                        handler = HTTPHandler()
+                    # 只有当parent存在时才设置
+                    if hasattr(self, 'parent') and self.parent:
+                        handler.add_parent(self.parent)
+                    return getattr(handler, type + '_open')(req)
+                    
+            except Exception as e:
+                last_exception = e
+                if i < len(self.proxies_list) - 1:
+                    logger.warning("Proxy failed: %s, trying next proxy: %s", current_proxy or "direct", str(e))
+                else:
+                    logger.error("All proxies failed, last error: %s", str(e))
+        
+        # 如果所有代理都失败，抛出最后一个异常
+        if last_exception:
+            raise last_exception
+        
+        # 理论上不会到达这里
+        raise RuntimeError("No proxy configurations to try")
+
+
+def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
 
@@ -72,7 +145,7 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
         data (str | bytes | None): 请求体数据
         headers (dict[str, str] | None): 请求头字典
-        proxy (str | None): 代理配置
+        proxies (list[str | None] | None): 代理列表，None表示直连
         verify (bool | str): SSL验证配置
                             - True: 启用标准SSL验证
                             - False: 禁用SSL验证
@@ -107,8 +180,10 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
 
     # 创建opener并发送请求，包括重试处理器
     handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
-    if proxy:
-        handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
+    
+    # 添加代理处理器 - 使用ProxiesHandler处理代理列表
+    handlers.append(ProxiesHandler(proxies=proxies))
+    
     if auth:
         handlers.append(auth)
 
