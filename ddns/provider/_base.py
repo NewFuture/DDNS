@@ -108,7 +108,7 @@ class SimpleProvider(object):
     remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
     def __init__(self, id, token, logger=None, verify_ssl="auto", proxy=None, endpoint=None, **options):
-        # type: (str, str, Logger | None, bool|str, Sequence[str|None]|None, str|None, **object) -> None
+        # type: (str, str, Logger | None, bool|str, str|list[str|None]|None, str|None, **object) -> None
         """
         初始化服务商对象
 
@@ -117,13 +117,23 @@ class SimpleProvider(object):
         Args:
             id (str): 身份认证 ID / Authentication ID
             token (str): 密钥 / Authentication Token
+            proxy (str | list[str | None] | None): 代理配置，支持单个代理或代理列表
             options (dict): 其它参数 / Additional options
         """
         self.id = id
         self.token = token
         if endpoint:
             self.endpoint = endpoint
-        self._proxy = proxy if proxy and len(proxy) else [None]
+        
+        # 处理代理参数：支持单个代理字符串或代理列表
+        if proxy is None:
+            self._proxy = [None]  # 默认直连
+        elif isinstance(proxy, list):
+            self._proxy = proxy if proxy else [None]  # 空列表时使用直连
+        else:
+            # 单个代理字符串，转换为列表
+            self._proxy = [proxy]
+        
         self._ssl = verify_ssl
 
         self.options = options
@@ -233,16 +243,11 @@ class SimpleProvider(object):
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         response = None  # type: Any
-        for p in self._proxy:
-            if p:
-                self.logger.debug("Using proxy: %s", p)
-            try:
-                # Provider 重试2次
-                response = request(method, url, body_data, headers=headers, proxy=p, verify=self._ssl, retries=2)
-                break  # 成功发送请求，跳出循环
-            except Exception as e:
-                self.logger.warning("Failed to send request: %s", e)
-        if not response:
+        try:
+            # 直接传递代理列表给request函数
+            response = request(method, url, body_data, headers=headers, proxies=self._proxy, verify=self._ssl, retries=2)
+        except Exception as e:
+            self.logger.error("Failed to send request: %s", e)
             if len(self._proxy) > 1:
                 self.logger.error("Failed to send request via all proxies: %s", self._proxy)
             raise RuntimeError("Failed to send request to {}".format(url))

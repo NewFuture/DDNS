@@ -62,8 +62,8 @@ class HttpResponse(object):
         self.body = body
 
 
-def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=None, retries=1):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
+def request(method, url, data=None, headers=None, proxy=None, proxies=None, verify=True, auth=None, retries=1):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
 
@@ -72,7 +72,8 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
         data (str | bytes | None): 请求体数据
         headers (dict[str, str] | None): 请求头字典
-        proxy (str | None): 代理配置
+        proxy (str | None): 单个代理配置（向后兼容）
+        proxies (list[str | None] | None): 代理列表，None表示直连
         verify (bool | str): SSL验证配置
                             - True: 启用标准SSL验证
                             - False: 禁用SSL验证
@@ -89,6 +90,43 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
         ssl.SSLError: 如果SSL验证失败
         ValueError: 如果参数无效
     """
+def request(method, url, data=None, headers=None, proxy=None, proxies=None, verify=True, auth=None, retries=1):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, str | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
+    """
+    发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
+
+    Args:
+        method (str): HTTP方法，如GET、POST等
+        url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
+        data (str | bytes | None): 请求体数据
+        headers (dict[str, str] | None): 请求头字典
+        proxy (str | None): 单个代理配置（向后兼容）
+        proxies (list[str | None] | None): 代理列表，None表示直连
+        verify (bool | str): SSL验证配置
+                            - True: 启用标准SSL验证
+                            - False: 禁用SSL验证
+                            - "auto": 启用验证，失败时自动回退到不验证
+                            - str: 自定义CA证书文件路径
+        auth (BaseHandler | None): 自定义认证处理器
+        retries (int): 最大重试次数，默认1次
+
+    Returns:
+        HttpResponse: 响应对象
+
+    Raises:
+        URLError: 如果请求失败
+        ssl.SSLError: 如果SSL验证失败
+        ValueError: 如果参数无效
+    """
+    # 处理代理列表参数 - 向后兼容单个proxy参数
+    proxy_list = []  # type: list[str | None]
+    if proxies is not None:
+        proxy_list = proxies
+    elif proxy is not None:
+        proxy_list = [proxy]
+    else:
+        proxy_list = [None]  # 默认直连
+
     # 解析URL以检查是否包含嵌入式认证信息
     m = _AUTH_URL_RE.match(url)
     if m:
@@ -105,24 +143,47 @@ def request(method, url, data=None, headers=None, proxy=None, verify=True, auth=
     req = Request(url, data=data, headers=headers or {})
     req.get_method = lambda: method.upper()  # 确保方法是大写
 
-    # 创建opener并发送请求，包括重试处理器
-    handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
-    if proxy:
-        handlers.append(ProxyHandler({"http": proxy, "https": proxy}))
-    if auth:
-        handlers.append(auth)
+    # 逐个尝试代理列表
+    last_exception = None
+    for i, current_proxy in enumerate(proxy_list):
+        try:
+            if current_proxy:
+                logger.debug("Trying proxy: %s", current_proxy)
+            else:
+                logger.debug("Trying direct connection (no proxy)")
 
-    opener = build_opener(*handlers)
-    response = opener.open(req)
+            # 创建opener并发送请求，包括重试处理器
+            handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
+            if current_proxy:
+                handlers.append(ProxyHandler({"http": current_proxy, "https": current_proxy}))
+            if auth:
+                handlers.append(auth)
 
-    # 处理响应
-    response_headers = response.info()
-    raw_body = response.read()
-    decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
-    status_code = response.getcode()
-    reason = getattr(response, "msg", "")
+            opener = build_opener(*handlers)
+            response = opener.open(req)
 
-    return HttpResponse(status_code, reason, response_headers, decoded_body)
+            # 处理响应
+            response_headers = response.info()
+            raw_body = response.read()
+            decoded_body = _decode_response_body(raw_body, response_headers.get("Content-Type"))
+            status_code = response.getcode()
+            reason = getattr(response, "msg", "")
+
+            return HttpResponse(status_code, reason, response_headers, decoded_body)
+
+        except Exception as e:
+            last_exception = e
+            if i < len(proxy_list) - 1:
+                logger.warning("Proxy failed: %s, trying next proxy: %s", current_proxy or "direct", str(e))
+            else:
+                logger.error("All proxies failed, last error: %s", str(e))
+
+    # 如果所有代理都失败，抛出最后一个异常
+    if last_exception:
+        raise last_exception
+
+    # 理论上不会到达这里
+    raise RuntimeError("No proxy configurations to try")
 
 
 class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
