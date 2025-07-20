@@ -24,7 +24,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_INDEX6`            | Number, `default`, `public`, `url:`, `regex:`, `cmd:`, `shell:`, or an array of them                | IPv6 address detection methods            | `DDNS_INDEX6=public`                                        |
 | `DDNS_TTL`               | Integer (seconds), varies by provider                                                                | DNS record TTL                            | `DDNS_TTL=600`                                              |
 | `DDNS_LINE`              | ISP line such as: 电信, 联通, 移动, or provider-specific values                                     | DNS resolution line                       | `DDNS_LINE=电信`                                            |
-| `DDNS_PROXY`             | IP:port or `DIRECT`, multiple values separated by semicolons                                        | HTTP proxy settings                       | `DDNS_PROXY="127.0.0.1:1080;DIRECT"`                        |
+| `DDNS_PROXY`             | `http://host:port` or `DIRECT`, multiple values separated by semicolons                             | HTTP proxy settings                       | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                 |
 | `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
 | `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
 | `DDNS_LOG_LEVEL`         | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                                     | Logging level                             | `DDNS_LOG_LEVEL="DEBUG"`                                    |
@@ -335,13 +335,13 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 
   ```bash
   # Single proxy
-  export DDNS_PROXY="127.0.0.1:1080"
+  export DDNS_PROXY="http://127.0.0.1:1080"
   
   # Multiple proxies with fallback
-  export DDNS_PROXY="127.0.0.1:1080;127.0.0.1:8080;DIRECT"
+  export DDNS_PROXY="http://127.0.0.1:1080;http://127.0.0.1:8080;DIRECT"
   
   # JSON array format
-  export DDNS_PROXY='["127.0.0.1:1080", "DIRECT"]'
+  export DDNS_PROXY='["http://127.0.0.1:1080", "DIRECT"]'
   
   # SOCKS proxy
   export DDNS_PROXY="socks5://127.0.0.1:1080"
@@ -485,7 +485,7 @@ export DDNS_IPV6='["ipv6.example.com"]'
 export DDNS_INDEX4="public"
 export DDNS_INDEX6="public"
 export DDNS_TTL="600"
-export DDNS_PROXY="127.0.0.1:1080;DIRECT"
+export DDNS_PROXY="http://127.0.0.1:1080;DIRECT"
 export DDNS_CACHE="/var/cache/ddns.json"
 export DDNS_LOG_LEVEL="DEBUG"
 export DDNS_LOG_FILE="/var/log/ddns.log"

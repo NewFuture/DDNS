@@ -46,6 +46,20 @@ logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
 
 
+def _normalize_proxy(proxy):
+    # type: (str | None) -> ProxyHandler | None
+    """标准化代理格式并返回ProxyHandler对象"""
+    if not proxy or proxy.upper() in ("SYSTEM", "DEFAULT"):
+        return ProxyHandler()  # 系统代理
+    elif proxy.upper() in ("DIRECT", "NONE"):
+        return ProxyHandler({})  # 不使用代理
+    elif "://" not in proxy:
+        # 检查是否是 host:port 格式
+        logger.warning("Legacy proxy format '%s' detected, converting to 'http://%s'", proxy, proxy)
+        proxy = "http://" + proxy
+    return ProxyHandler({"http": proxy, "https": proxy})
+
+
 def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1):
     # type: (str, str, str | bytes | None, dict[str, str] | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
@@ -56,7 +70,11 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
         url (str): 请求的URL，支持嵌入式认证格式 https://user:pass@domain.com
         data (str | bytes | None): 请求体数据
         headers (dict[str, str] | None): 请求头字典
-        proxies (list[str | None] | None): 代理列表，None表示直连
+        proxies (list[str | None] | None): 代理列表，支持以下格式：
+                                         - "http://host:port" - 具体代理地址
+                                         - "DIRECT" - 直连，不使用代理
+                                         - "SYSTEM"/"DEFAULT" - 使用系统默认代理设置
+                                         - None - 直连
         verify (bool | str): SSL验证配置
                             - True: 启用标准SSL验证
                             - False: 禁用SSL验证
@@ -88,22 +106,23 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
     handlers += [auth] if auth else []
 
-    def run(p):
+    def run(proxy_handler):
         req = Request(url, data=data, headers=headers or {})
         req.get_method = lambda: method.upper()  # python 2 兼容
-        h = handlers + ([ProxyHandler({"http": p, "https": p})] if p else [])
+        h = handlers + ([proxy_handler] if proxy_handler else [])
         return build_opener(*h).open(req)  # 创建处理器链
 
-    if not proxies or len(proxies) <= 1:
-        response = run(proxies[0] if proxies else None)  # 直连
+    if not proxies:
+        response = run(None)  # 默认
     else:
         last_err = None  # type: Exception # type: ignore[assignment]
-        for proxy in proxies:
+        for p in proxies:
+            logger.debug("Trying proxy: %s", p)
             try:
-                response = run(proxy)  # 尝试使用代理
+                response = run(_normalize_proxy(p))  # 尝试使用代理
                 break  # 成功后退出循环
             except Exception as e:
-                logger.warning("Proxy %s failed: %s", proxy, e)
+                last_err = e
         else:
             logger.error("All proxies failed")
             raise last_err  # 如果所有代理都失败，抛出最后一个错误

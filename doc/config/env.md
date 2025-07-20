@@ -24,7 +24,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_INDEX6`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv6 获取方式                     | `DDNS_INDEX6=public`                                     |
 | `DDNS_TTL`             | 整数（单位：秒），依服务商而定                                                                     | 设置 DNS TTL                      | `DDNS_TTL=600`                                           |
 | `DDNS_LINE`            | 依服务商而定，如：电信、移动                                                                        | DNS 解析线路                      | `DDNS_LINE=电信`                                         |
-| `DDNS_PROXY`           | IP:端口 或 DIRECT，支持多代理数组或分号分隔                                                         | HTTP 代理设置                     | `DDNS_PROXY="127.0.0.1:1080;DIRECT"`                     |
+| `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
 | `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
 | `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
 | `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |

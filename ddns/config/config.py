@@ -85,9 +85,7 @@ class Config(object):
         ttl = self._get("ttl", None)  # type: int | str | None
         self.ttl = int(ttl) if isinstance(ttl, (str, bytes)) else ttl  # type: int | None
         self.line = self._get("line", None)  # type: str | None
-        proxy = self._get("proxy", None)  # type: list[str] | None
-        self.proxy = proxy and [None if not p or p.upper() in ("DIRECT", "NONE") else p for p in proxy]
-
+        self.proxy = self._get("proxy", [])  # type: list[str] | None
         # cache and SSL settings
         self.cache = str_bool(self._get("cache", True))
         self.ssl = str_bool(self._get("ssl", "auto"))

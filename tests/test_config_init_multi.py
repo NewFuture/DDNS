@@ -10,7 +10,7 @@ import json
 import os
 import sys
 from ddns.config import load_configs
-from ddns.config.file import load_config as load_file_config
+from ddns.config.file import load_config as load_file_config, _process_multi_providers
 
 
 class TestMultiConfig(unittest.TestCase):
@@ -101,6 +101,114 @@ class TestMultiConfig(unittest.TestCase):
                 os.environ["DDNS_CONFIG"] = old_env
             elif "DDNS_CONFIG" in os.environ:
                 del os.environ["DDNS_CONFIG"]
+
+    def test_multi_provider_proxy_individual_settings(self):
+        """测试每个provider可以有独立的proxy设置"""
+        config = {
+            "providers": [
+                {
+                    "provider": "cloudflare",
+                    "id": "user@example.com",
+                    "token": "cf_token",
+                    "ipv4": ["cf.example.com"],
+                    "proxy": "http://127.0.0.1:1080",
+                },
+                {
+                    "provider": "alidns",
+                    "id": "access_key",
+                    "token": "secret_key",
+                    "ipv4": ["ali.example.com"],
+                    "proxy": "http://proxy.internal:8080;DIRECT",
+                },
+                {
+                    "provider": "dnspod",
+                    "id": "12345",
+                    "token": "dnspod_token",
+                    "ipv4": ["dp.example.com"],
+                    # 没有proxy设置，应该继承全局或为None
+                },
+            ],
+            "cache": True,
+            "ttl": 600,
+        }
+
+        result = _process_multi_providers(config)
+
+        # 验证返回3个独立配置
+        self.assertEqual(len(result), 3)
+
+        # 验证cloudflare配置
+        cf_config = result[0]
+        self.assertEqual(cf_config["dns"], "cloudflare")
+        self.assertEqual(cf_config["proxy"], "http://127.0.0.1:1080")
+        self.assertEqual(cf_config["ipv4"], ["cf.example.com"])
+
+        # 验证alidns配置
+        ali_config = result[1]
+        self.assertEqual(ali_config["dns"], "alidns")
+        self.assertEqual(ali_config["proxy"], "http://proxy.internal:8080;DIRECT")
+        self.assertEqual(ali_config["ipv4"], ["ali.example.com"])
+
+        # 验证dnspod配置（无proxy）
+        dp_config = result[2]
+        self.assertEqual(dp_config["dns"], "dnspod")
+        self.assertNotIn("proxy", dp_config)  # 没有设置proxy
+        self.assertEqual(dp_config["ipv4"], ["dp.example.com"])
+
+        # 验证全局配置继承
+        for config_item in result:
+            self.assertEqual(config_item["cache"], True)
+            self.assertEqual(config_item["ttl"], 600)
+
+    def test_multi_provider_with_global_proxy_override(self):
+        """测试provider级别的proxy覆盖全局proxy"""
+        config = {
+            "proxy": "http://global.proxy:8080",  # 全局proxy
+            "providers": [
+                {
+                    "provider": "cloudflare",
+                    "id": "user@example.com",
+                    "token": "cf_token",
+                    "ipv4": ["cf.example.com"],
+                    "proxy": "http://127.0.0.1:1080",  # provider级别proxy覆盖全局
+                },
+                {
+                    "provider": "alidns",
+                    "id": "access_key",
+                    "token": "secret_key",
+                    "ipv4": ["ali.example.com"],
+                    # 没有provider级别proxy，使用全局proxy
+                },
+            ],
+        }
+
+        result = _process_multi_providers(config)
+
+        # cloudflare使用provider级别的proxy
+        cf_config = result[0]
+        self.assertEqual(cf_config["proxy"], "http://127.0.0.1:1080")
+
+        # alidns使用全局proxy
+        ali_config = result[1]
+        self.assertEqual(ali_config["proxy"], "http://global.proxy:8080")
+
+    def test_multi_provider_proxy_array_format(self):
+        """测试provider级别的数组格式proxy配置"""
+        config = {
+            "providers": [
+                {
+                    "provider": "cloudflare",
+                    "id": "user@example.com",
+                    "token": "cf_token",
+                    "ipv4": ["cf.example.com"],
+                    "proxy": ["http://127.0.0.1:1080", "DIRECT"],
+                }
+            ]
+        }
+
+        result = _process_multi_providers(config)
+        cf_config = result[0]
+        self.assertEqual(cf_config["proxy"], ["http://127.0.0.1:1080", "DIRECT"])
 
 
 if __name__ == "__main__":

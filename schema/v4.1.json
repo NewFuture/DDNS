@@ -188,6 +188,36 @@
             },
             "required": [],
             "additionalProperties": false
+          },
+          "proxy": {
+            "type": [
+              "string",
+              "null",
+              "array"
+            ],
+            "title": "HTTP Proxy Setting",
+            "description": "该Provider专用的HTTP代理设置，支持多种格式：http://host:port（具体代理）、DIRECT（强制直连）、SYSTEM/DEFAULT（系统代理），多个代理逐个尝试直到成功",
+            "pattern": "^(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)(;(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT))*$",
+            "examples": [
+              "http://127.0.0.1:1080",
+              "http://proxy.example.com:8080",
+              "DIRECT",
+              "SYSTEM",
+              "DEFAULT"
+            ],
+            "uniqueItems": true,
+            "items": {
+              "title": "proxy setting for HTTP requests",
+              "type": "string",
+              "pattern": "^(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)$",
+              "examples": [
+                "http://127.0.0.1:1080",
+                "https://proxy.example.com:8080",
+                "DIRECT",
+                "SYSTEM",
+                "DEFAULT"
+              ]
+            }
           }
         },
         "required": [
@@ -399,19 +429,28 @@
         "array"
       ],
       "title": "HTTP Proxy Setting",
-      "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
-      "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
+      "description": "HTTP代理设置，支持多种格式：http://host:port（具体代理）、DIRECT（强制直连）、SYSTEM/DEFAULT（系统代理），多个代理逐个尝试直到成功",
+      "pattern": "^(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)(;(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT))*$",
       "examples": [
-        "127.0.0.1:1080;DIRECT"
+        "http://127.0.0.1:1080",
+        "http://proxy.example.com:8080",
+        "DIRECT",
+        "SYSTEM",
+        "DEFAULT",
+        "http://127.0.0.1:1080;DIRECT"
       ],
       "uniqueItems": true,
       "items": {
-        "$id": "/properties/ipv4/items",
-        "title": "ipv4 domain for DDNS",
+        "$id": "/properties/proxy/items",
+        "title": "proxy setting for HTTP requests",
         "type": "string",
-        "pattern": "^[a-zA-Z0-9\\-_:\\.]*$",
+        "pattern": "^(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)$",
         "examples": [
-          "127.0.0.1:1080"
+          "http://127.0.0.1:1080",
+          "https://proxy.example.com:8080",
+          "DIRECT",
+          "SYSTEM",
+          "DEFAULT"
         ]
       }
     },

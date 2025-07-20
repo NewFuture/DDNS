@@ -58,7 +58,7 @@ Configuration Parameters Table
 | index6 | string\|int\|array | No | `["default"]` | IPv6 Retrieval Method | [See details below](#index4-index6) |
 | ttl | number | No | `null` | DNS TTL Time | In seconds, uses DNS default policy when not set |
 | line | string | No | `null` | DNS Resolution Line | ISP line selection, supported values depend on DNS provider |
-| proxy | string\|array | No | None | HTTP Proxy | Try multiple proxies sequentially until success, `DIRECT` for direct connection |
+| proxy | string\|array | No | None | HTTP Proxy | Try multiple proxies sequentially until success, supports `DIRECT`(direct), `SYSTEM`(system proxy) |
 | ssl | string\|boolean | No | `"auto"` | SSL Verification Method | `true` (force verification), `false` (disable verification), `"auto"` (auto downgrade) or custom CA certificate file path |
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
 | log | object | No | `null` | Log Configuration | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters |
@@ -136,17 +136,21 @@ The `proxy` parameter is used to set HTTP proxy, which can be a single proxy add
 
 Proxy types:
 
-* http: `"http://<proxy_host>:<proxy_port>"`
-* https: `"https://<proxy_host>:<proxy_port>"`
-* No proxy: `"DIRECT"`
+* **Specific proxy**: `"http://<proxy_host>:<proxy_port>"` or `"https://<proxy_host>:<proxy_port>"`
+* **Direct connection**: `"DIRECT"` - Force direct connection, ignore system proxy settings
+* **System proxy**: `"SYSTEM"` - Use system default proxy settings (IE proxy, environment variables, etc.)
+* **Auto**: `null` or not set - Use system default proxy settings
 
 Configuration examples:
 
 ```json
 {
-    "proxy": "http://127.0.0.1:1080", // Single proxy address
-    "proxy": ["http://127.0.0.1:1080","DIRECT"], // Try proxy first, fallback to direct connection
-    "proxy": null // No proxy
+    "proxy": "http://127.0.0.1:1080",                    // Single proxy address
+    "proxy": "SYSTEM",                                   // Use system proxy settings
+    "proxy": "DIRECT",                                   // Force direct connection
+    "proxy": ["http://127.0.0.1:1080", "DIRECT"],       // Try proxy first, fallback to direct
+    "proxy": ["SYSTEM", "http://backup:8080", "DIRECT"], // System proxy → backup proxy → direct
+    "proxy": null                                        // Use system default proxy settings
 }
 ```
 
