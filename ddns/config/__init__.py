@@ -34,9 +34,10 @@ def _get_config_paths(config_paths):
                 return [p]
         return []
 
-    # 验证所有路径都存在
+    # 验证所有路径都存在（跳过URL检查）
     for config_path in config_paths:
-        if not os.path.exists(config_path):
+        # 跳过远程URL的存在性检查
+        if "://" not in config_path and not os.path.exists(config_path):
             sys.stderr.write("Config file `%s` does not exist!\n" % config_path)
             sys.stdout.write("Please check the path or use `--new-config` to create new one.\n")
             sys.exit(1)
@@ -67,12 +68,16 @@ def _setup_logging(cli_config, env_config, all_json_configs):
     return logging.getLogger().getChild("config")  # type: logging.Logger
 
 
-def _load_json_configs(config_paths):
-    # type: (list[str]) -> list[dict]
+def _load_json_configs(config_paths, cli_config, env_config):
+    # type: (list[str], dict, dict) -> list[dict]
     """Load all JSON configurations from config paths."""
+    # Extract proxy and SSL settings from CLI and environment for HTTP requests
+    proxy_settings = cli_config.get("proxy") or env_config.get("proxy")
+    ssl_settings = cli_config.get("ssl") or env_config.get("ssl", "auto")
+    
     all_json_configs = []
     for config_path in config_paths:
-        json_configs = load_file_config(config_path)
+        json_configs = load_file_config(config_path, proxy=proxy_settings, ssl=ssl_settings)
         if isinstance(json_configs, list):
             all_json_configs.extend(json_configs)
         else:
@@ -127,7 +132,7 @@ Copyright (c) NewFuture (MIT License)
     config_paths = _get_config_paths(config_paths)
 
     # 加载所有配置文件
-    all_json_configs = _load_json_configs(config_paths)
+    all_json_configs = _load_json_configs(config_paths, cli_config, env_config)
 
     # 为每个JSON配置创建Config对象
     configs = [
