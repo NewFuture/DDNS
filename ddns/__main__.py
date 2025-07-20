@@ -14,6 +14,7 @@ from .config import load_configs, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider
 from . import ip
 from .cache import Cache
+from .task import TaskManager, print_task_status
 
 logger = getLogger()
 # Set user agent for All Providers
@@ -103,6 +104,163 @@ def run(config):
     )
 
 
+def handle_task_command_from_args():
+    # type: () -> None
+    """
+    Handle task subcommand by parsing arguments separately
+    """
+    from argparse import ArgumentParser, RawTextHelpFormatter
+    
+    parser = ArgumentParser(
+        prog='ddns task',
+        description='Manage DDNS scheduled tasks',
+        formatter_class=RawTextHelpFormatter
+    )
+    
+    task_group = parser.add_mutually_exclusive_group()
+    task_group.add_argument('--status', action='store_true', 
+                           help='query task status [查询定时任务状态]')
+    task_group.add_argument('-i', '--install', action='store_true',
+                           help='install scheduled task [安装定时任务]')
+    task_group.add_argument('--delete', action='store_true',
+                           help='delete scheduled task [删除定时任务]')
+    
+    parser.add_argument('--interval', type=int, default=5, metavar='MINUTES',
+                        help='task execution interval in minutes (default: 5) [执行间隔分钟数，默认5分钟]')
+    parser.add_argument('--scheduler', choices=['systemd', 'cron', 'launchd', 'schtasks'],
+                        help='preferred task scheduler [指定任务调度器]')
+    parser.add_argument('--force', action='store_true',
+                        help='force reinstall if task already exists [强制重新安装]')
+    parser.add_argument('-c', '--config', metavar='FILE',
+                        help='config file for scheduled task [定时任务使用的配置文件]')
+    
+    # Parse arguments starting from index 2 (skip 'ddns' and 'task')
+    args = parser.parse_args(sys.argv[2:])
+    
+    logger = getLogger("ddns.task")
+    task_manager = TaskManager(logger)
+    
+    # Determine action
+    if args.status:
+        action = 'status'
+    elif args.install:
+        action = 'install'
+    elif args.delete:
+        action = 'delete'
+    else:
+        action = 'auto'  # Default action: show status and install if needed
+    
+    if action == 'status':
+        # Show task status
+        status = task_manager.get_task_status()
+        print_task_status(status)
+        
+    elif action == 'install':
+        # Install task
+        success = task_manager.install_task(
+            scheduler=args.scheduler,
+            interval=args.interval,
+            config_file=args.config,
+            force=args.force
+        )
+        
+        if not success:
+            sys.exit(1)
+            
+    elif action == 'delete':
+        # Uninstall task
+        success = task_manager.uninstall_task(scheduler=args.scheduler)
+        
+        if not success:
+            sys.exit(1)
+            
+    elif action == 'auto':
+        # Auto mode: show status, install if not installed
+        status = task_manager.get_task_status()
+        
+        if status['installed']:
+            print_task_status(status)
+        else:
+            print_task_status(status)
+            print("")
+            print("Task not installed. Installing with default settings...")
+            
+            success = task_manager.install_task(
+                interval=args.interval,
+                config_file=args.config
+            )
+            
+            if not success:
+                sys.exit(1)
+            else:
+                print("Task installed successfully!")
+
+
+def handle_task_command(task_config):
+    # type: (dict) -> None
+    """
+    Handle task subcommand
+    """
+    logger = getLogger("ddns.task")
+    task_manager = TaskManager(logger)
+    
+    action = task_config.get('task_action', 'auto')
+    
+    if action == 'status':
+        # Show task status
+        status = task_manager.get_task_status()
+        print_task_status(status)
+        
+    elif action == 'install':
+        # Install task
+        interval = task_config.get('interval', 5)
+        scheduler = task_config.get('scheduler')
+        config_file = task_config.get('config')
+        force = task_config.get('force', False)
+        
+        success = task_manager.install_task(
+            scheduler=scheduler,
+            interval=interval,
+            config_file=config_file,
+            force=force
+        )
+        
+        if not success:
+            sys.exit(1)
+            
+    elif action == 'delete':
+        # Uninstall task
+        scheduler = task_config.get('scheduler')
+        success = task_manager.uninstall_task(scheduler=scheduler)
+        
+        if not success:
+            sys.exit(1)
+            
+    elif action == 'auto':
+        # Auto mode: show status, install if not installed
+        status = task_manager.get_task_status()
+        
+        if status['installed']:
+            print_task_status(status)
+        else:
+            print_task_status(status)
+            print("")
+            print("Task not installed. Installing with default settings...")
+            
+            interval = task_config.get('interval', 5)
+            config_file = task_config.get('config')
+            
+            success = task_manager.install_task(
+                interval=interval,
+                config_file=config_file
+            )
+            
+            if not success:
+                sys.exit(1)
+            else:
+                print("Task installed successfully!")
+
+
 def main():
     encode = sys.stdout.encoding
     if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
@@ -110,6 +268,12 @@ def main():
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     logger.name = "ddns"
+
+    # Check if this is a task command by examining sys.argv
+    if len(sys.argv) > 1 and sys.argv[1] == 'task':
+        # Handle task command with a separate parser
+        handle_task_command_from_args()
+        return
 
     # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
