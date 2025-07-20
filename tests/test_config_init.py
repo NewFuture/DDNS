@@ -436,8 +436,8 @@ class TestConfigInit(unittest.TestCase):
         config_data = {"proxy": "DIRECT,http://proxy.com,NONE", "ssl": "auto", "cache": "true", "ttl": "600"}
         config = Config(cli_config=config_data)
 
-        # Verify proxy special value handling
-        self.assertEqual(config.proxy, ["DIRECT", "http://proxy.com", None])
+        # Verify proxy parsing (no special conversion of NONE to None after simplification)
+        self.assertEqual(config.proxy, ["DIRECT", "http://proxy.com", "NONE"])
         # Verify boolean conversion
         self.assertTrue(config.cache)
         # Verify TTL conversion to int

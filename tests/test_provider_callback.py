@@ -336,7 +336,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         domain = "test.example.com"
         ip = "111.111.111.111"
 
-        provider = CallbackProvider(id, "", verify_ssl="auto")
+        provider = CallbackProvider(id, "", ssl="auto")
         mock_logger = self._setup_provider_with_mock_logger(provider)
 
         self._random_delay()  # Add random delay before real request

@@ -25,14 +25,13 @@ def str_bool(v):
     if v is None:
         return False
     if not isinstance(v, str) and not type(v).__name__ == "unicode":
-        # For non-string types, convert to string first
-        return bool(v)
-    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return bool(v)  # For non-string types, convert to string first
+    if v.lower() in ("yes", "true", "t", "y", "1"):  # type: ignore[attribute-defined]
         return True
-    elif v.lower() in ("no", "false", "f", "n", "0"):
+    elif v.lower() in ("no", "false", "f", "n", "0"):  # type: ignore[attribute-defined]
         return False
     else:
-        return v
+        return v  # type: ignore[return-value]
 
 
 def log_level(value):

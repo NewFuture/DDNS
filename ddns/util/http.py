@@ -46,22 +46,23 @@ logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
 
 
-def _normalize_proxy(proxy):
+def _proxy_handler(proxy):
     # type: (str | None) -> ProxyHandler | None
     """标准化代理格式并返回ProxyHandler对象"""
     if not proxy or proxy.upper() in ("SYSTEM", "DEFAULT"):
         return ProxyHandler()  # 系统代理
-    elif proxy.upper() in ("DIRECT", "NONE"):
+    elif proxy.upper() in ("DIRECT"):
         return ProxyHandler({})  # 不使用代理
     elif "://" not in proxy:
         # 检查是否是 host:port 格式
         logger.warning("Legacy proxy format '%s' detected, converting to 'http://%s'", proxy, proxy)
         proxy = "http://" + proxy
+
     return ProxyHandler({"http": proxy, "https": proxy})
 
 
 def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str | None] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
+    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
 
@@ -73,8 +74,7 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
         proxies (list[str | None] | None): 代理列表，支持以下格式：
                                          - "http://host:port" - 具体代理地址
                                          - "DIRECT" - 直连，不使用代理
-                                         - "SYSTEM"/"DEFAULT" - 使用系统默认代理设置
-                                         - None - 直连
+                                         - "SYSTEM" - 使用系统默认代理设置
         verify (bool | str): SSL验证配置
                             - True: 启用标准SSL验证
                             - False: 禁用SSL验证
@@ -119,7 +119,7 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
         for p in proxies:
             logger.debug("Trying proxy: %s", p)
             try:
-                response = run(_normalize_proxy(p))  # 尝试使用代理
+                response = run(_proxy_handler(p))  # 尝试使用代理
                 break  # 成功后退出循环
             except Exception as e:
                 last_err = e

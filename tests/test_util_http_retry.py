@@ -375,31 +375,20 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
             root_logger.propagate = True
 
             # 使用httpbin.org的502错误端点测试重试
-            try:
-                response = request("GET", "http://postman-echo.com/status/502", retries=1)
 
-                # 验证最终返回502错误
-                self.assertEqual(response.status, 502)
+            response = request("GET", "http://postman-echo.com/status/502", retries=1)
 
-                # 检查日志输出
-                log_output = log_capture.getvalue()
+            # 验证最终返回502错误
+            self.assertEqual(response.status, 502)
 
-                # 验证日志中包含重试信息（匹配实际的日志格式）
-                # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
-                self.assertIn(" retrying in 2", log_output, "日志中应该包含重试信息")
-                retry_count = log_output.count(" error, retrying in ")
-                self.assertEqual(retry_count, 1, "应该有一次重试日志")
+            # 检查日志输出
+            log_output = log_capture.getvalue()
 
-            except Exception as e:
-                # 网络问题时跳过测试
-                error_msg = str(e).lower()
-                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    self.skipTest("Network unavailable for HTTP 502 retry test: {}".format(str(e)))
-                else:
-                    # 其他异常重新抛出
-                    raise
-
+            # 验证日志中包含重试信息（匹配实际的日志格式）
+            # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
+            self.assertIn(" retrying in 2 seconds", log_output, "日志中应该包含重试信息")
+            retry_count = log_output.count(" error, retrying in ")
+            self.assertEqual(retry_count, 1, "应该有一次重试日志")
         finally:
             # 恢复原始日志设置
             root_logger.setLevel(original_level)
@@ -442,7 +431,7 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 # 验证确实是SSL证书错误
                 self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
 
-            except Exception as e:
+            except OSError as e:
                 # 检查是否是SSL相关错误
                 error_msg = str(e).lower()
                 ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]

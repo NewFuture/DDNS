@@ -48,28 +48,28 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
     def test_init_with_options(self):
         """Test SimpleProvider initialization with additional options"""
         options = {"debug": True, "timeout": 30}
-        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=False, **options)
+        provider = _TestableSimpleProvider(self.authid, self.token, ssl=False, **options)
         self.assertEqual(provider.options, options)
         self.assertFalse(provider._ssl)  # Should respect verify_ssl parameter
 
     def test_init_with_verify_ssl_string(self):
         """Test SimpleProvider initialization with verify_ssl as string"""
-        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl="/path/to/cert")
+        provider = _TestableSimpleProvider(self.authid, self.token, ssl="/path/to/cert")
         self.assertEqual(provider._ssl, "/path/to/cert")
 
     def test_init_with_verify_ssl_false(self):
         """Test SimpleProvider initialization with verify_ssl as False"""
-        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=False)
+        provider = _TestableSimpleProvider(self.authid, self.token, ssl=False)
         self.assertFalse(provider._ssl)
 
     def test_init_with_verify_ssl_truthy_value(self):
         """Test SimpleProvider initialization with verify_ssl as truthy value"""
-        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=1)  # type: ignore
+        provider = _TestableSimpleProvider(self.authid, self.token, ssl=1)  # type: ignore
         self.assertEqual(provider._ssl, 1)  # Should preserve the exact value
 
     def test_init_with_verify_ssl_falsy_value(self):
         """Test SimpleProvider initialization with verify_ssl as falsy value"""
-        provider = _TestableSimpleProvider(self.authid, self.token, verify_ssl=0)  # type: ignore
+        provider = _TestableSimpleProvider(self.authid, self.token, ssl=0)  # type: ignore
         self.assertEqual(provider._ssl, 0)  # Should preserve the exact value
 
     def test_validate_missing_id(self):

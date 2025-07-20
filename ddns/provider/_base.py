@@ -107,8 +107,8 @@ class SimpleProvider(object):
     # Description
     remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
-    def __init__(self, id, token, logger=None, verify_ssl="auto", proxy=None, endpoint=None, **options):
-        # type: (str, str, Logger | None, bool|str, list[str|None]|None, str|None, **object) -> None
+    def __init__(self, id, token, logger=None, ssl="auto", proxy=None, endpoint=None, **options):
+        # type: (str, str, Logger | None, bool|str, list[str]|None, str|None, **object) -> None
         """
         初始化服务商对象
 
@@ -128,7 +128,7 @@ class SimpleProvider(object):
         # 处理代理配置
         self._proxy = proxy  # 代理列表或None
 
-        self._ssl = verify_ssl
+        self._ssl = ssl
 
         self.options = options
         name = self.__class__.__name__
