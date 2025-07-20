@@ -1,9 +1,7 @@
 # coding=utf-8
 """
-HTTP请求工具模块
-
-HTTP utilities module for DDNS project.
-Provides common HTTP functionality including ssl, proxy, and basicauth.
+HTTP请求工具模块,SSL 代理，重试，basic-auth
+HTTP utilities module, including ssl, proxies, retry and basicAuth.
 
 @author: NewFuture
 """
@@ -26,7 +24,7 @@ try:  # python 3
         ProxyHandler,
         Request,
     )
-    from urllib.parse import quote, urlencode, unquote, urlparse
+    from urllib.parse import quote, urlencode, unquote
     from http.client import HTTPSConnection
 except ImportError:  # python 2
     from urllib2 import (  # type: ignore[no-redef]
@@ -40,99 +38,12 @@ except ImportError:  # python 2
         Request,
     )
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
-    from urlparse import urlparse  # type: ignore[no-redef]
     from httplib import HTTPSConnection  # type: ignore[no-redef]
 
 __all__ = ["request", "HttpResponse", "quote", "urlencode"]
 
 logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
-
-
-class HttpResponse(object):
-    """HTTP响应封装类"""
-
-    def __init__(self, status, reason, headers, body):
-        # type: (int, str, Any, str) -> None
-        """
-        初始化HTTP响应对象
-        """
-        self.status = status
-        self.reason = reason
-        self.headers = headers
-        self.body = body
-
-
-class ProxiesHandler(ProxyHandler):
-    """代理处理器，支持多个代理地址逐一尝试"""
-    
-    def __init__(self, proxies=None):
-        # type: (list[str | None] | None) -> None
-        """
-        初始化代理处理器
-        
-        Args:
-            proxies (list[str | None] | None): 代理列表，None表示直连
-        """
-        self.proxies_list = proxies or [None]
-        
-        # 为了确保proxy_open被调用，我们设置http和https代理
-        # 使用占位符，实际的代理选择在proxy_open中进行
-        proxy_dict = {'http': 'placeholder', 'https': 'placeholder'}
-        super(ProxiesHandler, self).__init__(proxy_dict)
-    
-    def proxy_open(self, req, proxy, type):
-        # type: (Request, str, str) -> object
-        """
-        重载proxy_open方法，实现多代理逐一尝试
-        
-        Args:
-            req: HTTP请求对象
-            proxy: 代理地址（这个参数会被忽略，使用内部的proxies_list）
-            type: 代理类型
-            
-        Returns:
-            成功的HTTP响应
-            
-        Raises:
-            Exception: 当所有代理都失败时抛出最后一个异常
-        """
-        logger = getLogger(__name__)
-        last_exception = None
-        
-        for i, current_proxy in enumerate(self.proxies_list):
-            try:
-                if current_proxy:
-                    logger.debug("Trying proxy: %s", current_proxy)
-                    # 调用父类的proxy_open方法，使用当前代理
-                    return super(ProxiesHandler, self).proxy_open(req, current_proxy, type)
-                else:
-                    logger.debug("Trying direct connection (no proxy)")
-                    # 直连情况下，我们需要绕过代理直接连接
-                    # 创建一个没有代理的临时处理器链来处理请求
-                    from urllib.request import HTTPHandler, HTTPSHandler
-                    if type == 'https':
-                        handler = HTTPSHandler()
-                    else:
-                        handler = HTTPHandler()
-                    # 只有当parent存在时才设置
-                    if hasattr(self, 'parent') and self.parent:
-                        handler.add_parent(self.parent)
-                    return getattr(handler, type + '_open')(req)
-                    
-            except Exception as e:
-                last_exception = e
-                if i < len(self.proxies_list) - 1:
-                    logger.warning("Proxy failed: %s, trying next proxy: %s", current_proxy or "direct", str(e))
-                else:
-                    logger.error("All proxies failed, last error: %s", str(e))
-        
-        # 如果所有代理都失败，抛出最后一个异常
-        if last_exception:
-            raise last_exception
-        
-        # 理论上不会到达这里
-        raise RuntimeError("No proxy configurations to try")
 
 
 def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1):
@@ -167,28 +78,35 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     if m:
         protocol, username, password, rest = m.groups()
         url = protocol + rest
-        password_mgr = HTTPPasswordMgrWithDefaultRealm()
-        password_mgr.add_password(None, url, unquote(username), unquote(password))
-        auth = HTTPBasicAuthHandler(password_mgr)
+        auth = HTTPBasicAuthHandler(HTTPPasswordMgrWithDefaultRealm())
+        auth.add_password(None, url, unquote(username), unquote(password))  # type: ignore[no-untyped-call]
 
     # 准备请求
     if isinstance(data, str):
         data = data.encode("utf-8")
 
-    req = Request(url, data=data, headers=headers or {})
-    req.get_method = lambda: method.upper()  # 确保方法是大写
+    handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
+    handlers += [auth] if auth else []
 
-    # 创建opener并发送请求，包括重试处理器
-    handlers = [NoHTTPErrorProcessor(), SSLFallbackHandler(verify), RetryHandler(retries)]  # type: list[BaseHandler]
-    
-    # 添加代理处理器 - 使用ProxiesHandler处理代理列表
-    handlers.append(ProxiesHandler(proxies=proxies))
-    
-    if auth:
-        handlers.append(auth)
+    def run(p):
+        req = Request(url, data=data, headers=headers or {})
+        req.get_method = lambda: method.upper()  # python 2 兼容
+        h = handlers + ([ProxyHandler({"http": p, "https": p})] if p else [])
+        return build_opener(*h).open(req)  # 创建处理器链
 
-    opener = build_opener(*handlers)
-    response = opener.open(req)
+    if not proxies or len(proxies) <= 1:
+        response = run(proxies[0] if proxies else None)  # 直连
+    else:
+        last_err = None  # type: Exception # type: ignore[assignment]
+        for proxy in proxies:
+            try:
+                response = run(proxy)  # 尝试使用代理
+                break  # 成功后退出循环
+            except Exception as e:
+                logger.warning("Proxy %s failed: %s", proxy, e)
+        else:
+            logger.error("All proxies failed")
+            raise last_err  # 如果所有代理都失败，抛出最后一个错误
 
     # 处理响应
     response_headers = response.info()
@@ -200,7 +118,51 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     return HttpResponse(status_code, reason, response_headers, decoded_body)
 
 
-class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
+def _decode_response_body(raw_body, content_type):
+    # type: (bytes, str | None) -> str
+    """解码HTTP响应体，优先使用UTF-8"""
+    if not raw_body:
+        return ""
+
+    # 从Content-Type提取charset
+    charsets = ["utf-8", "gbk", "ascii", "latin-1"]
+    if content_type and "charset=" in content_type.lower():
+        start = content_type.lower().find("charset=") + 8
+        end = content_type.find(";", start)
+        if end == -1:
+            end = len(content_type)
+        charset = content_type[start:end].strip("'\" ").lower()
+
+        # 处理常见别名映射
+        charset_aliases = {"gb2312": "gbk", "iso-8859-1": "latin-1"}
+        charset = charset_aliases.get(charset, charset)
+        if charset in charsets:
+            charsets.remove(charset)
+        charsets.insert(0, charset)
+
+    # 按优先级尝试解码
+    for encoding in charsets:
+        try:
+            return raw_body.decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            continue
+
+    return raw_body.decode("utf-8", errors="replace")  # 最终后备：UTF-8替换错误字符
+
+
+class HttpResponse(object):
+    """HTTP响应封装类"""
+
+    def __init__(self, status, reason, headers, body):
+        # type: (int, str, Any, str) -> None
+        """初始化HTTP响应对象"""
+        self.status = status
+        self.reason = reason
+        self.headers = headers
+        self.body = body
+
+
+class NoHTTPErrorHandler(HTTPDefaultErrorHandler):  # type: ignore[misc]
     """自定义HTTP错误处理器，处理所有HTTP错误状态码，返回响应而不抛出异常"""
 
     def http_error_default(self, req, fp, code, msg, hdrs):
@@ -209,10 +171,9 @@ class NoHTTPErrorProcessor(HTTPDefaultErrorHandler):  # type: ignore[misc]
         return fp
 
 
-class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
+class AutoSSLHandler(HTTPSHandler):  # type: ignore[misc]
     """SSL自动降级处理器，处理 unable to get local issuer certificate 错误"""
 
-    # 类级别的SSL上下文缓存
     _ssl_cache = {}  # type: dict[str, ssl.SSLContext|None]
 
     def __init__(self, verify):
@@ -235,7 +196,7 @@ class SSLFallbackHandler(HTTPSHandler):  # type: ignore[misc]
                 "Basic Constraints of CA cert not marked critical",
             )
             if self._verify == "auto" and any(err in str(e) for err in ssl_errors):
-                logger.warning("SSL error (%s), switching to unverified connection for %s", str(e), req.get_full_url())
+                logger.warning("SSL error (%s), switching to unverified connection", str(e))
                 self._verify = False  # 不验证SSL
                 self._context = self._ssl_context()  # 确保上下文已更新
                 return self._open(req)  # 重试请求
@@ -306,74 +267,31 @@ class RetryHandler(BaseHandler):  # type: ignore[misc]
 
     def __init__(self, retries=3):
         # type: (int) -> None
-        """
-        初始化重试处理器
-
-        Args:
-            retries (int): 最大重试次数
-        """
-        self.retries = retries
+        """初始化重试处理器"""
         self._in_retry = False  # 防止递归调用的标志
+        self.retries = retries  # 始终设置retries属性
+        if retries > 0:
+            self.default_open = self._open
 
-    def default_open(self, req):
+    def _open(self, req):
         """实际的重试逻辑，处理所有协议"""
-        # 防止递归调用
         if self._in_retry:
-            return None
+            return None  # 防止递归调用
 
         self._in_retry = True
 
         try:
-            for attempt in range(1, self.retries + 2):
+            for attempt in range(1, self.retries + 1):
                 try:
-                    res = self.parent.open(req)
-
-                    if attempt <= self.retries and hasattr(res, "getcode") and res.getcode() in self.RETRY_CODES:
-                        logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
-                        time.sleep(2**attempt)
-                        continue
-
-                    return res
-
+                    res = self.parent.open(req, timeout=req.timeout)
+                    if not hasattr(res, "getcode") or res.getcode() not in self.RETRY_CODES:
+                        return res  # 成功响应直接返回
+                    logger.warning("HTTP %d error, retrying in %d seconds", res.getcode(), 2**attempt)
                 except (socket.timeout, socket.gaierror, socket.herror) as e:
-                    if attempt > self.retries:
-                        raise  # 如果是最后一次尝试，抛出错误
-
                     logger.warning("Request failed, retrying in %d seconds: %s", 2**attempt, str(e))
-                    time.sleep(2**attempt)
-                    continue
+
+                time.sleep(2**attempt)
+                continue
+            return self.parent.open(req, timeout=req.timeout)  # 最后一次尝试
         finally:
             self._in_retry = False
-
-
-def _decode_response_body(raw_body, content_type):
-    # type: (bytes, str | None) -> str
-    """解码HTTP响应体，优先使用UTF-8"""
-    if not raw_body:
-        return ""
-
-    # 从Content-Type提取charset
-    charsets = ["utf-8", "gbk", "ascii", "latin-1"]
-    if content_type and "charset=" in content_type.lower():
-        start = content_type.lower().find("charset=") + 8
-        end = content_type.find(";", start)
-        if end == -1:
-            end = len(content_type)
-        charset = content_type[start:end].strip("'\" ").lower()
-
-        # 处理常见别名映射
-        charset_aliases = {"gb2312": "gbk", "iso-8859-1": "latin-1"}
-        charset = charset_aliases.get(charset, charset)
-        if charset in charsets:
-            charsets.remove(charset)
-        charsets.insert(0, charset)
-
-    # 按优先级尝试解码
-    for encoding in charsets:
-        try:
-            return raw_body.decode(encoding)
-        except (UnicodeDecodeError, LookupError):
-            continue
-
-    # 最终后备：UTF-8替换错误字符
-    return raw_body.decode("utf-8", errors="replace")

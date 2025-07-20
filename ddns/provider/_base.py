@@ -248,7 +248,7 @@ class SimpleProvider(object):
         if status_code >= 500 or status_code in (400, 401, 403):
             self.logger.error("HTTP error:\n%s", res)
             if status_code == 400:
-                raise RuntimeError("请求参数错误 [400]: " + response.reason)
+                raise RuntimeError("参数错误 [400]: " + response.reason)
             elif status_code == 401:
                 raise RuntimeError("认证失败 [401]: " + response.reason)
             elif status_code == 403:

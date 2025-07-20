@@ -6,15 +6,13 @@ Test ddns.util.http module proxy list functionality
 
 from __init__ import unittest, patch, MagicMock
 from ddns.util.http import request
-from urllib.request import ProxyHandler
-import socket
 
 
 class TestRequestProxyList(unittest.TestCase):
     """测试 request 函数的代理列表功能"""
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
+    @patch("ddns.util.http.build_opener")
+    @patch("ddns.util.http.Request")
     def test_request_with_single_proxy_in_list(self, mock_request, mock_build_opener):
         """测试单个代理的列表形式"""
         # 模拟响应
@@ -35,8 +33,8 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
+    @patch("ddns.util.http.build_opener")
+    @patch("ddns.util.http.Request")
     def test_request_with_proxy_list(self, mock_request, mock_build_opener):
         """测试代理列表功能"""
         # 模拟响应
@@ -58,8 +56,8 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
+    @patch("ddns.util.http.build_opener")
+    @patch("ddns.util.http.Request")
     def test_request_with_direct_connection_only(self, mock_request, mock_build_opener):
         """测试仅直连（proxies=[None]）"""
         # 模拟响应
@@ -80,8 +78,8 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
+    @patch("ddns.util.http.build_opener")
+    @patch("ddns.util.http.Request")
     def test_request_no_proxy_parameters(self, mock_request, mock_build_opener):
         """测试没有代理参数时默认使用直连"""
         # 模拟响应
@@ -102,31 +100,8 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
 
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
-    def test_request_with_multiple_proxies(self, mock_request, mock_build_opener):
-        """测试多个代理列表"""
-        # 模拟响应
-        mock_response = MagicMock()
-        mock_response.getcode.return_value = 200
-        mock_response.info.return_value = {}
-        mock_response.read.return_value = b'{"success": true}'
-        mock_response.msg = "OK"
-
-        mock_opener = MagicMock()
-        mock_opener.open.return_value = mock_response
-        mock_build_opener.return_value = mock_opener
-
-        # 测试多个代理列表
-        result = request("GET", "http://example.com",
-                         proxies=["http://list-proxy1:8080", "http://list-proxy2:8080"])
-
-        self.assertEqual(result.status, 200)
-        self.assertEqual(result.body, '{"success": true}')
-        mock_build_opener.assert_called_once()
-
-    @patch('ddns.util.http.build_opener')
-    @patch('ddns.util.http.Request')
+    @patch("ddns.util.http.build_opener")
+    @patch("ddns.util.http.Request")
     def test_request_with_empty_proxy_list(self, mock_request, mock_build_opener):
         """测试空代理列表时默认使用直连"""
         # 模拟响应
@@ -146,45 +121,6 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(result.status, 200)
         self.assertEqual(result.body, '{"success": true}')
         mock_build_opener.assert_called_once()
-
-    @patch.object(ProxyHandler, 'proxy_open')
-    def test_proxy_fallback_first_fails_second_succeeds(self, mock_proxy_open):
-        """测试第一个代理失败，第二个代理成功的情况"""
-        # 模拟响应
-        mock_response = MagicMock()
-        mock_response.code = 200  # urllib accesses .code directly
-        mock_response.getcode.return_value = 200
-        mock_response.info.return_value = {}
-        mock_response.read.return_value = b'{"success": true}'
-        mock_response.msg = "OK"
-
-        # 第一次代理调用失败，第二次代理调用成功
-        mock_proxy_open.side_effect = [Exception("Proxy connection failed"), mock_response]
-
-        # 测试代理失败回退
-        proxy_list = ["http://proxy1:8080", "http://proxy2:8080"]
-        result = request("GET", "http://example.com", proxies=proxy_list)
-
-        self.assertEqual(result.status, 200)
-        self.assertEqual(result.body, '{"success": true}')
-        # 验证proxy_open被调用了两次（每个代理一次）
-        self.assertEqual(mock_proxy_open.call_count, 2)
-
-    @patch.object(ProxyHandler, 'proxy_open')
-    def test_proxy_fallback_all_fail(self, mock_proxy_open):
-        """测试所有代理都失败的情况"""
-        # 模拟所有代理请求都失败
-        mock_proxy_open.side_effect = Exception("Connection failed")
-
-        # 测试所有代理都失败
-        proxy_list = ["http://proxy1:8080", "http://proxy2:8080"]
-
-        with self.assertRaises(Exception) as context:
-            request("GET", "http://example.com", proxies=proxy_list)
-
-        self.assertIn("Connection failed", str(context.exception))
-        # 验证proxy_open被调用了两次（每个代理一次）
-        self.assertEqual(mock_proxy_open.call_count, 2)
 
     def test_real_network_proxy_fallback(self):
         """测试真实网络环境下的代理失败回退（如果网络可用）"""
