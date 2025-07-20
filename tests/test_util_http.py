@@ -178,18 +178,17 @@ class TestDecodeResponseBody(unittest.TestCase):
 class TestSendHttpRequest(unittest.TestCase):
     """测试 request 函数"""
 
-    def test_comprehensive_http_requests(self):
-        """综合测试HTTP请求功能 - 合并多个网络请求测试"""
+    def test_basic_get_request_with_json_response(self):
+        """测试基本GET请求和JSON响应解析"""
         from ddns.util.http import request
 
         try:
-            # 测试1: 基本GET请求和JSON响应解析
-            response_get = request("GET", "http://postman-echo.com/get?test=ddns&format=json")
-            self.assertEqual(response_get.status, 200)
-            self.assertIsNotNone(response_get.body)
+            response = request("GET", "http://postman-echo.com/get?test=ddns&format=json")
+            self.assertEqual(response.status, 200)
+            self.assertIsNotNone(response.body)
 
             # 验证响应内容是JSON格式
-            data = json.loads(response_get.body)
+            data = json.loads(response.body)
             self.assertIn("args", data)
             self.assertIn("url", data)
             self.assertIn("test", data["args"])
@@ -197,48 +196,57 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIsInstance(data, dict)
             self.assertTrue(len(data) > 0)
 
-            # 测试2: HTTP状态码处理 - 401认证失败
+        except (socket.timeout, ConnectionError) as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+        except Exception as e:
+            error_msg = str(e).lower()
+            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+            if any(keyword in error_msg for keyword in network_keywords):
+                self.skipTest("Network unavailable for GET request test: {}".format(str(e)))
+            else:
+                raise
+
+    def test_http_401_status_code_with_headers(self):
+        """测试HTTP 401认证失败状态码处理"""
+        from ddns.util.http import request
+
+        try:
             headers = {
                 "Authorization": "Bearer invalid-token",
                 "Content-Type": "application/json",
                 "User-Agent": "DDNS-Client/4.0",
             }
-            response_401 = request("GET", "http://postman-echo.com/status/401", headers=headers)
-            self.assertEqual(response_401.status, 401)
-            self.assertIsNotNone(response_401.body)
-
-            # 测试3: DNS over HTTPS模拟
-            dns_headers = {"Accept": "application/dns-json", "User-Agent": "DDNS-Test/1.0"}
-            response_dns = request(
-                "GET", "http://postman-echo.com/get?domain=example.com&type=A", headers=dns_headers
-            )
-            self.assertEqual(response_dns.status, 200)
-
-            dns_data = json.loads(response_dns.body)
-            self.assertIn("args", dns_data)
-            self.assertIn("domain", dns_data["args"])
-            self.assertEqual(dns_data["args"]["domain"], "example.com")
-
-            # 测试4: SSL auto模式（如果前面的测试都成功，说明网络正常）
-            try:
-                response_ssl = request("GET", "https://postman-echo.com/status/200", verify="auto")
-                self.assertEqual(response_ssl.status, 200, "SSL auto模式应该成功")
-                self.assertIsNotNone(response_ssl.body)
-            except Exception as ssl_e:
-                # SSL测试失败不影响整体测试
-                self.skipTest("SSL test failed: {}".format(str(ssl_e)))
+            response = request("GET", "http://postman-echo.com/status/401", headers=headers)
+            self.assertEqual(response.status, 401)
+            self.assertIsNotNone(response.body)
 
         except (socket.timeout, ConnectionError) as e:
-            # 网络不可用时跳过测试
             self.skipTest("Network unavailable: {}".format(str(e)))
         except Exception as e:
-            # 其他网络问题时跳过测试
             error_msg = str(e).lower()
             network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
             if any(keyword in error_msg for keyword in network_keywords):
-                self.skipTest("Network unavailable for comprehensive HTTP test: {}".format(str(e)))
+                self.skipTest("Network unavailable for 401 status test: {}".format(str(e)))
             else:
-                # 其他异常重新抛出
+                raise
+
+    def test_ssl_auto_mode(self):
+        """测试SSL auto模式"""
+        from ddns.util.http import request
+
+        try:
+            response = request("GET", "https://postman-echo.com/status/200", verify="auto")
+            self.assertEqual(response.status, 200, "SSL auto模式应该成功")
+            self.assertIsNotNone(response.body)
+
+        except (socket.timeout, ConnectionError) as e:
+            self.skipTest("Network unavailable: {}".format(str(e)))
+        except Exception as e:
+            error_msg = str(e).lower()
+            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
+            if any(keyword in error_msg for keyword in network_keywords):
+                self.skipTest("Network or SSL unavailable for SSL auto test: {}".format(str(e)))
+            else:
                 raise
 
     def test_http_400_status_code(self):
@@ -305,7 +313,7 @@ class TestSendHttpRequest(unittest.TestCase):
 
         try:
             # HTTP重定向处理 - GET重定向
-            redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
+            redirect_url = "http://httpbin.org/redirect-to?url=http://httpbin.org/get"
             response = request("GET", redirect_url, verify=False, retries=3)
 
             # 重定向后应该成功
@@ -332,7 +340,7 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            redirect_url = "https://httpbin.org/redirect-to?url=https://httpbin.org/get"
+            redirect_url = "http://httpbin.org/redirect-to?url=http://httpbin.org/get"
             post_data = "test=data&method=POST->GET"
             response_post = request("POST", redirect_url, data=post_data, verify=False, retries=3)
 

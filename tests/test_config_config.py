@@ -126,11 +126,11 @@ class TestConfig(unittest.TestCase):
         config = Config(cli_config={"ttl": b"150"})
         self.assertEqual(config.ttl, 150)
 
-        # Proxy special values
+        # Proxy special values - simplified (no conversion in config)
         config = Config(cli_config={"proxy": ["http://proxy1.com", "DIRECT", "http://proxy2.com"]})
-        self.assertEqual(config.proxy, ["http://proxy1.com", None, "http://proxy2.com"])
+        self.assertEqual(config.proxy, ["http://proxy1.com", "DIRECT", "http://proxy2.com"])
         config = Config(cli_config={"proxy": ["NONE", "direct", "none", "NoNe"]})
-        self.assertEqual(config.proxy, [None, None, None, None])
+        self.assertEqual(config.proxy, ["NONE", "direct", "none", "NoNe"])
 
         # Log level conversion
         test_cases = [("DEBUG", 10), ("INFO", 20), ("WARNING", 30), ("ERROR", 40), ("CRITICAL", 50), ("NOTSET", 0)]
@@ -348,16 +348,16 @@ class TestConfig(unittest.TestCase):
 
         # CLI array parameters with various input forms
         test_cases = [
-            ({"proxy": "192.168.1.1:8080;direct"}, {"proxy": ["192.168.1.1:8080", None]}),
+            ({"proxy": "192.168.1.1:8080;direct"}, {"proxy": ["192.168.1.1:8080", "direct"]}),
             ({"index4": "public,default"}, {"index4": ["public", "default"]}),
             (
                 {"proxy": "proxy1.com:8080;DIRECT;proxy2.com:3128"},
-                {"proxy": ["proxy1.com:8080", None, "proxy2.com:3128"]},
+                {"proxy": ["proxy1.com:8080", "DIRECT", "proxy2.com:3128"]},
             ),
-            ({"proxy": ["192.168.1.1:8080;direct"]}, {"proxy": ["192.168.1.1:8080", None]}),
+            ({"proxy": ["192.168.1.1:8080;direct"]}, {"proxy": ["192.168.1.1:8080", "direct"]}),
             (
                 {"proxy": ["192.168.1.1:8080", "direct", "proxy2.com:3128"]},
-                {"proxy": ["192.168.1.1:8080", None, "proxy2.com:3128"]},
+                {"proxy": ["192.168.1.1:8080", "direct", "proxy2.com:3128"]},
             ),
             ({"index4": ["public", "default", "custom"]}, {"index4": ["public", "default", "custom"]}),
             ({"proxy": []}, {"proxy": []}),

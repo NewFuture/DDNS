@@ -32,7 +32,7 @@ python3 -m ddns -h
 ```bash
 ddns --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com
 ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
-ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+ddns --proxy SYSTEM --proxy DIRECT
 ```
 
 #### 方式二：空格分隔
@@ -40,7 +40,7 @@ ddns --proxy 127.0.0.1:1080 --proxy DIRECT
 ```bash
 ddns --ipv4 example.com www.example.com api.example.com
 ddns --index4 public 0 "regex:192\\.168\\..*"
-ddns --proxy 127.0.0.1:1080 DIRECT
+ddns --proxy SYSTEM DIRECT
 ```
 
 #### 包含空格的参数值
@@ -79,7 +79,7 @@ ddns --ipv4=example.com,www.example.com
 | `--index6`      | 列表 | IPv6 地址获取方式，支持：数字, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0 public` 或 `--index6 0 --index6 public`                      |
 | `--ttl`         | 整数       | DNS 解析记录的 TTL 时间（秒）                                                                                                                      | `--ttl 600`                                              |
 | `--line`        | 字符串      | 解析线路(部分provider支持)，如 ISP线路                                                                                                                         | `--line 电信` <br> `--line telecom`                        |
-| `--proxy`       | 字符串列表    | HTTP 代理设置，可用格式：IP:端口 或 `DIRECT`                                                                                                   | `--proxy 127.0.0.1:1080 DIRECT` 或 `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--proxy`       | 字符串列表    | HTTP 代理设置，支持：`http://host:port`、`DIRECT`(直连)、`SYSTEM`(系统代理)                                                      | `--proxy SYSTEM DIRECT` 或 `--proxy http://127.0.0.1:1080 --proxy DIRECT`    |
 | `--cache`       | 标志/字符串   | 是否启用缓存或自定义缓存路径                                                                                                                           | `--cache` <br> `--cache=/path/to/cache`        |
 | `--no-cache`    | 标志       | 禁用缓存（等效于 `--cache=false`）                                                                                                                | `--no-cache`                                             |
 | `--ssl`         | 字符串      | SSL 证书验证方式，支持：true, false, auto, 文件路径                                                                                                    | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`             |
@@ -205,12 +205,19 @@ DNS解析TTL时间（秒）。
 
 ### `--proxy [PROXY...]`
 
-HTTP代理设置，支持多代理轮换。
+HTTP代理设置，支持多代理轮换。代理类型包括：
 
-- **默认值**: 无（DIRECT 直连）
+- **具体代理**: `http://host:port` - 使用指定代理服务器
+- **直连**: `DIRECT` - 强制直连，忽略系统代理设置  
+- **系统代理**: `SYSTEM` - 使用系统默认代理设置
+
+- **默认值**: 无（使用系统默认代理设置）
 - **示例**:
-  - `--proxy 127.0.0.1:1080` (单个代理)
-  - `--proxy 127.0.0.1:1080 --proxy DIRECT` (多个代理，逐个尝试)
+  - `--proxy http://127.0.0.1:1080` (单个代理)
+  - `--proxy SYSTEM` (使用系统代理设置)
+  - `--proxy DIRECT` (强制直连)
+  - `--proxy http://127.0.0.1:1080 --proxy DIRECT` (先尝试代理，失败后直连)
+  - `--proxy SYSTEM --proxy http://backup:8080 --proxy DIRECT` (系统代理→备用代理→直连)
 
 ## 系统配置参数
 
@@ -323,7 +330,7 @@ ddns --dns cloudflare --id user@example.com --token API_TOKEN \
 ddns --dns cloudflare --id user@example.com --token API_TOKEN \
      --ipv4 example.com www.example.com \
      --index4 public "regex:2001:.*" \
-     --ttl 300 --proxy 127.0.0.1:1080 DIRECT \
+     --ttl 300 --proxy http://127.0.0.1:1080 DIRECT \
      --cache=/var/cache/ddns.cache \
      --log_level=INFO --log_file=/var/log/ddns.log
 
@@ -331,7 +338,7 @@ ddns --dns cloudflare --id user@example.com --token API_TOKEN \
 ddns --dns cloudflare --id user@example.com --token API_TOKEN \
      --ipv4 example.com --ipv4 www.example.com \
      --index4 public --index6 "regex:2001:.*" \
-     --ttl 300 --proxy 127.0.0.1:1080 --proxy DIRECT \
+     --ttl 300 --proxy http://127.0.0.1:1080 --proxy DIRECT \
      --cache=/var/cache/ddns.cache \
      --log_level=INFO --log_file=/var/log/ddns.log
 

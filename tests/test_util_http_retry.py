@@ -13,8 +13,10 @@ import logging
 # Python 2/3 compatibility
 try:
     from io import StringIO
+    from urllib.error import URLError
 except ImportError:
     from StringIO import StringIO  # type: ignore[no-redef]
+    from urllib2 import URLError  # type: ignore[no-redef]
 
 from ddns.util.http import (
     RetryHandler,
@@ -66,7 +68,7 @@ class TestRetryHandler(unittest.TestCase):
         mock_parent.open.side_effect = [socket.timeout, mock_response]
 
         # 执行测试
-        result = self.retry_handler.default_open(mock_req)
+        result = self.retry_handler._open(mock_req)
 
         # 验证重试次数
         self.assertEqual(mock_parent.open.call_count, 2)
@@ -98,7 +100,7 @@ class TestRetryHandler(unittest.TestCase):
         mock_parent.open.side_effect = [mock_error_response, mock_success_response]
 
         # 执行测试
-        result = self.retry_handler.default_open(mock_req)
+        result = self.retry_handler._open(mock_req)
 
         # 验证重试次数
         self.assertEqual(mock_parent.open.call_count, 2)
@@ -122,7 +124,7 @@ class TestRetryHandler(unittest.TestCase):
 
         # 执行测试，期望异常被抛出
         with self.assertRaises(ValueError):
-            self.retry_handler.default_open(mock_req)
+            self.retry_handler._open(mock_req)
 
         # 验证只调用一次，没有重试
         self.assertEqual(mock_parent.open.call_count, 1)
@@ -144,13 +146,60 @@ class TestRetryHandler(unittest.TestCase):
 
         # 执行测试，期望最后的异常被抛出
         with self.assertRaises(socket.timeout):
-            self.retry_handler.default_open(mock_req)
+            self.retry_handler._open(mock_req)
 
         # 验证重试次数 (retries=2，总共3次请求)
         self.assertEqual(mock_parent.open.call_count, 3)
 
         # 验证sleep调用次数 (前两次失败后会sleep)
         self.assertEqual(mock_sleep.call_count, 2)
+
+    def test_zero_retries_init(self):
+        """测试0次重试初始化"""
+        handler = RetryHandler(retries=0)
+        self.assertEqual(handler.retries, 0)
+        self.assertFalse(hasattr(handler, "default_open"))
+
+    @patch("time.sleep")
+    def test_zero_retries_behavior(self, mock_sleep):
+        """测试0次重试时的各种情况：网络错误、HTTP错误、成功请求"""
+        # 测试1: 网络错误立即失败
+        handler = RetryHandler(retries=0)
+        mock_parent = MagicMock()
+        handler.parent = mock_parent
+        mock_req = MagicMock()
+
+        mock_parent.open.side_effect = socket.timeout("Connection timeout")
+        with self.assertRaises(socket.timeout):
+            handler._open(mock_req)
+        self.assertEqual(mock_parent.open.call_count, 1)
+        mock_sleep.assert_not_called()
+
+        # 测试2: HTTP错误立即返回 (新handler实例)
+        handler2 = RetryHandler(retries=0)
+        mock_parent2 = MagicMock()
+        handler2.parent = mock_parent2
+        mock_req2 = MagicMock()
+
+        mock_error_response = MagicMock()
+        mock_error_response.getcode.return_value = 500
+        mock_parent2.open.return_value = mock_error_response
+        result = handler2._open(mock_req2)
+        self.assertEqual(mock_parent2.open.call_count, 1)
+        self.assertEqual(result, mock_error_response)
+
+        # 测试3: 成功请求 (新handler实例)
+        handler3 = RetryHandler(retries=0)
+        mock_parent3 = MagicMock()
+        handler3.parent = mock_parent3
+        mock_req3 = MagicMock()
+
+        mock_success_response = MagicMock()
+        mock_success_response.getcode.return_value = 200
+        mock_parent3.open.return_value = mock_success_response
+        result = handler3._open(mock_req3)
+        self.assertEqual(mock_parent3.open.call_count, 1)
+        self.assertEqual(result, mock_success_response)
 
 
 class TestRequestFunction(unittest.TestCase):
@@ -200,15 +249,10 @@ class TestRequestFunction(unittest.TestCase):
 
         # 测试代理字符串
         proxy_string = "http://proxy:8080"
-        result = request("GET", "http://example.com", proxy=proxy_string)
+        result = request("GET", "http://example.com", proxies=[proxy_string])
 
         self.assertEqual(result.status, 200)
         mock_build_opener.assert_called_once()
-
-        # 验证ProxyHandler被添加
-        args = mock_build_opener.call_args[0]
-        handler_types = [getattr(handler, "__class__", type(handler)).__name__ for handler in args]
-        self.assertIn("ProxyHandler", handler_types)
 
     @patch("time.sleep")
     def test_retry_handler_backoff_delays(self, mock_sleep):
@@ -238,7 +282,7 @@ class TestRequestFunction(unittest.TestCase):
         mock_parent.open.side_effect = [mock_response_1, mock_response_2, mock_response_3]
 
         # 执行测试
-        result = retry_handler.default_open(mock_req)
+        result = retry_handler._open(mock_req)
 
         # 验证返回成功响应
         self.assertEqual(result, mock_response_3)
@@ -282,6 +326,32 @@ class TestRequestFunction(unittest.TestCase):
         handler_types = [getattr(handler, "__class__", type(handler)).__name__ for handler in args]
         self.assertIn("RetryHandler", handler_types)
 
+    @patch("ddns.util.http.build_opener")
+    def test_request_with_zero_retries(self, mock_build_opener):
+        """测试request函数设置0次重试"""
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.info.return_value = {}
+        mock_response.read.return_value = b"test"
+        mock_response.msg = "OK"
+
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        # 测试0次重试
+        result = request("GET", "http://example.com", retries=0)
+
+        # 验证请求成功
+        self.assertEqual(result.status, 200)
+        self.assertEqual(result.body, "test")
+
+        # 验证RetryHandler被创建（即使是0次重试也会创建，但不会有default_open）
+        mock_build_opener.assert_called_once()
+        args = mock_build_opener.call_args[0]
+        handler_types = [getattr(handler, "__class__", type(handler)).__name__ for handler in args]
+        self.assertIn("RetryHandler", handler_types)
+
 
 class TestHttpRetryRealNetwork(unittest.TestCase):
     """测试HTTP重试功能 - 真实网络请求"""
@@ -293,59 +363,38 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.WARNING)
 
-        # 获取http模块的logger
-        http_logger = logging.getLogger("ddns.util.http")
-        original_level = http_logger.level
-        original_handlers = http_logger.handlers[:]
+        # 获取根logger并设置 - 这样可以捕获所有子logger的日志
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        original_handlers = root_logger.handlers[:]
 
         try:
             # 设置日志级别和处理器
-            http_logger.setLevel(logging.WARNING)
-            http_logger.handlers = [handler]
+            root_logger.setLevel(logging.WARNING)
+            root_logger.handlers = [handler]
 
             # 确保logger会传播到我们的handler
-            http_logger.propagate = True
+            root_logger.propagate = True
 
             # 使用httpbin.org的502错误端点测试重试
-            try:
-                response = request("GET", "http://postman-echo.com/status/502", retries=1, verify="auto")
 
-                # 验证最终返回502错误
-                self.assertEqual(response.status, 502)
+            response = request("GET", "http://postman-echo.com/status/502", retries=1)
 
-                # 检查日志输出
-                log_output = log_capture.getvalue()
+            # 验证最终返回502错误
+            self.assertEqual(response.status, 502)
 
-                # 验证日志中包含重试信息（匹配实际的日志格式）
-                # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
-                if "HTTP 502 error, retrying in" in log_output:
-                    # 统计重试日志的数量
-                    retry_count = log_output.count("HTTP 502 error, retrying in")
-                    self.assertGreaterEqual(retry_count, 1, "应该至少有一次重试日志")
-                    self.assertLessEqual(retry_count, 1, "最多应该有一次重试日志")
-                elif "retrying" in log_output.lower():
-                    # 如果找到其他形式的重试信息，也算通过
-                    self.assertIn("retrying", log_output.lower())
-                else:
-                    # 如果没有找到重试日志，但请求成功了，可能是因为日志捕获问题或第一次就成功了
-                    self.skipTest(
-                        "No retry log found: '{}' - possibly succeeded on first attempt".format(repr(log_output))
-                    )
+            # 检查日志输出
+            log_output = log_capture.getvalue()
 
-            except Exception as e:
-                # 网络问题时跳过测试
-                error_msg = str(e).lower()
-                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    self.skipTest("Network unavailable for HTTP 502 retry test: {}".format(str(e)))
-                else:
-                    # 其他异常重新抛出
-                    raise
-
+            # 验证日志中包含重试信息（匹配实际的日志格式）
+            # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
+            self.assertIn(" retrying in 2 seconds", log_output)  # 日志中应该包含重试信息
+            retry_count = log_output.count(" error, retrying in ")
+            self.assertEqual(retry_count, 1, "应该有一次重试日志")
         finally:
             # 恢复原始日志设置
-            http_logger.setLevel(original_level)
-            http_logger.handlers = original_handlers
+            root_logger.setLevel(original_level)
+            root_logger.handlers = original_handlers
 
     def test_ssl_certificate_error_no_retry_real_case(self):
         """测试SSL证书错误不触发重试 - 使用真实证书错误案例"""
@@ -354,24 +403,21 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.DEBUG)  # 使用DEBUG级别捕获更多信息
 
-        # 获取http模块的logger
-        http_logger = logging.getLogger("ddns.util.http")
-        original_level = http_logger.level
-        original_handlers = http_logger.handlers[:]
+        # 获取根logger并设置 - 这样可以捕获所有子logger的日志
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        original_handlers = root_logger.handlers[:]
 
         try:
             # 设置日志级别和处理器
-            http_logger.setLevel(logging.DEBUG)
-            http_logger.handlers = [handler]
+            root_logger.setLevel(logging.DEBUG)
+            root_logger.handlers = [handler]
 
             # 使用expired.badssl.com测试过期证书错误
             try:
                 # 使用过期证书的网站，强制验证证书，重试一次即可
                 request("GET", "https://expired.badssl.com/", retries=1, verify=True)
-
-                # 如果没有抛出异常，说明请求成功了，跳过测试
-                self.skipTest("Expected SSL certificate error was not raised")
-
+                raise AssertionError("Expected SSL certificate error, but request succeeded unexpectedly.")
             except ssl.SSLError as e:
                 # 这是我们期望的SSL错误
                 # 检查日志输出
@@ -384,7 +430,7 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 # 验证确实是SSL证书错误
                 self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
 
-            except Exception as e:
+            except (OSError, URLError) as e:
                 # 检查是否是SSL相关错误
                 error_msg = str(e).lower()
                 ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]
@@ -410,8 +456,8 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
 
         finally:
             # 恢复原始日志设置
-            http_logger.setLevel(original_level)
-            http_logger.handlers = original_handlers
+            root_logger.setLevel(original_level)
+            root_logger.handlers = original_handlers
 
 
 if __name__ == "__main__":

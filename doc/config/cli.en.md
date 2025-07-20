@@ -29,7 +29,7 @@ For list-type parameters that support multiple values (such as `--ipv4`, `--ipv6
 ```bash
 ddns --ipv4 example.com --ipv4 www.example.com --ipv4 api.example.com
 ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
-ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+ddns --proxy SYSTEM --proxy DIRECT
 ```
 
 #### Method 2: Space-Separated
@@ -37,7 +37,7 @@ ddns --proxy 127.0.0.1:1080 --proxy DIRECT
 ```bash
 ddns --ipv4 example.com www.example.com api.example.com
 ddns --index4 public 0 "regex:192\\.168\\..*"
-ddns --proxy 127.0.0.1:1080 DIRECT
+ddns --proxy SYSTEM DIRECT
 ```
 
 #### Parameters with Spaces
@@ -76,7 +76,7 @@ ddns --ipv4=example.com,www.example.com
 | `--index6`      |     List    | Methods to retrieve IPv6 address, supports: number, default, public,<br>url:, regex:, cmd:, shell:                                                                        | `--index6 0 public` or `--index6 0 --index6 public`                      |
 | `--ttl`         |   Integer   | DNS record TTL time in seconds                                                                                                                                            | `--ttl 600`                                              |
 | `--line`        |    String   | DNS resolution line (e.g. ISP line)                                                                                                                                       | `--line 电信` <br> `--line telecom`                        |
-| `--proxy`       | String List | HTTP proxy settings, format: IP\:Port or `DIRECT`                                                                                                                         | `--proxy 127.0.0.1:1080 DIRECT` or `--proxy 127.0.0.1:1080 --proxy DIRECT`                  |
+| `--proxy`       | String List | HTTP proxy settings, supports: `http://host:port`, `DIRECT`(direct), `SYSTEM`(system proxy)                                | `--proxy SYSTEM DIRECT` or `--proxy http://127.0.0.1:1080 --proxy DIRECT`    |
 | `--cache`       | Flag/String | Enable cache or specify custom cache path                                                                                                                                 | `--cache` <br> `--cache=/path/to/cache`                  |
 | `--no-cache`    |     Flag    | Disable cache (equivalent to `--cache=false`)                                                                                                                             | `--no-cache`                                             |
 | `--ssl`         |    String   | SSL certificate verification: true, false, auto, or file path                                                                                                             | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`         |
@@ -197,7 +197,7 @@ ddns --dns callback --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP
 ddns --dns cloudflare --token API_TOKEN \
      --ipv4 example.com www.example.com \
      --index4 public "regex:2001:.*" \
-     --ttl 300 --proxy 127.0.0.1:1080 DIRECT \
+     --ttl 300 --proxy http://127.0.0.1:1080 DIRECT \
      --cache=/var/cache/ddns.cache \
      --log_level=INFO --log_file=/var/log/ddns.log
 
@@ -205,7 +205,7 @@ ddns --dns cloudflare --token API_TOKEN \
 ddns --dns cloudflare --token API_TOKEN \
      --ipv4 example.com --ipv4 www.example.com \
      --index4 public --index6 "regex:2001:.*" \
-     --ttl 300 --proxy 127.0.0.1:1080 --proxy DIRECT \
+     --ttl 300 --proxy http://127.0.0.1:1080 --proxy DIRECT \
      --cache=/var/cache/ddns.cache \
      --log_level=INFO --log_file=/var/log/ddns.log
 
@@ -230,12 +230,12 @@ ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
    # ✅ Method 1: Repeat parameter names (recommended)
    ddns --ipv4 example.com --ipv4 sub.example.com --ipv4 api.example.com
    ddns --index4 public --index4 0 --index4 "regex:192\\.168\\..*"
-   ddns --proxy 127.0.0.1:1080 --proxy DIRECT
+   ddns --proxy http://127.0.0.1:1080 --proxy DIRECT
    
    # ✅ Method 2: Space-separated
    ddns --ipv4 example.com sub.example.com api.example.com
    ddns --index4 public 0 "regex:192\\.168\\..*"
-   ddns --proxy 127.0.0.1:1080 DIRECT
+   ddns --proxy http://127.0.0.1:1080 DIRECT
    
    # ✅ Parameter values with spaces use quotes
    ddns --line "China Telecom" "China Unicom"

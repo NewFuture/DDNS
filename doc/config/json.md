@@ -61,7 +61,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 | index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | [详见下方说明](#index4-index6)|
 |  ttl     |       number       |  否  |   `null`    | DNS TTL时间     | 单位为秒，不设置则采用DNS默认策略|
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定 |
-|  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，`DIRECT`为直连                                                                      |
+|  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，支持`DIRECT`(直连)、`SYSTEM`(系统代理)                                              |
 |   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
 |  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
@@ -139,17 +139,21 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 代理类型:
 
-* http: `"http://<proxy_host>:<proxy_port>"`
-* https: `"https://<proxy_host>:<proxy_port>"`
-* 不使用代理: `"DIRECT"`
+* **具体代理**: `"http://<proxy_host>:<proxy_port>"` 或 `"https://<proxy_host>:<proxy_port>"`
+* **直连**: `"DIRECT"` - 强制不使用代理，忽略系统代理设置
+* **系统代理**: `"SYSTEM"` - 使用系统默认代理设置（如IE代理、环境变量等）
+* **自动**: `null` 或不设置 - 使用系统默认代理设置
 
 配置示例
 
 ```json
 {
-    "proxy": "http://127.0.0.1:1080", // 单个代理地址
-    "proxy": ["http://127.0.0.1:1080","DIRECT"],// 先尝试代理，失败不使用代理
-    "proxy": null // 不使用代理
+    "proxy": "http://127.0.0.1:1080",                    // 单个代理地址
+    "proxy": "SYSTEM",                                   // 使用系统代理设置
+    "proxy": "DIRECT",                                   // 强制直连，不使用代理
+    "proxy": ["http://127.0.0.1:1080", "DIRECT"],       // 先尝试代理，失败后直连
+    "proxy": ["SYSTEM", "http://backup:8080", "DIRECT"], // 系统代理→备用代理→直连
+    "proxy": null                                        // 使用系统默认代理设置
 }
 ```
 

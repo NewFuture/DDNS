@@ -94,7 +94,7 @@ def run(config):
     # dns provider class
     provider_class = get_provider_class(config.dns)
     dns = provider_class(
-        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, verify_ssl=config.ssl
+        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, ssl=config.ssl
     )
     cache = Cache.new(config.cache, config.md5(), logger)
     return (
