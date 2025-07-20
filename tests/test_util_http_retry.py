@@ -13,8 +13,10 @@ import logging
 # Python 2/3 compatibility
 try:
     from io import StringIO
+    from urllib.error import URLError
 except ImportError:
     from StringIO import StringIO  # type: ignore[no-redef]
+    from urllib2 import URLError  # type: ignore[no-redef]
 
 from ddns.util.http import (
     RetryHandler,
@@ -386,7 +388,7 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
 
             # 验证日志中包含重试信息（匹配实际的日志格式）
             # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
-            self.assertIn(" retrying in 2 seconds", log_output, "日志中应该包含重试信息")
+            self.assertIn(" retrying in 2 seconds", log_output)  # 日志中应该包含重试信息
             retry_count = log_output.count(" error, retrying in ")
             self.assertEqual(retry_count, 1, "应该有一次重试日志")
         finally:
@@ -415,10 +417,7 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
             try:
                 # 使用过期证书的网站，强制验证证书，重试一次即可
                 request("GET", "https://expired.badssl.com/", retries=1, verify=True)
-
-                # 如果没有抛出异常，说明请求成功了，跳过测试
-                self.skipTest("Expected SSL certificate error was not raised")
-
+                raise AssertionError("Expected SSL certificate error, but request succeeded unexpectedly.")
             except ssl.SSLError as e:
                 # 这是我们期望的SSL错误
                 # 检查日志输出
@@ -431,7 +430,7 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
                 # 验证确实是SSL证书错误
                 self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
 
-            except OSError as e:
+            except (OSError, URLError) as e:
                 # 检查是否是SSL相关错误
                 error_msg = str(e).lower()
                 ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]
