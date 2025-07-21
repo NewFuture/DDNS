@@ -107,16 +107,19 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     if isinstance(data, str):
         data = data.encode("utf-8")
 
+    if headers is None:
+        headers = {}
+    if not any(k.lower() == "user-agent" for k in headers.keys()):
+        headers["User-Agent"] = USER_AGENT  # 设置默认User-Agent
+
     handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
     handlers += [auth] if auth else []
 
     def run(proxy_handler):
-        req = Request(url, data=data, headers=headers or {})
+        req = Request(url, data=data, headers=headers)
         req.get_method = lambda: method.upper()  # python 2 兼容
-        if not req.has_header("User-Agent"):  # 确保User-Agent被设置
-            req.add_header("User-Agent", USER_AGENT)
         h = handlers + ([proxy_handler] if proxy_handler else [])
-        return build_opener(*h).open(req)  # 创建处理器链
+        return build_opener(*h).open(req, timeout=60 if method == "GET" else 120)  # 创建处理器链
 
     if not proxies:
         response = run(None)  # 默认

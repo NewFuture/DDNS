@@ -5,7 +5,7 @@ Test ddns.util.http module proxy list functionality
 """
 
 from __init__ import unittest, patch, MagicMock
-from ddns.util.http import request
+from ddns.util.http import request, quote
 
 
 class TestRequestProxyList(unittest.TestCase):
@@ -72,7 +72,7 @@ class TestRequestProxyList(unittest.TestCase):
         mock_build_opener.return_value = mock_opener
 
         # 测试直连
-        result = request("GET", "http://example.com", proxies=[None])
+        result = request("GET", "http://example.com", proxies=None)
 
         self.assertEqual(result.status, 200)
         self.assertEqual(result.body, '{"success": true}')
@@ -141,6 +141,45 @@ class TestRequestProxyList(unittest.TestCase):
             network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
             if any(keyword in error_msg for keyword in network_keywords):
                 self.skipTest("Network unavailable for proxy fallback test: {}".format(str(e)))
+            else:
+                # 其他异常重新抛出
+                raise
+
+    def test_basic_auth_with_embedded_url(self):
+        """测试URL嵌入式基本认证"""
+        from ddns.util.http import request
+
+        try:
+            # 使用URL编码的用户名和密码
+            special_username = "user@test.com"
+            special_password = "passwo.rd"
+            username_encoded = quote(special_username, safe="")
+            password_encoded = quote(special_password, safe="")
+
+            # 验证URL编码的特殊字符
+            self.assertEqual(username_encoded, "user%40test.com")
+            self.assertEqual(password_encoded, "passwo.rd")
+            # 构建认证URL
+            auth_url = "https://{0}:{1}@httpbingo.org/basic-auth/{2}/{3}".format(
+                username_encoded, password_encoded, username_encoded, password_encoded
+            )
+            response_auth = request("GET", auth_url, verify=False, retries=2)
+
+            if response_auth.status <= 500:  # 避免httpbin.org过载时的500错误
+                self.assertEqual(response_auth.status, 200)
+                self.assertIn('"auth', response_auth.body)
+                self.assertIn("user", response_auth.body)
+                self.assertIn(special_username, response_auth.body)
+
+            else:
+                self.skipTest("httpbingo.org returned 50x, skipping auth test")
+
+        except Exception as e:
+            # 网络问题时跳过测试
+            error_msg = str(e).lower()
+            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
+            if any(keyword in error_msg for keyword in network_keywords):
+                self.skipTest("Network unavailable for basic auth test: {}".format(str(e)))
             else:
                 # 其他异常重新抛出
                 raise
