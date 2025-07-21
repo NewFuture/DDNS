@@ -67,7 +67,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             result = load_config(config_url)
 
             self.assertEqual(result, config_data)
-            mock_http.assert_called_once_with("GET", config_url, proxies=None, verify="auto")
+            mock_http.assert_called_once_with("GET", config_url, proxies=None, verify="auto", retries=3)
         finally:
             ddns.config.file.stdout = original_stdout
 
@@ -81,7 +81,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         result = load_config(config_url, ssl=True)
 
         self.assertEqual(result, config_data)
-        mock_http.assert_called_once_with("GET", config_url, proxies=None, verify=True)
+        mock_http.assert_called_once_with("GET", config_url, proxies=None, verify=True, retries=3)
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_with_proxy(self, mock_http):
@@ -94,7 +94,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         result = load_config(config_url, proxy=proxy_list, ssl=False)
 
         self.assertEqual(result, config_data)
-        mock_http.assert_called_once_with("GET", config_url, proxies=proxy_list, verify=False)
+        mock_http.assert_called_once_with("GET", config_url, proxies=proxy_list, verify=False, retries=3)
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_with_embedded_auth(self, mock_http):
@@ -107,7 +107,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         self.assertEqual(result, config_data)
         # The HTTP module handles embedded auth automatically
-        mock_http.assert_called_once_with("GET", config_url, proxies=None, verify="auto")
+        mock_http.assert_called_once_with("GET", config_url, proxies=None, verify="auto", retries=3)
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_http_error(self, mock_http):
@@ -297,7 +297,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             for url in urls:
                 try:
                     load_config(url)
-                    mock_http.assert_called_with("GET", url, proxies=None, verify="auto")
+                    mock_http.assert_called_with("GET", url, proxies=None, verify="auto", retries=3)
                 except Exception:
                     pass  # We're just testing URL detection, not full functionality
 
@@ -327,7 +327,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         for ssl_config in ssl_configs:
             load_config(config_url, ssl=ssl_config)
-            mock_http.assert_called_with("GET", config_url, proxies=None, verify=ssl_config)
+            mock_http.assert_called_with("GET", config_url, proxies=None, verify=ssl_config, retries=3)
             mock_http.reset_mock()
 
     @patch("ddns.config.file.request")
@@ -351,7 +351,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         for proxy_config in proxy_configs:
             load_config(config_url, proxy=proxy_config)
-            mock_http.assert_called_with("GET", config_url, proxies=proxy_config, verify="auto")
+            mock_http.assert_called_with("GET", config_url, proxies=proxy_config, verify="auto", retries=3)
             mock_http.reset_mock()
 
     def test_load_config_real_remote_url(self):

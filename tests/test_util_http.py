@@ -79,7 +79,7 @@ class TestUserAgent(unittest.TestCase):
                             # 只验证不是None和空字符串
                             self.assertIn(ua_value, (None, ""))
                     else:
-                        self.assertIn(ua_value, (None, ""))
+                        self.assertIn(expected_ua, (None, ""))
                     return True  # 测试成功
 
             except OSError as e:

@@ -180,7 +180,7 @@ class TestConfigInit(unittest.TestCase):
             mock_json.return_value = {"id": "{}_id".format(location_type)}
 
             result = load_configs(self.test_description, self.test_version, self.test_date)[0]
-            mock_json.assert_called_with(config_path, proxy=None, ssl='auto')
+            mock_json.assert_called_with(config_path, proxy=[], ssl="auto")
             self.assertEqual(result.id, "{}_id".format(location_type))
 
     def test_load_config_missing_files_integration(self):
