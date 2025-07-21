@@ -73,7 +73,7 @@ def _load_json_configs(config_paths, cli_config, env_config):
     """Load all JSON configurations from config paths."""
     # Extract proxy and SSL settings from CLI and environment for HTTP requests
     proxy_settings = cli_config.get("proxy") or env_config.get("proxy")
-    ssl_settings = cli_config.get("ssl") or env_config.get("ssl", "auto")
+    ssl_settings = cli_config.get("ssl", env_config.get("ssl", "auto"))
     
     all_json_configs = []
     for config_path in config_paths:

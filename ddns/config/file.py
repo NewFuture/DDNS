@@ -8,7 +8,7 @@ from io import open
 from json import loads as json_decode, dumps as json_encode
 from sys import stderr, stdout
 from ..util.comment import remove_comment
-from ..util.http import request as http_request
+from ..util.http import request
 
 
 def _process_multi_providers(config):
@@ -66,7 +66,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
 
     Args:
         config_path (str): 配置文件路径或HTTP(S) URL
-        proxy (list[str] | None): 代理列表，仅用于HTTP请求
+        proxy (list[str] | None): 代理列表，仅用于HTTP或HTTPS请求
         ssl (bool | str): SSL验证配置，仅用于HTTPS请求
 
     Returns:
@@ -79,11 +79,11 @@ def load_config(config_path, proxy=None, ssl="auto"):
         # 检查是否为远程URL
         if "://" in config_path:
             # 使用HTTP请求获取远程配置
-            response = http_request("GET", config_path, proxies=proxy, verify=ssl)
+            response = request("GET", config_path, proxies=proxy, verify=ssl)
             if response.status != 200:
+                stderr.write("Failed to load remote config file %s: HTTP %d %s\n" % (config_path, response.status, response.reason))
                 raise Exception("HTTP {}: {}".format(response.status, response.reason))
             content = response.body
-            stdout.write("Successfully loaded remote config file: %s\n" % config_path)
         else:
             # 本地文件加载
             with open(config_path, "r", encoding="utf-8") as f:
