@@ -1,0 +1,177 @@
+#[build-system] #remove for python2
+#requires = ["setuptools>=64.0", "wheel", "setuptools_scm"]
+#build-backend = "setuptools.build_meta"
+#[tool.setuptools_scm]
+#local_scheme = "no-local-version"
+
+[project]
+name = "ddns"
+dynamic = ["version"]
+description = "Dynamic DNS client for multiple providers, supporting IPv4 and IPv6."
+authors = [{ name = "NewFuture", email = "python@newfuture.cc" }]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=2.7"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "Topic :: Internet",
+  "Topic :: Internet :: Name Service (DNS)",
+  "Topic :: System :: Networking",
+  "Topic :: Software Development",
+  'Programming Language :: Python :: 2.7',
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+keywords = ["ddns", "ipv6", "ipv4", "dns", "dnspod", "alidns", "cloudflare"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://ddns.newfuture.cc"
+Documentation = "https://ddns.newfuture.cc"
+Repository = "https://github.com/NewFuture/DDNS"
+"Bug Tracker" = "https://github.com/NewFuture/DDNS/issues"
+Source = "https://github.com/NewFuture/DDNS"
+
+[project.scripts]
+ddns = "ddns.__main__:main"
+
+# Optional dependencies
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "mock;python_version<'3.3'",  # For Python 2.7 compatibility
+]
+# 可选的 pytest 支持（不是默认测试框架）
+pytest = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "mock;python_version<'3.3'",
+]
+
+# Setuptools configuration
+[tool.setuptools]
+platforms = ["any"]
+packages = ["ddns", "ddns.provider", "ddns.util"]
+package-dir= {"ddns" = "ddns"}
+py-modules = ["ddns","ddns.provider", "ddns.util"]
+
+#[tool.setuptools.packages.find]
+#where = ["."]
+
+
+
+[tool.setuptools.dynamic]
+version = { attr = "ddns.__version__" }
+# description = { attr = "ddns.__description__" }
+
+
+# 测试配置 - 使用 unittest 作为默认测试框架
+[tool.unittest]
+start-directory = "tests"
+pattern = "test_*.py"
+# unittest 不需要额外配置，使用内置的 test discovery
+
+# pytest 兼容配置（保持与 pytest 的兼容性）
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = ["-v", "--tb=short"]
+# 确保 pytest 可以找到 test_base 模块
+pythonpath = [".", "tests"]
+
+# 代码格式化配置
+[tool.black]
+line-length = 118
+# py34删除尾部空格兼容py2
+target-version = ['py34', 'py38', 'py311']
+include = '\.py$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# 类型检查配置
+[tool.pyright]
+typeCheckingMode = "standard"
+autoImportCompletions = true
+autoFormatStrings = true
+completeFunctionParens = true
+supportAllPythonDocuments = true
+importFormat = "relative"
+generateWithTypeAnnotation = true
+diagnosticMode = "workspace"
+indexing = true
+useLibraryCodeForTypes = true
+
+# Coverage configuration (可选，仅在使用 pytest-cov 时需要)
+# 要使用覆盖率报告，需要安装: pip install pytest pytest-cov
+# 然后运行: pytest tests/ --cov=ddns --cov-report=term-missing
+[tool.coverage.run]
+source = ["ddns"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/.*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+precision = 2
+
+# Flake8 configuration
+[tool.flake8]
+max-line-length = 118
+extend-ignore = [
+    "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by black)
+    "W503",  # line break before binary operator
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".tox",
+    ".venv",
+]
+per-file-ignores = [
+    "tests/*:F401,F811",  # Allow unused imports and redefined names in tests
+]

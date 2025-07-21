@@ -1,7 +1,7 @@
 @ECHO OFF
 REM https://msdn.microsoft.com/zh-cn/library/windows/desktop/bb736357(v=vs.85).aspx
 
-SET RUNCMD=python "%~dp0run.py" -c "%~dp0config.json" >> "%~dp0run.log"
+SET RUNCMD="%~dp0run.bat" "%~dp0run.log"
 
 SET RUN_USER=%USERNAME%
 WHOAMI /GROUPS | FIND "12288" > NUL && SET RUN_USER="SYSTEM"

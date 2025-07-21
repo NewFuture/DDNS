@@ -1,0 +1,320 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "description": "DNS 配置文件 https://github.com/NewFuture/DDNS",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "please use https://ddns.newfuture.cc/schema/v4.0.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v4.0.json",
+      "default": "https://ddns.newfuture.cc/schema/v4.0.json",
+      "enum": [
+        "https://ddns.newfuture.cc/schema/v4.0.json",
+        "http://ddns.newfuture.cc/schema/v4.0.json",
+        "./schema/v4.0.json"
+      ]
+    },
+    "id": {
+      "$id": "/properties/id",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "ID or Email",
+      "description": "DNS服务API认证的ID或者邮箱"
+    },
+    "token": {
+      "$id": "/properties/token",
+      "type": "string",
+      "title": "API Token",
+      "description": "DNS服务商的访问Token或者Key"
+    },
+    "endpoint": {
+      "$id": "/properties/endpoint",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "API Endpoint",
+      "description": "DNS服务商的API端点URL，用于自定义或私有部署的API地址",
+      "default": null,
+      "examples": [
+        "https://dnsapi.com",
+        null
+      ]
+    },
+    "dns": {
+      "$id": "/properties/dns",
+      "type": "string",
+      "title": "DNS Provider",
+      "description": "dns服务商:阿里为alidns,阿里ESA为aliesa,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,NameSilo为namesilo,腾讯云为tencentcloud,腾讯云EdgeOne为edgeone,自定义回调为callback",
+      "default": "dnspod",
+      "examples": [
+        "dnspod",
+        "alidns",
+        "cloudflare"
+      ],
+      "enum": [
+        "alidns",
+        "aliesa",
+        "callback",
+        "cloudflare",
+        "debug",
+        "dnscom",
+        "dnspod_com",
+        "dnspod",
+        "edgeone",
+        "he",
+        "huaweidns",
+        "namesilo",
+        "noip",
+        "tencentcloud"
+      ]
+    },
+    "ipv4": {
+      "$id": "/properties/ipv4",
+      "title": "IPv4 domain list",
+      "description": "待更新的IPv4 域名列表",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv4/items",
+        "title": "ipv4 domain for DDNS",
+        "type": "string",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "examples": [
+          "newfuture.cc",
+          "ipv4.example.newfuture.cc"
+        ]
+      }
+    },
+    "ipv6": {
+      "$id": "/properties/ipv6",
+      "type": "array",
+      "title": "IPv6 domain list",
+      "description": "待更新的IPv6 域名列表",
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv6/items",
+        "title": "The ipv6 domain for DDNS",
+        "type": "string",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "examples": [
+          "newfuture.cc",
+          "ipv6.example.newfuture.cc"
+        ]
+      }
+    },
+    "index4": {
+      "$id": "/properties/index4",
+      "type": [
+        "string",
+        "integer",
+        "boolean",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
+      "title": "IPv4 address Setting",
+      "description": "本机 IPv4 获取方式设置，支持数组、字符串(逗号/分号分隔)等多种格式",
+      "default": [
+        "default"
+      ],
+      "examples": [
+        "default",
+        "public",
+        0,
+        "192\\\\.168\\\\..*",
+        "public,regex:192\\\\.168\\\\..*",
+        [
+          "public",
+          "default"
+        ],
+        false
+      ]
+    },
+    "index6": {
+      "$id": "/properties/index6",
+      "type": [
+        "string",
+        "integer",
+        "boolean",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
+      "title": "IPv6 address Setting",
+      "description": "本机 IPv6 获取方式设置，支持数组、字符串(逗号/分号分隔)等多种格式",
+      "default": [
+        "default"
+      ],
+      "examples": [
+        "default",
+        "public",
+        0,
+        1,
+        "2404:f801:10:.*",
+        "public;regex:2404:f801:.*",
+        [
+          "public",
+          "default"
+        ],
+        false
+      ]
+    },
+    "ttl": {
+      "$id": "/properties/ttl",
+      "type": [
+        "number",
+        "null"
+      ],
+      "title": "TTL",
+      "description": "设置DNS TTL,默认不填读取DNS服务商的配置",
+      "default": null,
+      "examples": [
+        600,
+        null
+      ]
+    },
+    "line": {
+      "$id": "/properties/line",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "DNS Line/Route",
+      "description": "DNS线路设置，如电信、联通、移动等，支持中文和英文线路名称",
+      "default": null,
+      "examples": [
+        "telecom",
+        "电信",
+        "default",
+        "默认"
+      ]
+    },
+    "proxy": {
+      "$id": "/properties/proxy",
+      "type": [
+        "string",
+        "null",
+        "array"
+      ],
+      "title": "HTTP Proxy Setting",
+      "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
+      "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
+      "examples": [
+        "127.0.0.1:1080;DIRECT"
+      ],
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv4/items",
+        "title": "ipv4 domain for DDNS",
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9\\-_:\\.]*$",
+        "examples": [
+          "127.0.0.1:1080"
+        ]
+      }
+    },
+    "cache": {
+      "$id": "/properties/cache",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "Enable Cache",
+      "description": "是否启用缓存记录以避免频繁更新",
+      "default": true,
+      "examples": [
+        true,
+        false,
+        "/path/to/cache/ddns.cache"
+      ]
+    },
+    "ssl": {
+      "$id": "/properties/ssl",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "SSL/TLS Setting",
+      "description": "SSL/TLS连接设置，auto表示自动检测，true强制使用SSL，false禁用SSL",
+      "default": "auto",
+      "examples": [
+        "auto",
+        true,
+        false
+      ]
+    },
+    "log": {
+      "$id": "/properties/log",
+      "type": "object",
+      "title": "Log Config",
+      "description": "日志配置，支持自定义日志级别、输出位置、格式和日期格式。可通过命令行 --log.level, --log.file, --log.format, --log.datefmt 或环境变量 DDNS_LOG_LEVEL, DDNS_LOG_FILE, DDNS_LOG_FORMAT, DDNS_LOG_DATEFMT 设置。",
+      "properties": {
+        "level": {
+          "type": "string",
+          "title": "Log Level",
+          "description": "日志级别，如 DEBUG、INFO、WARNING、ERROR、CRITICAL",
+          "default": "INFO",
+          "enum": [
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL"
+          ]
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Log Output File",
+          "description": "日志输出文件路径，留空或为null时输出到控制台"
+        },
+        "format": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Log Format",
+          "description": "日志格式，参考Python logging模块的格式字符串",
+          "default": "%(asctime)s %(levelname)s [%(module)s]: %(message)s"
+        },
+        "datefmt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Date Format",
+          "description": "日期时间格式，参考Python time.strftime()的格式字符串",
+          "default": "%Y-%m-%dT%H:%M:%S"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "token"
+  ],
+  "additionalProperties": false
+}

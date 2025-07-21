@@ -1,6 +1,5 @@
 config.*.json
 
-.vscode
 *.temp
 
 # Byte-compiled / optimized / DLL files

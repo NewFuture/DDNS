@@ -1,0 +1,437 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Build
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main", "abc"]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+env:
+  DOCKER_IMG: "ghcr.io/newfuture/ddns"
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: pip install flake8
+
+      - name: check Python syntax errors or undefined names
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: check complexity and length # the GitHub editor is 127 chars wide
+        run: flake8 . --count --max-complexity=12 --max-line-length=127 --statistics
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ "2.7", "3", "3.8", "3.10", "3.12", "3.13", "3.14-dev"]
+    env:
+      PY: python${{ matrix.version == '3.14-dev' && '3.14' || matrix.version }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.version }}
+        if: matrix.version == '2.7' || matrix.version == '3'
+      - uses: actions/setup-python@v5
+        if: matrix.version != '2.7' && matrix.version != '3'
+        with:
+          python-version: ${{ matrix.version }}
+      - name: test help command
+        run: ${{env.PY}} run.py -h
+      - name: test config generation
+        run: ${{env.PY}} run.py || test -f config.json
+      - name: test version
+        run: ${{env.PY}} run.py --version
+      - name: test run module
+        run:  ${{env.PY}} -m "ddns" -h
+      
+      - name: install mock for Python 2.7
+        if:  ${{ matrix.version == '2.7' }}
+        run: |
+          curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+          sudo ${{env.PY}} get-pip.py
+          ${{env.PY}} -m pip install mock==3.0.5
+        working-directory: /tmp
+      - run: rm config.json -f
+      - name: run unit tests
+        run: ${{env.PY}} -m unittest discover tests -v
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: test callback config  
+        run: ${{env.PY}} run.py -c tests/config/callback.json
+      - name: test multi config
+        run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
+      - name: test debug + noip config
+        run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
+
+      - name: test patch
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 .github/patch.py
+      - name: test help
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py -h
+      - name: test run
+        if:  ${{ matrix.version != '2.7' }}
+        run:  python3 run.py || test -f config.json
+      - name: test version
+        run: ${{env.PY}} run.py --version
+      - name: test run module
+        if:  ${{ matrix.version != '2.7' }}
+        run:  ${{env.PY}} -m "ddns" -h
+
+  pypi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: pip install build
+      - run: python3 .github/patch.py version
+      - name: Replace url in Readme
+        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+      - name: Build package
+        run: python -m build --sdist --wheel --outdir dist/
+      - name: run unit tests
+        run: python3 -m unittest -v
+
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
+      - name: test multi-provider config
+        run: python3 -m ddns -c tests/config/multi-provider.json
+      - name: test debug and noip config
+        run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi
+          path: dist/
+          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
+
+  nuitka:
+    needs: [ python, lint ]
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: x86
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          architecture: ${{ matrix.arch }}
+
+      - run:  python3 .github/patch.py
+
+      - name: Set up on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y --no-install-recommends patchelf
+
+      - name: Set up on macOS
+        if: runner.os == 'macOS'
+        run: python3 -m pip install imageio
+   
+      - run: python3 ./run.py -h
+      - name: run unit tests
+        run: python3 -m unittest -v
+
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
+
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: onefile
+          output-dir: dist
+          lto: yes
+          file-description: "DDNS客户端[测试版 Alpha]"
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
+          static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
+
+      - run: ./dist/ddns -v
+      - run: ./dist/ddns -h
+      - run: ./dist/ddns || test -f config.json
+
+      - name: test multi-provider config with executable
+        run: ./dist/ddns -c tests/config/multi-provider.json
+      - name: test debug + noip config with executable
+        run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
+
+      # Upload build result
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddns-${{ env.OS_NAME }}-${{ matrix.arch }}
+          if-no-files-found: error
+          path: |
+            dist/*.exe
+            dist/*.bin
+            dist/*.app
+            dist/ddns
+          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
+
+  linux-binary:
+    needs: [ python ]
+    strategy:
+      matrix:
+        host: [ amd, arm ]
+        libc: [ musl, glibc ]
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
+    env:
+      # glibc: 基于 debian linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8
+      # musl: 基于 alpine  linux/386,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+      platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/${{ matrix.libc }}.Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddnsbin
+          target: export
+          outputs: type=local,dest=./output
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
+      # 测试构建的二进制文件
+      - name: Test built binaries
+        run: |
+          set -ex
+          for f in output/*/ddns; do
+            platform=$(basename $(dirname "$f") | tr '_' '/')
+            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+          done
+
+      # 输出目录结构扁平化
+      - name: Flatten output directory structure
+        run: |
+          set -e
+          mkdir -p dist
+          for f in output/*/ddns; do
+            name=$(basename "$(dirname "$f")")
+            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
+          done
+      - name: Upload build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddns-${{ matrix.libc }}-${{ matrix.host}}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
+          
+  docker:
+    needs: [ python ]
+    timeout-minutes: ${{ matrix.host == 'qemu' && 60 || 30 }} 
+    strategy:
+      matrix:
+        host: ['amd','arm','qemu']
+        event: 
+          - ${{github.event_name}} 
+
+        exclude:
+          # PR 时不构建 QEMU 镜像
+          - host: qemu
+            event: pull_request
+
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
+    env:
+      platforms: ${{
+        matrix.host == 'amd' && 'linux/386,linux/amd64' ||
+          matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
+          'linux/ppc64le,linux/riscv64,linux/s390x' 
+        }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
+        if: matrix.host == 'qemu'
+        with:
+          platforms: ${{ env.platforms }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddns:test
+          outputs: type=oci,dest=./multi-platform-image.tar
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+            GITHUB_REF_NAME=${{ github.ref_name }}
+
+      # 准备测试环境
+      - name: Prepare test environment
+        run: mkdir -p oci-image && tar -vxf multi-platform-image.tar -C oci-image  
+      # 使用 skopeo 批量提取所有平台镜像，正确处理变体
+      - name: Extract platform images with skopeo
+        uses: addnab/docker-run-action@v3
+        with:
+          image: quay.io/skopeo/stable:latest
+          options: |
+            -v ${{ github.workspace }}/:/oci
+            -e PLATFORMS=${{ env.platforms }}
+          run: |
+            IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
+            for platform in "${PLATFORMS[@]}"; do
+              echo "=== Extracting image for: $platform ==="
+              tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
+              arch=$(echo $platform | cut -d'/' -f2)
+              variant=$(echo $platform | cut -d'/' -f3)
+              variantFlag=""
+              if [ -n "$variant" ]; then
+                variantFlag="--override-variant $variant"
+              fi
+              skopeo copy --override-os linux --override-arch $arch $variantFlag \
+                oci:/oci/oci-image:test docker-archive:/oci/ddns-oci-${tag}.tar:${{ env.DOCKER_IMG }}:${tag}
+            done
+      # 测试各个平台的镜像
+      - name: Test platform images
+        run: |
+          set -e
+          # 解析平台列表
+          IFS=',' read -ra PLATFORMS <<< "${{ env.platforms }}"
+          
+          # 测试每个平台的镜像
+          for platform in "${PLATFORMS[@]}"; do
+            echo "=== Testing platform: $platform ==="
+            # 将平台标识符转换为有效的文件名
+            tag=$(echo "${{ github.ref_name || 'test' }}-$platform" | tr '/' '_')
+            echo "Loading image for $platform..."
+            docker load < ddns-oci-${tag}.tar
+            echo "Running test..."
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -v
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
+            sudo rm -f config.json
+            echo "Testing with debug + noip config..."
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
+          done
+      
+      # 上传测试结果和镜像
+      - name: Upload images
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-${{ matrix.host }}
+          path: ddns-oci-*.tar
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 7 || 3 }}
+
+  preview-pypi:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: [lint, pypi, python]
+    timeout-minutes: 3
+    environment:
+      name: preview
+      url: https://test.pypi.org/project/ddns/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          print-hash: true
+          verbose: true
+
+  preview-docker:
+    if: github.event_name == 'push'
+    needs: [lint, docker, python]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: preview
+      url: https://github.com/NewFuture/DDNS/pkgs/container/ddns/?tag=master
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-amd
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-arm
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-qemu
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: docker load and push
+        run: |
+          set -ex
+          for f in $(ls ddns-oci-*.tar); do
+            docker load -i "$f"
+            docker push ${{ env.DOCKER_IMG }}:$(basename "$f" | sed 's/ddns-oci-//;s/.tar//')
+          done
+      - name: merge and push images
+        run: |
+          set -ex
+          docker buildx imagetools create \
+          -t ${{ env.DOCKER_IMG }}:${{ github.ref_name }} \
+          -t newfuture/ddns:${{ github.ref_name }} \
+          ${{ github.ref_name=='master' && '-t $DOCKER_IMG:edge' }} \
+          ${{ github.ref_name=='master' && '-t newfuture/ddns:edge' }} \
+          $(docker images --format "{{.Repository}}:{{.Tag}}" ${{ env.DOCKER_IMG }}:*) \
+          --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
+          --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \
+          --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"

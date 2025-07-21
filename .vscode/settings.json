@@ -1,0 +1,56 @@
+{
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.supportAllPythonDocuments": true,
+    "python.analysis.generateWithTypeAnnotation": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.indexing": true,
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "addMissingImports": true,
+        "addMissingOptionalParameters": true,
+        "addMissingReturn": true,
+        "addMissingParameters": true,
+        "addMissingTypeHints": true,
+        "addMissingFunctionOverloads": true,
+        "addMissingFunctionOverloadsWithReturnType": true
+    },
+    "editor.formatOnSaveMode": "file",
+    "python.analysis.fixAll": [
+        "source.convertImportFormat",
+    ],
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "flake8.enabled": true,
+    "editor.bracketPairColorization.enabled": true,
+    "flake8.args": [
+        "--max-line-length=120"
+    ],
+    "github.copilot.chat.agent.terminal.allowList": {
+        "python": true,
+        "python -c": true,
+        "python -m": true,
+        "python -m unittest": true,
+        "python3": true,
+        "python3 -c": true,
+        "python3 -m": true,
+        "python3 -m unittest": true,
+        "echo": true,
+        "cd": true,
+        "ls": true,
+        "dir": true,
+        "git": true,
+        "git status": true,
+        "rm": true,
+        "del": true,
+    },
+    "github.copilot.chat.agent.terminal.denyList": {
+        "rm -rf": true,
+        "del /f /s /q": true,
+        "git reset --hard": true,
+        "git clean -fdx": true,
+        "git checkout -- .": true,
+        "sudo": true
+    },
+}

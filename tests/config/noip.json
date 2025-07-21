@@ -1,0 +1,21 @@
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "noip", // NoIP DNS service
+    "id": "TEST", // Unique identifier for the configuration
+    "token": "TEST", # Token for authentication, can be empty for NoIP
+    "endpoint": "http://httpbin.org/base64/Z29vZCAxOTIuMTY4LjEuMQ==?",
+    "ipv4": [
+        "ddns.newfuture.cc"
+    ],
+    "index4": [
+        "public" // 公网IP
+    ],
+    "ttl": 300,
+    "proxy": null,
+    "cache": false, // Disable caching for NoIP
+    "ssl": false,
+    "log": {
+        "level": "DEBUG",
+        "datefmt": "%m-%d %H:%M:%S"
+    }
+}

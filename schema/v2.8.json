@@ -176,12 +176,28 @@
     "debug": {
       "$id": "/properties/debug",
       "type": "boolean",
-      "title": "Enable Debug Mode",
-      "description": "是否启用调试模式显示更多信息",
+      "title": "Enable Debug Mode (deprecated, use logger instead)",
+      "description": "是否启用调试模式显示更多信息（已废弃，请使用 logger 字段）",
       "default": false,
       "examples": [
         false,
         true
+      ],
+      "deprecated": true
+    },
+    "cache": {
+      "$id": "/properties/cache",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "Enable Cache",
+      "description": "是否启用缓存记录以避免频繁更新",
+      "default": true,
+      "examples": [
+        true,
+        false,
+        "/path/to/cache/ddns.cache"
       ]
     }
   },

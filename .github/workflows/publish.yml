@@ -1,0 +1,258 @@
+name: Publish
+run-name: Release ${{github.ref_name}}
+
+on:
+  push:
+    tags: [v*]
+
+permissions:
+  contents: read
+
+jobs:
+  publish-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment:
+      name: publish
+      url: https://hub.docker.com/r/newfuture/ddns
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ env.platforms }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: |
+            ghcr.io/newfuture/ddns
+            newfuture/ddns
+          flavor: | # exclude alpha, beta, rc
+            latest=${{ !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'c')) }}
+          tags: | # next for beta and rc or stable (none alpha)
+            type=ref,event=tag
+            type=raw,value=next,enable=${{ !contains(github.ref_name, 'alpha')}} 
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+      - uses: docker/build-push-action@v6
+        id: push
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ env.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master   
+            GITHUB_REF_NAME=${{ github.ref_name }}
+
+  publish-pypi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: publish
+      url: https://pypi.org/project/ddns/
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: pip install build
+      - run: python3 .github/patch.py version
+      - name: Replace url in Readme
+        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+
+      - name: run unit tests
+        run: python -m unittest discover tests -v
+
+      - name: test callback config
+        run: python3 -m ddns -c tests/config/callback.json
+      - name: test debug config
+        run: python3 -m ddns -c tests/config/debug.json
+      - name: test noip config
+        run: python3 -m ddns -c tests/config/noip.json
+
+      - name: Build package
+        run: python -m build --sdist --wheel --outdir dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+
+  publish-binary:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: x86
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-13
+            arch: x64
+          - os: macos-latest
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+
+      - run:  python3 .github/patch.py
+
+      - name: Set up on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y --no-install-recommends patchelf
+      - name: Set up on macOS
+        if: runner.os == 'macOS'
+        run: python3 -m pip install imageio
+
+      - name: run unit tests
+        run: python -m unittest discover tests -v
+      - name: test run.py
+        run: python3 ./run.py -h
+
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: onefile
+          output-dir: dist
+          lto: yes
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
+          static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
+          macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
+
+      - run: ./dist/ddns || test -e config.json
+      - run: ./dist/ddns -v
+      - run: ./dist/ddns -h
+
+      - name: test callback config with executable  
+        run: ./dist/ddns -c tests/config/callback.json
+      - name: test debug config with executable
+        run: ./dist/ddns -c tests/config/debug.json
+      - name: test noip config with executable
+        run: ./dist/ddns -c tests/config/noip.json
+
+      - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
+        if: runner.os == 'Linux'
+      - run: mv ./dist/ddns ./dist/ddns-mac-${{ matrix.arch }}
+        if: runner.os == 'macOS'
+      - run: mv ./dist/ddns.exe ./dist/ddns-windows-${{ matrix.arch }}.exe
+        if: runner.os == 'Windows'
+      - name: Upload binary
+        run: gh release upload ${{ github.ref_name }} dist/ddns*
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  publish-linux-binary:
+    strategy:
+      matrix:
+        host: [ amd, arm ]
+        libc: [ musl, glibc ]
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
+    permissions:
+      contents: write
+    env:
+      platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/${{ matrix.libc }}.Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddnsbin
+          target: export
+          outputs: type=local,dest=./output
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
+            GITHUB_REF_NAME=${{ github.ref_name }}
+      # 测试构建的二进制文件
+      - name: Test built binaries
+        run: |
+          set -ex
+          for f in output/*/ddns; do
+            platform=$(basename $(dirname "$f") | tr '_' '/')
+            docker/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+          done
+
+      # 输出目录结构扁平化
+      - name: Flatten output directory structure
+        run: |
+          set -e
+          mkdir -p dist
+          for f in output/*/ddns; do
+            name=$(basename "$(dirname "$f")")
+            mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
+          done
+      - name: Upload binary
+        run: gh release upload ${{ github.ref_name }} dist/ddns*
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  github-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: publish
+      url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
+    permissions:
+      contents: write
+    needs: [publish-docker, publish-pypi, publish-binary, publish-linux-binary]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload files
+        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - run: sed -i 's#${BUILD_VERSION}#${{ github.ref_name }}#g' .github/release.md
+      - name: Generate release notes and append README.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ${{ github.ref_name }} --json body -q '.body' > release_notes.md
+          cat .github/release.md >> release_notes.md
+          gh release edit ${{ github.ref_name }} --notes-file release_notes.md

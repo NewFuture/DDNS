@@ -1,7 +1,13 @@
 markdown: kramdown
+
+favicon: /doc/img/ddns.svg
+site_favicon: /doc/img/ddns.svg
+
 kramdown:
   parse_block_html: true
 
 plugins:
   - jekyll-mentions
-
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-redirect-from
