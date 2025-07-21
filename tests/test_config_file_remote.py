@@ -17,17 +17,11 @@ from ddns.util.http import HttpResponse
 # Import HTTP exceptions for Python 2/3 compatibility
 try:  # Python 3
     from urllib.error import URLError, HTTPError
-except ImportError:  # Python 2
-    from urllib2 import URLError, HTTPError
-
-# Python 2/3 compatibility
-try:
     from io import StringIO
-    from urllib.error import URLError
     unicode = str
-except ImportError:
+except ImportError:  # Python 2
+    from urllib2 import URLError, HTTPError  # type: ignore[no-redef]
     from StringIO import StringIO  # type: ignore[no-redef]
-    from urllib2 import URLError  # type: ignore[no-redef]
 else:
     try:
         from StringIO import StringIO
@@ -370,7 +364,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         # If the URL is not accessible due to network issues, the test will be skipped
         try:
             result = load_config(config_url)
-            
+
             # Handle both single config (dict) and multi-provider config (list)
             if isinstance(result, list):
                 # Multi-provider format - verify we got at least one configuration
@@ -379,7 +373,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             else:
                 # Single provider format
                 config = result
-                
+
             # Verify that the config has the expected structure
             self.assertIsInstance(config, dict, "Config should be a dictionary")
             # Check for at least one expected field (debug is common in debug configs)
@@ -387,11 +381,11 @@ class TestRemoteConfigFile(unittest.TestCase):
                 "debug" in config or "dns" in config or "id" in config,
                 "Config should have at least one expected field (debug, dns, or id)"
             )
-            
+
         except (URLError, HTTPError, socket.timeout, socket.gaierror, socket.herror) as e:
             # Only skip for network connection issues (URLError, HTTPError 5xx, timeout)
             if isinstance(e, HTTPError):
-                # For HTTPError, only skip if it's a server error (5xx) 
+                # For HTTPError, only skip if it's a server error (5xx)
                 if e.code >= 500:
                     self.skipTest("Real remote URL test skipped due to server error %s: %s" % (e.code, str(e)))
                 else:
