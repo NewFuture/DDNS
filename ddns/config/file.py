@@ -80,7 +80,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
         if "://" in config_path:
             # 使用HTTP请求获取远程配置
             response = request("GET", config_path, proxies=proxy, verify=ssl, retries=3)
-            if response.status != 200:
+            if (response.status not in (200, None)) or not response.body:
                 stderr.write("Failed to load {}: HTTP {} {}\n".format(config_path, response.status, response.reason))
                 stderr.write("Response body: %s\n" % response.body)
                 raise Exception("HTTP {}: {}".format(response.status, response.reason))
