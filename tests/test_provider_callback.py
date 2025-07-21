@@ -364,7 +364,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
         # Use an invalid URL to test error handling
-        id = "http://httpbin.org/status/400"  # This returns HTTP 400
+        id = "http://postman-echo.com/status/400"  # This returns HTTP 400
         provider = CallbackProvider(id, "")
 
         self._random_delay()  # Add random delay before real request

@@ -14,6 +14,7 @@ from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
     quote,
+    USER_AGENT,
 )
 
 # Python 2/3 compatibility
@@ -41,6 +42,177 @@ def byte_string(s):
     if isinstance(s, text_type):
         return s.encode("utf-8")
     return s
+
+
+class TestUserAgent(unittest.TestCase):
+    """测试 USER_AGENT 常量和用户代理头部设置"""
+
+    def test_user_agent_constant(self):
+        """测试USER_AGENT常量格式正确"""
+        # 验证USER_AGENT常量存在且格式正确
+        self.assertIsInstance(USER_AGENT, text_type)
+        self.assertIn("DDNS/", USER_AGENT)
+        self.assertIn("ddns@newfuture.cc", USER_AGENT)
+
+    def test_user_agent_version_format(self):
+        """测试USER_AGENT包含版本信息"""
+        # USER_AGENT应该包含版本号或"dev"
+        has_version = any(char.isdigit() for char in USER_AGENT) or "dev" in USER_AGENT
+        self.assertTrue(has_version, "USER_AGENT should contain version number or 'dev'")
+
+    def test_request_sets_user_agent_automatically(self):
+        """测试request函数自动设置User-Agent头部"""
+        from ddns.util.http import request
+
+        # 多个测试站点，按可靠性排序
+        test_endpoints = [
+            "http://pie.dev/headers",
+            "http://postman-echo.com/headers",
+            "http://httpbin.org/user-agent",
+        ]
+
+        for endpoint in test_endpoints:
+            try:
+                response = request("GET", endpoint, retries=1)
+
+                if response.status == 200:
+                    response_data = json.loads(response.body)
+
+                    # 不同的测试站点响应格式可能略有不同
+                    if "headers" in response_data:
+                        headers = response_data["headers"]
+                        user_agent_key = None
+                        # 查找User-Agent头部（不区分大小写）
+                        for key in headers:
+                            if key.lower() == "user-agent":
+                                user_agent_key = key
+                                break
+
+                        if user_agent_key:
+                            self.assertEqual(headers[user_agent_key], USER_AGENT)
+                            return  # 测试成功，退出
+                    elif "user-agent" in response_data:
+                        # httpbin.org/user-agent 的格式
+                        self.assertEqual(response_data["user-agent"], USER_AGENT)
+                        return  # 测试成功，退出
+
+            except Exception as e:
+                # 记录当前端点失败，继续尝试下一个
+                error_msg = str(e).lower()
+                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+                if not any(keyword in error_msg for keyword in network_keywords):
+                    # 如果不是网络问题，重新抛出异常
+                    raise
+                continue
+
+        # 所有端点都失败
+        self.skipTest("All test endpoints unavailable for user-agent test")
+
+    def test_custom_user_agent_override(self):
+        """测试自定义User-Agent头部会覆盖默认值"""
+        from ddns.util.http import request
+
+        custom_ua = "CustomAgent/1.0"
+        headers = {"User-Agent": custom_ua}
+
+        # 多个测试站点，按可靠性排序
+        test_endpoints = [
+            "http://pie.dev/headers",
+            "http://postman-echo.com/headers",
+            "http://httpbin.org/user-agent",
+        ]
+
+        for endpoint in test_endpoints:
+            try:
+                response = request("GET", endpoint, headers=headers, retries=1)
+
+                if response.status == 200:
+                    response_data = json.loads(response.body)
+
+                    # 不同的测试站点响应格式可能略有不同
+                    if "headers" in response_data:
+                        response_headers = response_data["headers"]
+                        user_agent_key = None
+                        # 查找User-Agent头部（不区分大小写）
+                        for key in response_headers:
+                            if key.lower() == "user-agent":
+                                user_agent_key = key
+                                break
+
+                        if user_agent_key:
+                            self.assertEqual(response_headers[user_agent_key], custom_ua)
+                            self.assertNotEqual(response_headers[user_agent_key], USER_AGENT)
+                            return  # 测试成功，退出
+                    elif "user-agent" in response_data:
+                        # httpbin.org/user-agent 的格式
+                        self.assertEqual(response_data["user-agent"], custom_ua)
+                        self.assertNotEqual(response_data["user-agent"], USER_AGENT)
+                        return  # 测试成功，退出
+
+            except Exception as e:
+                # 记录当前端点失败，继续尝试下一个
+                error_msg = str(e).lower()
+                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+                if not any(keyword in error_msg for keyword in network_keywords):
+                    # 如果不是网络问题，重新抛出异常
+                    raise
+                continue
+
+        # 所有端点都失败
+        self.skipTest("All test endpoints unavailable for custom user-agent test")
+
+    def test_case_insensitive_user_agent_header(self):
+        """测试User-Agent头部大小写不敏感处理"""
+        from ddns.util.http import request
+
+        custom_ua = "TestAgent/2.0"
+        # 使用小写的user-agent头部
+        headers = {"user-agent": custom_ua}
+
+        # 多个测试站点，按可靠性排序
+        test_endpoints = [
+            "http://postman-echo.com/headers" "http://pie.dev/headers",
+            "http://httpbin.org/user-agent",
+        ]
+
+        for endpoint in test_endpoints:
+            try:
+                response = request("GET", endpoint, headers=headers, retries=1)
+
+                if response.status == 200:
+                    response_data = json.loads(response.body)
+
+                    # 不同的测试站点响应格式可能略有不同
+                    if "headers" in response_data:
+                        response_headers = response_data["headers"]
+                        user_agent_key = None
+                        # 查找User-Agent头部（不区分大小写）
+                        for key in response_headers:
+                            if key.lower() == "user-agent":
+                                user_agent_key = key
+                                break
+
+                        if user_agent_key:
+                            self.assertEqual(response_headers[user_agent_key], custom_ua)
+                            self.assertNotEqual(response_headers[user_agent_key], USER_AGENT)
+                            return  # 测试成功，退出
+                    elif "user-agent" in response_data:
+                        # httpbin.org/user-agent 的格式
+                        self.assertEqual(response_data["user-agent"], custom_ua)
+                        self.assertNotEqual(response_data["user-agent"], USER_AGENT)
+                        return  # 测试成功，退出
+
+            except Exception as e:
+                # 记录当前端点失败，继续尝试下一个
+                error_msg = str(e).lower()
+                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+                if not any(keyword in error_msg for keyword in network_keywords):
+                    # 如果不是网络问题，重新抛出异常
+                    raise
+                continue
+
+        # 所有端点都失败
+        self.skipTest("All test endpoints unavailable for case-insensitive user-agent test")
 
 
 class TestHttpResponse(unittest.TestCase):

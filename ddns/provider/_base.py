@@ -102,8 +102,6 @@ class SimpleProvider(object):
     accept = TYPE_JSON  # type: str | None
     # Decode Response as JSON by default
     decode_response = True  # type: bool
-    # UA 可自定义, 可在子类中覆盖，空则不设置
-    user_agent = "DDNS/{version} (ddns@newfuture.cc)"
     # Description
     remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
@@ -231,9 +229,7 @@ class SimpleProvider(object):
         # 处理headers
         if self.accept and "accept" not in headers and "Accept" not in headers:
             headers["accept"] = self.accept
-        if "user-agent" not in headers and "User-Agent" not in headers and self.user_agent:
-            headers["user-agent"] = self.user_agent
-        if len(headers) > 3:
+        if len(headers) > 2:
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         # 直接传递代理列表给request函数

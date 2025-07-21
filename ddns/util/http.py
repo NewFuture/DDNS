@@ -42,15 +42,12 @@ except ImportError:  # python 2
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
     from httplib import HTTPSConnection  # type: ignore[no-redef]
 
-__all__ = ["request", "HttpResponse", "quote", "urlencode"]
+__all__ = ["request", "HttpResponse", "quote", "urlencode", "USER_AGENT"]
+# Default user-agent for DDNS requests
+USER_AGENT = "DDNS/{} (ddns@newfuture.cc)".format(__version__ if __version__ != "${BUILD_VERSION}" else "dev")
 
 logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
-
-# Default user-agent for DDNS requests
-_DEFAULT_USER_AGENT = "DDNS/{} (ddns@newfuture.cc)".format(
-    __version__ if __version__ != "${BUILD_VERSION}" else "dev"
-)
 
 
 def _proxy_handler(proxy):
@@ -110,18 +107,14 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     if isinstance(data, str):
         data = data.encode("utf-8")
 
-    # 准备请求头，添加默认User-Agent
-    request_headers = headers or {}
-    if not any(key.lower() == "user-agent" for key in request_headers.keys()):
-        request_headers = dict(request_headers)  # 创建副本避免修改原始字典
-        request_headers["User-Agent"] = _DEFAULT_USER_AGENT
-
     handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
     handlers += [auth] if auth else []
 
     def run(proxy_handler):
-        req = Request(url, data=data, headers=request_headers)
+        req = Request(url, data=data, headers=headers or {})
         req.get_method = lambda: method.upper()  # python 2 兼容
+        if not req.has_header("User-Agent"):  # 确保User-Agent被设置
+            req.add_header("User-Agent", USER_AGENT)
         h = handlers + ([proxy_handler] if proxy_handler else [])
         return build_opener(*h).open(req)  # 创建处理器链
 
