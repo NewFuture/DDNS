@@ -210,6 +210,80 @@ class TestMultiConfig(unittest.TestCase):
         cf_config = result[0]
         self.assertEqual(cf_config["proxy"], ["http://127.0.0.1:1080", "DIRECT"])
 
+    def test_env_multi_proxy_remote_config_array_conversion(self):
+        """测试环境变量配置多代理远程配置，验证代理参数正确转换为数组"""
+        # 创建远程配置文件，包含多种代理格式
+        remote_config_data = {
+            "providers": [
+                {
+                    "provider": "debug",
+                    "id": "remote1@example.com",
+                    "token": "remote_token1",
+                    "ipv4": ["remote1.example.com"],
+                    "proxy": "http://proxy1.example.com:8080;http://proxy2.example.com:8080;DIRECT",
+                },
+                {
+                    "provider": "debug",
+                    "id": "remote2@example.com",
+                    "token": "remote_token2",
+                    "ipv4": ["remote2.example.com"],
+                    "proxy": ["http://array.proxy1.com:3128", "http://array.proxy2.com:3128", "DIRECT"],
+                },
+            ],
+            "proxy": "http://global.proxy1.com:8080;http://global.proxy2.com:8080;DIRECT",
+        }
+
+        # 创建本地文件模拟远程配置
+        remote_config_path = os.path.join(self.temp_dir, "remote_multi_proxy.json")
+        with open(remote_config_path, "w") as f:
+            json.dump(remote_config_data, f)
+
+        # 测试场景1：环境变量代理覆盖配置文件代理
+        with patch("ddns.config.env.load_config") as mock_env:
+            # Mock环境变量配置，包含config和proxy设置
+            mock_env.return_value = {
+                "config": "file://{}".format(remote_config_path),
+                "proxy": "http://env.proxy1.com:9090;http://env.proxy2.com:9090;DIRECT",
+            }
+
+            sys.argv = ["ddns"]
+            configs = load_configs("test", "1.0", "2023-01-01")
+
+            self.assertEqual(len(configs), 2)
+
+            # 验证第一个配置的代理转换
+            config1 = configs[0]
+            self.assertEqual(config1.dns, "debug")
+            self.assertEqual(config1.id, "remote1@example.com")
+            # 环境变量代理应该覆盖配置文件，且被正确转换为数组
+            expected_env_proxy = ["http://env.proxy1.com:9090", "http://env.proxy2.com:9090", "DIRECT"]
+            self.assertEqual(config1.proxy, expected_env_proxy)
+
+            # 验证第二个配置的代理转换
+            config2 = configs[1]
+            self.assertEqual(config2.dns, "debug")
+            self.assertEqual(config2.id, "remote2@example.com")
+            # 环境变量代理应该覆盖配置文件，且被正确转换为数组
+            self.assertEqual(config2.proxy, expected_env_proxy)
+
+        # 测试场景2：不设置环境变量代理时，配置文件中的代理被正确转换
+        with patch("ddns.config.env.load_config") as mock_env:
+            # Mock环境变量配置，只设置config不设置proxy
+            mock_env.return_value = {"config": "file://{}".format(remote_config_path)}
+
+            sys.argv = ["ddns"]
+            configs = load_configs("test", "1.0", "2023-01-01")
+
+            # 验证第一个配置：字符串格式代理被转换为数组
+            config1 = configs[0]
+            expected_proxy1 = ["http://proxy1.example.com:8080", "http://proxy2.example.com:8080", "DIRECT"]
+            self.assertEqual(config1.proxy, expected_proxy1)
+
+            # 验证第二个配置：数组格式代理保持不变
+            config2 = configs[1]
+            expected_proxy2 = ["http://array.proxy1.com:3128", "http://array.proxy2.com:3128", "DIRECT"]
+            self.assertEqual(config2.proxy, expected_proxy2)
+
 
 if __name__ == "__main__":
     unittest.main()

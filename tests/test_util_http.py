@@ -97,7 +97,7 @@ class TestUserAgent(unittest.TestCase):
     def test_user_agent_constant(self):
         """测试USER_AGENT常量格式正确"""
         # 验证USER_AGENT常量存在且格式正确
-        self.assertIsInstance(USER_AGENT, text_type)
+        self.assertIsInstance(USER_AGENT, str)
         self.assertIn("DDNS/", USER_AGENT)
         self.assertIn("ddns@newfuture.cc", USER_AGENT)
 

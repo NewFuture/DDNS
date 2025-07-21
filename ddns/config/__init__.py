@@ -69,7 +69,7 @@ def _setup_logging(cli_config, env_config, all_json_configs):
 
 
 def _load_json_configs(config_paths, proxy, ssl):
-    # type: (list[str], str, str) -> list[dict]
+    # type: (list[str], list[str], str) -> list[dict]
     """Load all JSON configurations from config paths."""
     all_json_configs = []
     for config_path in config_paths:
@@ -128,7 +128,7 @@ Copyright (c) NewFuture (MIT License)
     config_paths = _get_config_paths(config_paths)
 
     # 提取代理和SSL设置用于HTTP请求
-    proxy_settings = cli_config.get("proxy", env_config.get("proxy"))
+    proxy_settings = split_array_string(cli_config.get("proxy", env_config.get("proxy", [])))  # type: list[str]
     ssl_settings = cli_config.get("ssl", env_config.get("ssl", "auto"))
 
     # 加载所有配置文件

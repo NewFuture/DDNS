@@ -1,4 +1,5 @@
 # coding=utf-8
+# type: ignore[index]
 """
 Unit tests for remote configuration loading in ddns.config.file module
 @author: GitHub Copilot
@@ -18,15 +19,16 @@ from ddns.util.http import HttpResponse
 try:  # Python 3
     from urllib.error import URLError, HTTPError
     from io import StringIO
+
     unicode = str
 except ImportError:  # Python 2
     from urllib2 import URLError, HTTPError  # type: ignore[no-redef]
     from StringIO import StringIO  # type: ignore[no-redef]
 else:
     try:
-        from StringIO import StringIO
+        from StringIO import StringIO  # type: ignore[no-redef]
     except ImportError:
-        from io import StringIO
+        from io import StringIO  # type: ignore[no-redef]
 
 
 class TestRemoteConfigFile(unittest.TestCase):
@@ -48,11 +50,12 @@ class TestRemoteConfigFile(unittest.TestCase):
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_http_success(self, mock_http):
         """Test loading configuration from HTTP URL"""
         # Patch stdout to capture output
         import ddns.config.file
+
         original_stdout = ddns.config.file.stdout
         ddns.config.file.stdout = self.stdout_capture
 
@@ -68,7 +71,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         finally:
             ddns.config.file.stdout = original_stdout
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_https_success(self, mock_http):
         """Test loading configuration from HTTPS URL"""
         config_data = {"dns": "dnspod", "id": "test123", "token": "abc456"}
@@ -80,7 +83,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         self.assertEqual(result, config_data)
         mock_http.assert_called_once_with("GET", config_url, proxies=None, verify=True)
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_with_proxy(self, mock_http):
         """Test loading configuration from remote URL with proxy settings"""
         config_data = {"dns": "alidns", "id": "test", "token": "xyz"}
@@ -93,7 +96,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         self.assertEqual(result, config_data)
         mock_http.assert_called_once_with("GET", config_url, proxies=proxy_list, verify=False)
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_with_embedded_auth(self, mock_http):
         """Test loading configuration from URL with embedded authentication"""
         config_data = {"dns": "cloudflare", "ttl": 300}
@@ -106,7 +109,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         # The HTTP module handles embedded auth automatically
         mock_http.assert_called_once_with("GET", config_url, proxies=None, verify="auto")
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_http_error(self, mock_http):
         """Test handling HTTP error responses"""
         mock_http.return_value = HttpResponse(404, "Not Found", {}, "Not Found")
@@ -118,7 +121,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         self.assertIn("HTTP 404: Not Found", str(context.exception))
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_http_500_error(self, mock_http):
         """Test handling HTTP 5xx server errors"""
         mock_http.return_value = HttpResponse(500, "Internal Server Error", {}, "Server Error")
@@ -130,7 +133,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         self.assertIn("HTTP 500: Internal Server Error", str(context.exception))
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_network_error(self, mock_http):
         """Test handling network errors during HTTP request"""
         mock_http.side_effect = URLError("Network is unreachable")
@@ -140,7 +143,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         with self.assertRaises(Exception):
             load_config(config_url)
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_invalid_json(self, mock_http):
         """Test handling invalid JSON in remote response"""
         # Invalid JSON content
@@ -152,11 +155,12 @@ class TestRemoteConfigFile(unittest.TestCase):
         with self.assertRaises((ValueError, SyntaxError)):
             load_config(config_url)
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_ast_fallback(self, mock_http):
         """Test AST parsing fallback for remote content"""
         # Patch stdout to capture output
         import ddns.config.file
+
         original_stdout = ddns.config.file.stdout
         ddns.config.file.stdout = self.stdout_capture
 
@@ -177,7 +181,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         finally:
             ddns.config.file.stdout = original_stdout
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_v41_providers_format(self, mock_http):
         """Test loading remote configuration with v4.1 providers format"""
         config_data = {
@@ -196,8 +200,8 @@ class TestRemoteConfigFile(unittest.TestCase):
                     "id": "user2@example.com",
                     "token": "token2",
                     "ipv4": ["test2.example.com"],
-                }
-            ]
+                },
+            ],
         }
         mock_http.return_value = HttpResponse(200, "OK", {}, json.dumps(config_data))
 
@@ -220,7 +224,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         self.assertEqual(config2["id"], "user2@example.com")
         self.assertEqual(config2["ssl"], "auto")  # Global config inherited
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_with_comments(self, mock_http):
         """Test loading remote configuration with comments"""
         json_with_comments = """{
@@ -239,15 +243,10 @@ class TestRemoteConfigFile(unittest.TestCase):
         expected = {"dns": "cloudflare", "id": "test@example.com", "token": "secret123", "ttl": 300}
         self.assertEqual(result, expected)
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_unicode_content(self, mock_http):
         """Test loading remote configuration with unicode characters"""
-        unicode_config = {
-            "dns": "cloudflare",
-            "description": "测试配置文件",
-            "symbols": "αβγδε",
-            "emoji": "🌍🔧⚡"
-        }
+        unicode_config = {"dns": "cloudflare", "description": "测试配置文件", "symbols": "αβγδε", "emoji": "🌍🔧⚡"}
         mock_http.return_value = HttpResponse(200, "OK", {}, json.dumps(unicode_config, ensure_ascii=False))
 
         config_url = "https://example.com/unicode-config.json"
@@ -279,7 +278,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             "http://example.com/config.json",
             "https://example.com/config.json",
             "ftp://example.com/config.json",
-            "file://path/to/config.json"
+            "file://path/to/config.json",
         ]
 
         # These should NOT be detected as URLs
@@ -288,11 +287,11 @@ class TestRemoteConfigFile(unittest.TestCase):
             "./config.json",
             "config.json",
             "C:\\path\\to\\config.json",
-            "~/config.json"
+            "~/config.json",
         ]
 
         # Test URL detection (we'll mock the HTTP request to avoid actual network calls)
-        with patch('ddns.config.file.request') as mock_http:
+        with patch("ddns.config.file.request") as mock_http:
             mock_http.return_value = HttpResponse(200, "OK", {}, '{"dns": "test"}')
 
             for url in urls:
@@ -315,7 +314,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             # HTTP request should not have been called for non-URLs
             mock_http.assert_not_called()
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_ssl_configurations(self, mock_http):
         """Test different SSL verification configurations"""
         config_data = {"dns": "test"}
@@ -331,7 +330,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             mock_http.assert_called_with("GET", config_url, proxies=None, verify=ssl_config)
             mock_http.reset_mock()
 
-    @patch('ddns.config.file.request')
+    @patch("ddns.config.file.request")
     def test_load_config_remote_proxy_configurations(self, mock_http):
         """Test different proxy configurations"""
         config_data = {"dns": "test"}
@@ -347,7 +346,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             ["http://proxy1.com:8080", "http://proxy2.com:8080"],
             ["DIRECT"],
             ["SYSTEM"],
-            ["http://proxy.com:8080", "DIRECT"]
+            ["http://proxy.com:8080", "DIRECT"],
         ]
 
         for proxy_config in proxy_configs:
@@ -379,7 +378,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             # Check for at least one expected field (debug is common in debug configs)
             self.assertTrue(
                 "debug" in config or "dns" in config or "id" in config,
-                "Config should have at least one expected field (debug, dns, or id)"
+                "Config should have at least one expected field (debug, dns, or id)",
             )
 
         except (URLError, HTTPError, socket.timeout, socket.gaierror, socket.herror) as e:
