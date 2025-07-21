@@ -15,9 +15,13 @@ from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
 # Python 2/3 compatibility
-if sys.version_info[0] >= 3:
+try:
     from io import StringIO
+    from urllib.error import URLError
     unicode = str
+except ImportError:
+    from StringIO import StringIO  # type: ignore[no-redef]
+    from urllib2 import URLError  # type: ignore[no-redef]
 else:
     try:
         from StringIO import StringIO
@@ -129,7 +133,6 @@ class TestRemoteConfigFile(unittest.TestCase):
     @patch('ddns.config.file.request')
     def test_load_config_remote_network_error(self, mock_http):
         """Test handling network errors during HTTP request"""
-        from urllib.error import URLError
         mock_http.side_effect = URLError("Network is unreachable")
 
         config_url = "https://unreachable.example.com/config.json"
@@ -261,7 +264,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         config_data = {"dns": "local", "id": "test", "token": "local123"}
         config_file = os.path.join(self.temp_dir, "local.json")
         
-        with open(config_file, "w", encoding="utf-8") as f:
+        with open(config_file, "w") as f:
             json.dump(config_data, f)
 
         # Load local file

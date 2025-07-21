@@ -68,16 +68,12 @@ def _setup_logging(cli_config, env_config, all_json_configs):
     return logging.getLogger().getChild("config")  # type: logging.Logger
 
 
-def _load_json_configs(config_paths, cli_config, env_config):
-    # type: (list[str], dict, dict) -> list[dict]
+def _load_json_configs(config_paths, proxy, ssl):
+    # type: (list[str], str, str) -> list[dict]
     """Load all JSON configurations from config paths."""
-    # Extract proxy and SSL settings from CLI and environment for HTTP requests
-    proxy_settings = cli_config.get("proxy") or env_config.get("proxy")
-    ssl_settings = cli_config.get("ssl", env_config.get("ssl", "auto"))
-    
     all_json_configs = []
     for config_path in config_paths:
-        json_configs = load_file_config(config_path, proxy=proxy_settings, ssl=ssl_settings)
+        json_configs = load_file_config(config_path, proxy=proxy, ssl=ssl)
         if isinstance(json_configs, list):
             all_json_configs.extend(json_configs)
         else:
@@ -131,8 +127,12 @@ Copyright (c) NewFuture (MIT License)
     config_paths = split_array_string(cli_config.get("config", env_config.get("config", [])))
     config_paths = _get_config_paths(config_paths)
 
+    # 提取代理和SSL设置用于HTTP请求
+    proxy_settings = cli_config.get("proxy") or env_config.get("proxy")
+    ssl_settings = cli_config.get("ssl", env_config.get("ssl", "auto"))
+
     # 加载所有配置文件
-    all_json_configs = _load_json_configs(config_paths, cli_config, env_config)
+    all_json_configs = _load_json_configs(config_paths, proxy_settings, ssl_settings)
 
     # 为每个JSON配置创建Config对象
     configs = [
