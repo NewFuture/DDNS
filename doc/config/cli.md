@@ -66,7 +66,7 @@ ddns --ipv4=example.com,www.example.com
 | --------------- | :-----: | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `-h, --help`    | 标志       | 显示帮助信息并退出                                                                                                                                | `--help`                                                 |
 | `-v, --version` | 标志       | 显示版本信息并退出                                                                                                                                | `--version`                                              |
-| `-c, --config`  | 字符串列表      | 指定配置文件路径，支持多个配置文件                                                                                                                                 | `--config config.json` <br> `--config config1.json --config config2.json`                                   |
+| `-c, --config`  | 字符串列表      | 指定配置文件路径，支持多个配置文件和远程HTTP(S) URL                                                                                                                         | `--config config.json` <br> `--config config1.json --config config2.json` <br> `--config https://ddns.newfuture.cc/tests/config/debug.json`                                   |
 | `--new-config`  | 标志/字符串   | 生成新的配置文件（可指定路径）                                                                                                                          | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       | 标志       | 开启调试模式                                                                                                                                   | `--debug`                                                |
 | `--dns`         | 选择项      | [DNS服务提供商](providers/README.md)包括：<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
@@ -95,7 +95,7 @@ ddns --ipv4=example.com,www.example.com
 
 ### `-c FILE`
 
-`-c`是`--config`的简写形式，用于指定配置文件路径。可以使用多个`-c`参数来加载多个配置文件。
+`-c`是`--config`的简写形式，用于指定配置文件路径。可以使用多个`-c`参数来加载多个配置文件。同时支持远程HTTP(S) URL。
 
 ```bash
 
@@ -103,6 +103,15 @@ ddns -c config.json
 
 # 多配置文件
 ddns -c cloudflare.json -c dnspod.json 
+
+# 远程配置文件
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+
+# 带认证的远程配置
+ddns -c https://user:password@config.example.com/ddns.json
+
+# 混合本地和远程配置
+ddns -c local-config.json -c https://remote.example.com/config.json
 
 ```
 
@@ -301,6 +310,12 @@ ddns -c /path/to/config.json
 # 使用多个配置文件
 ddns -c cloudflare.json -c dnspod.json
 
+# 使用远程配置文件
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+
+# 使用带代理的远程配置
+ddns -c https://config.example.com/ddns.json --proxy http://proxy:8080
+
 # 生成新的配置文件
 ddns --new-config config.json
 ```
@@ -345,6 +360,13 @@ ddns --dns cloudflare --id user@example.com --token API_TOKEN \
 # 使用线路解析
 ddns --dns dnspod --id 12345 --token mytokenkey \
      --ipv4 telecom.example.com --line 电信
+
+# 使用远程配置文件
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json --debug
+
+# 远程配置文件带代理
+ddns -c https://config.example.com/ddns.json \
+     --proxy http://proxy.company.com:8080
 
 # 禁用缓存和SSL验证
 ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \

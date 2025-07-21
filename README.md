@@ -21,6 +21,7 @@
 - 配置方式:
   - [命令行参数](/doc/config/cli.md)
   - [JSON 配置文件](/doc/config/json.md) (支持单文件多Provider和多配置文件)
+  - [远程配置文件](https://ddns.newfuture.cc/tests/config/debug.json) (支持HTTP(S)远程配置)
   - [环境变量配置](/doc/config/env.md)
   - [服务商配置指南](/doc/providers/)
 

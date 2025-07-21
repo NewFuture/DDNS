@@ -21,6 +21,7 @@
 - **Configuration Methods:**
   - [Command Line Arguments](/doc/config/cli.en.md)
   - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider and multiple config files)
+  - [Remote Configuration File](https://ddns.newfuture.cc/tests/config/debug.json) (supports HTTP(S) remote configuration)
   - [Environment Variables](/doc/config/env.en.md)
   - [Provider Configuration Guide](/doc/providers/)
 

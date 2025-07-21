@@ -13,7 +13,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 
 | 环境变量               | 参数格式                                                                                             | 描述                              | 示例                                                     |
 |------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------|----------------------------------------------------------|
-| `DDNS_CONFIG`          | 文件路径，支持逗号或分号分隔多个路径                                                                | 指定配置文件路径，支持多个配置文件 | `DDNS_CONFIG="config.json"` 或 `DDNS_CONFIG="cloudflare.json,dnspod.json"` |
+| `DDNS_CONFIG`          | 文件路径，支持逗号或分号分隔多个路径，支持远程HTTP(S) URL                                                              | 指定配置文件路径，支持多个配置文件和远程配置 | `DDNS_CONFIG="config.json"` 或 `DDNS_CONFIG="cloudflare.json,dnspod.json"` <br> `DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"` |
 | `DDNS_DNS`             | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`edgeone`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](./providers/README.md) | `DDNS_DNS=cloudflare`                                    |
 | `DDNS_ID`              | 依 DNS 服务商而定                                                                                   | API 账号 或 ID                    | `DDNS_ID="user@example.com"`                             |
 | `DDNS_TOKEN`           | 依 DNS 服务商而定                                                                                   | API 授权令牌或 Secret             | `DDNS_TOKEN="abcdef123456"`                              |
@@ -43,8 +43,8 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 - **类型**: 字符串
 - **必需**: 否
 - **默认值**: 按默认路径搜索（`config.json`、`~/.ddns/config.json`等）
-- **格式**: 单个文件路径或多个文件路径（用逗号或分号分隔）
-- **说明**: 指定配置文件路径，支持多个配置文件同时使用
+- **格式**: 单个文件路径、多个文件路径（用逗号或分号分隔）、或远程HTTP(S) URL
+- **说明**: 指定配置文件路径，支持多个配置文件同时使用和远程配置文件
 - **示例**:
 
   ```bash
@@ -52,8 +52,15 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   export DDNS_CONFIG="config.json"
   export DDNS_CONFIG="/path/to/ddns.json"
   
+  # 远程配置文件
+  export DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"
+  export DDNS_CONFIG="https://user:password@config.example.com/ddns.json"
+  
   # 多个配置文件径
   export DDNS_CONFIG="/etc/ddns/cloudflare.json,./dnspod.json"
+  
+  # 混合本地和远程配置
+  export DDNS_CONFIG="local.json,https://remote.example.com/config.json"
   ```
 
 ### DNS 服务商

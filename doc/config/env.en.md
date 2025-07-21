@@ -13,7 +13,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 
 | Environment Variable     | Accepted Values                                                                                     | Description                              | Example                                                     |
 |--------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------|-------------------------------------------------------------|
-| `DDNS_CONFIG`            | File path, supports comma or semicolon-separated multiple paths                                    | Specify config file path, supports multiple files | `DDNS_CONFIG="config.json"` or `DDNS_CONFIG="cloudflare.json,dnspod.json"` |
+| `DDNS_CONFIG`            | File path, supports comma or semicolon-separated multiple paths, supports remote HTTP(S) URLs                                    | Specify config file path, supports multiple files and remote configs | `DDNS_CONFIG="config.json"` or `DDNS_CONFIG="cloudflare.json,dnspod.json"` <br> `DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"` |
 | `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
 | `DDNS_ID`                | Depends on the provider                                                                              | API account or ID                        | `DDNS_ID="user@example.com"`                                |
 | `DDNS_TOKEN`             | Depends on the provider                                                                              | API token or secret                      | `DDNS_TOKEN="abcdef123456"`                                 |
@@ -41,8 +41,8 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 - **Type**: String
 - **Required**: No
 - **Default**: Search in default paths (`config.json`, `~/.ddns/config.json`, etc.)
-- **Format**: Single file path or multiple file paths (separated by commas or semicolons)
-- **Description**: Specify configuration file path, supports multiple configuration files
+- **Format**: Single file path, multiple file paths (separated by commas or semicolons), or remote HTTP(S) URLs
+- **Description**: Specify configuration file path, supports multiple configuration files and remote configuration files
 - **Examples**:
 
   ```bash
@@ -50,8 +50,15 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
   export DDNS_CONFIG="config.json"
   export DDNS_CONFIG="/path/to/ddns.json"
   
-  # Multiple configuration files 
+  # Remote configuration file
+  export DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"
+  export DDNS_CONFIG="https://user:password@config.example.com/ddns.json"
+  
+  # Multiple configuration files
   export DDNS_CONFIG="/etc/ddns/cloudflare.json,./dnspod.json"
+  
+  # Mixed local and remote configurations
+  export DDNS_CONFIG="local.json,https://remote.example.com/config.json"
   ```
 
 ### Authentication Information
