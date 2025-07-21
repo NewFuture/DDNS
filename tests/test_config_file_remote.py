@@ -10,8 +10,15 @@ import shutil
 import os
 import json
 import sys
+import socket
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
+
+# Import HTTP exceptions for Python 2/3 compatibility
+try:  # Python 3
+    from urllib.error import URLError, HTTPError
+except ImportError:  # Python 2
+    from urllib2 import URLError, HTTPError
 
 # Python 2/3 compatibility
 try:
@@ -360,17 +367,42 @@ class TestRemoteConfigFile(unittest.TestCase):
         config_url = "https://ddns.newfuture.cc/tests/config/debug.json"
 
         # This is a real integration test - it should succeed if the URL is accessible
-        # If the URL is not accessible, the test will be skipped
+        # If the URL is not accessible due to network issues, the test will be skipped
         try:
-            configs = load_config(config_url)
-            # Verify that we got at least one configuration
-            self.assertGreater(len(configs), 0, "Should load at least one configuration")
+            result = load_config(config_url)
+            
+            # Handle both single config (dict) and multi-provider config (list)
+            if isinstance(result, list):
+                # Multi-provider format - verify we got at least one configuration
+                self.assertGreater(len(result), 0, "Should load at least one configuration")
+                config = result[0]
+            else:
+                # Single provider format
+                config = result
+                
             # Verify that the config has the expected structure
-            config = configs[0]
-            self.assertIsInstance(config.get("debug"), bool, "Debug config should be present")
+            self.assertIsInstance(config, dict, "Config should be a dictionary")
+            # Check for at least one expected field (debug is common in debug configs)
+            self.assertTrue(
+                "debug" in config or "dns" in config or "id" in config,
+                "Config should have at least one expected field (debug, dns, or id)"
+            )
+            
+        except (URLError, HTTPError, socket.timeout, socket.gaierror, socket.herror) as e:
+            # Only skip for network connection issues (URLError, HTTPError 5xx, timeout)
+            if isinstance(e, HTTPError):
+                # For HTTPError, only skip if it's a server error (5xx) 
+                if e.code >= 500:
+                    self.skipTest("Real remote URL test skipped due to server error %s: %s" % (e.code, str(e)))
+                else:
+                    # For client errors (4xx), the test should fail as it indicates a real problem
+                    self.fail("Remote URL returned client error %s: %s" % (e.code, str(e)))
+            else:
+                # For URLError, socket errors, skip the test
+                self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
-            # Skip test if the remote URL is not accessible (network issues, etc.)
-            self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
+            # For other exceptions (like JSON parsing errors), the test should fail
+            self.fail("Real remote URL test failed with unexpected error: %s" % str(e))
 
 
 if __name__ == "__main__":

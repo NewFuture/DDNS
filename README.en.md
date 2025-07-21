@@ -140,11 +140,97 @@ All fields can be configured through three methods, with priority: **Command Lin
 
 1. [Command Line Parameters](doc/config/cli.en.md) `ddns --key=value` (use `ddns -h` for details), highest priority
 2. [JSON Configuration File](doc/config/json.en.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
-   ```bash
-   # Remote configuration file example
-   ddns -c https://ddns.newfuture.cc/tests/config/debug.json
-   ```
-3. Environment Variables with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
+3. [Environment Variables](doc/config/env.en.md) with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
+
+> 📖 **Environment Variables Documentation**: See [Environment Variables Configuration](doc/config/env.en.md) for detailed usage and examples of all environment variables
+
+<details open>
+<summary markdown="span">config.json Configuration File</summary>
+
+- A template configuration file will be automatically generated on first run
+- Use `-c` to specify a configuration file (defaults to config.json in the current directory)
+- Recommended to use editors that support JsonSchema like VSCode for editing configuration files
+- See [JSON Configuration File Documentation](doc/config/json.en.md) for complete configuration options and examples
+
+```bash
+ddns -c path/to/config.json
+# Or run with Python
+python -m ddns -c /path/to/config.json
+# Remote configuration file
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+```
+
+#### Configuration Parameters Table
+
+|  key   |        type        | required |   default   |    description     | tips                                                                                                                                                                                     |
+| :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   id   |       string       |    √     |     N/A     |    API Access ID   | Cloudflare uses email (leave empty when using Token)<br>HE.net can be left empty<br>Huawei Cloud uses Access Key ID (AK)                                                              |
+| token  |       string       |    √     |     N/A     |   API Auth Token   | Some platforms call it secret key, **remove when sharing feedback**                                                                                                                     |
+|  dns   |       string       |    No    | `"dnspod"`  |     DNS Provider   | Alibaba DNS: `alidns`, Alibaba ESA: `aliesa`, Cloudflare: `cloudflare`, DNS.COM: `dnscom`, DNSPOD China: `dnspod`, DNSPOD International: `dnspod_com`, HE.net: `he`, Huawei Cloud: `huaweidns`, NameSilo: `namesilo`, Tencent Cloud: `tencentcloud`, Tencent EdgeOne: `edgeone`, No-IP: `noip`, Custom Callback: `callback`. Some providers have [detailed configuration docs](doc/providers/) |
+|  ipv4  |       array        |    No    |    `[]`     |   IPv4 Domain List | When `[]`, IPv4 address will not be retrieved and updated                                                                                                                               |
+|  ipv6  |       array        |    No    |    `[]`     |   IPv6 Domain List | When `[]`, IPv6 address will not be retrieved and updated                                                                                                                               |
+| index4 | string\|int\|array |    No    | `"default"` |   IPv4 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
+| index6 | string\|int\|array |    No    | `"default"` |   IPv6 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
+|  ttl   |       number       |    No    |   `null`    | DNS Resolution TTL | Uses DNS default policy when not set                                                                                                                                                    |
+| proxy  |   string\|array    |    No    |     N/A     | HTTP Proxy Format: `http://host:port` | Multiple proxies tried sequentially until success, `DIRECT` for direct connection                                                                                                      |
+|  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL Certificate Verification | `true` (force verify), `false` (disable verify), `"auto"` (auto downgrade) or custom CA certificate file path                                                                         |
+| debug  |        bool        |    No    |   `false`   |    Enable Debug    | Debug mode, only effective with command line parameter `--debug`                                                                                                                       |
+| cache  |    string\|bool    |    No    |   `true`    |    Cache Records   | Keep enabled normally to avoid frequent updates, default location is `ddns.cache` in temp directory, can also specify a specific path                                                |
+|  log   |       object       |    No    |   `null`    |  Log Config (Optional) | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters                                                                                                     |
+
+#### index4 and index6 Parameter Description
+
+- Numbers (`0`, `1`, `2`, `3`, etc.): The i-th network interface IP
+- String `"default"` (or no this field): System default IP for external access
+- String `"public"`: Use public IP (query via public API, simplified URL mode)
+- String `"url:xxx"`: Open URL `xxx` (e.g., `"url:http://ip.sb"`), extract IP address from returned data
+- String `"regex:xxx"` Regular expression (e.g., `"regex:192.*"`): Extract the first IP address matching from `ifconfig`/`ipconfig`, **note JSON escaping** (`\` should be written as `\\`)
+  - `"192.*"` matches all IPs starting with 192 (note: `regex:` cannot be omitted)
+  - To match `10.00.xxxx`, write as `"regex:10\\.00\\..*"` (`"\\"` JSON escapes to `\`)
+- String `"cmd:xxxx"`: Execute command `xxxx` and use stdout output as target IP
+- String `"shell:xxx"`: Use system shell to run `xxx`, and use stdout result as target IP
+- `false`: Force disable IPv4 or IPv6 DNS resolution updates
+- List: Execute index rules in the list sequentially, using the first successful result as target IP
+  - For example, `["public", "regex:172\\..*"]` will first query public API, then look for local IPs starting with 172 if no IP is obtained
+
+#### Custom Callback Configuration
+
+- `id` field: Fill in callback URL starting with HTTP or HTTPS, HTTPS recommended, supports variable replacement
+- `token` field: POST request parameters (JSON object or JSON string), use GET request if this field is empty or missing. When JSON parameter values contain constants from the table below, they will be automatically replaced with actual content
+
+For detailed configuration guide, see: [Callback Provider Configuration](doc/providers/callback.en.md)
+
+| Constant Name    | Constant Content             | Description |
+| ---------------- | ---------------------------- | ----------- |
+| `__DOMAIN__`     | DDNS Domain                  |             |
+| `__IP__`         | Obtained corresponding type IP address |             |
+| `__RECORDTYPE__` | DDNS Record Type             |             |
+| `__TTL__`        | DDNS TTL                     |             |
+| `__TIMESTAMP__`  | Request timestamp            | With decimal |
+
+#### Configuration Example
+
+```json
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "id": "12345",
+  "token": "mytokenkey",
+  "dns": "dnspod or dnspod_com or alidns or aliesa or dnscom or cloudflare or he or huaweidns or namesilo or tencentcloud or noip or callback",
+  "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
+  "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
+  "index4": 0,
+  "index6": "public",
+  "ttl": 600,
+  "proxy": ["http://127.0.0.1:1080", "DIRECT"],
+  "log": {
+    "level": "DEBUG",
+    "file": "dns.log",
+    "datefmt": "%Y-%m-%dT%H:%M:%S"
+  }
+}
+```
+
+</details>
 
 ### Configuration Priority and Field Override Relationship
 

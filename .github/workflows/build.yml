@@ -79,6 +79,8 @@ jobs:
         run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
       - name: test debug + noip config
         run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
+      - name: test remote config
+        run: ${{env.PY}} -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
@@ -119,6 +121,8 @@ jobs:
         run: python3 -m ddns -c tests/config/multi-provider.json
       - name: test debug and noip config
         run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
+      - name: test remote config
+        run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -197,6 +201,8 @@ jobs:
         run: ./dist/ddns -c tests/config/multi-provider.json
       - name: test debug + noip config with executable
         run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
+      - name: test remote config with executable
+        run: ./dist/ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
       # Upload build result
       - name: Upload Artifacts
@@ -353,6 +359,7 @@ jobs:
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c https://ddns.newfuture.cc/tests/config/debug.json
           done
       
       # 上传测试结果和镜像
