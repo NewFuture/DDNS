@@ -81,7 +81,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
             # 使用HTTP请求获取远程配置
             response = request("GET", config_path, proxies=proxy, verify=ssl)
             if response.status != 200:
-                stderr.write("Failed to load remote config file %s: HTTP %d %s\n" % (
+                stderr.write("Failed to load remote config file {}: HTTP {} {}\n".format(
                     config_path, response.status, response.reason))
                 stderr.write("Response body: %s\n" % response.body)
                 raise Exception("HTTP {}: {}".format(response.status, response.reason))
