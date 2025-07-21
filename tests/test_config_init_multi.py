@@ -248,8 +248,6 @@ class TestMultiConfig(unittest.TestCase):
                 }
                 # Mock CLI配置为空，避免干扰
                 mock_cli.return_value = {}
-
-                sys.argv = ["ddns"]
                 configs = load_configs("test", "1.0", "2023-01-01")
                 self.assertEqual(len(configs), 2)
 
