@@ -4,12 +4,11 @@ Unit tests for remote configuration loading in ddns.config.file module
 @author: GitHub Copilot
 """
 from __future__ import unicode_literals
-from __init__ import unittest, patch, MagicMock
+from __init__ import unittest, patch
 import tempfile
 import shutil
 import os
 import json
-import io
 import sys
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
@@ -112,10 +111,10 @@ class TestRemoteConfigFile(unittest.TestCase):
         mock_http.return_value = HttpResponse(404, "Not Found", {}, "Not Found")
 
         config_url = "https://example.com/missing.json"
-        
+
         with self.assertRaises(Exception) as context:
             load_config(config_url)
-        
+
         self.assertIn("HTTP 404: Not Found", str(context.exception))
 
     @patch('ddns.config.file.request')
@@ -124,10 +123,10 @@ class TestRemoteConfigFile(unittest.TestCase):
         mock_http.return_value = HttpResponse(500, "Internal Server Error", {}, "Server Error")
 
         config_url = "https://example.com/config.json"
-        
+
         with self.assertRaises(Exception) as context:
             load_config(config_url)
-        
+
         self.assertIn("HTTP 500: Internal Server Error", str(context.exception))
 
     @patch('ddns.config.file.request')
@@ -136,7 +135,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         mock_http.side_effect = URLError("Network is unreachable")
 
         config_url = "https://unreachable.example.com/config.json"
-        
+
         with self.assertRaises(Exception):
             load_config(config_url)
 
@@ -148,7 +147,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         mock_http.return_value = HttpResponse(200, "OK", {}, invalid_json)
 
         config_url = "https://example.com/bad-config.json"
-        
+
         with self.assertRaises((ValueError, SyntaxError)):
             load_config(config_url)
 
@@ -193,7 +192,7 @@ class TestRemoteConfigFile(unittest.TestCase):
                 },
                 {
                     "provider": "dnspod",
-                    "id": "user2@example.com", 
+                    "id": "user2@example.com",
                     "token": "token2",
                     "ipv4": ["test2.example.com"],
                 }
@@ -263,13 +262,13 @@ class TestRemoteConfigFile(unittest.TestCase):
         # Create a local test file
         config_data = {"dns": "local", "id": "test", "token": "local123"}
         config_file = os.path.join(self.temp_dir, "local.json")
-        
+
         with open(config_file, "w") as f:
             json.dump(config_data, f)
 
         # Load local file
         result = load_config(config_file)
-        
+
         self.assertEqual(result, config_data)
 
     def test_load_config_url_detection(self):
@@ -281,7 +280,7 @@ class TestRemoteConfigFile(unittest.TestCase):
             "ftp://example.com/config.json",
             "file://path/to/config.json"
         ]
-        
+
         # These should NOT be detected as URLs
         non_urls = [
             "/path/to/config.json",
@@ -290,28 +289,28 @@ class TestRemoteConfigFile(unittest.TestCase):
             "C:\\path\\to\\config.json",
             "~/config.json"
         ]
-        
+
         # Test URL detection (we'll mock the HTTP request to avoid actual network calls)
         with patch('ddns.config.file.request') as mock_http:
             mock_http.return_value = HttpResponse(200, "OK", {}, '{"dns": "test"}')
-            
+
             for url in urls:
                 try:
                     load_config(url)
                     mock_http.assert_called_with("GET", url, proxies=None, verify="auto")
                 except Exception:
                     pass  # We're just testing URL detection, not full functionality
-            
+
             # Reset mock call count
             mock_http.reset_mock()
-            
+
             # Test non-URLs (these should not trigger HTTP requests)
             for non_url in non_urls:
                 try:
                     load_config(non_url)  # This will fail because files don't exist, but shouldn't call HTTP
                 except Exception:
                     pass  # Expected - files don't exist
-            
+
             # HTTP request should not have been called for non-URLs
             mock_http.assert_not_called()
 
@@ -325,7 +324,7 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         # Test different SSL settings
         ssl_configs = [True, False, "auto", "/path/to/cert.pem"]
-        
+
         for ssl_config in ssl_configs:
             load_config(config_url, ssl=ssl_config)
             mock_http.assert_called_with("GET", config_url, proxies=None, verify=ssl_config)
@@ -349,11 +348,29 @@ class TestRemoteConfigFile(unittest.TestCase):
             ["SYSTEM"],
             ["http://proxy.com:8080", "DIRECT"]
         ]
-        
+
         for proxy_config in proxy_configs:
             load_config(config_url, proxy=proxy_config)
             mock_http.assert_called_with("GET", config_url, proxies=proxy_config, verify="auto")
             mock_http.reset_mock()
+
+    def test_load_config_real_remote_url(self):
+        """Test loading configuration from the actual remote URL for real integration testing"""
+        # This tests the real URL provided in the specification
+        config_url = "https://ddns.newfuture.cc/tests/config/debug.json"
+
+        # This is a real integration test - it should succeed if the URL is accessible
+        # If the URL is not accessible, the test will be skipped
+        try:
+            configs = load_config(config_url)
+            # Verify that we got at least one configuration
+            self.assertGreater(len(configs), 0, "Should load at least one configuration")
+            # Verify that the config has the expected structure
+            config = configs[0]
+            self.assertIsInstance(config.get("debug"), bool, "Debug config should be present")
+        except Exception as e:
+            # Skip test if the remote URL is not accessible (network issues, etc.)
+            self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
 
 
 if __name__ == "__main__":

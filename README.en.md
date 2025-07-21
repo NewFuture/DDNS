@@ -21,7 +21,6 @@
 - **Configuration Methods:**
   - [Command Line Arguments](/doc/config/cli.en.md)
   - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider and multiple config files)
-  - [Remote Configuration File](https://ddns.newfuture.cc/tests/config/debug.json) (supports HTTP(S) remote configuration)
   - [Environment Variables](/doc/config/env.en.md)
   - [Provider Configuration Guide](/doc/providers/)
 
@@ -141,6 +140,10 @@ All fields can be configured through three methods, with priority: **Command Lin
 
 1. [Command Line Parameters](doc/config/cli.en.md) `ddns --key=value` (use `ddns -h` for details), highest priority
 2. [JSON Configuration File](doc/config/json.en.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
+   ```bash
+   # Remote configuration file example
+   ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+   ```
 3. Environment Variables with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
 
 ### Configuration Priority and Field Override Relationship
