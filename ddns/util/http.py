@@ -13,6 +13,8 @@ import os
 import time
 import socket
 
+from .. import __version__
+
 try:  # python 3
     from urllib.request import (
         BaseHandler,
@@ -40,7 +42,9 @@ except ImportError:  # python 2
     from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
     from httplib import HTTPSConnection  # type: ignore[no-redef]
 
-__all__ = ["request", "HttpResponse", "quote", "urlencode"]
+__all__ = ["request", "HttpResponse", "quote", "urlencode", "USER_AGENT"]
+# Default user-agent for DDNS requests
+USER_AGENT = "DDNS/{} (ddns@newfuture.cc)".format(__version__ if __version__ != "${BUILD_VERSION}" else "dev")
 
 logger = getLogger().getChild("http")
 _AUTH_URL_RE = compile(r"^(https?://)([^:/?#]+):([^@]+)@(.+)$")
@@ -103,14 +107,19 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
     if isinstance(data, str):
         data = data.encode("utf-8")
 
+    if headers is None:
+        headers = {}
+    if not any(k.lower() == "user-agent" for k in headers.keys()):
+        headers["User-Agent"] = USER_AGENT  # 设置默认User-Agent
+
     handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
     handlers += [auth] if auth else []
 
     def run(proxy_handler):
-        req = Request(url, data=data, headers=headers or {})
+        req = Request(url, data=data, headers=headers)
         req.get_method = lambda: method.upper()  # python 2 兼容
         h = handlers + ([proxy_handler] if proxy_handler else [])
-        return build_opener(*h).open(req)  # 创建处理器链
+        return build_opener(*h).open(req, timeout=60 if method == "GET" else 120)  # 创建处理器链
 
     if not proxies:
         response = run(None)  # 默认

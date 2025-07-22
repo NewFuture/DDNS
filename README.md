@@ -173,6 +173,8 @@
 ddns -c path/to/config.json
 # 或者python运行
 python -m ddns -c /path/to/config.json
+# 远程配置文件
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 ```
 
 #### 配置参数表

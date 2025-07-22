@@ -88,15 +88,6 @@ class TestBaseProvider(BaseProviderTestCase):
         provider = _TestProvider("test_id", "test_token", endpoint=None)
         self.assertEqual(provider.endpoint, "https://api.example.com")  # 使用类级别的默认值
 
-    def test_user_agent_exists_and_format(self):
-        """测试user_agent存在且格式正确"""
-        provider = _TestProvider("test_id", "test_token")
-        self.assertTrue(hasattr(provider, "user_agent"))
-        self.assertIsInstance(provider.user_agent, str)
-        self.assertGreater(len(provider.user_agent), 0)
-        # 检查是否包含基本的用户代理信息
-        self.assertIn("DDNS", provider.user_agent)
-
     def test_remark_exists_and_format(self):
         """测试remark存在且格式正确"""
         provider = _TestProvider("test_id", "test_token")

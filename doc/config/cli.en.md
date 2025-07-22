@@ -63,7 +63,7 @@ ddns --ipv4=example.com,www.example.com
 | --------------- | :---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `-h, --help`    |     Flag    | Show help message and exit                                                                                                                                                | `--help`                                                 |
 | `-v, --version` |     Flag    | Show version information and exit                                                                                                                                         | `--version`                                              |
-| `-c, --config`  | String List | Specify configuration file path, supports multiple config files                                                                                              | `--config config.json` or `--config config1.json --config config2.json`                                   |
+| `-c, --config`  | String List | Specify configuration file path, supports multiple config files and remote HTTP(S) URLs                                                                                              | `--config config.json` or `--config config1.json --config config2.json` <br> `--config https://ddns.newfuture.cc/tests/config/debug.json`                                   |
 | `--new-config`  | Flag/String | Generate a new config file (optional file path)                                                                                                                           | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       |     Flag    | Enable debug mode                                                                                                                                                         | `--debug`                                                |
 | `--dns`         |    Choice   | [DNS Providers](../providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
@@ -149,6 +149,12 @@ ddns -c /path/to/config.json
 # Use multiple configuration files
 ddns -c cloudflare.json -c dnspod.json
 
+# Use remote configuration file
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+
+# Use remote configuration with proxy
+ddns -c https://config.example.com/ddns.json --proxy http://proxy:8080
+
 # Generate new configuration file
 ddns --new-config config.json
 ```
@@ -212,6 +218,13 @@ ddns --dns cloudflare --token API_TOKEN \
 # ISP line configuration (for Chinese providers)
 ddns --dns dnspod --id 12345 --token mytokenkey \
      --ipv4 telecom.example.com --line 电信
+
+# Use remote configuration file
+ddns -c https://ddns.newfuture.cc/tests/config/debug.json --debug
+
+# Remote configuration with proxy
+ddns -c https://config.example.com/ddns.json \
+     --proxy http://proxy.company.com:8080
 
 # Disable cache and SSL verification
 ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \

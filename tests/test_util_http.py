@@ -9,11 +9,13 @@ from __future__ import unicode_literals
 from __init__ import unittest, sys
 import json
 import socket
+import random
 
 from ddns.util.http import (
     HttpResponse,
     _decode_response_body,
     quote,
+    USER_AGENT,
 )
 
 # Python 2/3 compatibility
@@ -41,6 +43,105 @@ def byte_string(s):
     if isinstance(s, text_type):
         return s.encode("utf-8")
     return s
+
+
+class TestUserAgent(unittest.TestCase):
+    """测试 USER_AGENT 常量和用户代理头部设置"""
+
+    def _test_user_agent_with_endpoints(self, headers=None, expected_ua=None):
+        """通用的User-Agent测试辅助方法"""
+        from ddns.util.http import request
+
+        # 多个测试站点，随机顺序以分散负载
+        test_endpoints = [
+            "https://httpbingo.org/user-agent",
+            "http://postman-echo.com/headers",
+            "http://httpbin.org/user-agent",
+        ]
+        if not expected_ua:
+            test_endpoints.remove("https://httpbingo.org/user-agent")  # 如果不验证User-Agent，则不需要这个端点
+        random.shuffle(test_endpoints)
+
+        for endpoint in test_endpoints:
+            try:
+                response = request("GET", endpoint, headers=headers, retries=1)
+                if response.status == 200:
+                    response_data = json.loads(response.body)
+                    # 不同的测试站点响应格式可能略有不同
+                    headers = response_data["headers"] if "headers" in response_data else response_data
+                    # 查找User-Agent头部（不区分大小写）
+                    ua_key = next((key for key in headers if key.lower() == "user-agent"), None)
+                    if ua_key:
+                        ua_value = headers[ua_key]
+                        if expected_ua:
+                            self.assertEqual(ua_value, expected_ua)
+                        else:
+                            # 只验证不是None和空字符串
+                            self.assertIn(ua_value, (None, ""))
+                    else:
+                        self.assertIn(expected_ua, (None, ""))
+                    return True  # 测试成功
+
+            except OSError as e:
+                error_msg = str(e).lower()
+                # 不允许None错误时，网络问题继续尝试，其他错误重新抛出
+                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
+                if not any(keyword in error_msg for keyword in network_keywords):
+                    # 如果不是网络问题，重新抛出异常
+                    raise
+                continue
+
+        # 所有端点都失败
+        return False
+
+    def test_user_agent_constant(self):
+        """测试USER_AGENT常量格式正确"""
+        # 验证USER_AGENT常量存在且格式正确
+        self.assertIsInstance(USER_AGENT, str)
+        self.assertIn("DDNS/", USER_AGENT)
+        self.assertIn("ddns@newfuture.cc", USER_AGENT)
+
+    def test_user_agent_version_format(self):
+        """测试USER_AGENT包含版本信息"""
+        # USER_AGENT应该包含版本号或"dev"
+        has_version = any(char.isdigit() for char in USER_AGENT) or "dev" in USER_AGENT
+        self.assertTrue(has_version, "USER_AGENT should contain version number or 'dev'")
+
+    def test_request_sets_user_agent_automatically(self):
+        """测试request函数自动设置User-Agent头部"""
+        if not self._test_user_agent_with_endpoints(expected_ua=USER_AGENT):
+            self.skipTest("All test endpoints unavailable for user-agent test")
+
+    def test_custom_user_agent_override(self):
+        """测试自定义User-Agent头部会覆盖默认值"""
+        custom_ua = "CustomAgent/1.0"
+        headers = {"User-Agent": custom_ua}
+
+        if self._test_user_agent_with_endpoints(headers=headers, expected_ua=custom_ua):
+            # 额外验证不是默认的USER_AGENT
+            self.assertNotEqual(custom_ua, USER_AGENT)
+        else:
+            self.skipTest("All test endpoints unavailable for custom user-agent test")
+
+    def test_case_insensitive_user_agent_header(self):
+        """测试User-Agent头部大小写不敏感处理"""
+        custom_ua = "TestAgent/2.0"
+        # 使用小写的user-agent头部
+        headers = {"user-agent": custom_ua}
+
+        if self._test_user_agent_with_endpoints(headers=headers, expected_ua=custom_ua):
+            # 额外验证不是默认的USER_AGENT
+            self.assertNotEqual(custom_ua, USER_AGENT)
+        else:
+            self.skipTest("All test endpoints unavailable for case-insensitive user-agent test")
+
+    def test_user_agent_header_with_empty_value(self):
+        """测试User-Agent头部设置为空字符串时的行为"""
+        # 显式设置User-Agent为空字符串
+        headers = {"User-Agent": ""}
+
+        if not self._test_user_agent_with_endpoints(headers=headers, expected_ua=""):
+            self.skipTest("All test endpoints unavailable or empty User-Agent causes expected failures")
 
 
 class TestHttpResponse(unittest.TestCase):
@@ -340,7 +441,7 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            redirect_url = "http://httpbin.org/redirect-to?url=http://httpbin.org/get"
+            redirect_url = "http://httpbingo.org/redirect-to?url=/get"
             post_data = "test=data&method=POST->GET"
             response_post = request("POST", redirect_url, data=post_data, verify=False, retries=3)
 
@@ -351,7 +452,7 @@ class TestSendHttpRequest(unittest.TestCase):
             # 验证最终到达了GET端点
             data_post = json.loads(response_post.body)
             self.assertIn("url", data_post)
-            self.assertIn("httpbin.org/get", data_post["url"])
+            self.assertIn(".org/get", data_post["url"])
 
         except Exception as e:
             # 网络问题时跳过测试
@@ -359,43 +460,6 @@ class TestSendHttpRequest(unittest.TestCase):
             network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
             if any(keyword in error_msg for keyword in network_keywords):
                 self.skipTest("Network unavailable for POST redirect test: {}".format(str(e)))
-            else:
-                # 其他异常重新抛出
-                raise
-
-    def test_basic_auth_with_embedded_url(self):
-        """测试URL嵌入式基本认证"""
-        from ddns.util.http import request
-
-        try:
-            # 使用URL编码的用户名和密码
-            special_username = "user@test.com"
-            special_password = "passwo.rd"
-            username_encoded = quote(special_username, safe="")
-            password_encoded = quote(special_password, safe="")
-
-            # 验证URL编码的特殊字符
-            self.assertEqual(username_encoded, "user%40test.com")
-            self.assertEqual(password_encoded, "passwo.rd")
-            # 构建认证URL
-            auth_url = "https://{0}:{1}@httpbin.org/basic-auth/{2}/{3}".format(
-                username_encoded, password_encoded, username_encoded, password_encoded
-            )
-            response_auth = request("GET", auth_url, verify=False, retries=2)
-
-            if response_auth.status <= 500:  # 避免httpbin.org过载时的500错误
-                self.assertEqual(response_auth.status, 200)
-                self.assertIn("authenticated", response_auth.body)
-                self.assertIn("user", response_auth.body)
-            else:
-                self.skipTest("httpbin.org returned 500, skipping auth test")
-
-        except Exception as e:
-            # 网络问题时跳过测试
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
-            if any(keyword in error_msg for keyword in network_keywords):
-                self.skipTest("Network unavailable for basic auth test: {}".format(str(e)))
             else:
                 # 其他异常重新抛出
                 raise

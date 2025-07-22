@@ -11,13 +11,11 @@ import sys
 
 from .__init__ import __version__, __description__, build_date
 from .config import load_configs, Config  # noqa: F401
-from .provider import get_provider_class, SimpleProvider
+from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from . import ip
 from .cache import Cache
 
 logger = getLogger()
-# Set user agent for All Providers
-SimpleProvider.user_agent = SimpleProvider.user_agent.format(version=__version__)
 
 
 def get_ip(ip_type, rules):

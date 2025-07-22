@@ -8,6 +8,7 @@ from io import open
 from json import loads as json_decode, dumps as json_encode
 from sys import stderr, stdout
 from ..util.comment import remove_comment
+from ..util.http import request
 
 
 def _process_multi_providers(config):
@@ -55,15 +56,18 @@ def _flatten_single_config(config, exclude_keys=None):
     return flat_config
 
 
-def load_config(config_path):
-    # type: (str) -> dict|list[dict]
+def load_config(config_path, proxy=None, ssl="auto"):
+    # type: (str, list[str] | None, bool | str) -> dict|list[dict]
     """
     加载配置文件并返回配置字典或配置字典数组。
+    支持本地文件和远程HTTP(S) URL。
     对于单个对象返回dict，对于数组返回list[dict]。
     优先尝试JSON解析，失败后尝试AST解析。
 
     Args:
-        config_path (str): 配置文件路径
+        config_path (str): 配置文件路径或HTTP(S) URL
+        proxy (list[str] | None): 代理列表，仅用于HTTP或HTTPS请求
+        ssl (bool | str): SSL验证配置，仅用于HTTPS请求
 
     Returns:
         dict|list[dict]: 配置字典或配置字典数组
@@ -72,8 +76,19 @@ def load_config(config_path):
         Exception: 当配置文件加载失败时抛出异常
     """
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        # 检查是否为远程URL
+        if "://" in config_path:
+            # 使用HTTP请求获取远程配置
+            response = request("GET", config_path, proxies=proxy, verify=ssl, retries=3)
+            if (response.status not in (200, None)) or not response.body:
+                stderr.write("Failed to load {}: HTTP {} {}\n".format(config_path, response.status, response.reason))
+                stderr.write("Response body: %s\n" % response.body)
+                raise Exception("HTTP {}: {}".format(response.status, response.reason))
+            content = response.body
+        else:
+            # 本地文件加载
+            with open(config_path, "r", encoding="utf-8") as f:
+                content = f.read()
 
         # 移除注释后尝试JSON解析
         content_without_comments = remove_comment(content)
