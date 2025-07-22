@@ -129,7 +129,7 @@ class TestRequestProxyList(unittest.TestCase):
             proxy_list = ["http://invalid-proxy:9999", None]
 
             # 这应该在第一个代理失败后回退到直连
-            response = request("GET", "http://httpbin.org/get", proxies=proxy_list, retries=1)
+            response = request("GET", "http://httpbin.org/get", proxies=proxy_list, retries=3)
 
             # 如果成功，应该是通过直连完成的
             self.assertEqual(response.status, 200)

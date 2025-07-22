@@ -294,8 +294,6 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
                     self.skipTest("On non-macOS CI, only amd64/x86_64 is supported for integration tests.")
             if pyver[:2] in [(3, 10), (3, 13)] or platform.architecture()[0] == "32bit":
                 self.skipTest("Skip real HTTP integration on CI for Python 3.10/3.13 or 32bit platform")
-        # Use httpbin.org as a stable test server
-        self.real_callback_url = "http://httpbin.org/post"
 
     def _setup_provider_with_mock_logger(self, provider):
         """Helper method to setup provider with a mock logger."""
@@ -346,7 +344,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
     def test_real_callback_post_method_with_json(self):
         """Test real callback using POST method with JSON data and verify logger calls"""
-        id = "http://httpbin.org/post"
+        id = "http://httpbingo.org/post"
         token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
         provider = CallbackProvider(id, token)
 
