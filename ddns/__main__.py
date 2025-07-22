@@ -14,6 +14,7 @@ from .config import load_configs, Config  # noqa: F401
 from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from . import ip
 from .cache import Cache
+from .util.task import TaskManager
 
 logger = getLogger()
 
@@ -101,6 +102,73 @@ def run(config):
     )
 
 
+def handle_task_command(args):
+    # type: (dict) -> None
+    """
+    Handle task subcommand
+    
+    Args:
+        args (dict): Parsed command line arguments
+    """
+    config_path = args.get("config", "config.json")
+    log_file = args.get("log_file", "ddns.log")
+    
+    # Default interval is 5 minutes
+    interval = 5
+    if args.get("install") is not None:
+        interval = args["install"]
+    
+    task_manager = TaskManager(config_path=config_path, log_path=log_file, interval=interval)
+    
+    # Handle different task operations
+    if args.get("install") is not None:
+        # Install task
+        logger.info("Installing DDNS scheduled task...")
+        if task_manager.install(force=True):
+            logger.info("DDNS task installed successfully with %d minute interval", interval)
+        else:
+            logger.error("Failed to install DDNS task")
+            sys.exit(1)
+    elif args.get("delete"):
+        # Delete task
+        logger.info("Uninstalling DDNS scheduled task...")
+        if task_manager.uninstall():
+            logger.info("DDNS task uninstalled successfully")
+        else:
+            logger.error("Failed to uninstall DDNS task")
+            sys.exit(1)
+    elif args.get("status"):
+        # Show status only
+        status = task_manager.get_status()
+        print("DDNS Task Status:")
+        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
+        print("  Scheduler: {}".format(status["scheduler"]))
+        print("  System: {}".format(status["system"]))
+        if status["installed"]:
+            print("  Running Status: {}".format(status.get("running_status", "unknown")))
+            print("  Interval: {} minutes".format(status["interval"]))
+            print("  Config Path: {}".format(status["config_path"]))
+            print("  Log Path: {}".format(status["log_path"]))
+    else:
+        # Default behavior: show status and install if not installed
+        status = task_manager.get_status()
+        if status["installed"]:
+            print("DDNS Task Status:")
+            print("  Installed: Yes")
+            print("  Scheduler: {}".format(status["scheduler"]))
+            print("  Running Status: {}".format(status.get("running_status", "unknown")))
+            print("  Interval: {} minutes".format(status["interval"]))
+            print("  Config Path: {}".format(status["config_path"]))
+            print("  Log Path: {}".format(status["log_path"]))
+        else:
+            print("DDNS task is not installed. Installing with default settings...")
+            if task_manager.install():
+                print("DDNS task installed successfully with {} minute interval".format(interval))
+            else:
+                print("Failed to install DDNS task")
+                sys.exit(1)
+
+
 def main():
     encode = sys.stdout.encoding
     if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
@@ -111,6 +179,12 @@ def main():
 
     # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
+
+    # Check if this is a task command
+    if len(configs) == 1 and isinstance(configs[0], dict) and configs[0].get("command") == "task":
+        # Handle task command
+        handle_task_command(configs[0])
+        return
 
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）

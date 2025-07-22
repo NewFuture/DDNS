@@ -95,7 +95,7 @@ def _validate_configs(configs, logger):
 
 
 def load_configs(description, version, date):
-    # type: (str, str, str) -> list[Config]
+    # type: (str, str, str) -> list[Config] | list[dict]
     """
     Load and merge configuration from CLI, JSON, and environment variables.
     Supports multiple config files and array config formats.
@@ -109,7 +109,8 @@ def load_configs(description, version, date):
         date (str): The program release date for the CLI parser.
 
     Returns:
-        list[Config]: A list of Config objects with merged configuration from all sources.
+        list[Config] | list[dict]: A list of Config objects with merged configuration from all sources,
+                                   or a list containing a single dict for task subcommand.
     """
     doc = """
 ddns [v{version}@{date}]
@@ -121,6 +122,11 @@ Copyright (c) NewFuture (MIT License)
     )
     # Load CLI configuration first
     cli_config = load_cli_config(description, doc, version, date)
+    
+    # Check if this is a task command
+    if cli_config.get("command") == "task":
+        return [cli_config]  # Return raw dict for task handling
+    
     env_config = load_env_config()
 
     # 获取配置文件路径列表

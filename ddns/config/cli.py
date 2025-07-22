@@ -121,6 +121,11 @@ def load_config(description, doc, version, date):
         "DEBUG",  # 10
         "NOTSET",  # 0
     ]
+    
+    # Add subparsers for subcommands
+    subparsers = parser.add_subparsers(dest="command", help="Available commands [可用的子命令]")
+    
+    # Default behavior (no subcommand) - add all the regular DDNS options
     parser.add_argument("-v", "--version", action="version", version=version_str)
     parser.add_argument(
         "-c",
@@ -134,8 +139,31 @@ def load_config(description, doc, version, date):
     parser.add_argument(
         "--new-config", metavar="FILE", action=NewConfigAction, nargs="?", help="generate new config [生成配置文件]"
     )
+    
+    # Task subcommand
+    task_parser = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
+    task_parser.add_argument(
+        "--status", action="store_true",
+        help="Show task installation status [显示定时任务安装状态]"
+    )
+    task_parser.add_argument(
+        "--install", "-i", nargs="?", type=int, const=5, metavar="MINUTES",
+        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]"
+    )
+    task_parser.add_argument(
+        "--delete", action="store_true",
+        help="Delete installed scheduled task [删除已安装的定时任务]"
+    )
+    task_parser.add_argument(
+        "-c", "--config", default="config.json",
+        help="Config file path for scheduled task [定时任务使用的配置文件路径]"
+    )
+    task_parser.add_argument(
+        "--log-file", default="ddns.log",
+        help="Log file path for scheduled task [定时任务使用的日志文件路径]"
+    )
 
-    # 参数定义
+    # Regular DDNS parameters (only when no subcommand is used)
     parser.add_argument(
         "--dns",
         help="DNS provider [DNS服务提供商]",
