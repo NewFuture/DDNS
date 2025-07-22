@@ -11,11 +11,9 @@ import sys
 
 from .__init__ import __version__, __description__, build_date
 from .config import load_configs, Config  # noqa: F401
-from .config.cli import handle_task_command
 from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from . import ip
 from .cache import Cache
-from .util.task import TaskManager
 
 logger = getLogger()
 
@@ -113,12 +111,6 @@ def main():
 
     # 使用多配置加载器，它会自动处理单个和多个配置
     configs = load_configs(__description__, __version__, build_date)
-
-    # Check if this is a task command
-    if len(configs) == 1 and isinstance(configs[0], dict) and configs[0].get("command") == "task":
-        # Handle task command
-        handle_task_command(configs[0])
-        return
 
     if len(configs) == 1:
         # 单个配置，使用原有逻辑（向后兼容）

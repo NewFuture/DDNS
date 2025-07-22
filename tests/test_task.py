@@ -8,26 +8,11 @@ import os
 import sys
 import subprocess
 
-from ddns.util.task import TaskManager
+import ddns.util.task as task
 
 
-class TestTaskManager(unittest.TestCase):
-    """Test TaskManager functionality"""
-
-    def setUp(self):
-        """Set up test cases"""
-        self.task_manager = TaskManager(
-            config_path="test_config.json",
-            log_path="test_ddns.log",
-            interval=10
-        )
-
-    def test_init(self):
-        """Test TaskManager initialization"""
-        self.assertEqual(self.task_manager.config_path, "test_config.json")
-        self.assertEqual(self.task_manager.log_path, "test_ddns.log")
-        self.assertEqual(self.task_manager.interval, 10)
-        self.assertEqual(self.task_manager.task_name, "DDNS")
+class TestTaskFunctions(unittest.TestCase):
+    """Test task module functions"""
 
     @patch('ddns.util.task.platform.system')
     def test_get_scheduler_type_linux_with_systemd(self, mock_system):
@@ -35,7 +20,7 @@ class TestTaskManager(unittest.TestCase):
         mock_system.return_value = "Linux"
         with patch('ddns.util.task.subprocess.check_call') as mock_check_call:
             mock_check_call.return_value = None
-            result = self.task_manager.get_scheduler_type()
+            result = task.get_scheduler_type()
             self.assertEqual(result, "systemd")
             mock_check_call.assert_called_once_with(
                 ["systemctl", "--version"],
@@ -49,7 +34,7 @@ class TestTaskManager(unittest.TestCase):
         mock_system.return_value = "Linux"
         with patch('ddns.util.task.subprocess.check_call') as mock_check_call:
             mock_check_call.side_effect = OSError("systemctl not found")
-            result = self.task_manager.get_scheduler_type()
+            result = task.get_scheduler_type()
             self.assertEqual(result, "cron")
 
     @patch('ddns.util.task.platform.system')
@@ -58,7 +43,7 @@ class TestTaskManager(unittest.TestCase):
         mock_system.return_value = "Darwin"
         with patch('ddns.util.task.subprocess.check_call') as mock_check_call:
             mock_check_call.return_value = None
-            result = self.task_manager.get_scheduler_type()
+            result = task.get_scheduler_type()
             self.assertEqual(result, "launchd")
 
     @patch('ddns.util.task.platform.system')
@@ -67,97 +52,97 @@ class TestTaskManager(unittest.TestCase):
         mock_system.return_value = "Darwin"
         with patch('ddns.util.task.subprocess.check_call') as mock_check_call:
             mock_check_call.side_effect = OSError("launchctl not found")
-            result = self.task_manager.get_scheduler_type()
+            result = task.get_scheduler_type()
             self.assertEqual(result, "cron")
 
     @patch('ddns.util.task.platform.system')
     def test_get_scheduler_type_windows(self, mock_system):
         """Test scheduler type detection on Windows"""
         mock_system.return_value = "Windows"
-        result = self.task_manager.get_scheduler_type()
+        result = task.get_scheduler_type()
         self.assertEqual(result, "schtasks")
 
     @patch('ddns.util.task.platform.system')
     def test_get_scheduler_type_unknown(self, mock_system):
         """Test scheduler type detection on unknown system"""
         mock_system.return_value = "Unknown"
-        result = self.task_manager.get_scheduler_type()
+        result = task.get_scheduler_type()
         self.assertEqual(result, "cron")
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_systemd_enabled(self, mock_get_scheduler):
         """Test is_installed for systemd when timer is enabled"""
         mock_get_scheduler.return_value = "systemd"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"enabled\n"
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertTrue(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_systemd_disabled(self, mock_get_scheduler):
         """Test is_installed for systemd when timer is disabled"""
         mock_get_scheduler.return_value = "systemd"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"disabled\n"
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertFalse(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_cron_with_ddns_job(self, mock_get_scheduler):
         """Test is_installed for cron when DDNS job exists"""
         mock_get_scheduler.return_value = "cron"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"*/5 * * * * /usr/bin/ddns\n"
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertTrue(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_cron_without_ddns_job(self, mock_get_scheduler):
         """Test is_installed for cron when no DDNS job exists"""
         mock_get_scheduler.return_value = "cron"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"*/5 * * * * /usr/bin/other\n"
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertFalse(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_launchd_with_plist(self, mock_get_scheduler):
         """Test is_installed for launchd when plist exists"""
         mock_get_scheduler.return_value = "launchd"
         with patch('os.path.exists') as mock_exists:
             mock_exists.return_value = True
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertTrue(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_launchd_without_plist(self, mock_get_scheduler):
         """Test is_installed for launchd when plist doesn't exist"""
         mock_get_scheduler.return_value = "launchd"
         with patch('os.path.exists') as mock_exists:
             mock_exists.return_value = False
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertFalse(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_schtasks_with_task(self, mock_get_scheduler):
         """Test is_installed for schtasks when task exists"""
         mock_get_scheduler.return_value = "schtasks"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"DDNS task found\n"
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertTrue(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
+    @patch('ddns.util.task.get_scheduler_type')
     def test_is_installed_schtasks_without_task(self, mock_get_scheduler):
         """Test is_installed for schtasks when task doesn't exist"""
         mock_get_scheduler.return_value = "schtasks"
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.side_effect = subprocess.CalledProcessError(1, "schtasks")
-            result = self.task_manager.is_installed()
+            result = task.is_installed()
             self.assertFalse(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
     @patch('ddns.util.task.platform.system')
     def test_get_status_not_installed(self, mock_system, mock_is_installed, mock_get_scheduler):
         """Test get_status when task is not installed"""
@@ -165,7 +150,7 @@ class TestTaskManager(unittest.TestCase):
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
         
-        status = self.task_manager.get_status()
+        status = task.get_status(config_path="test_config.json", log_path="test_ddns.log", interval=10)
         
         expected_status = {
             "installed": False,
@@ -177,9 +162,9 @@ class TestTaskManager(unittest.TestCase):
         }
         self.assertEqual(status, expected_status)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
-    @patch.object(TaskManager, '_get_running_status')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
+    @patch('ddns.util.task._get_running_status')
     @patch('ddns.util.task.platform.system')
     def test_get_status_installed(self, mock_system, mock_get_running_status, mock_is_installed, mock_get_scheduler):
         """Test get_status when task is installed"""
@@ -188,7 +173,7 @@ class TestTaskManager(unittest.TestCase):
         mock_is_installed.return_value = True
         mock_get_running_status.return_value = "active"
         
-        status = self.task_manager.get_status()
+        status = task.get_status(config_path="test_config.json", log_path="test_ddns.log", interval=10)
         
         expected_status = {
             "installed": True,
@@ -205,91 +190,91 @@ class TestTaskManager(unittest.TestCase):
         """Test _get_running_status for systemd when active"""
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"active\n"
-            result = self.task_manager._get_running_status("systemd")
+            result = task._get_running_status("systemd")
             self.assertEqual(result, "active")
 
     def test_get_running_status_systemd_inactive(self):
         """Test _get_running_status for systemd when inactive"""
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.side_effect = subprocess.CalledProcessError(1, "systemctl")
-            result = self.task_manager._get_running_status("systemd")
+            result = task._get_running_status("systemd")
             self.assertEqual(result, "inactive")
 
     def test_get_running_status_cron_active(self):
         """Test _get_running_status for cron when active"""
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.return_value = b"12345\n"
-            result = self.task_manager._get_running_status("cron")
+            result = task._get_running_status("cron")
             self.assertEqual(result, "active")
 
     def test_get_running_status_cron_inactive(self):
         """Test _get_running_status for cron when inactive"""
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.side_effect = subprocess.CalledProcessError(1, "pgrep")
-            result = self.task_manager._get_running_status("cron")
+            result = task._get_running_status("cron")
             self.assertEqual(result, "inactive")
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
-    @patch.object(TaskManager, '_install_cron')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
+    @patch('ddns.util.task._install_cron')
     def test_install_success(self, mock_install_cron, mock_is_installed, mock_get_scheduler):
         """Test successful installation"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
         mock_install_cron.return_value = True
         
-        result = self.task_manager.install()
+        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10)
         
         self.assertTrue(result)
         mock_install_cron.assert_called_once()
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
     def test_install_already_installed_without_force(self, mock_is_installed, mock_get_scheduler):
         """Test installation when already installed without force"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
         
-        result = self.task_manager.install(force=False)
+        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10, force=False)
         
         self.assertTrue(result)
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
-    @patch.object(TaskManager, '_install_cron')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
+    @patch('ddns.util.task._install_cron')
     def test_install_already_installed_with_force(self, mock_install_cron, mock_is_installed, mock_get_scheduler):
         """Test installation when already installed with force"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
         mock_install_cron.return_value = True
         
-        result = self.task_manager.install(force=True)
+        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10, force=True)
         
         self.assertTrue(result)
         mock_install_cron.assert_called_once()
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
-    @patch.object(TaskManager, '_uninstall_cron')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
+    @patch('ddns.util.task._uninstall_cron')
     def test_uninstall_success(self, mock_uninstall_cron, mock_is_installed, mock_get_scheduler):
         """Test successful uninstallation"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
         mock_uninstall_cron.return_value = True
         
-        result = self.task_manager.uninstall()
+        result = task.uninstall()
         
         self.assertTrue(result)
         mock_uninstall_cron.assert_called_once()
 
-    @patch.object(TaskManager, 'get_scheduler_type')
-    @patch.object(TaskManager, 'is_installed')
+    @patch('ddns.util.task.get_scheduler_type')
+    @patch('ddns.util.task.is_installed')
     def test_uninstall_not_installed(self, mock_is_installed, mock_get_scheduler):
         """Test uninstallation when not installed"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
         
-        result = self.task_manager.uninstall()
+        result = task.uninstall()
         
         self.assertTrue(result)
 
@@ -303,7 +288,7 @@ class TestTaskManager(unittest.TestCase):
                     mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
                     with patch('os.unlink'):
                         
-                        result = self.task_manager._install_cron()
+                        result = task._install_cron("test_config.json", "test_ddns.log", 10)
                         
                         self.assertTrue(result)
                         mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
@@ -320,7 +305,7 @@ class TestTaskManager(unittest.TestCase):
                     mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
                     with patch('os.unlink'):
                         
-                        result = self.task_manager._install_cron()
+                        result = task._install_cron("test_config.json", "test_ddns.log", 10)
                         
                         self.assertTrue(result)
                         mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
@@ -337,7 +322,7 @@ class TestTaskManager(unittest.TestCase):
                     mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
                     with patch('os.unlink'):
                         
-                        result = self.task_manager._uninstall_cron()
+                        result = task._uninstall_cron()
                         
                         self.assertTrue(result)
                         mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
@@ -347,7 +332,7 @@ class TestTaskManager(unittest.TestCase):
         with patch('subprocess.check_output') as mock_check_output:
             mock_check_output.side_effect = subprocess.CalledProcessError(1, "crontab")
             
-            result = self.task_manager._uninstall_cron()
+            result = task._uninstall_cron()
             
             self.assertTrue(result)
 
