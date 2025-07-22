@@ -11,6 +11,7 @@ import sys
 
 from .__init__ import __version__, __description__, build_date
 from .config import load_configs, Config  # noqa: F401
+from .config.cli import handle_task_command
 from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from . import ip
 from .cache import Cache
@@ -100,73 +101,6 @@ def run(config):
         update_ip(dns, cache, config.index4, config.ipv4, "A", config) is not False
         and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config) is not False
     )
-
-
-def handle_task_command(args):
-    # type: (dict) -> None
-    """
-    Handle task subcommand
-    
-    Args:
-        args (dict): Parsed command line arguments
-    """
-    config_path = args.get("config", "config.json")
-    log_file = args.get("log_file", "ddns.log")
-    
-    # Default interval is 5 minutes
-    interval = 5
-    if args.get("install") is not None:
-        interval = args["install"]
-    
-    task_manager = TaskManager(config_path=config_path, log_path=log_file, interval=interval)
-    
-    # Handle different task operations
-    if args.get("install") is not None:
-        # Install task
-        logger.info("Installing DDNS scheduled task...")
-        if task_manager.install(force=True):
-            logger.info("DDNS task installed successfully with %d minute interval", interval)
-        else:
-            logger.error("Failed to install DDNS task")
-            sys.exit(1)
-    elif args.get("delete"):
-        # Delete task
-        logger.info("Uninstalling DDNS scheduled task...")
-        if task_manager.uninstall():
-            logger.info("DDNS task uninstalled successfully")
-        else:
-            logger.error("Failed to uninstall DDNS task")
-            sys.exit(1)
-    elif args.get("status"):
-        # Show status only
-        status = task_manager.get_status()
-        print("DDNS Task Status:")
-        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
-        print("  Scheduler: {}".format(status["scheduler"]))
-        print("  System: {}".format(status["system"]))
-        if status["installed"]:
-            print("  Running Status: {}".format(status.get("running_status", "unknown")))
-            print("  Interval: {} minutes".format(status["interval"]))
-            print("  Config Path: {}".format(status["config_path"]))
-            print("  Log Path: {}".format(status["log_path"]))
-    else:
-        # Default behavior: show status and install if not installed
-        status = task_manager.get_status()
-        if status["installed"]:
-            print("DDNS Task Status:")
-            print("  Installed: Yes")
-            print("  Scheduler: {}".format(status["scheduler"]))
-            print("  Running Status: {}".format(status.get("running_status", "unknown")))
-            print("  Interval: {} minutes".format(status["interval"]))
-            print("  Config Path: {}".format(status["config_path"]))
-            print("  Log Path: {}".format(status["log_path"]))
-        else:
-            print("DDNS task is not installed. Installing with default settings...")
-            if task_manager.install():
-                print("DDNS task installed successfully with {} minute interval".format(interval))
-            else:
-                print("Failed to install DDNS task")
-                sys.exit(1)
 
 
 def main():

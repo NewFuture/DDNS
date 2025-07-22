@@ -31,8 +31,8 @@ class TaskManager(object):
             log_path (str): Path to log file  
             interval (int): Update interval in minutes (default: 5)
         """
-        self.config_path = config_path or "config.json"
-        self.log_path = log_path or "ddns.log"
+        self.config_path = config_path
+        self.log_path = log_path
         self.interval = interval
         self.task_name = "DDNS"
         
@@ -140,8 +140,71 @@ class TaskManager(object):
             except Exception as e:
                 logger.debug("Failed to get running status: %s", e)
                 status["running_status"] = "unknown"
+        else:
+            # Check fallback scheduler status when not installed with primary
+            fallback_scheduler = self._get_fallback_scheduler()
+            if fallback_scheduler and fallback_scheduler != scheduler:
+                try:
+                    fallback_installed = self._check_fallback_installation(fallback_scheduler)
+                    if fallback_installed:
+                        status["fallback_scheduler"] = fallback_scheduler
+                        status["fallback_installed"] = True
+                        status["fallback_running_status"] = self._get_running_status(fallback_scheduler)
+                except Exception as e:
+                    logger.debug("Failed to check fallback scheduler status: %s", e)
         
         return status
+    
+    def _get_fallback_scheduler(self):
+        # type: () -> str | None
+        """
+        Get fallback scheduler type for current system
+        
+        Returns:
+            str|None: Fallback scheduler type or None if no fallback
+        """
+        system = platform.system().lower()
+        
+        if system == "linux":
+            # Fallback from systemd to cron
+            try:
+                subprocess.check_call(["systemctl", "--version"], 
+                                    stdout=subprocess.DEVNULL, 
+                                    stderr=subprocess.DEVNULL)
+                return "cron"  # If systemd exists, cron is fallback
+            except (subprocess.CalledProcessError, OSError):
+                return None  # Already using cron, no fallback
+        elif system == "darwin":  # macOS
+            # Fallback from launchd to cron
+            try:
+                subprocess.check_call(["launchctl", "help"],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL)
+                return "cron"  # If launchd exists, cron is fallback
+            except (subprocess.CalledProcessError, OSError):
+                return None  # Already using cron, no fallback
+        
+        return None  # Windows has no fallback
+        
+    def _check_fallback_installation(self, fallback_scheduler):
+        # type: (str) -> bool
+        """
+        Check if task is installed using fallback scheduler
+        
+        Args:
+            fallback_scheduler (str): Fallback scheduler type
+            
+        Returns:
+            bool: True if installed using fallback scheduler
+        """
+        if fallback_scheduler == "cron":
+            try:
+                result = subprocess.check_output(["crontab", "-l"], stderr=subprocess.DEVNULL)
+                return "ddns" in result.decode().lower()
+            except (subprocess.CalledProcessError, OSError):
+                return False
+        
+        return False
 
     def _get_running_status(self, scheduler):
         # type: (str) -> str
@@ -284,7 +347,7 @@ WantedBy=multi-user.target
         # Check permissions
         if os.geteuid() != 0:
             logger.error("Root permission required for systemd installation.")
-            logger.info("Please run with sudo: sudo python3 -m ddns task --install")
+            logger.info("Please run with sudo: sudo %s -m ddns task --install", sys.executable)
             return False
         
         # Write service and timer files
@@ -309,7 +372,7 @@ WantedBy=multi-user.target
         """Uninstall systemd timer and service"""
         if os.geteuid() != 0:
             logger.error("Root permission required for systemd uninstallation.")
-            logger.info("Please run with sudo: sudo python3 -m ddns task --delete")
+            logger.info("Please run with sudo: sudo %s -m ddns task --delete", sys.executable)
             return False
         
         # Stop and disable timer
