@@ -1,7 +1,7 @@
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "dns": "callback",
-  "id": "https://httpbin.org/post?test=ddns&domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__&timestamp=__TIMESTAMP__",
+  "id": "https://postman-echo.com/post?test=ddns&domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__&timestamp=__TIMESTAMP__",
   "token": "{\"api_key\": \"test_e2e\", \"domain\": \"__DOMAIN__\", \"ip_address\": \"__IP__\", \"record_type\": \"__RECORDTYPE__\", \"ttl\": \"__TTL__\", \"line\": \"__LINE__\", \"timestamp\": \"__TIMESTAMP__\", \"event\": \"ddns_update\", \"version\": \"v4.0\", \"source\": \"ddns_client_e2e_test\"}",
   "ipv4": [
     "ddns.newfuture.cc"

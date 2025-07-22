@@ -73,14 +73,11 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
-      - name: test callback config  
-        run: ${{env.PY}} run.py -c tests/config/callback.json
-      - name: test multi config
-        run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
-      - name: test debug + noip config
-        run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
-      - name: test remote config
-        run: ${{env.PY}} -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - run: ${{env.PY}} run.py -c tests/config/callback.json
+      - run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
+      - run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
+      - run: ${{env.PY}} -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - run: ${{env.PY}} -m ddns -c tests/config/he-proxies.json --debug
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
@@ -115,14 +112,11 @@ jobs:
       - name: run unit tests
         run: python3 -m unittest -v
 
-      - name: test callback config
-        run: python3 -m ddns -c tests/config/callback.json
-      - name: test multi-provider config
-        run: python3 -m ddns -c tests/config/multi-provider.json
-      - name: test debug and noip config
-        run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
-      - name: test remote config
-        run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - run: python3 -m ddns -c tests/config/callback.json
+      - run: python3 -m ddns -c tests/config/multi-provider.json
+      - run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
+      - run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - run: python3 -m ddns -c tests/config/he-proxies.json --debug
 
       - uses: actions/upload-artifact@v4
         with:
@@ -197,12 +191,10 @@ jobs:
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
 
-      - name: test multi-provider config with executable
-        run: ./dist/ddns -c tests/config/multi-provider.json
-      - name: test debug + noip config with executable
-        run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
-      - name: test remote config with executable
-        run: ./dist/ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - run: ./dist/ddns -c tests/config/multi-provider.json
+      - run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
+      - run: ./dist/ddns -c tests/config/he-proxies.json --debug
+      - run: ./dist/ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
       # Upload build result
       - name: Upload Artifacts
@@ -360,6 +352,7 @@ jobs:
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c https://ddns.newfuture.cc/tests/config/debug.json
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/he-proxies.json
           done
       
       # 上传测试结果和镜像

@@ -1,0 +1,19 @@
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "dns": "he",
+    "token": "test-token",
+    "ipv4": [
+        "ddns.newfuture.cc"
+    ],
+    "index4": "default",
+    "ttl": 300,
+    "cache": false,
+    "proxy": [ //代理列表，轮换测试
+        "http://invalid-proxy-1.example.com:8080",
+        "http://invalid-proxy-2.example.com:8080",
+        "SYSTEM",
+        "DIRECT"
+    ],
+    "ssl": false,
+    "endpoint": "http://httpbingo.org/base64/bm9jaGc=?"
+}
