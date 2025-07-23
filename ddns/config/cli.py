@@ -12,7 +12,7 @@ import sys
 
 from .file import save_config
 
-__all__ = ["load_config", "str_bool", "handle_task_command"]
+__all__ = ["load_config", "str_bool"]
 
 
 def str_bool(v):
