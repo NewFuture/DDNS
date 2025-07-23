@@ -121,10 +121,10 @@ def load_config(description, doc, version, date):
         "DEBUG",  # 10
         "NOTSET",  # 0
     ]
-    
+
     # Add subparsers for subcommands
     subparsers = parser.add_subparsers(dest="command", help="Available commands [可用的子命令]")
-    
+
     # Default behavior (no subcommand) - add all the regular DDNS options
     parser.add_argument("-v", "--version", action="version", version=version_str)
     parser.add_argument(
@@ -139,28 +139,34 @@ def load_config(description, doc, version, date):
     parser.add_argument(
         "--new-config", metavar="FILE", action=NewConfigAction, nargs="?", help="generate new config [生成配置文件]"
     )
-    
+
     # Task subcommand
     task_parser = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
     task_parser.add_argument(
-        "--status", action="store_true",
-        help="Show task installation status [显示定时任务安装状态]"
+        "--status", action="store_true", help="Show task installation status [显示定时任务安装状态]"
     )
     task_parser.add_argument(
-        "--install", "-i", nargs="?", type=int, const=5, metavar="MINUTES",
-        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]"
+        "--install",
+        "-i",
+        nargs="?",
+        type=int,
+        const=5,
+        metavar="MINUTES",
+        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]",
     )
     task_parser.add_argument(
-        "--delete", action="store_true",
-        help="Delete installed scheduled task [删除已安装的定时任务]"
+        "--delete", action="store_true", help="Delete installed scheduled task [删除已安装的定时任务]"
+    )
+    task_parser.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
+    task_parser.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
+    task_parser.add_argument(
+        "-c",
+        "--config",
+        default="config.json",
+        help="Config file path for scheduled task [定时任务使用的配置文件路径]",
     )
     task_parser.add_argument(
-        "-c", "--config", default="config.json",
-        help="Config file path for scheduled task [定时任务使用的配置文件路径]"
-    )
-    task_parser.add_argument(
-        "--log-file", default="ddns.log",
-        help="Log file path for scheduled task [定时任务使用的日志文件路径]"
+        "--log-file", default="ddns.log", help="Log file path for scheduled task [定时任务使用的日志文件路径]"
     )
 
     # Regular DDNS parameters (only when no subcommand is used)
@@ -263,12 +269,12 @@ def load_config(description, doc, version, date):
     parser.add_argument("--log.datefmt", "--log-datefmt", dest="log_datefmt", help=SUPPRESS)  # 隐藏参数
 
     args = parser.parse_args()
-    
+
     # Handle task subcommand directly here and exit
     if args.command == "task":
         handle_task_command(vars(args))
         sys.exit(0)
-    
+
     is_debug = getattr(args, "debug", False)
     if is_debug:
         # 如果启用调试模式，则强制设置日志级别为 DEBUG
@@ -285,7 +291,7 @@ def handle_task_command(args):
     # type: (dict) -> None
     """
     Handle task subcommand
-    
+
     Args:
         args (dict): Parsed command line arguments
     """
@@ -293,17 +299,17 @@ def handle_task_command(args):
     import sys
     from logging import getLogger
     from ..util import task
-    
+
     logger = getLogger()
-    
+
     config_path = args.get("config")
     log_file = args.get("log_file")
-    
+
     # Default interval is 5 minutes
     interval = 5
     if args.get("install") is not None:
         interval = args["install"]
-    
+
     # Handle different task operations
     if args.get("install") is not None:
         # Install task
@@ -320,6 +326,22 @@ def handle_task_command(args):
             logger.info("DDNS task uninstalled successfully")
         else:
             logger.error("Failed to uninstall DDNS task")
+            sys.exit(1)
+    elif args.get("enable"):
+        # Enable task
+        logger.info("Enabling DDNS scheduled task...")
+        if task.enable():
+            logger.info("DDNS task enabled successfully")
+        else:
+            logger.error("Failed to enable DDNS task")
+            sys.exit(1)
+    elif args.get("disable"):
+        # Disable task
+        logger.info("Disabling DDNS scheduled task...")
+        if task.disable():
+            logger.info("DDNS task disabled successfully")
+        else:
+            logger.error("Failed to disable DDNS task")
             sys.exit(1)
     elif args.get("status"):
         # Show status only
