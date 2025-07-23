@@ -1,3 +1,11 @@
+---
+title: DDNS JSON Configuration
+post_tile: JSON File Configuration
+header_pages:
+  - /README.en.md
+  - /doc/config/
+  - /docs/proivders/README.en.md
+---
 # DDNS JSON Configuration File Reference
 
 This document provides detailed information about the JSON configuration file format and parameters for the DDNS tool. JSON configuration files have priority between command line arguments and environment variables.
