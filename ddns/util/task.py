@@ -109,14 +109,13 @@ def is_installed():
     return False
 
 
-def get_status(config_path=None, log_path=None, interval=5):
-    # type: (str | None, str | None, int) -> dict
+def get_status(config_path=None, interval=5):
+    # type: (str | None, int) -> dict
     """
     Get task status information
 
     Args:
         config_path (str): Path to DDNS config file
-        log_path (str): Path to log file
         interval (int): Update interval in minutes (default: 5)
 
     Returns:
@@ -130,7 +129,6 @@ def get_status(config_path=None, log_path=None, interval=5):
         "system": platform.system().lower(),
         "interval": interval,
         "config_path": config_path,
-        "log_path": log_path,
     }
 
     if installed:
@@ -143,14 +141,13 @@ def get_status(config_path=None, log_path=None, interval=5):
     return status
 
 
-def install(config_path=None, log_path=None, interval=5, force=False):
-    # type: (str | None, str | None, int, bool) -> bool
+def install(config_path=None, interval=5, force=False):
+    # type: (str | None, int, bool) -> bool
     """
     Install DDNS scheduled task
 
     Args:
         config_path (str): Path to DDNS config file
-        log_path (str): Path to log file
         interval (int): Update interval in minutes (default: 5)
         force (bool): Force reinstall if already exists
 
@@ -163,7 +160,7 @@ def install(config_path=None, log_path=None, interval=5, force=False):
 
     scheduler = get_scheduler_type()
     logger.info("Installing DDNS task using %s scheduler...", scheduler)
-    return _dispatch_scheduler_operation("install", config_path, log_path, interval)
+    return _dispatch_scheduler_operation("install", config_path, interval)
 
 
 def uninstall():
@@ -295,8 +292,8 @@ def _check_root_permission():
         return True
 
 
-def _install_systemd(config_path, log_path, interval):
-    # type: (str | None, str | None, int) -> bool
+def _install_systemd(config_path, interval):
+    # type: (str | None, int) -> bool
     """Install systemd timer and service"""
     if not _check_root_permission():
         logger.error("Root permission required for systemd installation.")
@@ -372,8 +369,8 @@ def _uninstall_systemd():
     return True
 
 
-def _install_cron(config_path, log_path, interval):
-    # type: (str | None, str | None, int) -> bool
+def _install_cron(config_path, interval):
+    # type: (str | None, int) -> bool
     """Install cron job"""
     ddns_cmd = _get_ddns_cmd()
     work_dir = os.getcwd()
@@ -381,12 +378,11 @@ def _install_cron(config_path, log_path, interval):
     # Use a more compatible approach that works across different Unix systems
     # Instead of relying on specific shell paths, use the system's default shell behavior
     # This approach works on Linux, macOS, BSD, Alpine, BusyBox, and other Unix variants
-    cron_entry = '*/{} * * * * cd "{}" ; {} -c "{}" >> "{}" 2>&1'.format(
+    cron_entry = '*/{} * * * * cd "{}" ; {} -c "{}" >> ddns.log 2>&1'.format(
         interval,
         work_dir,
         ddns_cmd,
         os.path.abspath(config_path) if config_path else "config.json",
-        os.path.abspath(log_path) if log_path else "ddns.log",
     )
 
     # Get existing crontab
@@ -444,8 +440,8 @@ def _uninstall_cron():
         os.unlink(temp_path)
 
 
-def _install_launchd(config_path, log_path, interval):
-    # type: (str | None, str | None, int) -> bool
+def _install_launchd(config_path, interval):
+    # type: (str | None, int) -> bool
     """Install macOS launchd plist"""
     plist_dir = os.path.expanduser("~/Library/LaunchAgents")
     plist_path = os.path.join(plist_dir, "{}.plist".format(LAUNCHD_LABEL))
@@ -472,9 +468,9 @@ def _install_launchd(config_path, log_path, interval):
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>{log_path}</string>
+    <string>ddns.log</string>
     <key>StandardErrorPath</key>
-    <string>{log_path}</string>
+    <string>ddns.log</string>
     <key>WorkingDirectory</key>
     <string>{work_dir}</string>
 </dict>
@@ -484,7 +480,6 @@ def _install_launchd(config_path, log_path, interval):
         python=sys.executable,
         config_path=os.path.abspath(config_path) if config_path else "config.json",
         interval_seconds=interval * 60,
-        log_path=os.path.abspath(log_path) if log_path else "ddns.log",
         work_dir=os.getcwd(),
     )
 
@@ -556,8 +551,8 @@ objShell.Run "{ddns_cmd} -c ""{config_path}""", 0, False
         return vbs_path
 
 
-def _install_schtasks(config_path, log_path, interval):
-    # type: (str | None, str | None, int) -> bool
+def _install_schtasks(config_path, interval):
+    # type: (str | None, int) -> bool
     """Install Windows scheduled task"""
     vbs_path = _create_vbs_script(config_path)
     cmd = 'wscript.exe "{}"'.format(vbs_path)

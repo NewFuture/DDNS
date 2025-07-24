@@ -366,8 +366,7 @@ jobs:
             sudo rm -f config.json
             echo "Testing task functionality..."
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag ddns task -h
-            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag ddns task --status
-            # Note: Full task lifecycle testing is not performed in Docker due to system limitations
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag /ddns/tests/scripts/test-task-cron.sh ddns
             echo "Testing with config files..."
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json

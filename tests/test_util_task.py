@@ -2,10 +2,7 @@
 """
 Tests for ddns.util.task module
 """
-from __init__ import unittest, patch, MagicMock
-import tempfile
-import os
-import sys
+from __init__ import unittest, patch, mock
 import subprocess
 
 import ddns.util.task as task
@@ -22,9 +19,7 @@ class TestTaskFunctions(unittest.TestCase):
             mock_check_call.return_value = None
             result = task.get_scheduler_type()
             self.assertEqual(result, "systemd")
-            mock_check_call.assert_called_once_with(
-                ["systemctl", "--version"], stdout=unittest.mock.ANY, stderr=unittest.mock.ANY
-            )
+            mock_check_call.assert_called_once_with(["systemctl", "--version"], stdout=mock.ANY, stderr=mock.ANY)
 
     @patch("ddns.util.task.platform.system")
     def test_get_scheduler_type_linux_without_systemd(self, mock_system):
@@ -148,7 +143,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
 
-        status = task.get_status(config_path="test_config.json", log_path="test_ddns.log", interval=10)
+        status = task.get_status(config_path="test_config.json", interval=10)
 
         expected_status = {
             "installed": False,
@@ -156,7 +151,6 @@ class TestTaskFunctions(unittest.TestCase):
             "system": "linux",
             "interval": 10,
             "config_path": "test_config.json",
-            "log_path": "test_ddns.log",
         }
         self.assertEqual(status, expected_status)
 
@@ -171,7 +165,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_is_installed.return_value = True
         mock_get_running_status.return_value = "active"
 
-        status = task.get_status(config_path="test_config.json", log_path="test_ddns.log", interval=10)
+        status = task.get_status(config_path="test_config.json", interval=10)
 
         expected_status = {
             "installed": True,
@@ -179,7 +173,6 @@ class TestTaskFunctions(unittest.TestCase):
             "system": "linux",
             "interval": 10,
             "config_path": "test_config.json",
-            "log_path": "test_ddns.log",
             "running_status": "active",
         }
         self.assertEqual(status, expected_status)
@@ -221,7 +214,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_is_installed.return_value = False
         mock_install_cron.return_value = True
 
-        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10)
+        result = task.install(config_path="test_config.json", interval=10)
 
         self.assertTrue(result)
         mock_install_cron.assert_called_once()
@@ -233,7 +226,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
 
-        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10, force=False)
+        result = task.install(config_path="test_config.json", interval=10, force=False)
 
         self.assertTrue(result)
 
@@ -246,7 +239,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_is_installed.return_value = True
         mock_install_cron.return_value = True
 
-        result = task.install(config_path="test_config.json", log_path="test_ddns.log", interval=10, force=True)
+        result = task.install(config_path="test_config.json", interval=10, force=True)
 
         self.assertTrue(result)
         mock_install_cron.assert_called_once()
@@ -286,7 +279,7 @@ class TestTaskFunctions(unittest.TestCase):
                     mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
                     with patch("os.unlink"):
 
-                        result = task._install_cron("test_config.json", "test_ddns.log", 10)
+                        result = task._install_cron("test_config.json", 10)
 
                         self.assertTrue(result)
                         mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
@@ -303,7 +296,7 @@ class TestTaskFunctions(unittest.TestCase):
                     mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
                     with patch("os.unlink"):
 
-                        result = task._install_cron("test_config.json", "test_ddns.log", 10)
+                        result = task._install_cron("test_config.json", 10)
 
                         self.assertTrue(result)
                         mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
@@ -345,10 +338,10 @@ class TestTaskDispatcher(unittest.TestCase):
         mock_get_scheduler.return_value = "schtasks"
         mock_install.return_value = True
 
-        result = task._dispatch_scheduler_operation("install", "config.json", "ddns.log", 5)
+        result = task._dispatch_scheduler_operation("install", "config.json", 5)
 
         self.assertTrue(result)
-        mock_install.assert_called_once_with("config.json", "ddns.log", 5)
+        mock_install.assert_called_once_with("config.json", 5)
 
     @patch("ddns.util.task.get_scheduler_type")
     def test_dispatch_scheduler_operation_unsupported(self, mock_get_scheduler):
@@ -449,7 +442,7 @@ class TestTaskVBSFunctionality(unittest.TestCase):
         mock_getcwd.return_value = "C:\\test"
         mock_get_cmd.return_value = '"python" -m ddns'
 
-        with patch("builtins.open", unittest.mock.mock_open()) as mock_open:
+        with patch("builtins.open", mock.mock_open()) as mock_open:
             result = task._create_vbs_script("config.json")
 
             self.assertIsInstance(result, str)
@@ -465,7 +458,7 @@ class TestTaskVBSFunctionality(unittest.TestCase):
         mock_get_cmd.return_value = '"python" -m ddns'
 
         # First open call fails (AppData), second succeeds (working dir)
-        mock_open = unittest.mock.mock_open()
+        mock_open = mock.mock_open()
         mock_open.side_effect = [Exception("Permission denied"), mock_open.return_value]
 
         with patch("builtins.open", mock_open):
