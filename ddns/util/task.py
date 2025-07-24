@@ -225,38 +225,29 @@ def _get_running_status(scheduler):
     Returns:
         str: Running status
     """
-    if scheduler == "systemd":
-        try:
+    try:
+        if scheduler == "systemd":
             result = subprocess.check_output(["systemctl", "is-active", "ddns.timer"], stderr=subprocess.DEVNULL)
             return result.strip().decode("utf-8")
-        except subprocess.CalledProcessError:
-            return "inactive"
-    elif scheduler == "cron":
-        try:
+        elif scheduler == "cron":
             subprocess.check_output(["pgrep", "-f", "cron"], stderr=subprocess.DEVNULL)
             return "active"
-        except subprocess.CalledProcessError:
-            return "inactive"
-    elif scheduler == "launchd":
-        try:
+        elif scheduler == "launchd":
             result = subprocess.check_output(["launchctl", "list", "cc.newfuture.ddns"], stderr=subprocess.DEVNULL)
             return "active" if result else "inactive"
-        except subprocess.CalledProcessError:
-            return "inactive"
-    elif scheduler == "schtasks":
-        try:
+        elif scheduler == "schtasks":
             result = subprocess.check_output(
                 ["schtasks", "/query", "/tn", "DDNS", "/fo", "csv"], stderr=subprocess.DEVNULL
             )
             lines = result.decode().strip().split("\n")
             if len(lines) > 1:
-                # Parse CSV output
+                # Parse CSV output - status is in the 3rd field (index 2)
                 fields = [field.strip('"') for field in lines[1].split('","')]
                 if len(fields) > 2:
-                    return fields[2].lower()  # Status field
+                    return fields[2].lower()
             return "unknown"
-        except subprocess.CalledProcessError:
-            return "inactive"
+    except subprocess.CalledProcessError:
+        return "inactive"
 
     return "unknown"
 
