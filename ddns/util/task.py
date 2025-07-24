@@ -15,6 +15,39 @@ __all__ = ["get_scheduler_type", "is_installed", "get_status", "install", "unins
 
 logger = getLogger(__name__)
 
+# Constants
+TASK_NAME = "DDNS"
+LAUNCHD_LABEL = "cc.newfuture.ddns"
+SYSTEMD_SERVICE = "ddns.service"
+SYSTEMD_TIMER = "ddns.timer"
+
+
+def _dispatch_scheduler_operation(operation, *args, **kwargs):
+    """
+    Generic scheduler operation dispatcher
+
+    Args:
+        operation (str): Operation name (install, uninstall, enable, disable)
+        *args: Arguments to pass to the operation function
+        **kwargs: Keyword arguments to pass to the operation function
+
+    Returns:
+        bool: True if operation successful
+    """
+    scheduler = get_scheduler_type()
+    func_name = "_{}_{}".format(operation, scheduler)
+
+    try:
+        func = globals().get(func_name)
+        if func:
+            return func(*args, **kwargs)
+        else:
+            logger.error("Unsupported operation %s for scheduler %s", operation, scheduler)
+            return False
+    except Exception as e:
+        logger.error("Failed to %s DDNS task: %s", operation, e)
+        return False
+
 
 def get_scheduler_type():
     # type: () -> str
@@ -56,28 +89,20 @@ def is_installed():
         bool: True if task is installed
     """
     scheduler = get_scheduler_type()
-    task_name = "DDNS"
 
     try:
         if scheduler == "systemd":
-            # Check if systemd timer is enabled
-            result = subprocess.check_output(["systemctl", "is-enabled", "ddns.timer"], stderr=subprocess.DEVNULL)
+            result = subprocess.check_output(["systemctl", "is-enabled", SYSTEMD_TIMER], stderr=subprocess.DEVNULL)
             return result.strip().decode("utf-8") == "enabled"
         elif scheduler == "cron":
-            # Check if cron job exists
-            try:
-                result = subprocess.check_output(["crontab", "-l"], stderr=subprocess.DEVNULL)
-                return b"DDNS" in result or b"ddns" in result
-            except subprocess.CalledProcessError:
-                return False
+            result = subprocess.check_output(["crontab", "-l"], stderr=subprocess.DEVNULL)
+            return b"ddns" in result.lower()
         elif scheduler == "launchd":
-            # Check if launchd plist exists
-            plist_path = os.path.expanduser("~/Library/LaunchAgents/cc.newfuture.ddns.plist")
+            plist_path = os.path.expanduser("~/Library/LaunchAgents/{}.plist".format(LAUNCHD_LABEL))
             return os.path.exists(plist_path)
         elif scheduler == "schtasks":
-            # Check if Windows scheduled task exists
-            result = subprocess.check_output(["schtasks", "/query", "/tn", task_name], stderr=subprocess.DEVNULL)
-            return task_name.encode() in result
+            result = subprocess.check_output(["schtasks", "/query", "/tn", TASK_NAME], stderr=subprocess.DEVNULL)
+            return TASK_NAME.encode() in result
     except (subprocess.CalledProcessError, OSError):
         pass
 
@@ -114,18 +139,6 @@ def get_status(config_path=None, log_path=None, interval=5):
         except Exception as e:
             logger.debug("Failed to get running status: %s", e)
             status["running_status"] = "unknown"
-    else:
-        # Check fallback scheduler status when not installed with primary
-        fallback_scheduler = _get_fallback_scheduler()
-        if fallback_scheduler and fallback_scheduler != scheduler:
-            try:
-                fallback_installed = _check_fallback_installation(fallback_scheduler)
-                if fallback_installed:
-                    status["fallback_scheduler"] = fallback_scheduler
-                    status["fallback_installed"] = True
-                    status["fallback_running_status"] = _get_running_status(fallback_scheduler)
-            except Exception as e:
-                logger.debug("Failed to check fallback scheduler status: %s", e)
 
     return status
 
@@ -150,21 +163,7 @@ def install(config_path=None, log_path=None, interval=5, force=False):
 
     scheduler = get_scheduler_type()
     logger.info("Installing DDNS task using %s scheduler...", scheduler)
-
-    try:
-        if scheduler == "systemd":
-            return _install_systemd(config_path, log_path, interval)
-        elif scheduler == "cron":
-            return _install_cron(config_path, log_path, interval)
-        elif scheduler == "launchd":
-            return _install_launchd(config_path, log_path, interval)
-        elif scheduler == "schtasks":
-            return _install_schtasks(config_path, log_path, interval)
-    except Exception as e:
-        logger.error("Failed to install DDNS task: %s", e)
-        return False
-
-    return False
+    return _dispatch_scheduler_operation("install", config_path, log_path, interval)
 
 
 def uninstall():
@@ -181,21 +180,7 @@ def uninstall():
 
     scheduler = get_scheduler_type()
     logger.info("Uninstalling DDNS task from %s scheduler...", scheduler)
-
-    try:
-        if scheduler == "systemd":
-            return _uninstall_systemd()
-        elif scheduler == "cron":
-            return _uninstall_cron()
-        elif scheduler == "launchd":
-            return _uninstall_launchd()
-        elif scheduler == "schtasks":
-            return _uninstall_schtasks()
-    except Exception as e:
-        logger.error("Failed to uninstall DDNS task: %s", e)
-        return False
-
-    return False
+    return _dispatch_scheduler_operation("uninstall")
 
 
 def enable():
@@ -212,21 +197,7 @@ def enable():
 
     scheduler = get_scheduler_type()
     logger.info("Enabling DDNS task using %s scheduler...", scheduler)
-
-    try:
-        if scheduler == "systemd":
-            return _enable_systemd()
-        elif scheduler == "cron":
-            return _enable_cron()
-        elif scheduler == "launchd":
-            return _enable_launchd()
-        elif scheduler == "schtasks":
-            return _enable_schtasks()
-    except Exception as e:
-        logger.error("Failed to enable DDNS task: %s", e)
-        return False
-
-    return False
+    return _dispatch_scheduler_operation("enable")
 
 
 def disable():
@@ -243,70 +214,7 @@ def disable():
 
     scheduler = get_scheduler_type()
     logger.info("Disabling DDNS task using %s scheduler...", scheduler)
-
-    try:
-        if scheduler == "systemd":
-            return _disable_systemd()
-        elif scheduler == "cron":
-            return _disable_cron()
-        elif scheduler == "launchd":
-            return _disable_launchd()
-        elif scheduler == "schtasks":
-            return _disable_schtasks()
-    except Exception as e:
-        logger.error("Failed to disable DDNS task: %s", e)
-        return False
-
-    return False
-
-
-def _get_fallback_scheduler():
-    # type: () -> str | None
-    """
-    Get fallback scheduler type for current system
-
-    Returns:
-        str|None: Fallback scheduler type or None if no fallback
-    """
-    system = platform.system().lower()
-
-    if system == "linux":
-        # Fallback from systemd to cron
-        try:
-            subprocess.check_call(["systemctl", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return "cron"  # If systemd exists, cron is fallback
-        except (subprocess.CalledProcessError, OSError):
-            return None  # Already using cron, no fallback
-    elif system == "darwin":  # macOS
-        # Fallback from launchd to cron
-        try:
-            subprocess.check_call(["launchctl", "help"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return "cron"  # If launchd exists, cron is fallback
-        except (subprocess.CalledProcessError, OSError):
-            return None  # Already using cron, no fallback
-
-    return None  # Windows has no fallback
-
-
-def _check_fallback_installation(fallback_scheduler):
-    # type: (str) -> bool
-    """
-    Check if task is installed using fallback scheduler
-
-    Args:
-        fallback_scheduler (str): Fallback scheduler type
-
-    Returns:
-        bool: True if installed using fallback scheduler
-    """
-    if fallback_scheduler == "cron":
-        try:
-            result = subprocess.check_output(["crontab", "-l"], stderr=subprocess.DEVNULL)
-            return "ddns" in result.decode().lower()
-        except (subprocess.CalledProcessError, OSError):
-            return False
-
-    return False
+    return _dispatch_scheduler_operation("disable")
 
 
 def _get_running_status(scheduler):
@@ -372,9 +280,29 @@ def _get_ddns_cmd():
         return '"{}" -m ddns'.format(sys.executable)
 
 
+def _check_root_permission():
+    # type: () -> bool
+    """Check if running with root permission (Linux/Unix only)"""
+    try:
+        # Check if we can access geteuid function
+        geteuid = getattr(os, "geteuid", None)
+        if geteuid:
+            return geteuid() == 0
+        else:
+            # Windows doesn't have geteuid, assume permission is OK
+            return True
+    except (AttributeError, OSError):
+        return True
+
+
 def _install_systemd(config_path, log_path, interval):
     # type: (str | None, str | None, int) -> bool
     """Install systemd timer and service"""
+    if not _check_root_permission():
+        logger.error("Root permission required for systemd installation.")
+        logger.info("Please run with sudo: sudo %s -m ddns task --install", sys.executable)
+        return False
+
     ddns_cmd = _get_ddns_cmd()
 
     service_content = """[Unit]
@@ -404,45 +332,31 @@ WantedBy=multi-user.target
         interval=interval
     )
 
-    # Check permissions (Linux/Unix only)
-    try:
-        if os.geteuid() != 0:
-            logger.error("Root permission required for systemd installation.")
-            logger.info("Please run with sudo: sudo %s -m ddns task --install", sys.executable)
-            return False
-    except AttributeError:
-        # Windows doesn't have geteuid, skip permission check
-        pass
-
     # Write service and timer files
-    with open("/etc/systemd/system/ddns.service", "w") as f:
+    with open("/etc/systemd/system/{}".format(SYSTEMD_SERVICE), "w") as f:
         f.write(service_content)
 
-    with open("/etc/systemd/system/ddns.timer", "w") as f:
+    with open("/etc/systemd/system/{}".format(SYSTEMD_TIMER), "w") as f:
         f.write(timer_content)
 
     # Reload systemd and enable timer
     subprocess.check_call(["systemctl", "daemon-reload"])
-    subprocess.check_call(["systemctl", "enable", "ddns.timer"])
-    subprocess.check_call(["systemctl", "start", "ddns.timer"])
+    subprocess.check_call(["systemctl", "enable", SYSTEMD_TIMER])
+    subprocess.check_call(["systemctl", "start", SYSTEMD_TIMER])
 
     logger.info("DDNS systemd timer installed successfully")
-    logger.info("Use 'systemctl status ddns.timer' to check status")
-    logger.info("Use 'journalctl -u ddns.service' to view logs")
+    logger.info("Use 'systemctl status %s' to check status", SYSTEMD_TIMER)
+    logger.info("Use 'journalctl -u %s' to view logs", SYSTEMD_SERVICE)
     return True
 
 
 def _uninstall_systemd():
     # type: () -> bool
     """Uninstall systemd timer and service"""
-    try:
-        if os.geteuid() != 0:
-            logger.error("Root permission required for systemd uninstallation.")
-            logger.info("Please run with sudo: sudo %s -m ddns task --delete", sys.executable)
-            return False
-    except AttributeError:
-        # Windows doesn't have geteuid, skip permission check
-        pass
+    if not _check_root_permission():
+        logger.error("Root permission required for systemd uninstallation.")
+        logger.info("Please run with sudo: sudo %s -m ddns task --delete", sys.executable)
+        return False
 
     # Stop and disable timer
     subprocess.call(["systemctl", "stop", "ddns.timer"], stderr=subprocess.DEVNULL)
@@ -534,7 +448,7 @@ def _install_launchd(config_path, log_path, interval):
     # type: (str | None, str | None, int) -> bool
     """Install macOS launchd plist"""
     plist_dir = os.path.expanduser("~/Library/LaunchAgents")
-    plist_path = os.path.join(plist_dir, "cc.newfuture.ddns.plist")
+    plist_path = os.path.join(plist_dir, "{}.plist".format(LAUNCHD_LABEL))
 
     # Create directory if not exists
     os.makedirs(plist_dir, exist_ok=True)
@@ -544,7 +458,7 @@ def _install_launchd(config_path, log_path, interval):
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>cc.newfuture.ddns</string>
+    <string>{label}</string>
     <key>ProgramArguments</key>
     <array>
         <string>{python}</string>
@@ -566,6 +480,7 @@ def _install_launchd(config_path, log_path, interval):
 </dict>
 </plist>
 """.format(
+        label=LAUNCHD_LABEL,
         python=sys.executable,
         config_path=os.path.abspath(config_path) if config_path else "config.json",
         interval_seconds=interval * 60,
@@ -580,14 +495,14 @@ def _install_launchd(config_path, log_path, interval):
     subprocess.check_call(["launchctl", "load", plist_path])
 
     logger.info("DDNS launchd service installed successfully")
-    logger.info("Use 'launchctl list cc.newfuture.ddns' to check status")
+    logger.info("Use 'launchctl list %s' to check status", LAUNCHD_LABEL)
     return True
 
 
 def _uninstall_launchd():
     # type: () -> bool
     """Uninstall macOS launchd plist"""
-    plist_path = os.path.expanduser("~/Library/LaunchAgents/cc.newfuture.ddns.plist")
+    plist_path = os.path.expanduser("~/Library/LaunchAgents/{}.plist".format(LAUNCHD_LABEL))
 
     if os.path.exists(plist_path):
         # Unload the plist
@@ -599,13 +514,21 @@ def _uninstall_launchd():
     return True
 
 
-def _install_schtasks(config_path, log_path, interval):
-    # type: (str | None, str | None, int) -> bool
-    """Install Windows scheduled task"""
-    task_name = "DDNS"
-    work_dir = os.getcwd()
+def _get_vbs_locations():
+    # type: () -> list
+    """Get all possible VBS script locations"""
+    return [
+        os.path.join(os.path.expanduser("~\\AppData\\Local\\DDNS"), ".ddns_silent.vbs"),  # Current location
+        os.path.join(os.path.expanduser("~\\AppData\\Local\\Temp"), ".ddns_silent.vbs"),  # Old temp location
+        os.path.join(os.getcwd(), ".ddns_silent.vbs"),  # Working directory (fallback)
+        os.path.join(os.getcwd(), "ddns_silent.vbs"),  # Old location (for compatibility)
+    ]
 
-    # Create VBS script to run DDNS silently without any popup windows
+
+def _create_vbs_script(config_path):
+    # type: (str | None) -> str
+    """Create VBS script for silent execution and return its path"""
+    work_dir = os.getcwd()
     vbs_content = '''Set objShell = CreateObject("WScript.Shell")
 objShell.CurrentDirectory = "{work_dir}"
 objShell.Run "{ddns_cmd} -c ""{config_path}""", 0, False
@@ -615,7 +538,7 @@ objShell.Run "{ddns_cmd} -c ""{config_path}""", 0, False
         config_path=os.path.abspath(config_path) if config_path else "config.json",
     )
 
-    # Place VBS script in user's AppData\Local directory (more stable than Temp)
+    # Try to place VBS script in user's AppData\Local directory first
     user_appdata_dir = os.path.expanduser("~\\AppData\\Local\\DDNS")
     os.makedirs(user_appdata_dir, exist_ok=True)
     vbs_path = os.path.join(user_appdata_dir, ".ddns_silent.vbs")
@@ -623,64 +546,47 @@ objShell.Run "{ddns_cmd} -c ""{config_path}""", 0, False
     try:
         with open(vbs_path, "w", encoding="utf-8") as f:
             f.write(vbs_content)
+        return vbs_path
     except Exception as e:
         logger.warning("Failed to create VBS in user AppData directory, using working directory: %s", e)
         # Fallback to working directory
         vbs_path = os.path.join(work_dir, ".ddns_silent.vbs")
         with open(vbs_path, "w", encoding="utf-8") as f:
             f.write(vbs_content)
+        return vbs_path
 
-    # Use the VBS script in the scheduled task
+
+def _install_schtasks(config_path, log_path, interval):
+    # type: (str | None, str | None, int) -> bool
+    """Install Windows scheduled task"""
+    vbs_path = _create_vbs_script(config_path)
     cmd = 'wscript.exe "{}"'.format(vbs_path)
 
-    # Check if running as administrator
+    # Check if running as administrator (optional warning)
     try:
         subprocess.check_output(["net", "session"], stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        # logger.error("Administrator privileges required for Windows task installation.")
         logger.info("Run as administrator is recommended for Windows task installation.")
-        # return False
 
-    # Create scheduled task without /SD parameter
+    # Create scheduled task
     subprocess.check_call(
-        [
-            "schtasks",
-            "/Create",
-            "/SC",
-            "MINUTE",
-            "/MO",
-            str(interval),
-            "/TR",
-            cmd,
-            "/TN",
-            task_name,
-            "/F",
-        ]
+        ["schtasks", "/Create", "/SC", "MINUTE", "/MO", str(interval), "/TR", cmd, "/TN", TASK_NAME, "/F"]
     )
 
     logger.info("DDNS Windows scheduled task installed successfully")
-    logger.info("Use 'schtasks /query /tn %s' to check status", task_name)
+    logger.info("Use 'schtasks /query /tn %s' to check status", TASK_NAME)
     return True
 
 
 def _uninstall_schtasks():
     # type: () -> bool
     """Uninstall Windows scheduled task"""
-    task_name = "DDNS"
-
     try:
-        subprocess.check_call(["schtasks", "/Delete", "/TN", task_name, "/F"])
+        subprocess.check_call(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"])
         logger.info("DDNS Windows scheduled task uninstalled successfully")
 
-        # Clean up VBS script files (try all possible locations)
-        vbs_locations = [
-            os.path.join(os.path.expanduser("~\\AppData\\Local\\DDNS"), ".ddns_silent.vbs"),  # Current location
-            os.path.join(os.path.expanduser("~\\AppData\\Local\\Temp"), ".ddns_silent.vbs"),  # Old temp location
-            os.path.join(os.getcwd(), ".ddns_silent.vbs"),  # Working directory (fallback)
-            os.path.join(os.getcwd(), "ddns_silent.vbs"),  # Old location (for compatibility)
-        ]
-
-        for vbs_path in vbs_locations:
+        # Clean up VBS script files from all possible locations
+        for vbs_path in _get_vbs_locations():
             if os.path.exists(vbs_path):
                 try:
                     os.remove(vbs_path)
@@ -698,8 +604,8 @@ def _enable_systemd():
     # type: () -> bool
     """Enable systemd timer"""
     try:
-        subprocess.check_call(["systemctl", "enable", "ddns.timer"])
-        subprocess.check_call(["systemctl", "start", "ddns.timer"])
+        subprocess.check_call(["systemctl", "enable", SYSTEMD_TIMER])
+        subprocess.check_call(["systemctl", "start", SYSTEMD_TIMER])
         logger.info("DDNS systemd timer enabled successfully")
         return True
     except subprocess.CalledProcessError as e:
@@ -711,8 +617,8 @@ def _disable_systemd():
     # type: () -> bool
     """Disable systemd timer"""
     try:
-        subprocess.check_call(["systemctl", "stop", "ddns.timer"])
-        subprocess.check_call(["systemctl", "disable", "ddns.timer"])
+        subprocess.check_call(["systemctl", "stop", SYSTEMD_TIMER])
+        subprocess.check_call(["systemctl", "disable", SYSTEMD_TIMER])
         logger.info("DDNS systemd timer disabled successfully")
         return True
     except subprocess.CalledProcessError as e:
@@ -738,7 +644,7 @@ def _disable_cron():
 def _enable_launchd():
     # type: () -> bool
     """Enable macOS launchd service"""
-    plist_path = os.path.expanduser("~/Library/LaunchAgents/cc.newfuture.ddns.plist")
+    plist_path = os.path.expanduser("~/Library/LaunchAgents/{}.plist".format(LAUNCHD_LABEL))
 
     if not os.path.exists(plist_path):
         logger.error("DDNS launchd service not found")
@@ -756,7 +662,7 @@ def _enable_launchd():
 def _disable_launchd():
     # type: () -> bool
     """Disable macOS launchd service"""
-    plist_path = os.path.expanduser("~/Library/LaunchAgents/cc.newfuture.ddns.plist")
+    plist_path = os.path.expanduser("~/Library/LaunchAgents/{}.plist".format(LAUNCHD_LABEL))
 
     try:
         subprocess.check_call(["launchctl", "unload", plist_path])
@@ -770,10 +676,8 @@ def _disable_launchd():
 def _enable_schtasks():
     # type: () -> bool
     """Enable Windows scheduled task"""
-    task_name = "DDNS"
-
     try:
-        subprocess.check_call(["schtasks", "/Change", "/TN", task_name, "/Enable"])
+        subprocess.check_call(["schtasks", "/Change", "/TN", TASK_NAME, "/Enable"])
         logger.info("DDNS Windows scheduled task enabled successfully")
         return True
     except subprocess.CalledProcessError as e:
@@ -784,10 +688,8 @@ def _enable_schtasks():
 def _disable_schtasks():
     # type: () -> bool
     """Disable Windows scheduled task"""
-    task_name = "DDNS"
-
     try:
-        subprocess.check_call(["schtasks", "/Change", "/TN", task_name, "/Disable"])
+        subprocess.check_call(["schtasks", "/Change", "/TN", TASK_NAME, "/Disable"])
         logger.info("DDNS Windows scheduled task disabled successfully")
         return True
     except subprocess.CalledProcessError as e:

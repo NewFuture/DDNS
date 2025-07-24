@@ -123,7 +123,7 @@ def load_config(description, doc, version, date):
     ]
 
     # Add subparsers for subcommands
-    subparsers = parser.add_subparsers(dest="command", help="Available commands [可用的子命令]")
+    subparsers = parser.add_subparsers(dest="command", help="task commands [定时任务子命令]")
 
     # Default behavior (no subcommand) - add all the regular DDNS options
     parser.add_argument("-v", "--version", action="version", version=version_str)

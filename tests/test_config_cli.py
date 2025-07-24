@@ -554,5 +554,86 @@ class TestCliConfig(unittest.TestCase):
         self.assertFalse(config["cache"])  # debug模式下默认禁用cache
 
 
+class TestTaskSubcommand(unittest.TestCase):
+    """Test task subcommand functionality"""
+
+    def setUp(self):
+        self.original_argv = sys.argv[:]
+
+    def tearDown(self):
+        sys.argv = self.original_argv
+
+    def test_task_subcommand_help(self):
+        """Test task subcommand help parsing"""
+        sys.argv = ["ddns", "task", "--help"]
+
+        # Test that SystemExit is raised with help
+        with self.assertRaises(SystemExit) as cm:
+            load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        # Help should exit with code 0
+        self.assertEqual(cm.exception.code, 0)
+
+    def test_task_subcommand_status(self):
+        """Test task subcommand status parsing"""
+        sys.argv = ["ddns", "task", "--status"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        # Should have task_command set
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "status")
+
+    def test_task_subcommand_install(self):
+        """Test task subcommand install parsing"""
+        sys.argv = ["ddns", "task", "--install", "10", "--config", "test.json"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        # Should have task_command and interval set
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "install")
+        self.assertIn("task_interval", config)
+        self.assertEqual(config["task_interval"], 10)
+
+    def test_task_subcommand_enable(self):
+        """Test task subcommand enable parsing"""
+        sys.argv = ["ddns", "task", "--enable"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "enable")
+
+    def test_task_subcommand_disable(self):
+        """Test task subcommand disable parsing"""
+        sys.argv = ["ddns", "task", "--disable"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "disable")
+
+    def test_task_subcommand_delete(self):
+        """Test task subcommand delete/uninstall parsing"""
+        sys.argv = ["ddns", "task", "--delete"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "uninstall")
+
+    def test_task_subcommand_force_install(self):
+        """Test task subcommand force install parsing"""
+        sys.argv = ["ddns", "task", "--install", "5", "--force"]
+
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+
+        self.assertIn("task_command", config)
+        self.assertEqual(config["task_command"], "install")
+        self.assertIn("task_force", config)
+        self.assertTrue(config["task_force"])
+
+
 if __name__ == "__main__":
     unittest.main()
