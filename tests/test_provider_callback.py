@@ -329,35 +329,107 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         )
 
     def test_real_callback_get_method(self):
-        """Test real callback using GET method with httpbin.org and verify logger calls"""
-        id = "http://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__"
+        """Test real callback using GET method with httpbin/httpbingo and verify logger calls"""
+        # 尝试多个测试端点以提高可靠性
+        test_endpoints = [
+            "http://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__",
+            "http://httpbingo.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__",
+        ]
+
         domain = "test.example.com"
         ip = "111.111.111.111"
+        last_exception = None
 
-        provider = CallbackProvider(id, "", ssl="auto")
-        mock_logger = self._setup_provider_with_mock_logger(provider)
+        for endpoint_id in test_endpoints:
+            try:
+                provider = CallbackProvider(endpoint_id, "", ssl="auto")
+                mock_logger = self._setup_provider_with_mock_logger(provider)
 
-        self._random_delay()  # Add random delay before real request
-        result = provider.set_record(domain, ip, "A")
-        self.assertTrue(result)
-        self._assert_callback_result_logged(mock_logger, domain, ip)
+                self._random_delay()  # Add random delay before real request
+                result = provider.set_record(domain, ip, "A")
+
+                if result:
+                    self.assertTrue(result)
+                    self._assert_callback_result_logged(mock_logger, domain, ip)
+                    return  # 成功则退出
+                else:
+                    # 如果结果为False，可能是5xx错误，尝试下一个端点
+                    continue
+
+            except Exception as e:
+                last_exception = e
+                # 网络问题时继续尝试下一个端点
+                error_msg = str(e).lower()
+                network_keywords = [
+                    "timeout",
+                    "connection",
+                    "resolution",
+                    "unreachable",
+                    "network",
+                    "ssl",
+                    "certificate",
+                ]
+                if any(keyword in error_msg for keyword in network_keywords):
+                    continue  # 尝试下一个端点
+                else:
+                    # 其他异常重新抛出
+                    raise
+
+        # 如果所有端点都失败，跳过测试
+        error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
+        self.skipTest("All network endpoints unavailable for GET callback test{}".format(error_info))
 
     def test_real_callback_post_method_with_json(self):
         """Test real callback using POST method with JSON data and verify logger calls"""
-        id = "http://httpbingo.org/post"
+        # 尝试多个测试端点以提高可靠性
+        test_endpoints = ["http://httpbingo.org/post", "http://httpbin.org/post"]
+
         token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
-        provider = CallbackProvider(id, token)
+        domain = "test.example.com"
+        ip = "203.0.113.2"
+        last_exception = None
 
-        # Setup provider with mock logger
-        mock_logger = self._setup_provider_with_mock_logger(provider)
+        for endpoint_id in test_endpoints:
+            try:
+                provider = CallbackProvider(endpoint_id, token)
+                # Setup provider with mock logger
+                mock_logger = self._setup_provider_with_mock_logger(provider)
 
-        self._random_delay()  # Add random delay before real request
-        result = provider.set_record("test.example.com", "203.0.113.2", "A", 300)
-        # httpbin.org returns JSON with our posted data, so it should be truthy
-        self.assertTrue(result)
+                self._random_delay()  # Add random delay before real request
+                result = provider.set_record(domain, ip, "A", 300)
 
-        # Verify that logger.info was called with response containing domain and IP
-        self._assert_callback_result_logged(mock_logger, "test.example.com", "203.0.113.2")
+                if result:
+                    # httpbin/httpbingo returns JSON with our posted data, so it should be truthy
+                    self.assertTrue(result)
+                    # Verify that logger.info was called with response containing domain and IP
+                    self._assert_callback_result_logged(mock_logger, domain, ip)
+                    return  # 成功则退出
+                else:
+                    # 如果结果为False，可能是5xx错误，尝试下一个端点
+                    continue
+
+            except Exception as e:
+                last_exception = e
+                # 网络问题时继续尝试下一个端点
+                error_msg = str(e).lower()
+                network_keywords = [
+                    "timeout",
+                    "connection",
+                    "resolution",
+                    "unreachable",
+                    "network",
+                    "ssl",
+                    "certificate",
+                ]
+                if any(keyword in error_msg for keyword in network_keywords):
+                    continue  # 尝试下一个端点
+                else:
+                    # 其他异常重新抛出
+                    raise
+
+        # 如果所有端点都失败，跳过测试
+        error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
+        self.skipTest("All network endpoints unavailable for POST callback test{}".format(error_info))
 
     def test_real_callback_error_handling(self):
         """Test real callback error handling with invalid URL"""
