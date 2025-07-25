@@ -82,7 +82,7 @@ class NewConfigAction(Action):
         if values and values != "true":
             config_path = str(values)  # type: str
         else:
-            config_path = getattr(namespace, "config") or "config.json"  # type: str
+            config_path = getattr(namespace, "config", None) or "config.json"  # type: str
             config_path = config_path[0] if isinstance(config_path, list) else config_path
             if os_path.exists(config_path):
                 sys.stderr.write("The default %s already exists!\n" % config_path)
