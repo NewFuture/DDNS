@@ -296,6 +296,76 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
   - `--log_datefmt="%Y-%m-%d %H:%M:%S"`
   - `--log_datefmt="%m-%d %H:%M:%S"`
 
+## Task Management (定时任务管理)
+
+DDNS 支持通过 `task` 子命令管理定时任务，可自动根据系统选择合适的调度器安装定时更新任务。
+
+### 基本用法
+
+```bash
+# 查看帮助
+ddns task --help
+
+# 检查任务状态
+ddns task --status
+
+# 自动安装（如果未安装）或显示状态（如果已安装）
+ddns task
+
+# 安装定时任务（默认5分钟间隔）
+ddns task --install
+
+# 安装定时任务并指定间隔时间（分钟）
+ddns task --install 10
+ddns task -i 15
+
+# 删除已安装的定时任务
+ddns task --delete
+```
+
+### 支持的调度器
+
+DDNS 会自动检测系统并选择最合适的调度器：
+
+- **Linux**: systemd (优先) 或 cron
+- **macOS**: launchd (优先) 或 cron  
+- **Windows**: schtasks
+
+### 参数说明
+
+| 参数 | 描述 |
+|------|------|
+| `--status` | 显示定时任务安装状态和运行信息 |
+| `--install [分钟]`, `-i [分钟]` | 安装定时任务，可指定更新间隔（默认5分钟） |
+| `--delete` | 删除已安装的定时任务 |
+| `-c`, `--config` | 指定定时任务使用的配置文件路径 |
+| `--log-file` | 指定定时任务使用的日志文件路径 |
+
+### 权限要求
+
+不同调度器需要不同的权限：
+
+- **systemd**: 需要 root 权限 (`sudo`)
+- **cron**: 普通用户权限即可
+- **launchd**: 普通用户权限即可
+- **schtasks**: 需要管理员权限
+
+### 使用示例
+
+```bash
+# 检查当前状态
+ddns task --status
+
+# 安装 10 分钟间隔的定时任务，使用指定配置文件
+ddns task --install 10 -c /etc/ddns/config.json --log-file /var/log/ddns.log
+
+# 在 Linux 上使用 sudo 安装 systemd 定时器
+sudo ddns task --install 5
+
+# 删除定时任务
+ddns task --delete
+```
+
 ## 常用命令示例
 
 ### 基本使用
