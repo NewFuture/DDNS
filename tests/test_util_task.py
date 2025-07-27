@@ -2,7 +2,7 @@
 """
 Tests for ddns.util.task module
 """
-from __init__ import unittest, patch, mock
+from __init__ import unittest, patch
 import subprocess
 
 import ddns.util.task as task
@@ -15,18 +15,23 @@ class TestTaskFunctions(unittest.TestCase):
     def test_get_scheduler_type_linux_with_systemd(self, mock_system):
         """Test scheduler type detection on Linux with systemd"""
         mock_system.return_value = "Linux"
-        with patch("ddns.util.task.subprocess.check_call") as mock_check_call:
-            mock_check_call.return_value = None
+        with patch("ddns.util.task.read_file_safely", return_value="systemd\n"):
             result = task.get_scheduler_type()
             self.assertEqual(result, "systemd")
-            mock_check_call.assert_called_once_with(["systemctl", "--version"], stdout=mock.ANY, stderr=mock.ANY)
 
     @patch("ddns.util.task.platform.system")
     def test_get_scheduler_type_linux_without_systemd(self, mock_system):
         """Test scheduler type detection on Linux without systemd"""
         mock_system.return_value = "Linux"
-        with patch("ddns.util.task.subprocess.check_call") as mock_check_call:
-            mock_check_call.side_effect = OSError("systemctl not found")
+        with patch("ddns.util.task.read_file_safely", return_value="init\n"):
+            result = task.get_scheduler_type()
+            self.assertEqual(result, "cron")
+
+    @patch("ddns.util.task.platform.system")
+    def test_get_scheduler_type_linux_proc_not_accessible(self, mock_system):
+        """Test scheduler type detection on Linux when /proc/1/comm is not accessible"""
+        mock_system.return_value = "Linux"
+        with patch("ddns.util.task.read_file_safely", return_value=None):
             result = task.get_scheduler_type()
             self.assertEqual(result, "cron")
 
@@ -34,8 +39,8 @@ class TestTaskFunctions(unittest.TestCase):
     def test_get_scheduler_type_darwin_with_launchd(self, mock_system):
         """Test scheduler type detection on macOS with launchd"""
         mock_system.return_value = "Darwin"
-        with patch("ddns.util.task.subprocess.check_call") as mock_check_call:
-            mock_check_call.return_value = None
+        with patch("ddns.util.task.os.path.isdir") as mock_isdir:
+            mock_isdir.return_value = True
             result = task.get_scheduler_type()
             self.assertEqual(result, "launchd")
 
@@ -43,8 +48,8 @@ class TestTaskFunctions(unittest.TestCase):
     def test_get_scheduler_type_darwin_without_launchd(self, mock_system):
         """Test scheduler type detection on macOS without launchd"""
         mock_system.return_value = "Darwin"
-        with patch("ddns.util.task.subprocess.check_call") as mock_check_call:
-            mock_check_call.side_effect = OSError("launchctl not found")
+        with patch("ddns.util.task.os.path.isdir") as mock_isdir:
+            mock_isdir.return_value = False
             result = task.get_scheduler_type()
             self.assertEqual(result, "cron")
 
@@ -143,39 +148,100 @@ class TestTaskFunctions(unittest.TestCase):
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
 
-        status = task.get_status(config_path="test_config.json", interval=10)
+        status = task.get_status()
 
         expected_status = {
             "installed": False,
             "scheduler": "cron",
             "system": "linux",
-            "interval": 10,
-            "config_path": "test_config.json",
         }
         self.assertEqual(status, expected_status)
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
     @patch("ddns.util.task._get_running_status")
+    @patch("ddns.util.task._get_task_interval")
     @patch("ddns.util.task.platform.system")
-    def test_get_status_installed(self, mock_system, mock_get_running_status, mock_is_installed, mock_get_scheduler):
+    def test_get_status_installed(
+        self, mock_system, mock_get_interval, mock_get_running_status, mock_is_installed, mock_get_scheduler
+    ):
         """Test get_status when task is installed"""
         mock_system.return_value = "Linux"
         mock_get_scheduler.return_value = "systemd"
         mock_is_installed.return_value = True
         mock_get_running_status.return_value = "active"
+        mock_get_interval.return_value = 10
 
-        status = task.get_status(config_path="test_config.json", interval=10)
+        status = task.get_status()
 
         expected_status = {
             "installed": True,
             "scheduler": "systemd",
             "system": "linux",
             "interval": 10,
-            "config_path": "test_config.json",
             "running_status": "active",
         }
         self.assertEqual(status, expected_status)
+
+    def test_get_task_interval_systemd(self):
+        """Test _get_task_interval for systemd"""
+        timer_content = """[Unit]
+Description=DDNS automatic IP update timer
+
+[Timer]
+OnUnitActiveSec=10m
+Unit=ddns.service
+
+[Install]
+WantedBy=multi-user.target
+"""
+        with patch("ddns.util.task.read_file_safely") as mock_read_file:
+            mock_read_file.return_value = timer_content
+            result = task._get_task_interval("systemd")
+            self.assertEqual(result, 10)
+
+    def test_get_task_interval_cron(self):
+        """Test _get_task_interval for cron"""
+        cron_content = "*/15 * * * * cd /path && python -m ddns"
+        with patch("subprocess.check_output") as mock_check_output:
+            mock_check_output.return_value = cron_content.encode()
+            result = task._get_task_interval("cron")
+            self.assertEqual(result, 15)
+
+    def test_get_task_interval_not_found(self):
+        """Test _get_task_interval when interval cannot be determined"""
+        result = task._get_task_interval("unsupported")
+        self.assertIsNone(result)
+
+    def test_get_task_command_systemd(self):
+        """Test _get_task_command for systemd"""
+        service_content = """[Unit]
+Description=DDNS automatic IP update service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -m ddns -c /etc/ddns/config.json
+
+[Install]
+WantedBy=multi-user.target
+"""
+        with patch("ddns.util.task.read_file_safely") as mock_read_file:
+            mock_read_file.return_value = service_content
+            result = task._get_task_command("systemd")
+            self.assertEqual(result, "/usr/bin/python3 -m ddns -c /etc/ddns/config.json")
+
+    def test_get_task_command_cron(self):
+        """Test _get_task_command for cron"""
+        cron_content = "*/15 * * * * cd /path && python3 -m ddns --config /home/user/ddns.json"
+        with patch("subprocess.check_output") as mock_check_output:
+            mock_check_output.return_value = cron_content.encode()
+            result = task._get_task_command("cron")
+            self.assertEqual(result, "cd /path && python3 -m ddns --config /home/user/ddns.json")
+
+    def test_get_task_command_not_found(self):
+        """Test _get_task_command when command cannot be determined"""
+        result = task._get_task_command("unsupported")
+        self.assertIsNone(result)
 
     def test_get_running_status_systemd_active(self):
         """Test _get_running_status for systemd when active"""
@@ -207,17 +273,17 @@ class TestTaskFunctions(unittest.TestCase):
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
-    @patch("ddns.util.task._install_cron")
-    def test_install_success(self, mock_install_cron, mock_is_installed, mock_get_scheduler):
+    @patch("ddns.util.task._dispatch_scheduler_operation")
+    def test_install_success(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
         """Test successful installation"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = False
-        mock_install_cron.return_value = True
+        mock_dispatch.return_value = True
 
-        result = task.install(config_path="test_config.json", interval=10)
+        result = task.install(interval=10)
 
         self.assertTrue(result)
-        mock_install_cron.assert_called_once()
+        mock_dispatch.assert_called_once_with("install", 10, None)
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
@@ -226,37 +292,37 @@ class TestTaskFunctions(unittest.TestCase):
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
 
-        result = task.install(config_path="test_config.json", interval=10, force=False)
+        result = task.install(interval=10, force=False)
 
         self.assertTrue(result)
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
-    @patch("ddns.util.task._install_cron")
-    def test_install_already_installed_with_force(self, mock_install_cron, mock_is_installed, mock_get_scheduler):
+    @patch("ddns.util.task._dispatch_scheduler_operation")
+    def test_install_already_installed_with_force(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
         """Test installation when already installed with force"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
-        mock_install_cron.return_value = True
+        mock_dispatch.return_value = True
 
-        result = task.install(config_path="test_config.json", interval=10, force=True)
+        result = task.install(interval=10, force=True)
 
         self.assertTrue(result)
-        mock_install_cron.assert_called_once()
+        mock_dispatch.assert_called_once_with("install", 10, None)
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
-    @patch("ddns.util.task._uninstall_cron")
-    def test_uninstall_success(self, mock_uninstall_cron, mock_is_installed, mock_get_scheduler):
+    @patch("ddns.util.task._dispatch_scheduler_operation")
+    def test_uninstall_success(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
         """Test successful uninstallation"""
         mock_get_scheduler.return_value = "cron"
         mock_is_installed.return_value = True
-        mock_uninstall_cron.return_value = True
+        mock_dispatch.return_value = True
 
         result = task.uninstall()
 
         self.assertTrue(result)
-        mock_uninstall_cron.assert_called_once()
+        mock_dispatch.assert_called_once_with("uninstall")
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
@@ -269,111 +335,88 @@ class TestTaskFunctions(unittest.TestCase):
 
         self.assertTrue(result)
 
-    def test_install_cron_new_crontab(self):
-        """Test _install_cron with new crontab"""
-        with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.side_effect = subprocess.CalledProcessError(1, "crontab")
+    @patch("ddns.util.task.get_scheduler_type")
+    @patch("ddns.util.task.is_installed")
+    @patch("ddns.util.task._dispatch_scheduler_operation")
+    def test_install_with_ddns_args(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
+        """Test installation with ddns_args parameter"""
+        mock_get_scheduler.return_value = "cron"
+        mock_is_installed.return_value = False
+        mock_dispatch.return_value = True
 
-            with patch("subprocess.check_call") as mock_check_call:
-                with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                    mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
-                    with patch("os.unlink"):
+        ddns_args = {"proxy": ["http://proxy.example.com:8080"], "debug": True}
+        result = task.install(interval=10, ddns_args=ddns_args)
 
-                        result = task._install_cron("test_config.json", 10)
+        self.assertTrue(result)
+        mock_dispatch.assert_called_once_with("install", 10, ddns_args)
 
-                        self.assertTrue(result)
-                        mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
+    @patch("ddns.util.task.get_scheduler_type")
+    @patch("ddns.util.task.is_installed")
+    @patch("ddns.util.task._dispatch_scheduler_operation")
+    def test_install_systemd_with_ddns_args(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
+        """Test systemd installation with ddns_args parameter"""
+        mock_get_scheduler.return_value = "systemd"
+        mock_is_installed.return_value = False
+        mock_dispatch.return_value = True
 
-    def test_install_cron_existing_crontab(self):
-        """Test _install_cron with existing crontab"""
-        existing_cron = "0 0 * * * /usr/bin/backup\n"
+        ddns_args = {"config": ["cloudflare.json"], "debug": True}
+        result = task.install(interval=5, ddns_args=ddns_args)
 
-        with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = existing_cron.encode()
-
-            with patch("subprocess.check_call") as mock_check_call:
-                with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                    mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
-                    with patch("os.unlink"):
-
-                        result = task._install_cron("test_config.json", 10)
-
-                        self.assertTrue(result)
-                        mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
-
-    def test_uninstall_cron_with_existing_crontab(self):
-        """Test _uninstall_cron with existing crontab containing DDNS"""
-        existing_cron = "0 0 * * * /usr/bin/backup\n*/5 * * * * ddns\n"
-
-        with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = existing_cron.encode()
-
-            with patch("subprocess.check_call") as mock_check_call:
-                with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                    mock_temp.return_value.__enter__.return_value.name = "/tmp/test_cron"
-                    with patch("os.unlink"):
-
-                        result = task._uninstall_cron()
-
-                        self.assertTrue(result)
-                        mock_check_call.assert_called_once_with(["crontab", "/tmp/test_cron"])
-
-    def test_uninstall_cron_no_existing_crontab(self):
-        """Test _uninstall_cron with no existing crontab"""
-        with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.side_effect = subprocess.CalledProcessError(1, "crontab")
-
-            result = task._uninstall_cron()
-
-            self.assertTrue(result)
+        self.assertTrue(result)
+        mock_dispatch.assert_called_once_with("install", 5, ddns_args)
 
 
 class TestTaskDispatcher(unittest.TestCase):
     """Test task dispatcher functionality"""
 
     @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task._install_schtasks")
-    def test_dispatch_scheduler_operation_install_success(self, mock_install, mock_get_scheduler):
+    def test_dispatch_scheduler_operation_install_success(self, mock_get_scheduler):
         """Test successful dispatcher operation for install"""
-        mock_get_scheduler.return_value = "schtasks"
-        mock_install.return_value = True
+        mock_get_scheduler.return_value = "systemd"
 
-        result = task._dispatch_scheduler_operation("install", "config.json", 5)
+        # Mock the _install_systemd function that still exists
+        with patch("ddns.util.task._install_systemd") as mock_install:
+            mock_install.return_value = True
+
+            result = task._dispatch_scheduler_operation("install", 5, None)
+
+            self.assertTrue(result)
+            mock_install.assert_called_once_with(5, None)
+
+    @patch("ddns.util.task.subprocess.check_call")
+    @patch("ddns.util.task.get_scheduler_type")
+    def test_dispatch_scheduler_operation_enable_success(self, mock_get_scheduler, mock_check_call):
+        """Test successful dispatcher operation for enable"""
+        mock_get_scheduler.return_value = "systemd"
+        mock_check_call.return_value = None  # Success
+
+        result = task._dispatch_scheduler_operation("enable")
 
         self.assertTrue(result)
-        mock_install.assert_called_once_with("config.json", 5)
+        # Should call systemctl enable and start
+        self.assertEqual(mock_check_call.call_count, 2)
 
     @patch("ddns.util.task.get_scheduler_type")
     def test_dispatch_scheduler_operation_unsupported(self, mock_get_scheduler):
         """Test dispatcher with unsupported operation"""
         mock_get_scheduler.return_value = "unsupported_scheduler"
 
-        result = task._dispatch_scheduler_operation("install", "config.json")
+        result = task._dispatch_scheduler_operation("install", 5, None)
 
         self.assertFalse(result)
 
     @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task._enable_systemd")
-    def test_dispatch_scheduler_operation_enable_success(self, mock_enable, mock_get_scheduler):
-        """Test successful dispatcher operation for enable"""
-        mock_get_scheduler.return_value = "systemd"
-        mock_enable.return_value = True
-
-        result = task._dispatch_scheduler_operation("enable")
-
-        self.assertTrue(result)
-        mock_enable.assert_called_once_with()
-
-    @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task._enable_systemd")
-    def test_dispatch_scheduler_operation_exception(self, mock_enable, mock_get_scheduler):
+    def test_dispatch_scheduler_operation_exception(self, mock_get_scheduler):
         """Test dispatcher handling exceptions"""
         mock_get_scheduler.return_value = "systemd"
-        mock_enable.side_effect = Exception("Test error")
 
-        result = task._dispatch_scheduler_operation("enable")
+        # Mock _install_systemd to raise an exception
+        with patch("ddns.util.task._install_systemd") as mock_install:
+            mock_install.side_effect = Exception("Test error")
 
-        self.assertFalse(result)
+            result = task._dispatch_scheduler_operation("install", 5, None)
+
+            self.assertFalse(result)
 
 
 class TestTaskEnableDisable(unittest.TestCase):
@@ -425,15 +468,6 @@ class TestTaskEnableDisable(unittest.TestCase):
 class TestTaskVBSFunctionality(unittest.TestCase):
     """Test VBS script functionality"""
 
-    def test_get_vbs_locations(self):
-        """Test VBS locations list"""
-        locations = task._get_vbs_locations()
-
-        self.assertIsInstance(locations, list)
-        self.assertTrue(len(locations) > 0)
-        # Check that AppData location is first (preferred)
-        self.assertIn("AppData", locations[0])
-
     @patch("ddns.util.task.os.makedirs")
     @patch("ddns.util.task.os.getcwd")
     @patch("ddns.util.task._get_ddns_cmd")
@@ -442,12 +476,12 @@ class TestTaskVBSFunctionality(unittest.TestCase):
         mock_getcwd.return_value = "C:\\test"
         mock_get_cmd.return_value = '"python" -m ddns'
 
-        with patch("builtins.open", mock.mock_open()) as mock_open:
-            result = task._create_vbs_script("config.json")
+        with patch("ddns.util.task.write_file") as mock_write:
+            result = task._create_vbs_script({"config": ["config.json"]})
 
             self.assertIsInstance(result, str)
             self.assertTrue(result.endswith(".vbs"))
-            mock_open.assert_called()
+            mock_write.assert_called()
 
     @patch("ddns.util.task.os.makedirs")
     @patch("ddns.util.task.os.getcwd")
@@ -457,12 +491,9 @@ class TestTaskVBSFunctionality(unittest.TestCase):
         mock_getcwd.return_value = "C:\\test"
         mock_get_cmd.return_value = '"python" -m ddns'
 
-        # First open call fails (AppData), second succeeds (working dir)
-        mock_open = mock.mock_open()
-        mock_open.side_effect = [Exception("Permission denied"), mock_open.return_value]
-
-        with patch("builtins.open", mock_open):
-            result = task._create_vbs_script("config.json")
+        # First write_file call fails (AppData), second succeeds (working dir)
+        with patch("ddns.util.task.write_file", side_effect=[Exception("Permission denied"), None]):
+            result = task._create_vbs_script({"config": ["config.json"]})
 
             self.assertIsInstance(result, str)
             self.assertTrue(result.endswith(".vbs"))
@@ -477,6 +508,92 @@ class TestTaskConstants(unittest.TestCase):
         self.assertEqual(task.LAUNCHD_LABEL, "cc.newfuture.ddns")
         self.assertEqual(task.SYSTEMD_SERVICE, "ddns.service")
         self.assertEqual(task.SYSTEMD_TIMER, "ddns.timer")
+
+
+class TestTaskCommandBuilder(unittest.TestCase):
+    """Test command building functionality"""
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_without_args(self, mock_get_ddns_cmd):
+        """Test building DDNS command without additional arguments"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+
+        result = task._build_ddns_command(None)
+
+        expected = '"python3" -m ddns'
+        self.assertEqual(result, expected)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_args(self, mock_get_ddns_cmd):
+        """Test building DDNS command with additional arguments"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+        ddns_args = {"config": ["config.json"], "proxy": ["http://proxy.example.com:8080"], "debug": True}
+
+        result = task._build_ddns_command(ddns_args)
+
+        # Should contain base command, proxy and debug (config is skipped)
+        self.assertIn('"python3" -m ddns', result)
+        self.assertIn('--proxy "http://proxy.example.com:8080"', result)
+        self.assertIn("--debug", result)
+        # config parameter should be skipped, not converted to -c
+        self.assertNotIn('-c "config.json"', result)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_empty_args(self, mock_get_ddns_cmd):
+        """Test building DDNS command with empty additional arguments"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+
+        result = task._build_ddns_command({})
+
+        expected = '"python3" -m ddns'
+        self.assertEqual(result, expected)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_special_chars(self, mock_get_ddns_cmd):
+        """Test building DDNS command with arguments containing special characters"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+        ddns_args = {"token": "abc-123_xyz", "domain": "test.example.com"}
+
+        result = task._build_ddns_command(ddns_args)
+
+        # Should contain properly quoted arguments
+        self.assertIn('--token "abc-123_xyz"', result)
+        self.assertIn('--domain "test.example.com"', result)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_boolean_flags(self, mock_get_ddns_cmd):
+        """Test building DDNS command with boolean flags"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+        ddns_args = {"verbose": True, "ipv6": True, "debug": True}
+
+        result = task._build_ddns_command(ddns_args)
+
+        self.assertIn("--verbose", result)
+        self.assertIn("--ipv6", result)
+        self.assertIn("--debug", result)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_false_boolean(self, mock_get_ddns_cmd):
+        """Test building DDNS command with False boolean (should be treated as string)"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+        ddns_args = {"cache": False}
+
+        result = task._build_ddns_command(ddns_args)
+
+        # False boolean should be included as string value
+        self.assertIn("--cache false", result)
+
+    @patch("ddns.util.task._get_ddns_cmd")
+    def test_build_ddns_command_with_list_args(self, mock_get_ddns_cmd):
+        """Test building DDNS command with list arguments"""
+        mock_get_ddns_cmd.return_value = '"python3" -m ddns'
+        ddns_args = {"domains": ["example.com", "test.com"]}
+
+        result = task._build_ddns_command(ddns_args)
+
+        # Should include both domain entries
+        self.assertIn('--domains "example.com"', result)
+        self.assertIn('--domains "test.com"', result)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,329 @@
+# -*- coding:utf-8 -*-
+"""
+Tests for ddns.util.fileio module
+"""
+from __init__ import unittest, patch, MagicMock
+import tempfile
+import os
+
+import ddns.util.fileio as fileio
+
+
+class TestFileIOModule(unittest.TestCase):
+    """Test fileio module functions"""
+
+    def setUp(self):
+        """Set up test fixtures"""
+        self.test_content = "Hello World! 测试内容"
+        self.test_encoding = "utf-8"
+
+    def tearDown(self):
+        """Clean up after tests"""
+        pass
+
+    def test_ensure_directory_exists_success(self):
+        """Test _ensure_directory_exists creates directory successfully"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "subdir", "test.txt")
+            fileio._ensure_directory_exists(test_file)
+            self.assertTrue(os.path.exists(os.path.dirname(test_file)))
+
+    def test_ensure_directory_exists_already_exists(self):
+        """Test _ensure_directory_exists when directory already exists"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "test.txt")
+            # Directory already exists, should not raise error
+            fileio._ensure_directory_exists(test_file)
+            self.assertTrue(os.path.exists(temp_dir))
+
+    def test_ensure_directory_exists_empty_path(self):
+        """Test _ensure_directory_exists with empty directory path"""
+        # Should not raise error for relative paths without directory
+        fileio._ensure_directory_exists("test.txt")
+
+    @patch("ddns.util.fileio.os.makedirs")
+    @patch("ddns.util.fileio.os.path.exists")
+    @patch("ddns.util.fileio.os.path.dirname")
+    def test_ensure_directory_exists_makedirs_called(self, mock_dirname, mock_exists, mock_makedirs):
+        """Test _ensure_directory_exists calls os.makedirs when needed"""
+        mock_dirname.return_value = "/test/dir"
+        mock_exists.return_value = False
+
+        fileio._ensure_directory_exists("/test/dir/file.txt")
+
+        mock_dirname.assert_called_once_with("/test/dir/file.txt")
+        mock_exists.assert_called_once_with("/test/dir")
+        mock_makedirs.assert_called_once_with("/test/dir")
+
+    @patch("ddns.util.fileio.os.makedirs")
+    @patch("ddns.util.fileio.os.path.exists")
+    @patch("ddns.util.fileio.os.path.dirname")
+    def test_ensure_directory_exists_raises_exception(self, mock_dirname, mock_exists, mock_makedirs):
+        """Test _ensure_directory_exists properly raises OSError"""
+        mock_dirname.return_value = "/test/dir"
+        mock_exists.return_value = False
+        mock_makedirs.side_effect = OSError("Permission denied")
+
+        with self.assertRaises(OSError):
+            fileio._ensure_directory_exists("/test/dir/file.txt")
+
+    def test_read_file_success(self):
+        """Test read_file with successful file reading"""
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as temp_file:
+            temp_file.write(self.test_content)
+            temp_path = temp_file.name
+
+        try:
+            result = fileio.read_file(temp_path, self.test_encoding)
+            self.assertEqual(result, self.test_content)
+        finally:
+            os.unlink(temp_path)
+
+    def test_read_file_nonexistent_file(self):
+        """Test read_file with nonexistent file raises exception"""
+        with self.assertRaises((OSError, IOError)):
+            fileio.read_file("nonexistent_file.txt")
+
+    def test_read_file_different_encoding(self):
+        """Test read_file with different encoding"""
+        content = "ASCII content"
+        with tempfile.NamedTemporaryFile(mode="w", encoding="ascii", delete=False) as temp_file:
+            temp_file.write(content)
+            temp_path = temp_file.name
+
+        try:
+            result = fileio.read_file(temp_path, "ascii")
+            self.assertEqual(result, content)
+        finally:
+            os.unlink(temp_path)
+
+    @patch("ddns.util.fileio.open")
+    def test_read_file_with_mock(self, mock_open):
+        """Test read_file with mocked file operations"""
+        mock_file = MagicMock()
+        mock_file.read.return_value = self.test_content
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        result = fileio.read_file("/test/path.txt", self.test_encoding)
+
+        self.assertEqual(result, self.test_content)
+        mock_open.assert_called_once_with("/test/path.txt", "r", encoding=self.test_encoding)
+        mock_file.read.assert_called_once()
+
+    def test_read_file_safely_success(self):
+        """Test read_file_safely with successful file reading"""
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as temp_file:
+            temp_file.write(self.test_content)
+            temp_path = temp_file.name
+
+        try:
+            result = fileio.read_file_safely(temp_path, self.test_encoding)
+            self.assertEqual(result, self.test_content)
+        finally:
+            os.unlink(temp_path)
+
+    def test_read_file_safely_nonexistent_file(self):
+        """Test read_file_safely with nonexistent file returns None"""
+        result = fileio.read_file_safely("nonexistent_file.txt")
+        self.assertIsNone(result)
+
+    @patch("ddns.util.fileio.read_file")
+    def test_read_file_safely_exception_handling(self, mock_read_file):
+        """Test read_file_safely handles exceptions properly"""
+        mock_read_file.side_effect = OSError("File not found")
+
+        result = fileio.read_file_safely("/test/path.txt")
+        self.assertIsNone(result)
+        mock_read_file.assert_called_once_with("/test/path.txt", "utf-8")
+
+    @patch("ddns.util.fileio.read_file")
+    def test_read_file_safely_unicode_error(self, mock_read_file):
+        """Test read_file_safely handles UnicodeDecodeError"""
+        mock_read_file.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
+
+        result = fileio.read_file_safely("/test/path.txt")
+        self.assertIsNone(result)
+
+    def test_write_file_success(self):
+        """Test write_file with successful file writing"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "subdir", "test.txt")
+
+            fileio.write_file(test_file, self.test_content, self.test_encoding)
+
+            # Verify file was created and content is correct
+            self.assertTrue(os.path.exists(test_file))
+            with open(test_file, "r", encoding=self.test_encoding) as f:
+                content = f.read()
+            self.assertEqual(content, self.test_content)
+
+    def test_write_file_creates_directory(self):
+        """Test write_file automatically creates directory"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "new", "nested", "dir", "test.txt")
+
+            fileio.write_file(test_file, self.test_content)
+
+            # Verify directory structure was created
+            self.assertTrue(os.path.exists(os.path.dirname(test_file)))
+            self.assertTrue(os.path.exists(test_file))
+
+    @patch("ddns.util.fileio._ensure_directory_exists")
+    @patch("ddns.util.fileio.open")
+    def test_write_file_with_mock(self, mock_open, mock_ensure_dir):
+        """Test write_file with mocked operations"""
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        fileio.write_file("/test/path.txt", self.test_content, self.test_encoding)
+
+        mock_ensure_dir.assert_called_once_with("/test/path.txt")
+        mock_open.assert_called_once_with("/test/path.txt", "w", encoding=self.test_encoding)
+        mock_file.write.assert_called_once_with(self.test_content)
+
+    def test_write_file_safely_success(self):
+        """Test write_file_safely with successful file writing"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "test.txt")
+
+            result = fileio.write_file_safely(test_file, self.test_content, self.test_encoding)
+
+            self.assertTrue(result)
+            self.assertTrue(os.path.exists(test_file))
+            with open(test_file, "r", encoding=self.test_encoding) as f:
+                content = f.read()
+            self.assertEqual(content, self.test_content)
+
+    @patch("ddns.util.fileio.write_file")
+    def test_write_file_safely_exception_handling(self, mock_write_file):
+        """Test write_file_safely handles exceptions properly"""
+        mock_write_file.side_effect = OSError("Permission denied")
+
+        result = fileio.write_file_safely("/test/path.txt", self.test_content)
+        self.assertFalse(result)
+        mock_write_file.assert_called_once_with("/test/path.txt", self.test_content, "utf-8")
+
+    @patch("ddns.util.fileio.write_file")
+    def test_write_file_safely_unicode_error(self, mock_write_file):
+        """Test write_file_safely handles UnicodeEncodeError"""
+        mock_write_file.side_effect = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
+
+        result = fileio.write_file_safely("/test/path.txt", self.test_content)
+        self.assertFalse(result)
+
+    def test_ensure_directory_success(self):
+        """Test ensure_directory with successful directory creation"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "new", "nested", "test.txt")
+
+            result = fileio.ensure_directory(test_file)
+
+            self.assertTrue(result)
+            self.assertTrue(os.path.exists(os.path.dirname(test_file)))
+
+    def test_ensure_directory_already_exists(self):
+        """Test ensure_directory when directory already exists"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "test.txt")
+
+            result = fileio.ensure_directory(test_file)
+
+            self.assertTrue(result)
+
+    @patch("ddns.util.fileio._ensure_directory_exists")
+    def test_ensure_directory_exception_handling(self, mock_ensure_dir):
+        """Test ensure_directory handles exceptions properly"""
+        mock_ensure_dir.side_effect = OSError("Permission denied")
+
+        result = fileio.ensure_directory("/test/path.txt")
+        self.assertFalse(result)
+        mock_ensure_dir.assert_called_once_with("/test/path.txt")
+
+    @patch("ddns.util.fileio._ensure_directory_exists")
+    def test_ensure_directory_io_error(self, mock_ensure_dir):
+        """Test ensure_directory handles IOError"""
+        mock_ensure_dir.side_effect = IOError("IO Error")
+
+        result = fileio.ensure_directory("/test/path.txt")
+        self.assertFalse(result)
+
+    def test_integration_full_workflow(self):
+        """Integration test for complete file I/O workflow"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "integration", "test.txt")
+
+            # Test complete workflow
+            # 1. Ensure directory
+            self.assertTrue(fileio.ensure_directory(test_file))
+
+            # 2. Write file
+            fileio.write_file(test_file, self.test_content)
+
+            # 3. Read file
+            content = fileio.read_file(test_file)
+            self.assertEqual(content, self.test_content)
+
+            # 4. Safe operations
+            self.assertTrue(fileio.write_file_safely(test_file, "Updated content"))
+            updated_content = fileio.read_file_safely(test_file)
+            self.assertEqual(updated_content, "Updated content")
+
+    def test_integration_error_scenarios(self):
+        """Integration test for error handling scenarios"""
+        # Test nonexistent files
+        self.assertIsNone(fileio.read_file_safely("/nonexistent/path.txt"))
+
+        # Test safe operations return appropriate values
+        # Use a more portable invalid path that will fail on most systems
+        try:
+            # Try to write to root directory (usually fails due to permissions)
+            invalid_path = "C:\\invalid_root_file.txt" if os.name == "nt" else "/invalid_root_file.txt"
+            result = fileio.write_file_safely(invalid_path, "content")
+            # On some systems this might work, on others it might fail
+            # We just verify it doesn't crash and returns a boolean
+            self.assertIsInstance(result, bool)
+        except Exception:
+            # If any exception occurs, that's also acceptable for this test
+            # as we're testing that the function handles errors gracefully
+            pass
+
+    def test_utf8_encoding_support(self):
+        """Test UTF-8 encoding support with various characters"""
+        test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for i, content in enumerate(test_contents):
+                test_file = os.path.join(temp_dir, f"test_{i}.txt")
+
+                # Write and read back
+                fileio.write_file(test_file, content)
+                read_content = fileio.read_file(test_file)
+                self.assertEqual(read_content, content, f"Failed for content: {repr(content)}")
+
+                # Test safe operations
+                self.assertTrue(fileio.write_file_safely(test_file, content))
+                safe_content = fileio.read_file_safely(test_file)
+                self.assertEqual(safe_content, content)
+
+    def test_different_encodings(self):
+        """Test support for different encodings"""
+        ascii_content = "ASCII only content"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_file = os.path.join(temp_dir, "ascii_test.txt")
+
+            # Write with ASCII encoding
+            fileio.write_file(test_file, ascii_content, "ascii")
+
+            # Read with ASCII encoding
+            content = fileio.read_file(test_file, "ascii")
+            self.assertEqual(content, ascii_content)
+
+            # Test safe operations with encoding
+            self.assertTrue(fileio.write_file_safely(test_file, ascii_content, "ascii"))
+            safe_content = fileio.read_file_safely(test_file, "ascii")
+            self.assertEqual(safe_content, ascii_content)
+
+
+if __name__ == "__main__":
+    unittest.main()

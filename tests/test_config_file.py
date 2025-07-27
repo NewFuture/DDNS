@@ -343,6 +343,12 @@ class TestConfigFile(unittest.TestCase):
 
     def test_save_config_invalid_path(self):
         """Test saving configuration to invalid path"""
+        import os
+
+        # Skip this test on Windows as path creation behavior is different
+        if os.name == "nt":
+            self.skipTest("Path creation behavior differs on Windows")
+
         config_data = {"dns": "test"}
         invalid_path = "/invalid/path/that/does/not/exist/config.json"
 
