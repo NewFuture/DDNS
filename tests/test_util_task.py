@@ -72,7 +72,7 @@ class TestTaskFunctions(unittest.TestCase):
         """Test is_installed for systemd when timer is enabled"""
         mock_get_scheduler.return_value = "systemd"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"enabled\n"
+            mock_check_output.return_value = "enabled\n"
             result = task.is_installed()
             self.assertTrue(result)
 
@@ -81,7 +81,7 @@ class TestTaskFunctions(unittest.TestCase):
         """Test is_installed for systemd when timer is disabled"""
         mock_get_scheduler.return_value = "systemd"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"disabled\n"
+            mock_check_output.return_value = "disabled\n"
             result = task.is_installed()
             self.assertFalse(result)
 
@@ -90,7 +90,7 @@ class TestTaskFunctions(unittest.TestCase):
         """Test is_installed for cron when DDNS job exists"""
         mock_get_scheduler.return_value = "cron"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"*/5 * * * * /usr/bin/ddns\n"
+            mock_check_output.return_value = "*/5 * * * * /usr/bin/ddns\n"
             result = task.is_installed()
             self.assertTrue(result)
 
@@ -99,7 +99,7 @@ class TestTaskFunctions(unittest.TestCase):
         """Test is_installed for cron when no DDNS job exists"""
         mock_get_scheduler.return_value = "cron"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"*/5 * * * * /usr/bin/other\n"
+            mock_check_output.return_value = "*/5 * * * * /usr/bin/other\n"
             result = task.is_installed()
             self.assertFalse(result)
 
@@ -126,7 +126,7 @@ class TestTaskFunctions(unittest.TestCase):
         """Test is_installed for schtasks when task exists"""
         mock_get_scheduler.return_value = "schtasks"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"DDNS task found\n"
+            mock_check_output.return_value = "DDNS task found\n"
             result = task.is_installed()
             self.assertTrue(result)
 
@@ -204,7 +204,7 @@ WantedBy=multi-user.target
         """Test _get_task_interval for cron"""
         cron_content = "*/15 * * * * cd /path && python -m ddns"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = cron_content.encode()
+            mock_check_output.return_value = cron_content
             result = task._get_task_interval("cron")
             self.assertEqual(result, 15)
 
@@ -234,7 +234,7 @@ WantedBy=multi-user.target
         """Test _get_task_command for cron"""
         cron_content = "*/15 * * * * cd /path && python3 -m ddns --config /home/user/ddns.json"
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = cron_content.encode()
+            mock_check_output.return_value = cron_content
             result = task._get_task_command("cron")
             self.assertEqual(result, "cd /path && python3 -m ddns --config /home/user/ddns.json")
 
@@ -246,7 +246,7 @@ WantedBy=multi-user.target
     def test_get_running_status_systemd_active(self):
         """Test _get_running_status for systemd when active"""
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"active\n"
+            mock_check_output.return_value = "active\n"
             result = task._get_running_status("systemd")
             self.assertEqual(result, "active")
 
@@ -260,7 +260,7 @@ WantedBy=multi-user.target
     def test_get_running_status_cron_active(self):
         """Test _get_running_status for cron when active"""
         with patch("subprocess.check_output") as mock_check_output:
-            mock_check_output.return_value = b"12345\n"
+            mock_check_output.return_value = "12345\n"
             result = task._get_running_status("cron")
             self.assertEqual(result, "active")
 
