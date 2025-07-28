@@ -233,7 +233,7 @@ def disable():
     return _dispatch_scheduler_operation("disable")
 
 
-def _get_task_interval(scheduler):
+def _get_task_interval(scheduler):  # noqa: C901
     # type: (str) -> int | None
     """Get the actual interval from installed task"""
     try:
@@ -241,7 +241,7 @@ def _get_task_interval(scheduler):
             content = read_file_safely(_get_systemd_path(SYSTEMD_TIMER))
             if content:
                 match = re.search(r"OnUnitActiveSec=(\d+)m", content)
-                return int(match.group(1)) if match else None
+                return match and int(match.group(1))
 
         elif scheduler == "cron":
             result = _run_command(["crontab", "-l"])
@@ -270,7 +270,7 @@ def _get_task_interval(scheduler):
     return None
 
 
-def _get_task_command(scheduler):
+def _get_task_command(scheduler):  # noqa: C901
     # type: (str) -> str | None
     """Get the actual command from installed task"""
     try:

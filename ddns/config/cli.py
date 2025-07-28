@@ -254,7 +254,7 @@ def _handle_task_command(args):  # type: (dict) -> None
     """Handle task subcommand"""
 
     # Extract task management arguments
-    interval = args.get("install", 5) or 5 # Default 5 minutes
+    interval = args.get("install", 5) or 5  # Default 5 minutes
 
     # Build DDNS command arguments from task subcommand arguments
     task_management_args = {"status", "install", "uninstall", "enable", "disable", "command"}
