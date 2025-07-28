@@ -417,8 +417,8 @@ def _uninstall_systemd():
     """Uninstall systemd timer and service"""
     try:
         # Stop and disable timer
-        subprocess.call(["systemctl", "stop", "ddns.timer"], stderr=subprocess.DEVNULL)
-        subprocess.call(["systemctl", "disable", "ddns.timer"], stderr=subprocess.DEVNULL)
+        subprocess.call(["systemctl", "stop", "ddns.timer"])
+        subprocess.call(["systemctl", "disable", "ddns.timer"])
 
         # Remove files
         service_files = [_get_systemd_path(SYSTEMD_SERVICE), _get_systemd_path(SYSTEMD_TIMER)]
@@ -531,7 +531,7 @@ def _uninstall_launchd():
     plist_path = _get_launchd_plist_path()
 
     # Unload the plist
-    subprocess.call(["launchctl", "unload", plist_path], stderr=subprocess.DEVNULL)
+    subprocess.call(["launchctl", "unload", plist_path])
     # Remove the plist file
     try:
         os.remove(plist_path)
