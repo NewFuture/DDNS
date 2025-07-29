@@ -14,7 +14,13 @@ import ddns.util.fileio as fileio
 # Test constants
 TEST_ENCODING_UTF8 = "utf-8"
 TEST_ENCODING_ASCII = "ascii"
-TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
+# Ensure content is unicode for Python 2 compatibility
+try:
+    # Python 2
+    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
+except NameError:
+    # Python 3
+    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
 
 
 class TestFileIOModule(unittest.TestCase):
@@ -83,14 +89,17 @@ class TestFileIOModule(unittest.TestCase):
 
     def test_read_file_success(self):
         """Test read_file with successful file reading"""
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as temp_file:
-            temp_file.write(self.test_content)
-            temp_path = temp_file.name
-
+        # Create temporary file with Python 2/3 compatible approach
+        temp_fd, temp_path = tempfile.mkstemp()
         try:
+            # Write content using io.open for consistent behavior
+            with open(temp_path, "w", encoding="utf-8") as temp_file:
+                temp_file.write(self.test_content)
+
             result = fileio.read_file(temp_path, self.test_encoding)
             self.assertEqual(result, self.test_content)
         finally:
+            os.close(temp_fd)
             os.unlink(temp_path)
 
     def test_read_file_nonexistent_file(self):
@@ -100,15 +109,24 @@ class TestFileIOModule(unittest.TestCase):
 
     def test_read_file_different_encoding(self):
         """Test read_file with different encoding"""
-        content = "ASCII content"
-        with tempfile.NamedTemporaryFile(mode="w", encoding="ascii", delete=False) as temp_file:
-            temp_file.write(content)
-            temp_path = temp_file.name
-
+        # Use ASCII-safe content for encoding test
         try:
+            # Python 2 - ensure unicode
+            content = "ASCII content"
+        except NameError:
+            # Python 3
+            content = "ASCII content"
+
+        temp_fd, temp_path = tempfile.mkstemp()
+        try:
+            # Write content using io.open for consistent behavior
+            with open(temp_path, "w", encoding="ascii") as temp_file:
+                temp_file.write(content)
+
             result = fileio.read_file(temp_path, "ascii")
             self.assertEqual(result, content)
         finally:
+            os.close(temp_fd)
             os.unlink(temp_path)
 
     @patch("ddns.util.fileio.open")
@@ -126,14 +144,16 @@ class TestFileIOModule(unittest.TestCase):
 
     def test_read_file_safely_success(self):
         """Test read_file_safely with successful file reading"""
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as temp_file:
-            temp_file.write(self.test_content)
-            temp_path = temp_file.name
-
+        temp_fd, temp_path = tempfile.mkstemp()
         try:
+            # Write content using io.open for consistent behavior
+            with open(temp_path, "w", encoding="utf-8") as temp_file:
+                temp_file.write(self.test_content)
+
             result = fileio.read_file_safely(temp_path, self.test_encoding)
             self.assertEqual(result, self.test_content)
         finally:
+            os.close(temp_fd)
             os.unlink(temp_path)
 
     def test_read_file_safely_nonexistent_file(self):
@@ -231,7 +251,15 @@ class TestFileIOModule(unittest.TestCase):
     @patch("ddns.util.fileio.write_file")
     def test_write_file_safely_unicode_error(self, mock_write_file):
         """Test write_file_safely handles UnicodeEncodeError"""
-        mock_write_file.side_effect = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
+        # Create UnicodeEncodeError with proper arguments for Python 2/3 compatibility
+        try:
+            # Python 2 - need unicode objects
+            error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
+        except TypeError:
+            # Python 3 - accepts str objects
+            error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
+
+        mock_write_file.side_effect = error
 
         result = fileio.write_file_safely("/test/path.txt", self.test_content)
         self.assertFalse(result)
@@ -296,9 +324,16 @@ class TestFileIOModule(unittest.TestCase):
             self.assertEqual(content, self.test_content)
 
             # 4. Safe operations
-            self.assertTrue(fileio.write_file_safely(test_file, "Updated content"))
+            try:
+                # Python 2 - ensure unicode
+                updated_content_str = "Updated content"
+            except NameError:
+                # Python 3
+                updated_content_str = "Updated content"
+
+            self.assertTrue(fileio.write_file_safely(test_file, updated_content_str))
             updated_content = fileio.read_file_safely(test_file)
-            self.assertEqual(updated_content, "Updated content")
+            self.assertEqual(updated_content, updated_content_str)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -323,7 +358,27 @@ class TestFileIOModule(unittest.TestCase):
 
     def test_utf8_encoding_support(self):
         """Test UTF-8 encoding support with various characters"""
-        test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
+        # Ensure all test contents are unicode for Python 2 compatibility
+        try:
+            # Python 2 - ensure unicode
+            test_contents = [
+                "English text",
+                "中文测试",
+                "Русский текст",
+                "العربية",
+                "🌟✨🎉",
+                "Mixed: English 中文 🎉",
+            ]
+        except NameError:
+            # Python 3
+            test_contents = [
+                "English text",
+                "中文测试",
+                "Русский текст",
+                "العربية",
+                "🌟✨🎉",
+                "Mixed: English 中文 🎉",
+            ]
 
         temp_dir = tempfile.mkdtemp()
         try:
@@ -344,7 +399,13 @@ class TestFileIOModule(unittest.TestCase):
 
     def test_different_encodings(self):
         """Test support for different encodings"""
-        ascii_content = "ASCII only content"
+        # Use ASCII-safe content for encoding test
+        try:
+            # Python 2 - ensure unicode
+            ascii_content = "ASCII only content"
+        except NameError:
+            # Python 3
+            ascii_content = "ASCII only content"
 
         temp_dir = tempfile.mkdtemp()
         try:
