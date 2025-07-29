@@ -114,7 +114,10 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
         help="load config file [配置文件路径, 可多次指定]",
     )
     arg.add_argument("--debug", action="store_true", help="debug mode [开启调试模式]")
-    arg.add_argument(
+
+    # DDNS Configuration group
+    ddns = arg.add_argument_group("DDNS Configuration [DDNS配置参数]")
+    ddns.add_argument(
         "--dns",
         help="DNS provider [DNS服务提供商]",
         choices=[
@@ -135,33 +138,40 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
             "tencentcloud",
         ],
     )
-    arg.add_argument("--id", help="API ID or email [对应账号ID或邮箱]")
-    arg.add_argument("--token", help="API token or key [授权凭证或密钥]")
-    arg.add_argument("--endpoint", help="API endpoint URL [API端点URL]")
-    arg.add_argument(
+    ddns.add_argument("--id", help="API ID or email [对应账号ID或邮箱]")
+    ddns.add_argument("--token", help="API token or key [授权凭证或密钥]")
+    ddns.add_argument("--endpoint", help="API endpoint URL [API端点URL]")
+    ddns.add_argument(
         "--index4", nargs="*", action=ExtendAction, metavar="RULE", help="IPv4 rules [获取IPv4方式, 多次可配置多规则]"
     )
-    arg.add_argument(
+    ddns.add_argument(
         "--index6", nargs="*", action=ExtendAction, metavar="RULE", help="IPv6 rules [获取IPv6方式, 多次配置多规则]"
     )
-    arg.add_argument(
+    ddns.add_argument(
         "--ipv4", nargs="*", action=ExtendAction, metavar="DOMAIN", help="IPv4 domains [IPv4域名列表, 可配多个域名]"
     )
-    arg.add_argument(
+    ddns.add_argument(
         "--ipv6", nargs="*", action=ExtendAction, metavar="DOMAIN", help="IPv6 domains [IPv6域名列表, 可配多个域名]"
     )
-    arg.add_argument("--ttl", type=int, help="DNS TTL(s) [设置域名解析过期时间]")
-    arg.add_argument("--line", help="DNS line/route [DNS线路设置，如电信、联通、移动等]")
-    arg.add_argument("--proxy", nargs="*", action=ExtendAction, help="HTTP proxy [设置http代理，可配多个代理连接]")
-    arg.add_argument("--cache", type=str_bool, nargs="?", const=True, help="set cache [启用缓存开关，或传入保存路径]")
-    arg.add_argument(
+    ddns.add_argument("--ttl", type=int, help="DNS TTL(s) [设置域名解析过期时间]")
+    ddns.add_argument("--line", help="DNS line/route [DNS线路设置]")
+
+    # Advanced Options group
+    advanced = arg.add_argument_group("Advanced Options [高级参数]")
+    advanced.add_argument(
+        "--proxy", nargs="*", action=ExtendAction, help="HTTP proxy [设置http代理，可配多个代理连接]"
+    )
+    advanced.add_argument(
+        "--cache", type=str_bool, nargs="?", const=True, help="set cache [启用缓存开关，或传入保存路径]"
+    )
+    advanced.add_argument(
         "--no-cache",
         dest="cache",
         action="store_const",
         const=False,
         help="disable cache [关闭缓存等效 --cache=false]",
     )
-    arg.add_argument(
+    advanced.add_argument(
         "--ssl",
         type=str_bool,
         nargs="?",
@@ -169,21 +179,56 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
         help="SSL certificate verification [SSL证书验证方式]: "
         "true(强制验证), false(禁用验证), auto(自动降级), /path/to/cert.pem(自定义证书)",
     )
-    arg.add_argument(
+    advanced.add_argument(
         "--no-ssl",
         dest="ssl",
         action="store_const",
         const=False,
         help="disable SSL verify [禁用验证, 等效 --ssl=false]",
     )
-    arg.add_argument("--log_file", metavar="FILE", help="log file [日志文件，默认标准输出]")
-    arg.add_argument("--log.file", "--log-file", dest="log_file", help=SUPPRESS)  # 隐藏参数
-    arg.add_argument("--log_level", type=log_level, metavar="|".join(log_levels), help=None)
-    arg.add_argument("--log.level", "--log-level", dest="log_level", type=log_level, help=SUPPRESS)  # 隐藏参数
-    arg.add_argument("--log_format", metavar="FORMAT", help="set log format [日志格式]")
-    arg.add_argument("--log.format", "--log-format", dest="log_format", help=SUPPRESS)  # 隐藏参数
-    arg.add_argument("--log_datefmt", metavar="FORMAT", help="set log date format [日志时间格式]")
-    arg.add_argument("--log.datefmt", "--log-datefmt", dest="log_datefmt", help=SUPPRESS)  # 隐藏参数
+    advanced.add_argument("--log_file", metavar="FILE", help="log file [日志文件，默认标准输出]")
+    advanced.add_argument("--log.file", "--log-file", dest="log_file", help=SUPPRESS)  # 隐藏参数
+    advanced.add_argument("--log_level", type=log_level, metavar="|".join(log_levels), help=None)
+    advanced.add_argument("--log.level", "--log-level", dest="log_level", type=log_level, help=SUPPRESS)  # 隐藏参数
+    advanced.add_argument("--log_format", metavar="FORMAT", help="set log format [日志格式]")
+    advanced.add_argument("--log.format", "--log-format", dest="log_format", help=SUPPRESS)  # 隐藏参数
+    advanced.add_argument("--log_datefmt", metavar="FORMAT", help="set log date format [日志时间格式]")
+    advanced.add_argument("--log.datefmt", "--log-datefmt", dest="log_datefmt", help=SUPPRESS)  # 隐藏参数
+
+
+def _add_task_subcommand_if_needed(parser):
+    # type: (ArgumentParser) -> None
+    """
+    Conditionally add task subcommand to avoid Python 2 'too few arguments' error.
+
+    Python 2's argparse requires subcommand when subparsers are defined, but Python 3 doesn't.
+    We only add subparsers when the first argument is likely a subcommand (doesn't start with '-').
+    """
+    # Python2 Only add subparsers when first argument is a subcommand (not an option)
+    if len(sys.argv) <= 1 or (sys.argv[1].startswith("-") and sys.argv[1] != "--help"):
+        return
+
+    # Add subparsers for subcommands
+    subparsers = parser.add_subparsers(dest="command", help="task commands [定时任务子命令]")
+
+    # Create task subcommand parser
+    task_parser = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
+    _add_ddns_args(task_parser)
+
+    # Add task-specific arguments
+    task_parser.add_argument(
+        "--install",
+        "-i",
+        nargs="?",
+        type=int,
+        const=5,
+        metavar="MINUTES",
+        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]",
+    )
+    task_parser.add_argument("--uninstall", action="store_true", help="Uninstall scheduled task [卸载定时任务]")
+    task_parser.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
+    task_parser.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
+    task_parser.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
 
 
 def load_config(description, doc, version, date):
@@ -212,29 +257,14 @@ def load_config(description, doc, version, date):
         "--new-config", metavar="FILE", action=NewConfigAction, nargs="?", help="generate new config [生成配置文件]"
     )
 
-    # Add subparsers for subcommands
-    subparsers = parser.add_subparsers(dest="command", help="task commands [定时任务子命令]")
-    # Task subcommand
-    task_parser = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
-    _add_ddns_args(task_parser)  # Add common DDNS arguments to task parser
-    task_parser.add_argument(
-        "--install",
-        "-i",
-        nargs="?",
-        type=int,
-        const=5,
-        metavar="MINUTES",
-        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]",
-    )
-    task_parser.add_argument("--uninstall", action="store_true", help="Uninstall scheduled task [卸载定时任务]")
-    task_parser.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
-    task_parser.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
-    task_parser.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
+    # Python 2/3 compatibility: conditionally add subparsers to avoid 'too few arguments' error
+    # Subparsers are only needed when user provides a subcommand (non-option argument)
+    _add_task_subcommand_if_needed(parser)
 
     args = parser.parse_args()
 
-    # Handle task subcommand directly here and exit
-    if args.command == "task":
+    # Handle task subcommand and exit early if present
+    if getattr(args, "command", None) == "task":
         _handle_task_command(vars(args))
         sys.exit(0)
 
