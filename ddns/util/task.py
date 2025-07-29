@@ -15,7 +15,7 @@ from .fileio import read_file_safely, write_file
 
 __all__ = ["get_scheduler_type", "is_installed", "get_status", "install", "uninstall", "enable", "disable"]
 
-logger = getLogger(__name__)
+logger = getLogger().getChild("task")
 
 # Constants and helper functions
 TASK_NAME = "DDNS"

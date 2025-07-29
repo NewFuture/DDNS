@@ -6,7 +6,7 @@ Configuration loader for DDNS command-line interface.
 import sys
 import platform
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
-from logging import getLevelName
+from logging import DEBUG, getLevelName, basicConfig
 from os import path as os_path
 from .file import save_config
 from ..util import task
@@ -156,9 +156,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
 
     # Advanced Options group
     advanced = arg.add_argument_group("Advanced Options [高级参数]")
-    advanced.add_argument(
-        "--proxy", nargs="*", action=ExtendAction, help="HTTP proxy [设置http代理，可配多个代理连接]"
-    )
+    advanced.add_argument("--proxy", nargs="*", action=ExtendAction, help="HTTP proxy [设置http代理，可配多个代理连接]")
     advanced.add_argument(
         "--cache", type=str_bool, nargs="?", const=True, help="set cache [启用缓存开关，或传入保存路径]"
     )
@@ -280,7 +278,7 @@ def load_config(description, doc, version, date):
 
 def _handle_task_command(args):  # type: (dict) -> None
     """Handle task subcommand"""
-
+    basicConfig(level=args["debug"] and DEBUG or args.get("log_level", "INFO"))
     # Extract task management arguments
     interval = args.get("install", 5) or 5  # Default 5 minutes
 
