@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Cron Task Management Test Script
 # Tests DDNS task functionality with cron on Linux systems
 # Exits with non-zero status on verification failure
@@ -13,7 +13,7 @@ set -e  # Exit on any error
 PYTHON_CMD=${PYTHON_CMD:-python3}
 
 # Check if DDNS command is provided as argument
-if [[ -z "$1" ]]; then
+if [ -z "$1" ]; then
     DDNS_CMD="$PYTHON_CMD -m ddns"
 else
     DDNS_CMD="$1"
@@ -31,20 +31,20 @@ fi
 
 # Function to check crontab and validate task existence
 check_crontab() {
-    local expected_state=$1  # "exists" or "not_exists"
+    expected_state=$1  # "exists" or "not_exists"
     
     echo "Checking crontab..."
     if crontab -l 2>/dev/null | grep -q "ddns\|DDNS"; then
         echo "✅ DDNS crontab entry found"
         echo "Crontab entries:"
         crontab -l 2>/dev/null | grep -i ddns || true
-        if [[ "$expected_state" == "not_exists" ]]; then
+        if [ "$expected_state" = "not_exists" ]; then
             echo "❌ VERIFICATION FAILED: Crontab entry should not exist but was found"
             return 1
         fi
     else
         echo "ℹ️ No DDNS crontab entry found"
-        if [[ "$expected_state" == "exists" ]]; then
+        if [ "$expected_state" = "exists" ]; then
             echo "❌ VERIFICATION FAILED: Crontab entry should exist but was not found"
             return 1
         fi
@@ -53,8 +53,7 @@ check_crontab() {
 }
 
 check_ddns_status() {
-    local expected_status=$1  # "Yes" or "No"
-    local status_output
+    expected_status=$1  # "Yes" or "No"
     
     echo "Checking DDNS status..."
     status_output=$($DDNS_CMD task --status | grep "Installed:" | head -1 || echo "Installed: Unknown")
@@ -115,7 +114,7 @@ check_crontab "exists" || exit 1
 # Verify crontab entry format
 echo "Verifying crontab entry format..."
 cron_entry=$(crontab -l 2>/dev/null | grep -i ddns | head -1)
-if [[ -n "$cron_entry" ]]; then
+if [ -n "$cron_entry" ]; then
     echo "Cron entry: $cron_entry"
     if echo "$cron_entry" | grep -q "\*/10"; then
         echo "✅ Cron entry has correct 10-minute interval"
@@ -127,14 +126,14 @@ else
     exit 1
 fi
 
-# Test Step 6: Delete task
+# Test Step 6: uninstall task
 echo ""
-echo "=== Step 6: Deleting DDNS task ==="
-$DDNS_CMD task --delete || {
-    echo "❌ VERIFICATION FAILED: Task deletion failed"
+echo "=== Step 6: Uninstalling DDNS task ==="
+$DDNS_CMD task --uninstall || {
+    echo "❌ VERIFICATION FAILED: Task uninstallation failed"
     exit 1
 }
-echo "✅ Task deletion command completed"
+echo "✅ Task uninstallation command completed"
 
 # Test Step 7: Verify deletion
 echo ""
@@ -149,7 +148,7 @@ check_crontab "not_exists" || exit 1
 # Test help commands availability
 echo ""
 echo "=== Step 9: Help commands verification ==="
-if $DDNS_CMD task --help | head -10 | grep -q "install\|uninstall\|enable\|disable\|status"; then
+if $DDNS_CMD task --help | grep -q "install\|uninstall\|enable\|disable\|status"; then
     echo "✅ Task commands found in help"
 else
     echo "❌ VERIFICATION FAILED: Task commands missing from help"

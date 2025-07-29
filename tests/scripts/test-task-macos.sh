@@ -182,18 +182,18 @@ if ! (launchctl list 2>/dev/null | grep -q "ddns" || crontab -l 2>/dev/null | gr
 fi
 echo "✅ At least one scheduling system has DDNS task"
 
-# Test Step 6: Delete task
+# Test Step 6: uninstall task
 echo ""
-echo "=== Step 6: Deleting DDNS task ==="
-$DDNS_CMD task --delete || {
-    echo "❌ VERIFICATION FAILED: Task deletion failed"
+echo "=== Step 6: Uninstalling DDNS task ==="
+$DDNS_CMD task --uninstall || {
+    echo "❌ VERIFICATION FAILED: Task uninstallation failed"
     exit 1
 }
-echo "✅ Task deletion command completed"
+echo "✅ Task uninstallation command completed"
 
-# Test Step 7: Verify deletion
+# Test Step 7: Verify uninstallation
 echo ""
-echo "=== Step 7: Verifying deletion ==="
+echo "=== Step 7: Verifying uninstallation ==="
 check_ddns_status "No" || exit 1
 
 # Final system state verification
@@ -206,7 +206,7 @@ check_crontab "not_exists" || exit 1
 # Test help commands availability
 echo ""
 echo "=== Step 9: Help commands verification ==="
-if $DDNS_CMD task --help | head -10 | grep -q "install\|uninstall\|enable\|disable\|status"; then
+if $DDNS_CMD task --help | grep -q "install\|uninstall\|enable\|disable\|status"; then
     echo "✅ Task commands found in help"
 else
     echo "❌ VERIFICATION FAILED: Task commands missing from help"

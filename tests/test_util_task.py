@@ -161,9 +161,10 @@ class TestTaskFunctions(unittest.TestCase):
     @patch("ddns.util.task.is_installed")
     @patch("ddns.util.task._get_running_status")
     @patch("ddns.util.task._get_task_interval")
+    @patch("ddns.util.task._get_task_command")
     @patch("ddns.util.task.platform.system")
     def test_get_status_installed(
-        self, mock_system, mock_get_interval, mock_get_running_status, mock_is_installed, mock_get_scheduler
+        self, mock_system, mock_get_command, mock_get_interval, mock_get_running_status, mock_is_installed, mock_get_scheduler
     ):
         """Test get_status when task is installed"""
         mock_system.return_value = "Linux"
@@ -171,6 +172,7 @@ class TestTaskFunctions(unittest.TestCase):
         mock_is_installed.return_value = True
         mock_get_running_status.return_value = "active"
         mock_get_interval.return_value = 10
+        mock_get_command.return_value = "/usr/bin/python3 -m ddns --debug false"
 
         status = task.get_status()
 
@@ -180,6 +182,7 @@ class TestTaskFunctions(unittest.TestCase):
             "system": "linux",
             "interval": 10,
             "running_status": "active",
+            "command": "/usr/bin/python3 -m ddns --debug false",
         }
         self.assertEqual(status, expected_status)
 

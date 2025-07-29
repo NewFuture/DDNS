@@ -123,7 +123,7 @@ fi
 # Test Step 6: Delete task
 echo ""
 echo "=== Step 6: Deleting DDNS task ==="
-sudo $DDNS_CMD task --delete || {
+sudo $DDNS_CMD task --uninstall || {
     echo "❌ VERIFICATION FAILED: Task deletion failed"
     exit 1
 }
@@ -158,7 +158,7 @@ fi
 # Test help commands availability
 echo ""
 echo "=== Step 9: Help commands verification ==="
-if $DDNS_CMD task --help | head -10 | grep -q "install\|uninstall\|enable\|disable\|status"; then
+if $DDNS_CMD task --help | grep -q "install\|uninstall\|enable\|disable\|status"; then
     echo "✅ Task commands found in help"
 else
     echo "❌ VERIFICATION FAILED: Task commands missing from help"
