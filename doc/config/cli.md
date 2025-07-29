@@ -89,7 +89,23 @@ ddns --ipv4=example.com,www.example.com
 | `--log_format`  | 字符串      | 日志格式字符串（`logging`模块格式）                                                                                                                   | `--log_format="%(asctime)s:%(message)s"`                |
 | `--log_datefmt` | 字符串      | 日志日期时间格式                                                                                                                                 | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
 
-> **注意**: 其中`--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`为命令行独有参数。
+> 这些参数仅支持命令行使用：`--debug`, `--no-cache`, `--no-ssl`, `--help`, `--version`。
+
+#### Task 子命令参数
+
+| 参数              | 类型       | 描述                                                                                                                                       | 示例                                                       |
+| --------------- | :-----: | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `--install`, `-i` | 整数（可选） | 安装定时任务，可指定更新间隔分钟数（默认5分钟）。**自动覆盖已有任务**                                                                                 | `--install`、`-i 10`                         |
+| `--uninstall`   | 标志       | 卸载已安装的定时任务                                                                                                                           | `--uninstall`                                           |
+| `--status`      | 标志       | 显示定时任务安装状态和运行信息                                                                                                                      | `--status`                                               |
+| `--enable`      | 标志       | 启用已安装的定时任务                                                                                                                           | `--enable`                                               |
+| `--disable`     | 标志       | 禁用已安装的定时任务                                                                                                                           | `--disable`                                              |
+
+> **重要说明**:
+>
+> - `--install` 命令**自动覆盖安装**，无需检查是否已安装。如果系统中已有 DDNS 定时任务，会自动替换为新配置。
+> - 这种设计简化了任务管理流程，避免手动卸载的繁琐操作。
+> - `task` 子命令支持所有主要 DDNS 配置参数（如 `--dns`, `--id`, `--token`, `--ipv4`, `--ipv6` 等），这些参数将被保存并传递给定时任务执行时使用。
 
 ## 配置文件
 
@@ -300,7 +316,13 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
 
 DDNS 支持通过 `task` 子命令管理定时任务，可自动根据系统选择合适的调度器安装定时更新任务。
 
-### 基本用法
+### 重要特性
+
+- **智能安装**: `--install` 命令自动覆盖已有任务，简化安装流程
+- **跨平台支持**: 自动检测系统并选择最佳调度器
+- **完整配置**: 支持所有 DDNS 配置参数
+
+### Task 子命令用法
 
 ```bash
 # 查看帮助
@@ -319,8 +341,14 @@ ddns task --install
 ddns task --install 10
 ddns task -i 15
 
-# 删除已安装的定时任务
-ddns task --delete
+# 启用已安装的定时任务
+ddns task --enable
+
+# 禁用已安装的定时任务
+ddns task --disable
+
+# 卸载已安装的定时任务
+ddns task --uninstall
 ```
 
 ### 支持的调度器
@@ -336,10 +364,18 @@ DDNS 会自动检测系统并选择最合适的调度器：
 | 参数 | 描述 |
 |------|------|
 | `--status` | 显示定时任务安装状态和运行信息 |
-| `--install [分钟]`, `-i [分钟]` | 安装定时任务，可指定更新间隔（默认5分钟） |
-| `--delete` | 删除已安装的定时任务 |
-| `-c`, `--config` | 指定定时任务使用的配置文件路径 |
-| `--log-file` | 指定定时任务使用的日志文件路径 |
+| `--install [分钟]`, `-i [分钟]` | 安装定时任务，可指定更新间隔（默认5分钟）。**自动覆盖已有任务** |
+| `--uninstall` | 卸载已安装的定时任务 |
+| `--enable` | 启用已安装的定时任务 |
+| `--disable` | 禁用已安装的定时任务 |
+
+> **安装行为说明**:
+>
+> - `--install` 命令直接执行安装，无需事先检查或卸载
+> - 自动替换系统中已有的 DDNS 定时任务
+> - 简化任务管理流程，一键完成任务更新
+
+> **配置参数支持**: `task` 子命令支持所有 DDNS 配置参数，这些参数将被传递给定时任务执行时使用。
 
 ### 权限要求
 
@@ -357,13 +393,58 @@ DDNS 会自动检测系统并选择最合适的调度器：
 ddns task --status
 
 # 安装 10 分钟间隔的定时任务，使用指定配置文件
-ddns task --install 10 -c /etc/ddns/config.json --log-file /var/log/ddns.log
+ddns task --install 10 -c /etc/ddns/config.json
+
+# 安装定时任务并直接指定 DDNS 参数（无需配置文件）
+ddns task --install 5 --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
+# 安装定时任务，包含高级配置参数
+ddns task --install 10 --dns dnspod --id 12345 --token secret \
+          --ipv4 example.com --ttl 600 --proxy http://proxy:8080 \
+          --log_file /var/log/ddns.log --log_level INFO
 
 # 在 Linux 上使用 sudo 安装 systemd 定时器
-sudo ddns task --install 5
+sudo ddns task --install 5 -c /etc/ddns/config.json
 
-# 删除定时任务
-ddns task --delete
+# 更新任务配置（自动覆盖）
+ddns task --install 15 --dns cloudflare --id user@example.com --token NEW_TOKEN --ipv4 example.com
+
+# 启用已安装的任务
+ddns task --enable
+
+# 禁用任务（不删除，仅停止执行）
+ddns task --disable
+
+# 完全卸载定时任务
+ddns task --uninstall
+```
+
+### 与配置文件结合使用
+
+`task` 子命令可以与配置文件完美结合，支持多种配置方式：
+
+```bash
+# 使用本地配置文件
+ddns task --install 10 -c config.json
+
+# 使用多个配置文件
+ddns task --install 5 -c cloudflare.json -c dnspod.json
+
+# 使用远程配置文件
+ddns task --install 15 -c https://config.example.com/ddns.json
+
+# 配置文件 + 命令行参数覆盖
+ddns task --install 10 -c config.json --debug --ttl 300
+```
+
+### 调试安装问题
+
+```bash
+# 启用调试模式查看详细安装过程
+ddns task --install 5 --debug
+
+# 查看任务状态和配置
+ddns task --status --debug
 ```
 
 ## 常用命令示例
@@ -385,6 +466,29 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
 # 使用带代理的远程配置
 ddns -c https://config.example.com/ddns.json --proxy http://proxy:8080
+```
+
+### 计划任务管理
+
+```bash
+# 安装计划任务，每5分钟执行一次
+ddns task --install 5
+
+# 查看任务状态
+ddns task --status
+
+# 启用/禁用任务
+ddns task --enable
+ddns task --disable
+
+# 卸载任务
+ddns task --uninstall
+
+# 使用自定义配置文件创建任务
+ddns task --install 10 -c /path/to/custom.json
+
+# 更新任务配置（自动覆盖）
+ddns task --install 15 --dns cloudflare --id new@example.com --token NEW_TOKEN --ipv4 example.com
 
 # 生成新的配置文件
 ddns --new-config config.json

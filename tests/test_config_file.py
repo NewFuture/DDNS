@@ -352,7 +352,7 @@ class TestConfigFile(unittest.TestCase):
         config_data = {"dns": "test"}
         invalid_path = "/invalid/path/that/does/not/exist/config.json"
 
-        with self.assertRaises((IOError, FileNotFoundError)):
+        with self.assertRaises((IOError, OSError, FileNotFoundError)):
             save_config(invalid_path, config_data)
 
     def test_save_config_permission_denied(self):
