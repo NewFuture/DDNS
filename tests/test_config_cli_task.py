@@ -3,10 +3,9 @@
 Unit tests for ddns task subcommand functionality
 @author: GitHub Copilot
 """
-from __init__ import unittest
+from __init__ import unittest, patch
 import sys
 import io
-from unittest.mock import patch
 from ddns.config.cli import load_config
 
 
@@ -21,6 +20,16 @@ class TestTaskSubcommand(unittest.TestCase):
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
         self.original_argv = sys.argv[:]
+
+        # Initialize test attributes for captured arguments
+        self.captured_basic_status_args = None
+        self.captured_basic_install_args = None
+        self.captured_enable_args = None
+        self.captured_disable_args = None
+        self.captured_delete_args = None
+        self.captured_force_args = None
+        self.captured_args = None
+        self.captured_status_args = None
 
     def tearDown(self):
         sys.argv = self.original_argv
@@ -65,7 +74,9 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_basic_status_args
-                self.assertTrue(args["status"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertTrue(args["status"])
 
     def test_task_subcommand_install(self):
         """Test task subcommand install parsing"""
@@ -89,8 +100,10 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_basic_install_args
-                self.assertEqual(args["install"], 10)
-                self.assertEqual(args["config"], ["test.json"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertEqual(args["install"], 10)
+                    self.assertEqual(args["config"], ["test.json"])
 
     def test_task_subcommand_enable(self):
         """Test task subcommand enable parsing"""
@@ -114,7 +127,9 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_enable_args
-                self.assertTrue(args["enable"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertTrue(args["enable"])
 
     def test_task_subcommand_disable(self):
         """Test task subcommand disable parsing"""
@@ -138,7 +153,9 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_disable_args
-                self.assertTrue(args["disable"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertTrue(args["disable"])
 
     def test_task_subcommand_delete(self):
         """Test task subcommand delete/uninstall parsing"""
@@ -162,7 +179,9 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_delete_args
-                self.assertTrue(args["uninstall"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertTrue(args["uninstall"])
 
     def test_task_subcommand_force_install(self):
         """Test task subcommand install parsing with custom interval"""
@@ -186,7 +205,9 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_force_args
-                self.assertEqual(args["install"], 5)
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertEqual(args["install"], 5)
 
     def test_task_subcommand_with_ddns_args(self):
         """Test task subcommand accepts same arguments as main DDNS command"""
@@ -228,11 +249,13 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments
                 args = self.captured_args
-                self.assertEqual(args["install"], 10)
-                self.assertEqual(args["config"], ["test.json"])
-                self.assertEqual(args["proxy"], ["http://proxy.example.com:8080"])
-                self.assertTrue(args["debug"])
-                self.assertEqual(args["ttl"], 300)
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertEqual(args["install"], 10)
+                    self.assertEqual(args["config"], ["test.json"])
+                    self.assertEqual(args["proxy"], ["http://proxy.example.com:8080"])
+                    self.assertTrue(args["debug"])
+                    self.assertEqual(args["ttl"], 300)
 
     def test_task_subcommand_with_provider_args(self):
         """Test task subcommand with provider-specific arguments"""
@@ -301,9 +324,11 @@ class TestTaskSubcommand(unittest.TestCase):
 
                 # Verify the captured arguments include debug flag
                 args = self.captured_status_args
-                self.assertTrue(args["status"])
-                self.assertTrue(args["debug"])
-                self.assertEqual(args["config"], ["test.json"])
+                self.assertIsNotNone(args)
+                if args is not None:  # Type checker satisfaction
+                    self.assertTrue(args["status"])
+                    self.assertTrue(args["debug"])
+                    self.assertEqual(args["config"], ["test.json"])
 
 
 if __name__ == "__main__":
