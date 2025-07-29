@@ -13,6 +13,11 @@ import tempfile
 from logging import getLogger
 from .fileio import read_file_safely, write_file
 
+try:  # python 3
+    PermissionError
+except NameError:  # python 2 doesn't have PermissionError, use OSError instead
+    PermissionError = OSError
+
 __all__ = ["get_scheduler_type", "is_installed", "get_status", "install", "uninstall", "enable", "disable"]
 
 logger = getLogger().getChild("task")
