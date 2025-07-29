@@ -85,7 +85,7 @@ echo ""
 echo "=== Step 3: Installing DDNS task ==="
 if echo "$initial_status" | grep -q "Installed.*No"; then
     echo "Installing task with 10-minute interval..."
-    sudo $DDNS_CMD task --install 10 || {
+    $DDNS_CMD task --install 10 || {
         echo "❌ VERIFICATION FAILED: Task installation failed"
         exit 1
     }
@@ -123,7 +123,7 @@ fi
 # Test Step 6: Delete task
 echo ""
 echo "=== Step 6: Deleting DDNS task ==="
-sudo $DDNS_CMD task --uninstall || {
+$DDNS_CMD task --uninstall || {
     echo "❌ VERIFICATION FAILED: Task deletion failed"
     exit 1
 }
