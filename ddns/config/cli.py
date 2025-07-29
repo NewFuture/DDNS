@@ -204,7 +204,7 @@ def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
         return
 
     # Add subparsers for subcommands
-    subparsers = parser.add_subparsers(dest="command", help="task commands [定时任务子命令]")
+    subparsers = parser.add_subparsers(dest="command", help="subcommands [子命令]")
 
     # Create task subcommand parser
     task = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
@@ -213,13 +213,13 @@ def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
 
     # Add task-specific arguments
     task.add_argument(
-        "--install",
         "-i",
+        "--install",
         nargs="?",
         type=int,
         const=5,
-        metavar="MINUTES",
-        help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]",
+        metavar="MINs",
+        help="Install task with <mins> [安装定时任务，默认5分钟]",
     )
     task.add_argument("--uninstall", action="store_true", help="Uninstall scheduled task [卸载定时任务]")
     task.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
@@ -260,7 +260,7 @@ def load_config(description, doc, version, date):
     args = parser.parse_args()
 
     # Handle task subcommand and exit early if present
-    if hasattr(args, "func") and callable(args.func):
+    if hasattr(args, "func"):
         args.func(vars(args))
         sys.exit(0)
 
