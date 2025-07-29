@@ -317,7 +317,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         """
         info_calls = mock_logger.info.call_args_list
         response_logged = False
-        
+
         for call in info_calls:
             if len(call[0]) >= 2 and call[0][0] == "Callback result: %s":
                 response_content = str(call[0][1])
