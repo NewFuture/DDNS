@@ -80,7 +80,7 @@ jobs:
       - run: ${{env.PY}} -m ddns -c tests/config/he-proxies.json --debug
 
       - name: Test task management functionality
-        run: tests/scripts/test-task-systemd.sh "${{env.PY}} -m ddns"
+        run: tests/scripts/test-task-systemd.sh "$(which ${{env.PY}}) -m ddns"
 
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
