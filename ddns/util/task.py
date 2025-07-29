@@ -185,13 +185,9 @@ def get_status():
     return status
 
 
-def install(interval=5, force=False, ddns_args=None):
-    # type: (int, bool, dict | None) -> bool
+def install(interval=5, ddns_args=None):
+    # type: (int, dict | None) -> bool
     """Install DDNS scheduled task"""
-    if is_installed() and not force:
-        logger.info("DDNS task is already installed. Use --force to reinstall.")
-        return True
-
     scheduler = get_scheduler_type()
     logger.info("Installing DDNS task using %s scheduler...", scheduler)
     return _dispatch_scheduler_operation("install", interval, ddns_args)

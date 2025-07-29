@@ -56,9 +56,7 @@ def _get_python_info_str():
 
 
 class ExtendAction(Action):
-    """
-    兼容 Python <3.8 的 extend action
-    """
+    """兼容 Python <3.8 的 extend action"""
 
     def __call__(self, parser, namespace, values, option_string=None):
         items = getattr(namespace, self.dest, None)
@@ -196,8 +194,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
     advanced.add_argument("--log.datefmt", "--log-datefmt", dest="log_datefmt", help=SUPPRESS)  # 隐藏参数
 
 
-def _add_task_subcommand_if_needed(parser):
-    # type: (ArgumentParser) -> None
+def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
     """
     Conditionally add task subcommand to avoid Python 2 'too few arguments' error.
 
@@ -212,11 +209,12 @@ def _add_task_subcommand_if_needed(parser):
     subparsers = parser.add_subparsers(dest="command", help="task commands [定时任务子命令]")
 
     # Create task subcommand parser
-    task_parser = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
-    _add_ddns_args(task_parser)
+    task = subparsers.add_parser("task", help="Manage scheduled tasks [管理定时任务]")
+    task.set_defaults(func=_handle_task_command)
+    _add_ddns_args(task)
 
     # Add task-specific arguments
-    task_parser.add_argument(
+    task.add_argument(
         "--install",
         "-i",
         nargs="?",
@@ -225,10 +223,10 @@ def _add_task_subcommand_if_needed(parser):
         metavar="MINUTES",
         help="Install scheduled task with interval in minutes (default: 5) [安装定时任务，指定间隔分钟数，默认5分钟]",
     )
-    task_parser.add_argument("--uninstall", action="store_true", help="Uninstall scheduled task [卸载定时任务]")
-    task_parser.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
-    task_parser.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
-    task_parser.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
+    task.add_argument("--uninstall", action="store_true", help="Uninstall scheduled task [卸载定时任务]")
+    task.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
+    task.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
+    task.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
 
 
 def load_config(description, doc, version, date):
@@ -264,8 +262,8 @@ def load_config(description, doc, version, date):
     args = parser.parse_args()
 
     # Handle task subcommand and exit early if present
-    if getattr(args, "command", None) == "task":
-        _handle_task_command(vars(args))
+    if hasattr(args, "func") and callable(args.func):
+        args.func(vars(args))
         sys.exit(0)
 
     is_debug = getattr(args, "debug", False)
@@ -290,27 +288,13 @@ def _handle_task_command(args):  # type: (dict) -> None
     task_management_args = {"status", "install", "uninstall", "enable", "disable", "command"}
     ddns_args = {k: v for k, v in args.items() if k not in task_management_args and v is not None}
 
-    def _print_status(status):
-        # type: (dict) -> None
-        """Print task status information"""
-        print("DDNS Task Status:")
-        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
-        print("  Scheduler: {}".format(status["scheduler"]))
-        print("  System: {}".format(status["system"]))
-        if status["installed"]:
-            print("  Running Status: {}".format(status.get("running_status", "unknown")))
-            if status.get("interval"):
-                print("  Interval: {} minutes".format(status["interval"]))
-            if status.get("command"):
-                print("  Command: {}".format(status["command"]))
-
     # Task operations with unified error handling
     operations = {
         "install": (
             task.install,
             "Installing DDNS scheduled task...",
             "DDNS task installed successfully with {} minute interval".format(interval),
-            {"interval": interval, "force": True, "ddns_args": ddns_args},
+            {"interval": interval, "ddns_args": ddns_args},
         ),
         "uninstall": (
             task.uninstall,
@@ -330,7 +314,6 @@ def _handle_task_command(args):  # type: (dict) -> None
             if op_name != "install":
                 kwargs.pop("ddns_args", None)
                 kwargs.pop("interval", None)
-                kwargs.pop("force", None)
             if func(**kwargs):
                 print(success_msg)
             else:
@@ -341,10 +324,15 @@ def _handle_task_command(args):  # type: (dict) -> None
     # Handle status or default behavior
     status = task.get_status()
 
-    if args.get("status"):
-        _print_status(status)
-    elif status["installed"]:
-        _print_status(status)
+    if args.get("status") or status["installed"]:
+        print("DDNS Task Status:")
+        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
+        print("  Scheduler: {}".format(status["scheduler"]))
+        print("  System: {}".format(status["system"]))
+        if status["installed"]:
+            print("  Running Status: {}".format(status.get("running_status", "unknown")))
+            print("  Interval: {} minutes".format(status.get("interval", "unknown")))
+            print("  Command: {}".format(status.get("command", "unknown")))
     else:
         print("DDNS task is not installed. Installing with default settings...")
         if task.install(interval=interval, ddns_args=ddns_args):

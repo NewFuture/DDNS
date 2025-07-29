@@ -164,7 +164,13 @@ class TestTaskFunctions(unittest.TestCase):
     @patch("ddns.util.task._get_task_command")
     @patch("ddns.util.task.platform.system")
     def test_get_status_installed(
-        self, mock_system, mock_get_command, mock_get_interval, mock_get_running_status, mock_is_installed, mock_get_scheduler
+        self,
+        mock_system,
+        mock_get_command,
+        mock_get_interval,
+        mock_get_running_status,
+        mock_is_installed,
+        mock_get_scheduler,
     ):
         """Test get_status when task is installed"""
         mock_system.return_value = "Linux"
@@ -275,12 +281,10 @@ WantedBy=multi-user.target
             self.assertEqual(result, "inactive")
 
     @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task.is_installed")
     @patch("ddns.util.task._dispatch_scheduler_operation")
-    def test_install_success(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
-        """Test successful installation"""
+    def test_install_always_proceeds(self, mock_dispatch, mock_get_scheduler):
+        """Test successful installation (always proceeds without checking if already installed)"""
         mock_get_scheduler.return_value = "cron"
-        mock_is_installed.return_value = False
         mock_dispatch.return_value = True
 
         result = task.install(interval=10)
@@ -289,29 +293,17 @@ WantedBy=multi-user.target
         mock_dispatch.assert_called_once_with("install", 10, None)
 
     @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task.is_installed")
-    def test_install_already_installed_without_force(self, mock_is_installed, mock_get_scheduler):
-        """Test installation when already installed without force"""
-        mock_get_scheduler.return_value = "cron"
-        mock_is_installed.return_value = True
-
-        result = task.install(interval=10, force=False)
-
-        self.assertTrue(result)
-
-    @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task.is_installed")
     @patch("ddns.util.task._dispatch_scheduler_operation")
-    def test_install_already_installed_with_force(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
-        """Test installation when already installed with force"""
-        mock_get_scheduler.return_value = "cron"
-        mock_is_installed.return_value = True
+    def test_install_with_ddns_args(self, mock_dispatch, mock_get_scheduler):
+        """Test installation with DDNS arguments"""
+        mock_get_scheduler.return_value = "systemd"
         mock_dispatch.return_value = True
+        ddns_args = {"config": "/path/to/config.json", "debug": True}
 
-        result = task.install(interval=10, force=True)
+        result = task.install(interval=5, ddns_args=ddns_args)
 
         self.assertTrue(result)
-        mock_dispatch.assert_called_once_with("install", 10, None)
+        mock_dispatch.assert_called_once_with("install", 5, ddns_args)
 
     @patch("ddns.util.task.get_scheduler_type")
     @patch("ddns.util.task.is_installed")
@@ -339,27 +331,10 @@ WantedBy=multi-user.target
         self.assertTrue(result)
 
     @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task.is_installed")
     @patch("ddns.util.task._dispatch_scheduler_operation")
-    def test_install_with_ddns_args(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
-        """Test installation with ddns_args parameter"""
-        mock_get_scheduler.return_value = "cron"
-        mock_is_installed.return_value = False
-        mock_dispatch.return_value = True
-
-        ddns_args = {"proxy": ["http://proxy.example.com:8080"], "debug": True}
-        result = task.install(interval=10, ddns_args=ddns_args)
-
-        self.assertTrue(result)
-        mock_dispatch.assert_called_once_with("install", 10, ddns_args)
-
-    @patch("ddns.util.task.get_scheduler_type")
-    @patch("ddns.util.task.is_installed")
-    @patch("ddns.util.task._dispatch_scheduler_operation")
-    def test_install_systemd_with_ddns_args(self, mock_dispatch, mock_is_installed, mock_get_scheduler):
+    def test_install_systemd_with_ddns_args(self, mock_dispatch, mock_get_scheduler):
         """Test systemd installation with ddns_args parameter"""
         mock_get_scheduler.return_value = "systemd"
-        mock_is_installed.return_value = False
         mock_dispatch.return_value = True
 
         ddns_args = {"config": ["cloudflare.json"], "debug": True}
