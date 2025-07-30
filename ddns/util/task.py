@@ -382,15 +382,15 @@ def _install_systemd(interval, ddns_args=None):
 
     # Create service content
     service_content = (
-        "[Unit]\nDescription=DDNS automatic IP update service\nAfter=network.target\n\n"
-        + "[Service]\nType=oneshot\nWorkingDirectory={}\nExecStart={}\n".format(work_dir, ddns_command)
+        u"[Unit]\nDescription=DDNS automatic IP update service\nAfter=network.target\n\n"
+        + u"[Service]\nType=oneshot\nWorkingDirectory={}\nExecStart={}\n".format(work_dir, ddns_command)
     )
 
     # Create timer content
     timer_content = (
-        "[Unit]\nDescription=DDNS automatic IP update timer\n\n"
-        + "[Timer]\nOnUnitActiveSec={}m\nUnit=ddns.service\n\n".format(interval)
-        + "[Install]\nWantedBy=multi-user.target\n"
+        u"[Unit]\nDescription=DDNS automatic IP update timer\n\n"
+        + u"[Timer]\nOnUnitActiveSec={}m\nUnit=ddns.service\n\n".format(interval)
+        + u"[Install]\nWantedBy=multi-user.target\n"
     )
 
     try:
@@ -439,61 +439,65 @@ def _uninstall_systemd():
 
 def _update_crontab(new_cron):
     """Update crontab with new content"""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
-        f.write(new_cron)
-        temp_path = f.name
-
+    temp_path = None
     try:
+        temp_path = tempfile.mktemp(suffix='.cron')
+        write_file(temp_path, new_cron)
+        
+        # Load the temporary file into crontab
         subprocess.check_call(["crontab", temp_path])
         return True
+    except Exception as e:
+        logger.error("Failed to update crontab: %s", e)
+        return False
     finally:
         os.unlink(temp_path)
 
 
 def _install_cron(interval, ddns_args=None):
     # type: (int, dict | None) -> bool
-    """Install cron job"""
+    """Install cron job with tag-based management"""
     ddns_command = _build_ddns_command(ddns_args)
+    cron_entry = '*/{} * * * * cd "{}" && {} # DDNS: auto-update'.format(interval, os.getcwd(), ddns_command)
 
-    # Build cron entry with cross-platform compatibility
-    cron_entry = '*/{} * * * * cd "{}" && {}'.format(interval, os.getcwd(), ddns_command)
-
-    # Get existing crontab (empty string if none exists)
-    existing_cron = _run_command(["crontab", "-l"])
-    existing_cron = existing_cron if existing_cron else ""
-
-    # Remove any existing DDNS entries and build new crontab
-    lines = [line for line in existing_cron.split("\n") if line.strip() and "ddns" not in line.lower()]
+    # Get existing crontab and filter out DDNS entries
+    existing_cron = _run_command(["crontab", "-l"]) or ""
+    lines = [line for line in existing_cron.split("\n") if "# DDNS:" not in line]
 
     # Add new DDNS entry
     lines.append(cron_entry)
-    new_cron = "\n".join(lines) + "\n"
 
     # Update crontab
-    if _update_crontab(new_cron):
+    if _update_crontab("\n".join(lines) + "\n"):
         logger.info("DDNS cron job installed successfully (interval: %d minutes)", interval)
         return True
-
-    logger.error("Failed to install DDNS cron job")
-    return False
+    else:
+        logger.error("Failed to install DDNS cron job")
+        return False
 
 
 def _uninstall_cron():
-    """Uninstall cron job"""
+    """Uninstall cron job with tag-based removal"""
     existing_cron = _run_command(["crontab", "-l"])
     if not existing_cron:
         logger.info("No crontab found")
         return True
-
-    # Remove DDNS entries
-    lines = [line for line in existing_cron.split("\n") if line and "ddns" not in line.lower()]
-    new_cron = "\n".join(lines) + "\n" if lines else ""
-
+    
+    # Filter out DDNS entries and count removals
+    lines = existing_cron.split("\n")
+    new_lines = [line for line in lines if "# DDNS:" not in line]
+    removed_count = len(lines) - len(new_lines)
+    
     # Update crontab
-    if _update_crontab(new_cron):
-        logger.info("DDNS cron job uninstalled successfully")
+    if _update_crontab("\n".join(new_lines) + "\n"):
+        if removed_count > 0:
+            logger.info("DDNS cron job uninstalled successfully")
+        else:
+            logger.info("No DDNS cron jobs found to remove")
         return True
-    return False
+    else:
+        logger.error("Failed to uninstall DDNS cron job")
+        return False
 
 
 def _install_launchd(interval, ddns_args=None):
@@ -502,19 +506,19 @@ def _install_launchd(interval, ddns_args=None):
     plist_path = _get_launchd_plist_path()
     ddns_command = _build_ddns_command(ddns_args)
     program_args = ddns_command.split()
-    program_args_xml = "\n".join("        <string>{}</string>".format(arg.strip('"')) for arg in program_args)
+    program_args_xml = u"\n".join(u"        <string>{}</string>".format(arg.strip('"')) for arg in program_args)
 
     # Create plist content
     plist_content = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        + '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
-        + '<plist version="1.0">\n<dict>\n'
-        + "    <key>Label</key>\n    <string>{}</string>\n".format(LAUNCHD_LABEL)
-        + "    <key>ProgramArguments</key>\n    <array>\n{}\n    </array>\n".format(program_args_xml)
-        + "    <key>StartInterval</key>\n    <integer>{}</integer>\n".format(interval * 60)
-        + "    <key>RunAtLoad</key>\n    <true/>\n"
-        + "    <key>WorkingDirectory</key>\n    <string>{}</string>\n".format(os.getcwd())
-        + "</dict>\n</plist>\n"
+        u'<?xml version="1.0" encoding="UTF-8"?>\n'
+        + u'<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+        + u'<plist version="1.0">\n<dict>\n'
+        + u"    <key>Label</key>\n    <string>{}</string>\n".format(LAUNCHD_LABEL)
+        + u"    <key>ProgramArguments</key>\n    <array>\n{}\n    </array>\n".format(program_args_xml)
+        + u"    <key>StartInterval</key>\n    <integer>{}</integer>\n".format(interval * 60)
+        + u"    <key>RunAtLoad</key>\n    <true/>\n"
+        + u"    <key>WorkingDirectory</key>\n    <string>{}</string>\n".format(os.getcwd())
+        + u"</dict>\n</plist>\n"
     )
 
     write_file(plist_path, plist_content)
@@ -572,9 +576,9 @@ def _create_vbs_script(ddns_args=None):
 
     # Create VBS script content
     vbs_content = (
-        'Set objShell = CreateObject("WScript.Shell")\n'
-        + 'objShell.CurrentDirectory = "{}"\n'.format(work_dir.replace("\\", "\\\\"))
-        + 'objShell.Run "{}", 0, False\n'.format(ddns_command.replace('"', '""'))
+        u'Set objShell = CreateObject("WScript.Shell")\n'
+        + u'objShell.CurrentDirectory = "{}"\n'.format(work_dir.replace("\\", "\\\\"))
+        + u'objShell.Run "{}", 0, False\n'.format(ddns_command.replace('"', '""'))
     )
 
     # Try user AppData first, fallback to working directory
