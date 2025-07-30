@@ -443,8 +443,6 @@ def _update_crontab(new_cron):
     try:
         temp_path = tempfile.mktemp(suffix='.cron')
         write_file(temp_path, new_cron)
-        
-        # Load the temporary file into crontab
         subprocess.check_call(["crontab", temp_path])
         return True
     except Exception as e:
@@ -482,12 +480,12 @@ def _uninstall_cron():
     if not existing_cron:
         logger.info("No crontab found")
         return True
-    
+
     # Filter out DDNS entries and count removals
     lines = existing_cron.split("\n")
     new_lines = [line for line in lines if "# DDNS:" not in line]
     removed_count = len(lines) - len(new_lines)
-    
+
     # Update crontab
     if _update_crontab("\n".join(new_lines) + "\n"):
         if removed_count > 0:
