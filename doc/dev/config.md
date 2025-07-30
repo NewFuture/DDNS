@@ -205,7 +205,7 @@ self.proxy = self._get("proxy", [])  # 自动处理数组
 ### CLI 基本用法
 
 ```bash
-python run.py --dns=cloudflare --endpoint=https://api.custom.com/v4/
+python -m ddns --dns=cloudflare --endpoint=https://api.custom.com/v4/
 ```
 
 ### JSON 配置

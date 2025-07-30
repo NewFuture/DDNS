@@ -4,7 +4,7 @@
 > 代理模式，支持自动创建 DNS 记录。
 
 [![Github Release](https://img.shields.io/github/v/release/NewFuture/DDNS?&logo=github&style=flatten
-)](https://github.com/NewFuture/DDNS/releases/latest)
+)](<https://github.com/NewFuture/DDNS/releases/latest>)
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=ddns&logo=pypi&style=flatten)](https://pypi.org/project/ddns/)
 [![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=newfuture/ddns&logo=docker&&sort=semver&style=flatten)](https://hub.docker.com/r/newfuture/ddns)
 [![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
@@ -113,7 +113,7 @@
 - #### 源码运行（无任何依赖，需 python 环境）
 
   1. clone 或者 [下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip) 并解压
-  2. 运行 `python run.py` 或者 `python -m ddns`
+  2. 运行 `python -m ddns`
 
 ### ② 快速配置
 
@@ -128,8 +128,8 @@
    - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)
    - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](doc/providers/huaweidns.md)
    - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager)（API Manager 中获取 API Key） | [详细配置文档](doc/providers/namesilo.md)
-   - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
-   - **腾讯云 EdgeOne**: [详细配置文档](doc/providers/edgeone.md)
+   - **腾讯云 DNS**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/tencentcloud.md)
+   - **腾讯云 EdgeOne**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/edgeone.md)
    - **No-IP**: [用户名和密码](https://www.noip.com/)（使用 No-IP 账户的用户名和密码） | [详细配置文档](doc/providers/noip.md)
    - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
 
@@ -252,56 +252,26 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 ## 定时任务
 
 <details>
-<summary markdown="span">可以通过脚本设置定时任务（默认每 5 分钟检查一次 IP，自动更新）</summary>
+<summary markdown="span">使用内置的 task 命令设置定时任务（默认每 5 分钟检查一次 IP，自动更新）</summary>
 
-#### Windows
+DDNS 提供内置的 `task` 子命令来管理定时任务，支持跨平台自动化部署：
 
-- [推荐] 以系统身份运行，右键“以管理员身份运行”`task.bat`（或者在管理员命令行中运行）
-- 以当前用户身份运行定时任务，双击或运行 `task.bat`（执行时会闪黑框）
+### 高级管理
 
-#### Linux
+```bash
+# 安装并指定更新间隔（分钟）
+ddns task --install 10 -c /etc/config/ddns.json
 
-- 使用 init.d 和 crontab:
+# 启用/禁用任务
+ddns task --enable
+ddns task --disable
+```
 
-  ```bash
-  sudo ./task.sh
-  ```
+详细配置指南请参考：[命令行参数文档](/doc/config/cli.md#task-management-定时任务管理)
 
-- 使用 systemd:
-
-  ```bash
-  安装:
-  sudo ./systemd.sh install
-  卸载:
-  sudo ./systemd.sh uninstall
-  ```
-
-  该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
-  可执行文件所在目录为 `/usr/share/DDNS`
-  配置文件所在目录为 `/etc/DDNS`
-
-#### Docker
+### Docker
 
 Docker 镜像在无额外参数的情况下，已默认启用每 5 分钟执行一次的定时任务
-
-</details>
-
-## FAQ
-
-<details>
-<summary markdown="span">Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]</summary>
-
-> Windows Server 默认安全策略会禁止任何未添加的信任 SSL 证书，可手动添加一下对应的证书 [#56](https://github.com/NewFuture/DDNS/issues/56#issuecomment-487371078)
-
-使用系统自带的 IE 浏览器访问一次对应的 API 即可
-
-- alidns 打开: <https://alidns.aliyuncs.com>
-- aliesa 打开: <https://esa.cn-hangzhou.aliyuncs.com>
-- cloudflare 打开: <https://api.cloudflare.com>
-- dns.com 打开: <https://www.dns.com>
-- dnspod.cn 打开: <https://dnsapi.cn>
-- dnspod 国际版: <https://api.dnspod.com>
-- 华为 DNS <https://dns.myhuaweicloud.com>
 
 </details>
 

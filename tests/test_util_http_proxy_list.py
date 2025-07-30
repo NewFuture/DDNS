@@ -139,7 +139,7 @@ class TestRequestProxyList(unittest.TestCase):
 
                 # 如果成功，应该是通过直连完成的
                 if response.status == 200:
-                    expected_content = "httpbin.org" if "httpbin" in url else "httpbingo.org"
+                    expected_content = "httpbin.org" if "httpbin.org" in url else "httpbingo.org"
                     self.assertIn(expected_content, response.body)
                     return  # 成功则退出
                 elif response.status >= 500:

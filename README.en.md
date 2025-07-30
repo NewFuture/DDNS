@@ -113,7 +113,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
 - #### Source Code Execution (No dependencies, requires Python environment)
 
   1. Clone or [download this repository](https://github.com/NewFuture/DDNS/archive/master.zip) and extract
-  2. Run `python run.py` or `python -m ddns`
+  2. Run `python -m ddns`
 
 ### ② Quick Configuration
 
@@ -249,35 +249,48 @@ If the same configuration item is set in multiple places, the following priority
 ### Scheduled Tasks
 
 <details>
-<summary markdown="span">Set up scheduled tasks to run automatically</summary>
+<summary markdown="span">Use built-in task command to set up scheduled tasks (checks IP every 5 minutes by default for automatic updates)</summary>
 
-This tool itself does not include loop and scheduled execution functions (to reduce code complexity). You can use system scheduled tasks to run regularly.
+DDNS provides a built-in `task` subcommand for managing scheduled tasks with cross-platform automated deployment:
 
-#### Windows
+#### Basic Usage
 
-- [Recommended] Run as system identity, right-click "Run as administrator" on `task.bat` (or run in administrator command line)
-- Run scheduled task as current user, double-click or run `task.bat` (a black window will flash during execution)
+```bash
+# Install scheduled task (default 5-minute interval)
+ddns task --install --dns dnspod --id your_id --token your_token --ipv4 your.domain.com
 
-#### Linux
+# Check task status
+ddns task --status
 
-- Using init.d and crontab:
+# Uninstall scheduled task
+ddns task --uninstall
+```
 
-  ```bash
-  sudo ./task.sh
-  ```
+#### Supported Systems
 
-- Using systemd:
+- **Windows**: Uses Task Scheduler
+- **Linux**: Automatically selects systemd or crontab
+- **macOS**: Uses launchd
 
-  ```bash
-  Install:
-  sudo ./systemd.sh install
-  Uninstall:
-  sudo ./systemd.sh uninstall
-  ```
+#### Advanced Management
 
-  Files installed by this script comply with [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard):
-  Executable files are located in `/usr/share/DDNS`
-  Configuration files are located in `/etc/DDNS`
+```bash
+# Install with custom interval (minutes)
+ddns task --install 10 -c /etc/ddns/config.json
+
+# Enable/disable tasks
+ddns task --enable
+ddns task --disable
+```
+
+> **New Feature Advantages**:
+>
+> - ✅ Cross-platform automatic system detection
+> - ✅ Automatically overwrites existing tasks without manual uninstallation
+> - ✅ Supports all DDNS configuration parameters
+> - ✅ Unified command-line interface
+
+For detailed configuration guide, see: [CLI Parameters Documentation](/doc/config/cli.en.md#task-management)
 
 #### Docker
 

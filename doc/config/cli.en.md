@@ -86,6 +86,23 @@ ddns --ipv4=example.com,www.example.com
 | `--log_format`  |    String   | Log format string (compatible with Python `logging` module)                                                                                                               | `--log_format="%(asctime)s:%(message)s"`                 |
 | `--log_datefmt` |    String   | Date/time format string for logs                                                                                                                                          | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
 
+#### Task Subcommand Parameters
+
+| Parameter          |     Type    | Description                                                                                                                                                               | Example                                                  |
+| --------------- | :---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `--install`, `-i` | Integer (Optional) | Install scheduled task with update interval in minutes (default: 5). **Automatically overwrites existing tasks** | `--install`, `--install 10` |
+| `--uninstall`   |     Flag    | Uninstall the installed scheduled task                                                                                                                                    | `--uninstall`                                           |
+| `--status`      |     Flag    | Show scheduled task installation status and running information                                                                                                           | `--status`                                               |
+| `--enable`      |     Flag    | Enable the installed scheduled task                                                                                                                                       | `--enable`                                               |
+| `--disable`     |     Flag    | Disable the installed scheduled task                                                                                                                                      | `--disable`                                              |
+
+> **Important Notes**:
+>
+> - The `--install` command **automatically overwrites** scheduled tasks without needing to check or uninstall existing tasks first.
+> - This design simplifies the task management process and avoids manual uninstallation procedures.
+> - The `task` subcommand supports all main DDNS configuration parameters (such as `--dns`, `--id`, `--token`, `--ipv4`, `--ipv6`, etc.), which will be saved and passed to the scheduled task for execution.
+> - Command line only parameters: `--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version`.
+
 > **Note**: Where `--debug`, `--new-config`, `--no-cache`, `--no-ssl`, `--help`, `--version` are command line only parameters.
 
 ## DNS Provider Values
@@ -261,6 +278,141 @@ ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
 4. **Debug Mode**: The `--debug` parameter is only effective as a command line argument; debug settings in configuration files will be ignored.
 
 5. **Regular Expressions**: When using regular expressions, special characters need to be properly escaped. It's recommended to use quotes, for example: `--index4 "regex:192\\.168\\..*"`.
+
+## Task Management
+
+DDNS supports managing scheduled tasks through the `task` subcommand, which automatically detects the system and selects the appropriate scheduler to install scheduled update tasks.
+
+### Key Features
+
+- **Smart Installation**: The `--install` command automatically overwrites existing tasks, simplifying the installation process
+- **Cross-Platform Support**: Automatically detects system and selects the best scheduler
+- **Complete Configuration**: Supports all DDNS configuration parameters
+
+### Task Subcommand Usage
+
+```bash
+# View help
+ddns task --help
+
+# Check task status
+ddns task --status
+
+# Install scheduled task (default 5-minute interval)
+ddns task --install
+
+# Install scheduled task with custom interval (minutes)
+ddns task --install 10
+ddns task -i 15
+
+# Enable installed scheduled task
+ddns task --enable
+
+# Disable installed scheduled task
+ddns task --disable
+
+# Uninstall installed scheduled task
+ddns task --uninstall
+```
+
+### Supported Schedulers
+
+DDNS automatically detects the system and chooses the most appropriate scheduler:
+
+- **Linux**: systemd (preferred) or cron
+- **macOS**: launchd (preferred) or cron  
+- **Windows**: schtasks
+
+### Parameter Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `--status` | Show scheduled task installation status and running information |
+| `--install [minutes]`, `-i [minutes]` | Install scheduled task with update interval (default: 5 minutes). **Automatically overwrites existing tasks** |
+| `--uninstall` | Uninstall installed scheduled task |
+| `--enable` | Enable installed scheduled task |
+| `--disable` | Disable installed scheduled task |
+
+> **Installation Behavior**:
+>
+> - The `--install` command always executes installation directly, without prior checking or uninstalling.
+> - Any existing DDNS scheduled task in the system will be automatically replaced with the new configuration.
+> - This design simplifies task management and avoids the hassle of manual uninstallation, enabling one-click task updates.
+>
+> **Configuration Parameter Support**: The `task` subcommand supports all DDNS configuration parameters, which will be passed to the scheduled task for execution.
+
+### Permission Requirements
+
+Different schedulers require different permissions:
+
+- **systemd**: Requires root privileges (`sudo`)
+- **cron**: Regular user privileges
+- **launchd**: Regular user privileges
+- **schtasks**: Administrator privileges required
+
+### Task Management Examples
+
+```bash
+# Check current status
+ddns task --status
+
+# Quick install (automatically overwrites existing tasks)
+ddns task --install
+
+# Install 10-minute interval scheduled task with specified config file
+ddns task --install 10 -c /etc/ddns/config.json
+
+# Install scheduled task with direct DDNS parameters (no config file needed)
+ddns task --install 5 --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
+# Install scheduled task with advanced configuration parameters
+ddns task --install 10 --dns dnspod --id 12345 --token secret \
+          --ipv4 example.com --ttl 600 --proxy http://proxy:8080 \
+          --log_file /var/log/ddns.log --log_level INFO
+
+# Install systemd timer on Linux with sudo
+sudo ddns task --install 5 -c /etc/ddns/config.json
+
+# Update task configuration (automatic overwrite)
+ddns task --install 15 --dns cloudflare --id user@example.com --token NEW_TOKEN --ipv4 example.com
+
+# Enable installed task
+ddns task --enable
+
+# Disable task (doesn't delete, just stops execution)
+ddns task --disable
+
+# Completely uninstall scheduled task
+ddns task --uninstall
+```
+
+### Using with Configuration Files
+
+The `task` subcommand works perfectly with configuration files, supporting multiple configuration methods:
+
+```bash
+# Use local configuration file
+ddns task --install 10 -c config.json
+
+# Use multiple configuration files
+ddns task --install 5 -c cloudflare.json -c dnspod.json
+
+# Use remote configuration file
+ddns task --install 15 -c https://config.example.com/ddns.json
+
+# Configuration file + command line parameter override
+ddns task --install 10 -c config.json --debug --ttl 300
+```
+
+### Debugging Installation Issues
+
+```bash
+# Enable debug mode to see detailed installation process
+ddns task --install 5 --debug
+
+# View task status and configuration
+ddns task --status --debug
+```
 
 ## Configuration Priority
 

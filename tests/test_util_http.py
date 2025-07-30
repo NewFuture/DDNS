@@ -432,7 +432,7 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 验证最终到达了正确的端点
                     data = json.loads(response.body)
                     self.assertIn("url", data)
-                    expected_content = "httpbin.org/get" if "httpbin" in redirect_url else "httpbingo.org/get"
+                    expected_content = "httpbin.org/get" if "httpbin.org" in redirect_url else "httpbingo.org/get"
                     self.assertIn(expected_content, data["url"])
                     return  # 成功则退出
                 elif response.status >= 500:
