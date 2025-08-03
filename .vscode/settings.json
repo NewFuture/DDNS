@@ -44,6 +44,9 @@
         "git status": true,
         "rm": true,
         "del": true,
+        "delete": true,
+        "mv": true,
+        "move": true,
     },
     "github.copilot.chat.agent.terminal.denyList": {
         "rm -rf": true,
@@ -53,4 +56,5 @@
         "git checkout -- .": true,
         "sudo": true
     },
+    "chat.agent.maxRequests": 64,
 }

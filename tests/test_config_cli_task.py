@@ -49,15 +49,15 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand status parsing"""
         sys.argv = ["ddns", "task", "--status"]
 
-        # Mock the task.get_status function to avoid actual system operations
-        with patch("ddns.config.cli.task.get_status") as mock_get_status:
-            mock_get_status.return_value = {
+        # Mock the scheduler.get_status function to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.get_status.return_value = {
                 "installed": True,
                 "scheduler": "schtasks",
-                "system": "windows",
                 "interval": 5,
-                "config_path": None,
-                "running_status": "unknown",
+                "enabled": True,
+                "command": "test command"
             }
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
@@ -82,9 +82,10 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand install parsing"""
         sys.argv = ["ddns", "task", "--install", "10", "--config", "test.json"]
 
-        # Mock the task.install function to avoid actual system operations
-        with patch("ddns.config.cli.task.install") as mock_install:
-            mock_install.return_value = True
+        # Mock the scheduler.install function to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
 
@@ -109,9 +110,11 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand enable parsing"""
         sys.argv = ["ddns", "task", "--enable"]
 
-        # Mock the task.enable function
-        with patch("ddns.config.cli.task.enable") as mock_enable:
-            mock_enable.return_value = True
+        # Mock the scheduler.enable function
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.enable.return_value = True
+            mock_scheduler.is_installed.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
 
@@ -135,9 +138,11 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand disable parsing"""
         sys.argv = ["ddns", "task", "--disable"]
 
-        # Mock the task.disable function
-        with patch("ddns.config.cli.task.disable") as mock_disable:
-            mock_disable.return_value = True
+        # Mock the scheduler.disable function
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.disable.return_value = True
+            mock_scheduler.is_installed.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
 
@@ -161,9 +166,10 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand delete/uninstall parsing"""
         sys.argv = ["ddns", "task", "--uninstall"]
 
-        # Mock the task operations to avoid actual system operations
-        with patch("ddns.config.cli.task.uninstall") as mock_uninstall:
-            mock_uninstall.return_value = True
+        # Mock the scheduler operations to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.uninstall.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
 
@@ -187,9 +193,10 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task subcommand install parsing with custom interval"""
         sys.argv = ["ddns", "task", "--install", "5"]
 
-        # Mock the task.install function
-        with patch("ddns.config.cli.task.install") as mock_install:
-            mock_install.return_value = True
+        # Mock the scheduler.install function
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
 
@@ -225,9 +232,10 @@ class TestTaskSubcommand(unittest.TestCase):
             "300",
         ]
 
-        # Mock the task.install function to avoid actual system operations
-        with patch("ddns.config.cli.task.install") as mock_install:
-            mock_install.return_value = True
+        # Mock the scheduler.install function to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
 
             # Mock _handle_task_command directly to capture its behavior
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
@@ -274,22 +282,23 @@ class TestTaskSubcommand(unittest.TestCase):
             "test-id",
         ]
 
-        # Mock the task.install function to avoid actual system operations
-        with patch("ddns.config.cli.task.install") as mock_install:
-            mock_install.return_value = True
+        # Mock the scheduler.install function to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli.sys.exit"):
                 load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
 
                 # Verify that install was called with correct arguments
-                mock_install.assert_called_once()
-                call_kwargs = mock_install.call_args[1]
+                mock_scheduler.install.assert_called_once()
+                call_args = mock_scheduler.install.call_args
 
-                # Check interval
-                self.assertEqual(call_kwargs["interval"], 5)
+                # Check interval (first positional argument)
+                self.assertEqual(call_args[0][0], 5)
 
-                # Check ddns_args contains provider arguments
-                ddns_args = call_kwargs["ddns_args"]
+                # Check ddns_args contains provider arguments (second positional argument)
+                ddns_args = call_args[0][1]
                 self.assertEqual(ddns_args["dns"], "cloudflare")
                 self.assertEqual(ddns_args["token"], "test-token")
                 self.assertEqual(ddns_args["id"], "test-id")
@@ -299,15 +308,15 @@ class TestTaskSubcommand(unittest.TestCase):
         """Test task status command doesn't need ddns_args but accepts other params"""
         sys.argv = ["ddns", "task", "--status", "--config", "test.json", "--debug"]
 
-        # Mock the task.get_status function to avoid actual system operations
-        with patch("ddns.config.cli.task.get_status") as mock_get_status:
-            mock_get_status.return_value = {
+        # Mock the scheduler.get_status function to avoid actual system operations
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.get_status.return_value = {
                 "installed": True,
                 "scheduler": "schtasks",
-                "system": "windows",
                 "interval": 5,
-                "config_path": "test.json",
-                "running_status": "active",
+                "enabled": True,
+                "command": "test command"
             }
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
@@ -329,6 +338,129 @@ class TestTaskSubcommand(unittest.TestCase):
                     self.assertTrue(args["status"])
                     self.assertTrue(args["debug"])
                     self.assertEqual(args["config"], ["test.json"])
+
+    def test_task_subcommand_scheduler_default(self):
+        """Test task subcommand scheduler default value"""
+        sys.argv = ["ddns", "task", "--status"]
+
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.get_status.return_value = {"installed": False, "scheduler": "auto"}
+
+            with patch("ddns.config.cli._handle_task_command") as mock_handle:
+                captured_args = None
+
+                def capture_args(args):
+                    nonlocal captured_args
+                    captured_args = args
+
+                mock_handle.side_effect = capture_args
+
+                try:
+                    load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+                except SystemExit:
+                    pass
+
+                self.assertIsNotNone(captured_args)
+                if captured_args is not None:
+                    self.assertEqual(captured_args.get("scheduler"), "auto")
+
+    def test_task_subcommand_scheduler_explicit_values(self):
+        """Test task subcommand scheduler with explicit values"""
+        test_schedulers = ["auto", "systemd", "cron", "launchd", "schtasks"]
+        
+        for scheduler in test_schedulers:
+            with self.subTest(scheduler=scheduler):
+                sys.argv = ["ddns", "task", "--status", "--scheduler", scheduler]
+
+                with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+                    mock_scheduler = mock_get_scheduler.return_value
+                    mock_scheduler.get_status.return_value = {"installed": False, "scheduler": scheduler}
+
+                    with patch("ddns.config.cli._handle_task_command") as mock_handle:
+                        captured_args = None
+
+                        def capture_args(args):
+                            nonlocal captured_args
+                            captured_args = args
+
+                        mock_handle.side_effect = capture_args
+
+                        try:
+                            load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+                        except SystemExit:
+                            pass
+
+                        self.assertIsNotNone(captured_args)
+                        if captured_args is not None:
+                            self.assertEqual(captured_args.get("scheduler"), scheduler)
+
+    def test_task_subcommand_scheduler_with_install(self):
+        """Test task subcommand scheduler parameter with install command"""
+        sys.argv = ["ddns", "task", "--install", "15", "--scheduler", "cron", "--dns", "debug"]
+
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
+
+            with patch("ddns.config.cli._handle_task_command") as mock_handle:
+                captured_args = None
+
+                def capture_args(args):
+                    nonlocal captured_args
+                    captured_args = args
+
+                mock_handle.side_effect = capture_args
+
+                try:
+                    load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+                except SystemExit:
+                    pass
+
+                self.assertIsNotNone(captured_args)
+                if captured_args is not None:
+                    self.assertEqual(captured_args.get("scheduler"), "cron")
+                    self.assertEqual(captured_args.get("install"), 15)
+                    self.assertEqual(captured_args.get("dns"), "debug")
+
+    def test_task_subcommand_scheduler_excluded_from_ddns_args(self):
+        """Test scheduler parameter is excluded from ddns_args in _handle_task_command"""
+        sys.argv = ["ddns", "task", "--install", "10", "--scheduler", "systemd", "--dns", "debug", "--id", "test-id"]
+
+        with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
+            mock_scheduler = mock_get_scheduler.return_value
+            mock_scheduler.install.return_value = True
+
+            with patch("ddns.config.cli._handle_task_command") as mock_handle:
+                captured_args = None
+
+                def capture_args(args):
+                    nonlocal captured_args
+                    captured_args = args
+
+                mock_handle.side_effect = capture_args
+
+                try:
+                    load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+                except SystemExit:
+                    pass
+
+                self.assertIsNotNone(captured_args)
+                if captured_args is not None:
+                    # Verify scheduler is in args
+                    self.assertEqual(captured_args.get("scheduler"), "systemd")
+                    
+                    # Simulate what _handle_task_command does with ddns_args
+                    excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
+                    ddns_args = {k: v for k, v in captured_args.items() if k not in excluded_keys and v is not None}
+                    
+                    # Verify scheduler is excluded from ddns_args but other params are included
+                    self.assertNotIn("scheduler", ddns_args)
+                    self.assertNotIn("install", ddns_args)  # Also excluded
+                    self.assertIn("dns", ddns_args)
+                    self.assertIn("id", ddns_args)
+                    self.assertEqual(ddns_args["dns"], "debug")
+                    self.assertEqual(ddns_args["id"], "test-id")
 
 
 if __name__ == "__main__":

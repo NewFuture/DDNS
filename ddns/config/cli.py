@@ -9,7 +9,7 @@ from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
 from logging import DEBUG, getLevelName, basicConfig
 from os import path as os_path
 from .file import save_config
-from ..util import task
+from ..scheduler import get_scheduler
 
 __all__ = ["load_config", "str_bool"]
 
@@ -225,6 +225,12 @@ def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
     task.add_argument("--status", action="store_true", help="Show task status [显示定时任务状态]")
     task.add_argument("--enable", action="store_true", help="Enable scheduled task [启用定时任务]")
     task.add_argument("--disable", action="store_true", help="Disable scheduled task [禁用定时任务]")
+    task.add_argument(
+        "--scheduler",
+        choices=["auto", "systemd", "cron", "launchd", "schtasks"],
+        default="auto",
+        help="Specify scheduler type [指定定时任务方式]"
+    )
 
 
 def load_config(description, doc, version, date):
@@ -279,62 +285,61 @@ def load_config(description, doc, version, date):
 def _handle_task_command(args):  # type: (dict) -> None
     """Handle task subcommand"""
     basicConfig(level=args["debug"] and DEBUG or args.get("log_level", "INFO"))
-    # Extract task management arguments
-    interval = args.get("install", 5) or 5  # Default 5 minutes
+    
+    # Use specified scheduler or auto-detect
+    scheduler_type = args.get("scheduler", "auto")
+    scheduler = get_scheduler(scheduler_type)
+    
+    interval = args.get("install", 5) or 5
+    excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
+    ddns_args = {k: v for k, v in args.items() if k not in excluded_keys and v is not None}
 
-    # Build DDNS command arguments from task subcommand arguments
-    task_management_args = {"status", "install", "uninstall", "enable", "disable", "command"}
-    ddns_args = {k: v for k, v in args.items() if k not in task_management_args and v is not None}
-
-    # Task operations with unified error handling
-    operations = {
-        "install": (
-            task.install,
-            "Installing DDNS scheduled task...",
-            "DDNS task installed successfully with {} minute interval".format(interval),
-            {"interval": interval, "ddns_args": ddns_args},
-        ),
-        "uninstall": (
-            task.uninstall,
-            "Uninstalling DDNS scheduled task...",
-            "DDNS task uninstalled successfully",
-            {},
-        ),
-        "enable": (task.enable, "Enabling DDNS scheduled task...", "DDNS task enabled successfully", {}),
-        "disable": (task.disable, "Disabling DDNS scheduled task...", "DDNS task disabled successfully", {}),
-    }
-
-    # Execute operation if found
-    for op_name, (func, start_msg, success_msg, kwargs) in operations.items():
-        if args.get(op_name):
-            print(start_msg)
-            # Remove ddns_args for functions that don't support it yet
-            if op_name != "install":
-                kwargs.pop("ddns_args", None)
-                kwargs.pop("interval", None)
-            if func(**kwargs):
-                print(success_msg)
-            else:
-                print("Failed to {} DDNS task".format(op_name))
-                sys.exit(1)
-            return
-
-    # Handle status or default behavior
-    status = task.get_status()
-
+    # Execute operations
+    for op in ["install", "uninstall", "enable", "disable"]:
+        if not args.get(op):
+            continue
+            
+        # Check if task is installed for enable/disable
+        if op in ["enable", "disable"] and not scheduler.is_installed():
+            print("DDNS task is not installed" + (" Please install it first." if op == "enable" else "."))
+            sys.exit(1)
+        
+        # Execute operation
+        print("{} DDNS scheduled task...".format(op.title()))
+        func = getattr(scheduler, op)
+        result = func(interval, ddns_args) if op == "install" else func()
+        
+        if result:
+            past_tense = {"install": "installed", "uninstall": "uninstalled",
+                          "enable": "enabled", "disable": "disabled"}[op]
+            suffix = " with {} minute interval".format(interval) if op == "install" else ""
+            print("DDNS task {} successfully{}".format(past_tense, suffix))
+        else:
+            print("Failed to {} DDNS task".format(op))
+            sys.exit(1)
+        return
+    
+    # Show status or auto-install
+    status = scheduler.get_status()
+    
     if args.get("status") or status["installed"]:
-        print("DDNS Task Status:")
-        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
-        print("  Scheduler: {}".format(status["scheduler"]))
-        print("  System: {}".format(status["system"]))
-        if status["installed"]:
-            print("  Running Status: {}".format(status.get("running_status", "unknown")))
-            print("  Interval: {} minutes".format(status.get("interval", "unknown")))
-            print("  Command: {}".format(status.get("command", "unknown")))
+        _print_status(status)
     else:
         print("DDNS task is not installed. Installing with default settings...")
-        if task.install(interval=interval, ddns_args=ddns_args):
+        if scheduler.install(interval, ddns_args):
             print("DDNS task installed successfully with {} minute interval".format(interval))
         else:
             print("Failed to install DDNS task")
             sys.exit(1)
+
+
+def _print_status(status):
+    """Print task status information"""
+    print("DDNS Task Status:")
+    print("  Installed: {}".format("Yes" if status["installed"] else "No"))
+    print("  Scheduler: {}".format(status["scheduler"]))
+    if status["installed"]:
+        print("  Enabled: {}".format(status.get("enabled", "unknown")))
+        print("  Interval: {} minutes".format(status.get("interval", "unknown")))
+        print("  Command: {}".format(status.get("command", "unknown")))
+        print("  Description: {}".format(status.get("description", "")))
