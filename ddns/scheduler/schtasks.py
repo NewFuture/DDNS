@@ -14,7 +14,7 @@ from ..util.fileio import write_file
 VBS_SCRIPT = "~\\AppData\\Local\\DDNS\\ddns_silent.vbs"
 
 
-class WindowsScheduler(BaseScheduler):
+class SchtasksScheduler(BaseScheduler):
     """schtasks-based task scheduler"""
 
     NAME = "DDNS"

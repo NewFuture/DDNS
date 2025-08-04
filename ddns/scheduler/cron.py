@@ -16,6 +16,8 @@ from .. import __version__ as version
 
 class CronScheduler(BaseScheduler):
     """Cron-based task scheduler for Unix-like systems"""
+    
+    SCHEDULER_NAME = "cron"
 
     KEY = "# DDNS:"
 

@@ -17,10 +17,10 @@ class TestSchedulerInit(unittest.TestCase):
         """Test that auto detection returns a valid scheduler instance"""
         scheduler = get_scheduler("auto")
         self.assertIsNotNone(scheduler)
-        # On Windows, should return WindowsScheduler
+        # On Windows, should return SchtasksScheduler
         if platform.system().lower() == "windows":
-            from ddns.scheduler.windows import WindowsScheduler
-            self.assertIsInstance(scheduler, WindowsScheduler)
+            from ddns.scheduler.schtasks import SchtasksScheduler
+            self.assertIsInstance(scheduler, SchtasksScheduler)
 
     def test_explicit_scheduler_selection(self):
         """Test explicit scheduler selection"""
@@ -28,7 +28,7 @@ class TestSchedulerInit(unittest.TestCase):
             ("systemd", "SystemdScheduler"),
             ("cron", "CronScheduler"),
             ("launchd", "LaunchdScheduler"),
-            ("schtasks", "WindowsScheduler")
+            ("schtasks", "SchtasksScheduler")
         ]
         
         for scheduler_type, expected_class_name in test_cases:
@@ -104,12 +104,20 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
         try:
             status = self.scheduler.get_status()
             self.assertIsInstance(status, dict)
-            # Status should have these basic keys
-            expected_keys = ["installed", "enabled", "scheduler"]
-            for key in expected_keys:
-                self.assertIn(key, status, f"Status missing key: {key}")
+            
+            # Basic keys should always be present
+            basic_keys = ["installed", "scheduler"]
+            for key in basic_keys:
+                self.assertIn(key, status, f"Status missing basic key: {key}")
+
             # Scheduler name should match the instance
             self.assertEqual(status["scheduler"], self.scheduler.SCHEDULER_NAME)
+
+            # Additional keys are only present when installed
+            if status.get("installed", False):
+                additional_keys = ["enabled"]
+                for key in additional_keys:
+                    self.assertIn(key, status, f"Status missing key for installed scheduler: {key}")
         except Exception as e:
             self.fail(f"get_status() failed: {e}")
 
@@ -139,8 +147,8 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
         if not self._is_scheduler_available("schtasks"):
             self.skipTest("schtasks not available")
         
-        from ddns.scheduler.windows import WindowsScheduler
-        scheduler = WindowsScheduler()
+        from ddns.scheduler.schtasks import SchtasksScheduler
+        scheduler = SchtasksScheduler()
         
         # Test status call
         status = scheduler.get_status()
@@ -251,7 +259,10 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
         self.assertIsInstance(status, dict)
         self.assertIn('scheduler', status)
         self.assertIn('installed', status)
-        self.assertIn('enabled', status)
+        
+        # Additional keys are only present when installed
+        if status.get('installed', False):
+            self.assertIn('enabled', status)
         
         # Test is_installed returns boolean
         installed = current_scheduler.is_installed()

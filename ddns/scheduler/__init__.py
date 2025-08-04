@@ -13,7 +13,7 @@ from ._base import BaseScheduler
 from .systemd import SystemdScheduler
 from .cron import CronScheduler
 from .launchd import LaunchdScheduler
-from .windows import WindowsScheduler
+from .schtasks import SchtasksScheduler
 
 
 def get_scheduler(scheduler=None):
@@ -41,7 +41,7 @@ def get_scheduler(scheduler=None):
         system = platform.system().lower()
 
         if system == "windows":
-            return WindowsScheduler()
+            return SchtasksScheduler()
         elif system == "darwin":  # macOS
             # Check if launchd directories exist
             launchd_dirs = ["/Library/LaunchDaemons", "/System/Library/LaunchDaemons"]
@@ -70,7 +70,7 @@ def get_scheduler(scheduler=None):
     elif scheduler == 'launchd' or scheduler == 'mac':
         return LaunchdScheduler()
     elif scheduler == 'schtasks' or scheduler == 'windows':
-        return WindowsScheduler()
+        return SchtasksScheduler()
     else:
         raise ValueError(
             "Invalid scheduler: {}. Must be one of: auto, systemd, cron, launchd, schtasks".format(scheduler)
