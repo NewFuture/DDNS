@@ -51,7 +51,7 @@ class SystemdScheduler(BaseScheduler):
         # Extract command and description from service file
         service_content = read_file_safely(self.SERVICE_PATH) or ""
         match = re.search(r"ExecStart=(.+)", service_content)
-        status["command"] = match.group(1).strip() if match else None 
+        status["command"] = match.group(1).strip() if match else None
         desc_match = re.search(r"Description=(.+)", service_content)
         status["description"] = desc_match.group(1).strip() if desc_match else None
 

@@ -3,6 +3,8 @@
 Unit tests for ddns.scheduler.corn module
 @author: NewFuture
 """
+import platform
+import shutil
 from __init__ import unittest, patch
 from ddns.scheduler.cron import CronScheduler
 
@@ -167,6 +169,59 @@ class TestCronScheduler(unittest.TestCase):
                 call_args = mock_update.call_args[0][0]
                 self.assertNotIn("DDNS", call_args)
                 self.assertIn("other cron job", call_args)
+
+    @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
+    def test_real_cron_integration(self):
+        """Test real cron integration with actual system calls"""
+        crontab_path = shutil.which("crontab")
+        if not crontab_path:
+            self.skipTest("crontab not available on this system")
+        
+        # Test real crontab list (safe read-only operation)
+        status = self.scheduler.get_status()
+        self.assertIsInstance(status, dict)
+        self.assertEqual(status["scheduler"], "cron")
+        self.assertIsInstance(status["installed"], bool)
+        
+        # Test crontab help/version (safe read-only operation)
+        import subprocess
+        try:
+            help_result = subprocess.run([crontab_path],
+                                         capture_output=True, text=True, check=False)
+            # crontab without args typically shows usage, which is expected
+            self.assertTrue(help_result.returncode != 0 or "usage" in help_result.stderr.lower())
+        except Exception as e:
+            self.fail(f"Failed to run crontab: {e}")
+
+    @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
+    def test_real_scheduler_methods_safe(self):
+        """Test real scheduler methods that don't modify system state"""
+        crontab_path = shutil.which("crontab")
+        if not crontab_path:
+            self.skipTest("crontab not available on this system")
+        
+        # Test is_installed (safe read-only operation)
+        installed = self.scheduler.is_installed()
+        self.assertIsInstance(installed, bool)
+        
+        # Test build command
+        ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
+        command = self.scheduler._build_ddns_command(ddns_args)
+        self.assertIsInstance(command, str)
+        self.assertIn("python", command.lower())
+        
+        # Test get status (safe read-only operation)
+        status = self.scheduler.get_status()
+        required_keys = ["scheduler", "installed", "enabled", "interval"]
+        for key in required_keys:
+            self.assertIn(key, status)
+        
+        # Test enable/disable without actual installation (should handle gracefully)
+        enable_result = self.scheduler.enable()
+        self.assertIsInstance(enable_result, bool)
+        
+        disable_result = self.scheduler.disable()
+        self.assertIsInstance(disable_result, bool)
 
 
 if __name__ == '__main__':
