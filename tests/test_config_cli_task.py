@@ -432,11 +432,11 @@ class TestTaskSubcommand(unittest.TestCase):
             mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                captured_args = None  # type: dict | None
+                args = None  # type: dict | None
 
-                def capture_args(args):
-                    nonlocal captured_args
-                    captured_args = args
+                def capture_args(cargs):
+                    nonlocal args
+                    args = cargs
 
                 mock_handle.side_effect = capture_args
 
@@ -445,21 +445,21 @@ class TestTaskSubcommand(unittest.TestCase):
                 except SystemExit:
                     pass
 
-                self.assertIsNotNone(captured_args)
+                self.assertIsNotNone(args)
                 # Verify scheduler is in args
-                self.assertEqual(captured_args.get("scheduler"), "systemd")  # type: ignore
+                self.assertEqual(args.get("scheduler"), "systemd")  # type: ignore
 
                 # Simulate what _handle_task_command does with ddns_args
-                excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
-                ddns_args = {k: v for k, v in captured_args.items() if k not in excluded_keys and v is not None}  # type: ignore
+                exclude = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
+                options = {k: v for k, v in args.items() if k not in exclude and v is not None}   # type: ignore
 
                 # Verify scheduler is excluded from ddns_args but other params are included
-                self.assertNotIn("scheduler", ddns_args)
-                self.assertNotIn("install", ddns_args)  # Also excluded
-                self.assertIn("dns", ddns_args)
-                self.assertIn("id", ddns_args)
-                self.assertEqual(ddns_args["dns"], "debug")
-                self.assertEqual(ddns_args["id"], "test-id")
+                self.assertNotIn("scheduler", options)
+                self.assertNotIn("install", options)  # Also excluded
+                self.assertIn("dns", options)
+                self.assertIn("id", options)
+                self.assertEqual(options["dns"], "debug")
+                self.assertEqual(options["id"], "test-id")
 
 
 if __name__ == "__main__":
