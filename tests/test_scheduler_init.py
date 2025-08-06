@@ -6,7 +6,7 @@ Test scheduler initialization and real functionality
 import os
 import platform
 import subprocess
-from tests import unittest
+from __init__ import unittest
 from ddns.scheduler import get_scheduler
 
 
@@ -102,7 +102,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
             # Basic keys should always be present
             basic_keys = ["installed", "scheduler"]
             for key in basic_keys:
-                self.assertIn(key, status, f"Status missing basic key: {key}")
+                self.assertIn(key, status, "Status missing basic key: {}".format(key))
 
             # Scheduler name should be a valid string
             self.assertIsInstance(status["scheduler"], str)
@@ -112,9 +112,9 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
             if status.get("installed", False):
                 additional_keys = ["enabled"]
                 for key in additional_keys:
-                    self.assertIn(key, status, f"Status missing key for installed scheduler: {key}")
+                    self.assertIn(key, status, "Status missing key for installed scheduler: {}".format(key))
         except Exception as e:
-            self.fail(f"get_status() failed: {e}")
+            self.fail("get_status() failed: {}".format(e))
 
     def test_scheduler_is_installed_call(self):
         """Test that is_installed() works on current system"""
@@ -122,7 +122,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
             installed = self.scheduler.is_installed()
             self.assertIsInstance(installed, bool)
         except Exception as e:
-            self.fail(f"is_installed() failed: {e}")
+            self.fail("is_installed() failed: {}".format(e))
 
     def test_scheduler_build_ddns_command(self):
         """Test that _build_ddns_command works correctly"""
@@ -134,7 +134,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
             # Should contain debug provider
             self.assertIn("debug", command)
         except Exception as e:
-            self.fail(f"_build_ddns_command() failed: {e}")
+            self.fail("_build_ddns_command() failed: {}".format(e))
 
     @unittest.skipUnless(platform.system().lower() == "windows", "Windows-specific test")
     def test_windows_scheduler_real_calls(self):
@@ -223,9 +223,11 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
 
         for method_name in required_methods:
             with self.subTest(method=method_name):
-                self.assertTrue(hasattr(self.scheduler, method_name), f"Scheduler missing method: {method_name}")
+                self.assertTrue(
+                    hasattr(self.scheduler, method_name), "Scheduler missing method: {}".format(method_name)
+                )
                 method = getattr(self.scheduler, method_name)
-                self.assertTrue(callable(method), f"Scheduler method not callable: {method_name}")
+                self.assertTrue(callable(method), "Scheduler method not callable: {}".format(method_name))
 
     def test_scheduler_safe_operations(self):
         """Test scheduler operations that are safe to run (won't modify system)"""

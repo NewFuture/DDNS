@@ -6,7 +6,6 @@ macOS launchd-based task scheduler
 
 import os
 import re
-import subprocess
 from datetime import datetime
 from ._base import BaseScheduler
 from ..util.fileio import read_file_safely, write_file
@@ -15,18 +14,11 @@ from .. import __version__ as version
 
 class LaunchdScheduler(BaseScheduler):
     """macOS launchd-based task scheduler"""
+
     LABEL = "cc.newfuture.ddns"
 
     def _get_plist_path(self):
         return os.path.expanduser("~/Library/LaunchAgents/{}.plist".format(self.LABEL))
-
-    def _launchctl(self, *args):  # type: (*str) -> bool
-        """Helper to run launchctl commands with consistent error handling"""
-        try:
-            subprocess.check_call(["launchctl"] + list(args))
-            return True
-        except subprocess.CalledProcessError:
-            return False
 
     def is_installed(self):
         return os.path.exists(self._get_plist_path())
@@ -68,7 +60,7 @@ class LaunchdScheduler(BaseScheduler):
         ddns_command = self._build_ddns_command(ddns_args)
         program_args = ddns_command.split()
         program_args_xml = u"\n".join(u"        <string>{}</string>".format(arg.strip('"')) for arg in program_args)
-        
+
         # Create comment with version and install date (consistent with Windows)
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         comment = "auto-update v{} installed on {}".format(version, date)
@@ -88,7 +80,8 @@ class LaunchdScheduler(BaseScheduler):
         )
 
         write_file(plist_path, plist_content)
-        if self._launchctl("load", plist_path):
+        result = self._run_command(["launchctl", "load", plist_path])
+        if result is not None:
             self.logger.info("DDNS launchd service installed successfully")
             return True
         else:
@@ -97,7 +90,7 @@ class LaunchdScheduler(BaseScheduler):
 
     def uninstall(self):
         plist_path = self._get_plist_path()
-        subprocess.call(["launchctl", "unload", plist_path])  # Ignore errors
+        self._run_command(["launchctl", "unload", plist_path])  # Ignore errors
         try:
             os.remove(plist_path)
         except OSError:
@@ -112,7 +105,8 @@ class LaunchdScheduler(BaseScheduler):
             self.logger.error("DDNS launchd service not found")
             return False
 
-        if self._launchctl("load", plist_path):
+        result = self._run_command(["launchctl", "load", plist_path])
+        if result is not None:
             self.logger.info("DDNS launchd service enabled successfully")
             return True
         else:
@@ -121,7 +115,8 @@ class LaunchdScheduler(BaseScheduler):
 
     def disable(self):
         plist_path = self._get_plist_path()
-        if self._launchctl("unload", plist_path):
+        result = self._run_command(["launchctl", "unload", plist_path])
+        if result is not None:
             self.logger.info("DDNS launchd service disabled successfully")
             return True
         else:

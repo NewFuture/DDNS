@@ -84,8 +84,8 @@ class TestCronScheduler(unittest.TestCase):
             self.assertEqual(status['interval'], 5)
             self.assertEqual(status['description'], 'auto-update')
 
-    def test_version_fallback_logic(self):
-        """Test version fallback logic in install method"""
+    def test_version_in_cron_entry(self):
+        """Test that install method includes version in cron entry"""
         with patch("ddns.scheduler.cron.datetime") as mock_datetime:
             mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
 
@@ -96,22 +96,13 @@ class TestCronScheduler(unittest.TestCase):
                         mock_update.return_value = True
                         mock_build.return_value = "python3 -m ddns"
 
-                        # Test with import error - Python 2/3 compatibility
-                        try:
-                            # Python 3
-                            import builtins
-
-                            builtin_module = 'builtins.__import__'
-                        except ImportError:
-                            # Python 2
-                            builtin_module = '__builtin__.__import__'
-
-                        with patch(builtin_module, side_effect=ImportError):
+                        # Test that version is included in cron entry
+                        with patch('ddns.scheduler.cron.version', 'test-version'):
                             result = self.scheduler.install(10)
 
                             self.assertTrue(result)
                             call_args = mock_update.call_args[0][0]
-                            self.assertIn("v${BUILD_VERSION}", call_args)  # Should use the actual version placeholder
+                            self.assertIn("vtest-version", call_args)  # Should include the version
 
     def test_get_status_with_no_comment(self):
         """Test get_status handles cron entries with no DDNS comment"""

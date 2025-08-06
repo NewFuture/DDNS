@@ -20,9 +20,10 @@ class BaseScheduler(object):
         try:
             if sys.version_info[0] >= 3:
                 kwargs.setdefault("stderr", subprocess.DEVNULL)
-            kwargs.setdefault("timeout", 60)  # 60 second timeout to prevent hanging
+                kwargs.setdefault("timeout", 60)  # 60 second timeout to prevent hanging
             return subprocess.check_output(command, universal_newlines=True, **kwargs)
-        except (subprocess.CalledProcessError, OSError, UnicodeDecodeError, subprocess.TimeoutExpired):
+        except Exception as e:
+            self.logger.debug("Command failed: %s", e)
             return None
 
     def _get_ddns_cmd(self):  # type: () -> str

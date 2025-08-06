@@ -348,11 +348,10 @@ class TestTaskSubcommand(unittest.TestCase):
             mock_scheduler.get_status.return_value = {"installed": False, "scheduler": "auto"}
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                captured_args = None
+                captured_args = [None]  # Use list to make it mutable in Python 2
 
                 def capture_args(args):
-                    nonlocal captured_args
-                    captured_args = args
+                    captured_args[0] = args
 
                 mock_handle.side_effect = capture_args
 
@@ -361,9 +360,9 @@ class TestTaskSubcommand(unittest.TestCase):
                 except SystemExit:
                     pass
 
-                self.assertIsNotNone(captured_args)
-                if captured_args is not None:
-                    self.assertEqual(captured_args.get("scheduler"), "auto")
+                self.assertIsNotNone(captured_args[0])
+                if captured_args[0] is not None:
+                    self.assertEqual(captured_args[0].get("scheduler"), "auto")
 
     def test_task_subcommand_scheduler_explicit_values(self):
         """Test task subcommand scheduler with explicit values"""
@@ -378,11 +377,10 @@ class TestTaskSubcommand(unittest.TestCase):
                     mock_scheduler.get_status.return_value = {"installed": False, "scheduler": scheduler}
 
                     with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                        captured_args = None
+                        captured_args = [None]  # Use list to make it mutable in Python 2
 
                         def capture_args(args):
-                            nonlocal captured_args
-                            captured_args = args
+                            captured_args[0] = args
 
                         mock_handle.side_effect = capture_args
 
@@ -391,9 +389,9 @@ class TestTaskSubcommand(unittest.TestCase):
                         except SystemExit:
                             pass
 
-                        self.assertIsNotNone(captured_args)
-                        if captured_args is not None:
-                            self.assertEqual(captured_args.get("scheduler"), scheduler)
+                        self.assertIsNotNone(captured_args[0])
+                        if captured_args[0] is not None:
+                            self.assertEqual(captured_args[0].get("scheduler"), scheduler)
 
     def test_task_subcommand_scheduler_with_install(self):
         """Test task subcommand scheduler parameter with install command"""
@@ -404,11 +402,10 @@ class TestTaskSubcommand(unittest.TestCase):
             mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                captured_args = None
+                captured_args = [None]  # Use list to make it mutable in Python 2
 
                 def capture_args(args):
-                    nonlocal captured_args
-                    captured_args = args
+                    captured_args[0] = args
 
                 mock_handle.side_effect = capture_args
 
@@ -417,11 +414,11 @@ class TestTaskSubcommand(unittest.TestCase):
                 except SystemExit:
                     pass
 
-                self.assertIsNotNone(captured_args)
-                if captured_args is not None:
-                    self.assertEqual(captured_args.get("scheduler"), "cron")
-                    self.assertEqual(captured_args.get("install"), 15)
-                    self.assertEqual(captured_args.get("dns"), "debug")
+                self.assertIsNotNone(captured_args[0])
+                if captured_args[0] is not None:
+                    self.assertEqual(captured_args[0].get("scheduler"), "cron")
+                    self.assertEqual(captured_args[0].get("install"), 15)
+                    self.assertEqual(captured_args[0].get("dns"), "debug")
 
     def test_task_subcommand_scheduler_excluded_from_ddns_args(self):
         """Test scheduler parameter is excluded from ddns_args in _handle_task_command"""
@@ -432,11 +429,10 @@ class TestTaskSubcommand(unittest.TestCase):
             mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                args = None  # type: dict | None
+                args = [None]  # Use list to make it mutable in Python 2
 
                 def capture_args(cargs):
-                    nonlocal args
-                    args = cargs
+                    args[0] = cargs
 
                 mock_handle.side_effect = capture_args
 
@@ -445,13 +441,13 @@ class TestTaskSubcommand(unittest.TestCase):
                 except SystemExit:
                     pass
 
-                self.assertIsNotNone(args)
+                self.assertIsNotNone(args[0])
                 # Verify scheduler is in args
-                self.assertEqual(args.get("scheduler"), "systemd")  # type: ignore
+                self.assertEqual(args[0].get("scheduler"), "systemd")  # type: ignore
 
                 # Simulate what _handle_task_command does with ddns_args
                 exclude = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
-                options = {k: v for k, v in args.items() if k not in exclude and v is not None}   # type: ignore
+                options = {k: v for k, v in args[0].items() if k not in exclude and v is not None}  # type: ignore
 
                 # Verify scheduler is excluded from ddns_args but other params are included
                 self.assertNotIn("scheduler", options)
