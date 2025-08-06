@@ -8,8 +8,7 @@ import os
 from io import open  # Python 2/3 compatible UTF-8 file operations
 
 
-def _ensure_directory_exists(file_path):
-    # type: (str) -> None
+def _ensure_directory_exists(file_path):  # type: (str) -> None
     """
     Internal helper to ensure directory exists for the given file path
 
@@ -24,8 +23,7 @@ def _ensure_directory_exists(file_path):
         os.makedirs(directory)
 
 
-def read_file_safely(file_path, encoding="utf-8"):
-    # type: (str, str) -> str | None
+def read_file_safely(file_path, encoding="utf-8", default=None):  # type: (str, str, str|None) -> str | None
     """
     Safely read file content with UTF-8 encoding, return None if file doesn't exist or can't be read
 
@@ -38,12 +36,11 @@ def read_file_safely(file_path, encoding="utf-8"):
     """
     try:
         return read_file(file_path, encoding)
-    except (OSError, IOError, UnicodeDecodeError):
-        return None
+    except Exception:
+        return default
 
 
-def write_file_safely(file_path, content, encoding="utf-8"):
-    # type: (str, str, str) -> bool
+def write_file_safely(file_path, content, encoding="utf-8"):  # type: (str, str, str) -> bool
     """
     Safely write content to file with UTF-8 encoding
 
@@ -58,12 +55,11 @@ def write_file_safely(file_path, content, encoding="utf-8"):
     try:
         write_file(file_path, content, encoding)
         return True
-    except (OSError, IOError, UnicodeEncodeError):
+    except Exception:
         return False
 
 
-def read_file(file_path, encoding="utf-8"):
-    # type: (str, str) -> str
+def read_file(file_path, encoding="utf-8"):  # type: (str, str) -> str
     """
     Read file content with UTF-8 encoding, raise exception if failed
 
@@ -82,8 +78,7 @@ def read_file(file_path, encoding="utf-8"):
         return f.read()
 
 
-def write_file(file_path, content, encoding="utf-8"):
-    # type: (str, str, str) -> None
+def write_file(file_path, content, encoding="utf-8"):  # type: (str, str, str) -> None
     """
     Write content to file with UTF-8 encoding, raise exception if failed
 
@@ -101,8 +96,7 @@ def write_file(file_path, content, encoding="utf-8"):
         f.write(content)
 
 
-def ensure_directory(file_path):
-    # type: (str) -> bool
+def ensure_directory(file_path):  # type: (str) -> bool
     """
     Ensure the directory for the given file path exists
 

@@ -57,7 +57,7 @@ class TestTaskSubcommand(unittest.TestCase):
                 "scheduler": "schtasks",
                 "interval": 5,
                 "enabled": True,
-                "command": "test command"
+                "command": "test command",
             }
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
@@ -316,7 +316,7 @@ class TestTaskSubcommand(unittest.TestCase):
                 "scheduler": "schtasks",
                 "interval": 5,
                 "enabled": True,
-                "command": "test command"
+                "command": "test command",
             }
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
@@ -368,7 +368,7 @@ class TestTaskSubcommand(unittest.TestCase):
     def test_task_subcommand_scheduler_explicit_values(self):
         """Test task subcommand scheduler with explicit values"""
         test_schedulers = ["auto", "systemd", "cron", "launchd", "schtasks"]
-        
+
         for scheduler in test_schedulers:
             with self.subTest(scheduler=scheduler):
                 sys.argv = ["ddns", "task", "--status", "--scheduler", scheduler]
@@ -432,7 +432,7 @@ class TestTaskSubcommand(unittest.TestCase):
             mock_scheduler.install.return_value = True
 
             with patch("ddns.config.cli._handle_task_command") as mock_handle:
-                captured_args = None
+                captured_args = None  # type: dict | None
 
                 def capture_args(args):
                     nonlocal captured_args
@@ -446,21 +446,20 @@ class TestTaskSubcommand(unittest.TestCase):
                     pass
 
                 self.assertIsNotNone(captured_args)
-                if captured_args is not None:
-                    # Verify scheduler is in args
-                    self.assertEqual(captured_args.get("scheduler"), "systemd")
-                    
-                    # Simulate what _handle_task_command does with ddns_args
-                    excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
-                    ddns_args = {k: v for k, v in captured_args.items() if k not in excluded_keys and v is not None}
-                    
-                    # Verify scheduler is excluded from ddns_args but other params are included
-                    self.assertNotIn("scheduler", ddns_args)
-                    self.assertNotIn("install", ddns_args)  # Also excluded
-                    self.assertIn("dns", ddns_args)
-                    self.assertIn("id", ddns_args)
-                    self.assertEqual(ddns_args["dns"], "debug")
-                    self.assertEqual(ddns_args["id"], "test-id")
+                # Verify scheduler is in args
+                self.assertEqual(captured_args.get("scheduler"), "systemd")  # type: ignore
+
+                # Simulate what _handle_task_command does with ddns_args
+                excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
+                ddns_args = {k: v for k, v in captured_args.items() if k not in excluded_keys and v is not None}  # type: ignore
+
+                # Verify scheduler is excluded from ddns_args but other params are included
+                self.assertNotIn("scheduler", ddns_args)
+                self.assertNotIn("install", ddns_args)  # Also excluded
+                self.assertIn("dns", ddns_args)
+                self.assertIn("id", ddns_args)
+                self.assertEqual(ddns_args["dns"], "debug")
+                self.assertEqual(ddns_args["id"], "test-id")
 
 
 if __name__ == "__main__":

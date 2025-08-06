@@ -8,6 +8,8 @@ Provides factory functions and public API for task scheduling
 import platform
 import os
 
+from ddns.util.fileio import read_file_safely
+
 # Import all scheduler classes
 from ._base import BaseScheduler
 from .systemd import SystemdScheduler
@@ -39,7 +41,6 @@ def get_scheduler(scheduler=None):
     # Auto-detect if not specified
     if scheduler is None or scheduler == 'auto':
         system = platform.system().lower()
-
         if system == "windows":
             return SchtasksScheduler()
         elif system == "darwin":  # macOS
@@ -47,23 +48,10 @@ def get_scheduler(scheduler=None):
             launchd_dirs = ["/Library/LaunchDaemons", "/System/Library/LaunchDaemons"]
             if any(os.path.isdir(d) for d in launchd_dirs):
                 return LaunchdScheduler()
-            return CronScheduler()
-        elif system == "linux":
-            # Check if systemd is the init system by reading /proc/1/comm
-            try:
-                with open("/proc/1/comm", "r") as f:
-                    init_name = f.read().strip()
-                if init_name == "systemd":
-                    return SystemdScheduler()
-            except (OSError, IOError):
-                pass  # Fall back to cron if can't read /proc/1/comm
-            return CronScheduler()
-        else:
-            # Other Unix-like systems, use cron
-            return CronScheduler()
-
-    # Use specified scheduler
-    if scheduler == 'systemd':
+        elif system == "linux" and read_file_safely("/proc/1/comm", default="").strip() == "systemd":  # type: ignore
+            return SystemdScheduler()
+        return CronScheduler()  # Other Unix-like systems, use cron
+    elif scheduler == 'systemd':
         return SystemdScheduler()
     elif scheduler == 'cron':
         return CronScheduler()
@@ -72,9 +60,7 @@ def get_scheduler(scheduler=None):
     elif scheduler == 'schtasks' or scheduler == 'windows':
         return SchtasksScheduler()
     else:
-        raise ValueError(
-            "Invalid scheduler: {}. Must be one of: auto, systemd, cron, launchd, schtasks".format(scheduler)
-        )
+        raise ValueError("Invalid scheduler: {}. ".format(scheduler))
 
 
 # Export public API

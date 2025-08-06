@@ -229,7 +229,7 @@ def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
         "--scheduler",
         choices=["auto", "systemd", "cron", "launchd", "schtasks"],
         default="auto",
-        help="Specify scheduler type [指定定时任务方式]"
+        help="Specify scheduler type [指定定时任务方式]",
     )
 
 
@@ -285,43 +285,47 @@ def load_config(description, doc, version, date):
 def _handle_task_command(args):  # type: (dict) -> None
     """Handle task subcommand"""
     basicConfig(level=args["debug"] and DEBUG or args.get("log_level", "INFO"))
-    
+
     # Use specified scheduler or auto-detect
     scheduler_type = args.get("scheduler", "auto")
     scheduler = get_scheduler(scheduler_type)
-    
+
     interval = args.get("install", 5) or 5
-    excluded_keys = {"status", "install", "uninstall", "enable", "disable", "command", "scheduler"}
+    excluded_keys = ("status", "install", "uninstall", "enable", "disable", "command", "scheduler", "func")
     ddns_args = {k: v for k, v in args.items() if k not in excluded_keys and v is not None}
 
     # Execute operations
     for op in ["install", "uninstall", "enable", "disable"]:
         if not args.get(op):
             continue
-            
+
         # Check if task is installed for enable/disable
         if op in ["enable", "disable"] and not scheduler.is_installed():
             print("DDNS task is not installed" + (" Please install it first." if op == "enable" else "."))
             sys.exit(1)
-        
+
         # Execute operation
         print("{} DDNS scheduled task...".format(op.title()))
         func = getattr(scheduler, op)
         result = func(interval, ddns_args) if op == "install" else func()
-        
+
         if result:
-            past_tense = {"install": "installed", "uninstall": "uninstalled",
-                          "enable": "enabled", "disable": "disabled"}[op]
+            past_tense = {
+                "install": "installed",
+                "uninstall": "uninstalled",
+                "enable": "enabled",
+                "disable": "disabled",
+            }[op]
             suffix = " with {} minute interval".format(interval) if op == "install" else ""
             print("DDNS task {} successfully{}".format(past_tense, suffix))
         else:
             print("Failed to {} DDNS task".format(op))
             sys.exit(1)
         return
-    
+
     # Show status or auto-install
     status = scheduler.get_status()
-    
+
     if args.get("status") or status["installed"]:
         _print_status(status)
     else:

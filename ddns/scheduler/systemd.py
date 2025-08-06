@@ -11,6 +11,11 @@ from ._base import BaseScheduler
 from ..util.fileio import read_file_safely, write_file
 from .. import __version__ as version
 
+try:  # python 3
+    PermissionError  # type: ignore
+except NameError:  # python 2 doesn't have PermissionError, use OSError instead
+    PermissionError = IOError
+
 
 class SystemdScheduler(BaseScheduler):
     """Systemd timer-based task scheduler for Linux"""
@@ -72,7 +77,9 @@ After=network.target
 Type=oneshot
 WorkingDirectory={}
 ExecStart={}
-""".format(version, date, work_dir, ddns_command)
+""".format(
+            version, date, work_dir, ddns_command
+        )
 
         # Create timer file content
         timer_content = u"""[Unit]
@@ -85,19 +92,25 @@ Unit={}
 
 [Install]
 WantedBy=multi-user.target
-""".format(self.SERVICE_NAME, interval, self.SERVICE_NAME)
+""".format(
+            self.SERVICE_NAME, interval, self.SERVICE_NAME
+        )
 
         try:
             # Write service and timer files
             write_file(self.SERVICE_PATH, service_content)
             write_file(self.TIMER_PATH, timer_content)
-        except (OSError, PermissionError) as e:
-            self.logger.error("Failed to create systemd files: %s", e)
+        except PermissionError as e:
+            self.logger.debug("Permission denied when writing systemd files: %s", e)
+            print("Permission denied. Please run as root or use sudo.")
+            print("or use cron scheduler (with --scheduler=cron) instead.")
+            return False
+        except Exception as e:
+            self.logger.error("Failed to write systemd files: %s", e)
             return False
 
-        if (self._systemctl("daemon-reload") and
-                self._systemctl("enable", self.TIMER_NAME) and
-                self._systemctl("start", self.TIMER_NAME)):
+        if self._systemctl("daemon-reload") and self._systemctl("enable", self.TIMER_NAME):
+            self._systemctl("start", self.TIMER_NAME)
             return True
         else:
             self.logger.error("Failed to enable/start systemd timer")
@@ -113,7 +126,11 @@ WantedBy=multi-user.target
             self._systemctl("daemon-reload")  # Reload systemd configuration
             return True
 
-        except (OSError, PermissionError) as e:
+        except PermissionError as e:
+            self.logger.debug("Permission denied when removing systemd files: %s", e)
+            print("Permission denied. Please run as root or use sudo.")
+            return False
+        except Exception as e:
             self.logger.error("Failed to remove systemd files: %s", e)
             return False
 

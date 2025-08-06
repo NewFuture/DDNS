@@ -16,14 +16,13 @@ from .. import __version__ as version
 
 class CronScheduler(BaseScheduler):
     """Cron-based task scheduler for Unix-like systems"""
-    
+
     SCHEDULER_NAME = "cron"
 
     KEY = "# DDNS:"
 
     def _update_crontab(self, new_cron):
         """Update crontab with new content"""
-        temp_path = None
         try:
             temp_path = tempfile.mktemp(suffix='.cron')
             write_file(temp_path, new_cron)

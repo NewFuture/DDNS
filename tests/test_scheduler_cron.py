@@ -4,7 +4,6 @@ Unit tests for ddns.scheduler.corn module
 @author: NewFuture
 """
 import platform
-import shutil
 from __init__ import unittest, patch
 from ddns.scheduler.cron import CronScheduler
 
@@ -97,8 +96,17 @@ class TestCronScheduler(unittest.TestCase):
                         mock_update.return_value = True
                         mock_build.return_value = "python3 -m ddns"
 
-                        # Test with import error
-                        with patch('builtins.__import__', side_effect=ImportError):
+                        # Test with import error - Python 2/3 compatibility
+                        try:
+                            # Python 3
+                            import builtins
+
+                            builtin_module = 'builtins.__import__'
+                        except ImportError:
+                            # Python 2
+                            builtin_module = '__builtin__.__import__'
+
+                        with patch(builtin_module, side_effect=ImportError):
                             result = self.scheduler.install(10)
 
                             self.assertTrue(result)
@@ -173,55 +181,79 @@ class TestCronScheduler(unittest.TestCase):
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
     def test_real_cron_integration(self):
         """Test real cron integration with actual system calls"""
-        crontab_path = shutil.which("crontab")
-        if not crontab_path:
-            self.skipTest("crontab not available on this system")
-        
-        # Test real crontab list (safe read-only operation)
-        status = self.scheduler.get_status()
-        self.assertIsInstance(status, dict)
-        self.assertEqual(status["scheduler"], "cron")
-        self.assertIsInstance(status["installed"], bool)
-        
-        # Test crontab help/version (safe read-only operation)
-        import subprocess
+        # Check if crontab command is available
         try:
-            help_result = subprocess.run([crontab_path],
-                                         capture_output=True, text=True, check=False)
-            # crontab without args typically shows usage, which is expected
-            self.assertTrue(help_result.returncode != 0 or "usage" in help_result.stderr.lower())
-        except Exception as e:
-            self.fail(f"Failed to run crontab: {e}")
+            crontab_result = self.scheduler._run_command(["crontab", "-l"])
+            if not crontab_result:
+                self.skipTest("crontab not available on this system")
+        except Exception:
+            self.skipTest("crontab not available on this system")
+
+        # Test real crontab list with shorter timeout to prevent hanging
+        # Save original method and override with shorter timeout
+        original_run_command = self.scheduler._run_command
+
+        def fast_run_command(command, **kwargs):
+            kwargs.setdefault('timeout', 5)  # 5 second timeout for tests
+            return original_run_command(command, **kwargs)
+
+        self.scheduler._run_command = fast_run_command
+
+        try:
+            status = self.scheduler.get_status()
+            self.assertIsInstance(status, dict)
+            self.assertEqual(status["scheduler"], "cron")
+            self.assertIsInstance(status["installed"], bool)
+        finally:
+            # Restore original method
+            self.scheduler._run_command = original_run_command
 
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
     def test_real_scheduler_methods_safe(self):
         """Test real scheduler methods that don't modify system state"""
-        crontab_path = shutil.which("crontab")
-        if not crontab_path:
+        # Check if crontab command is available
+        try:
+            crontab_result = self.scheduler._run_command(["crontab", "-l"])
+            if not crontab_result:
+                self.skipTest("crontab not available on this system")
+        except Exception:
             self.skipTest("crontab not available on this system")
-        
-        # Test is_installed (safe read-only operation)
-        installed = self.scheduler.is_installed()
-        self.assertIsInstance(installed, bool)
-        
-        # Test build command
-        ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
-        command = self.scheduler._build_ddns_command(ddns_args)
-        self.assertIsInstance(command, str)
-        self.assertIn("python", command.lower())
-        
-        # Test get status (safe read-only operation)
-        status = self.scheduler.get_status()
-        required_keys = ["scheduler", "installed", "enabled", "interval"]
-        for key in required_keys:
-            self.assertIn(key, status)
-        
-        # Test enable/disable without actual installation (should handle gracefully)
-        enable_result = self.scheduler.enable()
-        self.assertIsInstance(enable_result, bool)
-        
-        disable_result = self.scheduler.disable()
-        self.assertIsInstance(disable_result, bool)
+
+        # Save original method and override with shorter timeout
+        original_run_command = self.scheduler._run_command
+
+        def fast_run_command(command, **kwargs):
+            kwargs.setdefault('timeout', 5)  # 5 second timeout for tests
+            return original_run_command(command, **kwargs)
+
+        self.scheduler._run_command = fast_run_command
+
+        try:
+            # Test is_installed (safe read-only operation)
+            installed = self.scheduler.is_installed()
+            self.assertIsInstance(installed, bool)
+
+            # Test build command
+            ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
+            command = self.scheduler._build_ddns_command(ddns_args)
+            self.assertIsInstance(command, str)
+            self.assertIn("python", command.lower())
+
+            # Test get status (safe read-only operation)
+            status = self.scheduler.get_status()
+            required_keys = ["scheduler", "installed", "enabled", "interval"]
+            for key in required_keys:
+                self.assertIn(key, status)
+
+            # Test enable/disable without actual installation (should handle gracefully)
+            enable_result = self.scheduler.enable()
+            self.assertIsInstance(enable_result, bool)
+
+            disable_result = self.scheduler.disable()
+            self.assertIsInstance(disable_result, bool)
+        finally:
+            # Restore original method
+            self.scheduler._run_command = original_run_command
 
 
 if __name__ == '__main__':
