@@ -6,7 +6,6 @@ schtasks-based task scheduler
 
 import os
 import re
-import subprocess
 from ._base import BaseScheduler
 from ..util.fileio import write_file
 
@@ -21,8 +20,8 @@ class SchtasksScheduler(BaseScheduler):
 
     def _schtasks(self, *args):  # type: (*str) -> bool
         """Helper to run schtasks commands with consistent error handling"""
-        subprocess.check_call(["schtasks"] + list(args))
-        return True
+        result = self._run_command(["schtasks"] + list(args))
+        return result is not None
 
     def _create_vbs_script(self, ddns_args=None):  # type: (dict | None) -> str
         """Create VBS script for silent execution and return its path"""

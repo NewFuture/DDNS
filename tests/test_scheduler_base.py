@@ -3,7 +3,7 @@
 Unit tests for ddns.scheduler._base module
 @author: NewFuture
 """
-from tests import unittest, patch
+from __init__ import unittest, patch
 from ddns.scheduler._base import BaseScheduler
 
 

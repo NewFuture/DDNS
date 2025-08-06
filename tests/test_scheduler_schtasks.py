@@ -4,7 +4,7 @@ Unit tests for ddns.scheduler.schtasks module
 @author: NewFuture
 """
 import platform
-from tests import unittest, patch
+from __init__ import unittest, patch
 from ddns.scheduler.schtasks import SchtasksScheduler
 
 
