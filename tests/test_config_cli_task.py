@@ -369,7 +369,7 @@ class TestTaskSubcommand(unittest.TestCase):
         test_schedulers = ["auto", "systemd", "cron", "launchd", "schtasks"]
 
         for scheduler in test_schedulers:
-            with self.subTest(scheduler=scheduler):
+            try:
                 sys.argv = ["ddns", "task", "--status", "--scheduler", scheduler]
 
                 with patch("ddns.config.cli.get_scheduler") as mock_get_scheduler:
@@ -389,9 +389,17 @@ class TestTaskSubcommand(unittest.TestCase):
                         except SystemExit:
                             pass
 
-                        self.assertIsNotNone(captured_args[0])
+                        self.assertIsNotNone(
+                            captured_args[0], "Failed to capture args for scheduler: {}".format(scheduler)
+                        )
                         if captured_args[0] is not None:
-                            self.assertEqual(captured_args[0].get("scheduler"), scheduler)
+                            self.assertEqual(
+                                captured_args[0].get("scheduler"),
+                                scheduler,
+                                "Expected scheduler {} but got {}".format(scheduler, captured_args[0].get("scheduler")),
+                            )
+            except Exception as e:
+                self.fail("Failed for scheduler {}: {}".format(scheduler, e))
 
     def test_task_subcommand_scheduler_with_install(self):
         """Test task subcommand scheduler parameter with install command"""

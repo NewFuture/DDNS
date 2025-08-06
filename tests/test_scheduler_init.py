@@ -33,10 +33,18 @@ class TestSchedulerInit(unittest.TestCase):
         ]
 
         for scheduler_type, expected_class_name in test_cases:
-            with self.subTest(scheduler_type=scheduler_type):
+            try:
                 scheduler = get_scheduler(scheduler_type)
-                self.assertIsNotNone(scheduler)
-                self.assertEqual(scheduler.__class__.__name__, expected_class_name)
+                self.assertIsNotNone(scheduler, "Failed to get scheduler for type: {}".format(scheduler_type))
+                self.assertEqual(
+                    scheduler.__class__.__name__,
+                    expected_class_name,
+                    "Expected {} but got {} for scheduler type: {}".format(
+                        expected_class_name, scheduler.__class__.__name__, scheduler_type
+                    ),
+                )
+            except Exception as e:
+                self.fail("Failed for scheduler_type {}: {}".format(scheduler_type, e))
 
     def test_invalid_scheduler_raises_error(self):
         """Test that invalid scheduler raises ValueError"""
@@ -222,12 +230,14 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
         required_methods = ['get_status', 'is_installed', 'install', 'uninstall', 'enable', 'disable']
 
         for method_name in required_methods:
-            with self.subTest(method=method_name):
+            try:
                 self.assertTrue(
                     hasattr(self.scheduler, method_name), "Scheduler missing method: {}".format(method_name)
                 )
                 method = getattr(self.scheduler, method_name)
                 self.assertTrue(callable(method), "Scheduler method not callable: {}".format(method_name))
+            except Exception as e:
+                self.fail("Failed for method {}: {}".format(method_name, e))
 
     def test_scheduler_safe_operations(self):
         """Test scheduler operations that are safe to run (won't modify system)"""

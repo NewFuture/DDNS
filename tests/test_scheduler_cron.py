@@ -16,6 +16,7 @@ class TestCronScheduler(unittest.TestCase):
         self.scheduler = CronScheduler()
 
     @patch("ddns.scheduler.cron.datetime")
+    @patch("ddns.scheduler.cron.version", "test-version")
     def test_install_with_version_and_date(self, mock_datetime):
         """Test install method includes version and date in cron entry"""
         mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
@@ -35,7 +36,7 @@ class TestCronScheduler(unittest.TestCase):
 
                     # Verify the cron entry contains version and date
                     call_args = mock_update.call_args[0][0]
-                    self.assertIn("# DDNS: auto-update v${BUILD_VERSION} installed on 2025-08-01 14:30:00", call_args)
+                    self.assertIn("# DDNS: auto-update vtest-version installed on 2025-08-01 14:30:00", call_args)
 
     def test_get_status_extracts_comments(self):
         """Test get_status method extracts comments from cron entry"""
