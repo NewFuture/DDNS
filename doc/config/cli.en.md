@@ -95,6 +95,7 @@ ddns --ipv4=example.com,www.example.com
 | `--status`      |     Flag    | Show scheduled task installation status and running information                                                                                                           | `--status`                                               |
 | `--enable`      |     Flag    | Enable the installed scheduled task                                                                                                                                       | `--enable`                                               |
 | `--disable`     |     Flag    | Disable the installed scheduled task                                                                                                                                      | `--disable`                                              |
+| `--scheduler`   |   Choice    | Specify scheduler type. Supports: auto (automatic), systemd, cron, launchd, schtasks                                                                                    | `--scheduler systemd`, `--scheduler auto`                |
 
 > **Important Notes**:
 >
@@ -305,6 +306,11 @@ ddns task --install
 ddns task --install 10
 ddns task -i 15
 
+# Specify scheduler type for installation
+ddns task --install 5 --scheduler systemd
+ddns task --install 10 --scheduler cron
+ddns task --install 15 --scheduler auto
+
 # Enable installed scheduled task
 ddns task --enable
 
@@ -323,6 +329,16 @@ DDNS automatically detects the system and chooses the most appropriate scheduler
 - **macOS**: launchd (preferred) or cron  
 - **Windows**: schtasks
 
+### Scheduler Selection Guide
+
+| Scheduler | Supported Systems | Description | Recommendation |
+|-----------|-------------------|-------------|----------------|
+| `auto` | All systems | Automatically detects system and selects the best scheduler | ⭐⭐⭐⭐⭐ |
+| `systemd` | Linux | Modern Linux standard timer with complete functionality | ⭐⭐⭐⭐⭐ |
+| `cron` | Unix-like | Traditional Unix scheduled tasks with good compatibility | ⭐⭐⭐⭐ |
+| `launchd` | macOS | macOS native task scheduler | ⭐⭐⭐⭐⭐ |
+| `schtasks` | Windows | Windows Task Scheduler | ⭐⭐⭐⭐⭐ |
+
 ### Parameter Description
 
 | Parameter | Description |
@@ -332,6 +348,7 @@ DDNS automatically detects the system and chooses the most appropriate scheduler
 | `--uninstall` | Uninstall installed scheduled task |
 | `--enable` | Enable installed scheduled task |
 | `--disable` | Disable installed scheduled task |
+| `--scheduler` | Specify scheduler type. Supports: auto, systemd, cron, launchd, schtasks |
 
 > **Installation Behavior**:
 >
@@ -370,6 +387,18 @@ ddns task --install 10 --dns dnspod --id 12345 --token secret \
           --ipv4 example.com --ttl 600 --proxy http://proxy:8080 \
           --log_file /var/log/ddns.log --log_level INFO
 
+# Specify scheduler type for installation
+ddns task --install 5 --scheduler systemd --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
+# Force use cron scheduler (for Linux systems without systemd)
+ddns task --install 10 --scheduler cron -c config.json
+
+# Force use launchd on macOS
+ddns task --install 15 --scheduler launchd --dns dnspod --id 12345 --token secret --ipv4 example.com
+
+# Use schtasks on Windows
+ddns task --install 5 --scheduler schtasks --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
 # Install systemd timer on Linux with sudo
 sudo ddns task --install 5 -c /etc/ddns/config.json
 
@@ -402,6 +431,51 @@ ddns task --install 15 -c https://config.example.com/ddns.json
 
 # Configuration file + command line parameter override
 ddns task --install 10 -c config.json --debug --ttl 300
+
+# Specify scheduler type + configuration file
+ddns task --install 5 --scheduler cron -c config.json
+
+# Use remote configuration file + specify scheduler
+ddns task --install 10 --scheduler systemd -c https://config.example.com/ddns.json
+```
+
+### Scheduler Usage Examples
+
+Choose the appropriate scheduler based on different systems and requirements:
+
+```bash
+# Automatic selection (recommended, let system choose the best scheduler)
+ddns task --install 5 --scheduler auto
+
+# Linux system choices
+ddns task --install 5 --scheduler systemd  # Preferred choice, full functionality
+ddns task --install 5 --scheduler cron     # Backup choice, good compatibility
+
+# macOS system choices
+ddns task --install 5 --scheduler launchd  # Preferred choice, system native
+ddns task --install 5 --scheduler cron     # Backup choice, good compatibility
+
+# Windows system choices
+ddns task --install 5 --scheduler schtasks # Only choice, Windows Task Scheduler
+```
+
+### Debugging Installation Issues
+
+```bash
+# Enable debug mode to view detailed installation process
+ddns task --install 5 --debug
+
+# View task status and configuration
+ddns task --status --debug
+
+# View status of specified scheduler
+ddns task --status --scheduler systemd --debug
+```
+
+# Configuration file + command line parameter override
+
+ddns task --install 10 -c config.json --debug --ttl 300
+
 ```
 
 ### Debugging Installation Issues

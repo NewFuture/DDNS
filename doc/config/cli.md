@@ -100,6 +100,7 @@ ddns --ipv4=example.com,www.example.com
 | `--status`      | 标志       | 显示定时任务安装状态和运行信息                                                                                                                      | `--status`                                               |
 | `--enable`      | 标志       | 启用已安装的定时任务                                                                                                                           | `--enable`                                               |
 | `--disable`     | 标志       | 禁用已安装的定时任务                                                                                                                           | `--disable`                                              |
+| `--scheduler`   | 选择项      | 指定调度器类型，支持：auto（自动选择）、systemd、cron、launchd、schtasks                                                                         | `--scheduler systemd`、`--scheduler auto`                |
 
 > **重要说明**:
 >
@@ -341,6 +342,11 @@ ddns task --install
 ddns task --install 10
 ddns task -i 15
 
+# 指定调度器类型安装任务
+ddns task --install 5 --scheduler systemd
+ddns task --install 10 --scheduler cron
+ddns task --install 15 --scheduler auto
+
 # 启用已安装的定时任务
 ddns task --enable
 
@@ -359,6 +365,16 @@ DDNS 会自动检测系统并选择最合适的调度器：
 - **macOS**: launchd (优先) 或 cron  
 - **Windows**: schtasks
 
+### 调度器选择说明
+
+| 调度器 | 适用系统 | 描述 | 推荐度 |
+|--------|----------|------|--------|
+| `auto` | 所有系统 | 自动检测系统并选择最佳调度器 | ⭐⭐⭐⭐⭐ |
+| `systemd` | Linux | 现代 Linux 系统的标准定时器，功能完整 | ⭐⭐⭐⭐⭐ |
+| `cron` | Unix-like | 传统 Unix 定时任务，兼容性好 | ⭐⭐⭐⭐ |
+| `launchd` | macOS | macOS 系统原生任务调度器 | ⭐⭐⭐⭐⭐ |
+| `schtasks` | Windows | Windows 任务计划程序 | ⭐⭐⭐⭐⭐ |
+
 ### 参数说明
 
 | 参数 | 描述 |
@@ -368,6 +384,7 @@ DDNS 会自动检测系统并选择最合适的调度器：
 | `--uninstall` | 卸载已安装的定时任务 |
 | `--enable` | 启用已安装的定时任务 |
 | `--disable` | 禁用已安装的定时任务 |
+| `--scheduler` | 指定调度器类型，支持：auto、systemd、cron、launchd、schtasks |
 
 > **安装行为说明**:
 >
@@ -403,6 +420,18 @@ ddns task --install 10 --dns dnspod --id 12345 --token secret \
           --ipv4 example.com --ttl 600 --proxy http://proxy:8080 \
           --log_file /var/log/ddns.log --log_level INFO
 
+# 指定调度器类型安装任务
+ddns task --install 5 --scheduler systemd --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
+# 强制使用 cron 调度器（适用于没有 systemd 的 Linux 系统）
+ddns task --install 10 --scheduler cron -c config.json
+
+# 在 macOS 上强制使用 launchd
+ddns task --install 15 --scheduler launchd --dns dnspod --id 12345 --token secret --ipv4 example.com
+
+# 在 Windows 上使用 schtasks
+ddns task --install 5 --scheduler schtasks --dns cloudflare --id user@example.com --token API_TOKEN --ipv4 example.com
+
 # 在 Linux 上使用 sudo 安装 systemd 定时器
 sudo ddns task --install 5 -c /etc/ddns/config.json
 
@@ -435,6 +464,32 @@ ddns task --install 15 -c https://config.example.com/ddns.json
 
 # 配置文件 + 命令行参数覆盖
 ddns task --install 10 -c config.json --debug --ttl 300
+
+# 指定调度器类型 + 配置文件
+ddns task --install 5 --scheduler cron -c config.json
+
+# 使用远程配置文件 + 指定调度器
+ddns task --install 10 --scheduler systemd -c https://config.example.com/ddns.json
+```
+
+### 调度器选择指南
+
+根据不同系统和需求选择合适的调度器：
+
+```bash
+# 自动选择（推荐，让系统选择最佳调度器）
+ddns task --install 5 --scheduler auto
+
+# Linux 系统选择
+ddns task --install 5 --scheduler systemd  # 优先选择，功能完整
+ddns task --install 5 --scheduler cron     # 备用选择，兼容性好
+
+# macOS 系统选择
+ddns task --install 5 --scheduler launchd  # 优先选择，系统原生
+ddns task --install 5 --scheduler cron     # 备用选择，兼容性好
+
+# Windows 系统选择
+ddns task --install 5 --scheduler schtasks # 唯一选择，Windows 任务计划
 ```
 
 ### 调试安装问题
@@ -445,6 +500,9 @@ ddns task --install 5 --debug
 
 # 查看任务状态和配置
 ddns task --status --debug
+
+# 查看指定调度器的状态
+ddns task --status --scheduler systemd --debug
 ```
 
 ## 常用命令示例
@@ -471,11 +529,19 @@ ddns -c https://config.example.com/ddns.json --proxy http://proxy:8080
 ### 计划任务管理
 
 ```bash
-# 安装计划任务，每5分钟执行一次
+# 安装计划任务，每5分钟执行一次（自动选择调度器）
 ddns task --install 5
+
+# 指定调度器类型安装任务
+ddns task --install 5 --scheduler systemd
+ddns task --install 10 --scheduler cron
+ddns task --install 15 --scheduler launchd
 
 # 查看任务状态
 ddns task --status
+
+# 查看指定调度器的状态
+ddns task --status --scheduler systemd
 
 # 启用/禁用任务
 ddns task --enable
@@ -487,8 +553,14 @@ ddns task --uninstall
 # 使用自定义配置文件创建任务
 ddns task --install 10 -c /path/to/custom.json
 
+# 指定调度器 + 配置文件
+ddns task --install 10 --scheduler cron -c /path/to/custom.json
+
 # 更新任务配置（自动覆盖）
 ddns task --install 15 --dns cloudflare --id new@example.com --token NEW_TOKEN --ipv4 example.com
+
+# 更新任务配置并更改调度器
+ddns task --install 15 --scheduler systemd --dns cloudflare --id new@example.com --token NEW_TOKEN --ipv4 example.com
 
 # 生成新的配置文件
 ddns --new-config config.json
