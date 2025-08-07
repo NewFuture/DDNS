@@ -126,9 +126,7 @@ class TestDebugProvider(BaseProviderTestCase):
         self.assertTrue(result)
 
         # Verify logger.debug was called with correct parameters
-        provider.logger.debug.assert_called_once_with(
-            "DebugProvider: %s(%s) => %s", "example.com", "A", "192.168.1.1"
-        )
+        provider.logger.debug.assert_called_once_with("DebugProvider: %s(%s) => %s", "example.com", "A", "192.168.1.1")
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_set_record_multiple_calls(self, mock_stdout):

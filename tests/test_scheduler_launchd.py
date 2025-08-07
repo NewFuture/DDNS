@@ -385,13 +385,10 @@ class TestLaunchdScheduler(unittest.TestCase):
             self.assertTrue(os.access(plist_path, os.R_OK), "Plist file should be readable")
 
             # Validate plist content
-            try:
-                with open(plist_path, 'r') as f:
-                    content = f.read()
-                self.assertIn(test_service_label, content, "Plist should contain correct service label")
-                self.assertIn("StartInterval", content, "Plist should contain StartInterval")
-            except Exception:
-                self.fail("Should be able to read generated plist file")
+            with open(plist_path, 'r') as f:
+                content = f.read()
+            self.assertIn(test_service_label, content, "Plist should contain correct service label")
+            self.assertIn("StartInterval", content, "Plist should contain StartInterval")
 
             # ===== PHASE 3: Disable/Enable cycle =====
             disable_result = self.scheduler.disable()
@@ -417,19 +414,17 @@ class TestLaunchdScheduler(unittest.TestCase):
 
             # Test LaunchAgents directory accessibility if needed
             agents_dir = os.path.expanduser("~/Library/LaunchAgents")
-            if os.path.exists(agents_dir):
-                can_write = os.access(agents_dir, os.W_OK)
-                if can_write:
-                    # Test file creation/removal
-                    test_file = os.path.join(agents_dir, "test_write_access.tmp")
-                    try:
-                        with open(test_file, 'w') as f:
-                            f.write("test")
-                        self.assertTrue(os.path.exists(test_file), "Should be able to create test file")
-                        os.remove(test_file)
-                        self.assertFalse(os.path.exists(test_file), "Should be able to remove test file")
-                    except (OSError, IOError):
-                        pass  # Permission test failed, but not critical
+            if os.path.exists(agents_dir) and os.access(agents_dir, os.W_OK):
+                # Test file creation/removal
+                test_file = os.path.join(agents_dir, "test_write_access.tmp")
+                try:
+                    with open(test_file, 'w') as f:
+                        f.write("test")
+                    self.assertTrue(os.path.exists(test_file), "Should be able to create test file")
+                    os.remove(test_file)
+                    self.assertFalse(os.path.exists(test_file), "Should be able to remove test file")
+                except (OSError, IOError):
+                    pass  # Permission test failed, but not critical
 
             # ===== PHASE 5: Uninstall and verification =====
             uninstall_result = self.scheduler.uninstall()
@@ -441,16 +436,6 @@ class TestLaunchdScheduler(unittest.TestCase):
 
             # Verify plist file is removed
             self.assertFalse(os.path.exists(plist_path), "Plist file should be removed after uninstall")
-
-        except Exception as e:
-            # If test fails, ensure cleanup
-            try:
-                if self.scheduler.is_installed():
-                    self.scheduler.uninstall()
-            except Exception:
-                pass
-            raise e
-
         finally:
             self._cleanup_real_launchd_test(original_label, test_service_label)
 

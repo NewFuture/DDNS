@@ -229,13 +229,11 @@ class TestAlidnsProvider(BaseProviderTestCase):
             mock_request.return_value = {"RecordId": "123456"}
 
             extra = {"Priority": 10, "Remark": "Test record"}
-            result = provider._create_record(
-                "example.com", "www", "example.com", "1.2.3.4", "A", 300, "default", extra
-            )
+            result = provider._create_record("t.com", "www", "t.com", "1.2.3.4", "A", 300, "default", extra)
 
             mock_request.assert_called_once_with(
                 "AddDomainRecord",
-                DomainName="example.com",
+                DomainName="t.com",
                 RR="www",
                 Value="1.2.3.4",
                 Type="A",
