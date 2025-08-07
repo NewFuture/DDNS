@@ -105,7 +105,7 @@ if !ERRORLEVEL! == 0 (
 REM Test Step 6: Delete task
 echo.
 echo === Step 6: Deleting DDNS task ===
-%DDNS_CMD% task --delete
+%DDNS_CMD% task --uninstall
 if !ERRORLEVEL! neq 0 (
     echo ERROR: Task deletion failed
     exit /b 1
