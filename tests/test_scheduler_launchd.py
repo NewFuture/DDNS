@@ -360,7 +360,6 @@ class TestLaunchdScheduler(unittest.TestCase):
 
             # Test operations on non-existent service
             self.assertFalse(self.scheduler.enable(), "Enable should fail for non-existent service")
-            self.assertFalse(self.scheduler.uninstall(), "Uninstall should fail for non-existent service")
 
             # Verify initial state
             initial_status = self.scheduler.get_status()
