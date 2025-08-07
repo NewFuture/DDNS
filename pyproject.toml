@@ -95,7 +95,8 @@ pythonpath = [".", "tests"]
 
 # 代码格式化配置
 [tool.black]
-line-length = 118
+line-length = 120
+skip-string-normalization = true
 # py34删除尾部空格兼容py2
 target-version = ['py34', 'py38', 'py311']
 include = '\.py$'

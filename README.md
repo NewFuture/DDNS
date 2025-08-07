@@ -1,64 +1,50 @@
-# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
 
-> 自动更新 DNS 解析 到本机 IP 地址，支持 IPv4 和 IPv6，本地（内网）IP 和公网 IP。
-> 代理模式，支持自动创建 DNS 记录。
+> 自动更新 DNS 解析到本机 IP 地址，支持 IPv4/IPv6，内网/公网 IP，自动创建 DNS 记录
 
-[![Github Release](https://img.shields.io/github/v/release/NewFuture/DDNS?&logo=github&style=flatten
-)](https://github.com/NewFuture/DDNS/releases/latest)
-[![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=ddns&logo=pypi&style=flatten)](https://pypi.org/project/ddns/)
-[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=newfuture/ddns&logo=docker&&sort=semver&style=flatten)](https://hub.docker.com/r/newfuture/ddns)
-[![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
+[![GitHub](https://img.shields.io/github/license/NewFuture/DDNS?logo=github&style=flat)](https://github.com/NewFuture/DDNS)
+[![Build](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
 [![Publish](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml)
+[![Release](https://img.shields.io/github/v/release/NewFuture/DDNS?logo=github&style=flat)](https://github.com/NewFuture/DDNS/releases/latest)
+[![PyPI](https://img.shields.io/pypi/v/ddns.svg?logo=pypi&style=flat)](https://pypi.org/project/ddns/)
+[![Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?logo=python&style=flat)](https://pypi.org/project/ddns/)
+[![Docker](https://img.shields.io/docker/v/newfuture/ddns?logo=docker&sort=semver&style=flat)](https://hub.docker.com/r/newfuture/ddns)
+[![Docker image size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=flat)](https://hub.docker.com/r/newfuture/ddns)
 
----
+## 主要特性
 
-## Features
+### 🚀 多平台支持
 
-- 兼容和跨平台:
-  - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20riscv64-blue?style=social)](https://hub.docker.com/r/newfuture/ddns)
-  - [二进制文件](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
-  
-- 配置方式:
-  - [命令行参数](/doc/config/cli.md)
-  - [JSON 配置文件](/doc/config/json.md) (支持单文件多Provider和多配置文件)
-  - [环境变量配置](/doc/config/env.md)
-  - [服务商配置指南](/doc/providers/)
+- **Docker**: 推荐方式，支持 `amd64`、`arm64`、`arm/v7` 等多架构 ([使用文档](doc/docker.md))
+- **二进制文件**: 单文件运行，支持 Windows/Linux/macOS ([下载地址](https://github.com/NewFuture/DDNS/releases/latest))
+- **pip 安装**: `pip install ddns`
+- **源码运行**: 无依赖，仅需 Python 环境
 
-- 域名支持:
-  - 多个域名支持
-  - 多级域名解析
-  - 自动创建新 DNS 记录
-  - 多配置文件和多Provider同时运行
-- IP 类型:
-  - 内网 IPv4 / IPv6
-  - 公网 IPv4 / IPv6 (支持自定义 API)
-  - 自定义命令（shell）
-  - 正则选取支持 (@rufengsuixing)
-- 网络代理:
-  - http 代理支持
-  - 多代理自动切换
-- 服务商支持:
-  - [DNSPOD](https://www.dnspod.cn/) ([配置指南](doc/providers/dnspod.md))
-  - [阿里 DNS](http://www.alidns.com/) ([配置指南](doc/providers/alidns.md)) ⚡
-  - [阿里云边缘安全加速(ESA)](https://esa.console.aliyun.com/) ([配置指南](doc/providers/aliesa.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) ([配置指南](doc/providers/51dns.md)) (@loftor-git)
-  - [DNSPOD 国际版](https://www.dnspod.com/) ([配置指南](doc/providers/dnspod_com.md))
-  - [CloudFlare](https://www.cloudflare.com/) ([配置指南](doc/providers/cloudflare.md)) (@tongyifan)
-  - [HE.net](https://dns.he.net/) ([配置指南](doc/providers/he.md)) (@NN708) (不支持自动创建记录)
-  - [华为云](https://huaweicloud.com/) ([配置指南](doc/providers/huaweidns.md)) (@cybmp3) ⚡
-  - [NameSilo](https://www.namesilo.com/) ([配置指南](doc/providers/namesilo.md))
-  - [腾讯云](https://cloud.tencent.com/) ([配置指南](doc/providers/tencentcloud.md)) ⚡
-  - [腾讯云 EdgeOne](https://cloud.tencent.com/product/teo) ([配置指南](doc/providers/edgeone.md)) ⚡
-  - [No-IP](https://www.noip.com/) ([配置指南](doc/providers/noip.md))
-  - 自定义回调 API ([配置指南](doc/providers/callback.md))
-  
-  > ⚡ 标记的服务商使用高级 HMAC-SHA256 签名认证，提供企业级安全保障
-- 其他:
-  - 可设置定时任务
-  - TTL 配置支持
-  - DNS 线路（运营商）配置支持（国内服务商）
-  - 本地文件缓存（减少 API 请求）
-  - 地址变更时触发自定义回调 API（与 DDNS 功能互斥）
+### ⚙️ 灵活配置
+
+- **命令行参数**: `ddns --dns=dnspod --id=xxx --token=xxx` ([配置文档](doc/config/cli.md))
+- **JSON 配置文件**: 支持多域名、多服务商配置 ([配置文档](doc/config/json.md))
+- **环境变量**: Docker 友好的配置方式 ([配置文档](doc/config/env.md))
+
+### 🌍 DNS 服务商支持
+
+支持 15+ 主流 DNS 服务商，包括：
+
+- **国内**: [阿里DNS](doc/providers/alidns.md) ⚡、[阿里云ESA](doc/providers/aliesa.md) ⚡、[DNSPOD](doc/providers/dnspod.md)、[腾讯云DNS](doc/providers/tencentcloud.md) ⚡、[腾讯云EdgeOne](doc/providers/edgeone.md) ⚡、[华为云DNS](doc/providers/huaweidns.md) ⚡、[DNS.COM](doc/providers/51dns.md)
+- **国际**: [Cloudflare](doc/providers/cloudflare.md)、[DNSPOD国际版](doc/providers/dnspod_com.md)、[HE.net](doc/providers/he.md)、[NameSilo](doc/providers/namesilo.md)、[No-IP](doc/providers/noip.md)
+- **自定义**: [回调 API](doc/providers/callback.md)、[调试模式](doc/providers/debug.md)
+
+> ⚡ 表示支持 HMAC-SHA256 企业级安全认证 | [查看所有服务商](doc/providers/)
+
+### 🔧 高级功能
+
+- 多域名和多级域名解析
+- IPv4/IPv6 双栈支持
+- 自动创建 DNS 记录
+- 内网/公网 IP 自动检测
+- HTTP 代理和多代理切换
+- 本地缓存减少 API 调用
+- [定时任务](doc/config/cli.md#task-management-定时任务管理)和日志管理
 
 ## 使用
 
@@ -113,7 +99,7 @@
 - #### 源码运行（无任何依赖，需 python 环境）
 
   1. clone 或者 [下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip) 并解压
-  2. 运行 `python run.py` 或者 `python -m ddns`
+  2. 运行 `python -m ddns`
 
 ### ② 快速配置
 
@@ -128,8 +114,8 @@
    - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)
    - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](doc/providers/huaweidns.md)
    - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager)（API Manager 中获取 API Key） | [详细配置文档](doc/providers/namesilo.md)
-   - **腾讯云 DNS**: [详细配置文档](doc/providers/tencentcloud.md)
-   - **腾讯云 EdgeOne**: [详细配置文档](doc/providers/edgeone.md)
+   - **腾讯云 DNS**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/tencentcloud.md)
+   - **腾讯云 EdgeOne**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/edgeone.md)
    - **No-IP**: [用户名和密码](https://www.noip.com/)（使用 No-IP 账户的用户名和密码） | [详细配置文档](doc/providers/noip.md)
    - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
 
@@ -252,56 +238,26 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 ## 定时任务
 
 <details>
-<summary markdown="span">可以通过脚本设置定时任务（默认每 5 分钟检查一次 IP，自动更新）</summary>
+<summary markdown="span">使用内置的 task 命令设置定时任务（默认每 5 分钟检查一次 IP，自动更新）</summary>
 
-#### Windows
+DDNS 提供内置的 `task` 子命令来管理定时任务，支持跨平台自动化部署：
 
-- [推荐] 以系统身份运行，右键“以管理员身份运行”`task.bat`（或者在管理员命令行中运行）
-- 以当前用户身份运行定时任务，双击或运行 `task.bat`（执行时会闪黑框）
+### 高级管理
 
-#### Linux
+```bash
+# 安装并指定更新间隔（分钟）
+ddns task --install 10 -c /etc/config/ddns.json
 
-- 使用 init.d 和 crontab:
+# 启用/禁用任务
+ddns task --enable
+ddns task --disable
+```
 
-  ```bash
-  sudo ./task.sh
-  ```
+详细配置指南请参考：[命令行参数文档](/doc/config/cli.md#task-management-定时任务管理)
 
-- 使用 systemd:
-
-  ```bash
-  安装:
-  sudo ./systemd.sh install
-  卸载:
-  sudo ./systemd.sh uninstall
-  ```
-
-  该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
-  可执行文件所在目录为 `/usr/share/DDNS`
-  配置文件所在目录为 `/etc/DDNS`
-
-#### Docker
+### Docker
 
 Docker 镜像在无额外参数的情况下，已默认启用每 5 分钟执行一次的定时任务
-
-</details>
-
-## FAQ
-
-<details>
-<summary markdown="span">Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]</summary>
-
-> Windows Server 默认安全策略会禁止任何未添加的信任 SSL 证书，可手动添加一下对应的证书 [#56](https://github.com/NewFuture/DDNS/issues/56#issuecomment-487371078)
-
-使用系统自带的 IE 浏览器访问一次对应的 API 即可
-
-- alidns 打开: <https://alidns.aliyuncs.com>
-- aliesa 打开: <https://esa.cn-hangzhou.aliyuncs.com>
-- cloudflare 打开: <https://api.cloudflare.com>
-- dns.com 打开: <https://www.dns.com>
-- dnspod.cn 打开: <https://dnsapi.cn>
-- dnspod 国际版: <https://api.dnspod.com>
-- 华为 DNS <https://dns.myhuaweicloud.com>
 
 </details>
 

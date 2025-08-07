@@ -4,11 +4,11 @@ Configuration file loader for DDNS. supports both JSON and AST parsing.
 @author: NewFuture
 """
 from ast import literal_eval
-from io import open
 from json import loads as json_decode, dumps as json_encode
 from sys import stderr, stdout
 from ..util.comment import remove_comment
 from ..util.http import request
+from ..util.fileio import read_file, write_file
 
 
 def _process_multi_providers(config):
@@ -87,8 +87,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
             content = response.body
         else:
             # 本地文件加载
-            with open(config_path, "r", encoding="utf-8") as f:
-                content = f.read()
+            content = read_file(config_path)
 
         # 移除注释后尝试JSON解析
         content_without_comments = remove_comment(content)
@@ -158,13 +157,12 @@ def save_config(config_path, config):
         },
     }
     try:
-        with open(config_path, "w", encoding="utf-8") as f:
-            content = json_encode(config, indent=2, ensure_ascii=False)
-            # Python 2 兼容性：检查是否需要解码
-            if hasattr(content, "decode"):
-                content = content.decode("utf-8")  # type: ignore
-            f.write(content)
-            return True
+        content = json_encode(config, indent=2, ensure_ascii=False)
+        # Python 2 兼容性：检查是否需要解码
+        if hasattr(content, "decode"):
+            content = content.decode("utf-8")  # type: ignore
+        write_file(config_path, content)
+        return True
     except Exception:
         stderr.write("Cannot open config file to write: `%s`!\n" % config_path)
         raise

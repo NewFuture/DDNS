@@ -79,6 +79,9 @@ jobs:
       - run: ${{env.PY}} -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
       - run: ${{env.PY}} -m ddns -c tests/config/he-proxies.json --debug
 
+      - name: Test task management functionality
+        run: tests/scripts/test-task-systemd.sh "$(which ${{env.PY}}) -m ddns"
+
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
         run:  python3 .github/patch.py
@@ -111,6 +114,9 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
       - name: run unit tests
         run: python3 -m unittest -v
+
+      - name: Test task management functionality  
+        run: tests/scripts/test-task-systemd.sh "python3 -m ddns"
 
       - run: python3 -m ddns -c tests/config/callback.json
       - run: python3 -m ddns -c tests/config/multi-provider.json
@@ -190,6 +196,17 @@ jobs:
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
+
+      - run: ./dist/ddns task --status
+      - name: Test Windows schtasks task
+        if: runner.os == 'Windows'
+        run: tests/scripts/test-task-windows.bat .\\dist\\ddns.exe
+      - name: Test Linux systemd service
+        if: runner.os == 'Linux'
+        run: tests/scripts/test-task-systemd.sh "./dist/ddns"
+      - name: Test macOS launchd service
+        if: runner.os == 'macOS'
+        run: tests/scripts/test-task-macos.sh "./dist/ddns"
 
       - run: ./dist/ddns -c tests/config/multi-provider.json
       - run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
@@ -347,7 +364,10 @@ jobs:
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
-            echo "Testing with debug + noip config..."
+            echo "Testing task functionality..."
+            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag ddns task -h
+            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag /ddns/tests/scripts/test-task-cron.sh ddns
+            echo "Testing with config files..."
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
