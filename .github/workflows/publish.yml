@@ -248,11 +248,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - run: sed -i 's#${BUILD_VERSION}#${{ github.ref_name }}#g' .github/release.md
+      - run: python3 .github/patch.py release
       - name: Generate release notes and append README.md
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view ${{ github.ref_name }} --json body -q '.body' > release_notes.md
-          cat .github/release.md >> release_notes.md
+          cat doc/release.md >> release_notes.md
           gh release edit ${{ github.ref_name }} --notes-file release_notes.md

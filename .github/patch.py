@@ -234,13 +234,88 @@ def replace_version_and_date(pyfile: str, version: str, date_str: str):
         exit(1)
 
 
+def replace_readme_links_for_release(version):
+    """
+    修改 README.md 中的链接为指定版本，用于发布时
+    """
+    readme_path = os.path.join(ROOT, "README.md")
+    if not os.path.exists(readme_path):
+        print(f"README.md not found: {readme_path}")
+        return False
+
+    with open(readme_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 替换各种链接中的 latest 为具体版本
+    # GitHub releases download links
+    content = re.sub(
+        r'https://github\.com/NewFuture/DDNS/releases/latest/download/',
+        f'https://github.com/NewFuture/DDNS/releases/download/{version}/',
+        content,
+    )
+
+    # GitHub releases latest links
+    content = re.sub(
+        r'https://github\.com/NewFuture/DDNS/releases/latest',
+        f'https://github.com/NewFuture/DDNS/releases/tag/{version}',
+        content,
+    )
+
+    # Docker tags from latest to version
+    content = re.sub(r'docker pull ([^:\s]+):latest', f'docker pull \\1:{version}', content)
+
+    # PyPI version-specific links
+    content = re.sub(
+        r'https://pypi\.org/project/ddns(?:/latest)?(?=[\s\)])', f'https://pypi.org/project/ddns/{version}', content
+    )
+
+    # Shield.io badges - Docker version
+    content = re.sub(
+        r'https://img\.shields\.io/docker/v/newfuture/ddns/latest',
+        f'https://img.shields.io/docker/v/newfuture/ddns/{version}',
+        content,
+    )
+
+    # Shield.io badges - PyPI version (add version if not present)
+    content = re.sub(
+        r'https://img\.shields\.io/pypi/v/ddns(?!\?)', f'https://img.shields.io/pypi/v/ddns/{version}', content
+    )
+
+    # GitHub archive links
+    content = re.sub(
+        r'https://github\.com/NewFuture/DDNS/archive/refs/tags/latest\.(zip|tar\.gz)',
+        f'https://github.com/NewFuture/DDNS/archive/refs/tags/{version}.\\1',
+        content,
+    )
+
+    # PIP install commands
+    content = re.sub(r'pip install ddns(?!=)', f'pip install ddns=={version}', content)
+
+    with open(readme_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    print(f"Updated README.md links for release version: {version}")
+    return True
+
+
 def main():
     """
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
+    支持参数:
+    - version: 只更新版本号
+    - release: 更新版本号并修改README.md链接为发布版本
     """
-    if len(sys.argv) > 1 and sys.argv[1].lower() != "version":
+    if len(sys.argv) > 2:
         print(f"unknown arguments: {sys.argv}")
         exit(1)
+
+    mode = sys.argv[1].lower() if len(sys.argv) > 1 else "default"
+
+    if mode not in ["version", "release", "default"]:
+        print(f"unknown mode: {mode}")
+        print("Usage: python patch.py [version|release]")
+        exit(1)
+
     version = generate_version()
     date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     print(f"Version: {version}")
@@ -248,10 +323,16 @@ def main():
 
     # 修改__init__.py 中的 __version__
     replace_version_and_date(init_py_path, version, date_str)
-    if len(sys.argv) > 1 and sys.argv[1].lower() == "version":
+
+    if mode == "version":
         # python version only
         exit(0)
+    elif mode == "release":
+        # 发布模式：修改README.md链接为指定版本
+        replace_readme_links_for_release(version)
+        exit(0)
 
+    # 默认模式：继续执行原有逻辑
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
