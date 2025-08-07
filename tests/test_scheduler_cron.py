@@ -200,25 +200,71 @@ class TestCronScheduler(unittest.TestCase):
             # Restore original method
             self.scheduler._run_command = original_run_command
 
-    @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
-    def test_real_scheduler_methods_safe(self):
-        """Test real scheduler methods that don't modify system state"""
-        # Check if crontab command is available
+    def _setup_real_cron_test(self, timeout=10):
+        """
+        Helper method to set up real cron tests with common functionality
+        Returns: (original_run_command, original_crontab)
+        """
+        # Check if crontab is available first
         try:
-            crontab_result = self.scheduler._run_command(["crontab", "-l"])
-            if not crontab_result:
-                self.skipTest("crontab not available on this system")
+            self.scheduler._run_command(["crontab", "-l"])
         except Exception:
             self.skipTest("crontab not available on this system")
 
-        # Save original method and override with shorter timeout
+        # Save original crontab for restoration
+        original_crontab = None
+        try:
+            original_crontab = self.scheduler._run_command(["crontab", "-l"])
+        except Exception:
+            pass  # No existing crontab is fine
+
+        # Use shorter timeout for test operations
         original_run_command = self.scheduler._run_command
 
         def fast_run_command(command, **kwargs):
-            kwargs.setdefault('timeout', 5)  # 5 second timeout for tests
+            kwargs.setdefault('timeout', timeout)
             return original_run_command(command, **kwargs)
 
         self.scheduler._run_command = fast_run_command
+        return original_run_command, original_crontab
+
+    def _cleanup_real_cron_test(self, original_run_command, original_crontab):
+        """
+        Helper method to clean up real cron tests
+        """
+        try:
+            # Remove any test cron jobs
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+        except Exception:
+            pass
+
+        # Restore original crontab
+        try:
+            if original_crontab and original_crontab.strip():
+                import tempfile
+                import os
+
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+                    f.write(original_crontab)
+                    temp_file = f.name
+                self.scheduler._run_command(["crontab", temp_file])
+                os.unlink(temp_file)
+            elif original_crontab is None:
+                try:
+                    self.scheduler._run_command(["crontab", "-r"])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Restore original method
+        self.scheduler._run_command = original_run_command
+
+    @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
+    def test_real_scheduler_methods_safe(self):
+        """Test real scheduler methods that don't modify system state"""
+        original_run_command, original_crontab = self._setup_real_cron_test(timeout=5)
 
         try:
             # Test is_installed (safe read-only operation)
@@ -244,8 +290,125 @@ class TestCronScheduler(unittest.TestCase):
             disable_result = self.scheduler.disable()
             self.assertIsInstance(disable_result, bool)
         finally:
-            # Restore original method
-            self.scheduler._run_command = original_run_command
+            self._cleanup_real_cron_test(original_run_command, original_crontab)
+
+    @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific integration test")
+    def test_real_lifecycle_comprehensive(self):
+        """
+        Comprehensive real-life integration test covering all lifecycle scenarios
+        This combines install/enable/disable/uninstall, error handling, and crontab scenarios
+        WARNING: This test modifies system state and should only run on test systems
+        """
+        if platform.system().lower() == "windows":
+            self.skipTest("Unix/Linux/macOS-specific integration test")
+
+        original_run_command, original_crontab = self._setup_real_cron_test()
+
+        try:
+            # ===== PHASE 1: Clean state and error handling =====
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+
+            # Test operations on non-existent cron job
+            self.assertFalse(self.scheduler.enable(), "Enable should fail for non-existent cron job")
+            self.assertFalse(self.scheduler.disable(), "Disable should fail for non-existent cron job")
+            self.assertFalse(self.scheduler.uninstall(), "Uninstall should fail for non-existent cron job")
+
+            # Verify initial state
+            initial_status = self.scheduler.get_status()
+            self.assertEqual(initial_status["scheduler"], "cron")
+            self.assertFalse(initial_status["installed"], "Cron job should not be installed initially")
+
+            # ===== PHASE 2: Installation and validation =====
+            ddns_args = {
+                "dns": "debug",
+                "ipv4": ["test-comprehensive.example.com"],
+                "config": ["config.json"],
+                "ttl": 300,
+            }
+            install_result = self.scheduler.install(interval=5, ddns_args=ddns_args)
+            self.assertTrue(install_result, "Installation should succeed")
+
+            # Verify installation and crontab content
+            post_install_status = self.scheduler.get_status()
+            self.assertTrue(post_install_status["installed"], "Cron job should be installed")
+            self.assertTrue(post_install_status["enabled"], "Cron job should be enabled")
+            self.assertEqual(post_install_status["interval"], 5, "Interval should match")
+
+            crontab_content = self.scheduler._run_command(["crontab", "-l"])
+            self.assertIsNotNone(crontab_content, "Crontab should have content")
+            if crontab_content:
+                self.assertIn("DDNS", crontab_content, "Crontab should contain DDNS entry")
+                self.assertIn("*/5", crontab_content, "Crontab should contain correct interval")
+
+            # Validate cron entry format
+            lines = crontab_content.strip().split('\n') if crontab_content else []
+            ddns_lines = [line for line in lines if 'DDNS' in line and not line.strip().startswith('#')]
+            self.assertTrue(len(ddns_lines) > 0, "Should have active DDNS cron entry")
+
+            ddns_line = ddns_lines[0]
+            parts = ddns_line.split()
+            self.assertTrue(len(parts) >= 5, "Cron line should have at least 5 time fields")
+            self.assertEqual(parts[0], "*/5", "Should have correct minute interval")
+            self.assertIn("python", ddns_line.lower(), "Should contain python command")
+            if crontab_content:
+                self.assertIn("debug", crontab_content, "Should contain DNS provider")
+
+            # ===== PHASE 3: Disable/Enable cycle =====
+            disable_result = self.scheduler.disable()
+            self.assertTrue(disable_result, "Disable should succeed")
+
+            post_disable_status = self.scheduler.get_status()
+            self.assertTrue(post_disable_status["installed"], "Should still be installed after disable")
+            self.assertFalse(post_disable_status["enabled"], "Should be disabled")
+
+            # Verify cron entry is commented out
+            disabled_crontab = self.scheduler._run_command(["crontab", "-l"])
+            if disabled_crontab:
+                disabled_lines = [line for line in disabled_crontab.split('\n') if 'DDNS' in line]
+                self.assertTrue(
+                    all(line.strip().startswith('#') for line in disabled_lines),
+                    "All DDNS lines should be commented when disabled",
+                )
+
+            enable_result = self.scheduler.enable()
+            self.assertTrue(enable_result, "Enable should succeed")
+
+            post_enable_status = self.scheduler.get_status()
+            self.assertTrue(post_enable_status["installed"], "Should still be installed after enable")
+            self.assertTrue(post_enable_status["enabled"], "Should be enabled")
+
+            # ===== PHASE 4: Duplicate installation test =====
+            duplicate_install = self.scheduler.install(interval=5, ddns_args=ddns_args)
+            self.assertIsInstance(duplicate_install, bool, "Duplicate install should return boolean")
+
+            status_after_duplicate = self.scheduler.get_status()
+            self.assertTrue(status_after_duplicate["installed"], "Should remain installed after duplicate")
+
+            # ===== PHASE 5: Uninstall and verification =====
+            uninstall_result = self.scheduler.uninstall()
+            self.assertTrue(uninstall_result, "Uninstall should succeed")
+
+            final_status = self.scheduler.get_status()
+            self.assertFalse(final_status["installed"], "Should not be installed after uninstall")
+            self.assertFalse(self.scheduler.is_installed(), "is_installed() should return False")
+
+            # Verify complete removal from crontab
+            final_crontab = self.scheduler._run_command(["crontab", "-l"])
+            if final_crontab:
+                self.assertNotIn("DDNS", final_crontab, "DDNS should be completely removed")
+
+        except Exception as e:
+            # If test fails, ensure cleanup
+            try:
+                if self.scheduler.is_installed():
+                    self.scheduler.uninstall()
+            except Exception:
+                pass
+            raise e
+
+        finally:
+            self._cleanup_real_cron_test(original_run_command, original_crontab)
 
 
 if __name__ == '__main__':

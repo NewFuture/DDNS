@@ -362,9 +362,7 @@ class TestDnspodProvider(BaseProviderTestCase):
             mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.1"}}
 
             # Test create record with line parameter
-            result = self.provider._create_record(
-                "zone123", "www", "example.com", "192.168.1.1", "A", 600, "电信", {}
-            )
+            result = self.provider._create_record("zone123", "www", "example.com", "192.168.1.1", "A", 600, "电信", {})
 
             self.assertTrue(result)
             mock_request.assert_called_once_with(

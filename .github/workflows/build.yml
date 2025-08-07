@@ -200,7 +200,7 @@ jobs:
       - run: ./dist/ddns task --status
       - name: Test Windows schtasks task
         if: runner.os == 'Windows'
-        run: tests/scripts/test-task-windows.bat "./dist/ddns.exe"
+        run: tests/scripts/test-task-windows.bat .\\dist\\ddns.exe
       - name: Test Linux systemd service
         if: runner.os == 'Linux'
         run: tests/scripts/test-task-systemd.sh "./dist/ddns"

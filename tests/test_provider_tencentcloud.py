@@ -124,12 +124,10 @@ class TestTencentCloudProvider(BaseProviderTestCase):
     def test_query_record_root_domain(self, mock_http):
         """Test record query for root domain (@)"""
         mock_http.return_value = {
-            "Response": {"RecordList": [{"RecordId": 123456, "Name": "@", "Type": "A", "Value": "1.2.3.4"}]}
+            "Response": {"RecordList": [{"RecordId": 1234, "Name": "@", "Type": "A", "Value": "1.2.3.4"}]}
         }
 
-        record = self.provider._query_record(
-            "12345678", "@", "example.com", "A", None, {}
-        )  # type: dict # type: ignore
+        record = self.provider._query_record("1234", "@", "example.com", "A", None, {})  # type: dict # type: ignore
 
         self.assertIsNotNone(record)
         self.assertEqual(record["Name"], "@")
@@ -260,9 +258,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test API request with error response"""
         mock_time.return_value = 1609459200
         mock_strftime.return_value = "20210101"
-        mock_http.return_value = {
-            "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
-        }
+        mock_http.return_value = {"Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}}
 
         result = self.provider._request("DescribeRecordList", Domain="invalid")
 
@@ -502,9 +498,7 @@ class TestTencentCloudProviderIntegration(BaseProviderTestCase):
     def test_api_error_handling(self, mock_http):
         """Test API error handling"""
         # Mock API error response for DescribeDomain
-        mock_http.return_value = {
-            "Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}
-        }
+        mock_http.return_value = {"Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid domain name"}}}
 
         # This should return False because zone_id cannot be resolved
         result = self.provider.set_record("test.example.com", "1.2.3.4", "A")

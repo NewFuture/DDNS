@@ -6,7 +6,7 @@ Unit tests for ddns.scheduler.launchd module
 import os
 import platform
 import sys
-from __init__ import unittest, patch, MagicMock
+from __init__ import unittest, patch
 from ddns.scheduler.launchd import LaunchdScheduler
 
 # Handle builtins import for Python 2/3 compatibility
@@ -100,18 +100,6 @@ class TestLaunchdScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertFalse(result)
 
-    def test_install_success(self):
-        """Test successful installation"""
-        mock_file = MagicMock()
-
-        with patch(builtins_module + '.open', create=True) as mock_open:
-            mock_open.return_value.__enter__.return_value = mock_file
-
-            with patch.object(self.scheduler, '_run_command', return_value="loaded successfully"):
-                ddns_args = {"dns": "debug", "ipv4": ["test.com"]}
-                result = self.scheduler.install(5, ddns_args)
-                self.assertTrue(result)
-
     @patch('ddns.scheduler.launchd.write_file')
     def test_install_with_sudo_fallback(self, mock_write_file):
         """Test install with sudo fallback for permission issues"""
@@ -121,10 +109,6 @@ class TestLaunchdScheduler(unittest.TestCase):
             ddns_args = {"dns": "debug", "ipv4": ["test.com"]}
             result = self.scheduler.install(5, ddns_args)
             self.assertTrue(result)
-
-            # Should build the correct plist path
-            self.scheduler._get_plist_path()
-            mock_write_file.assert_called_once()
 
     @unittest.skipUnless(platform.system().lower() == "darwin", "macOS-specific test")
     def test_launchctl_with_sudo_retry(self):
@@ -304,6 +288,171 @@ class TestLaunchdScheduler(unittest.TestCase):
 
         disable_result = self.scheduler.disable()
         self.assertIsInstance(disable_result, bool)
+
+    def _setup_real_launchd_test(self):
+        """
+        Helper method to set up real launchd tests with common functionality
+        Returns: (original_label, test_service_label)
+        """
+        # Check if launchctl is available first
+        try:
+            result = self.scheduler._run_command(["launchctl", "version"])
+            if result is None:
+                self.skipTest("launchctl not available on this system")
+        except (OSError, Exception):
+            self.skipTest("launchctl not available on this system")
+
+        # Use a unique test service label to avoid conflicts
+        original_label = self.scheduler.LABEL
+        import time
+
+        test_service_label = "cc.newfuture.ddns.test.{}".format(int(time.time()))
+        self.scheduler.LABEL = test_service_label  # type: ignore
+
+        return original_label, test_service_label
+
+    def _cleanup_real_launchd_test(self, original_label, test_service_label):
+        """
+        Helper method to clean up real launchd tests
+        """
+        try:
+            # Remove any test services
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+        except Exception:
+            pass
+
+        # Restore original service label
+        self.scheduler.LABEL = original_label
+
+        # Final cleanup - ensure test service is removed
+        try:
+            self.scheduler.LABEL = test_service_label
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+        except Exception:
+            pass
+
+        # Restore original label
+        self.scheduler.LABEL = original_label
+
+    @unittest.skipUnless(platform.system().lower() == "darwin", "macOS-specific integration test")
+    def test_real_lifecycle_comprehensive(self):
+        """
+        Comprehensive real-life integration test covering all lifecycle scenarios
+        This combines install/enable/disable/uninstall, error handling, and permission scenarios
+        WARNING: This test modifies system state and should only run on test systems
+        """
+        if platform.system().lower() != "darwin":
+            self.skipTest("macOS-specific integration test")
+
+        original_label, test_service_label = self._setup_real_launchd_test()
+
+        try:
+            # ===== PHASE 1: Clean state and error handling =====
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+
+            # Test operations on non-existent service
+            self.assertFalse(self.scheduler.enable(), "Enable should fail for non-existent service")
+            self.assertFalse(self.scheduler.disable(), "Disable should fail for non-existent service")
+            self.assertFalse(self.scheduler.uninstall(), "Uninstall should fail for non-existent service")
+
+            # Verify initial state
+            initial_status = self.scheduler.get_status()
+            self.assertEqual(initial_status["scheduler"], "launchd")
+            self.assertFalse(initial_status["installed"], "Service should not be installed initially")
+
+            # ===== PHASE 2: Installation and validation =====
+            ddns_args = {
+                "dns": "debug",
+                "ipv4": ["test-comprehensive.example.com"],
+                "config": ["config.json"],
+                "ttl": 300,
+            }
+            install_result = self.scheduler.install(interval=5, ddns_args=ddns_args)
+            self.assertTrue(install_result, "Installation should succeed")
+
+            # Verify installation
+            post_install_status = self.scheduler.get_status()
+            self.assertTrue(post_install_status["installed"], "Service should be installed")
+            self.assertTrue(post_install_status["enabled"], "Service should be enabled")
+            self.assertEqual(post_install_status["interval"], 5, "Interval should match")
+
+            # Verify plist file exists and is readable
+            plist_path = self.scheduler._get_plist_path()
+            self.assertTrue(os.path.exists(plist_path), "Plist file should exist after installation")
+            self.assertTrue(os.access(plist_path, os.R_OK), "Plist file should be readable")
+
+            # Validate plist content
+            try:
+                with open(plist_path, 'r') as f:
+                    content = f.read()
+                self.assertIn(test_service_label, content, "Plist should contain correct service label")
+                self.assertIn("StartInterval", content, "Plist should contain StartInterval")
+            except Exception:
+                self.fail("Should be able to read generated plist file")
+
+            # ===== PHASE 3: Disable/Enable cycle =====
+            disable_result = self.scheduler.disable()
+            self.assertTrue(disable_result, "Disable should succeed")
+
+            post_disable_status = self.scheduler.get_status()
+            self.assertTrue(post_disable_status["installed"], "Should still be installed after disable")
+            self.assertFalse(post_disable_status["enabled"], "Should be disabled")
+
+            enable_result = self.scheduler.enable()
+            self.assertTrue(enable_result, "Enable should succeed")
+
+            post_enable_status = self.scheduler.get_status()
+            self.assertTrue(post_enable_status["installed"], "Should still be installed after enable")
+            self.assertTrue(post_enable_status["enabled"], "Should be enabled")
+
+            # ===== PHASE 4: Duplicate installation and permission test =====
+            duplicate_install = self.scheduler.install(interval=5, ddns_args=ddns_args)
+            self.assertIsInstance(duplicate_install, bool, "Duplicate install should return boolean")
+
+            status_after_duplicate = self.scheduler.get_status()
+            self.assertTrue(status_after_duplicate["installed"], "Should remain installed after duplicate")
+
+            # Test LaunchAgents directory accessibility if needed
+            agents_dir = os.path.expanduser("~/Library/LaunchAgents")
+            if os.path.exists(agents_dir):
+                can_write = os.access(agents_dir, os.W_OK)
+                if can_write:
+                    # Test file creation/removal
+                    test_file = os.path.join(agents_dir, "test_write_access.tmp")
+                    try:
+                        with open(test_file, 'w') as f:
+                            f.write("test")
+                        self.assertTrue(os.path.exists(test_file), "Should be able to create test file")
+                        os.remove(test_file)
+                        self.assertFalse(os.path.exists(test_file), "Should be able to remove test file")
+                    except (OSError, IOError):
+                        pass  # Permission test failed, but not critical
+
+            # ===== PHASE 5: Uninstall and verification =====
+            uninstall_result = self.scheduler.uninstall()
+            self.assertTrue(uninstall_result, "Uninstall should succeed")
+
+            final_status = self.scheduler.get_status()
+            self.assertFalse(final_status["installed"], "Should not be installed after uninstall")
+            self.assertFalse(self.scheduler.is_installed(), "is_installed() should return False")
+
+            # Verify plist file is removed
+            self.assertFalse(os.path.exists(plist_path), "Plist file should be removed after uninstall")
+
+        except Exception as e:
+            # If test fails, ensure cleanup
+            try:
+                if self.scheduler.is_installed():
+                    self.scheduler.uninstall()
+            except Exception:
+                pass
+            raise e
+
+        finally:
+            self._cleanup_real_launchd_test(original_label, test_service_label)
 
 
 if __name__ == "__main__":

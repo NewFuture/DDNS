@@ -167,12 +167,10 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"},
             ]
 
-            result = provider._query_record(
-                "zone123", "www", "example.com", "A", None, {}
-            )  # type: dict # type: ignore
+            res = provider._query_record("zone123", "www", "example.com", "A", None, {})  # type: dict # type: ignore
 
-            self.assertEqual(result["id"], "rec123")
-            self.assertEqual(result["name"], "www.example.com")
+            self.assertEqual(res["id"], "rec123")
+            self.assertEqual(res["name"], "www.example.com")
 
             params = {"name.exact": "www.example.com"}
             mock_request.assert_called_once_with("GET", "/zone123/dns_records", type="A", per_page=10000, **params)

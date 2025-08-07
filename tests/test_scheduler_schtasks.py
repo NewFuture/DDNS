@@ -238,6 +238,96 @@ class TestSchtasksScheduler(unittest.TestCase):
         disable_result = self.scheduler.disable()
         self.assertIsInstance(disable_result, bool)
 
+    @unittest.skipUnless(platform.system().lower() == "windows", "Windows-specific integration test")
+    def test_real_lifecycle_install_enable_disable_uninstall(self):
+        """
+        Real-life integration test: Full lifecycle of install → enable → disable → uninstall
+        This test actually interacts with Windows Task Scheduler
+        WARNING: This test modifies system state and should only run on test systems
+
+        Test phases:
+        1. Clean state verification (uninstall if exists)
+        2. Install task and verify installation
+        3. Disable task and verify disabled state
+        4. Enable task and verify enabled state
+        5. Uninstall task and verify removal
+        """
+        if platform.system().lower() != "windows":
+            self.skipTest("Windows-specific integration test")
+
+        try:
+            # PHASE 1: Ensure clean state - uninstall if exists
+            if self.scheduler.is_installed():
+                self.scheduler.uninstall()
+
+            # Verify initial state - task should not exist
+            initial_status = self.scheduler.get_status()
+            self.assertEqual(initial_status["scheduler"], "schtasks")
+            self.assertFalse(initial_status["installed"], "Task should not be installed initially")
+
+            # PHASE 2: Install the task
+            ddns_args = {
+                "dns": "debug",
+                "ipv4": ["test-integration.example.com"],
+                "config": ["config.json"],
+                "ttl": 300,
+            }
+            install_result = self.scheduler.install(interval=10, ddns_args=ddns_args)
+            self.assertTrue(install_result, "Installation should succeed")
+
+            # Verify installation
+            post_install_status = self.scheduler.get_status()
+            self.assertTrue(post_install_status["installed"], "Task should be installed after install()")
+            self.assertTrue(post_install_status["enabled"], "Task should be enabled after install()")
+            self.assertEqual(post_install_status["interval"], 10, "Task interval should match")
+            self.assertIn("wscript.exe", post_install_status["command"], "Command should use wscript.exe")
+            self.assertIn("ddns_silent.vbs", post_install_status["command"], "Command should contain VBS script")
+
+            # PHASE 3: Test disable functionality
+            disable_result = self.scheduler.disable()
+            self.assertTrue(disable_result, "Disable should succeed")
+
+            # Verify disabled state
+            post_disable_status = self.scheduler.get_status()
+            self.assertTrue(post_disable_status["installed"], "Task should still be installed after disable")
+            self.assertFalse(post_disable_status["enabled"], "Task should be disabled after disable()")
+
+            # PHASE 4: Test enable functionality
+            enable_result = self.scheduler.enable()
+            self.assertTrue(enable_result, "Enable should succeed")
+
+            # Verify enabled state
+            post_enable_status = self.scheduler.get_status()
+            self.assertTrue(post_enable_status["installed"], "Task should still be installed after enable")
+            self.assertTrue(post_enable_status["enabled"], "Task should be enabled after enable()")
+
+            # PHASE 5: Test uninstall functionality
+            uninstall_result = self.scheduler.uninstall()
+            self.assertTrue(uninstall_result, "Uninstall should succeed")
+
+            # Verify final state - task should be gone
+            final_status = self.scheduler.get_status()
+            self.assertFalse(final_status["installed"], "Task should not be installed after uninstall()")
+
+            # Double-check with is_installed()
+            self.assertFalse(self.scheduler.is_installed(), "is_installed() should return False after uninstall")
+
+        except Exception as e:
+            # If test fails, ensure cleanup
+            try:
+                if self.scheduler.is_installed():
+                    self.scheduler.uninstall()
+            except Exception:
+                pass  # Best effort cleanup
+            raise e
+
+        finally:
+            try:
+                if self.scheduler.is_installed():
+                    self.scheduler.uninstall()
+            except Exception:
+                pass  # Best effort cleanup
+
 
 if __name__ == "__main__":
     unittest.main()

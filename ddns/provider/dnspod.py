@@ -101,9 +101,7 @@ class DnspodProvider(BaseProvider):
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询记录 list 然后逐个查找 https://docs.dnspod.cn/api/record-list/"""
-        res = self._request(
-            "Record.List", domain_id=zone_id, sub_domain=subdomain, record_type=record_type, line=line
-        )
+        res = self._request("Record.List", domain_id=zone_id, sub_domain=subdomain, record_type=record_type, line=line)
         # length="3000"
         records = res.get("records", [])
         n = len(records)
