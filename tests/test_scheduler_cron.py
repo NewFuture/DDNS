@@ -181,29 +181,17 @@ class TestCronScheduler(unittest.TestCase):
         except Exception:
             self.skipTest("crontab not available on this system")
 
-        # Test real crontab list with shorter timeout to prevent hanging
-        # Save original method and override with shorter timeout
-        original_run_command = self.scheduler._run_command
-
-        def fast_run_command(command, **kwargs):
-            kwargs.setdefault('timeout', 5)  # 5 second timeout for tests
-            return original_run_command(command, **kwargs)
-
-        self.scheduler._run_command = fast_run_command
-
         try:
             status = self.scheduler.get_status()
             self.assertIsInstance(status, dict)
             self.assertEqual(status["scheduler"], "cron")
             self.assertIsInstance(status["installed"], bool)
         finally:
-            # Restore original method
-            self.scheduler._run_command = original_run_command
+            pass
 
-    def _setup_real_cron_test(self, timeout=10):
+    def _setup_real_cron_test(self):
         """
         Helper method to set up real cron tests with common functionality
-        Returns: (original_run_command, original_crontab)
         """
         # Check if crontab is available first
         try:
@@ -211,24 +199,7 @@ class TestCronScheduler(unittest.TestCase):
         except Exception:
             self.skipTest("crontab not available on this system")
 
-        # Save original crontab for restoration
-        original_crontab = None
-        try:
-            original_crontab = self.scheduler._run_command(["crontab", "-l"])
-        except Exception:
-            pass  # No existing crontab is fine
-
-        # Use shorter timeout for test operations
-        original_run_command = self.scheduler._run_command
-
-        def fast_run_command(command, **kwargs):
-            kwargs.setdefault('timeout', timeout)
-            return original_run_command(command, **kwargs)
-
-        self.scheduler._run_command = fast_run_command
-        return original_run_command, original_crontab
-
-    def _cleanup_real_cron_test(self, original_run_command, original_crontab):
+    def _cleanup_real_cron_test(self):
         """
         Helper method to clean up real cron tests
         """
@@ -239,33 +210,9 @@ class TestCronScheduler(unittest.TestCase):
         except Exception:
             pass
 
-        # Restore original crontab
-        try:
-            if original_crontab and original_crontab.strip():
-                import tempfile
-                import os
-
-                with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-                    f.write(original_crontab)
-                    temp_file = f.name
-                self.scheduler._run_command(["crontab", temp_file])
-                os.unlink(temp_file)
-            elif original_crontab is None:
-                try:
-                    self.scheduler._run_command(["crontab", "-r"])
-                except Exception:
-                    pass
-        except Exception:
-            pass
-
-        # Restore original method
-        self.scheduler._run_command = original_run_command
-
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
     def test_real_scheduler_methods_safe(self):
         """Test real scheduler methods that don't modify system state"""
-        original_run_command, original_crontab = self._setup_real_cron_test(timeout=5)
-
         try:
             # Test is_installed (safe read-only operation)
             installed = self.scheduler.is_installed()
@@ -290,7 +237,7 @@ class TestCronScheduler(unittest.TestCase):
             disable_result = self.scheduler.disable()
             self.assertIsInstance(disable_result, bool)
         finally:
-            self._cleanup_real_cron_test(original_run_command, original_crontab)
+            self._cleanup_real_cron_test()
 
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific integration test")
     def test_real_lifecycle_comprehensive(self):
@@ -302,7 +249,7 @@ class TestCronScheduler(unittest.TestCase):
         if platform.system().lower() == "windows":
             self.skipTest("Unix/Linux/macOS-specific integration test")
 
-        original_run_command, original_crontab = self._setup_real_cron_test()
+        self._setup_real_cron_test()
 
         try:
             # ===== PHASE 1: Clean state and error handling =====
@@ -397,18 +344,8 @@ class TestCronScheduler(unittest.TestCase):
             final_crontab = self.scheduler._run_command(["crontab", "-l"])
             if final_crontab:
                 self.assertNotIn("DDNS", final_crontab, "DDNS should be completely removed")
-
-        except Exception as e:
-            # If test fails, ensure cleanup
-            try:
-                if self.scheduler.is_installed():
-                    self.scheduler.uninstall()
-            except Exception:
-                pass
-            raise e
-
         finally:
-            self._cleanup_real_cron_test(original_run_command, original_crontab)
+            self._cleanup_real_cron_test()
 
 
 if __name__ == '__main__':

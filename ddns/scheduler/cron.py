@@ -69,7 +69,7 @@ class CronScheduler(BaseScheduler):
         lines = [line for line in crontext.splitlines() if self.KEY not in line]
         lines.append(cron_entry)
 
-        if self._update_crontab("\n".join(lines) + "\n"):
+        if self._update_crontab(u"\n".join(lines) + u"\n"):
             return True
         else:
             self.logger.error("Failed to install DDNS cron job")
@@ -105,7 +105,7 @@ class CronScheduler(BaseScheduler):
             else:
                 raise ValueError("Invalid action: {}".format(action))
 
-        if self._update_crontab("\n".join(modified_lines) + "\n"):
+        if self._update_crontab(u"\n".join(modified_lines) + u"\n"):
             return True
         else:
             self.logger.error("Failed to %s DDNS cron job", action)
