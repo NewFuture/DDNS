@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 """
-Unit tests for ddns.scheduler.corn module
+Unit tests for ddns.scheduler.cron module
 @author: NewFuture
 """
 import platform
