@@ -275,7 +275,6 @@ class TestLaunchdScheduler(unittest.TestCase):
         basic_keys = ["scheduler", "installed"]
         for key in basic_keys:
             self.assertIn(key, status)
-        
         # enabled and interval are only present when service is installed
         if status["installed"]:
             optional_keys = ["enabled", "interval"]
