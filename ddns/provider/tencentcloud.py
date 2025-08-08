@@ -123,7 +123,6 @@ class TencentCloudProvider(BaseProvider):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """查询 DNS 记录列表 https://cloud.tencent.com/document/api/1427/56166"""
 
-        # fmt: off
         response = self._request(
             "DescribeRecordList",
             DomainId=int(zone_id),
@@ -132,8 +131,7 @@ class TencentCloudProvider(BaseProvider):
             RecordType=record_type,
             RecordLine=line,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if not response or "RecordList" not in response:
             self.logger.debug("No records found or query failed")
             return None
@@ -156,7 +154,6 @@ class TencentCloudProvider(BaseProvider):
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """创建 DNS 记录 https://cloud.tencent.com/document/api/1427/56180"""
         extra["Remark"] = extra.get("Remark", self.remark)
-        # fmt: off
         response = self._request(
             "CreateRecord",
             Domain=main_domain,
@@ -167,8 +164,7 @@ class TencentCloudProvider(BaseProvider):
             RecordLine=line or "默认",
             TTL=int(ttl) if ttl else None,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if response and "RecordId" in response:
             self.logger.info("Record created successfully with ID: %s", response["RecordId"])
             return True
@@ -178,7 +174,6 @@ class TencentCloudProvider(BaseProvider):
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         """更新 DNS 记录: https://cloud.tencent.com/document/api/1427/56157"""
         extra["Remark"] = extra.get("Remark", self.remark)
-        # fmt: off
         response = self._request(
             "ModifyRecord",
             Domain=old_record.get("Domain", ""),
@@ -190,8 +185,7 @@ class TencentCloudProvider(BaseProvider):
             Value=value,
             TTL=int(ttl) if ttl else None,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if response and "RecordId" in response:
             self.logger.info("Record updated successfully")
             return True

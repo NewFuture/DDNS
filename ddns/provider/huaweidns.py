@@ -106,7 +106,6 @@ class HuaweiDNSProvider(BaseProvider):
         """
         domain = join_domain(subdomain, main_domain) + "."
         extra["description"] = extra.get("description", self.remark)
-        # fmt: off
         res = self._request(
             "POST",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -116,8 +115,7 @@ class HuaweiDNSProvider(BaseProvider):
             ttl=ttl,
             line=line,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if res and res.get("id"):
             self.logger.info("Record created: %s", res)
             return True
@@ -129,7 +127,6 @@ class HuaweiDNSProvider(BaseProvider):
         extra["description"] = extra.get("description", self.remark)
         # Note: The v2.1 update API does not support the line parameter in the request body
         # The line parameter is returned in the response but cannot be modified
-        # fmt: off
         res = self._request(
             "PUT",
             "/v2.1/zones/" + zone_id + "/recordsets/" + old_record["id"],
@@ -138,8 +135,7 @@ class HuaweiDNSProvider(BaseProvider):
             records=[value],
             ttl=ttl if ttl is not None else old_record.get("ttl"),
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if res and res.get("id"):
             self.logger.info("Record updated: %s", res)
             return True

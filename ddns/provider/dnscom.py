@@ -74,7 +74,6 @@ class DnscomProvider(BaseProvider):
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://www.51dns.com/document/api/4/12.html"""
         extra["remark"] = extra.get("remark", self.remark)
-        # fmt: off
         res = self._request(
             "record/create",
             domainID=zone_id,
@@ -84,8 +83,7 @@ class DnscomProvider(BaseProvider):
             TTL=ttl,
             viewID=line,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if res and res.get("recordID"):
             self.logger.info("Record created: %s", res)
             return True

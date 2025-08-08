@@ -84,7 +84,6 @@ class CloudflareProvider(BaseProvider):
         extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态
         extra["tags"] = old_record.get("tags", extra.get("tags"))  # 保持原有的标签
         extra["settings"] = old_record.get("settings", extra.get("settings"))  # 保持原有的设置
-        # fmt: off
         data = self._request(
             "PUT",
             "/{}/dns_records/{}".format(zone_id, old_record["id"]),
@@ -93,8 +92,7 @@ class CloudflareProvider(BaseProvider):
             content=value,
             ttl=ttl,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         self.logger.debug("Record updated: %s", data)
         if data:
             return True

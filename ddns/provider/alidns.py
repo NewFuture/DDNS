@@ -108,7 +108,6 @@ class AlidnsProvider(AliBaseProvider):
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord"""
-        # fmt: off
         data = self._request(
             "AddDomainRecord",
             DomainName=main_domain,
@@ -118,8 +117,7 @@ class AlidnsProvider(AliBaseProvider):
             TTL=ttl,
             Line=line,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if data and data.get("RecordId"):
             self.logger.info("Record created: %s", data)
             return True
@@ -137,7 +135,6 @@ class AlidnsProvider(AliBaseProvider):
             domain = join_domain(old_record.get("RR"), old_record.get("DomainName"))
             self.logger.warning("No changes detected, skipping update for record: %s", domain)
             return True
-        # fmt: off
         data = self._request(
             "UpdateDomainRecord",
             RecordId=old_record.get("RecordId"),
@@ -147,8 +144,7 @@ class AlidnsProvider(AliBaseProvider):
             TTL=ttl,
             Line=line or old_record.get("Line"),
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
         if data and data.get("RecordId"):
             self.logger.info("Record updated: %s", data)
             return True

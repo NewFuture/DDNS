@@ -74,7 +74,6 @@ class AliesaProvider(AliBaseProvider):
         extra["Comment"] = extra.get("Comment", self.remark)
         extra["BizName"] = extra.get("BizName", "web")
         extra["Proxied"] = extra.get("Proxied", True)
-        # fmt: off
         data = self._request(
             method="POST",
             action="CreateRecord",
@@ -84,8 +83,7 @@ class AliesaProvider(AliBaseProvider):
             Data={"Value": value},
             Ttl=ttl or 1,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
 
         if data and data.get("RecordId"):
             self.logger.info("Record created: %s", data)
@@ -111,7 +109,6 @@ class AliesaProvider(AliBaseProvider):
 
         extra["Comment"] = extra.get("Comment", self.remark)
         extra["Proxied"] = extra.get("Proxied", old_record.get("Proxied"))
-        # fmt: off
         data = self._request(
             method="POST",
             action="UpdateRecord",
@@ -119,8 +116,7 @@ class AliesaProvider(AliBaseProvider):
             Data={"Value": value},
             Ttl=ttl,
             **extra
-        )
-        # fmt: on
+        )  # fmt: skip
 
         if data and data.get("RecordId"):
             self.logger.info("Record updated: %s", data)
