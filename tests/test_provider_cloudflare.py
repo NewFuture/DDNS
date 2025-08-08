@@ -5,7 +5,8 @@ Unit tests for CloudflareProvider
 @author: GitHub Copilot
 """
 
-from base_test import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, patch, unittest
+
 from ddns.provider.cloudflare import CloudflareProvider
 
 
@@ -209,8 +210,8 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 "/zone123/dns_records",
                 type="A",
                 per_page=10000,
-                **{"name.exact": "www.example.com", "proxied": True},
-            )
+                **{"name.exact": "www.example.com", "proxied": True}
+            )  # fmt: skip
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""

@@ -28,11 +28,8 @@ jobs:
       - uses: astral-sh/ruff-action@v3
         with:
           src: "."
-          args: "check --select=E9,F63,F7,F82 --output-format=github"
-      - uses: astral-sh/ruff-action@v3
-        with:
-          src: "."
-          args: "check --statistics"
+          args: "check --statistics --output-format=github"
+
   python:
     strategy:
       fail-fast: false
