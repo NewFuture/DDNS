@@ -2,26 +2,25 @@
 """
 Tests for ddns.util.fileio module
 """
-
-from __init__ import unittest, patch, MagicMock
-import tempfile
 import os
 import shutil
+import tempfile
 from io import open  # Python 2/3 compatible UTF-8 file operations
+
+from __init__ import MagicMock, patch, unittest
 
 import ddns.util.fileio as fileio
 
-
 # Test constants
-TEST_ENCODING_UTF8 = "utf-8"
-TEST_ENCODING_ASCII = "ascii"
+TEST_ENCODING_UTF8 = u"utf-8"  # fmt: skip
+TEST_ENCODING_ASCII = u"ascii"  # fmt: skip
 # Ensure content is unicode for Python 2 compatibility
 try:
     # Python 2
-    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
+    TEST_CONTENT_MULTILINGUAL = u"Hello World! 测试内容"
 except NameError:
     # Python 3
-    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
+    TEST_CONTENT_MULTILINGUAL = u"Hello World! 测试内容"  # fmt: skip
 
 
 class TestFileIOModule(unittest.TestCase):
@@ -40,7 +39,7 @@ class TestFileIOModule(unittest.TestCase):
         """Test _ensure_directory_exists creates directory successfully"""
         temp_dir = tempfile.mkdtemp()
         try:
-            test_file = os.path.join(temp_dir, "subdir", "test.txt")
+            test_file = os.path.join(temp_dir, u"subdir", u"test.txt")  # fmt: skip
             fileio._ensure_directory_exists(test_file)
             self.assertTrue(os.path.exists(os.path.dirname(test_file)))
         finally:
@@ -50,7 +49,7 @@ class TestFileIOModule(unittest.TestCase):
         """Test _ensure_directory_exists when directory already exists"""
         temp_dir = tempfile.mkdtemp()
         try:
-            test_file = os.path.join(temp_dir, "test.txt")
+            test_file = os.path.join(temp_dir, u"test.txt")  # fmt: skip
             # Directory already exists, should not raise error
             fileio._ensure_directory_exists(test_file)
             self.assertTrue(os.path.exists(temp_dir))
@@ -60,33 +59,33 @@ class TestFileIOModule(unittest.TestCase):
     def test_ensure_directory_exists_empty_path(self):
         """Test _ensure_directory_exists with empty directory path"""
         # Should not raise error for relative paths without directory
-        fileio._ensure_directory_exists("test.txt")
+        fileio._ensure_directory_exists(u"test.txt")  # fmt: skip
 
-    @patch("ddns.util.fileio.os.makedirs")
-    @patch("ddns.util.fileio.os.path.exists")
-    @patch("ddns.util.fileio.os.path.dirname")
+    @patch(u"ddns.util.fileio.os.makedirs")  # fmt: skip
+    @patch(u"ddns.util.fileio.os.path.exists")  # fmt: skip
+    @patch(u"ddns.util.fileio.os.path.dirname")  # fmt: skip
     def test_ensure_directory_exists_makedirs_called(self, mock_dirname, mock_exists, mock_makedirs):
         """Test _ensure_directory_exists calls os.makedirs when needed"""
-        mock_dirname.return_value = "/test/dir"
+        mock_dirname.return_value = u"/test/dir"  # fmt: skip
         mock_exists.return_value = False
 
-        fileio._ensure_directory_exists("/test/dir/file.txt")
+        fileio._ensure_directory_exists(u"/test/dir/file.txt")  # fmt: skip
 
-        mock_dirname.assert_called_once_with("/test/dir/file.txt")
-        mock_exists.assert_called_once_with("/test/dir")
-        mock_makedirs.assert_called_once_with("/test/dir")
+        mock_dirname.assert_called_once_with(u"/test/dir/file.txt")  # fmt: skip
+        mock_exists.assert_called_once_with(u"/test/dir")  # fmt: skip
+        mock_makedirs.assert_called_once_with(u"/test/dir")  # fmt: skip
 
-    @patch("ddns.util.fileio.os.makedirs")
-    @patch("ddns.util.fileio.os.path.exists")
-    @patch("ddns.util.fileio.os.path.dirname")
+    @patch(u"ddns.util.fileio.os.makedirs")  # fmt: skip
+    @patch(u"ddns.util.fileio.os.path.exists")  # fmt: skip
+    @patch(u"ddns.util.fileio.os.path.dirname")  # fmt: skip
     def test_ensure_directory_exists_raises_exception(self, mock_dirname, mock_exists, mock_makedirs):
         """Test _ensure_directory_exists properly raises OSError"""
-        mock_dirname.return_value = "/test/dir"
+        mock_dirname.return_value = u"/test/dir"  # fmt: skip
         mock_exists.return_value = False
-        mock_makedirs.side_effect = OSError("Permission denied")
+        mock_makedirs.side_effect = OSError(u"Permission denied")  # fmt: skip
 
         with self.assertRaises(OSError):
-            fileio._ensure_directory_exists("/test/dir/file.txt")
+            fileio._ensure_directory_exists(u"/test/dir/file.txt")  # fmt: skip
 
     def test_read_file_success(self):
         """Test read_file with successful file reading"""
@@ -94,7 +93,7 @@ class TestFileIOModule(unittest.TestCase):
         temp_fd, temp_path = tempfile.mkstemp()
         try:
             # Write content using io.open for consistent behavior
-            with open(temp_path, "w", encoding="utf-8") as temp_file:
+            with open(temp_path, u"w", encoding=u"utf-8") as temp_file:  # fmt: skip
                 temp_file.write(self.test_content)
 
             result = fileio.read_file(temp_path, self.test_encoding)
@@ -106,41 +105,41 @@ class TestFileIOModule(unittest.TestCase):
     def test_read_file_nonexistent_file(self):
         """Test read_file with nonexistent file raises exception"""
         with self.assertRaises((OSError, IOError)):
-            fileio.read_file("nonexistent_file.txt")
+            fileio.read_file(u"nonexistent_file.txt")  # fmt: skip
 
     def test_read_file_different_encoding(self):
         """Test read_file with different encoding"""
         # Use ASCII-safe content for encoding test
         try:
             # Python 2 - ensure unicode
-            content = "ASCII content"
+            content = u"ASCII content"  # fmt: skip
         except NameError:
             # Python 3
-            content = "ASCII content"
+            content = u"ASCII content"  # fmt: skip
 
         temp_fd, temp_path = tempfile.mkstemp()
         try:
             # Write content using io.open for consistent behavior
-            with open(temp_path, "w", encoding="ascii") as temp_file:
+            with open(temp_path, u"w", encoding=u"ascii") as temp_file:  # fmt: skip
                 temp_file.write(content)
 
-            result = fileio.read_file(temp_path, "ascii")
+            result = fileio.read_file(temp_path, u"ascii")  # fmt: skip
             self.assertEqual(result, content)
         finally:
             os.close(temp_fd)
             os.unlink(temp_path)
 
-    @patch("ddns.util.fileio.open")
+    @patch(u"ddns.util.fileio.open")  # fmt: skip
     def test_read_file_with_mock(self, mock_open):
         """Test read_file with mocked file operations"""
         mock_file = MagicMock()
         mock_file.read.return_value = self.test_content
         mock_open.return_value.__enter__.return_value = mock_file
 
-        result = fileio.read_file("/test/path.txt", self.test_encoding)
+        result = fileio.read_file(u"/test/path.txt", self.test_encoding)  # fmt: skip
 
         self.assertEqual(result, self.test_content)
-        mock_open.assert_called_once_with("/test/path.txt", "r", encoding=self.test_encoding)
+        mock_open.assert_called_once_with(u"/test/path.txt", u"r", encoding=self.test_encoding)  # fmt: skip
         mock_file.read.assert_called_once()
 
     def test_read_file_safely_success(self):
@@ -148,7 +147,7 @@ class TestFileIOModule(unittest.TestCase):
         temp_fd, temp_path = tempfile.mkstemp()
         try:
             # Write content using io.open for consistent behavior
-            with open(temp_path, "w", encoding="utf-8") as temp_file:
+            with open(temp_path, u"w", encoding=u"utf-8") as temp_file:  # fmt: skip
                 temp_file.write(self.test_content)
 
             result = fileio.read_file_safely(temp_path, self.test_encoding)
@@ -255,7 +254,7 @@ class TestFileIOModule(unittest.TestCase):
         # Create UnicodeEncodeError with proper arguments for Python 2/3 compatibility
         try:
             # Python 2 - need unicode objects
-            error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
+            error = UnicodeEncodeError("utf-8", u"", 0, 1, "invalid")
         except TypeError:
             # Python 3 - accepts str objects
             error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
@@ -327,7 +326,7 @@ class TestFileIOModule(unittest.TestCase):
             # 4. Safe operations
             try:
                 # Python 2 - ensure unicode
-                updated_content_str = "Updated content"
+                updated_content_str = u"Updated content"
             except NameError:
                 # Python 3
                 updated_content_str = "Updated content"
@@ -362,7 +361,14 @@ class TestFileIOModule(unittest.TestCase):
         # Ensure all test contents are unicode for Python 2 compatibility
         try:
             # Python 2 - ensure unicode
-            test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
+            test_contents = [
+                u"English text",
+                u"中文测试",
+                u"Русский текст",
+                u"العربية",
+                u"🌟✨🎉",
+                u"Mixed: English 中文 🎉",
+            ]
         except NameError:
             # Python 3
             test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
@@ -389,7 +395,7 @@ class TestFileIOModule(unittest.TestCase):
         # Use ASCII-safe content for encoding test
         try:
             # Python 2 - ensure unicode
-            ascii_content = "ASCII only content"
+            ascii_content = u"ASCII only content"
         except NameError:
             # Python 3
             ascii_content = "ASCII only content"
