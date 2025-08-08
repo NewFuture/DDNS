@@ -433,27 +433,9 @@ class TestAliesaProviderIntegration(BaseProviderTestCase):
         # Mock API response format
         api_response = {
             "Records": [
-                {
-                    "RecordId": "111",
-                    "RecordName": "www.example.com",
-                    "Type": "A",
-                    "Value": "192.168.1.1",
-                    "TTL": 300,
-                },
-                {
-                    "RecordId": "222",
-                    "RecordName": "www.example.com",
-                    "Type": "A",
-                    "Value": "192.168.1.2",
-                    "TTL": 600,
-                },
-                {
-                    "RecordId": "333",
-                    "RecordName": "mail.example.com",
-                    "Type": "A",
-                    "Value": "192.168.1.3",
-                    "TTL": 300,
-                },
+                {"RecordId": "111", "RecordName": "www.example.com", "Type": "A", "Value": "192.168.1.1", "TTL": 300},
+                {"RecordId": "222", "RecordName": "www.example.com", "Type": "A", "Value": "192.168.1.2", "TTL": 600},
+                {"RecordId": "333", "RecordName": "mail.example.com", "Type": "A", "Value": "192.168.1.3", "TTL": 300},
             ]
         }
 
@@ -505,12 +487,7 @@ class TestAliesaProviderAPIResponse(BaseProviderTestCase):
         self.assertTrue(":" in record_params["Value"])  # IPv6 format
 
         # Test CNAME record parameters
-        record_params = {
-            "RecordName": "alias.example.com",
-            "Type": "CNAME",
-            "Value": "target.example.com",
-            "TTL": 300,
-        }
+        record_params = {"RecordName": "alias.example.com", "Type": "CNAME", "Value": "target.example.com", "TTL": 300}
         self.assertEqual(record_params["Type"], "CNAME")
         self.assertTrue(record_params["Value"].endswith(".com"))
 

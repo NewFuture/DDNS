@@ -331,10 +331,7 @@ class TestConfig(unittest.TestCase):
         normal_cases = [
             (
                 {"index4": "public,regex:192\\.168\\..*", "index6": "public,cmd:curl -s ipv6.icanhazip.com"},
-                {
-                    "index4": ["public", "regex:192\\.168\\..*"],
-                    "index6": ["public", "cmd:curl -s ipv6.icanhazip.com"],
-                },
+                {"index4": ["public", "regex:192\\.168\\..*"], "index6": ["public", "cmd:curl -s ipv6.icanhazip.com"]},
             ),
             (
                 {"index4": "public,default", "index6": "public;default"},

@@ -3,6 +3,7 @@
 Unit tests for ddns.scheduler.schtasks module
 @author: NewFuture
 """
+
 import platform
 from __init__ import unittest, patch
 from ddns.scheduler.schtasks import SchtasksScheduler
@@ -20,7 +21,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         expected_name = "DDNS"
         self.assertEqual(self.scheduler.NAME, expected_name)
 
-    @patch.object(SchtasksScheduler, '_run_command')
+    @patch.object(SchtasksScheduler, "_run_command")
     def test_get_status_installed_enabled(self, mock_run_command):
         """Test get_status when task is installed and enabled"""
         # Mock XML output from schtasks query
@@ -61,7 +62,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertEqual(status["enabled"], expected_status["enabled"])
         self.assertEqual(status["interval"], expected_status["interval"])
 
-    @patch.object(SchtasksScheduler, '_run_command')
+    @patch.object(SchtasksScheduler, "_run_command")
     def test_get_status_not_installed(self, mock_run_command):
         """Test get_status when task is not installed"""
         # Mock _run_command to return None (task not found)
@@ -69,17 +70,14 @@ class TestSchtasksScheduler(unittest.TestCase):
 
         status = self.scheduler.get_status()
 
-        expected_status = {
-            "scheduler": "schtasks",
-            "installed": False,
-        }
+        expected_status = {"scheduler": "schtasks", "installed": False}
 
         # Check main fields - only scheduler and installed are included when task not found
         self.assertEqual(status["scheduler"], expected_status["scheduler"])
         self.assertEqual(status["installed"], expected_status["installed"])
         # When task is not installed, enabled and interval are not included in status
 
-    @patch.object(SchtasksScheduler, '_run_command')
+    @patch.object(SchtasksScheduler, "_run_command")
     def test_is_installed_true(self, mock_run_command):
         """Test is_installed returns True when task exists"""
         mock_run_command.return_value = "TaskName: DDNS\nStatus: Ready"
@@ -87,7 +85,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertTrue(result)
 
-    @patch.object(SchtasksScheduler, '_run_command')
+    @patch.object(SchtasksScheduler, "_run_command")
     def test_is_installed_false(self, mock_run_command):
         """Test is_installed returns False when task doesn't exist"""
         mock_run_command.return_value = None
@@ -95,8 +93,8 @@ class TestSchtasksScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertFalse(result)
 
-    @patch.object(SchtasksScheduler, '_schtasks')
-    @patch.object(SchtasksScheduler, '_create_vbs_script')
+    @patch.object(SchtasksScheduler, "_schtasks")
+    @patch.object(SchtasksScheduler, "_create_vbs_script")
     def test_install_success(self, mock_vbs, mock_schtasks):
         """Test successful installation"""
         mock_vbs.return_value = "test.vbs"
@@ -108,7 +106,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         mock_schtasks.assert_called_once()
         mock_vbs.assert_called_once()
 
-    @patch.object(SchtasksScheduler, '_schtasks')
+    @patch.object(SchtasksScheduler, "_schtasks")
     def test_uninstall_success(self, mock_schtasks):
         """Test successful uninstall"""
         mock_schtasks.return_value = True
@@ -117,7 +115,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertTrue(result)
         mock_schtasks.assert_called_once()
 
-    @patch.object(SchtasksScheduler, '_schtasks')
+    @patch.object(SchtasksScheduler, "_schtasks")
     def test_enable_success(self, mock_schtasks):
         """Test successful enable"""
         mock_schtasks.return_value = True
@@ -126,7 +124,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertTrue(result)
         mock_schtasks.assert_called_once()
 
-    @patch.object(SchtasksScheduler, '_schtasks')
+    @patch.object(SchtasksScheduler, "_schtasks")
     def test_disable_success(self, mock_schtasks):
         """Test successful disable"""
         mock_schtasks.return_value = True

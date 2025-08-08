@@ -2,6 +2,7 @@
 """
 Configuration loader tests for environment variables.
 """
+
 import os
 import unittest
 from ddns.config.env import load_config
@@ -78,13 +79,7 @@ class TestConfigEnv(unittest.TestCase):
 
     def test_pythonhttpsverify_values(self):
         """Test PYTHONHTTPSVERIFY with different values"""
-        test_cases = [
-            ("0", "0"),
-            ("1", "1"),
-            ("false", "false"),
-            ("true", "true"),
-            ("anything", "anything"),
-        ]
+        test_cases = [("0", "0"), ("1", "1"), ("false", "false"), ("true", "true"), ("anything", "anything")]
 
         for env_value, expected in test_cases:
             os.environ["PYTHONHTTPSVERIFY"] = env_value
@@ -206,12 +201,7 @@ class TestConfigEnv(unittest.TestCase):
 
     def test_numeric_and_boolean_strings(self):
         """Test that numeric and boolean strings are preserved"""
-        test_cases = [
-            ("123", "123"),
-            ("true", "true"),
-            ("false", "false"),
-            ("3.14", "3.14"),
-        ]
+        test_cases = [("123", "123"), ("true", "true"), ("false", "false"), ("3.14", "3.14")]
 
         for value, expected in test_cases:
             os.environ["DDNS_TEST_VALUE"] = value

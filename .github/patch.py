@@ -249,47 +249,47 @@ def replace_readme_links_for_release(version):
     # 替换各种链接中的 latest 为具体版本
     # GitHub releases download links
     content = re.sub(
-        r'https://github\.com/NewFuture/DDNS/releases/latest/download/',
-        f'https://github.com/NewFuture/DDNS/releases/download/{version}/',
+        r"https://github\.com/NewFuture/DDNS/releases/latest/download/",
+        f"https://github.com/NewFuture/DDNS/releases/download/{version}/",
         content,
     )
 
     # GitHub releases latest links
     content = re.sub(
-        r'https://github\.com/NewFuture/DDNS/releases/latest',
-        f'https://github.com/NewFuture/DDNS/releases/tag/{version}',
+        r"https://github\.com/NewFuture/DDNS/releases/latest",
+        f"https://github.com/NewFuture/DDNS/releases/tag/{version}",
         content,
     )
 
     # Docker tags from latest to version
-    content = re.sub(r'docker pull ([^:\s]+):latest', f'docker pull \\1:{version}', content)
+    content = re.sub(r"docker pull ([^:\s]+):latest", f"docker pull \\1:{version}", content)
 
     # PyPI version-specific links
     content = re.sub(
-        r'https://pypi\.org/project/ddns(?:/latest)?(?=[\s\)])', f'https://pypi.org/project/ddns/{version}', content
+        r"https://pypi\.org/project/ddns(?:/latest)?(?=[\s\)])", f"https://pypi.org/project/ddns/{version}", content
     )
 
     # Shield.io badges - Docker version
     content = re.sub(
-        r'https://img\.shields\.io/docker/v/newfuture/ddns/latest',
-        f'https://img.shields.io/docker/v/newfuture/ddns/{version}',
+        r"https://img\.shields\.io/docker/v/newfuture/ddns/latest",
+        f"https://img.shields.io/docker/v/newfuture/ddns/{version}",
         content,
     )
 
     # Shield.io badges - PyPI version (add version if not present)
     content = re.sub(
-        r'https://img\.shields\.io/pypi/v/ddns(?!\?)', f'https://img.shields.io/pypi/v/ddns/{version}', content
+        r"https://img\.shields\.io/pypi/v/ddns(?!\?)", f"https://img.shields.io/pypi/v/ddns/{version}", content
     )
 
     # GitHub archive links
     content = re.sub(
-        r'https://github\.com/NewFuture/DDNS/archive/refs/tags/latest\.(zip|tar\.gz)',
-        f'https://github.com/NewFuture/DDNS/archive/refs/tags/{version}.\\1',
+        r"https://github\.com/NewFuture/DDNS/archive/refs/tags/latest\.(zip|tar\.gz)",
+        f"https://github.com/NewFuture/DDNS/archive/refs/tags/{version}.\\1",
         content,
     )
 
     # PIP install commands
-    content = re.sub(r'pip install ddns(?!=)', f'pip install ddns=={version}', content)
+    content = re.sub(r"pip install ddns(?!=)", f"pip install ddns=={version}", content)
 
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(content)

@@ -4,6 +4,7 @@
 Integration test for all config formats including v4.1 providers
 @author: GitHub Copilot
 """
+
 from __future__ import unicode_literals
 from __init__ import unittest
 import tempfile

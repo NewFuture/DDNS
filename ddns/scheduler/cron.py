@@ -9,9 +9,9 @@ import subprocess
 import tempfile
 from datetime import datetime
 
-from ._base import BaseScheduler
-from ..util.fileio import write_file
 from .. import __version__ as version
+from ..util.fileio import write_file
+from ._base import BaseScheduler
 
 
 class CronScheduler(BaseScheduler):
@@ -24,7 +24,7 @@ class CronScheduler(BaseScheduler):
     def _update_crontab(self, new_cron):
         """Update crontab with new content"""
         try:
-            temp_path = tempfile.mktemp(suffix='.cron')
+            temp_path = tempfile.mktemp(suffix=".cron")
             write_file(temp_path, new_cron)
             subprocess.check_call(["crontab", temp_path])
             os.unlink(temp_path)
@@ -51,7 +51,7 @@ class CronScheduler(BaseScheduler):
             status["enabled"] = False
 
         cmd_groups = line.split(self.KEY, 1) if line else ["", ""]
-        parts = cmd_groups[0].strip(' #\t').split() if cmd_groups[0] else []
+        parts = cmd_groups[0].strip(" #\t").split() if cmd_groups[0] else []
         status["interval"] = int(parts[0][2:]) if len(parts) >= 5 and parts[0].startswith("*/") else None
         status["command"] = " ".join(parts[5:]) if len(parts) >= 6 else None
         status["description"] = cmd_groups[1].strip() if len(cmd_groups) > 1 else None
@@ -69,7 +69,7 @@ class CronScheduler(BaseScheduler):
         lines = [line for line in crontext.splitlines() if self.KEY not in line]
         lines.append(cron_entry)
 
-        if self._update_crontab(u"\n".join(lines) + u"\n"):
+        if self._update_crontab("\n".join(lines) + "\n"):
             return True
         else:
             self.logger.error("Failed to install DDNS cron job")
@@ -105,7 +105,7 @@ class CronScheduler(BaseScheduler):
             else:
                 raise ValueError("Invalid action: {}".format(action))
 
-        if self._update_crontab(u"\n".join(modified_lines) + u"\n"):
+        if self._update_crontab(u"\n".join(modified_lines) + u"\n"):  # fmt: skip
             return True
         else:
             self.logger.error("Failed to %s DDNS cron job", action)

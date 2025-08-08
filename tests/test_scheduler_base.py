@@ -3,6 +3,7 @@
 Unit tests for ddns.scheduler._base module
 @author: NewFuture
 """
+
 from __init__ import unittest, patch
 from ddns.scheduler._base import BaseScheduler
 
@@ -44,7 +45,7 @@ class TestBaseScheduler(unittest.TestCase):
 
     def test_abstract_methods_exist(self):
         """Test that all abstract methods are implemented"""
-        required_methods = ['get_status', 'is_installed', 'install', 'uninstall', 'enable', 'disable']
+        required_methods = ["get_status", "is_installed", "install", "uninstall", "enable", "disable"]
 
         for method_name in required_methods:
             self.assertTrue(hasattr(self.scheduler, method_name))
@@ -145,7 +146,7 @@ class TestBaseScheduler(unittest.TestCase):
         self.assertNotIn("--ipv6", command)
         self.assertNotIn("--config", command)
 
-    @patch('sys.executable', '/usr/bin/python3.9')
+    @patch("sys.executable", "/usr/bin/python3.9")
     def test_build_ddns_command_uses_current_python(self):
         """Test _build_ddns_command uses current Python executable"""
         ddns_args = {"dns": "debug", "ipv4": ["test.com"]}

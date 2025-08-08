@@ -2,6 +2,7 @@
 """
 Tests for ddns.util.fileio module
 """
+
 from __init__ import unittest, patch, MagicMock
 import tempfile
 import os
@@ -17,7 +18,7 @@ TEST_ENCODING_ASCII = "ascii"
 # Ensure content is unicode for Python 2 compatibility
 try:
     # Python 2
-    TEST_CONTENT_MULTILINGUAL = u"Hello World! 测试内容"
+    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
 except NameError:
     # Python 3
     TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
@@ -112,7 +113,7 @@ class TestFileIOModule(unittest.TestCase):
         # Use ASCII-safe content for encoding test
         try:
             # Python 2 - ensure unicode
-            content = u"ASCII content"
+            content = "ASCII content"
         except NameError:
             # Python 3
             content = "ASCII content"
@@ -254,7 +255,7 @@ class TestFileIOModule(unittest.TestCase):
         # Create UnicodeEncodeError with proper arguments for Python 2/3 compatibility
         try:
             # Python 2 - need unicode objects
-            error = UnicodeEncodeError("utf-8", u"", 0, 1, "invalid")
+            error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
         except TypeError:
             # Python 3 - accepts str objects
             error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
@@ -326,7 +327,7 @@ class TestFileIOModule(unittest.TestCase):
             # 4. Safe operations
             try:
                 # Python 2 - ensure unicode
-                updated_content_str = u"Updated content"
+                updated_content_str = "Updated content"
             except NameError:
                 # Python 3
                 updated_content_str = "Updated content"
@@ -361,14 +362,7 @@ class TestFileIOModule(unittest.TestCase):
         # Ensure all test contents are unicode for Python 2 compatibility
         try:
             # Python 2 - ensure unicode
-            test_contents = [
-                u"English text",
-                u"中文测试",
-                u"Русский текст",
-                u"العربية",
-                u"🌟✨🎉",
-                u"Mixed: English 中文 🎉",
-            ]
+            test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
         except NameError:
             # Python 3
             test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
@@ -395,7 +389,7 @@ class TestFileIOModule(unittest.TestCase):
         # Use ASCII-safe content for encoding test
         try:
             # Python 2 - ensure unicode
-            ascii_content = u"ASCII only content"
+            ascii_content = "ASCII only content"
         except NameError:
             # Python 3
             ascii_content = "ASCII only content"

@@ -27,6 +27,14 @@ applyTo: '**/*.py'
   - NO f-strings (not supported in Python 2.7)
   - NO `async`/`await` syntax
   - Avoid Python 3.6+ exclusive features when compatibility is needed
+- **Unicode String Handling**:
+    - **IMPORTANT**: Ruff formatter automatically converts `u"string"` to `"string"`
+    - In Python 2, `u"\n"` and `"\n"` are different types (unicode vs bytes)
+    - Prefer `# fmt: skip` on the exact line that must preserve a Unicode literal
+    - Example:
+        ```python
+        unicode_string = u"hello\nworld"  # fmt: skip
+        ```
 
 ## Project Architecture
 

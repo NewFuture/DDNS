@@ -111,9 +111,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         """Test acceleration domain query when domain not found"""
         mock_request.return_value = {"AccelerationDomains": []}
 
-        record = self.provider._query_record(
-            "zone-123456789", "www", "example.com", "A", None, {}
-        )  # type: dict # type: ignore
+        record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})  # type: dict # type: ignore
 
         self.assertIsNone(record)
 
@@ -131,9 +129,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
             ]
         }
 
-        record = self.provider._query_record(
-            "zone-123456789", "@", "example.com", "A", None, {}
-        )  # type: dict # type: ignore
+        record = self.provider._query_record("zone-123456789", "@", "example.com", "A", None, {})  # type: dict # type: ignore
 
         self.assertIsNotNone(record)
         self.assertEqual(record["DomainName"], "example.com")
@@ -266,7 +262,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_http.return_value = {"Response": {"ZoneId": "zone-123456", "RequestId": "test-request-id"}}
 
         result = self.provider._request(
-            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+            "DescribeZones",
+            Filters=[{"Name": "zone-name", "Values": ["example.com"]}],  # type: ignore[arg-type]
         )
 
         self.assertIsNotNone(result)
@@ -284,7 +281,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_http.return_value = {"Response": {"Error": {"Code": "InvalidParameter", "Message": "Invalid zone name"}}}
 
         result = self.provider._request(
-            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["invalid"]}]  # type: ignore[arg-type]
+            "DescribeZones",
+            Filters=[{"Name": "zone-name", "Values": ["invalid"]}],  # type: ignore[arg-type]
         )
 
         self.assertIsNone(result)
@@ -299,7 +297,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         mock_http.return_value = {"UnexpectedField": "value"}
 
         result = self.provider._request(
-            "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+            "DescribeZones",
+            Filters=[{"Name": "zone-name", "Values": ["example.com"]}],  # type: ignore[arg-type]
         )
 
         self.assertIsNone(result)
@@ -316,7 +315,8 @@ class TestEdgeOneProvider(BaseProviderTestCase):
         # The implementation doesn't catch exceptions, so it will propagate
         with self.assertRaises(Exception) as cm:
             self.provider._request(
-                "DescribeZones", Filters=[{"Name": "zone-name", "Values": ["example.com"]}]  # type: ignore[arg-type]
+                "DescribeZones",
+                Filters=[{"Name": "zone-name", "Values": ["example.com"]}],  # type: ignore[arg-type]
             )
 
         self.assertEqual(str(cm.exception), "Network error")

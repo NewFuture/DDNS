@@ -39,7 +39,7 @@ def get_scheduler(scheduler=None):
         NotImplementedError: If scheduler not available on current platform
     """
     # Auto-detect if not specified
-    if scheduler is None or scheduler == 'auto':
+    if scheduler is None or scheduler == "auto":
         system = platform.system().lower()
         if system == "windows":
             return SchtasksScheduler()
@@ -51,13 +51,13 @@ def get_scheduler(scheduler=None):
         elif system == "linux" and read_file_safely("/proc/1/comm", default="").strip() == "systemd":  # type: ignore
             return SystemdScheduler()
         return CronScheduler()  # Other Unix-like systems, use cron
-    elif scheduler == 'systemd':
+    elif scheduler == "systemd":
         return SystemdScheduler()
-    elif scheduler == 'cron':
+    elif scheduler == "cron":
         return CronScheduler()
-    elif scheduler == 'launchd' or scheduler == 'mac':
+    elif scheduler == "launchd" or scheduler == "mac":
         return LaunchdScheduler()
-    elif scheduler == 'schtasks' or scheduler == 'windows':
+    elif scheduler == "schtasks" or scheduler == "windows":
         return SchtasksScheduler()
     else:
         raise ValueError("Invalid scheduler: {}. ".format(scheduler))

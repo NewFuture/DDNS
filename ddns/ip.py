@@ -69,7 +69,6 @@ def public_v6(url="https://api-ipv6.ip.sb/ip", reg=IPV6_REG):  # 公网IPV6地�
 
 
 def _ip_regex_match(parrent_regex, match_regex):
-
     ip_pattern = compile(parrent_regex)
     matcher = compile(match_regex)
 

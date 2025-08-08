@@ -18,10 +18,7 @@ except ImportError:
     from StringIO import StringIO  # type: ignore[no-redef]
     from urllib2 import URLError  # type: ignore[no-redef]
 
-from ddns.util.http import (
-    RetryHandler,
-    request,
-)
+from ddns.util.http import RetryHandler, request
 
 
 class TestRetryHandler(unittest.TestCase):

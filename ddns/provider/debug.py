@@ -8,7 +8,6 @@ from ._base import SimpleProvider
 
 
 class DebugProvider(SimpleProvider):
-
     def _validate(self):
         """无需任何验证"""
         pass

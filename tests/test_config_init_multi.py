@@ -4,6 +4,7 @@
 Unit tests for multi-config functionality
 @author: GitHub Copilot
 """
+
 from __init__ import unittest, patch
 import tempfile
 import json
@@ -14,7 +15,6 @@ from ddns.config.file import load_config as load_file_config, _process_multi_pro
 
 
 class TestMultiConfig(unittest.TestCase):
-
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.original_argv = sys.argv[:]

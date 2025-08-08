@@ -3,6 +3,7 @@
 Unit tests for ddns task subcommand functionality
 @author: GitHub Copilot
 """
+
 from __init__ import unittest, patch
 import sys
 import io

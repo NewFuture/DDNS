@@ -4,7 +4,6 @@
     "python.analysis.completeFunctionParens": true,
     "python.analysis.supportAllPythonDocuments": true,
     "python.analysis.generateWithTypeAnnotation": true,
-    "python.analysis.diagnosticMode": "workspace",
     "python.analysis.indexing": true,
     "python.analysis.aiCodeActions": {
         "implementAbstractClasses": true,
@@ -16,51 +15,6 @@
         "addMissingFunctionOverloads": true,
         "addMissingFunctionOverloadsWithReturnType": true
     },
-    "editor.formatOnSaveMode": "file",
-    "python.analysis.fixAll": [
-        "source.convertImportFormat",
-    ],
-    "python.formatting.provider": "none",
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports.ruff": true,
-            "source.fixAll.ruff": true
-        }
-    },
-    "editor.formatOnSave": true,
-    "ruff.enabled": true,
-    "editor.bracketPairColorization.enabled": true,
-    "github.copilot.chat.agent.terminal.allowList": {
-        "python": true,
-        "python -c": true,
-        "python -m": true,
-        "python -m unittest": true,
-        "python3": true,
-        "python3 -c": true,
-        "python3 -m": true,
-        "python3 -m unittest": true,
-        "echo": true,
-        "cd": true,
-        "ls": true,
-        "dir": true,
-        "git": true,
-        "git status": true,
-        "rm": true,
-        "del": true,
-        "delete": true,
-        "mv": true,
-        "move": true,
-    },
-    "github.copilot.chat.agent.terminal.denyList": {
-        "rm -rf": true,
-        "del /f /s /q": true,
-        "git reset --hard": true,
-        "git clean -fdx": true,
-        "git checkout -- .": true,
-        "sudo": true
-    },
-    "chat.agent.maxRequests": 64,
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -70,4 +24,21 @@
     ],
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports.ruff": "explicit",
+            "source.fixAll.ruff": "explicit"
+        }
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "editor.codeActionsOnSave": {},
+    "editor.bracketPairColorization.enabled": true,
+    "editor.rulers": [
+        80,
+        100,
+        120
+    ],
+    "chat.agent.maxRequests": 64,
 }

@@ -3,6 +3,7 @@
 Unit tests for ddns.config.cli module
 @author: GitHub Copilot
 """
+
 from __init__ import unittest
 import sys
 import io
@@ -10,7 +11,6 @@ from ddns.config.cli import load_config, str_bool, log_level  # noqa: E402
 
 
 class TestCliConfig(unittest.TestCase):
-
     def setUp(self):
         encode = sys.stdout.encoding
         if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
@@ -150,15 +150,7 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(config["log_file"], "/var/log/ddns.log")
         self.assertEqual(config["log_format"], "%(asctime)s %(message)s")
 
-        sys.argv = [
-            "ddns",
-            "--log_level",
-            "INFO",
-            "--log_file",
-            "/tmp/ddns.log",
-            "--log_datefmt",
-            "%Y-%m-%d %H:%M:%S",
-        ]
+        sys.argv = ["ddns", "--log_level", "INFO", "--log_file", "/tmp/ddns.log", "--log_datefmt", "%Y-%m-%d %H:%M:%S"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config["log_level"], 20)
         self.assertEqual(config["log_file"], "/tmp/ddns.log")
@@ -186,7 +178,6 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(action.nargs, "?")
 
     def test_load_config_other_flags(self):
-
         sys.argv = ["ddns", "--ttl", "300", "--line", "unicom"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config["ttl"], 300)
@@ -402,13 +393,7 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(config["ssl"], "~/.ssl/cert.pem")
 
         # Test multiple configs
-        sys.argv = [
-            "ddns",
-            "--config",
-            "/path/to/config1.json",
-            "--config",
-            "/path/to/config2.json",
-        ]
+        sys.argv = ["ddns", "--config", "/path/to/config1.json", "--config", "/path/to/config2.json"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config["config"], ["/path/to/config1.json", "/path/to/config2.json"])
 

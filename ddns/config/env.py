@@ -3,6 +3,7 @@
 Configuration loader for DDNS environment variables.
 @author: NewFuture
 """
+
 from ast import literal_eval
 from os import environ
 from sys import stderr

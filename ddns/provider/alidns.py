@@ -5,9 +5,10 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, join_domain, encode_params
+from time import gmtime, strftime, time
+
+from ._base import TYPE_FORM, BaseProvider, encode_params, join_domain
 from ._signature import hmac_sha256_authorization, sha256_hash
-from time import strftime, gmtime, time
 
 
 class AliBaseProvider(BaseProvider):
@@ -107,6 +108,7 @@ class AlidnsProvider(AliBaseProvider):
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
         """https://help.aliyun.com/zh/dns/api-alidns-2015-01-09-adddomainrecord"""
+        # fmt: off
         data = self._request(
             "AddDomainRecord",
             DomainName=main_domain,
@@ -117,6 +119,7 @@ class AlidnsProvider(AliBaseProvider):
             Line=line,
             **extra
         )
+        # fmt: on
         if data and data.get("RecordId"):
             self.logger.info("Record created: %s", data)
             return True
@@ -134,6 +137,7 @@ class AlidnsProvider(AliBaseProvider):
             domain = join_domain(old_record.get("RR"), old_record.get("DomainName"))
             self.logger.warning("No changes detected, skipping update for record: %s", domain)
             return True
+        # fmt: off
         data = self._request(
             "UpdateDomainRecord",
             RecordId=old_record.get("RecordId"),
@@ -144,6 +148,7 @@ class AlidnsProvider(AliBaseProvider):
             Line=line or old_record.get("Line"),
             **extra
         )
+        # fmt: on
         if data and data.get("RecordId"):
             self.logger.info("Record updated: %s", data)
             return True

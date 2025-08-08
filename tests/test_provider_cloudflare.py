@@ -182,7 +182,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request", autospec=True
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = [
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"}
@@ -199,7 +198,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = []
 
@@ -211,7 +209,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 "/zone123/dns_records",
                 type="A",
                 per_page=10000,
-                **{"name.exact": "www.example.com", "proxied": True}
+                **{"name.exact": "www.example.com", "proxied": True},
             )
 
     def test_create_record_success(self):
@@ -221,7 +219,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123", "name": "www.example.com"}
 
@@ -246,7 +243,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = None  # API request failed
 
@@ -261,7 +257,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123"}
 

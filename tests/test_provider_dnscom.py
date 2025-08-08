@@ -76,7 +76,6 @@ class TestDnscomProvider(BaseProviderTestCase):
         provider = DnscomProvider(self.authid, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-
             mock_signature.return_value = {"apiKey": self.authid, "hash": "test_hash"}
             mock_http.return_value = {"code": 0, "data": {"result": "success"}}
 
@@ -91,7 +90,6 @@ class TestDnscomProvider(BaseProviderTestCase):
         provider = DnscomProvider(self.authid, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-
             mock_signature.return_value = {"apiKey": self.authid}
             mock_http.return_value = None
 
@@ -105,7 +103,6 @@ class TestDnscomProvider(BaseProviderTestCase):
         provider = DnscomProvider(self.authid, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-
             mock_signature.return_value = {"apiKey": self.authid}
             mock_http.return_value = {"code": 1, "message": "Invalid API key"}
 

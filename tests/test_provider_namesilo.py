@@ -263,13 +263,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
                 "reply": {
                     "code": "300",
                     "resource_record": [
-                        {
-                            "record_id": "12345",
-                            "host": "test",
-                            "type": "A",
-                            "value": "1.2.3.4",
-                            "ttl": "3600",
-                        }
+                        {"record_id": "12345", "host": "test", "type": "A", "value": "1.2.3.4", "ttl": "3600"}
                     ],
                 }
             },

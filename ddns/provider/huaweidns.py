@@ -5,9 +5,10 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, join_domain, encode_params
+from time import gmtime, strftime
+
+from ._base import TYPE_JSON, BaseProvider, encode_params, join_domain
 from ._signature import hmac_sha256_authorization, sha256_hash
-from time import strftime, gmtime
 
 
 class HuaweiDNSProvider(BaseProvider):
@@ -105,6 +106,7 @@ class HuaweiDNSProvider(BaseProvider):
         """
         domain = join_domain(subdomain, main_domain) + "."
         extra["description"] = extra.get("description", self.remark)
+        # fmt: off
         res = self._request(
             "POST",
             "/v2.1/zones/" + zone_id + "/recordsets",
@@ -115,6 +117,7 @@ class HuaweiDNSProvider(BaseProvider):
             line=line,
             **extra
         )
+        # fmt: on
         if res and res.get("id"):
             self.logger.info("Record created: %s", res)
             return True
@@ -126,6 +129,7 @@ class HuaweiDNSProvider(BaseProvider):
         extra["description"] = extra.get("description", self.remark)
         # Note: The v2.1 update API does not support the line parameter in the request body
         # The line parameter is returned in the response but cannot be modified
+        # fmt: off
         res = self._request(
             "PUT",
             "/v2.1/zones/" + zone_id + "/recordsets/" + old_record["id"],
@@ -135,6 +139,7 @@ class HuaweiDNSProvider(BaseProvider):
             ttl=ttl if ttl is not None else old_record.get("ttl"),
             **extra
         )
+        # fmt: on
         if res and res.get("id"):
             self.logger.info("Record updated: %s", res)
             return True

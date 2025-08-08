@@ -3,6 +3,7 @@
 Test scheduler initialization and real functionality
 @author: NewFuture
 """
+
 import os
 import platform
 import subprocess
@@ -85,7 +86,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
                 # Check if systemd is running and we have systemctl
                 return (
                     self.current_system == "linux"
-                    and os.path.exists('/proc/1/comm')
+                    and os.path.exists("/proc/1/comm")
                     and self._is_command_available("systemctl")
                 )
             elif scheduler_name == "cron":
@@ -227,7 +228,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
 
     def test_scheduler_methods_exist(self):
         """Test that required scheduler methods exist and are callable"""
-        required_methods = ['get_status', 'is_installed', 'install', 'uninstall', 'enable', 'disable']
+        required_methods = ["get_status", "is_installed", "install", "uninstall", "enable", "disable"]
 
         for method_name in required_methods:
             try:
@@ -261,18 +262,18 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
 
         # Test basic properties
         self.assertIsNotNone(current_scheduler)
-        self.assertTrue(hasattr(current_scheduler, 'get_status'))
-        self.assertTrue(hasattr(current_scheduler, 'is_installed'))
+        self.assertTrue(hasattr(current_scheduler, "get_status"))
+        self.assertTrue(hasattr(current_scheduler, "is_installed"))
 
         # Test status method returns valid structure
         status = current_scheduler.get_status()
         self.assertIsInstance(status, dict)
-        self.assertIn('scheduler', status)
-        self.assertIn('installed', status)
+        self.assertIn("scheduler", status)
+        self.assertIn("installed", status)
 
         # Additional keys are only present when installed
-        if status.get('installed', False):
-            self.assertIn('enabled', status)
+        if status.get("installed", False):
+            self.assertIn("enabled", status)
 
         # Test is_installed returns boolean
         installed = current_scheduler.is_installed()

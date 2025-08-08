@@ -5,6 +5,7 @@ Custom Callback API
 
 @author: 老周部落, NewFuture
 """
+
 from ._base import TYPE_JSON, SimpleProvider
 from time import time
 from json import loads as jsondecode

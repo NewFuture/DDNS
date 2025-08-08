@@ -4,6 +4,7 @@
 Unit tests for ddns.config.file module
 @author: GitHub Copilot
 """
+
 from __future__ import unicode_literals
 from __init__ import unittest
 import tempfile

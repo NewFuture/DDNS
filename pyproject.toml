@@ -98,6 +98,7 @@ pythonpath = [".", "tests"]
 line-length = 120
 # Ruff minimum supported version is py37, but project supports py27+ 
 target-version = "py37"
+
 exclude = [
     ".eggs",
     ".git", 
@@ -113,11 +114,14 @@ exclude = [
 
 [tool.ruff.lint]
 # Enable pycodestyle (E, W), pyflakes (F), and mccabe (C) - same as flake8 defaults
+# Deliberately exclude pyupgrade (UP) rules to maintain Python 2 compatibility
+# (UP rules would convert u"" strings to "" which breaks py2 compatibility)
 select = ["E", "W", "F", "C"]
 # Same ignores as flake8 configuration, but using ruff rule codes
 ignore = [
-    "E203",  # whitespace before ':' - not needed in ruff, formatter handles this
+    # "E203",  # whitespace before ':' - not needed in ruff, formatter handles this
     "E501",  # line too long (handled by formatter)
+    "UP025", # unicode-kind-prefix (keep u"..." for Py2 compatibility)
 ]
 # Same max complexity as flake8
 mccabe = { max-complexity = 12 }
@@ -127,10 +131,12 @@ mccabe = { max-complexity = 12 }
 "tests/*" = ["F401", "F811"]
 
 [tool.ruff.format]
-# Same settings as black
-quote-style = "preserve"  # equivalent to black's skip-string-normalization = true
-indent-style = "space"
 line-ending = "auto"
+indent-style = "space"
+quote-style = "double"
+skip-magic-trailing-comma = true # py2
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
 
 # 类型检查配置
 [tool.pyright]
@@ -172,5 +178,3 @@ exclude_lines = [
 ]
 show_missing = true
 precision = 2
-
-

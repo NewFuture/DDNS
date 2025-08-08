@@ -3,6 +3,7 @@
 Configuration loader for DDNS command-line interface.
 @author: NewFuture
 """
+
 import sys
 import platform
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
@@ -74,7 +75,6 @@ class NewConfigAction(Action):
     """生成配置文件并退出程序"""
 
     def __call__(self, parser, namespace, values, option_string=None):
-
         # 获取配置文件路径
         if values and values != "true":
             config_path = str(values)  # type: str
@@ -161,11 +161,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
         "--cache", type=str_bool, nargs="?", const=True, help="set cache [启用缓存开关，或传入保存路径]"
     )
     advanced.add_argument(
-        "--no-cache",
-        dest="cache",
-        action="store_const",
-        const=False,
-        help="disable cache [关闭缓存等效 --cache=false]",
+        "--no-cache", dest="cache", action="store_const", const=False, help="disable cache [关闭缓存等效 --cache=false]"
     )
     advanced.add_argument(
         "--ssl",

@@ -37,10 +37,7 @@ class SystemdScheduler(BaseScheduler):
     def get_status(self):
         """Get comprehensive status information"""
         installed = self.is_installed()
-        status = {
-            "scheduler": "systemd",
-            "installed": installed,
-        }
+        status = {"scheduler": "systemd", "installed": installed}
         if not installed:
             return status
 
@@ -77,9 +74,7 @@ After=network.target
 Type=oneshot
 WorkingDirectory={}
 ExecStart={}
-""".format(
-            version, date, work_dir, ddns_command
-        )
+""".format(version, date, work_dir, ddns_command)  # fmt: skip
 
         # Create timer file content
         timer_content = u"""[Unit]
@@ -92,9 +87,7 @@ Unit={}
 
 [Install]
 WantedBy=multi-user.target
-""".format(
-            self.SERVICE_NAME, interval, self.SERVICE_NAME
-        )
+""".format(self.SERVICE_NAME, interval, self.SERVICE_NAME)  # fmt: skip
 
         try:
             # Write service and timer files
