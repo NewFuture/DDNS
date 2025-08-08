@@ -5,7 +5,9 @@ Unit tests for ddns.scheduler.cron module
 """
 
 import platform
-from __init__ import unittest, patch
+
+from __init__ import patch, unittest
+
 from ddns.scheduler.cron import CronScheduler
 
 
@@ -37,7 +39,8 @@ class TestCronScheduler(unittest.TestCase):
 
                     # Verify the cron entry contains version and date
                     call_args = mock_update.call_args[0][0]
-                    self.assertIn("# DDNS: auto-update vtest-version installed on 2025-08-01 14:30:00", call_args)
+                    cron_entry = u"\n".join(call_args)  # fmt: skip
+                    self.assertIn("# DDNS: auto-update vtest-version installed on 2025-08-01 14:30:00", cron_entry)
 
     def test_get_status_extracts_comments(self):
         """Test get_status method extracts comments from cron entry"""
@@ -104,7 +107,8 @@ class TestCronScheduler(unittest.TestCase):
 
                             self.assertTrue(result)
                             call_args = mock_update.call_args[0][0]
-                            self.assertIn("vtest-version", call_args)  # Should include the version
+                            cron_entry = u"\n".join(call_args)  # fmt: skip
+                            self.assertIn("vtest-version", cron_entry)  # Should include the version
 
     def test_get_status_with_no_comment(self):
         """Test get_status handles cron entries with no DDNS comment"""
@@ -143,7 +147,8 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertIn("*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertIn("*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", cron_entry)
 
         # Test disable operation on active line
         with patch.object(self.scheduler, "_run_command") as mock_run:
@@ -155,7 +160,8 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertIn("# */5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertIn("# */5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", cron_entry)
 
     def test_modify_cron_lines_uninstall(self):
         """Test _modify_cron_lines method for uninstall operation"""
@@ -168,8 +174,9 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertNotIn("DDNS", call_args)
-                self.assertIn("other cron job", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertNotIn("DDNS", cron_entry)
+                self.assertIn("other cron job", cron_entry)
 
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
     def test_real_cron_integration(self):
