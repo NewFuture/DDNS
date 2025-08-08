@@ -21,11 +21,11 @@ class CronScheduler(BaseScheduler):
 
     KEY = "# DDNS:"
 
-    def _update_crontab(self, new_cron):
+    def _update_crontab(self, lines):  # type: (str[]) -> None
         """Update crontab with new content"""
         try:
             temp_path = tempfile.mktemp(suffix=".cron")
-            write_file(temp_path, new_cron)
+            write_file(temp_path, u"\n".join(lines) + u"\n"):  # fmt: skip
             subprocess.check_call(["crontab", temp_path])
             os.unlink(temp_path)
             return True
@@ -69,7 +69,7 @@ class CronScheduler(BaseScheduler):
         lines = [line for line in crontext.splitlines() if self.KEY not in line]
         lines.append(cron_entry)
 
-        if self._update_crontab("\n".join(lines) + "\n"):
+        if self._update_crontab(lines):
             return True
         else:
             self.logger.error("Failed to install DDNS cron job")
@@ -105,7 +105,7 @@ class CronScheduler(BaseScheduler):
             else:
                 raise ValueError("Invalid action: {}".format(action))
 
-        if self._update_crontab(u"\n".join(modified_lines) + u"\n"):  # fmt: skip
+        if self._update_crontab(modified_lines)
             return True
         else:
             self.logger.error("Failed to %s DDNS cron job", action)
