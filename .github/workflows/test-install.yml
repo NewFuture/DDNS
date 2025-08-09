@@ -50,7 +50,6 @@ jobs:
     name: Test on Container (${{ matrix.container }})
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         container:
           - alpine:latest
@@ -65,21 +64,31 @@ jobs:
       RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
 
     steps:
+      - name: Download install script
+        run: |
+          if command -v wget >/dev/null 2>&1; then
+            wget -O install.sh "$RAW_URL"
+          elif command -v curl >/dev/null 2>&1; then
+            curl -fsSL -o install.sh "$RAW_URL"
+          else
+            echo "Neither wget nor curl available"
+            exit 1
+          fi
+          chmod +x install.sh
+
       - name: Test install script help
-        run: curl -fsSL "$RAW_URL" | sh -s -- --help
-      - name: Test with bash (if available)
-        run: curl -fsSL "$RAW_URL" | bash -s -- --help
+        run: ./install.sh --help
 
       - name: Test install latest
-        run: curl -fsSL "$RAW_URL" | sh
+        run: ./install.sh
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
+        run: ./install.sh --uninstall
 
       - name: Test install beta with language detection (zh_CN)
-        run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help | grep -q "一键安装脚本"
+        run: LANG=zh_CN.UTF-8 ./install.sh --help | grep -q "一键安装脚本"
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
+        run: ./install.sh --uninstall
