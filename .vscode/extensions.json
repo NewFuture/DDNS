@@ -4,7 +4,7 @@
         "github.vscode-pull-request-github",
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
+        "charliermarsh.ruff",
         "ms-azuretools.vscode-containers"
     ]
 }

@@ -3,6 +3,7 @@
 Unit tests for ddns.util.comment module
 @author: GitHub Copilot
 """
+
 from __future__ import unicode_literals
 from __init__ import unittest
 from ddns.util.comment import remove_comment

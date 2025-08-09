@@ -5,9 +5,10 @@ www.51dns.com (原dns.com)
 @author: Bigjin<i@bigjin.com>, NewFuture
 """
 
-from ._base import BaseProvider, TYPE_FORM, encode_params
 from hashlib import md5
 from time import time
+
+from ._base import TYPE_FORM, BaseProvider, encode_params
 
 
 class DnscomProvider(BaseProvider):
@@ -82,7 +83,7 @@ class DnscomProvider(BaseProvider):
             TTL=ttl,
             viewID=line,
             **extra
-        )
+        )  # fmt: skip
         if res and res.get("recordID"):
             self.logger.info("Record created: %s", res)
             return True

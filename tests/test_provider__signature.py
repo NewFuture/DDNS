@@ -64,7 +64,7 @@ class TestHmacSha256Authorization(unittest.TestCase):
         body_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
         auth_header_template = (
-            "ACS3-HMAC-SHA256 Credential=YourAccessKeyId," "SignedHeaders={SignedHeaders},Signature={Signature}"
+            "ACS3-HMAC-SHA256 Credential=YourAccessKeyId,SignedHeaders={SignedHeaders},Signature={Signature}"
         )
         signing_string_template = "ACS3-HMAC-SHA256\n{HashedCanonicalRequest}"
 
@@ -103,7 +103,7 @@ class TestHmacSha256Authorization(unittest.TestCase):
         body_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
         auth_header_template = (
-            "SDK-HMAC-SHA256 Access=your_access_key_id, " "SignedHeaders={SignedHeaders}, Signature={Signature}"
+            "SDK-HMAC-SHA256 Access=your_access_key_id, SignedHeaders={SignedHeaders}, Signature={Signature}"
         )
         signing_string_template = "SDK-HMAC-SHA256\n20191115T033655Z\n{HashedCanonicalRequest}"
 

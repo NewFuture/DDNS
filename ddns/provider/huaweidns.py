@@ -5,9 +5,10 @@ HuaweiDNS API
 @author: NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, join_domain, encode_params
+from time import gmtime, strftime
+
+from ._base import TYPE_JSON, BaseProvider, encode_params, join_domain
 from ._signature import hmac_sha256_authorization, sha256_hash
-from time import strftime, gmtime
 
 
 class HuaweiDNSProvider(BaseProvider):
@@ -114,7 +115,7 @@ class HuaweiDNSProvider(BaseProvider):
             ttl=ttl,
             line=line,
             **extra
-        )
+        )  # fmt: skip
         if res and res.get("id"):
             self.logger.info("Record created: %s", res)
             return True
@@ -134,7 +135,7 @@ class HuaweiDNSProvider(BaseProvider):
             records=[value],
             ttl=ttl if ttl is not None else old_record.get("ttl"),
             **extra
-        )
+        )  # fmt: skip
         if res and res.get("id"):
             self.logger.info("Record updated: %s", res)
             return True

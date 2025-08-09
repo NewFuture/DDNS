@@ -2,25 +2,21 @@
 """
 Tests for ddns.util.fileio module
 """
-from __init__ import unittest, patch, MagicMock
-import tempfile
+
 import os
 import shutil
+import tempfile
 from io import open  # Python 2/3 compatible UTF-8 file operations
 
-import ddns.util.fileio as fileio
+from __init__ import MagicMock, patch, unittest
 
+import ddns.util.fileio as fileio
 
 # Test constants
 TEST_ENCODING_UTF8 = "utf-8"
 TEST_ENCODING_ASCII = "ascii"
-# Ensure content is unicode for Python 2 compatibility
-try:
-    # Python 2
-    TEST_CONTENT_MULTILINGUAL = u"Hello World! 测试内容"
-except NameError:
-    # Python 3
-    TEST_CONTENT_MULTILINGUAL = "Hello World! 测试内容"
+# Ensure content is unicode f
+TEST_CONTENT_MULTILINGUAL = u"Hello World! 测试内容"  # fmt: skip
 
 
 class TestFileIOModule(unittest.TestCase):
@@ -110,12 +106,7 @@ class TestFileIOModule(unittest.TestCase):
     def test_read_file_different_encoding(self):
         """Test read_file with different encoding"""
         # Use ASCII-safe content for encoding test
-        try:
-            # Python 2 - ensure unicode
-            content = u"ASCII content"
-        except NameError:
-            # Python 3
-            content = "ASCII content"
+        content = u"ASCII content"  # fmt: skip
 
         temp_fd, temp_path = tempfile.mkstemp()
         try:
@@ -254,7 +245,7 @@ class TestFileIOModule(unittest.TestCase):
         # Create UnicodeEncodeError with proper arguments for Python 2/3 compatibility
         try:
             # Python 2 - need unicode objects
-            error = UnicodeEncodeError("utf-8", u"", 0, 1, "invalid")
+            error = UnicodeEncodeError("utf-8", u"", 0, 1, "invalid")  # fmt: skip
         except TypeError:
             # Python 3 - accepts str objects
             error = UnicodeEncodeError("utf-8", "", 0, 1, "invalid")
@@ -324,12 +315,7 @@ class TestFileIOModule(unittest.TestCase):
             self.assertEqual(content, self.test_content)
 
             # 4. Safe operations
-            try:
-                # Python 2 - ensure unicode
-                updated_content_str = u"Updated content"
-            except NameError:
-                # Python 3
-                updated_content_str = "Updated content"
+            updated_content_str = u"Updated content"  # fmt: skip
 
             self.assertTrue(fileio.write_file_safely(test_file, updated_content_str))
             updated_content = fileio.read_file_safely(test_file)
@@ -368,7 +354,7 @@ class TestFileIOModule(unittest.TestCase):
                 u"العربية",
                 u"🌟✨🎉",
                 u"Mixed: English 中文 🎉",
-            ]
+            ]  # fmt: skip
         except NameError:
             # Python 3
             test_contents = ["English text", "中文测试", "Русский текст", "العربية", "🌟✨🎉", "Mixed: English 中文 🎉"]
@@ -393,12 +379,7 @@ class TestFileIOModule(unittest.TestCase):
     def test_different_encodings(self):
         """Test support for different encodings"""
         # Use ASCII-safe content for encoding test
-        try:
-            # Python 2 - ensure unicode
-            ascii_content = u"ASCII only content"
-        except NameError:
-            # Python 3
-            ascii_content = "ASCII only content"
+        ascii_content = u"ASCII only content"  # fmt: skip
 
         temp_dir = tempfile.mkdtemp()
         try:

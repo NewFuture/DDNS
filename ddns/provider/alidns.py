@@ -5,9 +5,10 @@ AliDNS API
 @author: NewFuture
 """
 
-from ._base import TYPE_FORM, BaseProvider, join_domain, encode_params
+from time import gmtime, strftime, time
+
+from ._base import TYPE_FORM, BaseProvider, encode_params, join_domain
 from ._signature import hmac_sha256_authorization, sha256_hash
-from time import strftime, gmtime, time
 
 
 class AliBaseProvider(BaseProvider):
@@ -116,7 +117,7 @@ class AlidnsProvider(AliBaseProvider):
             TTL=ttl,
             Line=line,
             **extra
-        )
+        )  # fmt: skip
         if data and data.get("RecordId"):
             self.logger.info("Record created: %s", data)
             return True
@@ -143,7 +144,7 @@ class AlidnsProvider(AliBaseProvider):
             TTL=ttl,
             Line=line or old_record.get("Line"),
             **extra
-        )
+        )  # fmt: skip
         if data and data.get("RecordId"):
             self.logger.info("Record updated: %s", data)
             return True

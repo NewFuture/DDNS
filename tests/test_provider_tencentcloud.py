@@ -64,10 +64,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         mock_http.return_value = {
             "Response": {
-                "Error": {
-                    "Code": "InvalidParameterValue.DomainNotExists",
-                    "Message": "当前域名有误，请返回重新操作。",
-                }
+                "Error": {"Code": "InvalidParameterValue.DomainNotExists", "Message": "当前域名有误，请返回重新操作。"}
             }
         }
 
@@ -114,9 +111,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         """Test record query when record not found"""
         mock_http.return_value = {"Response": {"RecordList": []}}
 
-        record = self.provider._query_record(
-            "12345678", "www", "example.com", "A", None, {}
-        )  # type: dict # type: ignore
+        record = self.provider._query_record("12345678", "www", "example.com", "A", None, {})  # type: dict # type: ignore
 
         self.assertIsNone(record)
 
@@ -366,13 +361,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
     def test_update_record_with_line(self):
         """Test _update_record method with line parameter"""
-        old_record = {
-            "RecordId": 123456,
-            "Name": "www",
-            "Line": "默认",
-            "Domain": "example.com",
-            "DomainId": 12345678,
-        }
+        old_record = {"RecordId": 123456, "Name": "www", "Line": "默认", "Domain": "example.com", "DomainId": 12345678}
 
         with patch.object(self.provider, "_request") as mock_request:
             mock_request.return_value = {"RecordId": 123456}

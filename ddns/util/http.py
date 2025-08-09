@@ -219,10 +219,7 @@ class AutoSSLHandler(HTTPSHandler):  # type: ignore[misc]
         try:
             return self._open(req)
         except OSError as e:  # SSL auto模式：处理本地证书错误
-            ssl_errors = (
-                "unable to get local issuer certificate",
-                "Basic Constraints of CA cert not marked critical",
-            )
+            ssl_errors = ("unable to get local issuer certificate", "Basic Constraints of CA cert not marked critical")
             if self._verify == "auto" and any(err in str(e) for err in ssl_errors):
                 logger.warning("SSL error (%s), switching to unverified connection", str(e))
                 self._verify = False  # 不验证SSL

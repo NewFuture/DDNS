@@ -25,15 +25,11 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.x"
-      - run: pip install flake8
+          src: "."
+          args: "check --statistics --output-format=github"
 
-      - name: check Python syntax errors or undefined names
-        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-      - name: check complexity and length # the GitHub editor is 127 chars wide
-        run: flake8 . --count --max-complexity=12 --max-line-length=127 --statistics
   python:
     strategy:
       fail-fast: false

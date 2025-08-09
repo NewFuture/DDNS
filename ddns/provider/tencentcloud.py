@@ -5,9 +5,11 @@ Tencent Cloud DNSPod API
 
 @author: NewFuture
 """
-from ._base import BaseProvider, TYPE_JSON
-from ._signature import hmac_sha256_authorization, sha256_hash, hmac_sha256
-from time import time, strftime, gmtime
+
+from time import gmtime, strftime, time
+
+from ._base import TYPE_JSON, BaseProvider
+from ._signature import hmac_sha256, hmac_sha256_authorization, sha256_hash
 
 
 class TencentCloudProvider(BaseProvider):
@@ -45,10 +47,7 @@ class TencentCloudProvider(BaseProvider):
         body = self._encode_body(params)
 
         # 构建请求头,小写 腾讯云只签名特定头部
-        headers = {
-            "content-type": self.content_type,
-            "host": self.endpoint.split("://", 1)[1].strip("/"),
-        }
+        headers = {"content-type": self.content_type, "host": self.endpoint.split("://", 1)[1].strip("/")}
 
         # 腾讯云特殊的密钥派生过程
         date = strftime("%Y-%m-%d", gmtime())
@@ -132,7 +131,7 @@ class TencentCloudProvider(BaseProvider):
             RecordType=record_type,
             RecordLine=line,
             **extra
-        )
+        )  # fmt: skip
         if not response or "RecordList" not in response:
             self.logger.debug("No records found or query failed")
             return None
@@ -165,7 +164,7 @@ class TencentCloudProvider(BaseProvider):
             RecordLine=line or "默认",
             TTL=int(ttl) if ttl else None,
             **extra
-        )
+        )  # fmt: skip
         if response and "RecordId" in response:
             self.logger.info("Record created successfully with ID: %s", response["RecordId"])
             return True
@@ -186,7 +185,7 @@ class TencentCloudProvider(BaseProvider):
             Value=value,
             TTL=int(ttl) if ttl else None,
             **extra
-        )
+        )  # fmt: skip
         if response and "RecordId" in response:
             self.logger.info("Record updated successfully")
             return True

@@ -4,7 +4,7 @@ CloudFlare API
 @author: TongYifan, NewFuture
 """
 
-from ._base import BaseProvider, TYPE_JSON, join_domain
+from ._base import TYPE_JSON, BaseProvider, join_domain
 
 
 class CloudflareProvider(BaseProvider):
@@ -92,7 +92,7 @@ class CloudflareProvider(BaseProvider):
             content=value,
             ttl=ttl,
             **extra
-        )
+        )  # fmt: skip
         self.logger.debug("Record updated: %s", data)
         if data:
             return True

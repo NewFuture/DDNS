@@ -3,8 +3,11 @@
 Unit tests for ddns.scheduler.cron module
 @author: NewFuture
 """
+
 import platform
-from __init__ import unittest, patch
+
+from __init__ import patch, unittest
+
 from ddns.scheduler.cron import CronScheduler
 
 
@@ -22,57 +25,58 @@ class TestCronScheduler(unittest.TestCase):
         mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
 
         # Mock the methods to avoid actual system calls
-        with patch.object(self.scheduler, '_run_command') as mock_run:
-            with patch.object(self.scheduler, '_update_crontab') as mock_update:
-                with patch.object(self.scheduler, '_build_ddns_command') as mock_build:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
+            with patch.object(self.scheduler, "_update_crontab") as mock_update:
+                with patch.object(self.scheduler, "_build_ddns_command") as mock_build:
                     mock_run.return_value = ""
                     mock_update.return_value = True
                     mock_build.return_value = "python3 -m ddns -c test.json"
 
-                    result = self.scheduler.install(5, {'config': ['test.json']})
+                    result = self.scheduler.install(5, {"config": ["test.json"]})
 
                     self.assertTrue(result)
                     mock_update.assert_called_once()
 
                     # Verify the cron entry contains version and date
                     call_args = mock_update.call_args[0][0]
-                    self.assertIn("# DDNS: auto-update vtest-version installed on 2025-08-01 14:30:00", call_args)
+                    cron_entry = u"\n".join(call_args)  # fmt: skip
+                    self.assertIn("# DDNS: auto-update vtest-version installed on 2025-08-01 14:30:00", cron_entry)
 
     def test_get_status_extracts_comments(self):
         """Test get_status method extracts comments from cron entry"""
         cron_entry = (
             '*/10 * * * * cd "/home/user" && python3 -m ddns -c test.json '
-            '# DDNS: auto-update v4.0 installed on 2025-08-01 14:30:00'
+            "# DDNS: auto-update v4.0 installed on 2025-08-01 14:30:00"
         )
 
-        with patch.object(self.scheduler, '_run_command') as mock_run:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
 
             def mock_command(cmd):
-                if cmd == ['crontab', '-l']:
+                if cmd == ["crontab", "-l"]:
                     return cron_entry
-                elif cmd == ['pgrep', '-f', 'cron']:
-                    return '12345'
+                elif cmd == ["pgrep", "-f", "cron"]:
+                    return "12345"
                 return None
 
             mock_run.side_effect = mock_command
 
             status = self.scheduler.get_status()
 
-            self.assertEqual(status['scheduler'], 'cron')
-            self.assertTrue(status['enabled'])
-            self.assertEqual(status['interval'], 10)
-            self.assertEqual(status['description'], 'auto-update v4.0 installed on 2025-08-01 14:30:00')
+            self.assertEqual(status["scheduler"], "cron")
+            self.assertTrue(status["enabled"])
+            self.assertEqual(status["interval"], 10)
+            self.assertEqual(status["description"], "auto-update v4.0 installed on 2025-08-01 14:30:00")
 
     def test_get_status_handles_missing_comment_info(self):
         """Test get_status handles cron entries without full comment info gracefully"""
         cron_entry = '*/5 * * * * cd "/home/user" && python3 -m ddns -c test.json # DDNS: auto-update'
 
-        with patch.object(self.scheduler, '_run_command') as mock_run:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
 
             def mock_command(cmd):
-                if cmd == ['crontab', '-l']:
+                if cmd == ["crontab", "-l"]:
                     return cron_entry
-                elif cmd == ['pgrep', '-f', 'cron']:
+                elif cmd == ["pgrep", "-f", "cron"]:
                     return None
                 return None
 
@@ -80,41 +84,42 @@ class TestCronScheduler(unittest.TestCase):
 
             status = self.scheduler.get_status()
 
-            self.assertEqual(status['scheduler'], 'cron')
-            self.assertTrue(status['enabled'])
-            self.assertEqual(status['interval'], 5)
-            self.assertEqual(status['description'], 'auto-update')
+            self.assertEqual(status["scheduler"], "cron")
+            self.assertTrue(status["enabled"])
+            self.assertEqual(status["interval"], 5)
+            self.assertEqual(status["description"], "auto-update")
 
     def test_version_in_cron_entry(self):
         """Test that install method includes version in cron entry"""
         with patch("ddns.scheduler.cron.datetime") as mock_datetime:
             mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
 
-            with patch.object(self.scheduler, '_run_command') as mock_run:
-                with patch.object(self.scheduler, '_update_crontab') as mock_update:
-                    with patch.object(self.scheduler, '_build_ddns_command') as mock_build:
+            with patch.object(self.scheduler, "_run_command") as mock_run:
+                with patch.object(self.scheduler, "_update_crontab") as mock_update:
+                    with patch.object(self.scheduler, "_build_ddns_command") as mock_build:
                         mock_run.return_value = ""
                         mock_update.return_value = True
                         mock_build.return_value = "python3 -m ddns"
 
                         # Test that version is included in cron entry
-                        with patch('ddns.scheduler.cron.version', 'test-version'):
+                        with patch("ddns.scheduler.cron.version", "test-version"):
                             result = self.scheduler.install(10)
 
                             self.assertTrue(result)
                             call_args = mock_update.call_args[0][0]
-                            self.assertIn("vtest-version", call_args)  # Should include the version
+                            cron_entry = u"\n".join(call_args)  # fmt: skip
+                            self.assertIn("vtest-version", cron_entry)  # Should include the version
 
     def test_get_status_with_no_comment(self):
         """Test get_status handles cron entries with no DDNS comment"""
         cron_entry = '*/15 * * * * cd "/home/user" && python3 -m ddns -c test.json'
 
-        with patch.object(self.scheduler, '_run_command') as mock_run:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
 
             def mock_command(cmd):
-                if cmd == ['crontab', '-l']:
+                if cmd == ["crontab", "-l"]:
                     return cron_entry
-                elif cmd == ['pgrep', '-f', 'cron']:
+                elif cmd == ["pgrep", "-f", "cron"]:
                     return None
                 return None
 
@@ -122,19 +127,19 @@ class TestCronScheduler(unittest.TestCase):
 
             status = self.scheduler.get_status()
 
-            self.assertEqual(status['scheduler'], 'cron')
-            self.assertEqual(status['enabled'], False)  # False when no DDNS line found
+            self.assertEqual(status["scheduler"], "cron")
+            self.assertEqual(status["enabled"], False)  # False when no DDNS line found
             # When no DDNS line is found, the method still tries to parse the empty line
             # This results in None values for interval, command, and empty string for comments
-            self.assertIsNone(status.get('interval'))
-            self.assertIsNone(status.get('command'))
-            self.assertEqual(status.get('description'), '')
+            self.assertIsNone(status.get("interval"))
+            self.assertIsNone(status.get("command"))
+            self.assertEqual(status.get("description"), "")
 
     def test_modify_cron_lines_enable_disable(self):
         """Test _modify_cron_lines method for enable and disable operations"""
         # Test enable operation on commented line
-        with patch.object(self.scheduler, '_run_command') as mock_run:
-            with patch.object(self.scheduler, '_update_crontab') as mock_update:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
+            with patch.object(self.scheduler, "_update_crontab") as mock_update:
                 mock_run.return_value = "# */5 * * * * cd /path && python3 -m ddns # DDNS: auto-update"
                 mock_update.return_value = True
 
@@ -142,11 +147,12 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertIn("*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertIn("*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", cron_entry)
 
         # Test disable operation on active line
-        with patch.object(self.scheduler, '_run_command') as mock_run:
-            with patch.object(self.scheduler, '_update_crontab') as mock_update:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
+            with patch.object(self.scheduler, "_update_crontab") as mock_update:
                 mock_run.return_value = "*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update"
                 mock_update.return_value = True
 
@@ -154,12 +160,13 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertIn("# */5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertIn("# */5 * * * * cd /path && python3 -m ddns # DDNS: auto-update", cron_entry)
 
     def test_modify_cron_lines_uninstall(self):
         """Test _modify_cron_lines method for uninstall operation"""
-        with patch.object(self.scheduler, '_run_command') as mock_run:
-            with patch.object(self.scheduler, '_update_crontab') as mock_update:
+        with patch.object(self.scheduler, "_run_command") as mock_run:
+            with patch.object(self.scheduler, "_update_crontab") as mock_update:
                 mock_run.return_value = "*/5 * * * * cd /path && python3 -m ddns # DDNS: auto-update\nother cron job"
                 mock_update.return_value = True
 
@@ -167,8 +174,9 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertTrue(result)
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0][0]
-                self.assertNotIn("DDNS", call_args)
-                self.assertIn("other cron job", call_args)
+                cron_entry = u"\n".join(call_args)  # fmt: skip
+                self.assertNotIn("DDNS", cron_entry)
+                self.assertIn("other cron job", cron_entry)
 
     @unittest.skipIf(platform.system().lower() == "windows", "Unix/Linux/macOS-specific test")
     def test_real_cron_integration(self):
@@ -289,8 +297,8 @@ class TestCronScheduler(unittest.TestCase):
                 self.assertIn("*/5", crontab_content, "Crontab should contain correct interval")
 
             # Validate cron entry format
-            lines = crontab_content.strip().split('\n') if crontab_content else []
-            ddns_lines = [line for line in lines if 'DDNS' in line and not line.strip().startswith('#')]
+            lines = crontab_content.strip().split("\n") if crontab_content else []
+            ddns_lines = [line for line in lines if "DDNS" in line and not line.strip().startswith("#")]
             self.assertTrue(len(ddns_lines) > 0, "Should have active DDNS cron entry")
 
             ddns_line = ddns_lines[0]
@@ -312,9 +320,9 @@ class TestCronScheduler(unittest.TestCase):
             # Verify cron entry is commented out
             disabled_crontab = self.scheduler._run_command(["crontab", "-l"])
             if disabled_crontab:
-                disabled_lines = [line for line in disabled_crontab.split('\n') if 'DDNS' in line]
+                disabled_lines = [line for line in disabled_crontab.split("\n") if "DDNS" in line]
                 self.assertTrue(
-                    all(line.strip().startswith('#') for line in disabled_lines),
+                    all(line.strip().startswith("#") for line in disabled_lines),
                     "All DDNS lines should be commented when disabled",
                 )
 
@@ -348,5 +356,5 @@ class TestCronScheduler(unittest.TestCase):
             self._cleanup_real_cron_test()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

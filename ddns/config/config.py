@@ -3,6 +3,7 @@
 Configuration class merged from CLI, JSON, and environment variables.
 @author: NewFuture
 """
+
 from hashlib import md5
 from .cli import str_bool, log_level as get_log_level
 

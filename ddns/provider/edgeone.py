@@ -5,6 +5,7 @@ Tencent Cloud EdgeOne API
 API Documentation: https://cloud.tencent.com/document/api/1552/80731
 @author: NewFuture
 """
+
 from ddns.provider._base import join_domain
 from .tencentcloud import TencentCloudProvider
 

@@ -5,7 +5,8 @@ Unit tests for CloudflareProvider
 @author: GitHub Copilot
 """
 
-from base_test import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, patch, unittest
+
 from ddns.provider.cloudflare import CloudflareProvider
 
 
@@ -182,7 +183,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request", autospec=True
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = [
                 {"id": "rec456", "name": "mail.example.com", "type": "A", "content": "5.6.7.8"}
@@ -199,7 +199,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = []
 
@@ -212,7 +211,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 type="A",
                 per_page=10000,
                 **{"name.exact": "www.example.com", "proxied": True}
-            )
+            )  # fmt: skip
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
@@ -221,7 +220,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain", autospec=True) as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123", "name": "www.example.com"}
 
@@ -246,7 +244,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = None  # API request failed
 
@@ -261,7 +258,6 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
             provider, "_request"
         ) as mock_request:
-
             mock_join.return_value = "www.example.com"
             mock_request.return_value = {"id": "rec123"}
 

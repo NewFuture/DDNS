@@ -3,6 +3,7 @@
 Configuration file loader for DDNS. supports both JSON and AST parsing.
 @author: NewFuture
 """
+
 from ast import literal_eval
 from json import loads as json_decode, dumps as json_encode
 from sys import stderr, stdout

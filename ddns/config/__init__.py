@@ -7,6 +7,7 @@ JSON configuration files, and environment variables.
 
 @author: NewFuture
 """
+
 import os
 import sys
 import logging
@@ -116,9 +117,7 @@ ddns [v{version}@{date}]
 (i) homepage or docs [文档主页]: https://ddns.newfuture.cc/
 (?) issues or bugs [问题和反馈]: https://github.com/NewFuture/DDNS/issues
 Copyright (c) NewFuture (MIT License)
-""".format(
-        version=version, date=date
-    )
+""".format(version=version, date=date)
     # Load CLI configuration first
     cli_config = load_cli_config(description, doc, version, date)
     env_config = load_env_config()
@@ -169,7 +168,4 @@ Copyright (c) NewFuture (MIT License)
     return configs
 
 
-__all__ = [
-    "load_configs",
-    "Config",
-]
+__all__ = ["load_configs", "Config"]

@@ -11,12 +11,7 @@ import json
 import socket
 import random
 
-from ddns.util.http import (
-    HttpResponse,
-    _decode_response_body,
-    quote,
-    USER_AGENT,
-)
+from ddns.util.http import HttpResponse, _decode_response_body, quote, USER_AGENT
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:  # python 2

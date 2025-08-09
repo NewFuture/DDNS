@@ -3,6 +3,7 @@
 Unit tests for ddns.scheduler.launchd module
 @author: NewFuture
 """
+
 import os
 import platform
 import sys
@@ -11,11 +12,11 @@ from ddns.scheduler.launchd import LaunchdScheduler
 
 # Handle builtins import for Python 2/3 compatibility
 if sys.version_info[0] >= 3:
-    builtins_module = 'builtins'
+    builtins_module = "builtins"
     permission_error = PermissionError
 else:
     # Python 2
-    builtins_module = '__builtin__'
+    builtins_module = "__builtin__"
     permission_error = OSError
 
 
@@ -39,7 +40,7 @@ class TestLaunchdScheduler(unittest.TestCase):
     def test_get_status_loaded_enabled(self):
         """Test get_status when service is loaded and enabled"""
         # Mock plist file exists and has content
-        plist_content = '''<?xml version="1.0" encoding="UTF-8"?>
+        plist_content = """<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0">
 <dict>
     <key>Label</key>
@@ -47,14 +48,13 @@ class TestLaunchdScheduler(unittest.TestCase):
     <key>StartInterval</key>
     <integer>300</integer>
 </dict>
-</plist>'''
+</plist>"""
 
-        with patch('os.path.exists', return_value=True), patch(
-            'ddns.scheduler.launchd.read_file_safely', return_value=plist_content
-        ), patch.object(self.scheduler, '_run_command') as mock_run_command:
-
+        with patch("os.path.exists", return_value=True), patch(
+            "ddns.scheduler.launchd.read_file_safely", return_value=plist_content
+        ), patch.object(self.scheduler, "_run_command") as mock_run_command:
             # Mock _run_command to return service is loaded
-            mock_run_command.return_value = '123\t0\tcc.newfuture.ddns'
+            mock_run_command.return_value = "123\t0\tcc.newfuture.ddns"
 
             status = self.scheduler.get_status()
 
@@ -72,8 +72,8 @@ class TestLaunchdScheduler(unittest.TestCase):
     def test_get_status_not_loaded(self):
         """Test get_status when service is not loaded"""
         # Mock plist file doesn't exist
-        with patch('os.path.exists', return_value=False), patch(
-            'ddns.scheduler.launchd.read_file_safely', return_value=None
+        with patch("os.path.exists", return_value=False), patch(
+            "ddns.scheduler.launchd.read_file_safely", return_value=None
         ):
             status = self.scheduler.get_status()
 
@@ -84,7 +84,7 @@ class TestLaunchdScheduler(unittest.TestCase):
             self.assertNotIn("enabled", status)
             self.assertNotIn("interval", status)
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_is_installed_true(self, mock_exists):
         """Test is_installed returns True when plist file exists"""
         mock_exists.return_value = True
@@ -92,7 +92,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertTrue(result)
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_is_installed_false(self, mock_exists):
         """Test is_installed returns False when plist file doesn't exist"""
         mock_exists.return_value = False
@@ -100,12 +100,12 @@ class TestLaunchdScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertFalse(result)
 
-    @patch('ddns.scheduler.launchd.write_file')
+    @patch("ddns.scheduler.launchd.write_file")
     def test_install_with_sudo_fallback(self, mock_write_file):
         """Test install with sudo fallback for permission issues"""
         mock_write_file.return_value = None  # write_file succeeds
 
-        with patch.object(self.scheduler, '_run_command', return_value="loaded successfully"):
+        with patch.object(self.scheduler, "_run_command", return_value="loaded successfully"):
             ddns_args = {"dns": "debug", "ipv4": ["test.com"]}
             result = self.scheduler.install(5, ddns_args)
             self.assertTrue(result)
@@ -113,30 +113,30 @@ class TestLaunchdScheduler(unittest.TestCase):
     @unittest.skipUnless(platform.system().lower() == "darwin", "macOS-specific test")
     def test_launchctl_with_sudo_retry(self):
         """Test launchctl command with automatic sudo retry on permission error"""
-        with patch.object(self.scheduler, '_run_command') as mock_run_cmd:
+        with patch.object(self.scheduler, "_run_command") as mock_run_cmd:
             # Test that launchctl operations use _run_command directly
             mock_run_cmd.return_value = "success"
 
             # Test enable which uses launchctl load
             plist_path = self.scheduler._get_plist_path()
-            with patch('os.path.exists', return_value=True):
+            with patch("os.path.exists", return_value=True):
                 result = self.scheduler.enable()
                 self.assertTrue(result)
                 mock_run_cmd.assert_called_with(["launchctl", "load", plist_path])
 
-    @patch('os.path.exists')
-    @patch('os.remove')
+    @patch("os.path.exists")
+    @patch("os.remove")
     def test_uninstall_success(self, mock_remove, mock_exists):
         """Test successful uninstall"""
         mock_exists.return_value = True
 
-        with patch.object(self.scheduler, '_run_command', return_value="unloaded successfully"):
+        with patch.object(self.scheduler, "_run_command", return_value="unloaded successfully"):
             result = self.scheduler.uninstall()
             self.assertTrue(result)
             mock_remove.assert_called_once()
 
-    @patch('os.path.exists')
-    @patch('os.remove')
+    @patch("os.path.exists")
+    @patch("os.remove")
     def test_uninstall_with_permission_handling(self, mock_remove, mock_exists):
         """Test uninstall handles permission errors gracefully"""
         mock_exists.return_value = True
@@ -144,7 +144,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         # Mock file removal failure - use appropriate error type for Python version
         mock_remove.side_effect = permission_error("Permission denied")
 
-        with patch.object(self.scheduler, '_run_command', return_value="") as mock_run:
+        with patch.object(self.scheduler, "_run_command", return_value="") as mock_run:
             result = self.scheduler.uninstall()
 
             # Should handle permission error gracefully and still return True
@@ -156,14 +156,14 @@ class TestLaunchdScheduler(unittest.TestCase):
 
     def test_enable_success(self):
         """Test successful enable"""
-        with patch.object(self.scheduler, '_run_command', return_value="loaded successfully"):
-            with patch('os.path.exists', return_value=True):
+        with patch.object(self.scheduler, "_run_command", return_value="loaded successfully"):
+            with patch("os.path.exists", return_value=True):
                 result = self.scheduler.enable()
                 self.assertTrue(result)
 
     def test_disable_success(self):
         """Test successful disable"""
-        with patch.object(self.scheduler, '_run_command', return_value="unloaded successfully"):
+        with patch.object(self.scheduler, "_run_command", return_value="unloaded successfully"):
             result = self.scheduler.disable()
             self.assertTrue(result)
 
@@ -388,7 +388,7 @@ class TestLaunchdScheduler(unittest.TestCase):
             self.assertTrue(os.access(plist_path, os.R_OK), "Plist file should be readable")
 
             # Validate plist content
-            with open(plist_path, 'r') as f:
+            with open(plist_path, "r") as f:
                 content = f.read()
             self.assertIn(test_service_label, content, "Plist should contain correct service label")
             self.assertIn("StartInterval", content, "Plist should contain StartInterval")
@@ -421,7 +421,7 @@ class TestLaunchdScheduler(unittest.TestCase):
                 # Test file creation/removal
                 test_file = os.path.join(agents_dir, "test_write_access.tmp")
                 try:
-                    with open(test_file, 'w') as f:
+                    with open(test_file, "w") as f:
                         f.write("test")
                     self.assertTrue(os.path.exists(test_file), "Should be able to create test file")
                     os.remove(test_file)

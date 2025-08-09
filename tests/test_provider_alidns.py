@@ -126,11 +126,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
 
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {
-                "DomainRecords": {
-                    "Record": [
-                        {"RR": "www", "RecordId": "123", "Value": "1.2.3.4", "Type": "A"},
-                    ]
-                }
+                "DomainRecords": {"Record": [{"RR": "www", "RecordId": "123", "Value": "1.2.3.4", "Type": "A"}]}
             }
 
             result = provider._query_record("example.com", "www", "example.com", "A", None, {})
@@ -299,14 +295,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
         """Test _update_record method when no changes are detected"""
         provider = AlidnsProvider(self.authid, self.token)
 
-        old_record = {
-            "RecordId": "123456",
-            "RR": "www",
-            "Value": "1.2.3.4",
-            "Type": "A",
-            "TTL": 300,
-            "Line": "default",
-        }
+        old_record = {"RecordId": "123456", "RR": "www", "Value": "1.2.3.4", "Type": "A", "TTL": 300, "Line": "default"}
 
         with patch.object(provider, "_request") as mock_request:
             # Same value, type, and TTL should skip update
@@ -374,13 +363,7 @@ class TestAlidnsProvider(BaseProviderTestCase):
             result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 300, "unicom", {})
 
             mock_request.assert_called_once_with(
-                "AddDomainRecord",
-                DomainName="example.com",
-                RR="www",
-                Value="1.2.3.4",
-                Type="A",
-                TTL=300,
-                Line="unicom",
+                "AddDomainRecord", DomainName="example.com", RR="www", Value="1.2.3.4", Type="A", TTL=300, Line="unicom"
             )
             self.assertTrue(result)
 

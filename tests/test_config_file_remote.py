@@ -4,6 +4,7 @@
 Unit tests for remote configuration loading in ddns.config.file module
 @author: GitHub Copilot
 """
+
 from __future__ import unicode_literals
 from __init__ import unittest, patch
 import tempfile
@@ -189,18 +190,8 @@ class TestRemoteConfigFile(unittest.TestCase):
             "ssl": "auto",
             "cache": True,
             "providers": [
-                {
-                    "provider": "cloudflare",
-                    "id": "user1@example.com",
-                    "token": "token1",
-                    "ipv4": ["test1.example.com"],
-                },
-                {
-                    "provider": "dnspod",
-                    "id": "user2@example.com",
-                    "token": "token2",
-                    "ipv4": ["test2.example.com"],
-                },
+                {"provider": "cloudflare", "id": "user1@example.com", "token": "token1", "ipv4": ["test1.example.com"]},
+                {"provider": "dnspod", "id": "user2@example.com", "token": "token2", "ipv4": ["test2.example.com"]},
             ],
         }
         mock_http.return_value = HttpResponse(200, "OK", {}, json.dumps(config_data))

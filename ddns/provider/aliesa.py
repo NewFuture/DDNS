@@ -5,9 +5,10 @@ AliESA API
 @author: NewFuture, GitHub Copilot
 """
 
-from .alidns import AliBaseProvider
-from ._base import join_domain, TYPE_JSON
 from time import strftime
+
+from ._base import TYPE_JSON, join_domain
+from .alidns import AliBaseProvider
 
 
 class AliesaProvider(AliBaseProvider):
@@ -82,7 +83,7 @@ class AliesaProvider(AliBaseProvider):
             Data={"Value": value},
             Ttl=ttl or 1,
             **extra
-        )
+        )  # fmt: skip
 
         if data and data.get("RecordId"):
             self.logger.info("Record created: %s", data)
@@ -115,7 +116,7 @@ class AliesaProvider(AliBaseProvider):
             Data={"Value": value},
             Ttl=ttl,
             **extra
-        )
+        )  # fmt: skip
 
         if data and data.get("RecordId"):
             self.logger.info("Record updated: %s", data)

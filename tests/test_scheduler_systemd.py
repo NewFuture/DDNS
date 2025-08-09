@@ -3,6 +3,7 @@
 Unit tests for ddns.scheduler.systemd module
 @author: NewFuture
 """
+
 import os
 import platform
 from __init__ import unittest, patch
@@ -24,23 +25,23 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test timer name constant"""
         self.assertEqual(self.scheduler.TIMER_NAME, "ddns.timer")
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_is_installed_true(self, mock_exists):
         """Test is_installed returns True when service exists"""
         mock_exists.return_value = True
         result = self.scheduler.is_installed()
         self.assertTrue(result)
 
-    @patch('os.path.exists')
+    @patch("os.path.exists")
     def test_is_installed_false(self, mock_exists):
         """Test is_installed returns False when service doesn't exist"""
         mock_exists.return_value = False
         result = self.scheduler.is_installed()
         self.assertFalse(result)
 
-    @patch('subprocess.check_output')
-    @patch('ddns.scheduler.systemd.read_file_safely')
-    @patch('os.path.exists')
+    @patch("subprocess.check_output")
+    @patch("ddns.scheduler.systemd.read_file_safely")
+    @patch("os.path.exists")
     def test_get_status_success(self, mock_exists, mock_read_file, mock_check_output):
         """Test get_status with proper file reading"""
         mock_exists.return_value = True
@@ -55,7 +56,7 @@ class TestSystemdScheduler(unittest.TestCase):
 
         mock_read_file.side_effect = mock_read_side_effect
         # Mock subprocess.check_output to return "enabled" status
-        mock_check_output.return_value = 'enabled'
+        mock_check_output.return_value = "enabled"
 
         status = self.scheduler.get_status()
 
@@ -64,8 +65,8 @@ class TestSystemdScheduler(unittest.TestCase):
         self.assertTrue(status["enabled"])
         self.assertEqual(status["interval"], 5)
 
-    @patch('ddns.scheduler.systemd.write_file')
-    @patch.object(SystemdScheduler, '_systemctl')
+    @patch("ddns.scheduler.systemd.write_file")
+    @patch.object(SystemdScheduler, "_systemctl")
     def test_install_with_sudo_fallback(self, mock_systemctl, mock_write_file):
         """Test install with sudo fallback for permission issues"""
         # Mock successful file writing and systemctl calls
@@ -84,14 +85,14 @@ class TestSystemdScheduler(unittest.TestCase):
     def test_systemctl_with_sudo_retry(self):
         """Test systemctl command with automatic sudo retry on permission error"""
         # Test that systemctl automatically retries with sudo when permission fails
-        with patch.object(self.scheduler, '_run_command') as mock_run_cmd:
+        with patch.object(self.scheduler, "_run_command") as mock_run_cmd:
             mock_run_cmd.side_effect = [None, "success"]  # First fails, sudo succeeds
             self.scheduler._systemctl("enable", "ddns.timer")
             # Should still return success after sudo retry
             mock_run_cmd.assert_called()
 
-    @patch('os.remove')
-    @patch.object(SystemdScheduler, '_systemctl')
+    @patch("os.remove")
+    @patch.object(SystemdScheduler, "_systemctl")
     def test_uninstall_with_permission_handling(self, mock_systemctl, mock_remove):
         """Test uninstall with proper permission handling"""
         mock_systemctl.return_value = True  # disable() succeeds

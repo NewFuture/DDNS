@@ -6,8 +6,9 @@ schtasks-based task scheduler
 
 import os
 import re
-from ._base import BaseScheduler
+
 from ..util.fileio import write_file
+from ._base import BaseScheduler
 
 # Constants
 VBS_SCRIPT = "~\\AppData\\Local\\DDNS\\ddns_silent.vbs"
@@ -29,11 +30,10 @@ class SchtasksScheduler(BaseScheduler):
         work_dir = os.getcwd()
 
         # Build VBS content with proper escaping
-        vbs_content = (
-            u'Set objShell = CreateObject("WScript.Shell")\n'
-            u'objShell.CurrentDirectory = "{}"\n'
-            u'objShell.Run "{}", 0, False\n'
-        ).format(work_dir.replace("\\", "\\\\"), ddns_command.replace('"', '""'))
+        vbs_content = """Set objShell = CreateObject("WScript.Shell")
+    objShell.CurrentDirectory = "{work_dir}"
+    objShell.Run "{ddns_command}", 0, False
+    """.format(work_dir=work_dir.replace("\\", "\\\\"), ddns_command=ddns_command.replace('"', '""'))
 
         # Try locations in order: AppData, then working directory
         vbs_paths = [os.path.expanduser(VBS_SCRIPT), os.path.join(work_dir, ".ddns_silent.vbs")]
@@ -49,7 +49,7 @@ class SchtasksScheduler(BaseScheduler):
 
     def _extract_xml(self, xml_text, tag_name):  # type: (str, str) -> str | None
         """Extract XML tag content using regex for better performance and flexibility"""
-        pattern = r'<{0}[^>]*>(.*?)</{0}>'.format(re.escape(tag_name))
+        pattern = r"<{0}[^>]*>(.*?)</{0}>".format(re.escape(tag_name))
         match = re.search(pattern, xml_text, re.DOTALL)
         return match.group(1).strip() if match else None
 
@@ -60,26 +60,23 @@ class SchtasksScheduler(BaseScheduler):
     def get_status(self):
         # Use XML format for language-independent parsing
         task_xml = self._run_command(["schtasks", "/query", "/tn", self.NAME, "/xml"])
-        status = {
-            "scheduler": "schtasks",
-            "installed": bool(task_xml),
-        }
+        status = {"scheduler": "schtasks", "installed": bool(task_xml)}
 
         if not task_xml:
             return status  # Task not installed, return minimal status
 
-        status['enabled'] = self._extract_xml(task_xml, 'Enabled') != 'false'
-        command = self._extract_xml(task_xml, 'Command')
-        arguments = self._extract_xml(task_xml, 'Arguments')
+        status["enabled"] = self._extract_xml(task_xml, "Enabled") != "false"
+        command = self._extract_xml(task_xml, "Command")
+        arguments = self._extract_xml(task_xml, "Arguments")
         status["command"] = "{} {}".format(command, arguments) if command and arguments else command
 
         # Parse interval: PT10M -> 10, fallback to original string
-        interval_str = self._extract_xml(task_xml, 'Interval')
-        interval_match = re.search(r'PT(\d+)M', interval_str) if interval_str else None
+        interval_str = self._extract_xml(task_xml, "Interval")
+        interval_match = re.search(r"PT(\d+)M", interval_str) if interval_str else None
         status["interval"] = int(interval_match.group(1)) if interval_match else interval_str
 
         # Show description if exists, otherwise show installation date
-        description = self._extract_xml(task_xml, 'Description') or self._extract_xml(task_xml, 'Date')
+        description = self._extract_xml(task_xml, "Description") or self._extract_xml(task_xml, "Date")
         if description:
             status["description"] = description
         return status
