@@ -64,9 +64,26 @@
 
 ### ① Installation
 
-Choose one of the following methods: `binary` version, `pip` version, `source code` execution, or `Docker`.
+Choose one of the following methods: `one-click script`, `binary` version, `pip` version, `source code` execution, or `Docker`.
 
 Docker version is recommended for best compatibility, small size, and optimized performance.
+
+- #### One-Click Installation Script (Recommended)
+
+  Supports Linux and macOS systems with automatic system architecture detection:
+
+  ```bash
+  # Install latest stable version
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+  
+  # Install latest beta version
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- beta
+  
+  # Install specific version
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2
+  ```
+  
+  For detailed instructions, see [Installation Documentation](doc/install.md)
 
 - #### Docker (Requires Docker Installation)
 

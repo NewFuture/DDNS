@@ -50,9 +50,26 @@
 
 ### ① 安装
 
-根据需要选择一种方式：`二进制`版、`pip`版、`源码`运行，或者 `Docker`。
+根据需要选择一种方式：`一键脚本`、`二进制`版、`pip`版、`源码`运行，或者 `Docker`。
 
 推荐 Docker 版，兼容性最佳，体积小，性能优化。
+
+- #### 一键安装脚本（推荐）
+
+  支持 Linux 和 macOS 系统，自动检测系统架构和下载对应版本：
+
+  ```bash
+  # 安装最新稳定版
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+  
+  # 安装最新测试版
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- beta
+  
+  # 安装指定版本
+  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2
+  ```
+  
+  详细说明请查看 [一键安装文档](doc/install.md)
 
 - #### Docker（需要安装 Docker）
 
