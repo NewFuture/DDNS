@@ -74,13 +74,10 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
   ```bash
   # Install latest stable version
-  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+  curl -fsSL https://ddns.newfuture.cc/install.sh | sh
   
-  # Install latest beta version
-  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- beta
-  
-  # Install specific version
-  curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2
+  # Or with sudo if needed
+  curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
   ```
   
   For detailed instructions, see [Installation Documentation](doc/install.md)

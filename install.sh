@@ -4,13 +4,13 @@
 # 一键安装脚本
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
-#   wget -qO- https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+#   curl -fsSL https://ddns.newfuture.cc/install.sh | sh
+#   wget -qO- https://ddns.newfuture.cc/install.sh | sh
 #
 # With version:
-#   curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2
-#   curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- beta
-#   curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- latest
+#   curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
+#   curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta
+#   curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 #
 
 set -e
@@ -355,14 +355,32 @@ install_binary() {
     fi
     
     print_info "Installing binary to $target_path"
-    if ! cp "$temp_file" "$target_path"; then
-        print_error "Failed to install binary"
-        print_error "You may need to run this script with sudo"
-        exit 1
-    fi
     
-    # Make executable
-    chmod +x "$target_path"
+    # Make executable before moving
+    chmod +x "$temp_file"
+    
+    # Try to move directly, auto-detect if sudo is needed
+    if ! mv "$temp_file" "$target_path" 2>/dev/null; then
+        # Check if it's a permission issue and try with sudo
+        if [ ! -w "$(dirname "$target_path")" ]; then
+            print_warning "Permission denied, trying with sudo..."
+            if command -v sudo >/dev/null 2>&1; then
+                if sudo mv "$temp_file" "$target_path"; then
+                    print_info "Successfully installed with sudo"
+                else
+                    print_error "Failed to install binary even with sudo"
+                    exit 1
+                fi
+            else
+                print_error "Failed to install binary: Permission denied"
+                print_error "Please run this script with administrator privileges"
+                exit 1
+            fi
+        else
+            print_error "Failed to install binary"
+            exit 1
+        fi
+    fi
     
     # Clean up
     rm -f "$temp_file"

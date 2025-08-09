@@ -2,16 +2,14 @@ name: Test Install Script
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ master ]
     paths:
       - 'install.sh'
-      - 'test_install.sh'
       - '.github/workflows/test-install.yml'
   pull_request:
-    branches: [ master, develop ]
+    branches: [ master ]
     paths:
       - 'install.sh'
-      - 'test_install.sh'
       - '.github/workflows/test-install.yml'
 
 jobs:
@@ -24,13 +22,13 @@ jobs:
         os: [ubuntu-latest, ubuntu-20.04, macos-latest, macos-12]
         include:
           - os: ubuntu-latest
-            shell: bash
+            shell: sh
           - os: ubuntu-20.04
-            shell: bash
+            shell: sh
           - os: macos-latest
-            shell: bash
+            shell: sh
           - os: macos-12
-            shell: bash
+            shell: sh
 
     steps:
     - name: Checkout code
@@ -104,6 +102,7 @@ jobs:
           - debian:latest
           - centos:7
           - ubuntu:18.04
+          - openwrt/rootfs:latest
 
     container: ${{ matrix.container }}
 
