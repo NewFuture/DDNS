@@ -64,9 +64,23 @@
 
 ### ① Installation
 
-Choose one of the following methods: `binary` version, `pip` version, `source code` execution, or `Docker`.
+Choose one of the following methods: `one-click script`, `binary` version, `pip` version, `source code` execution, or `Docker`.
 
 Docker version is recommended for best compatibility, small size, and optimized performance.
+
+- #### One-Click Installation Script (Recommended)
+
+  Supports Linux and macOS systems with automatic system architecture detection:
+
+  ```bash
+  # Install latest stable version
+  curl -fsSL https://ddns.newfuture.cc/install.sh | sh
+  
+  # Or with sudo if needed
+  curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
+  ```
+  
+  For detailed instructions, see [Installation Documentation](doc/install.en.md)
 
 - #### Docker (Requires Docker Installation)
 

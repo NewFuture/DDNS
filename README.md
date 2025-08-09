@@ -50,9 +50,19 @@
 
 ### ① 安装
 
-根据需要选择一种方式：`二进制`版、`pip`版、`源码`运行，或者 `Docker`。
+根据需要选择一种方式：`一键脚本`、`二进制`版、`pip`版、`源码`运行，或者 `Docker`。
 
 推荐 Docker 版，兼容性最佳，体积小，性能优化。
+
+- #### 一键安装脚本（推荐）
+
+  支持 Linux 和 macOS 系统，自动检测系统架构和下载对应版本：
+
+  ```bash
+  curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
+  ```
+  
+  详细说明请查看 [一键安装文档](doc/install.md) | [English Install Guide](doc/install.en.md)
 
 - #### Docker（需要安装 Docker）
 
