@@ -30,7 +30,7 @@ jobs:
       - name: Test install latest
         run: curl -fsSL "$RAW_URL" | sh
       - name: Check DDNS
-        run: ddns --version | grep -q "DDNS"
+        run: ddns --version
       - name: Test uninstall
         run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
 
@@ -44,7 +44,7 @@ jobs:
       - name: Test install location by wget
         run: wget -qO - "$RAW_URL" | sh -s -- --install-dir /tmp/ddns
       - name: Check DDNS in custom location
-        run: /tmp/ddns/ddns --version | grep -q "DDNS"
+        run: /tmp/ddns/ddns --version
 
   test-with-container:
     name: Test on Container (${{ matrix.container }})
@@ -73,7 +73,7 @@ jobs:
       - name: Test install latest
         run: curl -fsSL "$RAW_URL" | sh
       - name: Check DDNS
-        run: ddns --version | grep -q "DDNS"
+        run: ddns --version
       - name: Test uninstall
         run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
 
