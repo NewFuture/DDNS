@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # One-click installation script for DDNS
 # 一键安装脚本
@@ -29,34 +29,73 @@ BINARY_NAME="ddns"
 REPO="NewFuture/DDNS"
 FORCE_INSTALL=false
 
+# Language detection
+detect_language() {
+    if [ -n "$LANG" ]; then
+        case "$LANG" in
+            zh_* | zh-* | *zh*)
+                LANGUAGE="zh"
+                ;;
+            *)
+                LANGUAGE="en"
+                ;;
+        esac
+    else
+        LANGUAGE="en"
+    fi
+}
+
+# Initialize language detection
+detect_language
+
 # Proxy/mirror sites for China users
-GITHUB_MIRRORS=(
-    "https://github.com"
-    "https://hub.gitmirror.com"
-    "https://proxy.gitwarp.com"
-    "https://gh.200112.xyz"
-)
+GITHUB_MIRRORS="https://github.com https://hub.gitmirror.com https://proxy.gitwarp.com https://gh.200112.xyz"
 
 # Print colored messages
 print_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    printf "${BLUE}[INFO]${NC} %s\n" "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    printf "${GREEN}[SUCCESS]${NC} %s\n" "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    printf "${YELLOW}[WARNING]${NC} %s\n" "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    printf "${RED}[ERROR]${NC} %s\n" "$1"
 }
 
 # Show usage information
 show_usage() {
-    cat << EOF
+    if [ "$LANGUAGE" = "zh" ]; then
+        cat << EOF
+DDNS 一键安装脚本
+
+用法:
+    $0 [VERSION] [OPTIONS]
+
+版本:
+    latest          安装最新稳定版本 (默认)
+    beta           安装最新测试版本
+    v4.0.2         安装指定版本 (例如: v4.0.2)
+
+选项:
+    --install-dir PATH    安装目录 (默认: /usr/local/bin)
+    --force              强制安装，即使已存在
+    --help               显示此帮助信息
+
+示例:
+    $0                    # 安装最新稳定版本
+    $0 beta              # 安装最新测试版本
+    $0 v4.0.2            # 安装指定版本
+    $0 latest --force    # 强制重新安装最新版本
+
+EOF
+    else
+        cat << EOF
 DDNS One-Click Installation Script
 
 Usage:
@@ -79,6 +118,7 @@ Examples:
     $0 latest --force    # Force reinstall latest version
 
 EOF
+    fi
 }
 
 # Check if running on supported OS
@@ -175,10 +215,10 @@ download_file() {
 find_working_mirror() {
     print_info "Testing GitHub connectivity..."
     
-    for mirror in "${GITHUB_MIRRORS[@]}"; do
+    for mirror in $GITHUB_MIRRORS; do
         print_info "Testing mirror: $mirror"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-            if curl -fsSL --connect-timeout 5 --max-time 10 "$mirror" > /dev/null 2>&1; then
+            if curl -fsSL --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL"
                 return 0
@@ -204,11 +244,21 @@ get_latest_version() {
     case "$version_type" in
         "beta")
             # Get the latest pre-release (beta)
-            api_url="https://api.github.com/repos/$REPO/releases"
+            if [ "$GITHUB_URL" = "https://github.com" ]; then
+                api_url="https://api.github.com/repos/$REPO/releases"
+            else
+                # For mirrors, try to use their API endpoint or fallback to main API
+                api_url="$GITHUB_URL/api/repos/$REPO/releases"
+            fi
             ;;
         *)
             # Get the latest stable release
-            api_url="https://api.github.com/repos/$REPO/releases/latest"
+            if [ "$GITHUB_URL" = "https://github.com" ]; then
+                api_url="https://api.github.com/repos/$REPO/releases/latest"
+            else
+                # For mirrors, try to use their API endpoint or fallback to main API
+                api_url="$GITHUB_URL/api/repos/$REPO/releases/latest"
+            fi
             ;;
     esac
     
@@ -216,8 +266,21 @@ get_latest_version() {
     
     local temp_file="/tmp/ddns_releases.json"
     if ! download_file "$api_url" "$temp_file"; then
-        print_error "Failed to fetch release information"
-        exit 1
+        # Fallback to main GitHub API if mirror API fails
+        print_warning "Mirror API failed, falling back to main GitHub API..."
+        case "$version_type" in
+            "beta")
+                api_url="https://api.github.com/repos/$REPO/releases"
+                ;;
+            *)
+                api_url="https://api.github.com/repos/$REPO/releases/latest"
+                ;;
+        esac
+        
+        if ! download_file "$api_url" "$temp_file"; then
+            print_error "Failed to fetch release information"
+            exit 1
+        fi
     fi
     
     if [ "$version_type" = "beta" ]; then
@@ -384,8 +447,13 @@ parse_args() {
 
 # Main installation function
 main() {
-    print_info "DDNS One-Click Installation Script"
-    print_info "======================================="
+    if [ "$LANGUAGE" = "zh" ]; then
+        print_info "DDNS 一键安装脚本"
+        print_info "======================================="
+    else
+        print_info "DDNS One-Click Installation Script"
+        print_info "======================================="
+    fi
     
     # Parse arguments
     parse_args "$@"
