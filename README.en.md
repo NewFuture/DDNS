@@ -80,7 +80,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
   curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
   ```
   
-  For detailed instructions, see [Installation Documentation](doc/install.md)
+  For detailed instructions, see [Installation Documentation](doc/install.en.md)
 
 - #### Docker (Requires Docker Installation)
 

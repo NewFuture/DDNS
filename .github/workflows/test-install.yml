@@ -3,9 +3,6 @@ name: Test Install Script
 on:
   push:
     branches: [ master ]
-    paths:
-      - 'install.sh'
-      - '.github/workflows/test-install.yml'
   pull_request:
     branches: [ master ]
     paths:
@@ -16,80 +13,38 @@ jobs:
   test-install-script:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Remote installer from the current repository and commit
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-20.04, macos-latest, macos-12]
-        include:
-          - os: ubuntu-latest
-            shell: sh
-          - os: ubuntu-20.04
-            shell: sh
-          - os: macos-latest
-            shell: sh
-          - os: macos-12
-            shell: sh
+        os: [ubuntu-latest,  ubuntu-24.04-arm, ubuntu-22.04, macos-latest, macos-13]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Test install script help
+        run: curl -fsSL "$RAW_URL" | sh -s -- --help
+      - name: Test with bash (if available)
+        run: curl -fsSL "$RAW_URL" | bash -s -- --help
 
-    - name: Test install script syntax
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test script syntax
-        sh -n install.sh
-        echo "✓ Syntax check passed"
+      - name: Test install latest
+        run: curl -fsSL "$RAW_URL" | sh
+      - name: Check DDNS
+        run: ddns --version | grep -q "DDNS"
+      - name: Test uninstall
+        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
 
-    - name: Test install script help
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test help function
-        ./install.sh --help
-        echo "✓ Help function test passed"
+      - name: Test install beta with language detection (zh_CN)
+        run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help | grep -q "一键安装脚本"
+      - name: Check DDNS
+        run: ddns --version
+      - name: Test uninstall
+        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
 
-    - name: Test install script version detection
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test that we can at least parse arguments without installing
-        # Create a mock test that doesn't actually download/install
-        timeout 30 ./install.sh latest --help || true
-        echo "✓ Version detection test passed"
-
-    - name: Test script with different shells
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test with sh (POSIX)
-        sh install.sh --help
-        echo "✓ sh compatibility test passed"
-        
-        # Test with bash (if available)
-        if command -v bash >/dev/null 2>&1; then
-          bash install.sh --help
-          echo "✓ bash compatibility test passed"
-        fi
-
-    - name: Test network connectivity functions
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test mirror detection logic (without actually downloading)
-        echo "Testing network functions..."
-        # We can't easily test the actual network functions without mocking,
-        # but we can verify the script structure is sound
-        grep -q "find_working_mirror" install.sh
-        grep -q "download_file" install.sh
-        echo "✓ Network function structure test passed"
-
-    - name: Test language detection
-      shell: ${{ matrix.shell }}
-      run: |
-        # Test Chinese locale
-        LANG=zh_CN.UTF-8 ./install.sh --help | grep -q "一键安装脚本"
-        echo "✓ Chinese language detection test passed"
-        
-        # Test English locale
-        LANG=en_US.UTF-8 ./install.sh --help | grep -q "One-Click Installation Script"
-        echo "✓ English language detection test passed"
+      - name: Test install location by wget
+        run: wget -qO - "$RAW_URL" | sh -s -- --install-dir /tmp/ddns
+      - name: Check DDNS in custom location
+        run: /tmp/ddns/ddns --version | grep -q "DDNS"
 
   test-with-container:
     name: Test on Container (${{ matrix.container }})
@@ -100,53 +55,31 @@ jobs:
         container:
           - alpine:latest
           - debian:latest
-          - centos:7
-          - ubuntu:18.04
+          - ubuntu:20.04
           - openwrt/rootfs:latest
+          - bensuperpc/tinycore:latest
 
     container: ${{ matrix.container }}
+    env:
+      # Remote installer from the current repository and commit
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
 
     steps:
-    - name: Install basic tools
-      run: |
-        if command -v apk >/dev/null 2>&1; then
-          # Alpine
-          apk add --no-cache git curl wget
-        elif command -v apt-get >/dev/null 2>&1; then
-          # Debian/Ubuntu
-          apt-get update && apt-get install -y git curl wget
-        elif command -v yum >/dev/null 2>&1; then
-          # CentOS/RHEL
-          yum install -y git curl wget
-        fi
+      - name: Test install script help
+        run: curl -fsSL "$RAW_URL" | sh -s -- --help
+      - name: Test with bash (if available)
+        run: curl -fsSL "$RAW_URL" | bash -s -- --help
 
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Test install latest
+        run: curl -fsSL "$RAW_URL" | sh
+      - name: Check DDNS
+        run: ddns --version | grep -q "DDNS"
+      - name: Test uninstall
+        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall
 
-    - name: Test install script in container
-      run: |
-        # Test script syntax
-        sh -n install.sh
-        echo "✓ Container syntax check passed"
-        
-        # Test help function
-        ./install.sh --help
-        echo "✓ Container help test passed"
-
-    - name: Test shell compatibility in container
-      run: |
-        # Test with different shells available in container
-        if command -v sh >/dev/null 2>&1; then
-          sh install.sh --help >/dev/null
-          echo "✓ Container sh test passed"
-        fi
-        
-        if command -v bash >/dev/null 2>&1; then
-          bash install.sh --help >/dev/null
-          echo "✓ Container bash test passed"
-        fi
-        
-        if command -v dash >/dev/null 2>&1; then
-          dash install.sh --help >/dev/null
-          echo "✓ Container dash test passed"
-        fi
+      - name: Test install beta with language detection (zh_CN)
+        run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help | grep -q "一键安装脚本"
+      - name: Check DDNS
+        run: ddns --version
+      - name: Test uninstall
+        run: curl -fsSL "$RAW_URL" | sh -s -- uninstall

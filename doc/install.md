@@ -1,181 +1,94 @@
-# 一键安装脚本 (One-Click Installation Script)
+# 一键安装脚本
 
-## 简介 (Introduction)
+DDNS 一键安装脚本，支持 Linux 和 macOS 系统自动下载安装。
 
-`install.sh` 是 DDNS 项目的一键安装脚本，支持在 Linux 和 macOS 系统上自动下载和安装 DDNS 二进制文件。
-
-The `install.sh` script provides one-click installation for DDNS on Linux and macOS systems, automatically downloading and installing the appropriate binary for your platform.
-
-## 特性 (Features)
-
-### 🚀 跨平台支持 (Cross-Platform Support)
-- ✅ Linux (glibc/musl)  
-- ✅ macOS (Intel/Apple Silicon)
-- ✅ 多架构支持 (Multiple architectures): x86_64, ARM64, ARM v7, ARM v6, i386
-
-### 📦 版本管理 (Version Management)
-- **latest**: 最新稳定版 (Latest stable release)
-- **beta**: 最新测试版 (Latest beta release)  
-- **v4.0.2**: 指定版本号 (Specific version)
-
-### 🌍 网络优化 (Network Optimization)
-- 自动检测网络连接 (Auto network connectivity check)
-- 镜像站点回退 (Mirror fallback for China users):
-  - `github.com` (主站 Primary)
-  - `hub.gitmirror.com` (镜像 Mirror)
-  - `proxy.gitwarp.com` (代理 Proxy)
-  - `gh.200112.xyz` (备用 Backup)
-
-### 🔧 智能检测 (Smart Detection)
-- 自动检测操作系统和架构 (Auto OS and architecture detection)
-- 自动选择下载工具 (curl/wget) (Auto download tool selection)
-- 自动检测 Linux libc 类型 (glibc/musl) (Auto libc detection)
-
-## 使用方法 (Usage)
-
-### 基本安装 (Basic Installation)
+## 快速安装
 
 ```bash
-# 在线安装最新稳定版 (Install latest stable version online)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+# 在线安装最新稳定版
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh
+# 如需 root 权限安装到系统目录，使用 sudo
+curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
 
-# 使用 wget (Using wget)
-wget -qO- https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash
+# 或使用 wget
+wget -qO- https://ddns.newfuture.cc/install.sh | sh
+
 ```
 
-### 版本选择 (Version Selection)
+> **说明：** 默认安装到 `/usr/local/bin`，如果该目录需要管理员权限，脚本会自动提示使用 sudo，或者可以预先使用 sudo 运行。
+
+## 版本选择
 
 ```bash
-# 安装最新稳定版 (Install latest stable)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- latest
+# 安装最新稳定版
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 
-# 安装最新测试版 (Install latest beta)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- beta
+# 安装最新测试版
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta
 
-# 安装指定版本 (Install specific version)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2
+# 安装指定版本
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
 ```
 
-### 自定义安装 (Custom Installation)
+## 命令行选项
+
+| 选项 | 说明 |
+|------|------|
+| `latest` | 安装最新稳定版（默认） |
+| `beta` | 安装最新测试版 |
+| `v4.0.2` | 安装指定版本 |
+| `--install-dir PATH` | 指定安装目录（默认：/usr/local/bin） |
+| `--force` | 强制重新安装 |
+| `--uninstall` | 卸载已安装的 ddns |
+| `--help` | 显示帮助信息 |
+
+## 高级用法
 
 ```bash
-# 下载脚本后执行 (Download script first)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh -o install.sh
-chmod +x install.sh
+# 自定义安装目录
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta --install-dir ~/.local/bin
 
-# 自定义安装目录 (Custom installation directory)
-./install.sh latest --install-dir /usr/local/bin
+# 强制重新安装
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --force
 
-# 强制重新安装 (Force reinstallation)  
-./install.sh latest --force
-
-# 查看帮助 (Show help)
-./install.sh --help
+# 卸载
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
 ```
 
-## 命令行选项 (Command Line Options)
+## 系统支持
 
-| 选项 (Option) | 说明 (Description) |
-|---------------|-------------------|
-| `latest` | 安装最新稳定版 (Install latest stable version) |
-| `beta` | 安装最新测试版 (Install latest beta version) |
-| `v4.0.2` | 安装指定版本 (Install specific version) |
-| `--install-dir PATH` | 指定安装目录 (Custom installation directory) |
-| `--force` | 强制重新安装 (Force reinstallation) |
-| `--help` | 显示帮助信息 (Show help message) |
+**操作系统：** Linux（glibc/musl）、macOS  
+**架构：** x86_64、ARM64、ARM v7、ARM v6、i386  
+**依赖：** curl 或 wget
 
-## 系统要求 (System Requirements)
+### 自动检测功能
+- **系统检测：** 自动识别操作系统、架构和 libc 类型
+- **工具检测：** 自动选择 curl 或 wget 下载工具
+- **网络优化：** 自动测试并选择最佳下载镜像（github.com → 国内镜像站）
 
-### Linux
-- **GNU Linux**: glibc ≥ 2.28 (Debian 9+, Ubuntu 20.04+, CentOS 8+)
-- **Musl Linux**: musl ≥ 1.1.24 (OpenWRT 19+)
-- **架构 (Architecture)**: x86_64, i386, ARM64, ARM v7, ARM v6
-
-### macOS  
-- **版本 (Version)**: macOS 10.15+ 
-- **架构 (Architecture)**: Intel x86_64, Apple Silicon (ARM64)
-
-### 工具依赖 (Tool Dependencies)
-- `curl` 或 `wget` (required)
-- `bash` (required)
-- `grep`, `cut` (usually pre-installed)
-
-## 安装位置 (Installation Location)
-
-默认安装到 `/usr/local/bin/ddns` (Default installation to `/usr/local/bin/ddns`)
-
-如果该目录需要 root 权限，请使用 sudo 运行：
-(If the directory requires root permissions, run with sudo:)
+## 验证安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | sudo bash
+ddns --version    # 检查版本
+which ddns        # 检查安装位置
 ```
 
-## 验证安装 (Verify Installation)
+## 更新与卸载
 
 ```bash
-# 检查版本 (Check version)
-ddns --version
+# 更新到最新版本
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 
-# 查看帮助 (Show help)  
-ddns --help
+# 卸载
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
 
-# 检查安装位置 (Check installation location)
-which ddns
-```
-
-## 卸载 (Uninstallation)
-
-```bash
-# 删除二进制文件 (Remove binary)
+# 手动卸载
 sudo rm -f /usr/local/bin/ddns
-
-# 或从自定义目录删除 (Or remove from custom directory)
-rm -f /path/to/your/ddns
 ```
 
-## 故障排除 (Troubleshooting)
+## 故障排除
 
-### 网络连接问题 (Network Connectivity Issues)
-如果 GitHub 访问受限，脚本会自动尝试镜像站点。
-(If GitHub access is restricted, the script will automatically try mirror sites.)
-
-### 权限问题 (Permission Issues)  
-```bash
-# 使用 sudo 安装到系统目录 (Use sudo for system directory)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | sudo bash
-
-# 或安装到用户目录 (Or install to user directory)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- latest --install-dir ~/.local/bin
-```
-
-### 架构不支持 (Unsupported Architecture)
-脚本会自动检测并报告不支持的架构。请查看 [releases 页面](https://github.com/NewFuture/DDNS/releases) 确认是否有适合的版本。
-(The script will automatically detect and report unsupported architectures. Check the [releases page](https://github.com/NewFuture/DDNS/releases) for available versions.)
-
-## 更新 DDNS (Update DDNS)
-
-```bash
-# 更新到最新版本 (Update to latest version)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- latest --force
-
-# 更新到指定版本 (Update to specific version)
-curl -fsSL https://raw.githubusercontent.com/NewFuture/DDNS/master/install.sh | bash -s -- v4.0.2 --force
-```
-
-## 开发和测试 (Development and Testing)
-
-### 测试脚本 (Test Script)
-```bash
-# 运行测试 (Run tests)
-./test_install.sh
-```
-
-### 贡献 (Contributing)
-欢迎提交 Pull Request 来改进安装脚本！
-(Pull requests are welcome to improve the installation script!)
-
-## 许可证 (License)
-
-与 DDNS 项目相同的 MIT 许可证。
-(Same MIT license as the DDNS project.)
+**权限问题：** 使用 `sudo` 或安装到用户目录  
+**网络问题：** 脚本自动使用镜像站点（hub.gitmirror.com、proxy.gitwarp.com 等）  
+**架构不支持：** 查看 [releases 页面](https://github.com/NewFuture/DDNS/releases) 确认支持的架构
+**代理环境:** 脚本会尊重系统代理设置（`HTTP_PROXY/HTTPS_PROXY`）

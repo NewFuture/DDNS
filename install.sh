@@ -28,6 +28,10 @@ INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="ddns"
 REPO="NewFuture/DDNS"
 FORCE_INSTALL=false
+# Whether user explicitly passed a VERSION argument
+USER_VERSION_SPECIFIED=false
+# Uninstall mode
+UNINSTALL_MODE=false
 
 # Language detection
 detect_language() {
@@ -41,7 +45,7 @@ detect_language() {
                 ;;
         esac
     else
-        LANGUAGE="en"
+        LANGUAGE="zh"
     fi
 }
 
@@ -51,21 +55,32 @@ detect_language
 # Proxy/mirror sites for China users
 GITHUB_MIRRORS="https://github.com https://hub.gitmirror.com https://proxy.gitwarp.com https://gh.200112.xyz"
 
+# Helper function to select message based on language
+select_message() {
+    local en="$1"
+    local zh="$2"
+    if [ "$LANGUAGE" = "zh" ] && [ -n "$zh" ]; then
+        echo "$zh"
+    else
+        echo "$en"
+    fi
+}
+
 # Print colored messages
 print_info() {
-    printf "${BLUE}[INFO]${NC} %s\n" "$1"
+    printf "${BLUE}[INFO]${NC} %s\n" "$(select_message "$1" "$2")"
 }
 
 print_success() {
-    printf "${GREEN}[SUCCESS]${NC} %s\n" "$1"
+    printf "${GREEN}[SUCCESS]${NC} %s\n" "$(select_message "$1" "$2")"
 }
 
 print_warning() {
-    printf "${YELLOW}[WARNING]${NC} %s\n" "$1"
+    printf "${YELLOW}[WARNING]${NC} %s\n" "$(select_message "$1" "$2")"
 }
 
 print_error() {
-    printf "${RED}[ERROR]${NC} %s\n" "$1"
+    printf "${RED}[ERROR]${NC} %s\n" "$(select_message "$1" "$2")"
 }
 
 # Show usage information
@@ -85,13 +100,18 @@ DDNS 一键安装脚本
 选项:
     --install-dir PATH    安装目录 (默认: /usr/local/bin)
     --force              强制安装，即使已存在
+    --uninstall          卸载已安装的 ddns 可执行文件
     --help               显示此帮助信息
+
+说明:
+    显式指定 VERSION 时(如: v4.0.2/beta/latest)，即使已安装也会覆盖，无需 --force
 
 示例:
     $0                    # 安装最新稳定版本
     $0 beta              # 安装最新测试版本
     $0 v4.0.2            # 安装指定版本
     $0 latest --force    # 强制重新安装最新版本
+    $0 --uninstall       # 卸载 ddns
 
 EOF
     else
@@ -109,13 +129,19 @@ VERSION:
 OPTIONS:
     --install-dir PATH    Installation directory (default: /usr/local/bin)
     --force              Force installation even if already exists
+    --uninstall          Uninstall the ddns executable
     --help               Show this help message
+
+Notes:
+    When a VERSION is explicitly provided (e.g., v4.0.2/beta/latest), the installer
+    will overwrite an existing installation without requiring --force
 
 Examples:
     $0                    # Install latest stable version
     $0 beta              # Install latest beta version
     $0 v4.0.2            # Install specific version
     $0 latest --force    # Force reinstall latest version
+    $0 --uninstall       # Uninstall ddns
 
 EOF
     fi
@@ -127,12 +153,12 @@ check_os() {
         Linux*)  OS="linux" ;;
         Darwin*) OS="mac" ;;
         *)
-            print_error "Unsupported operating system: $(uname -s)"
-            print_error "This script only supports Linux and macOS"
+            print_error "Unsupported operating system: $(uname -s)" "不支持的操作系统: $(uname -s)"
+            print_error "This script only supports Linux and macOS" "此脚本仅支持 Linux 和 macOS"
             exit 1
             ;;
     esac
-    print_info "Detected OS: $OS"
+    print_info "Detected OS: $OS" "检测到操作系统: $OS"
 }
 
 # Detect system architecture
@@ -161,11 +187,11 @@ detect_arch() {
             ARCH="386"
             ;;
         *)
-            print_error "Unsupported architecture: $arch"
+            print_error "Unsupported architecture: $arch" "不支持的架构: $arch"
             exit 1
             ;;
     esac
-    print_info "Detected architecture: $ARCH"
+    print_info "Detected architecture: $ARCH" "检测到架构: $ARCH"
 }
 
 # Detect libc type on Linux
@@ -179,22 +205,22 @@ detect_libc() {
     elif ldd --version 2>&1 | grep -i musl > /dev/null; then
         LIBC="musl"
     else
-        # Default to glibc for most distributions
-        LIBC="glibc"
+    # Default to glibc for most distributions
+    LIBC="glibc"
     fi
-    print_info "Detected libc: $LIBC"
+    print_info "Detected libc: $LIBC" "检测到 libc: $LIBC"
 }
 
 # Check for download tool (curl or wget)
 check_download_tool() {
     if command -v curl > /dev/null 2>&1; then
         DOWNLOAD_TOOL="curl"
-        print_info "Using curl for downloads"
+        print_info "Using curl for downloads" "使用 curl 进行下载"
     elif command -v wget > /dev/null 2>&1; then
         DOWNLOAD_TOOL="wget"
-        print_info "Using wget for downloads"
+        print_info "Using wget for downloads" "使用 wget 进行下载"
     else
-        print_error "Neither curl nor wget found. Please install one of them."
+        print_error "Neither curl nor wget found. Please install one of them." "未找到 curl 或 wget，请安装其中一个"
         exit 1
     fi
 }
@@ -213,92 +239,55 @@ download_file() {
 
 # Test GitHub connectivity and find working mirror
 find_working_mirror() {
-    print_info "Testing GitHub connectivity..."
+    print_info "Testing GitHub connectivity..." "测试 GitHub 连接..."
     
     for mirror in $GITHUB_MIRRORS; do
-        print_info "Testing mirror: $mirror"
+        print_info "Testing mirror: $mirror" "测试镜像: $mirror"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
             if curl -fsSL --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
                 GITHUB_URL="$mirror"
-                print_success "Using mirror: $GITHUB_URL"
+                print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
             fi
         else
-            if wget -q --timeout=5 -O /dev/null "$mirror" > /dev/null 2>&1; then
+            if wget -q --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
                 GITHUB_URL="$mirror"
-                print_success "Using mirror: $GITHUB_URL"
+                print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
             fi
         fi
     done
-    
-    print_error "All GitHub mirrors are unreachable"
-    exit 1
+
+    print_warning "All mirror checks failed; proceeding with default GitHub URL" "所有镜像检查失败，使用默认 GitHub URL"
+    GITHUB_URL="https://github.com"
+    return 0
 }
 
-# Get latest version from GitHub API
-get_latest_version() {
-    local api_url
-    local version_type="$1"
-    
-    case "$version_type" in
-        "beta")
-            # Get the latest pre-release (beta)
-            if [ "$GITHUB_URL" = "https://github.com" ]; then
-                api_url="https://api.github.com/repos/$REPO/releases"
-            else
-                # For mirrors, try to use their API endpoint or fallback to main API
-                api_url="$GITHUB_URL/api/repos/$REPO/releases"
-            fi
-            ;;
-        *)
-            # Get the latest stable release
-            if [ "$GITHUB_URL" = "https://github.com" ]; then
-                api_url="https://api.github.com/repos/$REPO/releases/latest"
-            else
-                # For mirrors, try to use their API endpoint or fallback to main API
-                api_url="$GITHUB_URL/api/repos/$REPO/releases/latest"
-            fi
-            ;;
-    esac
-    
-    print_info "Fetching version information from GitHub API..."
-    
-    local temp_file="/tmp/ddns_releases.json"
-    if ! download_file "$api_url" "$temp_file"; then
-        # Fallback to main GitHub API if mirror API fails
-        print_warning "Mirror API failed, falling back to main GitHub API..."
-        case "$version_type" in
-            "beta")
-                api_url="https://api.github.com/repos/$REPO/releases"
-                ;;
-            *)
-                api_url="https://api.github.com/repos/$REPO/releases/latest"
-                ;;
-        esac
-        
-        if ! download_file "$api_url" "$temp_file"; then
-            print_error "Failed to fetch release information"
-            exit 1
-        fi
-    fi
-    
-    if [ "$version_type" = "beta" ]; then
-        # For beta, find the latest pre-release
-        VERSION=$(grep -o '"tag_name": *"[^"]*"' "$temp_file" | head -1 | cut -d'"' -f4)
-    else
-        # For latest stable
-        VERSION=$(grep -o '"tag_name": *"[^"]*"' "$temp_file" | head -1 | cut -d'"' -f4)
-    fi
-    
-    rm -f "$temp_file"
-    
-    if [ -z "$VERSION" ]; then
-        print_error "Failed to parse version information"
+# Get latest beta version from api.github.com only
+get_beta_verion() {
+    local temp_file
+    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
+
+    # Only used for beta
+    local url="https://api.github.com/repos/$REPO/releases?per_page=20"
+    print_info "Fetching version information from api.github.com..." "正在从 api.github.com 获取版本信息..."
+    if ! download_file "$url" "$temp_file" || [ ! -s "$temp_file" ]; then
+        print_error "Failed to fetch release information" "获取发布信息失败"
+        rm -f "$temp_file" 2>/dev/null || true
         exit 1
     fi
-    
-    print_success "Found version: $VERSION"
+
+    # Extract the first tag_name (beta = first release item is fine here)
+    VERSION=$(grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' "$temp_file" | head -1 | cut -d '"' -f4)
+
+    if [ -z "$VERSION" ]; then
+        print_error "Failed to parse version information" "解析版本信息失败"
+        rm -f "$temp_file" 2>/dev/null || true
+        exit 1
+    fi
+
+    print_success "Found version: $VERSION" "找到版本: $VERSION"
+    rm -f "$temp_file" 2>/dev/null || true
 }
 
 # Build binary filename based on OS and architecture
@@ -311,35 +300,43 @@ build_binary_name() {
             BINARY_FILE="ddns-mac-${ARCH}"
             ;;
     esac
-    print_info "Target binary: $BINARY_FILE"
+    print_info "Target binary: $BINARY_FILE" "目标二进制文件: $BINARY_FILE"
 }
 
 # Download and install binary
 install_binary() {
-    local download_url="$GITHUB_URL/$REPO/releases/download/$VERSION/$BINARY_FILE"
-    local temp_file="/tmp/ddns_binary"
+    local download_url
+    if [ "$VERSION" = "latest" ]; then
+        download_url="$GITHUB_URL/$REPO/releases/latest/download/$BINARY_FILE"
+    else
+        download_url="$GITHUB_URL/$REPO/releases/download/$VERSION/$BINARY_FILE"
+    fi
+    local temp_file
+    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     
-    print_info "Downloading DDNS binary..."
+    print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
     print_info "URL: $download_url"
     
     if ! download_file "$download_url" "$temp_file"; then
-        print_error "Failed to download binary"
-        print_error "Make sure the version $VERSION exists and supports your platform"
+        print_error "Failed to download binary" "下载二进制文件失败"
+        print_error "Make sure the version $VERSION exists and supports your platform" "请确保版本 $VERSION 存在并支持您的平台"
+        rm -f "$temp_file" 2>/dev/null || true
         exit 1
     fi
     
     # Verify download
     if [ ! -f "$temp_file" ] || [ ! -s "$temp_file" ]; then
-        print_error "Downloaded file is empty or missing"
+        print_error "Downloaded file is empty or missing" "下载的文件为空或缺失"
+        rm -f "$temp_file" 2>/dev/null || true
         exit 1
     fi
     
     # Check if install directory exists and create if needed
     if [ ! -d "$INSTALL_DIR" ]; then
-        print_info "Creating installation directory: $INSTALL_DIR"
+        print_info "Creating installation directory: $INSTALL_DIR" "创建安装目录: $INSTALL_DIR"
         if ! mkdir -p "$INSTALL_DIR"; then
-            print_error "Failed to create installation directory: $INSTALL_DIR"
-            print_error "Try running with sudo or choose a different directory"
+            print_error "Failed to create installation directory: $INSTALL_DIR" "创建安装目录失败: $INSTALL_DIR"
+            print_error "Try running with sudo or choose a different directory" "请尝试使用 sudo 运行或选择其他目录"
             exit 1
         fi
     fi
@@ -349,12 +346,16 @@ install_binary() {
     
     # Check if already exists and not forcing
     if [ -f "$target_path" ] && [ "$FORCE_INSTALL" = false ]; then
-        print_warning "DDNS is already installed at $target_path"
-        print_info "Use --force to overwrite or run: $BINARY_NAME --version"
-        exit 0
+        if [ "$USER_VERSION_SPECIFIED" = true ]; then
+            print_warning "DDNS already installed at $target_path; version specified, proceeding to overwrite" "DDNS 已安装在 $target_path；已指定版本，继续覆盖"
+        else
+            print_warning "DDNS is already installed at $target_path" "DDNS 已安装在 $target_path"
+            print_info "Use --force to overwrite or run: $BINARY_NAME --version" "使用 --force 覆盖或运行: $BINARY_NAME --version"
+            exit 0
+        fi
     fi
     
-    print_info "Installing binary to $target_path"
+    print_info "Installing binary to $target_path" "正在安装二进制文件到 $target_path"
     
     # Make executable before moving
     chmod +x "$temp_file"
@@ -363,29 +364,80 @@ install_binary() {
     if ! mv "$temp_file" "$target_path" 2>/dev/null; then
         # Check if it's a permission issue and try with sudo
         if [ ! -w "$(dirname "$target_path")" ]; then
-            print_warning "Permission denied, trying with sudo..."
+            print_warning "Permission denied, trying with sudo..." "权限被拒绝，尝试使用 sudo..."
             if command -v sudo >/dev/null 2>&1; then
                 if sudo mv "$temp_file" "$target_path"; then
-                    print_info "Successfully installed with sudo"
+                    print_info "Successfully installed with sudo" "使用 sudo 安装成功"
                 else
-                    print_error "Failed to install binary even with sudo"
+                    print_error "Failed to install binary even with sudo" "即使使用 sudo 也无法安装二进制文件"
+                    rm -f "$temp_file" 2>/dev/null || true
                     exit 1
                 fi
             else
-                print_error "Failed to install binary: Permission denied"
-                print_error "Please run this script with administrator privileges"
+                print_error "Failed to install binary: Permission denied" "安装二进制文件失败: 权限被拒绝"
+                print_error "Please run this script with administrator privileges" "请以管理员权限运行此脚本"
+                rm -f "$temp_file" 2>/dev/null || true
                 exit 1
             fi
         else
-            print_error "Failed to install binary"
+            print_error "Failed to install binary" "安装二进制文件失败"
+            rm -f "$temp_file" 2>/dev/null || true
             exit 1
         fi
     fi
     
-    # Clean up
-    rm -f "$temp_file"
-    
-    print_success "DDNS installed successfully!"
+    print_success "DDNS installed successfully!" "DDNS 安装成功！"
+}
+
+# Uninstall binary
+uninstall_binary() {
+    print_info "Starting uninstallation..." "开始卸载..."
+    local target_path=""
+
+    # If a specific install dir is provided, prefer that
+    if [ -n "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
+        target_path="$INSTALL_DIR/$BINARY_NAME"
+    fi
+
+    # Otherwise look up in PATH
+    if [ -z "$target_path" ]; then
+        local resolved
+        resolved=$(command -v "$BINARY_NAME" 2>/dev/null || true)
+        if [ -n "$resolved" ] && [ -f "$resolved" ]; then
+            target_path="$resolved"
+        fi
+    fi
+
+    # Fallback to default location
+    if [ -z "$target_path" ]; then
+        if [ -f "/usr/local/bin/$BINARY_NAME" ]; then
+            target_path="/usr/local/bin/$BINARY_NAME"
+        fi
+    fi
+
+    if [ -z "$target_path" ]; then
+        print_warning "ddns not found. Nothing to uninstall." "未找到 ddns，无需卸载"
+        return 0
+    fi
+
+    print_info "Removing: $target_path" "正在移除: $target_path"
+    if rm -f "$target_path" 2>/dev/null; then
+        print_success "Uninstalled ddns" "已卸载 ddns"
+        return 0
+    fi
+
+    # Try with sudo when permission denied
+    if command -v sudo >/dev/null 2>&1; then
+        if sudo rm -f "$target_path"; then
+            print_success "Uninstalled ddns (with sudo)" "已卸载 ddns (使用 sudo)"
+            return 0
+        fi
+        print_error "Failed to uninstall ddns even with sudo" "即使使用 sudo 也无法卸载 ddns"
+        return 1
+    else
+        print_error "Permission denied removing $target_path. Try running with sudo." "删除 $target_path 权限被拒绝，请尝试使用 sudo 运行"
+        return 1
+    fi
 }
 
 # Verify installation
@@ -393,18 +445,18 @@ verify_installation() {
     local target_path="$INSTALL_DIR/$BINARY_NAME"
     
     if [ -x "$target_path" ]; then
-        print_success "Installation verified!"
-        print_info "DDNS version: $($target_path --version 2>/dev/null || echo 'Version check failed')"
-        print_info "Binary location: $target_path"
+        print_success "Installation verified!" "安装验证成功！"
+        print_info "DDNS version: $($target_path --version 2>/dev/null || echo 'Version check failed')" "DDNS 版本: $($target_path --version 2>/dev/null || echo '版本检查失败')"
+        print_info "Binary location: $target_path" "二进制文件位置: $target_path"
         
         # Check if installation directory is in PATH
         if echo "$PATH" | grep -q "$INSTALL_DIR"; then
-            print_success "Installation directory is in PATH"
-            print_info "You can now run: $BINARY_NAME --help"
+            print_success "Installation directory is in PATH" "安装目录已在 PATH 中"
+            print_info "You can now run: $BINARY_NAME --help" "现在可以运行: $BINARY_NAME --help"
         else
-            print_warning "Installation directory is not in PATH"
-            print_info "Add to PATH temporarily: export PATH=\"$INSTALL_DIR:\$PATH\""
-            print_info "Add to shell profile permanently:"
+            print_warning "Installation directory is not in PATH" "安装目录不在 PATH 中"
+            print_info "Add to PATH temporarily: export PATH=\"$INSTALL_DIR:\$PATH\"" "临时添加到 PATH: export PATH=\"$INSTALL_DIR:\$PATH\""
+            print_info "Add to shell profile permanently:" "永久添加到 shell 配置文件:"
             
             # Suggest adding to shell profile
             if [ -n "$BASH_VERSION" ]; then
@@ -415,10 +467,10 @@ verify_installation() {
                 print_info "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.profile"
             fi
             
-            print_info "Or run directly: $target_path --help"
+            print_info "Or run directly: $target_path --help" "或直接运行: $target_path --help"
         fi
     else
-        print_error "Installation verification failed"
+        print_error "Installation verification failed" "安装验证失败"
         exit 1
     fi
 }
@@ -439,16 +491,21 @@ parse_args() {
                 FORCE_INSTALL=true
                 shift
                 ;;
+            --uninstall)
+                UNINSTALL_MODE=true
+                shift
+                ;;
             -*)
-                print_error "Unknown option: $1"
+                print_error "Unknown option: $1" "未知选项: $1"
                 show_usage
                 exit 1
                 ;;
             *)
                 if [ -z "$VERSION" ]; then
                     VERSION="$1"
+                    USER_VERSION_SPECIFIED=true
                 else
-                    print_error "Too many arguments"
+                    print_error "Too many arguments" "参数过多"
                     show_usage
                     exit 1
                 fi
@@ -465,18 +522,21 @@ parse_args() {
 
 # Main installation function
 main() {
-    if [ "$LANGUAGE" = "zh" ]; then
-        print_info "DDNS 一键安装脚本"
-        print_info "======================================="
-    else
-        print_info "DDNS One-Click Installation Script"
-        print_info "======================================="
-    fi
+    print_info "DDNS One-Click Installation Script" "DDNS 一键安装脚本"
+    print_info "======================================="
     
     # Parse arguments
     parse_args "$@"
     
-    # System checks
+    # Uninstall early: no network required
+    if [ "$UNINSTALL_MODE" = true ]; then
+        uninstall_binary
+        print_success "======================================="
+        print_success "DDNS uninstallation completed" "DDNS 卸载完成"
+        exit 0
+    fi
+
+    # System checks (only needed for install)
     check_os
     detect_arch
     detect_libc
@@ -484,8 +544,10 @@ main() {
     find_working_mirror
     
     # Version handling
-    if [ "$VERSION" = "latest" ] || [ "$VERSION" = "beta" ]; then
-        get_latest_version "$VERSION"
+    # For 'latest', skip API query and use GitHub's latest download URL directly.
+    # For 'beta', fetch the latest available tag via API.
+    if [ "$VERSION" = "beta" ]; then
+        get_beta_verion
     fi
     
     # Build and install
@@ -494,9 +556,9 @@ main() {
     verify_installation
     
     print_success "======================================="
-    print_success "DDNS installation completed!"
-    print_info "Get started: $BINARY_NAME --help"
-    print_info "Documentation: https://ddns.newfuture.cc/"
+    print_success "DDNS installation completed" "DDNS 安装完成"
+    print_info "Get started: $BINARY_NAME --help" "开始使用: $BINARY_NAME --help"
+    print_info "Documentation: https://ddns.newfuture.cc/" "文档: https://ddns.newfuture.cc/"
 }
 
 # Run main function with all arguments
