@@ -262,7 +262,7 @@ find_working_proxy() {
     # Try direct first (empty mirror), then known proxy candidates
     for mirror in "" $PROXY_CANDIDATES; do
         ok=false
-        test_url="${mirror:+$mirror}https://github.com"
+        test_url="${mirror}https://github.com/$REPO/releases/latest"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
             if curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1 || \
                 curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1; then
