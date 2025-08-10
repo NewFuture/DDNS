@@ -20,7 +20,7 @@
   
 - **Configuration Methods:**
   - [Command Line Arguments](/doc/config/cli.en.md)
-  - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider and multiple config files)
+  - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider, multiple config files, and remote URL)
   - [Environment Variables](/doc/config/env.en.md)
   - [Provider Configuration Guide](/doc/providers/)
 
@@ -64,11 +64,11 @@
 
 ### ① Installation
 
-Choose one of the following methods: `binary` version, `pip` version, `source code` execution, or `Docker`.
+Choose one of the following methods: `Docker`, `binary` version, `pip` version, or `source code` execution.
 
 Docker version is recommended for best compatibility, small size, and optimized performance.
 
-- #### Docker (Requires Docker Installation)
+- #### Docker (Recommended)
 
   For detailed instructions and advanced usage, see [Docker Usage Documentation](/doc/docker.en.md)
 
@@ -101,14 +101,23 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
   </details>
 
+- #### Binary Version (Single file, no Python required)
+
+  Go to [releases to download the corresponding version](https://github.com/NewFuture/DDNS/releases/latest)
+
+  Or use the one‑click installation script to automatically download and install the binary for your platform:
+
+  ```bash
+  curl -fSL https://ddns.newfuture.cc/install.sh | sh
+  ```
+  Note: Installing to system directories (e.g., /usr/local/bin) may require root or sudo; if permissions are insufficient, run as `sudo sh`.
+
+  For detailed instructions, see [Installation Documentation](doc/install.en.md)
+
 - #### pip Installation (Requires pip or easy_install)
 
   1. Install ddns: `pip install ddns` or `easy_install ddns`
   2. Run: `ddns -h` or `python -m ddns`
-
-- #### Binary Version (Single file, no Python required)
-
-  Go to [releases to download the corresponding version](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### Source Code Execution (No dependencies, requires Python environment)
 

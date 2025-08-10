@@ -48,5 +48,25 @@ docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $containe
 docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/debug.json
 docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/noip.json
 
+# Test task subcommand
+echo "Testing task subcommand..."
+docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --help
+docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --status
+
+# Test task functionality - auto-detect available scheduler
+echo "Testing task management with auto-detection..."
+TEST_SCRIPTS=$(dirname $(realpath "$0"))
+
+# Determine if privileged mode is needed for systemd support
+if [ "$libc" = "glibc" ]; then
+    # Skip task test in glibc environment due to systemd requiring privileged container
+    echo "Skipping task test in glibc environment (systemd requires privileged container)."
+else
+    echo "Running task test cron..."
+    docker run --rm -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" \
+        --platform=$platform $container /scripts/test-task-cron.sh /dist/$file
+fi
+
+
 # delete to avoid being reused
 docker image rm $container
