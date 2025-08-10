@@ -286,9 +286,8 @@ find_working_proxy() {
     local mirror test_url ok=false
     # Try direct first (empty mirror), then known proxy candidates
     for mirror in "" $PROXY_CANDIDATES; do
-        ok=false
-        # Probe a lightweight raw file to validate proxy behavior
-        test_url="${mirror}https://raw.githubusercontent.com/NewFuture/DDNS/refs/heads/master/CNAME"
+        # Probe using a real release asset to validate proxy behavior
+        test_url="${mirror}https://github.com/NewFuture/DDNS/releases/download/v4.0.0/create-task.sh"
         if download_file "$test_url" "/dev/null" 8; then
             ok=true
         fi
