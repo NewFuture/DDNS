@@ -58,16 +58,19 @@ echo "Testing task management with auto-detection..."
 TEST_SCRIPTS=$(dirname $(realpath "$0"))
 
 # Determine if privileged mode is needed for systemd support
-DOCKER_OPTS="--rm -v=\"$volume:/dist\" -v=\"$TEST_SCRIPTS:/scripts\" --platform=$platform"
 if [ "$libc" = "glibc" ]; then
     # Ubuntu containers may need privileged mode for systemd
     echo "Running task test in privileged mode for systemd support..."
-    DOCKER_OPTS="$DOCKER_OPTS --privileged --tmpfs /tmp --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro"
+    docker run --rm --privileged \
+        --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+        -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+        -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" \
+        --platform=$platform $container /scripts/test-task-auto.sh /dist/$file
 else
     echo "Running task test in standard mode..."
+    docker run --rm -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" \
+        --platform=$platform $container /scripts/test-task-auto.sh /dist/$file
 fi
-
-docker run $DOCKER_OPTS $container /scripts/test-task-auto.sh /dist/$file
 
 
 # delete to avoid being reused

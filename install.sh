@@ -282,72 +282,30 @@ find_working_mirror() {
     return 0
 }
 
-# Check GitHub API rate limit status
-check_api_rate_limit() {
-    local temp_file
-    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.ratelimit.$$")"
-    
-    if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        if curl -fsSL -H "User-Agent: $USER_AGENT" "https://api.github.com/rate_limit" -o "$temp_file" 2>/dev/null; then
-            local remaining=$(grep -o '"remaining"[[:space:]]*:[[:space:]]*[0-9]*' "$temp_file" | cut -d ':' -f2 | tr -d ' ')
-            if [ -n "$remaining" ] && [ "$remaining" -le 5 ]; then
-                print_warning "GitHub API rate limit is low (remaining: $remaining)" "GitHub API 速率限制较低 (剩余: $remaining)"
-                rm -f "$temp_file" 2>/dev/null || true
-                return 1
-            fi
-        else
-            print_warning "Unable to check GitHub API rate limit" "无法检查 GitHub API 速率限制"
-            rm -f "$temp_file" 2>/dev/null || true
-            return 1
-        fi
-    fi
-    
-    rm -f "$temp_file" 2>/dev/null || true
-    return 0
-}
-
 # Get latest beta version from api.github.com only
 get_beta_verion() {
-    local temp_file
+    local temp_file url
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
+    url="https://api.github.com/repos/$REPO/releases?per_page=2"
 
-    # Check rate limit first
-    if ! check_api_rate_limit; then
-        print_error "GitHub API rate limit exceeded. Please try again later or use a specific version like 'latest'." "GitHub API 速率限制超出。请稍后重试或使用特定版本如 'latest'。"
-        rm -f "$temp_file" 2>/dev/null || true
-        exit 1
-    fi
-
-    # Only used for beta
-    local url="https://api.github.com/repos/$REPO/releases?per_page=20"
     print_info "Fetching version information from api.github.com..." "正在从 api.github.com 获取版本信息..."
     
-    # Download with User-Agent (now included in download_file by default)
-    if ! download_file "$url" "$temp_file" || [ ! -s "$temp_file" ]; then
-        print_warning "Failed to fetch from GitHub API..." "从 GitHub API 获取失败..."
-        
-        # Check if the response contains error information
-        if [ -f "$temp_file" ] && grep -q "rate limit\|API rate limit\|403" "$temp_file" 2>/dev/null; then
-            print_error "GitHub API rate limit exceeded. Please try again later." "GitHub API 速率限制超出，请稍后重试。"
-        else
-            print_error "Failed to fetch release information from GitHub API. This might be a temporary issue." "从 GitHub API 获取发布信息失败，这可能是临时问题。"
-        fi
-        
-        rm -f "$temp_file" 2>/dev/null || true
-        exit 1
+    # Simple download and parse - let download_file handle errors and retries
+    if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
+        # Extract first tag_name using simplified regex
+        VERSION=$(grep -m 1 '"tag_name"' "$temp_file" | cut -d '"' -f4)
     fi
 
-    # Extract the first tag_name (beta = first release item is fine here)
-    VERSION=$(grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' "$temp_file" | head -1 | cut -d '"' -f4)
+    # Cleanup temp file
+    rm -f "$temp_file" 2>/dev/null || true
 
+    # Validate result
     if [ -z "$VERSION" ]; then
-        print_error "Failed to parse version information" "解析版本信息失败"
-        rm -f "$temp_file" 2>/dev/null || true
+        print_error "Failed to get version from GitHub API. Try using 'latest' instead." "无法从 GitHub API 获取版本，请尝试使用 'latest'。"
         exit 1
     fi
 
     print_success "Found version: $VERSION" "找到版本: $VERSION"
-    rm -f "$temp_file" 2>/dev/null || true
 }
 
 # Build binary filename based on OS and architecture
