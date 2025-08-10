@@ -292,7 +292,7 @@ get_beta_version() {
     
     # Simple download and parse - let download_file handle errors and retries
     if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
-        VERSION=$(grep -m1 -o '"tag_name":"[^"]+"' "$temp_file" | cut -d '"' -f4)
+        VERSION=$(grep -m1 -o '"tag_name":"[^"]*"' "$temp_file" | cut -d '"' -f4)
     fi
 
     # Cleanup temp file
