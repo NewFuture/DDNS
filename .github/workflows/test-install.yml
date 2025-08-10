@@ -1,4 +1,5 @@
 name: Test Install Script
+run-name: "Install Test: ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} | ${{ github.event.head_commit.message || github.event.pull_request.title || 'Manual trigger' }} by ${{ github.actor }}"
 
 on:
   push:
@@ -51,6 +52,7 @@ jobs:
 
   test-with-container:
     name: Test on Container (${{ matrix.container }})
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         container:

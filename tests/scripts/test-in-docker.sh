@@ -52,8 +52,22 @@ docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $containe
 echo "Testing task subcommand..."
 docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --help
 docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --status
+
+# Test task functionality - auto-detect available scheduler
+echo "Testing task management with auto-detection..."
 TEST_SCRIPTS=$(dirname $(realpath "$0"))
-docker run --rm -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" --platform=$platform $container /scripts/test-task-cron.sh /dist/$file
+
+# Determine if privileged mode is needed for systemd support
+DOCKER_OPTS="--rm -v=\"$volume:/dist\" -v=\"$TEST_SCRIPTS:/scripts\" --platform=$platform"
+if [ "$libc" = "glibc" ]; then
+    # Ubuntu containers may need privileged mode for systemd
+    echo "Running task test in privileged mode for systemd support..."
+    DOCKER_OPTS="$DOCKER_OPTS --privileged --tmpfs /tmp --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro"
+else
+    echo "Running task test in standard mode..."
+fi
+
+docker run $DOCKER_OPTS $container /scripts/test-task-auto.sh /dist/$file
 
 
 # delete to avoid being reused
