@@ -264,12 +264,12 @@ download_file() {
                 ;;
         esac
     else
-        wget -q -t $retries --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output"
+        wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output"
         rc=$?
         if [ "$rc" -eq 5 ]; then
             # SSL verification failure: retry insecurely
             print_warning "Download failed due to SSL (code $rc), trying with --no-check-certificate" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --no-check-certificate"
-            wget -t $retries --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
+            wget --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
             return $?
         fi
         # Non-SSL errors: do not retry insecurely
