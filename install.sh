@@ -265,18 +265,16 @@ download_file() {
         fi
     else
         # First attempt with normal SSL verification
-        if ! wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null; then
-            rc=$?
-            if [ "$rc" -eq 5 ]; then
-                # SSL verification failure: retry insecurely
-                print_warning "Download failed due to SSL (code $rc), trying with --no-check-certificate" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --no-check-certificate"
-                wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
-                return $?
-            else
-                # Non-SSL errors: do not retry insecurely
-                return "$rc"
-            fi
+        wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null && return 0
+        rc=$?
+        if [ "$rc" -eq 5 ]; then
+            # SSL verification failure: retry insecurely
+            print_warning "Download failed due to SSL (code $rc), trying with --no-check-certificate" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --no-check-certificate"
+            wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
+            return $?
         fi
+        # Non-SSL errors: do not retry insecurely
+        return "$rc"
     fi
 }
 
@@ -308,7 +306,7 @@ get_beta_version() {
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
     url="https://api.github.com/repos/$REPO/releases?per_page=1"
 
-    print_info "Fetching version information from api.github.com..." "正在从 api.github.com 获取版本信息..."
+    print_info "Fetching verrom api.github.com..." "正在从 api.github.com 获取版本信息..."
     
     # Simple download and parse - let download_file handle errors and retries
     if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
