@@ -237,16 +237,16 @@ download_file() {
     local output="$2"
     
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        # Try with SSL verification first, fallback to insecure if needed
-        if ! curl -fsSL "$url" -o "$output" 2>/dev/null; then
-            print_warning "SSL verification failed, trying with --insecure" "SSL 验证失败，尝试使用 --insecure"
-            curl -fsSL --insecure "$url" -o "$output"
+        # Always add User-Agent to avoid 403 errors
+        if ! curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" "$url" -o "$output" 2>/dev/null; then
+            print_warning "Download failed, trying with --insecure" "下载失败，尝试使用 --insecure"
+            curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --insecure "$url" -o "$output"
         fi
     else
-        # Try with SSL verification first, fallback to no-check-certificate if needed  
-        if ! wget -q "$url" -O "$output" 2>/dev/null; then
-            print_warning "SSL verification failed, trying with --no-check-certificate" "SSL 验证失败，尝试使用 --no-check-certificate"
-            wget -q --no-check-certificate "$url" -O "$output"
+        # Always add User-Agent for wget
+        if ! wget -q --user-agent="DDNS-Install-Script/1.0" "$url" -O "$output" 2>/dev/null; then
+            print_warning "Download failed, trying with --no-check-certificate" "下载失败，尝试使用 --no-check-certificate"
+            wget -q --user-agent="DDNS-Install-Script/1.0" --no-check-certificate "$url" -O "$output"
         fi
     fi
 }
@@ -259,16 +259,16 @@ find_working_mirror() {
         print_info "Testing mirror: $mirror" "测试镜像: $mirror"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
             # Try with SSL verification first, fallback to insecure if needed
-            if curl -fsSL --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
-               curl -fsSL --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
+            if curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
+               curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
             fi
         else
             # Try with SSL verification first, fallback to no-check-certificate if needed
-            if wget -q --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
-               wget -q --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
+            if wget -q --user-agent="DDNS-Install-Script/1.0" --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
+               wget -q --user-agent="DDNS-Install-Script/1.0" --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
@@ -281,16 +281,57 @@ find_working_mirror() {
     return 0
 }
 
+# Check GitHub API rate limit status
+check_api_rate_limit() {
+    local temp_file
+    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.ratelimit.$$")"
+    
+    if [ "$DOWNLOAD_TOOL" = "curl" ]; then
+        if curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" "https://api.github.com/rate_limit" -o "$temp_file" 2>/dev/null; then
+            local remaining=$(grep -o '"remaining"[[:space:]]*:[[:space:]]*[0-9]*' "$temp_file" | cut -d ':' -f2 | tr -d ' ')
+            if [ -n "$remaining" ] && [ "$remaining" -le 5 ]; then
+                print_warning "GitHub API rate limit is low (remaining: $remaining)" "GitHub API 速率限制较低 (剩余: $remaining)"
+                rm -f "$temp_file" 2>/dev/null || true
+                return 1
+            fi
+        else
+            print_warning "Unable to check GitHub API rate limit" "无法检查 GitHub API 速率限制"
+            rm -f "$temp_file" 2>/dev/null || true
+            return 1
+        fi
+    fi
+    
+    rm -f "$temp_file" 2>/dev/null || true
+    return 0
+}
+
 # Get latest beta version from api.github.com only
 get_beta_verion() {
     local temp_file
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
 
+    # Check rate limit first
+    if ! check_api_rate_limit; then
+        print_error "GitHub API rate limit exceeded. Please try again later or use a specific version like 'latest'." "GitHub API 速率限制超出。请稍后重试或使用特定版本如 'latest'。"
+        rm -f "$temp_file" 2>/dev/null || true
+        exit 1
+    fi
+
     # Only used for beta
     local url="https://api.github.com/repos/$REPO/releases?per_page=20"
     print_info "Fetching version information from api.github.com..." "正在从 api.github.com 获取版本信息..."
+    
+    # Download with User-Agent (now included in download_file by default)
     if ! download_file "$url" "$temp_file" || [ ! -s "$temp_file" ]; then
-        print_error "Failed to fetch release information" "获取发布信息失败"
+        print_warning "Failed to fetch from GitHub API..." "从 GitHub API 获取失败..."
+        
+        # Check if the response contains error information
+        if [ -f "$temp_file" ] && grep -q "rate limit\|API rate limit\|403" "$temp_file" 2>/dev/null; then
+            print_error "GitHub API rate limit exceeded. Please try again later." "GitHub API 速率限制超出，请稍后重试。"
+        else
+            print_error "Failed to fetch release information from GitHub API. This might be a temporary issue." "从 GitHub API 获取发布信息失败，这可能是临时问题。"
+        fi
+        
         rm -f "$temp_file" 2>/dev/null || true
         exit 1
     fi

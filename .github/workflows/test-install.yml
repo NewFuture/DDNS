@@ -51,7 +51,6 @@ jobs:
 
   test-with-container:
     name: Test on Container (${{ matrix.container }})
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         container:
@@ -65,18 +64,11 @@ jobs:
       RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
 
     steps:
+      - name: install wget
+        if: matrix.container == 'debian:latest'
+        run: apt-get update && apt-get install -y wget
       - name: Download install script
-        run: |
-          if command -v wget >/dev/null 2>&1; then
-            wget -O install.sh "$RAW_URL"
-          elif command -v curl >/dev/null 2>&1; then
-            curl -fsSL -o install.sh "$RAW_URL"
-          else
-            echo "Neither wget nor curl available, install curl"
-            sudo apt-get update && sudo apt-get install -y curl
-            curl -fsSL -o install.sh "$RAW_URL"
-          fi
-          chmod +x install.sh
+        run: wget "$RAW_URL" && chmod +x install.sh
 
       - name: Test install script help
         run: ./install.sh --help
