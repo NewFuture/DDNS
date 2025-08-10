@@ -283,17 +283,16 @@ find_working_mirror() {
 }
 
 # Get latest beta version from api.github.com only
-get_beta_verion() {
+get_beta_version() {
     local temp_file url
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
-    url="https://api.github.com/repos/$REPO/releases?per_page=2"
+    url="https://api.github.com/repos/$REPO/releases?per_page=1"
 
     print_info "Fetching version information from api.github.com..." "正在从 api.github.com 获取版本信息..."
     
     # Simple download and parse - let download_file handle errors and retries
     if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
-        # Extract first tag_name using simplified regex
-        VERSION=$(grep -m 1 '"tag_name"' "$temp_file" | cut -d '"' -f4)
+        VERSION=$(grep -m1 -o '"tag_name":"[^"]+"' "$temp_file" | cut -d '"' -f4)
     fi
 
     # Cleanup temp file
@@ -565,7 +564,7 @@ main() {
     # For 'latest', skip API query and use GitHub's latest download URL directly.
     # For 'beta', fetch the latest available tag via API.
     if [ "$VERSION" = "beta" ]; then
-        get_beta_verion
+        get_beta_version
     fi
     
     # Build and install
