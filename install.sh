@@ -283,15 +283,12 @@ download_file() {
 # Auto-detect a working proxy (or direct GitHub) when PROXY_URL not specified
 find_working_proxy() {
     print_info "Testing proxy connectivity..." "测试代理连接..."
-    local mirror test_url ok=false
+    local mirror test_url
     # Try direct first (empty mirror), then known proxy candidates
     for mirror in "" $PROXY_CANDIDATES; do
         # Probe using a real release asset to validate proxy behavior
         test_url="${mirror}https://github.com/NewFuture/DDNS/releases/download/v4.0.0/create-task.sh"
         if download_file "$test_url" "/dev/null" 8; then
-            ok=true
-        fi
-        if [ "$ok" = true ]; then
             PROXY_URL="$mirror"
             if [ -n "$PROXY_URL" ]; then
                 print_success "Using proxy: $PROXY_URL" "使用代理: $PROXY_URL"
@@ -302,7 +299,6 @@ find_working_proxy() {
         fi
     done
     print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
-    PROXY_URL=""
     return 0
 }
 
