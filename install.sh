@@ -39,6 +39,10 @@ FORCE_INSTALL=false
 USER_VERSION_SPECIFIED=false
 # Uninstall mode
 UNINSTALL_MODE=false
+# Optional proxy base URL to prefix the original GitHub URL, e.g.
+# Final download will be: "$PROXY_URL" + "https://github.com/..." (PROXY_URL always ends with '/')
+PROXY_URL=""
+PROXY_CANDIDATES="https://hub.gitmirror.com/ https://proxy.gitwarp.com/ https://gh.200112.xyz/"
 
 # Language detection
 detect_language() {
@@ -58,9 +62,6 @@ detect_language() {
 
 # Initialize language detection
 detect_language
-
-# Proxy/mirror sites for China users
-GITHUB_MIRRORS="https://github.com https://hub.gitmirror.com https://proxy.gitwarp.com https://gh.200112.xyz"
 
 # Helper function to select message based on language
 select_message() {
@@ -106,6 +107,7 @@ DDNS 一键安装脚本
 
 选项:
     --install-dir PATH    安装目录 (默认: /usr/local/bin)
+    --proxy URL          代理域名/前缀，例如: https://hub.gitmirror.com/
     --force              强制安装，即使已存在
     --uninstall          卸载已安装的 ddns 可执行文件
     --help               显示此帮助信息
@@ -135,6 +137,7 @@ VERSION:
 
 OPTIONS:
     --install-dir PATH    Installation directory (default: /usr/local/bin)
+    --proxy URL          Proxy domain/prefix, e.g. https://hub.gitmirror.com/
     --force              Force installation even if already exists
     --uninstall          Uninstall the ddns executable
     --help               Show this help message
@@ -252,33 +255,37 @@ download_file() {
     fi
 }
 
-# Test GitHub connectivity and find working mirror
-find_working_mirror() {
-    print_info "Testing GitHub connectivity..." "测试 GitHub 连接..."
-    
-    for mirror in $GITHUB_MIRRORS; do
-        print_info "Testing mirror: $mirror" "测试镜像: $mirror"
+# Auto-detect a working proxy (or direct GitHub) when PROXY_URL not specified
+find_working_proxy() {
+    print_info "Testing proxy connectivity..." "测试代理连接..."
+    local mirror test_url ok=false
+    # Try direct first (empty mirror), then known proxy candidates
+    for mirror in "" $PROXY_CANDIDATES; do
+        ok=false
+        test_url="${mirror:+$mirror}https://github.com"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-            # Try with SSL verification first, fallback to insecure if needed
-            if curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
-               curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
-                GITHUB_URL="$mirror"
-                print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
-                return 0
+            if curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1 || \
+                curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1; then
+                ok=true
             fi
         else
-            # Try with SSL verification first, fallback to no-check-certificate if needed
-            if wget -q --user-agent="$USER_AGENT" --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
-               wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
-                GITHUB_URL="$mirror"
-                print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
-                return 0
+            if wget -q --user-agent="$USER_AGENT" --timeout=10 -O /dev/null "$test_url" >/dev/null 2>&1 || \
+                wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout=10 -O /dev/null "$test_url" >/dev/null 2>&1; then
+                ok=true
             fi
         fi
+        if [ "$ok" = true ]; then
+            PROXY_URL="$mirror"
+            if [ -n "$PROXY_URL" ]; then
+                print_success "Using proxy: $PROXY_URL" "使用代理: $PROXY_URL"
+            else
+                print_success "Using direct GitHub" "使用直连 GitHub"
+            fi
+            return 0
+        fi
     done
-
-    print_warning "All mirror checks failed; proceeding with default GitHub URL" "所有镜像检查失败，使用默认 GitHub URL"
-    GITHUB_URL="https://github.com"
+    print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
+    PROXY_URL=""
     return 0
 }
 
@@ -322,18 +329,19 @@ build_binary_name() {
 
 # Download and install binary
 install_binary() {
+    # Build release path and original GitHub URL
     local download_url
     if [ "$VERSION" = "latest" ]; then
-        download_url="$GITHUB_URL/$REPO/releases/latest/download/$BINARY_FILE"
+        download_url="${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
     else
-        download_url="$GITHUB_URL/$REPO/releases/download/$VERSION/$BINARY_FILE"
+        download_url="${PROXY_URL}https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
     fi
+
     local temp_file
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
-    
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
     print_info "URL: $download_url"
-    
+
     if ! download_file "$download_url" "$temp_file"; then
         print_error "Failed to download binary" "下载二进制文件失败"
         print_error "Make sure the version $VERSION exists and supports your platform" "请确保版本 $VERSION 存在并支持您的平台"
@@ -504,6 +512,10 @@ parse_args() {
                 INSTALL_DIR="$2"
                 shift 2
                 ;;
+            --proxy)
+                PROXY_URL="$2"
+                shift 2
+                ;;
             --force)
                 FORCE_INSTALL=true
                 shift
@@ -530,6 +542,15 @@ parse_args() {
                 ;;
         esac
     done
+    
+    # Normalize PROXY_URL: add https:// if missing, ensure trailing slash
+    if [ -n "$PROXY_URL" ]; then
+        case "$PROXY_URL" in
+            http://*|https://*) : ;; # keep
+            *) PROXY_URL="https://$PROXY_URL" ;;
+        esac
+        PROXY_URL="${PROXY_URL%/}/"
+    fi
     
     # Set default version if not specified
     if [ -z "$VERSION" ]; then
@@ -558,7 +579,10 @@ main() {
     detect_arch
     detect_libc
     check_download_tool
-    find_working_mirror
+    # Auto-select proxy only when not explicitly set
+    if [ -z "$PROXY_URL" ]; then
+        find_working_proxy
+    fi
     
     # Version handling
     # For 'latest', skip API query and use GitHub's latest download URL directly.
