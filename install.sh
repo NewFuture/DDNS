@@ -58,7 +58,7 @@ detect_language() {
                 ;;
         esac
     else
-        LANGUAGE="zh"
+        LANGUAGE="en"
     fi
 }
 
