@@ -218,7 +218,12 @@ detect_libc() {
         LIBC="musl"
     else
     # Default to glibc for most distributions
-    LIBC="glibc"
+    elif ldd /bin/sh 2>&1 | grep -i musl > /dev/null; then
+        # musl detected via ldd on /bin/sh
+        LIBC="musl"
+    else
+        # Could not detect libc type, defaulting to glibc (may be incorrect on some systems)
+        LIBC="glibc"
     fi
     print_info "Detected libc: $LIBC" "检测到 libc: $LIBC"
 }
