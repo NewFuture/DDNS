@@ -39,6 +39,8 @@ FORCE_INSTALL=false
 USER_VERSION_SPECIFIED=false
 # Uninstall mode
 UNINSTALL_MODE=false
+# Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
+DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
 # Optional proxy base URL to prefix the original GitHub URL, e.g.
 # Final download will be: "$PROXY_URL" + "https://github.com/..." (PROXY_URL always ends with '/')
 PROXY_URL=""
@@ -239,18 +241,41 @@ check_download_tool() {
 download_file() {
     local url="$1"
     local output="$2"
-    
+    local timeout="$3"    # optional seconds; falls back to DOWNLOAD_DEFAULT_TIMEOUT
+    if [ -z "$timeout" ]; then
+        timeout="$DOWNLOAD_DEFAULT_TIMEOUT"
+    fi
+
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        # Always add User-Agent to avoid 403 errors
-        if ! curl -fsSL -H "User-Agent: $USER_AGENT" "$url" -o "$output" 2>/dev/null; then
-            print_warning "Download failed, trying with --insecure" "下载失败，尝试使用 --insecure"
-            curl -fsSL -H "User-Agent: $USER_AGENT" --insecure "$url" -o "$output"
+        # First attempt with normal SSL verification
+        if ! curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output" 2>/dev/null; then
+            rc=$?
+            case "$rc" in
+                35|51|60|77)
+                    # SSL-related errors only: retry insecurely
+                    print_warning "Download failed due to SSL (code $rc), trying with --insecure" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --insecure"
+                    curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
+                    return $?
+                    ;;
+                *)
+                    # Non-SSL errors: do not retry insecurely
+                    return "$rc"
+                    ;;
+            esac
         fi
     else
-        # Always add User-Agent for wget
-        if ! wget -q --user-agent="$USER_AGENT" "$url" -O "$output" 2>/dev/null; then
-            print_warning "Download failed, trying with --no-check-certificate" "下载失败，尝试使用 --no-check-certificate"
-            wget -q --user-agent="$USER_AGENT" --no-check-certificate "$url" -O "$output"
+        # First attempt with normal SSL verification
+        if ! wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null; then
+            rc=$?
+            if [ "$rc" -eq 5 ]; then
+                # SSL verification failure: retry insecurely
+                print_warning "Download failed due to SSL (code $rc), trying with --no-check-certificate" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --no-check-certificate"
+                wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
+                return $?
+            else
+                # Non-SSL errors: do not retry insecurely
+                return "$rc"
+            fi
         fi
     fi
 }
@@ -262,17 +287,10 @@ find_working_proxy() {
     # Try direct first (empty mirror), then known proxy candidates
     for mirror in "" $PROXY_CANDIDATES; do
         ok=false
-        test_url="${mirror}https://github.com/$REPO/releases/latest"
-        if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-            if curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1 || \
-                curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout 10 --max-time 10 "$test_url" > /dev/null 2>&1; then
-                ok=true
-            fi
-        else
-            if wget -q --user-agent="$USER_AGENT" --timeout=10 -O /dev/null "$test_url" >/dev/null 2>&1 || \
-                wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout=10 -O /dev/null "$test_url" >/dev/null 2>&1; then
-                ok=true
-            fi
+        # Probe a lightweight raw file to validate proxy behavior
+        test_url="${mirror}https://raw.githubusercontent.com/NewFuture/DDNS/refs/heads/master/CNAME"
+        if download_file "$test_url" "/dev/null" 8; then
+            ok=true
         fi
         if [ "$ok" = true ]; then
             PROXY_URL="$mirror"
@@ -324,7 +342,7 @@ build_binary_name() {
             BINARY_FILE="ddns-mac-${ARCH}"
             ;;
     esac
-    print_info "Target binary: $BINARY_FILE" "目标二进制文件: $BINARY_FILE"
+    print_info "Target binary: $BINARY_FILE" "二进制文件: $BINARY_FILE"
 }
 
 # Download and install binary
