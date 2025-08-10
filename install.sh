@@ -317,7 +317,7 @@ get_beta_version() {
     rm -f "$temp_file" 2>/dev/null || true
 
     # Validate result
-    if [ -z "$VERSION" ]; then
+    if [ -z "$VERSION" ] || [ "$VERSION" = "beta" ]; then
         print_error "Failed to get version from GitHub API. Try using 'latest' instead." "无法从 GitHub API 获取版本，请尝试使用 'latest'。"
         exit 1
     fi
