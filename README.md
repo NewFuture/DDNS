@@ -23,7 +23,7 @@
 ### ⚙️ 灵活配置
 
 - **命令行参数**: `ddns --dns=dnspod --id=xxx --token=xxx` ([配置文档](doc/config/cli.md))
-- **JSON 配置文件**: 支持多域名、多服务商配置 ([配置文档](doc/config/json.md))
+- **JSON 配置文件**: 支持多域名、多服务商配置，支持远程URL配置 ([配置文档](doc/config/json.md))
 - **环境变量**: Docker 友好的配置方式 ([配置文档](doc/config/env.md))
 
 ### 🌍 DNS 服务商支持
@@ -54,17 +54,7 @@
 
 推荐 Docker 版，兼容性最佳，体积小，性能优化。
 
-- #### 一键安装脚本（推荐）
-
-  支持 Linux 和 macOS 系统，自动检测系统架构和下载对应版本：
-
-  ```bash
-  curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
-  ```
-  
-  详细说明请查看 [一键安装文档](doc/install.md) | [English Install Guide](doc/install.en.md)
-
-- #### Docker（需要安装 Docker）
+- #### Docker（推荐）
 
   详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
 
@@ -97,14 +87,23 @@
 
   </details>
 
+- #### 二进制版（单文件，无需 python）
+
+  前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
+
+  也可使用一键安装脚本自动下载并安装对应平台的二进制：
+
+  ```bash
+  curl -fSL https://ddns.newfuture.cc/install.sh | sh
+  ```
+  提示：安装到系统目录（如 /usr/local/bin）可能需要 root 或 sudo 权限；若权限不足，可改为 `sudo sh` 运行。
+
+  详细说明请查看 [一键安装文档](doc/install.md)
+
 - #### pip 安装（需要 pip 或 easy_install）
 
   1. 安装 ddns: `pip install ddns` 或 `easy_install ddns`
   2. 运行: `ddns -h` 或者 `python -m ddns`
-
-- #### 二进制版（单文件，无需 python）
-
-  前往[release下载对应版本](https://github.com/NewFuture/DDNS/releases/latest)
 
 - #### 源码运行（无任何依赖，需 python 环境）
 

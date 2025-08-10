@@ -264,7 +264,7 @@ download_file() {
                 ;;
         esac
     else
-        wget -t $retries --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output"
+        wget -q -t $retries --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output"
         rc=$?
         if [ "$rc" -eq 5 ]; then
             # SSL verification failure: retry insecurely

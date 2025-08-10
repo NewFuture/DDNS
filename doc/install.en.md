@@ -38,6 +38,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
 | `beta` | Install latest beta version |
 | `v4.0.2` | Install specific version |
 | `--install-dir PATH` | Specify installation directory (default: /usr/local/bin) |
+| `--proxy URL` | Specify proxy domain/prefix (e.g., `https://hub.gitmirror.com/`), overrides auto-detection |
 | `--force` | Force reinstallation |
 | `--uninstall` | Uninstall installed ddns |
 | `--help` | Show help information |
@@ -53,6 +54,9 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --force
 
 # Uninstall
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
+
+# Specify proxy domain (override auto-detection)
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --proxy https://hub.gitmirror.com/
 ```
 
 ## System Support
@@ -65,6 +69,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
 - **System Detection:** Automatically identifies operating system, architecture and libc type
 - **Tool Detection:** Automatically selects curl or wget download tool
 - **Network Optimization:** Automatically tests and selects the best download mirror (github.com → China mirror sites)
+- **Manual Override:** Use `--proxy` to specify a proxy domain/mirror prefix, which takes precedence over auto-detection
 
 ## Verify Installation
 
@@ -91,4 +96,4 @@ sudo rm -f /usr/local/bin/ddns
 **Permission Issues:** Use `sudo` or install to user directory  
 **Network Issues:** Script automatically uses mirror sites (hub.gitmirror.com, proxy.gitwarp.com, etc.)  
 **Unsupported Architecture:** Check [releases page](https://github.com/NewFuture/DDNS/releases) for supported architectures  
-**Proxy Environment:** Script respects system proxy settings (`HTTP_PROXY/HTTPS_PROXY`)
+**Proxy Environment:** The script respects system proxy settings (`HTTP_PROXY/HTTPS_PROXY`); you can also use `--proxy https://hub.gitmirror.com/` to specify a GitHub mirror prefix (overrides auto-detection)
