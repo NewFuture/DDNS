@@ -213,7 +213,7 @@ jobs:
           set -ex
           for f in output/*/ddns; do
             platform=$(basename $(dirname "$f") | tr '_' '/')
-            test/scripts/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+            tests/scripts/test-in-docker.sh $platform ${{matrix.libc}} "$f"
           done
 
       # 输出目录结构扁平化

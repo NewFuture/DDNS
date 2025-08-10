@@ -12,6 +12,12 @@
 #   curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta
 #   curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 #
+# Note: This script handles SSL certificate verification gracefully.
+# In container environments where CA certificates may be missing,
+# it will fallback to insecure downloads after SSL verification fails.
+# 注意：此脚本会优雅地处理SSL证书验证。
+# 在可能缺少CA证书的容器环境中，SSL验证失败后会回退到不安全的下载。
+#
 
 set -e
 
@@ -231,9 +237,17 @@ download_file() {
     local output="$2"
     
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        curl -fsSL "$url" -o "$output"
+        # Try with SSL verification first, fallback to insecure if needed
+        if ! curl -fsSL "$url" -o "$output" 2>/dev/null; then
+            print_warning "SSL verification failed, trying with --insecure" "SSL 验证失败，尝试使用 --insecure"
+            curl -fsSL --insecure "$url" -o "$output"
+        fi
     else
-        wget -q "$url" -O "$output"
+        # Try with SSL verification first, fallback to no-check-certificate if needed  
+        if ! wget -q "$url" -O "$output" 2>/dev/null; then
+            print_warning "SSL verification failed, trying with --no-check-certificate" "SSL 验证失败，尝试使用 --no-check-certificate"
+            wget -q --no-check-certificate "$url" -O "$output"
+        fi
     fi
 }
 
@@ -244,13 +258,17 @@ find_working_mirror() {
     for mirror in $GITHUB_MIRRORS; do
         print_info "Testing mirror: $mirror" "测试镜像: $mirror"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-            if curl -fsSL --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
+            # Try with SSL verification first, fallback to insecure if needed
+            if curl -fsSL --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
+               curl -fsSL --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
             fi
         else
-            if wget -q --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
+            # Try with SSL verification first, fallback to no-check-certificate if needed
+            if wget -q --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
+               wget -q --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
