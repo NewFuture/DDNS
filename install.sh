@@ -242,19 +242,22 @@ download_file() {
     local url="$1"
     local output="$2"
     local timeout="$3"    # optional seconds; falls back to DOWNLOAD_DEFAULT_TIMEOUT
+    local retries=3
     if [ -z "$timeout" ]; then
         timeout="$DOWNLOAD_DEFAULT_TIMEOUT"
+    else
+        retries=1  # If timeout is specified, only try once
     fi
 
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
         # First attempt with normal SSL verification
-        curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output" 2>/dev/null
+        curl -fsSL --retry "$retries" -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output" 2>/dev/null
         rc=$?
         case "$rc" in
             35|51|60|77)
                 # SSL-related errors only: retry insecurely
                 print_warning "Download failed due to SSL (code $rc), trying with --insecure" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --insecure"
-                curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
+                curl -fsSL --retry "$retries" -H "User-Agent: $USER_AGENT" --insecure --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
                 return $?
                 ;;
             *)
@@ -264,12 +267,12 @@ download_file() {
         esac
     else
         # First attempt with normal SSL verification
-        wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null
+        wget -t "$retries" --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null
         rc=$?
         if [ "$rc" -eq 5 ]; then
             # SSL verification failure: retry insecurely
             print_warning "Download failed due to SSL (code $rc), trying with --no-check-certificate" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --no-check-certificate"
-            wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
+            wget -t "$retries" --user-agent="$USER_AGENT" --no-check-certificate --timeout="$timeout" "$url" -O "$output"
             return $?
         fi
         # Non-SSL errors: do not retry insecurely
