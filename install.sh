@@ -33,6 +33,7 @@ VERSION=""
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="ddns"
 REPO="NewFuture/DDNS"
+USER_AGENT="DDNS-Installer/1.0"
 FORCE_INSTALL=false
 # Whether user explicitly passed a VERSION argument
 USER_VERSION_SPECIFIED=false
@@ -238,15 +239,15 @@ download_file() {
     
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
         # Always add User-Agent to avoid 403 errors
-        if ! curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" "$url" -o "$output" 2>/dev/null; then
+        if ! curl -fsSL -H "User-Agent: $USER_AGENT" "$url" -o "$output" 2>/dev/null; then
             print_warning "Download failed, trying with --insecure" "下载失败，尝试使用 --insecure"
-            curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --insecure "$url" -o "$output"
+            curl -fsSL -H "User-Agent: $USER_AGENT" --insecure "$url" -o "$output"
         fi
     else
         # Always add User-Agent for wget
-        if ! wget -q --user-agent="DDNS-Install-Script/1.0" "$url" -O "$output" 2>/dev/null; then
+        if ! wget -q --user-agent="$USER_AGENT" "$url" -O "$output" 2>/dev/null; then
             print_warning "Download failed, trying with --no-check-certificate" "下载失败，尝试使用 --no-check-certificate"
-            wget -q --user-agent="DDNS-Install-Script/1.0" --no-check-certificate "$url" -O "$output"
+            wget -q --user-agent="$USER_AGENT" --no-check-certificate "$url" -O "$output"
         fi
     fi
 }
@@ -259,16 +260,16 @@ find_working_mirror() {
         print_info "Testing mirror: $mirror" "测试镜像: $mirror"
         if [ "$DOWNLOAD_TOOL" = "curl" ]; then
             # Try with SSL verification first, fallback to insecure if needed
-            if curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
-               curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
+            if curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1 || \
+               curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout 10 --max-time 10 "$mirror" > /dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
             fi
         else
             # Try with SSL verification first, fallback to no-check-certificate if needed
-            if wget -q --user-agent="DDNS-Install-Script/1.0" --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
-               wget -q --user-agent="DDNS-Install-Script/1.0" --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
+            if wget -q --user-agent="$USER_AGENT" --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1 || \
+               wget -q --user-agent="$USER_AGENT" --no-check-certificate --timeout=10 -O /dev/null "$mirror" >/dev/null 2>&1; then
                 GITHUB_URL="$mirror"
                 print_success "Using mirror: $GITHUB_URL" "使用镜像: $GITHUB_URL"
                 return 0
@@ -287,7 +288,7 @@ check_api_rate_limit() {
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.ratelimit.$$")"
     
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        if curl -fsSL -H "User-Agent: DDNS-Install-Script/1.0" "https://api.github.com/rate_limit" -o "$temp_file" 2>/dev/null; then
+        if curl -fsSL -H "User-Agent: $USER_AGENT" "https://api.github.com/rate_limit" -o "$temp_file" 2>/dev/null; then
             local remaining=$(grep -o '"remaining"[[:space:]]*:[[:space:]]*[0-9]*' "$temp_file" | cut -d ':' -f2 | tr -d ' ')
             if [ -n "$remaining" ] && [ "$remaining" -le 5 ]; then
                 print_warning "GitHub API rate limit is low (remaining: $remaining)" "GitHub API 速率限制较低 (剩余: $remaining)"
