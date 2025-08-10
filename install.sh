@@ -295,7 +295,7 @@ find_working_proxy() {
             fi
             return 0
         fi
-        print_warning "Failed to connect to $test_url" "无法连接到 $test_url"
+        print_info "Failed to connect to $test_url" "无法连接到 $test_url"
     done
     print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
     return 0
