@@ -248,24 +248,23 @@ download_file() {
 
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
         # First attempt with normal SSL verification
-        if ! curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output" 2>/dev/null; then
-            rc=$?
-            case "$rc" in
-                35|51|60|77)
-                    # SSL-related errors only: retry insecurely
-                    print_warning "Download failed due to SSL (code $rc), trying with --insecure" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --insecure"
-                    curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
-                    return $?
-                    ;;
-                *)
-                    # Non-SSL errors: do not retry insecurely
-                    return "$rc"
-                    ;;
-            esac
-        fi
+        curl -fsSL -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output" 2>/dev/null
+        rc=$?
+        case "$rc" in
+            35|51|60|77)
+                # SSL-related errors only: retry insecurely
+                print_warning "Download failed due to SSL (code $rc), trying with --insecure" "下载因 SSL 问题失败(代码 $rc)，尝试使用 --insecure"
+                curl -fsSL -H "User-Agent: $USER_AGENT" --insecure --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
+                return $?
+                ;;
+            *)
+                # Non-SSL errors: do not retry insecurely
+                return "$rc"
+                ;;
+        esac
     else
         # First attempt with normal SSL verification
-        wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null && return 0
+        wget -q --user-agent="$USER_AGENT" --timeout="$timeout" "$url" -O "$output" 2>/dev/null
         rc=$?
         if [ "$rc" -eq 5 ]; then
             # SSL verification failure: retry insecurely
@@ -280,10 +279,11 @@ download_file() {
 
 # Auto-detect a working proxy (or direct GitHub) when PROXY_URL not specified
 find_working_proxy() {
-    print_info "Testing proxy connectivity..." "测试代理连接..."
+    print_info "Testing Github and proxy connectivity..." "测试GitHub和代理连接..."
     local mirror test_url
     # Try direct first (empty mirror), then known proxy candidates
     for mirror in "" $PROXY_CANDIDATES; do
+        print_info "Testing: ${mirror:-"github.com"}" "测试: ${mirror:-"github.com"}"
         # Probe using a real release asset to validate proxy behavior
         test_url="${mirror}https://github.com/NewFuture/DDNS/releases/download/v4.0.0/create-task.sh"
         if download_file "$test_url" "/dev/null" 8; then
@@ -295,6 +295,7 @@ find_working_proxy() {
             fi
             return 0
         fi
+        print_warning "Failed to connect to $test_url" "无法连接到 $test_url"
     done
     print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
     return 0
