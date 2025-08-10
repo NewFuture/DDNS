@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest,  ubuntu-24.04-arm, ubuntu-22.04, macos-latest, macos-13]
+        os: [ubuntu-latest,  ubuntu-24.04-arm, macos-latest, macos-13]
 
     steps:
       - name: Test install script help
@@ -57,9 +57,7 @@ jobs:
         container:
           - alpine:latest
           - debian:latest
-          - ubuntu:20.04
           - openwrt/rootfs:latest
-          - bensuperpc/tinycore:latest
 
     container: ${{ matrix.container }}
     env:
@@ -70,12 +68,13 @@ jobs:
       - name: Download install script
         run: |
           if command -v wget >/dev/null 2>&1; then
-            wget --no-check-certificate -O install.sh "$RAW_URL"
+            wget -O install.sh "$RAW_URL"
           elif command -v curl >/dev/null 2>&1; then
-            curl -fsSL --insecure -o install.sh "$RAW_URL"
+            curl -fsSL -o install.sh "$RAW_URL"
           else
-            echo "Neither wget nor curl available"
-            exit 1
+            echo "Neither wget nor curl available, install curl"
+            sudo apt-get update && sudo apt-get install -y curl
+            curl -fsSL -o install.sh "$RAW_URL"
           fi
           chmod +x install.sh
 

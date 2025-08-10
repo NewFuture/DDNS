@@ -48,5 +48,13 @@ docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $containe
 docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/debug.json
 docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/noip.json
 
+# Test task subcommand
+echo "Testing task subcommand..."
+docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --help
+docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --status
+TEST_SCRIPTS=$(dirname $(realpath "$0"))
+docker run --rm -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" --platform=$platform $container /scripts/test-task-cron.sh /dist/$file
+
+
 # delete to avoid being reused
 docker image rm $container
