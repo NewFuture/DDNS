@@ -2,7 +2,7 @@
 
 [<img src="https://ddns.newfuture.cc/doc/img/ddns.svg" height="32px"/>](https://ddns.newfuture.cc)[![Github Release](https://img.shields.io/github/v/release/newfuture/ddns?style=for-the-badge&logo=github&label=DDNS)](https://github.com/NewFuture/DDNS/releases/latest)[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/latest?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns/tags?name=latest)[![PyPI version](https://img.shields.io/pypi/v/ddns?logo=python&style=for-the-badge)](https://pypi.org/project/ddns)
 
-## 各版本一览表 (Download Methods Overview)
+## 各版本一览表 | Download Methods Overview
 
 | 系统环境 (System) | 架构支持 (Architecture) | 说明 (Description) |
 | ---------: |:------------------- |:---------|
@@ -41,18 +41,32 @@ docker run -d --name ddns -v $(pwd)/:/ddns/ newfuture/ddns:latest
 * Docker官方源 (Docker Hub): [docker.io/newfuture/ddns](https://hub.docker.com/r/newfuture/ddns)
 * Github官方源 (Github Registry): [ghcr.io/newfuture/ddns](https://github.com/NewFuture/DDNS/pkgs/container/ddns)
 
-## 二进制文件 (Executable Binary) ![cross platform](https://img.shields.io/badge/system-Windows_%7C%20Linux_%7C%20MacOS-success.svg?style=social)
+## 一键安装 | One-click Install
 
-各平台下载和使用方式 (Download and Usage per platform):
+Linux/MacOS 使用安装脚本获取并安装最新版本(Use the installer to fetch and install the latest release):
 
-* ### Windows
+```sh
+# 使用 curl 安装，
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
+# 使用wegt 安装
+wget -qO- https://ddns.newfuture.cc/install.sh | sh -s -- latest
+```
+
+> 需要 root 或 sudo 权限 (Requires curl and sudo).
+> 更多说明与源码 More details and source: <https://ddns.newfuture.cc>
+
+### 二进制文件 | Executable Binary ![cross platform](https://img.shields.io/badge/system-Windows_%7C%20Linux_%7C%20MacOS-success.svg?style=social)
+
+手动下载各平台文件和使用方式 (Download and Usage per platform):
+
+* #### Windows
 
 1. 下载 [`ddns-windows-x64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x64.exe) 或 [`ddns-windows-x86.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x86.exe) 或 [`ddns-windows-arm64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-arm64.exe) 保存为 `ddns.exe` 并在终端运行.
 (Download the binary, rename it as `ddns.exe`, then run in cmd or PowerShell.)
 2. [可选] 定时任务: 使用内置命令 `ddns task --install` 创建定时任务.
 (Optionally, use the built-in command `ddns task --install` to create a scheduled task.)
 
-### Linux
+* #### Linux
 
 ```bash
 # 常规Linux (glibc x64)
@@ -70,7 +84,7 @@ sudo mv ddns /usr/local/bin/
 ddns task --install
 ```
 
-### MacOS
+* #### MacOS
 
 ```sh
 # ARM 芯片 Apple Silicon (M-chip)
@@ -86,7 +100,9 @@ sudo mv ddns /usr/local/bin/
 ddns task --install
 ```
 
-## 使用pip安装 (Install via PIP) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
+---
+
+## 使用pip安装 | Install via PIP ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?style=social) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/ddns.svg?style=social)
 
 Pypi 安装当前版本或者更新最新版本
 

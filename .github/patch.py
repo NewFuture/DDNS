@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import sys
+import json
 import os
 import re
-import urllib.request
+import sys
 import time
-import json
+import urllib.request
 from datetime import datetime, timezone
 
 ROOT = "."
@@ -82,7 +82,7 @@ def add_nuitka_include_modules(pyfile):
         for module in sorted(modules):
             f.write(f"# nuitka-project: --include-module={module}\n")
 
-    print(f'Added {len(modules)} DNS modules to {pyfile}: {", ".join(modules)}')
+    print(f"Added {len(modules)} DNS modules to {pyfile}: {', '.join(modules)}")
     return True
 
 
@@ -234,67 +234,75 @@ def replace_version_and_date(pyfile: str, version: str, date_str: str):
         exit(1)
 
 
-def replace_readme_links_for_release(version):
+def replace_links_for_release_in_file(file_path, version, label=None):
     """
-    修改 README.md 中的链接为指定版本，用于发布时
+    将指定 Markdown 文件中的 "latest" 等动态链接替换为给定版本，便于发布归档。
     """
-    readme_path = os.path.join(ROOT, "README.md")
-    if not os.path.exists(readme_path):
-        print(f"README.md not found: {readme_path}")
+    if not os.path.exists(file_path):
+        print(f"File not found: {file_path}")
         return False
 
-    with open(readme_path, "r", encoding="utf-8") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # 替换各种链接中的 latest 为具体版本
-    # GitHub releases download links
+    # GitHub releases download links -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/releases/latest/download/",
-        f"https://github.com/NewFuture/DDNS/releases/download/{version}/",
+        "https://github.com/NewFuture/DDNS/releases/download/{}/".format(version),
         content,
     )
 
-    # GitHub releases latest links
+    # GitHub releases page -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/releases/latest",
-        f"https://github.com/NewFuture/DDNS/releases/tag/{version}",
+        "https://github.com/NewFuture/DDNS/releases/tag/{}".format(version),
         content,
     )
 
-    # Docker tags from latest to version
-    content = re.sub(r"docker pull ([^:\s]+):latest", f"docker pull \\1:{version}", content)
+    # Docker tags from latest to a pinned tag
+    content = re.sub(r"docker pull ([^:\s]+):latest", "docker pull \\1:{}".format(version), content)
 
-    # PyPI version-specific links
+    # Docker image references in run/create/examples: pin ghcr.io/newfuture/ddns:latest and newfuture/ddns:latest
+    content = re.sub(r"(ghcr\.io/newfuture/ddns|newfuture/ddns):latest", r"\1:{}".format(version), content)
+
+    # PyPI project page -> pin to version page
     content = re.sub(
-        r"https://pypi\.org/project/ddns(?:/latest)?(?=[\s\)])", f"https://pypi.org/project/ddns/{version}", content
+        r"https://pypi\.org/project/ddns(?:/latest)?(?=[\s\)])",
+        "https://pypi.org/project/ddns/{}".format(version),
+        content,
     )
 
-    # Shield.io badges - Docker version
+    # Shield.io badges - Docker version badge
     content = re.sub(
         r"https://img\.shields\.io/docker/v/newfuture/ddns/latest",
-        f"https://img.shields.io/docker/v/newfuture/ddns/{version}",
+        "https://img.shields.io/docker/v/newfuture/ddns/{}".format(version),
         content,
     )
 
-    # Shield.io badges - PyPI version (add version if not present)
+    # Shield.io badges - PyPI version (rarely used with explicit version, keep pattern to avoid accidental match)
     content = re.sub(
-        r"https://img\.shields\.io/pypi/v/ddns(?!\?)", f"https://img.shields.io/pypi/v/ddns/{version}", content
+        r"https://img\.shields\.io/pypi/v/ddns(?!\?)", "https://img.shields.io/pypi/v/ddns/{}".format(version), content
     )
 
-    # GitHub archive links
+    # GitHub archive links -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/archive/refs/tags/latest\.(zip|tar\.gz)",
-        f"https://github.com/NewFuture/DDNS/archive/refs/tags/{version}.\\1",
+        "https://github.com/NewFuture/DDNS/archive/refs/tags/{}.\\1".format(version),
         content,
     )
 
-    # PIP install commands
-    content = re.sub(r"pip install ddns(?!=)", f"pip install ddns=={version}", content)
+    # PIP install commands -> pin to exact version (handle optional -U)
+    content = re.sub(r"pip install -U ddns(?!=)", "pip install -U ddns=={}".format(version), content)
+    content = re.sub(r"pip install ddns(?!=)", "pip install ddns=={}".format(version), content)
 
-    with open(readme_path, "w", encoding="utf-8") as f:
+    # One-click install script examples: pin 'latest' to specific version
+    content = re.sub(r"(install\.sh \| sh -s --)\s+latest", r"\1 {}".format(version), content, flags=re.IGNORECASE)
+
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print(f"Updated README.md links for release version: {version}")
+    name = label or os.path.basename(file_path)
+    print("Updated {} links for release version: {}".format(name, version))
     return True
 
 
@@ -303,20 +311,26 @@ def main():
     遍历所有py文件并替换兼容导入，同时更新nuitka版本号
     支持参数:
     - version: 只更新版本号
-    - release: 更新版本号并修改README.md链接为发布版本
+    - release: 更新版本号并修改release.md链接为发布版本
     """
     if len(sys.argv) > 2:
         print(f"unknown arguments: {sys.argv}")
         exit(1)
 
     mode = sys.argv[1].lower() if len(sys.argv) > 1 else "default"
+    version = generate_version()
 
     if mode not in ["version", "release", "default"]:
         print(f"unknown mode: {mode}")
         print("Usage: python patch.py [version|release]")
         exit(1)
+    elif mode == "release":
+        # 同步修改 doc/release.md 的版本与链接
+        release_md_path = os.path.join(ROOT, "doc", "release.md")
+        if os.path.exists(release_md_path):
+            replace_links_for_release_in_file(release_md_path, version, label="doc/release.md")
+        exit(0)
 
-    version = generate_version()
     date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     print(f"Version: {version}")
     print(f"Date: {date_str}")
@@ -326,10 +340,6 @@ def main():
 
     if mode == "version":
         # python version only
-        exit(0)
-    elif mode == "release":
-        # 发布模式：修改README.md链接为指定版本
-        replace_readme_links_for_release(version)
         exit(0)
 
     # 默认模式：继续执行原有逻辑

@@ -243,16 +243,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Upload files
-        run: gh release upload ${{ github.ref_name }} .release/*.sh .release/*.bat --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - run: python3 .github/patch.py release
+
       - name: Generate release notes and append README.md
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view ${{ github.ref_name }} --json body -q '.body' > release_notes.md
-          cat doc/release.md >> release_notes.md
-          gh release edit ${{ github.ref_name }} --notes-file release_notes.md
+          gh release view ${{ github.ref_name }} --json body -q '.body' > changelog.md
+          gh release upload ${{ github.ref_name }} changelog.md --clobber
+          cat doc/release.md >> changelog.md
+          gh release edit ${{ github.ref_name }} --notes-file changelog.md
