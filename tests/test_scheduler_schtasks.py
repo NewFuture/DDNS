@@ -5,7 +5,9 @@ Unit tests for ddns.scheduler.schtasks module
 """
 
 import platform
-from __init__ import unittest, patch
+
+from __init__ import patch, unittest
+
 from ddns.scheduler.schtasks import SchtasksScheduler
 
 
@@ -25,7 +27,7 @@ class TestSchtasksScheduler(unittest.TestCase):
     def test_get_status_installed_enabled(self, mock_run_command):
         """Test get_status when task is installed and enabled"""
         # Mock XML output from schtasks query
-        xml_output = """<?xml version="1.0" encoding="UTF-16"?>
+        xml_output = """<?xml version=\"1.0\" encoding=\"UTF-16\"?>
         <Task>
             <Settings>
                 <Enabled>true</Enabled>
@@ -39,8 +41,8 @@ class TestSchtasksScheduler(unittest.TestCase):
             </Triggers>
             <Actions>
                 <Exec>
-                    <Command>wscript.exe</Command>
-                    <Arguments>"test.vbs"</Arguments>
+                    <Command>pythonw.exe</Command>
+                    <Arguments>-m ddns</Arguments>
                 </Exec>
             </Actions>
         </Task>"""
@@ -49,13 +51,7 @@ class TestSchtasksScheduler(unittest.TestCase):
 
         status = self.scheduler.get_status()
 
-        expected_status = {
-            "scheduler": "schtasks",
-            "installed": True,
-            "enabled": True,
-            "interval": 5,
-            "command": 'wscript.exe "test.vbs"',
-        }
+        expected_status = {"scheduler": "schtasks", "installed": True, "enabled": True, "interval": 5}
 
         # Check main fields
         self.assertEqual(status["scheduler"], expected_status["scheduler"])
@@ -94,17 +90,14 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertFalse(result)
 
     @patch.object(SchtasksScheduler, "_schtasks")
-    @patch.object(SchtasksScheduler, "_create_vbs_script")
-    def test_install_success(self, mock_vbs, mock_schtasks):
+    def test_install_success(self, mock_schtasks):
         """Test successful installation"""
-        mock_vbs.return_value = "test.vbs"
         mock_schtasks.return_value = True
 
         result = self.scheduler.install(5, {"dns": "debug", "ipv4": ["test.com"]})
 
         self.assertTrue(result)
         mock_schtasks.assert_called_once()
-        mock_vbs.assert_called_once()
 
     @patch.object(SchtasksScheduler, "_schtasks")
     def test_uninstall_success(self, mock_schtasks):
@@ -221,12 +214,10 @@ class TestSchtasksScheduler(unittest.TestCase):
         enabled = self.scheduler._extract_xml(test_xml, "Enabled")
         self.assertEqual(enabled, "true")
 
-        # Test VBS script generation
+        # No VBS generation anymore; ensure command building returns a string
         ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
-        vbs_path = self.scheduler._create_vbs_script(ddns_args)
-        self.assertIsInstance(vbs_path, str)
-        self.assertTrue(vbs_path.endswith(".vbs"))
-        self.assertIn("ddns_silent.vbs", vbs_path)
+        cmd = self.scheduler._build_ddns_command(ddns_args)
+        self.assertIsInstance(cmd, str)
 
         # Test enable/disable without actual installation (should handle gracefully)
         # These operations will fail if task doesn't exist, but should return boolean
@@ -278,8 +269,11 @@ class TestSchtasksScheduler(unittest.TestCase):
             self.assertTrue(post_install_status["installed"], "Task should be installed after install()")
             self.assertTrue(post_install_status["enabled"], "Task should be enabled after install()")
             self.assertEqual(post_install_status["interval"], 10, "Task interval should match")
-            self.assertIn("wscript.exe", post_install_status["command"], "Command should use wscript.exe")
-            self.assertIn("ddns_silent.vbs", post_install_status["command"], "Command should contain VBS script")
+            # Command may be pythonw -m ddns ... or compiled exe path; both are acceptable
+            self.assertTrue(
+                (post_install_status.get("command") or "").lower().find("python") >= 0
+                or (post_install_status.get("command") or "").lower().endswith(".exe")
+            )
 
             # PHASE 3: Test disable functionality
             disable_result = self.scheduler.disable()
