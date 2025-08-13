@@ -8,7 +8,6 @@ import os
 import re
 import tempfile
 
-from ..util.xml import dict_to_xml
 from ._base import BaseScheduler
 
 
@@ -69,29 +68,34 @@ class SchtasksScheduler(BaseScheduler):
         # Create XML task definition with working directory support
         description = self._get_description()
 
-        xml_content = dict_to_xml(
-            {
-                "RegistrationInfo": {"Description": description},
-                "Triggers": {
-                    "TimeTrigger": {
-                        "StartBoundary": "1900-01-01T00:00:00",
-                        "Repetition": {"Interval": "PT{}M".format(interval)},
-                        "Enabled": "true",
-                    }
-                },
-                "Actions": {"Exec": {"Command": executable, "Arguments": arguments, "WorkingDirectory": workdir}},
-                "Settings": {
-                    "MultipleInstancesPolicy": "IgnoreNew",
-                    "DisallowStartIfOnBatteries": "false",
-                    "StopIfGoingOnBatteries": "false",
-                },
-            },
-            root="Task",
-            namespace="http://schemas.microsoft.com/windows/2004/02/mit/task",
-            encoding="UTF-16",
-            version="1.0",
-            root_version="1.2",
-        )
+        # Use template string to generate Windows Task Scheduler XML
+        xml_content = """<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>{description}</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>1900-01-01T00:00:00</StartBoundary>
+      <Repetition>
+        <Interval>PT{interval}M</Interval>
+      </Repetition>
+      <Enabled>true</Enabled>
+    </TimeTrigger>
+  </Triggers>
+  <Actions>
+    <Exec>
+      <Command>{exe}</Command>
+      <Arguments>{arguments}</Arguments>
+      <WorkingDirectory>{dir}</WorkingDirectory>
+    </Exec>
+  </Actions>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+  </Settings>
+</Task>""".format(description=description, interval=interval, exe=executable, arguments=arguments, dir=workdir)
 
         # Write XML to temp file and use it to create task
         with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
