@@ -65,25 +65,25 @@ class TestXmlUtils(unittest.TestCase):
         """Test Windows Task Scheduler XML generation with complete template"""
         # Test data that matches schtasks scheduler structure
         data = {
-            "RegistrationInfo": {"Description": "Test Task Description"},
-            "Triggers": {
-                "TimeTrigger": {
-                    "StartBoundary": "1900-01-01T00:00:00",
-                    "Repetition": {"Interval": "PT30M"},
-                    "Enabled": "true",
-                }
-            },
             "Actions": {
                 "Exec": {
-                    "Command": "python.exe",
                     "Arguments": "run.py --config config.json",
+                    "Command": "python.exe",
                     "WorkingDirectory": "C:\\GitHub\\DDNS",
                 }
             },
+            "RegistrationInfo": {"Description": "Test Task Description"},
             "Settings": {
-                "MultipleInstancesPolicy": "IgnoreNew",
                 "DisallowStartIfOnBatteries": "false",
+                "MultipleInstancesPolicy": "IgnoreNew",
                 "StopIfGoingOnBatteries": "false",
+            },
+            "Triggers": {
+                "TimeTrigger": {
+                    "Enabled": "true",
+                    "Repetition": {"Interval": "PT30M"},
+                    "StartBoundary": "1900-01-01T00:00:00",
+                }
             },
         }
 
@@ -91,7 +91,7 @@ class TestXmlUtils(unittest.TestCase):
             data, root="Task", namespace="http://schemas.microsoft.com/windows/2004/02/mit/task", version="1.2"
         )
 
-        expected_xml = """<?xml version="1.2" encoding="UTF-16"?><Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><RegistrationInfo><Description>Test Task Description</Description></RegistrationInfo><Triggers><TimeTrigger><StartBoundary>1900-01-01T00:00:00</StartBoundary><Repetition><Interval>PT30M</Interval></Repetition><Enabled>true</Enabled></TimeTrigger></Triggers><Actions><Exec><Command>python.exe</Command><Arguments>run.py --config config.json</Arguments><WorkingDirectory>C:\\GitHub\\DDNS</WorkingDirectory></Exec></Actions><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries></Settings></Task>"""
+        expected_xml = """<?xml version="1.2" encoding="UTF-16"?><Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Actions><Exec><Arguments>run.py --config config.json</Arguments><Command>python.exe</Command><WorkingDirectory>C:\\GitHub\\DDNS</WorkingDirectory></Exec></Actions><RegistrationInfo><Description>Test Task Description</Description></RegistrationInfo><Settings><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries></Settings><Triggers><TimeTrigger><Enabled>true</Enabled><Repetition><Interval>PT30M</Interval></Repetition><StartBoundary>1900-01-01T00:00:00</StartBoundary></TimeTrigger></Triggers></Task>"""
 
         self.assertEqual(result, expected_xml)
 
@@ -99,12 +99,12 @@ class TestXmlUtils(unittest.TestCase):
         """Test macOS launchd plist XML generation with complete template"""
         # Test complete plist structure matching actual launchd.py implementation
         data = {
-            "Label": "cc.newfuture.ddns",
             "Description": "auto-update v4.0.0 installed on 2025-08-13 16:50:37",
+            "Label": "cc.newfuture.ddns",
             "ProgramArguments": ["/usr/bin/python3", "-m", "ddns"],
-            "StartInterval": 300,
             "RunAtLoad": True,
-            "WorkingDirectory": "/opt/DDNS"
+            "StartInterval": 300,
+            "WorkingDirectory": "/opt/DDNS",
         }
 
         # Generate complete plist using dict_to_xml with plist as root and version
@@ -117,7 +117,7 @@ class TestXmlUtils(unittest.TestCase):
         )
 
         # Expected XML should include complete plist structure
-        expected_xml = """<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><Label>cc.newfuture.ddns</Label><Description>auto-update v4.0.0 installed on 2025-08-13 16:50:37</Description><ProgramArguments>/usr/bin/python3</ProgramArguments><ProgramArguments>-m</ProgramArguments><ProgramArguments>ddns</ProgramArguments><StartInterval>300</StartInterval><RunAtLoad>True</RunAtLoad><WorkingDirectory>/opt/DDNS</WorkingDirectory></dict></plist>"""
+        expected_xml = """<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><Description>auto-update v4.0.0 installed on 2025-08-13 16:50:37</Description><Label>cc.newfuture.ddns</Label><ProgramArguments>/usr/bin/python3</ProgramArguments><ProgramArguments>-m</ProgramArguments><ProgramArguments>ddns</ProgramArguments><RunAtLoad>True</RunAtLoad><StartInterval>300</StartInterval><WorkingDirectory>/opt/DDNS</WorkingDirectory></dict></plist>"""
 
         # Test that the generated XML matches expected output
         self.assertEqual(complete_plist, expected_xml)
