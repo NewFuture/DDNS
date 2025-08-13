@@ -108,7 +108,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
   Or use the one‑click installation script to automatically download and install the binary for your platform:
 
   ```bash
-  curl -fSL https://ddns.newfuture.cc/install.sh | sh
+  curl -#fSL https://ddns.newfuture.cc/install.sh | sh
   ```
   Note: Installing to system directories (e.g., /usr/local/bin) may require root or sudo; if permissions are insufficient, run as `sudo sh`.
 

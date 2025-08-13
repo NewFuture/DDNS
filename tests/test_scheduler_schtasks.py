@@ -218,10 +218,10 @@ class TestSchtasksScheduler(unittest.TestCase):
         enabled = self.scheduler._extract_xml(test_xml, "Enabled")
         self.assertEqual(enabled, "true")
 
-        # No VBS generation anymore; ensure command building returns a string
+        # No VBS generation anymore; ensure command building returns a list
         ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
         cmd = self.scheduler._build_ddns_command(ddns_args)
-        self.assertIsInstance(cmd, str)
+        self.assertIsInstance(cmd, list)
 
         # Test enable/disable without actual installation (should handle gracefully)
         # These operations will fail if task doesn't exist, but should return boolean

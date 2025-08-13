@@ -18,8 +18,8 @@ class TestCronScheduler(unittest.TestCase):
         """Set up test fixtures"""
         self.scheduler = CronScheduler()
 
-    @patch("ddns.scheduler.cron.datetime")
-    @patch("ddns.scheduler.cron.version", "test-version")
+    @patch("ddns.scheduler._base.datetime")
+    @patch("ddns.scheduler._base.version", "test-version")
     def test_install_with_version_and_date(self, mock_datetime):
         """Test install method includes version and date in cron entry"""
         mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
@@ -91,7 +91,7 @@ class TestCronScheduler(unittest.TestCase):
 
     def test_version_in_cron_entry(self):
         """Test that install method includes version in cron entry"""
-        with patch("ddns.scheduler.cron.datetime") as mock_datetime:
+        with patch("ddns.scheduler._base.datetime") as mock_datetime:
             mock_datetime.now.return_value.strftime.return_value = "2025-08-01 14:30:00"
 
             with patch.object(self.scheduler, "_run_command") as mock_run:
@@ -102,7 +102,7 @@ class TestCronScheduler(unittest.TestCase):
                         mock_build.return_value = "python3 -m ddns"
 
                         # Test that version is included in cron entry
-                        with patch("ddns.scheduler.cron.version", "test-version"):
+                        with patch("ddns.scheduler._base.version", "test-version"):
                             result = self.scheduler.install(10)
 
                             self.assertTrue(result)

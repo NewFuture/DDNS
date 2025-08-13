@@ -248,7 +248,7 @@ download_file() {
     fi
 
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        curl -fsSL --retry $retries -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
+        curl -#fSL --retry $retries -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
         rc=$?
         case "$rc" in
             35|51|60|77)

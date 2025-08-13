@@ -94,7 +94,7 @@
   也可使用一键安装脚本自动下载并安装对应平台的二进制：
 
   ```bash
-  curl -fSL https://ddns.newfuture.cc/install.sh | sh
+  curl -#fSL https://ddns.newfuture.cc/install.sh | sh
   ```
   提示：安装到系统目录（如 /usr/local/bin）可能需要 root 或 sudo 权限；若权限不足，可改为 `sudo sh` 运行。
 

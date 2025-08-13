@@ -12,6 +12,7 @@
 | Musl Linux | [64-bit (ddns-musl-linux_amd64)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-musl-linux_amd64) <br> [32-bit (ddns-musl-linux_386)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-musl-linux_386) <br> [ARM64 (ddns-musl-linux_arm64)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-musl-linux_arm64)<br> [ARM/V7 (ddns-musl-linux_arm_v7)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-musl-linux_arm_v7) <br> [ARM/V6 (ddns-musl-linux_arm_v6)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-musl-linux_arm_v6) | 适用于OpenWRT及嵌入式系统（musl ≥ 1.1.24），如OpenWRT 19+；ARMv6未测试。<br> 🛠️ For OpenWRT and embedded systems with musl ≥ 1.1.24. ARMv6 not tested. |
 | macOS | [ARM/M-chip (ddns-mac-arm64)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-mac-arm64) <br> [Intel x86_64 (ddns-mac-x64)](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-mac-x64) | 仅虚拟环境测试，未在真机测试 <br> 🍎 Tested in virtual environments only |
 | PIP | [`ddns` (全平台)](https://pypi.org/project/ddns) | 可通过 pip/pip2/pip3/easy_install 安装，部分环境自动添加至 PATH。<br> 📦 Installable via pip and easy_install. May auto-register in PATH |
+| Pipx | [`pipx run ddns` (全平台)](https://pypi.org/project/ddns) | 🚀 直接运行无需安装，独立虚拟环境避免冲突。<br> 🚀 Run directly without installation, isolated virtual environment. |
 | Python | 源码 Source code (全平台)<br> [zip](https://github.com/NewFuture/DDNS/archive/refs/tags/latest.zip) + [tar](https://github.com/NewFuture/DDNS/archive/refs/tags/latest.tar.gz) | 可在 Python 2.7 或 Python 3 上直接运行，无需依赖 <br> 🐍 Directly runnable with Python 2.7 or Python 3. No extra dependencies. |
 
 ---
@@ -118,4 +119,7 @@ pip install ddns
 
 # 或更新为最新版本 (Or upgrade to latest)
 pip install -U ddns
+
+# 或使用pipx直接运行（无需安装）Run directly with pipx (no installation needed)
+pipx run ddns -h
 ```
