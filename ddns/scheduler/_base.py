@@ -6,7 +6,10 @@ Base scheduler class for DDNS task management
 
 import subprocess
 import sys
+from datetime import datetime
 from logging import Logger, getLogger  # noqa: F401
+
+from .. import __version__ as version
 
 
 class BaseScheduler(object):
@@ -57,6 +60,11 @@ class BaseScheduler(object):
     def _quote_command_array(self, cmd_array):  # type: (list[str]) -> str
         """Convert command array to properly quoted command string"""
         return " ".join('"{}"'.format(arg) if " " in arg else arg for arg in cmd_array)
+
+    def _get_description(self):  # type: () -> str
+        """Generate standard description/comment for DDNS installation"""
+        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return "auto-update v{} installed on {}".format(version, date)
 
     def is_installed(self):  # type: () -> bool
         """Check if DDNS task is installed"""

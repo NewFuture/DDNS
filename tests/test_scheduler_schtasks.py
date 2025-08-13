@@ -28,7 +28,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         """Test get_status when task is installed and enabled"""
         # Mock XML output from schtasks query
         xml_output = """<?xml version=\"1.0\" encoding=\"UTF-16\"?>
-        <Task>
+        <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
             <Settings>
                 <Enabled>true</Enabled>
             </Settings>
@@ -132,9 +132,12 @@ class TestSchtasksScheduler(unittest.TestCase):
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
-        self.assertIsInstance(command, str)
-        self.assertIn("python", command.lower())
+        self.assertIsInstance(command, list)
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
+        self.assertIn("-m", command)
         self.assertIn("ddns", command)
+        self.assertIn("--dns", command)
         self.assertIn("debug", command)
         self.assertIn("test.example.com", command)
 
@@ -193,8 +196,9 @@ class TestSchtasksScheduler(unittest.TestCase):
         # Test build command
         ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
         command = self.scheduler._build_ddns_command(ddns_args)
-        self.assertIsInstance(command, str)
-        self.assertIn("python", command.lower())
+        self.assertIsInstance(command, list)
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
 
         # Test get status (safe read-only operation)
         status = self.scheduler.get_status()

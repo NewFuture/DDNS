@@ -6,9 +6,7 @@ Systemd timer-based task scheduler for Linux
 
 import os
 import re
-from datetime import datetime
 
-from .. import __version__ as version
 from ..util.fileio import read_file_safely, write_file
 from ._base import BaseScheduler
 
@@ -66,18 +64,18 @@ class SystemdScheduler(BaseScheduler):
         # Convert array to properly quoted command string for ExecStart
         ddns_command = self._quote_command_array(ddns_commands)
         work_dir = os.getcwd()
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        description = self._get_description()
 
         # Create service file content
         service_content = u"""[Unit]
-Description=auto-update v{} installed on {}
+Description={}
 After=network.target
 
 [Service]
 Type=oneshot
 WorkingDirectory={}
 ExecStart={}
-""".format(version, date, work_dir, ddns_command)  # fmt: skip
+""".format(description, work_dir, ddns_command)  # fmt: skip
 
         # Create timer file content
         timer_content = u"""[Unit]

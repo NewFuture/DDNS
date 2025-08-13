@@ -7,9 +7,7 @@ schtasks-based task scheduler
 import os
 import re
 import tempfile
-from datetime import datetime
 
-from .. import __version__ as version
 from ..util.xml import dict_to_xml
 from ._base import BaseScheduler
 
@@ -69,8 +67,7 @@ class SchtasksScheduler(BaseScheduler):
         arguments = self._quote_command_array(cmd_array[1:]) if len(cmd_array) > 1 else ""
 
         # Create XML task definition with working directory support
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        description = "auto-update v{} installed on {}".format(version, date)
+        description = self._get_description()
 
         xml_content = dict_to_xml(
             {

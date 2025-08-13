@@ -6,9 +6,7 @@ macOS launchd-based task scheduler
 
 import os
 import re
-from datetime import datetime
 
-from .. import __version__ as version
 from ..util.fileio import read_file_safely, write_file
 from ..util.xml import dict_to_xml
 from ._base import BaseScheduler
@@ -62,8 +60,7 @@ class LaunchdScheduler(BaseScheduler):
         program_args = self._build_ddns_command(ddns_args)
 
         # Create comment with version and install date (consistent with Windows)
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        comment = "auto-update v{} installed on {}".format(version, date)
+        comment = self._get_description()
 
         # Build plist data structure
         plist_data = {

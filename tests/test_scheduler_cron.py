@@ -229,8 +229,9 @@ class TestCronScheduler(unittest.TestCase):
             # Test build command
             ddns_args = {"dns": "debug", "ipv4": ["test.example.com"]}
             command = self.scheduler._build_ddns_command(ddns_args)
-            self.assertIsInstance(command, str)
-            self.assertIn("python", command.lower())
+            self.assertIsInstance(command, list)
+            command_str = " ".join(command)
+            self.assertIn("python", command_str.lower())
 
             # Test get status (safe read-only operation)
             status = self.scheduler.get_status()
