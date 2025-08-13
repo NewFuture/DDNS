@@ -67,8 +67,11 @@ Linux/MacOS 使用安装脚本获取并安装最新版本(Use the installer to f
 1. (推荐) 下载 ZIP: [`x64.zip`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x64.zip) · [`x86.zip`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x86.zip) · [`arm64.zip`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-arm64.zip) 解压并运行 `ddns.exe`。
 (Recommended) Download the ZIP for your arch, extract, then run `ddns.exe`.
 
-或 2. 直接下载 EXE: [`x64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x64.exe) · [`x86.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x86.exe) · [`arm64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-arm64.exe)
+2. 直接下载 EXE: [`x64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x64.exe) · [`x86.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-x86.exe) · [`arm64.exe`](https://github.com/NewFuture/DDNS/releases/latest/download/ddns-windows-arm64.exe)
 (Alternatively) Download the EXE and run in cmd or PowerShell.
+
+   > ⚠️ **注意**: 单文件版exe可能会被杀毒软件误报，建议使用ZIP版本或添加信任例外。
+   > ⚠️ **Note**: Single-file EXE may be flagged by antivirus software as false positive. Consider using ZIP version or adding trust exception.
 
 3. [可选] 定时任务: 使用内置命令 `ddns task --install` 创建定时任务。
 (Optionally) Use the built-in command `ddns task --install` to create a scheduled task.

@@ -231,7 +231,8 @@ jobs:
           $appDir = Get-ChildItem -Path 'dist-app' -Directory -Filter '*.dist' | Select-Object -First 1
           if (-not $appDir) { throw 'Standalone app folder (*.dist) not found in dist' }
           if (Test-Path 'dist/ddns.zip') { Remove-Item 'dist/ddns.zip' -Force }
-          Compress-Archive -Path $appDir.FullName -DestinationPath 'dist/ddns.zip'
+          # Package the contents of the .dist folder directly, not the folder itself
+          Compress-Archive -Path "$($appDir.FullName)\*" -DestinationPath 'dist/ddns.zip'
           # Clean up temporary output directory
           Remove-Item 'dist-app' -Recurse -Force
 
