@@ -6,10 +6,10 @@ DDNS one-click installation script with support for automatic download and insta
 
 ```bash
 # Install latest stable version online
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh
 
 # Use sudo if root permission is needed for system directory
-curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
+curl -#fSL https://ddns.newfuture.cc/install.sh | sudo sh
 
 # Or using wget
 wget -qO- https://ddns.newfuture.cc/install.sh | sh
@@ -21,13 +21,13 @@ wget -qO- https://ddns.newfuture.cc/install.sh | sh
 
 ```bash
 # Install latest stable version
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 
 # Install latest beta version
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- beta
 
 # Install specific version
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
 ```
 
 ## Command Line Options
@@ -47,16 +47,16 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
 
 ```bash
 # Custom installation directory
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- beta --install-dir ~/.local/bin
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- beta --install-dir ~/.local/bin
 
 # Force reinstallation
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --force
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- --force
 
 # Uninstall
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
 
 # Specify proxy domain (override auto-detection)
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --proxy https://hub.gitmirror.com/
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- --proxy https://hub.gitmirror.com/
 ```
 
 ## System Support
@@ -82,10 +82,10 @@ which ddns        # Check installation location
 
 ```bash
 # Update to latest version
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- latest
 
 # Uninstall
-curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
+curl -#fSL https://ddns.newfuture.cc/install.sh | sh -s -- --uninstall
 
 # Manual uninstall
 sudo rm -f /usr/local/bin/ddns

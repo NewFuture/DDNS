@@ -4,7 +4,8 @@ Unit tests for ddns.scheduler._base module
 @author: NewFuture
 """
 
-from __init__ import unittest, patch
+from __init__ import patch, unittest
+
 from ddns.scheduler._base import BaseScheduler
 
 
@@ -58,8 +59,10 @@ class TestBaseScheduler(unittest.TestCase):
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
-        self.assertIsInstance(command, str)
-        self.assertIn("python", command.lower())
+        self.assertIsInstance(command, list)
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
+        self.assertIn("-m", command)
         self.assertIn("ddns", command)
         self.assertIn("--dns", command)
         self.assertIn("debug", command)
@@ -98,8 +101,9 @@ class TestBaseScheduler(unittest.TestCase):
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
-        self.assertIn("--debug true", command)
-        self.assertIn("--cache true", command)
+        self.assertIn("--debug", command)
+        self.assertIn("true", command)
+        self.assertIn("--cache", command)
 
     def test_build_ddns_command_filters_debug_false(self):
         """Test _build_ddns_command filters out debug=False"""
@@ -107,8 +111,10 @@ class TestBaseScheduler(unittest.TestCase):
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
-        self.assertNotIn("--debug false", command)
-        self.assertIn("--cache true", command)
+        command_str = " ".join(command)
+        self.assertNotIn("--debug false", command_str)
+        self.assertIn("--cache", command)
+        self.assertIn("true", command)
 
     def test_build_ddns_command_with_single_values(self):
         """Test _build_ddns_command with single value arguments"""
@@ -153,7 +159,8 @@ class TestBaseScheduler(unittest.TestCase):
         command = self.scheduler._build_ddns_command(ddns_args)
 
         # Should use sys.executable for Python path
-        self.assertIn("python", command.lower())
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
 
     def test_build_ddns_command_with_special_characters(self):
         """Test _build_ddns_command handles special characters"""
@@ -161,7 +168,7 @@ class TestBaseScheduler(unittest.TestCase):
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
-        self.assertIsInstance(command, str)
+        self.assertIsInstance(command, list)
         self.assertIn("test-domain.example.com", command)
         self.assertIn("test_token_with_special_chars!@#", command)
 
@@ -191,6 +198,27 @@ class TestBaseScheduler(unittest.TestCase):
         # Test disable
         result = self.scheduler.disable()
         self.assertIsInstance(result, bool)
+
+    def test_quote_command_array(self):
+        """Test _quote_command_array method"""
+        # Test basic functionality
+        cmd_array = ["python", "script.py"]
+        result = self.scheduler._quote_command_array(cmd_array)
+        self.assertEqual(result, "python script.py")
+
+        # Test with spaces
+        cmd_array = ["python", "script with spaces.py", "normal_arg"]
+        result = self.scheduler._quote_command_array(cmd_array)
+        self.assertEqual(result, 'python "script with spaces.py" normal_arg')
+
+        # Test with multiple spaced arguments
+        cmd_array = ["python", "-m", "ddns", "--config", "config file.json"]
+        result = self.scheduler._quote_command_array(cmd_array)
+        self.assertEqual(result, 'python -m ddns --config "config file.json"')
+
+        # Test empty array
+        result = self.scheduler._quote_command_array([])
+        self.assertEqual(result, "")
 
 
 if __name__ == "__main__":

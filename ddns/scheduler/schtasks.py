@@ -6,12 +6,9 @@ schtasks-based task scheduler
 
 import os
 import re
+import tempfile
 
-from ..util.fileio import write_file
 from ._base import BaseScheduler
-
-# Constants
-VBS_SCRIPT = "~\\AppData\\Local\\DDNS\\ddns_silent.vbs"
 
 
 class SchtasksScheduler(BaseScheduler):
@@ -23,29 +20,6 @@ class SchtasksScheduler(BaseScheduler):
         """Helper to run schtasks commands with consistent error handling"""
         result = self._run_command(["schtasks"] + list(args))
         return result is not None
-
-    def _create_vbs_script(self, ddns_args=None):  # type: (dict | None) -> str
-        """Create VBS script for silent execution and return its path"""
-        ddns_command = self._build_ddns_command(ddns_args)
-        work_dir = os.getcwd()
-
-        # Build VBS content with proper escaping
-        vbs_content = """Set objShell = CreateObject("WScript.Shell")
-    objShell.CurrentDirectory = "{work_dir}"
-    objShell.Run "{ddns_command}", 0, False
-    """.format(work_dir=work_dir.replace("\\", "\\\\"), ddns_command=ddns_command.replace('"', '""'))
-
-        # Try locations in order: AppData, then working directory
-        vbs_paths = [os.path.expanduser(VBS_SCRIPT), os.path.join(work_dir, ".ddns_silent.vbs")]
-
-        for path in vbs_paths:
-            try:
-                write_file(path, vbs_content)
-                return path
-            except Exception as e:
-                self.logger.warning("Failed to create VBS in %s: %s", path, e)
-
-        raise Exception("Failed to create VBS script in any location")
 
     def _extract_xml(self, xml_text, tag_name):  # type: (str, str) -> str | None
         """Extract XML tag content using regex for better performance and flexibility"""
@@ -82,23 +56,60 @@ class SchtasksScheduler(BaseScheduler):
         return status
 
     def install(self, interval, ddns_args=None):
-        vbs_path = self._create_vbs_script(ddns_args)
-        cmd = 'wscript.exe "{}"'.format(vbs_path)
-        return self._schtasks("/Create", "/SC", "MINUTE", "/MO", str(interval), "/TR", cmd, "/TN", self.NAME, "/F")
+        # Build command line as array: prefer pythonw for script mode, or compiled exe directly
+        cmd_array = self._build_ddns_command(ddns_args)
+        workdir = os.getcwd()
+
+        # Split array into executable and arguments for schtasks XML format
+        # For Windows scheduler, prefer pythonw.exe to avoid console window
+        executable = cmd_array[0].replace("python.exe", "pythonw.exe")
+        arguments = self._quote_command_array(cmd_array[1:]) if len(cmd_array) > 1 else ""
+
+        # Create XML task definition with working directory support
+        description = self._get_description()
+
+        # Use template string to generate Windows Task Scheduler XML
+        xml_content = """<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>{description}</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>1900-01-01T00:00:00</StartBoundary>
+      <Repetition>
+        <Interval>PT{interval}M</Interval>
+      </Repetition>
+      <Enabled>true</Enabled>
+    </TimeTrigger>
+  </Triggers>
+  <Actions>
+    <Exec>
+      <Command>{exe}</Command>
+      <Arguments>{arguments}</Arguments>
+      <WorkingDirectory>{dir}</WorkingDirectory>
+    </Exec>
+  </Actions>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+  </Settings>
+</Task>""".format(description=description, interval=interval, exe=executable, arguments=arguments, dir=workdir)
+
+        # Write XML to temp file and use it to create task
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write(xml_content)
+            xml_file = f.name
+
+        try:
+            success = self._schtasks("/Create", "/XML", xml_file, "/TN", self.NAME, "/F")
+            return success
+        finally:
+            os.unlink(xml_file)
 
     def uninstall(self):
         success = self._schtasks("/Delete", "/TN", self.NAME, "/F")
-        if success:
-            # Clean up VBS script files
-            vbs_paths = [os.path.expanduser(VBS_SCRIPT), os.path.join(os.getcwd(), ".ddns_silent.vbs")]
-            for vbs_path in vbs_paths:
-                if os.path.exists(vbs_path):
-                    try:
-                        os.remove(vbs_path)
-                        self.logger.info("Cleaned up VBS script file: %s", vbs_path)
-                    except OSError:
-                        self.logger.info("fail to remove %s", vbs_path)
-                        pass  # Ignore cleanup failures
         return success
 
     def enable(self):

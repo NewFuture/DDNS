@@ -248,7 +248,7 @@ download_file() {
     fi
 
     if [ "$DOWNLOAD_TOOL" = "curl" ]; then
-        curl -fsSL --retry $retries -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
+        curl -#fSL --retry $retries -H "User-Agent: $USER_AGENT" --connect-timeout "$timeout" --max-time "$timeout" "$url" -o "$output"
         rc=$?
         case "$rc" in
             35|51|60|77)
@@ -303,21 +303,24 @@ find_working_proxy() {
 # Get latest beta version from api.github.com only
 get_beta_version() {
     local temp_file url
+    # Reset VERSION to avoid using a stale value on API failures
+    VERSION=""
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
-    url="https://api.github.com/repos/$REPO/releases?per_page=1"
+    url="https://api.github.com/repos/$REPO/tags?per_page=1"
 
     print_info "Fetching version from api.github.com..." "正在从 api.github.com 获取版本信息..."
     
     # Simple download and parse - let download_file handle errors and retries
     if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
-        VERSION=$(grep -m1 -o '"tag_name":"[^"]*"' "$temp_file" | cut -d '"' -f4)
+        # Tags API returns objects with a "name" field for the tag
+        VERSION=$(grep -m1 -o '"name":"[^"]*"' "$temp_file" | cut -d '"' -f4)
     fi
 
     # Cleanup temp file
     rm -f "$temp_file" 2>/dev/null || true
 
     # Validate result
-    if [ -z "$VERSION" ] || [ "$VERSION" = "beta" ]; then
+    if [ -z "$VERSION" ]; then
         print_error "Failed to get version from GitHub API. Try using 'latest' instead." "无法从 GitHub API 获取版本，请尝试使用 'latest'。"
         exit 1
     fi

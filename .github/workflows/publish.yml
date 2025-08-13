@@ -11,7 +11,7 @@ permissions:
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     environment:
       name: publish
       url: https://hub.docker.com/r/newfuture/ddns
@@ -167,6 +167,33 @@ jobs:
         run: ./dist/ddns -c tests/config/debug.json
       - name: test noip config with executable
         run: ./dist/ddns -c tests/config/noip.json
+
+      - name: Build Windows App (standalone)
+        if: runner.os == 'Windows'
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: standalone
+          output-dir: dist-app
+          lto: yes
+          file-description: "DDNS客户端 ${{ github.ref_name }}"
+          windows-console-mode: attach
+          windows-icon-from-ico: favicon.ico
+
+      - name: Package Windows app as ddns.zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $appDir = Get-ChildItem -Path 'dist-app' -Directory -Filter '*.dist' | Select-Object -First 1
+          if (-not $appDir) { throw 'Standalone app folder (*.dist) not found in dist' }
+          $zipName = "ddns-windows-${{ matrix.arch }}.zip"
+          if (Test-Path "dist/$zipName") { Remove-Item "dist/$zipName" -Force }
+          # Package the contents of the .dist folder directly, not the folder itself
+          Compress-Archive -Path "$($appDir.FullName)\*" -DestinationPath "dist/$zipName"
+          # Clean up temporary output directory
+          Remove-Item 'dist-app' -Recurse -Force
 
       - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
         if: runner.os == 'Linux'

@@ -6,9 +6,7 @@ macOS launchd-based task scheduler
 
 import os
 import re
-from datetime import datetime
 
-from .. import __version__ as version
 from ..util.fileio import read_file_safely, write_file
 from ._base import BaseScheduler
 
@@ -58,39 +56,32 @@ class LaunchdScheduler(BaseScheduler):
 
     def install(self, interval, ddns_args=None):
         plist_path = self._get_plist_path()
-        ddns_command = self._build_ddns_command(ddns_args)
-        program_args = ddns_command.split()
-        program_args_xml = "\n".join("        <string>{}</string>".format(arg.strip('"')) for arg in program_args)
+        program_args = self._build_ddns_command(ddns_args)
 
         # Create comment with version and install date (consistent with Windows)
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        comment = "auto-update v{} installed on {}".format(version, date)
+        comment = self._get_description()
+
+        # Generate plist XML using template string for proper macOS plist format
+        program_args_xml = "".join("        <string>{}</string>\n".format(arg) for arg in program_args)
+
         plist_content = """<?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>{label}</string>
-        <key>Description</key>
-        <string>{comment}</string>
-        <key>ProgramArguments</key>
-        <array>
-    {program_args_xml}
-        </array>
-        <key>StartInterval</key>
-        <integer>{interval}</integer>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>{cwd}</string>
-    </dict>
-    </plist>
-    """.format(
-            label=self.LABEL,
-            comment=comment,
-            program_args_xml=program_args_xml,
-            interval=interval * 60,
-            cwd=os.getcwd(),
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{label}</string>
+    <key>Description</key>
+    <string>{description}</string>
+    <key>ProgramArguments</key>
+    <array>{program}</array>
+    <key>StartInterval</key>
+    <integer>{interval}</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>WorkingDirectory</key>
+    <string>{dir}</string>
+</dict>
+</plist>""".format(
+            label=self.LABEL, description=comment, program=program_args_xml, interval=interval * 60, dir=os.getcwd()
         )
 
         write_file(plist_path, plist_content)

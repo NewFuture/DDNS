@@ -183,6 +183,7 @@ jobs:
           output-dir: dist
           lto: yes
           file-description: "DDNS客户端[测试版 Alpha]"
+          windows-console-mode: ${{ runner.os == 'Windows' && 'attach' || '' }}
           windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
           linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
@@ -209,6 +210,32 @@ jobs:
       - run: ./dist/ddns -c tests/config/he-proxies.json --debug
       - run: ./dist/ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
+      - name: Build Windows App (standalone)
+        if: runner.os == 'Windows'
+        uses: Nuitka/Nuitka-Action@v1.3
+        with:
+          nuitka-version: main
+          script-name: run.py
+          mode: standalone
+          output-dir: dist-app
+          lto: yes
+          file-description: "DDNS客户端[测试版 Alpha]"
+          windows-console-mode: attach
+          windows-icon-from-ico: favicon.ico
+
+      - name: Package Windows app as ddns.zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $appDir = Get-ChildItem -Path 'dist-app' -Directory -Filter '*.dist' | Select-Object -First 1
+          if (-not $appDir) { throw 'Standalone app folder (*.dist) not found in dist' }
+          if (Test-Path 'dist/ddns.zip') { Remove-Item 'dist/ddns.zip' -Force }
+          # Package the contents of the .dist folder directly, not the folder itself
+          Compress-Archive -Path "$($appDir.FullName)\*" -DestinationPath 'dist/ddns.zip'
+          # Clean up temporary output directory
+          Remove-Item 'dist-app' -Recurse -Force
+
       # Upload build result
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -220,6 +247,7 @@ jobs:
             dist/*.bin
             dist/*.app
             dist/ddns
+            dist/*.zip
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
 
   linux-binary:

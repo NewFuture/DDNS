@@ -4,16 +4,16 @@ DDNS
 @author: NewFuture, rufengsuixing
 """
 
-from io import TextIOWrapper
-from subprocess import check_output
-from logging import getLogger
 import sys
+from io import TextIOWrapper
+from logging import getLogger
+from subprocess import check_output
 
-from .__init__ import __version__, __description__, build_date
-from .config import load_configs, Config  # noqa: F401
-from .provider import get_provider_class, SimpleProvider  # noqa: F401
 from . import ip
+from .__init__ import __description__, __version__, build_date
 from .cache import Cache
+from .config import Config, load_configs  # noqa: F401
+from .provider import SimpleProvider, get_provider_class  # noqa: F401
 
 logger = getLogger()
 
@@ -102,8 +102,8 @@ def run(config):
 
 
 def main():
-    encode = sys.stdout.encoding
-    if encode is not None and encode.lower() != "utf-8" and hasattr(sys.stdout, "buffer"):
+    stdout = sys.stdout  # pythonw 模式无 stdout
+    if stdout and stdout.encoding and stdout.encoding.lower() != "utf-8" and hasattr(stdout, "buffer"):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")

@@ -221,6 +221,19 @@ def generate_version():
     return f"{base}.dev{suffix}"
 
 
+def resolve_version(mode: str) -> str:
+    """
+    仅在 PyPI 发布步骤（mode = 'version'）使用 generate_version；
+    其他步骤优先使用标签 GITHUB_REF_NAME（规范化），没有标签时回退到 generate_version。
+    """
+    if mode == "version":
+        return generate_version()
+    ref = os.environ.get("GITHUB_REF_NAME", "")
+    if re.match(r"^v\d+\.\d+", ref):
+        return normalize_tag(ref)
+    return generate_version()
+
+
 def replace_version_and_date(pyfile: str, version: str, date_str: str):
     with open(pyfile, "r", encoding="utf-8") as f:
         text = f.read()
@@ -234,7 +247,7 @@ def replace_version_and_date(pyfile: str, version: str, date_str: str):
         exit(1)
 
 
-def replace_links_for_release_in_file(file_path, version, label=None):
+def replace_links_for_release_in_file(file_path, version, label=None, tag=None):
     """
     将指定 Markdown 文件中的 "latest" 等动态链接替换为给定版本，便于发布归档。
     """
@@ -245,25 +258,34 @@ def replace_links_for_release_in_file(file_path, version, label=None):
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
+    # Determine the tag string to use for GitHub/Docker (prefer provided tag, else add 'v' to version)
+    tag_str = (
+        tag or os.environ.get("GITHUB_REF_NAME") or ("v" + version if not str(version).startswith("v") else version)
+    )
+
+    # shields.io static badge escaping: '-' -> '--', '_' -> '__'
+    def _shields_escape(text):
+        return str(text).replace("-", "--").replace("_", "__")
+
     # GitHub releases download links -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/releases/latest/download/",
-        "https://github.com/NewFuture/DDNS/releases/download/{}/".format(version),
+        "https://github.com/NewFuture/DDNS/releases/download/{}/".format(tag_str),
         content,
     )
 
     # GitHub releases page -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/releases/latest",
-        "https://github.com/NewFuture/DDNS/releases/tag/{}".format(version),
+        "https://github.com/NewFuture/DDNS/releases/tag/{}".format(tag_str),
         content,
     )
 
     # Docker tags from latest to a pinned tag
-    content = re.sub(r"docker pull ([^:\s]+):latest", "docker pull \\1:{}".format(version), content)
+    content = re.sub(r"docker pull ([^:\s]+):latest", "docker pull \\1:{}".format(tag_str), content)
 
     # Docker image references in run/create/examples: pin ghcr.io/newfuture/ddns:latest and newfuture/ddns:latest
-    content = re.sub(r"(ghcr\.io/newfuture/ddns|newfuture/ddns):latest", r"\1:{}".format(version), content)
+    content = re.sub(r"(ghcr\.io/newfuture/ddns|newfuture/ddns):latest", r"\1:{}".format(tag_str), content)
 
     # PyPI project page -> pin to version page
     content = re.sub(
@@ -272,22 +294,31 @@ def replace_links_for_release_in_file(file_path, version, label=None):
         content,
     )
 
-    # Shield.io badges - Docker version badge
+    # Shield.io badges - Docker version badge (preserve query string)
     content = re.sub(
-        r"https://img\.shields\.io/docker/v/newfuture/ddns/latest",
-        "https://img.shields.io/docker/v/newfuture/ddns/{}".format(version),
+        r"(https://img\.shields\.io/docker/v/newfuture/ddns/)latest(\?[^)\s]*)?", r"\1{}\2".format(tag_str), content
+    )
+
+    # Simple pin for GitHub release badge -> static text with tag
+    content = re.sub(
+        r"https://img\.shields\.io/github/v/release/[^)\s]+",
+        "https://img.shields.io/badge/DDNS-{}-black?logo=github&style=for-the-badge&label=DDNS".format(
+            _shields_escape(tag_str)
+        ),
         content,
     )
 
-    # Shield.io badges - PyPI version (rarely used with explicit version, keep pattern to avoid accidental match)
+    # Simple pin for PyPI version badge -> static text with version
     content = re.sub(
-        r"https://img\.shields\.io/pypi/v/ddns(?!\?)", "https://img.shields.io/pypi/v/ddns/{}".format(version), content
+        r"https://img\.shields\.io/pypi/v/ddns[^)\s]*",
+        "https://img.shields.io/badge/PyPI-{}-blue?logo=python&style=for-the-badge".format(_shields_escape(version)),
+        content,
     )
 
     # GitHub archive links -> pin to tag
     content = re.sub(
         r"https://github\.com/NewFuture/DDNS/archive/refs/tags/latest\.(zip|tar\.gz)",
-        "https://github.com/NewFuture/DDNS/archive/refs/tags/{}.\\1".format(version),
+        "https://github.com/NewFuture/DDNS/archive/refs/tags/{}.\\1".format(tag_str),
         content,
     )
 
@@ -295,8 +326,8 @@ def replace_links_for_release_in_file(file_path, version, label=None):
     content = re.sub(r"pip install -U ddns(?!=)", "pip install -U ddns=={}".format(version), content)
     content = re.sub(r"pip install ddns(?!=)", "pip install ddns=={}".format(version), content)
 
-    # One-click install script examples: pin 'latest' to specific version
-    content = re.sub(r"(install\.sh \| sh -s --)\s+latest", r"\1 {}".format(version), content, flags=re.IGNORECASE)
+    # One-click install script examples: pin 'latest' to specific tag (vX.Y.Z)
+    content = re.sub(r"(install\.sh \| sh -s --)\s+latest", r"\1 {}".format(tag_str), content, flags=re.IGNORECASE)
 
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -318,7 +349,7 @@ def main():
         exit(1)
 
     mode = sys.argv[1].lower() if len(sys.argv) > 1 else "default"
-    version = generate_version()
+    version = resolve_version(mode)
 
     if mode not in ["version", "release", "default"]:
         print(f"unknown mode: {mode}")
@@ -328,7 +359,9 @@ def main():
         # 同步修改 doc/release.md 的版本与链接
         release_md_path = os.path.join(ROOT, "doc", "release.md")
         if os.path.exists(release_md_path):
-            replace_links_for_release_in_file(release_md_path, version, label="doc/release.md")
+            replace_links_for_release_in_file(
+                release_md_path, version, label="doc/release.md", tag=os.environ.get("GITHUB_REF_NAME")
+            )
         exit(0)
 
     date_str = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")

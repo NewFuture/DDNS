@@ -7,7 +7,9 @@ Test scheduler initialization and real functionality
 import os
 import platform
 import subprocess
+
 from __init__ import unittest
+
 from ddns.scheduler import get_scheduler
 
 
@@ -137,11 +139,12 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
         """Test that _build_ddns_command works correctly"""
         try:
             command = self.scheduler._build_ddns_command(self.test_ddns_args)
-            self.assertIsInstance(command, str)
-            self.assertIn("python", command.lower())
-            self.assertIn("ddns", command)
+            self.assertIsInstance(command, list)
+            command_str = " ".join(command)
+            self.assertIn("python", command_str.lower())
+            self.assertIn("ddns", command_str)
             # Should contain debug provider
-            self.assertIn("debug", command)
+            self.assertIn("debug", command_str)
         except Exception as e:
             self.fail("_build_ddns_command() failed: {}".format(e))
 
@@ -166,8 +169,9 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
 
         # Test command building
         command = scheduler._build_ddns_command(self.test_ddns_args)
-        self.assertIsInstance(command, str)
-        self.assertIn("python", command.lower())
+        self.assertIsInstance(command, list)
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
 
     @unittest.skipUnless(platform.system().lower() == "linux", "Linux-specific test")
     def test_systemd_scheduler_real_calls(self):
@@ -252,7 +256,7 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
 
         # Test command building (safe operation)
         command = self.scheduler._build_ddns_command(self.test_ddns_args)
-        self.assertIsInstance(command, str)
+        self.assertIsInstance(command, list)
         self.assertGreater(len(command), 0)
 
     def test_scheduler_real_integration(self):
@@ -288,13 +292,14 @@ class TestSchedulerRealFunctionality(unittest.TestCase):
             "ttl": 600,
         }
         command = current_scheduler._build_ddns_command(test_args)
-        self.assertIsInstance(command, str)
+        self.assertIsInstance(command, list)
         self.assertGreater(len(command), 0)
 
         # Verify command contains expected elements
-        self.assertIn("python", command.lower())
-        self.assertIn("debug", command)
-        self.assertIn("test.domain.com", command)
+        command_str = " ".join(command)
+        self.assertIn("python", command_str.lower())
+        self.assertIn("debug", command_str)
+        self.assertIn("test.domain.com", command_str)
 
 
 if __name__ == "__main__":

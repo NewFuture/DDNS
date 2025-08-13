@@ -7,9 +7,7 @@ Cron-based task scheduler for Unix-like systems
 import os
 import subprocess
 import tempfile
-from datetime import datetime
 
-from .. import __version__ as version
 from ..util.fileio import write_file
 from ._base import BaseScheduler
 
@@ -59,11 +57,11 @@ class CronScheduler(BaseScheduler):
         return status
 
     def install(self, interval, ddns_args=None):
-        ddns_command = self._build_ddns_command(ddns_args)
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cron_entry = '*/{} * * * * cd "{}" && {} # DDNS: auto-update v{} installed on {}'.format(
-            interval, os.getcwd(), ddns_command, version, date
-        )
+        ddns_commands = self._build_ddns_command(ddns_args)
+        # Convert array to properly quoted command string for cron
+        ddns_command = self._quote_command_array(ddns_commands)
+        description = self._get_description()
+        cron_entry = '*/{} * * * * cd "{}" && {} # DDNS: {}'.format(interval, os.getcwd(), ddns_command, description)
 
         crontext = self._run_command(["crontab", "-l"]) or ""
         lines = [line for line in crontext.splitlines() if self.KEY not in line]
