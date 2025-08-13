@@ -10,6 +10,7 @@ from datetime import datetime
 
 from .. import __version__ as version
 from ..util.fileio import read_file_safely, write_file
+from ..util.xml import dict_to_xml
 from ._base import BaseScheduler
 
 
@@ -58,39 +59,25 @@ class LaunchdScheduler(BaseScheduler):
 
     def install(self, interval, ddns_args=None):
         plist_path = self._get_plist_path()
-        ddns_command = self._build_ddns_command(ddns_args)
-        program_args = ddns_command.split()
-        program_args_xml = "\n".join("        <string>{}</string>".format(arg.strip('"')) for arg in program_args)
+        program_args = self._build_ddns_command(ddns_args)
 
         # Create comment with version and install date (consistent with Windows)
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         comment = "auto-update v{} installed on {}".format(version, date)
-        plist_content = """<?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>{label}</string>
-        <key>Description</key>
-        <string>{comment}</string>
-        <key>ProgramArguments</key>
-        <array>
-    {program_args_xml}
-        </array>
-        <key>StartInterval</key>
-        <integer>{interval}</integer>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>{cwd}</string>
-    </dict>
-    </plist>
-    """.format(
-            label=self.LABEL,
-            comment=comment,
-            program_args_xml=program_args_xml,
-            interval=interval * 60,
-            cwd=os.getcwd(),
+
+        # Build plist data structure
+        plist_data = {
+            "Label": self.LABEL,
+            "Description": comment,
+            "ProgramArguments": program_args,
+            "StartInterval": interval * 60,
+            "RunAtLoad": True,
+            "WorkingDirectory": os.getcwd(),
+        }
+
+        # Generate plist XML using dict_to_xml
+        plist_content = dict_to_xml(
+            {"dict": plist_data}, root="plist", encoding="UTF-8", version="1.0", root_version="1.0"
         )
 
         write_file(plist_path, plist_content)

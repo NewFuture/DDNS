@@ -6,8 +6,11 @@ schtasks-based task scheduler
 
 import os
 import re
-import sys
+import tempfile
+from datetime import datetime
 
+from .. import __version__ as version
+from ..util.xml import dict_to_xml
 from ._base import BaseScheduler
 
 
@@ -56,9 +59,53 @@ class SchtasksScheduler(BaseScheduler):
         return status
 
     def install(self, interval, ddns_args=None):
-        # Build command line: prefer pythonw for script mode, or compiled exe directly
-        cmd = self._build_ddns_command(ddns_args)
-        return self._schtasks("/Create", "/SC", "MINUTE", "/MO", str(interval), "/TR", cmd, "/TN", self.NAME, "/F")
+        # Build command line as array: prefer pythonw for script mode, or compiled exe directly
+        cmd_array = self._build_ddns_command(ddns_args)
+        workdir = os.getcwd()
+
+        # Split array into executable and arguments for schtasks XML format
+        # For Windows scheduler, prefer pythonw.exe to avoid console window
+        executable = cmd_array[0].replace("python.exe", "pythonw.exe")
+        arguments = self._quote_command_array(cmd_array[1:]) if len(cmd_array) > 1 else ""
+
+        # Create XML task definition with working directory support
+        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        description = "auto-update v{} installed on {}".format(version, date)
+
+        xml_content = dict_to_xml(
+            {
+                "RegistrationInfo": {"Description": description},
+                "Triggers": {
+                    "TimeTrigger": {
+                        "StartBoundary": "1900-01-01T00:00:00",
+                        "Repetition": {"Interval": "PT{}M".format(interval)},
+                        "Enabled": "true",
+                    }
+                },
+                "Actions": {"Exec": {"Command": executable, "Arguments": arguments, "WorkingDirectory": workdir}},
+                "Settings": {
+                    "MultipleInstancesPolicy": "IgnoreNew",
+                    "DisallowStartIfOnBatteries": "false",
+                    "StopIfGoingOnBatteries": "false",
+                },
+            },
+            root="Task",
+            namespace="http://schemas.microsoft.com/windows/2004/02/mit/task",
+            encoding="UTF-16",
+            version="1.0",
+            root_version="1.2",
+        )
+
+        # Write XML to temp file and use it to create task
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as f:
+            f.write(xml_content)
+            xml_file = f.name
+
+        try:
+            success = self._schtasks("/Create", "/XML", xml_file, "/TN", self.NAME, "/F")
+            return success
+        finally:
+            os.unlink(xml_file)
 
     def uninstall(self):
         success = self._schtasks("/Delete", "/TN", self.NAME, "/F")
@@ -69,15 +116,3 @@ class SchtasksScheduler(BaseScheduler):
 
     def disable(self):
         return self._schtasks("/Change", "/TN", self.NAME, "/Disable")
-
-    # Override to prefer pythonw when not frozen (Windows scheduler only)
-    def _get_ddns_cmd(self):  # type: () -> str
-        if hasattr(sys, "frozen"):
-            # Compiled binary, call directly (already configured for no window)
-            return sys.executable
-        # Non-frozen: try pythonw next to the current interpreter; fallback to sys.executable
-        exe = sys.executable or "python"
-        base_dir = os.path.dirname(exe)
-        pythonw_candidate = os.path.join(base_dir, "pythonw.exe")
-        py = pythonw_candidate if os.path.exists(pythonw_candidate) else exe
-        return '"%s" -m ddns' % (py,)

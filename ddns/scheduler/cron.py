@@ -59,7 +59,9 @@ class CronScheduler(BaseScheduler):
         return status
 
     def install(self, interval, ddns_args=None):
-        ddns_command = self._build_ddns_command(ddns_args)
+        ddns_commands = self._build_ddns_command(ddns_args)
+        # Convert array to properly quoted command string for cron
+        ddns_command = self._quote_command_array(ddns_commands)
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cron_entry = '*/{} * * * * cd "{}" && {} # DDNS: auto-update v{} installed on {}'.format(
             interval, os.getcwd(), ddns_command, version, date

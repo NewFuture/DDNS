@@ -19,40 +19,44 @@ class BaseScheduler(object):
         """Safely run subprocess command, return decoded string or None if failed"""
         try:
             if sys.version_info[0] >= 3:
-                kwargs.setdefault("stderr", subprocess.DEVNULL)
                 kwargs.setdefault("timeout", 60)  # 60 second timeout to prevent hanging
             return subprocess.check_output(command, universal_newlines=True, **kwargs)
         except Exception as e:
             self.logger.debug("Command failed: %s", e)
             return None
 
-    def _get_ddns_cmd(self):  # type: () -> str
-        """Get DDNS command for scheduled execution"""
+    def _get_ddns_cmd(self):  # type: () -> list[str]
+        """Get DDNS command for scheduled execution as array"""
         if hasattr(sys, "frozen"):
-            return sys.executable
+            return [sys.argv[0] or sys.executable]
         else:
-            return '"{}" -m ddns'.format(sys.executable)
+            return [sys.executable, "-m", "ddns"]
 
-    def _build_ddns_command(self, ddns_args=None):  # type: (dict | None) -> str
-        """Build DDNS command with arguments"""
-        cmd_parts = [self._get_ddns_cmd()]
+    def _build_ddns_command(self, ddns_args=None):  # type: (dict | None) -> list[str]
+        """Build DDNS command with arguments as array"""
+        # Get base command as array
+        cmd_parts = self._get_ddns_cmd()
 
         if not ddns_args:
-            return " ".join(cmd_parts)
+            return cmd_parts
 
         # Filter out debug=False to reduce noise
         args = {k: v for k, v in ddns_args.items() if not (k == "debug" and not v)}
 
         for key, value in args.items():
             if isinstance(value, bool):
-                cmd_parts.append("--{} {}".format(key, str(value).lower()))
+                cmd_parts.extend(["--{}".format(key), str(value).lower()])
             elif isinstance(value, list):
                 for item in value:
-                    cmd_parts.append('--{} "{}"'.format(key, item))
+                    cmd_parts.extend(["--{}".format(key), str(item)])
             else:
-                cmd_parts.append('--{} "{}"'.format(key, value))
+                cmd_parts.extend(["--{}".format(key), str(value)])
 
-        return " ".join(cmd_parts)
+        return cmd_parts
+
+    def _quote_command_array(self, cmd_array):  # type: (list[str]) -> str
+        """Convert command array to properly quoted command string"""
+        return " ".join('"{}"'.format(arg) if " " in arg else arg for arg in cmd_array)
 
     def is_installed(self):  # type: () -> bool
         """Check if DDNS task is installed"""

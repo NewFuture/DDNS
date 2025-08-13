@@ -7,9 +7,10 @@ Systemd timer-based task scheduler for Linux
 import os
 import re
 from datetime import datetime
-from ._base import BaseScheduler
-from ..util.fileio import read_file_safely, write_file
+
 from .. import __version__ as version
+from ..util.fileio import read_file_safely, write_file
+from ._base import BaseScheduler
 
 try:  # python 3
     PermissionError  # type: ignore
@@ -61,7 +62,9 @@ class SystemdScheduler(BaseScheduler):
 
     def install(self, interval, ddns_args=None):
         """Install systemd timer with specified interval"""
-        ddns_command = self._build_ddns_command(ddns_args)
+        ddns_commands = self._build_ddns_command(ddns_args)
+        # Convert array to properly quoted command string for ExecStart
+        ddns_command = self._quote_command_array(ddns_commands)
         work_dir = os.getcwd()
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
