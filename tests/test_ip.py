@@ -26,9 +26,9 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "1.2.3.4"
         mock_request.return_value = mock_response
-        
+
         result = ip.public_v4("https://test.example.com/ip")
-        
+
         self.assertEqual(result, "1.2.3.4")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
@@ -39,9 +39,9 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "2001:db8::1"
         mock_request.return_value = mock_response
-        
+
         result = ip.public_v6("https://test.example.com/ipv6")
-        
+
         self.assertEqual(result, "2001:db8::1")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ipv6", verify=ip.ssl_verify, retries=2)
 
@@ -50,9 +50,9 @@ class TestIpModule(unittest.TestCase):
         """测试自定义URL获取IPv4 - 请求失败"""
         # 模拟请求异常
         mock_request.side_effect = Exception("Network error")
-        
+
         result = ip.public_v4("https://test.example.com/ip")
-        
+
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
@@ -63,9 +63,9 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "invalid response"
         mock_request.return_value = mock_response
-        
+
         result = ip.public_v4("https://test.example.com/ip")
-        
+
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
@@ -76,9 +76,9 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "1.2.3.4"
         mock_request.return_value = mock_response
-        
+
         result = ip.public_v4()
-        
+
         self.assertEqual(result, "1.2.3.4")
         # 应该只调用第一个API
         mock_request.assert_called_once_with("GET", ip.PUBLIC_IPV4_APIS[0], verify=ip.ssl_verify, retries=2)
@@ -93,11 +93,11 @@ class TestIpModule(unittest.TestCase):
                 mock_response = MagicMock()
                 mock_response.body = "1.2.3.4"
                 return mock_response
-        
+
         mock_request.side_effect = mock_request_side_effect
-        
+
         result = ip.public_v4()
-        
+
         self.assertEqual(result, "1.2.3.4")
         # 应该调用前两个API
         self.assertEqual(mock_request.call_count, 2)
@@ -109,9 +109,9 @@ class TestIpModule(unittest.TestCase):
         """测试公网IPv4获取 - 多个API全部失败"""
         # 模拟所有API都失败
         mock_request.side_effect = Exception("All APIs failed")
-        
+
         result = ip.public_v4()
-        
+
         self.assertIsNone(result)
         # 应该调用所有API
         self.assertEqual(mock_request.call_count, len(ip.PUBLIC_IPV4_APIS))
@@ -123,9 +123,9 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "2001:db8::1"
         mock_request.return_value = mock_response
-        
+
         result = ip.public_v6()
-        
+
         self.assertEqual(result, "2001:db8::1")
         # 应该只调用第一个API
         mock_request.assert_called_once_with("GET", ip.PUBLIC_IPV6_APIS[0], verify=ip.ssl_verify, retries=2)
@@ -140,11 +140,11 @@ class TestIpModule(unittest.TestCase):
                 mock_response = MagicMock()
                 mock_response.body = "2001:db8::1"
                 return mock_response
-        
+
         mock_request.side_effect = mock_request_side_effect
-        
+
         result = ip.public_v6()
-        
+
         self.assertEqual(result, "2001:db8::1")
         # 应该调用前两个API
         self.assertEqual(mock_request.call_count, 2)
@@ -155,7 +155,7 @@ class TestIpModule(unittest.TestCase):
         """测试IPv4 API列表存在并包含所需的API"""
         expected_apis = [
             "https://api.ipify.cn",
-            "https://api.ipify.org", 
+            "https://api.ipify.org",
             "https://4.ipw.cn/",
             "https://ipinfo.io/ip",
             "https://api-ipv4.ip.sb/ip",
@@ -186,12 +186,12 @@ class TestIpModule(unittest.TestCase):
                 return mock_response
             else:
                 raise Exception("Unexpected URL")
-        
+
         mock_request.side_effect = mock_request_side_effect
-        
+
         # 使用"public"规则获取IPv4地址
         result = get_ip("4", ["public"])
-        
+
         self.assertEqual(result, "1.2.3.4")
         # 应该调用了前两个API
         self.assertEqual(mock_request.call_count, 2)
@@ -203,10 +203,10 @@ class TestIpModule(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = "1.2.3.4"
         mock_request.return_value = mock_response
-        
+
         # 使用"url:"规则获取IPv4地址
         result = get_ip("4", ["url:https://custom.api.com/ip"])
-        
+
         self.assertEqual(result, "1.2.3.4")
         # 应该只调用指定的API
         mock_request.assert_called_once()
@@ -219,16 +219,16 @@ class TestIpModule(unittest.TestCase):
         # 注意：当前get_ip实现有限制 - 如果一个规则返回None，它不会尝试下一个规则
         # 只有当规则抛出异常时才会尝试下一个规则
         # 这是一个已知限制，不在本次功能实现范围内
-        
+
         # 模拟所有public API都失败（返回无效响应）
         mock_response = MagicMock()
         mock_response.body = "invalid response"
         mock_request.return_value = mock_response
-        
+
         # 使用多个规则：先尝试public，失败后应该尝试url:指定的API
         # 但由于当前实现限制，public返回None后不会尝试下一个规则
         result = get_ip("4", ["public", "url:https://backup.api.com/ip"])
-        
+
         # 由于当前实现限制，返回None而不是继续尝试backup API
         self.assertIsNone(result)
         # 只调用了public APIs，没有调用backup API

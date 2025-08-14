@@ -26,7 +26,7 @@ PUBLIC_IPV4_APIS = [
     "http://checkip.amazonaws.com",
 ]
 
-# 公网IPv6 API列表，按优先级排序  
+# 公网IPv6 API列表，按优先级排序
 PUBLIC_IPV6_APIS = [
     "https://api6.ipify.org/",
     "https://6.ipw.cn/",
