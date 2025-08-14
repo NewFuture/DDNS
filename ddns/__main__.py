@@ -107,6 +107,11 @@ def main():
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
+    # Windows 下输出一个空行
+    if stdout and sys.platform.startswith("win"):
+        stdout.write("\r\n")
+
     logger.name = "ddns"
 
     # 使用多配置加载器，它会自动处理单个和多个配置
