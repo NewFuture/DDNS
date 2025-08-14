@@ -487,15 +487,7 @@ def main():
     # add_nuitka_include_modules(run_py_path)
 
     # 检测Docker环境并移除scheduler
-    # Docker构建通常在/app目录或有特定环境变量
-    is_docker = (
-        os.path.exists("/.dockerenv") or
-        os.environ.get("DOCKER_ENV") == "true" or
-        os.getcwd() == "/app" or
-        mode == "docker"
-    )
-
-    if is_docker:
+    if mode == "docker":
         print("Detected Docker environment, removing scheduler components...")
         remove_scheduler_for_docker()
 
