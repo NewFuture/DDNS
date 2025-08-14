@@ -131,7 +131,7 @@ DDNS supports the following DNS providers:
 
 - **number** (0, 1, 2...): Use IP of the Nth network interface
 - **default**: System's default external IP
-- **public**: Get public IP from external services
+- **public**: Get public IP from external services with automatic failover
 - **url:ADDRESS**: Get IP from specific URL
 - **regex:PATTERN**: Extract IP using regex pattern
 - **cmd:COMMAND**: Get IP from command output

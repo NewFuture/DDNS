@@ -202,7 +202,7 @@ IPv4地址获取方式。
 - **可选值**:
   - 数字（`0`，`1`，`2`...）: 第N个网卡IP
   - `default`: 系统访问外网默认IP
-  - `public`: 使用公网IP（通过API查询）
+  - `public`: 使用公网IP（通过多个API自动查询，支持失败重试）
   - `url:{URL}`: 从指定URL获取IP
   - `regex:{PATTERN}`: 使用正则表达式匹配本地网络配置中的IP
   - `cmd:{COMMAND}`: 执行指定命令并使用其输出作为IP
