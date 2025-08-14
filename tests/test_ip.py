@@ -27,7 +27,7 @@ class TestIpModule(unittest.TestCase):
         mock_response.body = "1.2.3.4"
         mock_request.return_value = mock_response
         
-        result = ip.url_v4("https://test.example.com/ip")
+        result = ip.public_v4("https://test.example.com/ip")
         
         self.assertEqual(result, "1.2.3.4")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
@@ -40,7 +40,7 @@ class TestIpModule(unittest.TestCase):
         mock_response.body = "2001:db8::1"
         mock_request.return_value = mock_response
         
-        result = ip.url_v6("https://test.example.com/ipv6")
+        result = ip.public_v6("https://test.example.com/ipv6")
         
         self.assertEqual(result, "2001:db8::1")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ipv6", verify=ip.ssl_verify, retries=2)
@@ -51,7 +51,7 @@ class TestIpModule(unittest.TestCase):
         # 模拟请求异常
         mock_request.side_effect = Exception("Network error")
         
-        result = ip.url_v4("https://test.example.com/ip")
+        result = ip.public_v4("https://test.example.com/ip")
         
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
@@ -64,7 +64,7 @@ class TestIpModule(unittest.TestCase):
         mock_response.body = "invalid response"
         mock_request.return_value = mock_response
         
-        result = ip.url_v4("https://test.example.com/ip")
+        result = ip.public_v4("https://test.example.com/ip")
         
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
