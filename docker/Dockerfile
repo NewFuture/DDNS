@@ -26,7 +26,10 @@ RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{prin
 FROM ${BUILDER} AS builder
 COPY run.py  .
 COPY ddns ddns
+COPY .github/patch.py .github/patch.py
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
+# 运行Docker模式的patch以移除scheduler功能
+RUN python3 .github/patch.py docker
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes \
