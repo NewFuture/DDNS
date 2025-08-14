@@ -34,7 +34,7 @@ def get_ip(ip_type, rules):
             elif i.startswith("shell:"):  # shell
                 return str(check_output(i[6:], shell=True).strip().decode("utf-8"))
             elif i.startswith("url:"):  # 自定义 url
-                return getattr(ip, "public_v" + ip_type)(i[4:])
+                return getattr(ip, "url_v" + ip_type)(i[4:])
             elif i.startswith("regex:"):  # 正则 regex
                 return getattr(ip, "regex_v" + ip_type)(i[6:])
             else:

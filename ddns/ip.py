@@ -31,7 +31,7 @@ PUBLIC_IPV6_APIS = [
     "https://api6.ipify.org/",
     "https://6.ipw.cn/",
     "https://api-ipv6.ip.sb/ip",
-    "https://ipv6.icanhazip.com",
+    "http://ipv6.icanhazip.com",
 ]
 
 
@@ -96,22 +96,22 @@ def _try_multiple_apis(api_list, reg, ip_type):
     return None
 
 
-def public_v4(url=None, reg=IPV4_REG):  # 公网IPV4地址
-    if url is not None:
-        # 使用指定的URL（向后兼容）
-        return _open(url, reg)
-    else:
-        # 使用多个API自动重试
-        return _try_multiple_apis(PUBLIC_IPV4_APIS, reg, "IPv4")
+def public_v4(reg=IPV4_REG):  # 公网IPV4地址
+    # 使用多个API自动重试
+    return _try_multiple_apis(PUBLIC_IPV4_APIS, reg, "IPv4")
 
 
-def public_v6(url=None, reg=IPV6_REG):  # 公网IPV6地址
-    if url is not None:
-        # 使用指定的URL（向后兼容）
-        return _open(url, reg)
-    else:
-        # 使用多个API自动重试
-        return _try_multiple_apis(PUBLIC_IPV6_APIS, reg, "IPv6")
+def public_v6(reg=IPV6_REG):  # 公网IPV6地址
+    # 使用多个API自动重试
+    return _try_multiple_apis(PUBLIC_IPV6_APIS, reg, "IPv6")
+
+
+def url_v4(url, reg=IPV4_REG):  # 自定义URL获取IPV4地址
+    return _open(url, reg)
+
+
+def url_v6(url, reg=IPV6_REG):  # 自定义URL获取IPV6地址
+    return _open(url, reg)
 
 
 def _ip_regex_match(parrent_regex, match_regex):
