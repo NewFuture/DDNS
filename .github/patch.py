@@ -86,6 +86,46 @@ def add_nuitka_include_modules(pyfile):
     return True
 
 
+def add_nuitka_windows_unbuffered(pyfile):
+    """
+    为Windows平台在现有的 --python-flag 配置中添加 unbuffered 标志
+    """
+    import platform
+
+    # 只在Windows平台执行
+    if platform.system().lower() != "windows":
+        print(f"Skipping unbuffered flag addition: not on Windows (current: {platform.system()})")
+        return False
+
+    with open(pyfile, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 查找现有的 --python-flag 配置行
+    python_flag_pattern = r"(# nuitka-project: --python-flag=)([^\n]*)"
+    match = re.search(python_flag_pattern, content)
+
+    if not match:
+        print(f"No existing --python-flag found in {pyfile}")
+        return False
+
+    existing_flags = match.group(2)
+
+    # 检查是否已经包含 unbuffered
+    if "unbuffered" in existing_flags:
+        print(f"unbuffered flag already exists in {pyfile}")
+        return False
+
+    # 添加 unbuffered 到现有标志
+    new_flags = existing_flags + ",unbuffered"
+    new_content = re.sub(python_flag_pattern, r"\g<1>" + new_flags, content)
+
+    with open(pyfile, "w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    print(f"Added unbuffered to python-flag in {pyfile}: {new_flags}")
+    return True
+
+
 def remove_python2_compatibility(pyfile):  # noqa: C901
     """
     自动将所有 try-except python2/3 兼容导入替换为 python3 only 导入，并显示处理日志
@@ -379,6 +419,7 @@ def main():
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
+    add_nuitka_windows_unbuffered(run_py_path)
     # add_nuitka_include_modules(run_py_path)
 
     changed_files = 0

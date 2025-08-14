@@ -41,4 +41,26 @@
         120
     ],
     "chat.agent.maxRequests": 64,
+    "chat.tools.terminal.autoApprove": {
+        "python": true,
+        "python -c": true,
+        "python -m": true,
+        "python -m unittest": true,
+        "python3": true,
+        "python3 -c": true,
+        "python3 -m": true,
+        "python3 -m unittest": true,
+        "echo": true,
+        "cd": true,
+        "ls": true,
+        "dir": true,
+        "git": true,
+        "git status": true,
+        "rm": true,
+        "del": true,
+        "delete": true,
+        "mv": true,
+        "move": true,
+    },
+    "github.copilot.chat.agent.currentEditorContext.enabled": true
 }
