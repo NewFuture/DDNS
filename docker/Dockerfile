@@ -29,7 +29,7 @@ COPY ddns ddns
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
-RUN python3 patch.py
+RUN python3 patch.py docker
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes \
