@@ -327,6 +327,7 @@ jobs:
         }}
     steps:
       - uses: actions/checkout@v4
+      - run: python3 .github/patch.py docker
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
