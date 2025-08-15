@@ -4,7 +4,6 @@ Base scheduler class for DDNS task management
 @author: NewFuture
 """
 
-import subprocess
 import sys
 from datetime import datetime
 from logging import Logger, getLogger  # noqa: F401
@@ -18,20 +17,10 @@ class BaseScheduler(object):
     def __init__(self, logger=None):  # type: (Logger | None) -> None
         self.logger = (logger or getLogger()).getChild("task")
 
-    def _run_command(self, command, **kwargs):  # type: (list[str], **Any) -> str | None
-        """Safely run subprocess command, return decoded string or None if failed"""
-        try:
-            if sys.version_info[0] >= 3:
-                kwargs.setdefault("timeout", 60)  # 60 second timeout to prevent hanging
-            return subprocess.check_output(command, universal_newlines=True, **kwargs)
-        except Exception as e:
-            self.logger.debug("Command failed: %s", e)
-            return None
-
     def _get_ddns_cmd(self):  # type: () -> list[str]
         """Get DDNS command for scheduled execution as array"""
-        if hasattr(sys, "frozen"):
-            return [sys.argv[0] or sys.executable]
+        if hasattr(sys.modules["__main__"], "__compiled__"):
+            return [sys.argv[0]]
         else:
             return [sys.executable, "-m", "ddns"]
 

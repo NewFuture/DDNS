@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 
 from ..util.fileio import write_file
+from ..util.try_run import try_run
 from ._base import BaseScheduler
 
 
@@ -32,13 +33,13 @@ class CronScheduler(BaseScheduler):
             return False
 
     def is_installed(self, crontab_content=None):  # type: (str | None) -> bool
-        result = crontab_content or self._run_command(["crontab", "-l"]) or ""
+        result = crontab_content or try_run(["crontab", "-l"], logger=self.logger) or ""
         return self.KEY in result
 
     def get_status(self):
         status = {"scheduler": "cron", "installed": False}  # type: dict[str, str | bool | int | None]
         # Get crontab content once and reuse it for all checks
-        crontab_content = self._run_command(["crontab", "-l"]) or ""
+        crontab_content = try_run(["crontab", "-l"], logger=self.logger) or ""
         lines = crontab_content.splitlines()
         line = next((i for i in lines if self.KEY in i), "").strip()
 
@@ -63,7 +64,7 @@ class CronScheduler(BaseScheduler):
         description = self._get_description()
         cron_entry = '*/{} * * * * cd "{}" && {} # DDNS: {}'.format(interval, os.getcwd(), ddns_command, description)
 
-        crontext = self._run_command(["crontab", "-l"]) or ""
+        crontext = try_run(["crontab", "-l"], logger=self.logger) or ""
         lines = [line for line in crontext.splitlines() if self.KEY not in line]
         lines.append(cron_entry)
 
@@ -84,7 +85,7 @@ class CronScheduler(BaseScheduler):
 
     def _modify_cron_lines(self, action):  # type: (str) -> bool
         """Helper to enable, disable, or uninstall cron lines"""
-        crontext = self._run_command(["crontab", "-l"])
+        crontext = try_run(["crontab", "-l"], logger=self.logger)
         if not crontext or self.KEY not in crontext:
             self.logger.info("No crontab found")
             return False

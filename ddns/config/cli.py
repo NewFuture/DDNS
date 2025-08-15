@@ -247,7 +247,8 @@ def load_config(description, doc, version, date):
     parser = ArgumentParser(description=description, epilog=doc, formatter_class=RawTextHelpFormatter)
     sysinfo = _get_system_info_str()
     pyinfo = _get_python_info_str()
-    version_str = "v{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
+    compiled = getattr(sys.modules["__main__"], "__compiled__", "")
+    version_str = "v{} ({})\n{}\n{}\n{}".format(version, date, pyinfo, sysinfo, compiled)
 
     _add_ddns_args(parser)  # Add common DDNS arguments to main parser
     # Default behavior (no subcommand) - add all the regular DDNS options

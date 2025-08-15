@@ -8,6 +8,7 @@ import os
 import re
 
 from ..util.fileio import read_file_safely, write_file
+from ..util.try_run import try_run
 from ._base import BaseScheduler
 
 
@@ -30,7 +31,7 @@ class LaunchdScheduler(BaseScheduler):
             return status
 
         # For launchd, check if service is actually loaded/enabled
-        result = self._run_command(["launchctl", "list"])
+        result = try_run(["launchctl", "list"], logger=self.logger)
         status["enabled"] = bool(result) and self.LABEL in result
 
         # Get interval
@@ -85,7 +86,7 @@ class LaunchdScheduler(BaseScheduler):
         )
 
         write_file(plist_path, plist_content)
-        result = self._run_command(["launchctl", "load", plist_path])
+        result = try_run(["launchctl", "load", plist_path], logger=self.logger)
         if result is not None:
             self.logger.info("DDNS launchd service installed successfully")
             return True
@@ -95,7 +96,7 @@ class LaunchdScheduler(BaseScheduler):
 
     def uninstall(self):
         plist_path = self._get_plist_path()
-        self._run_command(["launchctl", "unload", plist_path])  # Ignore errors
+        try_run(["launchctl", "unload", plist_path], logger=self.logger)  # Ignore errors
         try:
             os.remove(plist_path)
         except OSError:
@@ -110,7 +111,7 @@ class LaunchdScheduler(BaseScheduler):
             self.logger.error("DDNS launchd service not found")
             return False
 
-        result = self._run_command(["launchctl", "load", plist_path])
+        result = try_run(["launchctl", "load", plist_path], logger=self.logger)
         if result is not None:
             self.logger.info("DDNS launchd service enabled successfully")
             return True
@@ -120,7 +121,7 @@ class LaunchdScheduler(BaseScheduler):
 
     def disable(self):
         plist_path = self._get_plist_path()
-        result = self._run_command(["launchctl", "unload", plist_path])
+        result = try_run(["launchctl", "unload", plist_path], logger=self.logger)
         if result is not None:
             self.logger.info("DDNS launchd service disabled successfully")
             return True

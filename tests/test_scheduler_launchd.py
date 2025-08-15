@@ -11,6 +11,7 @@ import sys
 from __init__ import patch, unittest
 
 from ddns.scheduler.launchd import LaunchdScheduler
+from ddns.util.try_run import try_run
 
 # Handle builtins import for Python 2/3 compatibility
 if sys.version_info[0] >= 3:
@@ -54,9 +55,9 @@ class TestLaunchdScheduler(unittest.TestCase):
 
         with patch("os.path.exists", return_value=True), patch(
             "ddns.scheduler.launchd.read_file_safely", return_value=plist_content
-        ), patch.object(self.scheduler, "_run_command") as mock_run_command:
-            # Mock _run_command to return service is loaded
-            mock_run_command.return_value = "123\t0\tcc.newfuture.ddns"
+        ), patch("ddns.scheduler.launchd.try_run") as mock_run_command:
+            # Mock launchctl list to return service is loaded - need to include the full label
+            mock_run_command.return_value = "PID\tStatus\tLabel\n123\t0\tcc.newfuture.ddns\n456\t0\tcom.apple.other"
 
             status = self.scheduler.get_status()
 
@@ -107,7 +108,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test install with sudo fallback for permission issues"""
         mock_write_file.return_value = None  # write_file succeeds
 
-        with patch.object(self.scheduler, "_run_command", return_value="loaded successfully"):
+        with patch("ddns.scheduler.launchd.try_run", return_value="loaded successfully"):
             ddns_args = {"dns": "debug", "ipv4": ["test.com"]}
             result = self.scheduler.install(5, ddns_args)
             self.assertTrue(result)
@@ -115,8 +116,8 @@ class TestLaunchdScheduler(unittest.TestCase):
     @unittest.skipUnless(platform.system().lower() == "darwin", "macOS-specific test")
     def test_launchctl_with_sudo_retry(self):
         """Test launchctl command with automatic sudo retry on permission error"""
-        with patch.object(self.scheduler, "_run_command") as mock_run_cmd:
-            # Test that launchctl operations use _run_command directly
+        with patch("ddns.util.try_run.try_run") as mock_run_cmd:
+            # Test that launchctl operations use try_run directly
             mock_run_cmd.return_value = "success"
 
             # Test enable which uses launchctl load
@@ -132,7 +133,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test successful uninstall"""
         mock_exists.return_value = True
 
-        with patch.object(self.scheduler, "_run_command", return_value="unloaded successfully"):
+        with patch("ddns.util.try_run.try_run", return_value="unloaded successfully"):
             result = self.scheduler.uninstall()
             self.assertTrue(result)
             mock_remove.assert_called_once()
@@ -146,7 +147,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         # Mock file removal failure - use appropriate error type for Python version
         mock_remove.side_effect = permission_error("Permission denied")
 
-        with patch.object(self.scheduler, "_run_command", return_value="") as mock_run:
+        with patch("ddns.scheduler.launchd.try_run", return_value="") as mock_run:
             result = self.scheduler.uninstall()
 
             # Should handle permission error gracefully and still return True
@@ -158,14 +159,14 @@ class TestLaunchdScheduler(unittest.TestCase):
 
     def test_enable_success(self):
         """Test successful enable"""
-        with patch.object(self.scheduler, "_run_command", return_value="loaded successfully"):
-            with patch("os.path.exists", return_value=True):
+        with patch("os.path.exists", return_value=True):
+            with patch("ddns.scheduler.launchd.try_run", return_value="loaded successfully"):
                 result = self.scheduler.enable()
                 self.assertTrue(result)
 
     def test_disable_success(self):
         """Test successful disable"""
-        with patch.object(self.scheduler, "_run_command", return_value="unloaded successfully"):
+        with patch("ddns.scheduler.launchd.try_run", return_value="unloaded successfully"):
             result = self.scheduler.disable()
             self.assertTrue(result)
 
@@ -185,7 +186,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test if launchctl is available on macOS systems"""
         try:
             # Test launchctl availability by trying to run it
-            result = self.scheduler._run_command(["launchctl", "version"])
+            result = try_run(["launchctl", "version"])
             # launchctl is available if result is not None
             if result is None:
                 self.skipTest("launchctl not available")
@@ -206,7 +207,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         # If we can't write to system locations, we should be able to use sudo
         if not daemon_write:
             try:
-                self.scheduler._run_command(["sudo", "--version"])
+                try_run(["sudo", "--version"])
                 sudo_available = True
             except Exception:
                 sudo_available = False
@@ -217,7 +218,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         # User agents directory should generally be writable or sudo should be available
         if os.path.exists(agents_dir):
             try:
-                self.scheduler._run_command(["sudo", "--version"])
+                try_run(["sudo", "--version"])
                 sudo_available = True
             except Exception:
                 sudo_available = False
@@ -230,14 +231,14 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test real launchd integration with actual system calls"""
         # Test launchctl availability by trying to run it directly
         try:
-            result = self.scheduler._run_command(["launchctl", "version"])
+            result = try_run(["launchctl", "version"])
             if result is None:
                 self.skipTest("launchctl not available on this system")
         except (OSError, Exception):
             self.skipTest("launchctl not available on this system")
 
         # Test real launchctl version call
-        version_result = self.scheduler._run_command(["launchctl", "version"])
+        version_result = try_run(["launchctl", "version"])
         # On a real macOS system, this should work
         self.assertTrue(version_result is None or isinstance(version_result, str))
 
@@ -248,7 +249,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         self.assertIsInstance(status["installed"], bool)
 
         # Test launchctl list (read-only operation)
-        list_result = self.scheduler._run_command(["launchctl", "list"])
+        list_result = try_run(["launchctl", "list"])
         # This might return None or string based on system state
         self.assertTrue(list_result is None or isinstance(list_result, str))
 
@@ -257,7 +258,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test real scheduler methods that don't modify system state"""
         # Test launchctl availability by trying to run it directly
         try:
-            result = self.scheduler._run_command(["launchctl", "version"])
+            result = try_run(["launchctl", "version"])
             if result is None:
                 self.skipTest("launchctl not available on this system")
         except (OSError, Exception):
@@ -305,7 +306,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """
         # Check if launchctl is available first
         try:
-            result = self.scheduler._run_command(["launchctl", "version"])
+            result = try_run(["launchctl", "version"])
             if result is None:
                 self.skipTest("launchctl not available on this system")
         except (OSError, Exception):

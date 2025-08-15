@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 
+from ..util.try_run import try_run
 from ._base import BaseScheduler
 
 
@@ -16,24 +17,24 @@ class SchtasksScheduler(BaseScheduler):
 
     NAME = "DDNS"
 
-    def _schtasks(self, *args):  # type: (*str) -> bool
+    def _schtasks(self, *args):
         """Helper to run schtasks commands with consistent error handling"""
-        result = self._run_command(["schtasks"] + list(args))
+        result = try_run(["schtasks"] + list(args), logger=self.logger)
         return result is not None
 
-    def _extract_xml(self, xml_text, tag_name):  # type: (str, str) -> str | None
+    def _extract_xml(self, xml_text, tag_name):
         """Extract XML tag content using regex for better performance and flexibility"""
         pattern = r"<{0}[^>]*>(.*?)</{0}>".format(re.escape(tag_name))
         match = re.search(pattern, xml_text, re.DOTALL)
         return match.group(1).strip() if match else None
 
     def is_installed(self):
-        result = self._run_command(["schtasks", "/query", "/tn", self.NAME]) or ""
+        result = try_run(["schtasks", "/query", "/tn", self.NAME], logger=self.logger) or ""
         return self.NAME in result
 
     def get_status(self):
         # Use XML format for language-independent parsing
-        task_xml = self._run_command(["schtasks", "/query", "/tn", self.NAME, "/xml"])
+        task_xml = try_run(["schtasks", "/query", "/tn", self.NAME, "/xml"], logger=self.logger)
         status = {"scheduler": "schtasks", "installed": bool(task_xml)}
 
         if not task_xml:
