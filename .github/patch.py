@@ -116,7 +116,7 @@ def add_nuitka_windows_unbuffered(pyfile):
         return False
 
     # 添加 unbuffered 到现有标志
-    new_flags = existing_flags + ",unbuffered"
+    new_flags = "unbuffered" if not existing_flags.strip() else existing_flags + ",unbuffered"
     new_content = re.sub(python_flag_pattern, r"\g<1>" + new_flags, content)
 
     with open(pyfile, "w", encoding="utf-8") as f:
