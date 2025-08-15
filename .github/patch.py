@@ -167,7 +167,7 @@ def remove_scheduler_for_docker():
     target_functions = ["_add_task_subcommand_if_needed", "_handle_task_command", "_print_status"]
     for func_name in target_functions:
         # 匹配函数定义到下一个函数或文件结尾
-        pattern = rf"^(def {func_name}\([^)]*\):.*?)(?=^def |\Z)"
+        pattern = rf"([ \t]*def {func_name}\s*\(.*?\):(?:.*?\n)*?)(?=^[ \t]*def |\Z)"
 
         def comment_block(match):
             block = match.group(1)
