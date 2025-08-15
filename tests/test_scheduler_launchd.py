@@ -116,7 +116,7 @@ class TestLaunchdScheduler(unittest.TestCase):
     @unittest.skipUnless(platform.system().lower() == "darwin", "macOS-specific test")
     def test_launchctl_with_sudo_retry(self):
         """Test launchctl command with automatic sudo retry on permission error"""
-        with patch("ddns.util.try_run.try_run") as mock_run_cmd:
+        with patch("ddns.scheduler.launchd.try_run") as mock_run_cmd:
             # Test that launchctl operations use try_run directly
             mock_run_cmd.return_value = "success"
 
@@ -125,7 +125,8 @@ class TestLaunchdScheduler(unittest.TestCase):
             with patch("os.path.exists", return_value=True):
                 result = self.scheduler.enable()
                 self.assertTrue(result)
-                mock_run_cmd.assert_called_with(["launchctl", "load", plist_path])
+                # Verify the call was made with the expected command and logger
+                mock_run_cmd.assert_called_with(["launchctl", "load", plist_path], logger=self.scheduler.logger)
 
     @patch("os.path.exists")
     @patch("os.remove")
@@ -133,7 +134,7 @@ class TestLaunchdScheduler(unittest.TestCase):
         """Test successful uninstall"""
         mock_exists.return_value = True
 
-        with patch("ddns.util.try_run.try_run", return_value="unloaded successfully"):
+        with patch("ddns.scheduler.launchd.try_run", return_value="unloaded successfully"):
             result = self.scheduler.uninstall()
             self.assertTrue(result)
             mock_remove.assert_called_once()
