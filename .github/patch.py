@@ -86,6 +86,110 @@ def add_nuitka_include_modules(pyfile):
     return True
 
 
+def add_nuitka_windows_unbuffered(pyfile):
+    """
+    为Windows平台在现有的 --python-flag 配置中添加 unbuffered 标志
+    """
+    import platform
+
+    # 只在Windows平台执行
+    if platform.system().lower() != "windows":
+        print(f"Skipping unbuffered flag addition: not on Windows (current: {platform.system()})")
+        return False
+
+    with open(pyfile, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 查找现有的 --python-flag 配置行
+    python_flag_pattern = r"(# nuitka-project: --python-flag=)([^\n]*)"
+    match = re.search(python_flag_pattern, content)
+
+    if not match:
+        print(f"No existing --python-flag found in {pyfile}")
+        return False
+
+    existing_flags = match.group(2)
+
+    # 检查是否已经包含 unbuffered
+    if "unbuffered" in existing_flags:
+        print(f"unbuffered flag already exists in {pyfile}")
+        return False
+
+    # 添加 unbuffered 到现有标志
+    new_flags = "unbuffered" if not existing_flags.strip() else existing_flags + ",unbuffered"
+    new_content = re.sub(python_flag_pattern, r"\g<1>" + new_flags, content)
+
+    with open(pyfile, "w", encoding="utf-8") as f:
+        f.write(new_content)
+
+    print(f"Added unbuffered to python-flag in {pyfile}: {new_flags}")
+    return True
+
+
+def remove_scheduler_for_docker():
+    """
+    为Docker构建移除scheduler相关代码和task子命令
+    通过注释方式保持行号不变，便于调试
+    """
+    import shutil
+
+    # 1. 移除scheduler文件夹
+    scheduler_dir = os.path.join(ROOT, "ddns", "scheduler")
+    if os.path.exists(scheduler_dir):
+        shutil.rmtree(scheduler_dir)
+        print(f"Removed scheduler directory: {scheduler_dir}")
+
+    # 2. 修改ddns/config/cli.py，注释掉scheduler相关代码（保持行号不变）
+    cli_path = os.path.join(ROOT, "ddns", "config", "cli.py")
+    if not os.path.exists(cli_path):
+        return False
+
+    with open(cli_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 注释掉scheduler导入
+    content = re.sub(
+        r"^(from \.\.scheduler import get_scheduler)$",
+        r"# \1",
+        content,
+        flags=re.MULTILINE
+    )
+
+    # 注释掉函数调用
+    content = re.sub(
+        r"^(\s*)(_add_task_subcommand_if_needed\(parser\))$",
+        r"\1# \2",
+        content,
+        flags=re.MULTILINE
+    )
+
+    # 注释掉整个函数块，保持行号
+    target_functions = ["_add_task_subcommand_if_needed", "_handle_task_command", "_print_status"]
+    for func_name in target_functions:
+        # 匹配函数定义到下一个函数或文件结尾
+        pattern = rf"([ \t]*def {func_name}\s*\(.*?\):(?:.*?\n)*?)(?=^[ \t]*def |\Z)"
+
+        def comment_block(match):
+            block = match.group(1)
+            lines = block.split("\n")
+            commented_lines = []
+            for line in lines:
+                if line.strip():  # 非空行
+                    # 在每行前加注释
+                    commented_lines.append("# " + line)
+                else:  # 空行保持原样
+                    commented_lines.append(line)
+            return "\n".join(commented_lines)
+
+        content = re.sub(pattern, comment_block, content, flags=re.DOTALL | re.MULTILINE)
+
+    with open(cli_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    print(f"Commented out scheduler-related code in {cli_path} (preserving line numbers)")
+    return True
+
+
 def remove_python2_compatibility(pyfile):  # noqa: C901
     """
     自动将所有 try-except python2/3 兼容导入替换为 python3 only 导入，并显示处理日志
@@ -351,9 +455,9 @@ def main():
     mode = sys.argv[1].lower() if len(sys.argv) > 1 else "default"
     version = resolve_version(mode)
 
-    if mode not in ["version", "release", "default"]:
+    if mode not in ["version", "release", "default", "docker"]:
         print(f"unknown mode: {mode}")
-        print("Usage: python patch.py [version|release]")
+        print("Usage: python patch.py [version|release|docker]")
         exit(1)
     elif mode == "release":
         # 同步修改 doc/release.md 的版本与链接
@@ -379,7 +483,13 @@ def main():
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
     add_nuitka_file_description(run_py_path)
+    add_nuitka_windows_unbuffered(run_py_path)
     # add_nuitka_include_modules(run_py_path)
+
+    # 检测Docker环境并移除scheduler
+    if mode == "docker":
+        print("Detected Docker environment, removing scheduler components...")
+        remove_scheduler_for_docker()
 
     changed_files = 0
     for dirpath, _, filenames in os.walk(ROOT):

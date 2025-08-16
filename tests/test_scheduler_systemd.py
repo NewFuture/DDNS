@@ -10,6 +10,7 @@ import platform
 from __init__ import patch, unittest
 
 from ddns.scheduler.systemd import SystemdScheduler
+from ddns.util.try_run import try_run
 
 
 class TestSystemdScheduler(unittest.TestCase):
@@ -84,14 +85,20 @@ class TestSystemdScheduler(unittest.TestCase):
         # Verify systemctl was called 3 times (daemon-reload, enable, start)
         self.assertEqual(mock_systemctl.call_count, 3)
 
-    def test_systemctl_with_sudo_retry(self):
-        """Test systemctl command with automatic sudo retry on permission error"""
-        # Test that systemctl automatically retries with sudo when permission fails
-        with patch.object(self.scheduler, "_run_command") as mock_run_cmd:
-            mock_run_cmd.side_effect = [None, "success"]  # First fails, sudo succeeds
-            self.scheduler._systemctl("enable", "ddns.timer")
-            # Should still return success after sudo retry
-            mock_run_cmd.assert_called()
+    def test_systemctl_basic_functionality(self):
+        """Test systemctl command basic functionality"""
+        # Test that systemctl calls try_run and returns appropriate boolean
+        with patch("ddns.scheduler.systemd.try_run") as mock_run_cmd:
+            # Test success case
+            mock_run_cmd.return_value = "success"
+            result = self.scheduler._systemctl("enable", "ddns.timer")
+            self.assertTrue(result)
+            mock_run_cmd.assert_called_with(["systemctl", "enable", "ddns.timer"], logger=self.scheduler.logger)
+
+            # Test failure case
+            mock_run_cmd.return_value = None
+            result = self.scheduler._systemctl("enable", "ddns.timer")
+            self.assertFalse(result)
 
     @patch("os.remove")
     @patch.object(SystemdScheduler, "_systemctl")
@@ -122,7 +129,9 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test if systemctl is available on Linux systems"""
         # Check if systemctl command is available
         try:
-            systemctl_result = self.scheduler._run_command(["systemctl", "--version"])
+            from ddns.util.try_run import try_run
+
+            systemctl_result = try_run(["systemctl", "--version"])
             if not systemctl_result:
                 self.skipTest("systemctl not available on this system")
         except Exception:
@@ -133,7 +142,7 @@ class TestSystemdScheduler(unittest.TestCase):
 
         # Test if we have sudo access (don't actually run sudo commands in tests)
         try:
-            sudo_result = self.scheduler._run_command(["sudo", "--version"])
+            sudo_result = try_run(["sudo", "--version"])
             if sudo_result:
                 # Just verify sudo is available for fallback
                 self.assertIsNotNone(sudo_result)
@@ -151,7 +160,7 @@ class TestSystemdScheduler(unittest.TestCase):
         # If we can't write directly, we should be able to use sudo
         if not can_write:
             try:
-                sudo_result = self.scheduler._run_command(["sudo", "--version"])
+                sudo_result = try_run(["sudo", "--version"])
                 self.assertIsNotNone(sudo_result, "sudo should be available for elevated permissions")
             except Exception:
                 self.skipTest("sudo not available for elevated permissions")
@@ -161,7 +170,7 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test real systemd integration with actual system calls"""
         # Check if systemctl command is available
         try:
-            systemctl_result = self.scheduler._run_command(["systemctl", "--version"])
+            systemctl_result = try_run(["systemctl", "--version"])
             if not systemctl_result:
                 self.skipTest("systemctl not available on this system")
         except Exception:
@@ -189,7 +198,7 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test real scheduler methods that don't modify system state"""
         # Check if systemctl command is available
         try:
-            systemctl_result = self.scheduler._run_command(["systemctl", "--version"])
+            systemctl_result = try_run(["systemctl", "--version"])
             if not systemctl_result:
                 self.skipTest("systemctl not available on this system")
         except Exception:
@@ -231,7 +240,7 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test real systemd lifecycle operations: install -> enable -> disable -> uninstall"""
         # Check if systemctl command is available
         try:
-            systemctl_result = self.scheduler._run_command(["systemctl", "--version"])
+            systemctl_result = try_run(["systemctl", "--version"])
             if not systemctl_result:
                 self.skipTest("systemctl not available on this system")
         except Exception:
@@ -317,7 +326,7 @@ class TestSystemdScheduler(unittest.TestCase):
         """Test that systemd status reporting is consistent across operations"""
         # Check if systemctl command is available
         try:
-            systemctl_result = self.scheduler._run_command(["systemctl", "--version"])
+            systemctl_result = try_run(["systemctl", "--version"])
             if not systemctl_result:
                 self.skipTest("systemctl not available on this system")
         except Exception:

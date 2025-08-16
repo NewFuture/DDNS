@@ -8,6 +8,7 @@ import os
 import re
 
 from ..util.fileio import read_file_safely, write_file
+from ..util.try_run import try_run
 from ._base import BaseScheduler
 
 try:  # python 3
@@ -26,7 +27,7 @@ class SystemdScheduler(BaseScheduler):
 
     def _systemctl(self, *args):
         """Run systemctl command and return success status"""
-        result = self._run_command(["systemctl"] + list(args))
+        result = try_run(["systemctl"] + list(args), logger=self.logger)
         return result is not None
 
     def is_installed(self):
@@ -41,7 +42,7 @@ class SystemdScheduler(BaseScheduler):
             return status
 
         # Check if timer is enabled
-        result = self._run_command(["systemctl", "is-enabled", self.TIMER_NAME])
+        result = try_run(["systemctl", "is-enabled", self.TIMER_NAME], logger=self.logger)
         status["enabled"] = bool(result and result.strip() == "enabled")
 
         # Extract interval from timer file

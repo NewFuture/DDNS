@@ -5,17 +5,19 @@ Provides factory functions and public API for task scheduling
 @author: NewFuture
 """
 
-import platform
 import os
+import platform
 
 from ddns.util.fileio import read_file_safely
 
+from ..util.try_run import try_run
+
 # Import all scheduler classes
 from ._base import BaseScheduler
-from .systemd import SystemdScheduler
 from .cron import CronScheduler
 from .launchd import LaunchdScheduler
 from .schtasks import SchtasksScheduler
+from .systemd import SystemdScheduler
 
 
 def get_scheduler(scheduler=None):
@@ -48,7 +50,10 @@ def get_scheduler(scheduler=None):
             launchd_dirs = ["/Library/LaunchDaemons", "/System/Library/LaunchDaemons"]
             if any(os.path.isdir(d) for d in launchd_dirs):
                 return LaunchdScheduler()
-        elif system == "linux" and read_file_safely("/proc/1/comm", default="").strip() == "systemd":  # type: ignore
+        elif system == "linux" and (
+            (read_file_safely("/proc/1/comm", default="").strip().lower() == "systemd")
+            or (try_run(["systemctl", "--version"]) is not None)
+        ):  # Linux with systemd available
             return SystemdScheduler()
         return CronScheduler()  # Other Unix-like systems, use cron
     elif scheduler == "systemd":

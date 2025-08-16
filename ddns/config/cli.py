@@ -4,13 +4,14 @@ Configuration loader for DDNS command-line interface.
 @author: NewFuture
 """
 
-import sys
 import platform
-from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS
-from logging import DEBUG, getLevelName, basicConfig
+import sys
+from argparse import SUPPRESS, Action, ArgumentParser, RawTextHelpFormatter
+from logging import DEBUG, basicConfig, getLevelName
 from os import path as os_path
-from .file import save_config
+
 from ..scheduler import get_scheduler
+from .file import save_config
 
 __all__ = ["load_config", "str_bool"]
 
@@ -246,7 +247,8 @@ def load_config(description, doc, version, date):
     parser = ArgumentParser(description=description, epilog=doc, formatter_class=RawTextHelpFormatter)
     sysinfo = _get_system_info_str()
     pyinfo = _get_python_info_str()
-    version_str = "v{} ({})\n{}\n{}".format(version, date, pyinfo, sysinfo)
+    compiled = getattr(sys.modules["__main__"], "__compiled__", "")
+    version_str = "v{} ({})\n{}\n{}\n{}".format(version, date, pyinfo, sysinfo, compiled)
 
     _add_ddns_args(parser)  # Add common DDNS arguments to main parser
     # Default behavior (no subcommand) - add all the regular DDNS options
@@ -323,7 +325,14 @@ def _handle_task_command(args):  # type: (dict) -> None
     status = scheduler.get_status()
 
     if args.get("status") or status["installed"]:
-        _print_status(status)
+        print("DDNS Task Status:")
+        print("  Installed: {}".format("Yes" if status["installed"] else "No"))
+        print("  Scheduler: {}".format(status["scheduler"]))
+        if status["installed"]:
+            print("  Enabled: {}".format(status.get("enabled", "unknown")))
+            print("  Interval: {} minutes".format(status.get("interval", "unknown")))
+            print("  Command: {}".format(status.get("command", "unknown")))
+            print("  Description: {}".format(status.get("description", "")))
     else:
         print("DDNS task is not installed. Installing with default settings...")
         if scheduler.install(interval, ddns_args):
@@ -331,15 +340,3 @@ def _handle_task_command(args):  # type: (dict) -> None
         else:
             print("Failed to install DDNS task")
             sys.exit(1)
-
-
-def _print_status(status):
-    """Print task status information"""
-    print("DDNS Task Status:")
-    print("  Installed: {}".format("Yes" if status["installed"] else "No"))
-    print("  Scheduler: {}".format(status["scheduler"]))
-    if status["installed"]:
-        print("  Enabled: {}".format(status.get("enabled", "unknown")))
-        print("  Interval: {} minutes".format(status.get("interval", "unknown")))
-        print("  Command: {}".format(status.get("command", "unknown")))
-        print("  Description: {}".format(status.get("description", "")))

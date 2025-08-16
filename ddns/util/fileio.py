@@ -23,7 +23,7 @@ def _ensure_directory_exists(file_path):  # type: (str) -> None
         os.makedirs(directory)
 
 
-def read_file_safely(file_path, encoding="utf-8", default=None):  # type: (str, str, str|None) -> str | None
+def read_file_safely(file_path, encoding="utf-8", default=None):  # type: (str, str, str|None) -> str
     """
     Safely read file content with UTF-8 encoding, return None if file doesn't exist or can't be read
 
@@ -37,7 +37,7 @@ def read_file_safely(file_path, encoding="utf-8", default=None):  # type: (str, 
     try:
         return read_file(file_path, encoding)
     except Exception:
-        return default
+        return default  # type: ignore
 
 
 def write_file_safely(file_path, content, encoding="utf-8"):  # type: (str, str, str) -> bool

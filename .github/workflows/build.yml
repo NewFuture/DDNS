@@ -148,7 +148,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
-    timeout-minutes: 10
+    timeout-minutes: ${{ matrix.arch == 'x86' && 20 || contains(matrix.os, 'windows') && 12 || 8 }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
@@ -327,6 +327,7 @@ jobs:
         }}
     steps:
       - uses: actions/checkout@v4
+      - run: python3 .github/patch.py docker
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
@@ -388,9 +389,6 @@ jobs:
             docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag -h
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag || test -e "config.json"
             sudo rm -f config.json
-            echo "Testing task functionality..."
-            docker run --platform $platform --rm ${{ env.DOCKER_IMG }}:$tag ddns task -h
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag /ddns/tests/scripts/test-task-cron.sh ddns
             echo "Testing with config files..."
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json

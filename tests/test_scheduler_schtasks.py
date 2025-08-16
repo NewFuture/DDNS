@@ -9,6 +9,7 @@ import platform
 from __init__ import patch, unittest
 
 from ddns.scheduler.schtasks import SchtasksScheduler
+from ddns.util.try_run import try_run
 
 
 class TestSchtasksScheduler(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         expected_name = "DDNS"
         self.assertEqual(self.scheduler.NAME, expected_name)
 
-    @patch.object(SchtasksScheduler, "_run_command")
+    @patch("ddns.scheduler.schtasks.try_run")
     def test_get_status_installed_enabled(self, mock_run_command):
         """Test get_status when task is installed and enabled"""
         # Mock XML output from schtasks query
@@ -58,10 +59,10 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertEqual(status["enabled"], expected_status["enabled"])
         self.assertEqual(status["interval"], expected_status["interval"])
 
-    @patch.object(SchtasksScheduler, "_run_command")
+    @patch("ddns.scheduler.schtasks.try_run")
     def test_get_status_not_installed(self, mock_run_command):
         """Test get_status when task is not installed"""
-        # Mock _run_command to return None (task not found)
+        # Mock try_run to return None (task not found)
         mock_run_command.return_value = None
 
         status = self.scheduler.get_status()
@@ -73,7 +74,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertEqual(status["installed"], expected_status["installed"])
         # When task is not installed, enabled and interval are not included in status
 
-    @patch.object(SchtasksScheduler, "_run_command")
+    @patch("ddns.scheduler.schtasks.try_run")
     def test_is_installed_true(self, mock_run_command):
         """Test is_installed returns True when task exists"""
         mock_run_command.return_value = "TaskName: DDNS\nStatus: Ready"
@@ -81,7 +82,7 @@ class TestSchtasksScheduler(unittest.TestCase):
         result = self.scheduler.is_installed()
         self.assertTrue(result)
 
-    @patch.object(SchtasksScheduler, "_run_command")
+    @patch("ddns.scheduler.schtasks.try_run")
     def test_is_installed_false(self, mock_run_command):
         """Test is_installed returns False when task doesn't exist"""
         mock_run_command.return_value = None
@@ -177,9 +178,9 @@ class TestSchtasksScheduler(unittest.TestCase):
         self.assertIsInstance(status["installed"], bool)
 
         # Test schtasks help (safe read-only operation)
-        # Note: We rely on the scheduler's _run_command method for actual subprocess calls
+        # Note: We rely on the try_run function for actual subprocess calls
         # since it has proper timeout and error handling
-        help_result = self.scheduler._run_command(["schtasks", "/?"])
+        help_result = try_run(["schtasks", "/?"])
         if help_result:
             self.assertIn("schtasks", help_result.lower())
 
