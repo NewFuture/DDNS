@@ -511,5 +511,45 @@ class TestSendHttpRequest(unittest.TestCase):
         self.skipTest("All network endpoints unavailable for POST redirect test{}".format(error_info))
 
 
+class TestHttpRequestTimeout(unittest.TestCase):
+    """测试 HTTP 请求超时设置"""
+
+    def test_request_timeout_default_150_seconds(self):
+        """测试 HTTP 请求默认超时时间为 150 秒"""
+        from __init__ import patch, MagicMock
+        from ddns.util.http import request
+
+        # Mock build_opener and its open method to capture timeout parameter
+        with patch("ddns.util.http.build_opener") as mock_build_opener:
+            mock_opener = mock_build_opener.return_value
+            mock_response = MagicMock()
+            mock_response.getcode.return_value = 200
+            mock_response.info.return_value = {}
+            mock_response.read.return_value = b'{"test": "success"}'
+            mock_response.msg = "OK"
+            mock_opener.open.return_value = mock_response
+
+            # Test GET request
+            request("GET", "http://example.com/test")
+            
+            # Verify timeout was set to 150 seconds
+            mock_opener.open.assert_called_once()
+            args, kwargs = mock_opener.open.call_args
+            self.assertIn("timeout", kwargs)
+            self.assertEqual(kwargs["timeout"], 150)
+
+            # Reset mock for POST test
+            mock_opener.reset_mock()
+            
+            # Test POST request
+            request("POST", "http://example.com/test", data="test=data")
+            
+            # Verify timeout was set to 150 seconds for POST as well
+            mock_opener.open.assert_called_once()
+            args, kwargs = mock_opener.open.call_args
+            self.assertIn("timeout", kwargs)
+            self.assertEqual(kwargs["timeout"], 150)
+
+
 if __name__ == "__main__":
     unittest.main()
