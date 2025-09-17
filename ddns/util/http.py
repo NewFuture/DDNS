@@ -119,7 +119,7 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
         req = Request(url, data=data, headers=headers)
         req.get_method = lambda: method.upper()  # python 2 兼容
         h = handlers + ([proxy_handler] if proxy_handler else [])
-        return build_opener(*h).open(req, timeout=60 if method == "GET" else 120)  # 创建处理器链
+        return build_opener(*h).open(req, timeout=150)  # 创建处理器链
 
     if not proxies:
         response = run(None)  # 默认
