@@ -120,7 +120,7 @@ jobs:
           - os: macos-latest
             arch: arm64
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: ${{ matrix.arch == 'x86' && 20 || 10 }}
     permissions:
       contents: write
     steps:
