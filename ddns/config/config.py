@@ -79,7 +79,7 @@ class Config(object):
             "dns", "id", "token", "endpoint", "index4", "index6", 
             "ipv4", "ipv6", "ttl", "line", "proxy", "cache", "ssl",
             "log_level", "log_format", "log_file", "log_datefmt",
-            "extra", "debug", "config", "command", "func"
+            "extra", "debug", "config", "command"
         }
 
         # dns related configurations
