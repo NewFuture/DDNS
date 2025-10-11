@@ -114,7 +114,7 @@ class TestEnvExtraFields(unittest.TestCase):
         """Test that config works without any extra environment variables"""
         # Clear all DDNS env vars first
         self._clear_env_prefix("DDNS_")
-        
+
         os.environ["DDNS_DNS"] = "cloudflare"
         os.environ["DDNS_ID"] = "test@example.com"
 
