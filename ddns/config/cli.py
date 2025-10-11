@@ -72,7 +72,6 @@ class ExtendAction(Action):
         setattr(namespace, self.dest, items)
 
 
-
 class NewConfigAction(Action):
     """生成配置文件并退出程序"""
 

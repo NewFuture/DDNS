@@ -311,24 +311,10 @@
       },
       "required": [],
       "additionalProperties": false
-    },
-    "extra": {
-      "$id": "/properties/extra",
-      "type": "object",
-      "title": "Extra Fields",
-      "description": "额外的自定义字段，用于传递DNS服务商特定的参数，如Cloudflare的proxied、comment、tags等",
-      "additionalProperties": true,
-      "examples": [
-        {
-          "proxied": true,
-          "comment": "Managed by DDNS",
-          "tags": ["production", "ddns"]
-        }
-      ]
     }
   },
   "required": [
     "token"
   ],
-  "additionalProperties": true
+  "additionalProperties": false
 }

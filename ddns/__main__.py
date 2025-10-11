@@ -100,7 +100,7 @@ def run(config):
         logger=logger,
         proxy=config.proxy,
         ssl=config.ssl,
-        **config.extra
+        **config.extra,
     )
     cache = Cache.new(config.cache, config.md5(), logger)
     return (

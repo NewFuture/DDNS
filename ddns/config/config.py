@@ -76,10 +76,27 @@ class Config(object):
 
         # Known configuration keys that should not go into extra
         self._known_keys = {
-            "dns", "id", "token", "endpoint", "index4", "index6", 
-            "ipv4", "ipv6", "ttl", "line", "proxy", "cache", "ssl",
-            "log_level", "log_format", "log_file", "log_datefmt",
-            "extra", "debug", "config", "command"
+            "dns",
+            "id",
+            "token",
+            "endpoint",
+            "index4",
+            "index6",
+            "ipv4",
+            "ipv6",
+            "ttl",
+            "line",
+            "proxy",
+            "cache",
+            "ssl",
+            "log_level",
+            "log_format",
+            "log_file",
+            "log_datefmt",
+            "extra",
+            "debug",
+            "config",
+            "command",
         }
 
         # dns related configurations
