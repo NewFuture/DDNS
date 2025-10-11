@@ -28,7 +28,7 @@ jobs:
       - uses: astral-sh/ruff-action@v3
         with:
           src: "."
-          args: "check --statistics --output-format=github"
+          args: "check --output-format=github"
 
   python:
     strategy:
