@@ -264,7 +264,7 @@ def load_config(description, doc, version, date):
     args, unknown = parser.parse_known_args()
 
     # Parse unknown arguments that follow --extra.xxx format
-    extra_args = {}  # type: dict[str, str]
+    extra_args = {}  # type: dict[str, str | bool]
     i = 0
     while i < len(unknown):
         arg = unknown[i]
