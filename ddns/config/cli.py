@@ -72,6 +72,7 @@ class ExtendAction(Action):
         setattr(namespace, self.dest, items)
 
 
+
 class NewConfigAction(Action):
     """生成配置文件并退出程序"""
 
@@ -261,7 +262,31 @@ def load_config(description, doc, version, date):
     # Subparsers are only needed when user provides a subcommand (non-option argument)
     _add_task_subcommand_if_needed(parser)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+
+    # Parse unknown arguments that follow --extra.xxx format
+    extra_args = {}  # type: dict[str, str]
+    i = 0
+    while i < len(unknown):
+        arg = unknown[i]
+        if arg.startswith("--extra."):
+            key = "extra_" + arg[8:]  # Remove "--extra." and add "extra_" prefix
+            # Check if there's a value for this argument
+            if i + 1 < len(unknown) and not unknown[i + 1].startswith("--"):
+                extra_args[key] = unknown[i + 1]
+                i += 2
+            else:
+                # No value provided, set to True (flag)
+                extra_args[key] = True  # type: ignore[assignment]
+                i += 1
+        else:
+            # Unknown argument that doesn't match our pattern
+            sys.stderr.write("Warning: Unknown argument: {}\n".format(arg))
+            i += 1
+
+    # Merge extra_args into args namespace
+    for k, v in extra_args.items():
+        setattr(args, k, v)
 
     # Handle task subcommand and exit early if present
     if hasattr(args, "func"):
