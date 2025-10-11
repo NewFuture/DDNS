@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+  "dns": "cloudflare",
+  "id": "user@example.com",
+  "token": "YOUR_API_TOKEN_HERE",
+  "ipv4": [
+    "example.com",
+    "www.example.com"
+  ],
+  "index4": ["default"],
+  "ttl": 600,
+  "extra": {
+    "proxied": true,
+    "comment": "Managed by DDNS - Auto-updated",
+    "tags": [
+      "production",
+      "ddns"
+    ]
+  }
+}
