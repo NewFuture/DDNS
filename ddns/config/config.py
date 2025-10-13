@@ -74,6 +74,31 @@ class Config(object):
         self._json_config = json_config or {}
         self._env_config = env_config or {}
 
+        # Known configuration keys that should not go into extra
+        self._known_keys = {
+            "dns",
+            "id",
+            "token",
+            "endpoint",
+            "index4",
+            "index6",
+            "ipv4",
+            "ipv6",
+            "ttl",
+            "line",
+            "proxy",
+            "cache",
+            "ssl",
+            "log_level",
+            "log_format",
+            "log_file",
+            "log_datefmt",
+            "extra",
+            "debug",
+            "config",
+            "command",
+        }
+
         # dns related configurations
         self.dns = self._get("dns", "")  # type: str
         self.id = self._get("id", "")  # type: str
@@ -99,6 +124,9 @@ class Config(object):
         self.log_file = self._get("log_file", None)  # type: str | None
         self.log_datefmt = self._get("log_datefmt", "%Y-%m-%dT%H:%M:%S")  # type: str | None
 
+        # Collect extra fields from all config sources
+        self.extra = self._collect_extra()  # type: dict
+
     def _get(self, key, default=None):
         # type: (str, Any) -> Any
         """
@@ -116,6 +144,41 @@ class Config(object):
         if key in SIMPLE_ARRAY_PARAMS:
             return split_array_string(value)
         return value
+
+    def _collect_extra(self):
+        # type: () -> dict
+        """
+        Collect all extra fields from CLI, JSON, and ENV configs that are not known keys.
+        Priority: CLI > JSON > ENV
+        """
+        extra = {}  # type: dict
+
+        # Collect from env config first (lowest priority)
+        for key, value in self._env_config.items():
+            if key.startswith("extra_"):
+                extra_key = key[6:]  # Remove "extra_" prefix
+                extra[extra_key] = value
+            elif key == "extra" and isinstance(value, dict):
+                extra.update(value)
+            elif key not in self._known_keys:
+                extra[key] = value
+
+        # Collect from JSON config (medium priority)
+        for key, value in self._json_config.items():
+            if key == "extra" and isinstance(value, dict):
+                extra.update(value)
+            elif key not in self._known_keys:
+                extra[key] = value
+
+        # Collect from CLI config (highest priority)
+        for key, value in self._cli_config.items():
+            if key.startswith("extra_"):
+                extra_key = key[6:]  # Remove "extra_" prefix
+                extra[extra_key] = value
+            elif key not in self._known_keys:
+                extra[key] = value
+
+        return extra
 
     def md5(self):
         # type: () -> str
@@ -145,5 +208,7 @@ class Config(object):
             "log_format": self.log_format,
             "log_file": self.log_file,
             "log_datefmt": self.log_datefmt,
+            # Extra fields
+            "extra": self.extra,
         }
         return md5(str(dict_var).encode("utf-8")).hexdigest()

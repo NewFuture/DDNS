@@ -46,7 +46,8 @@ def load_config(prefix="DDNS_"):
     3. 键名转换：点号转下划线，支持大小写变体
     4. 自动检测标准 Python 环境变量：
        - SSL 验证：PYTHONHTTPSVERIFY
-    5. 其他所有值保持原始字符串格式，去除前后空格
+    5. 支持 extra 字段：DDNS_EXTRA_XXX 会被转换为 extra_xxx
+    6. 其他所有值保持原始字符串格式，去除前后空格
 
     Args:
         prefix (str): 环境变量前缀，默认为 "DDNS_"
