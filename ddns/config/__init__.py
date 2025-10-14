@@ -49,8 +49,9 @@ def _get_config_paths(config_paths):
 def _setup_logging(cli_config, env_config, all_json_configs):
     # type: (dict, dict, list[dict]) -> logging.Logger
     """Setup logging configuration and return logger."""
-    # Include global config from config file when there's only one config
-    json_config = all_json_configs[0] if len(all_json_configs) == 1 else {}
+    # Use first config for global log settings (log config is inherited from global in v4.1 format)
+    # All provider configs share the same log settings since they inherit from global config
+    json_config = all_json_configs[0] if all_json_configs else {}
     global_conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
     log_format = global_conf.log_format  # type: str  # type: ignore
     if log_format:
