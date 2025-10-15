@@ -11,6 +11,8 @@ import tempfile
 import shutil
 import os
 import json
+import logging
+import sys
 from ddns.config import load_configs
 
 
@@ -259,6 +261,82 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             load_config(invalid_file2)
         self.assertIn("providers and dns fields conflict", str(cm.exception))
+
+    def test_v41_multi_provider_log_config(self):
+        """Test that log configuration works with multiple providers in v4.1 format.
+
+        This is a regression test for issue where log.file was ignored when
+        using multiple providers in v4.1 format.
+        """
+        # Create a temp log file path
+        log_file_path = os.path.join(self.temp_dir, "ddns.log")
+
+        # Create v4.1 config with multiple providers and log configuration
+        multi_provider_config = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+            "ssl": "auto",
+            "cache": True,
+            "log": {
+                "level": "INFO",
+                "file": log_file_path,
+                "format": "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S"
+            },
+            "providers": [
+                {
+                    "provider": "debug",
+                    "id": "user1@example.com",
+                    "token": "token1",
+                    "ipv4": ["test1.example.com"]
+                },
+                {
+                    "provider": "debug",
+                    "id": "user2@example.com",
+                    "token": "token2",
+                    "ipv4": ["test2.example.com"]
+                }
+            ]
+        }
+        config_file = self.create_test_file("multi_provider_log.json", multi_provider_config)
+
+        # Mock sys.argv to load this config
+        original_argv = sys.argv
+
+        # Reset logging handlers before test
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+
+        try:
+            sys.argv = ["ddns", "-c", config_file]
+
+            # Load configs using load_configs which calls _setup_logging
+            configs = load_configs("test", "1.0.0", "2025-01-01")
+
+            # Should have 2 configs (one per provider)
+            self.assertEqual(len(configs), 2)
+
+            # Both configs should have the log settings inherited from global config
+            for i, config in enumerate(configs):
+                self.assertEqual(config.log_file, log_file_path,
+                               "Config %d should have log_file from global config" % i)
+                # Check log_level - in Python 2.7, getLevelName may return string, so check both
+                self.assertIn(config.log_level, [20, logging.INFO, "INFO"],
+                               "Config %d should have log_level from global config" % i)
+                self.assertEqual(config.log_format,
+                               "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
+                               "Config %d should have log_format from global config" % i)
+                self.assertEqual(config.log_datefmt, "%Y-%m-%d %H:%M:%S",
+                               "Config %d should have log_datefmt from global config" % i)
+
+            # Verify that log file was actually created (proving logging.basicConfig was called with filename)
+            self.assertTrue(os.path.exists(log_file_path),
+                          "Log file should have been created by logging.basicConfig")
+
+        finally:
+            sys.argv = original_argv
+            # Clean up logging handlers
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
 
 
 if __name__ == "__main__":
