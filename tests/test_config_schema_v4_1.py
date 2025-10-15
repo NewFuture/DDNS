@@ -11,6 +11,8 @@ import tempfile
 import shutil
 import os
 import json
+import sys
+import logging
 from ddns.config import load_configs
 
 
@@ -298,8 +300,6 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         config_file = self.create_test_file("multi_provider_log.json", multi_provider_config)
 
         # Mock sys.argv to load this config
-        import sys
-        import logging
         original_argv = sys.argv
         
         # Reset logging handlers before test
