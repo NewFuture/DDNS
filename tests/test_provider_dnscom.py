@@ -286,6 +286,23 @@ class TestDnscomProvider(BaseProviderTestCase):
             )
             self.assertTrue(result)
 
+    def test_update_record_extra_priority_over_old_record(self):
+        """Test that extra parameters take priority over old_record values"""
+        provider = DnscomProvider(self.authid, self.token)
+
+        old_record = {"recordID": "123456", "remark": "Old remark"}
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"success": True}
+
+            # extra should override old_record's remark
+            extra = {"remark": "New remark from extra"}
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, "1", extra)
+
+            # Verify that extra["remark"] was set correctly with priority
+            self.assertEqual(extra["remark"], "New remark from extra")
+            self.assertTrue(result)
+
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
         provider = DnscomProvider(self.authid, self.token)

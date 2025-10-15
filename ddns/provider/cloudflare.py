@@ -81,9 +81,9 @@ class CloudflareProvider(BaseProvider):
         # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/edit/"""
         extra["comment"] = extra.get("comment", self.remark)  # 注释
-        extra["proxied"] = old_record.get("proxied", extra.get("proxied"))  # 保持原有的代理状态
-        extra["tags"] = old_record.get("tags", extra.get("tags"))  # 保持原有的标签
-        extra["settings"] = old_record.get("settings", extra.get("settings"))  # 保持原有的设置
+        extra["proxied"] = extra.get("proxied", old_record.get("proxied"))  # extra优先，保持原有的代理状态作为默认值
+        extra["tags"] = extra.get("tags", old_record.get("tags"))  # extra优先，保持原有的标签作为默认值
+        extra["settings"] = extra.get("settings", old_record.get("settings"))  # extra优先，保持原有的设置作为默认值
         data = self._request(
             "PUT",
             "/{}/dns_records/{}".format(zone_id, old_record["id"]),

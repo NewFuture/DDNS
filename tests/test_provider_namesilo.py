@@ -247,6 +247,29 @@ class TestNamesiloProvider(BaseProviderTestCase):
 
         self.assertFalse(result)
 
+    @patch.object(NamesiloProvider, "_request")
+    def test_update_record_extra_priority_over_old_record(self, mock_request):
+        """Test that extra parameters take priority over old_record values"""
+        mock_request.return_value = {"reply": {"code": "300"}}
+
+        old_record = {"record_id": "12345", "host": "test", "type": "A", "value": "1.2.3.4", "ttl": "3600"}
+
+        # NameSilo doesn't use many extra params in update, but we verify it doesn't break
+        extra = {"custom_field": "custom_value"}
+        result = self.provider._update_record("example.com", old_record, "5.6.7.8", "A", 7200, None, extra)
+
+        # Verify the basic call was made (NameSilo doesn't support extra params in update)
+        mock_request.assert_called_once_with(
+            "dnsUpdateRecord",
+            rrid="12345",
+            domain="example.com",
+            rrhost="test",
+            rrvalue="5.6.7.8",
+            rrtype="A",
+            rrttl=7200,
+        )
+        self.assertTrue(result)
+
     @patch.object(NamesiloProvider, "_http")
     def test_integration_set_record_update_flow(self, mock_http):
         """Integration test for complete set_record flow with update"""

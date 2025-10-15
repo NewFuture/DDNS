@@ -323,15 +323,15 @@ class TestCloudflareProvider(BaseProviderTestCase):
             self.assertFalse(result)
 
     def test_update_record_with_extra_params(self):
-        """Test _update_record method with extra parameters overriding defaults"""
+        """Test _update_record method with extra parameters overriding old_record values"""
         provider = CloudflareProvider(self.authid, self.token)
 
-        old_record = {"id": "rec123", "name": "www.example.com", "comment": "Old comment", "proxied": False}
+        old_record = {"id": "rec123", "name": "www.example.com", "comment": "Old comment", "proxied": False, "tags": ["old_tag"], "settings": {"old": "setting"}}
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123"}
 
-            extra = {"comment": "New comment", "proxied": True, "priority": 20}
+            extra = {"comment": "New comment", "proxied": True, "priority": 20, "tags": ["new_tag"]}
             result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, None, extra)
 
             mock_request.assert_called_once_with(
@@ -342,10 +342,10 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 content="5.6.7.8",
                 ttl=600,
                 comment="New comment",  # extra.get("comment", self.remark)
-                proxied=False,  # old_record.get("proxied", extra.get("proxied"))
+                proxied=True,  # extra.get("proxied", old_record.get("proxied")) - extra takes priority
                 priority=20,  # From extra
-                tags=None,
-                settings=None,
+                tags=["new_tag"],  # extra.get("tags", old_record.get("tags")) - extra takes priority
+                settings={"old": "setting"},  # extra.get("settings", old_record.get("settings")) - falls back to old_record
             )
             self.assertTrue(result)
 
