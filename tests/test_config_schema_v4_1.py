@@ -11,8 +11,8 @@ import tempfile
 import shutil
 import os
 import json
-import sys
 import logging
+import sys
 from ddns.config import load_configs
 
 
