@@ -50,7 +50,7 @@ def _setup_logging(cli_config, env_config, all_json_configs):
     # type: (dict, dict, list[dict]) -> logging.Logger
     """Setup logging configuration and return logger."""
     # Use first config for global log settings (log config is inherited from global in v4.1 format)
-    # All provider configs share the same log settings since they inherit from global config
+    # Use first config for log settings (all configs inherit same log settings in v4.1 format)
     json_config = all_json_configs[0] if all_json_configs else {}
     global_conf = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
     log_format = global_conf.log_format  # type: str  # type: ignore
