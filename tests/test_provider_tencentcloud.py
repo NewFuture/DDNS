@@ -233,7 +233,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
     def test_update_record_extra_priority_over_old_record(self, mock_http):
         """Test that extra parameters take priority over old_record values"""
         import json
-        
+
         mock_http.return_value = {"Response": {"RecordId": 123456}}
 
         old_record = {"RecordId": 123456, "Domain": "example.com", "DomainId": 12345678, "Name": "www", "Line": "默认", "Remark": "Old remark"}
