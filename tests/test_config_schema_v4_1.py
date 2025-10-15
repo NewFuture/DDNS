@@ -264,13 +264,13 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
     def test_v41_multi_provider_log_config(self):
         """Test that log configuration works with multiple providers in v4.1 format.
-        
+
         This is a regression test for issue where log.file was ignored when
         using multiple providers in v4.1 format.
         """
         # Create a temp log file path
         log_file_path = os.path.join(self.temp_dir, "ddns.log")
-        
+
         # Create v4.1 config with multiple providers and log configuration
         multi_provider_config = {
             "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
@@ -301,7 +301,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
         # Mock sys.argv to load this config
         original_argv = sys.argv
-        
+
         # Reset logging handlers before test
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
@@ -317,16 +317,16 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
             # Both configs should have the log settings inherited from global config
             for i, config in enumerate(configs):
-                self.assertEqual(config.log_file, log_file_path, 
+                self.assertEqual(config.log_file, log_file_path,
                                "Config %d should have log_file from global config" % i)
-                self.assertEqual(config.log_level, 20,  # INFO level
+                self.assertEqual(config.log_level, logging.INFO,
                                "Config %d should have log_level from global config" % i)
-                self.assertEqual(config.log_format, 
+                self.assertEqual(config.log_format,
                                "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
                                "Config %d should have log_format from global config" % i)
                 self.assertEqual(config.log_datefmt, "%Y-%m-%d %H:%M:%S",
                                "Config %d should have log_datefmt from global config" % i)
-            
+
             # Verify that log file was actually created (proving logging.basicConfig was called with filename)
             self.assertTrue(os.path.exists(log_file_path),
                           "Log file should have been created by logging.basicConfig")
