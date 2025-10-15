@@ -232,6 +232,8 @@ class TestTencentCloudProvider(BaseProviderTestCase):
     @patch.object(TencentCloudProvider, "_http")
     def test_update_record_extra_priority_over_old_record(self, mock_http):
         """Test that extra parameters take priority over old_record values"""
+        import json
+        
         mock_http.return_value = {"Response": {"RecordId": 123456}}
 
         old_record = {"RecordId": 123456, "Domain": "example.com", "DomainId": 12345678, "Name": "www", "Line": "默认", "Remark": "Old remark"}
@@ -244,7 +246,7 @@ class TestTencentCloudProvider(BaseProviderTestCase):
         self.assertTrue(result)
         call_kwargs = mock_http.call_args[1]
         # extra["Remark"] should be set with priority
-        body_dict = eval(call_kwargs["body"])  # Parse the JSON body
+        body_dict = json.loads(call_kwargs["body"])  # Parse the JSON body
         self.assertEqual(body_dict["Remark"], "New remark from extra")
         self.assertEqual(body_dict["Status"], "ENABLE")
 
