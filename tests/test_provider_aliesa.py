@@ -252,7 +252,7 @@ class TestAliesaProvider(BaseProviderTestCase):
 
     def test_update_record_extra_priority_over_old_record(self):
         """Test that extra parameters take priority over old_record values in _update_record"""
-        from unittest.mock import patch
+        from base_test import patch
 
         old_record = {
             "RecordId": "123456",
