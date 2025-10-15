@@ -330,6 +330,32 @@ class TestAlidnsProvider(BaseProviderTestCase):
             )
             self.assertTrue(result)
 
+    def test_update_record_extra_priority_over_old_record(self):
+        """Test that extra parameters take priority over old_record values"""
+        provider = AlidnsProvider(self.authid, self.token)
+
+        old_record = {"RecordId": "123456", "RR": "www", "Line": "default", "Priority": 10, "Remark": "Old remark"}
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"RecordId": "123456"}
+
+            # extra should override old_record's Priority and Remark
+            extra = {"Priority": 20, "Remark": "New remark from extra"}
+            result = provider._update_record("example.com", old_record, "5.6.7.8", "A", 600, "unicom", extra)
+
+            mock_request.assert_called_once_with(
+                "UpdateDomainRecord",
+                RecordId="123456",
+                Value="5.6.7.8",
+                RR="www",
+                Type="A",
+                TTL=600,
+                Line="unicom",
+                Priority=20,  # Should use extra, not old_record's 10
+                Remark="New remark from extra",  # Should use extra, not old_record's "Old remark"
+            )
+            self.assertTrue(result)
+
     def test_line_configuration_support(self):
         """Test that AlidnsProvider supports line configuration"""
         provider = AlidnsProvider(self.authid, self.token)

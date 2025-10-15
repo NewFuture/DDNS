@@ -282,6 +282,30 @@ class TestHuaweiDNSProvider(BaseProviderTestCase):
             )
             self.assertTrue(result)
 
+    def test_update_record_extra_priority_over_old_record(self):
+        """Test that extra parameters take priority over old_record values"""
+        provider = HuaweiDNSProvider(self.authid, self.token)
+
+        old_record = {"id": "rec123", "name": "www.example.com.", "ttl": 300, "description": "Old description"}
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"id": "rec123"}
+
+            # extra should override old_record's description
+            extra = {"description": "New description from extra"}
+            result = provider._update_record("zone123", old_record, "5.6.7.8", "A", 600, None, extra)
+
+            mock_request.assert_called_once_with(
+                "PUT",
+                "/v2.1/zones/zone123/recordsets/rec123",
+                name="www.example.com.",
+                type="A",
+                records=["5.6.7.8"],
+                ttl=600,
+                description="New description from extra",  # Should use extra, not old_record
+            )
+            self.assertTrue(result)
+
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
         provider = HuaweiDNSProvider(self.authid, self.token)

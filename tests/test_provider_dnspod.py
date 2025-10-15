@@ -320,6 +320,24 @@ class TestDnspodProvider(BaseProviderTestCase):
         call_args = mock_request.call_args[1]
         self.assertEqual(call_args["extra"], extra)
 
+    @patch("ddns.provider.dnspod.DnspodProvider._request")
+    def test_update_record_extra_priority_over_old_record(self, mock_request):
+        """Test that extra parameters take priority over old_record values"""
+        mock_request.return_value = {"record": {"id": "12345", "name": "www", "value": "192.168.1.2"}}
+
+        old_record = {"id": "12345", "name": "www", "line": "电信", "weight": 10}
+        # extra should override old_record's weight
+        extra = {"weight": 20, "mx": 5}
+
+        result = self.provider._update_record("zone123", old_record, "192.168.1.2", "A", None, None, extra)
+
+        self.assertTrue(result)
+        call_args = mock_request.call_args[1]
+        self.assertEqual(call_args["extra"], extra)
+        # Verify extra contains the new weight value
+        self.assertEqual(call_args["extra"]["weight"], 20)
+        self.assertEqual(call_args["extra"]["mx"], 5)
+
     def test_request_with_none_response(self):
         """Test _request method when HTTP returns None"""
         with patch("ddns.provider.dnspod.DnspodProvider._http") as mock_http:

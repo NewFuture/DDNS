@@ -250,6 +250,33 @@ class TestAliesaProvider(BaseProviderTestCase):
         )
         self.assertFalse(needs_update)
 
+    def test_update_record_extra_priority_over_old_record(self):
+        """Test that extra parameters take priority over old_record values in _update_record"""
+        from unittest.mock import patch
+
+        old_record = {
+            "RecordId": "123456",
+            "RecordName": "www.example.com",
+            "Data": {"Value": "192.168.1.100"},
+            "RecordType": "A/AAAA",
+            "Ttl": 300,
+            "Proxied": False,
+        }
+
+        with patch.object(self.provider, "_request") as mock_request:
+            mock_request.return_value = {"RecordId": "123456"}
+
+            # extra should override old_record's Proxied value
+            extra = {"Proxied": True, "Comment": "New comment"}
+            result = self.provider._update_record("zone123", old_record, "192.168.1.200", "A", 600, None, extra)
+
+            # Verify the call was made with extra taking priority
+            mock_request.assert_called_once()
+            call_kwargs = mock_request.call_args[1]
+            self.assertEqual(call_kwargs["Proxied"], True)  # Should use extra, not old_record's False
+            self.assertEqual(call_kwargs["Comment"], "New comment")
+            self.assertTrue(result)
+
     def test_domain_formatting(self):
         """Test domain formatting for various subdomain and main domain combinations"""
         # Import the helper function
