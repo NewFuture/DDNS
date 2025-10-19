@@ -200,11 +200,15 @@ class TestCloudflareProvider(BaseProviderTestCase):
             provider, "_request"
         ) as mock_request:
             mock_join.return_value = "www.example.com"
-            mock_request.return_value = []
+            # When record is found with extra filter, should not fallback
+            mock_request.return_value = [
+                {"id": "rec123", "name": "www.example.com", "type": "A", "content": "1.2.3.4", "proxied": True}
+            ]
 
             extra = {"proxied": True}
-            provider._query_record("zone123", "www", "example.com", "A", None, extra)
+            result = provider._query_record("zone123", "www", "example.com", "A", None, extra)
 
+            # Should call only once since record is found with extra filter
             mock_request.assert_called_once_with(
                 "GET",
                 "/zone123/dns_records",
@@ -212,6 +216,105 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 per_page=10000,
                 **{"name.exact": "www.example.com", "proxied": True}
             )  # fmt: skip
+            self.assertIsNotNone(result)
+
+    def test_query_record_with_proxy_false_fallback(self):
+        """Test _query_record fallback logic when proxied=False filter returns no results"""
+        provider = CloudflareProvider(self.authid, self.token)
+
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
+            mock_join.return_value = "test.example.net"
+            # First call with extra filter returns empty, second call without filter returns record
+            mock_request.side_effect = [
+                [],  # No results with proxied=False
+                [{"id": "rec123", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": True}]
+            ]
+
+            extra = {"proxied": False}
+            result = provider._query_record("zone123", "test", "example.net", "A", None, extra)
+
+            # Should call twice - first with extra filter, then without
+            self.assertEqual(mock_request.call_count, 2)
+            mock_request.assert_any_call(
+                "GET",
+                "/zone123/dns_records",
+                type="A",
+                per_page=10000,
+                **{"name.exact": "test.example.net", "proxied": False}
+            )  # fmt: skip
+            mock_request.assert_any_call(
+                "GET",
+                "/zone123/dns_records",
+                type="A",
+                per_page=10000,
+                **{"name.exact": "test.example.net"}
+            )  # fmt: skip
+            # Should return the record found without extra filter
+            self.assertIsNotNone(result)
+            self.assertEqual(result["id"], "rec123")
+
+    def test_query_record_with_proxy_true_fallback(self):
+        """Test _query_record fallback logic when proxied=True filter returns no results"""
+        provider = CloudflareProvider(self.authid, self.token)
+
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
+            mock_join.return_value = "test.example.net"
+            # First call with extra filter returns empty, second call without filter returns record
+            mock_request.side_effect = [
+                [],  # No results with proxied=True
+                [{"id": "rec456", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": False}]
+            ]
+
+            extra = {"proxied": True}
+            result = provider._query_record("zone123", "test", "example.net", "A", None, extra)
+
+            # Should call twice - first with extra filter, then without
+            self.assertEqual(mock_request.call_count, 2)
+            # Should return the record found without extra filter
+            self.assertIsNotNone(result)
+            self.assertEqual(result["id"], "rec456")
+
+    def test_query_record_with_proxy_found_with_filter(self):
+        """Test _query_record does not fallback when record is found with extra filter"""
+        provider = CloudflareProvider(self.authid, self.token)
+
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
+            mock_join.return_value = "test.example.net"
+            # Returns record on first call with extra filter
+            mock_request.return_value = [
+                {"id": "rec789", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": True}
+            ]
+
+            extra = {"proxied": True}
+            result = provider._query_record("zone123", "test", "example.net", "A", None, extra)
+
+            # Should call only once since record found with extra filter
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertIsNotNone(result)
+            self.assertEqual(result["id"], "rec789")
+
+    def test_query_record_no_extra_filter(self):
+        """Test _query_record without extra filters does not perform fallback"""
+        provider = CloudflareProvider(self.authid, self.token)
+
+        with patch("ddns.provider.cloudflare.join_domain") as mock_join, patch.object(
+            provider, "_request"
+        ) as mock_request:
+            mock_join.return_value = "www.example.com"
+            mock_request.return_value = []
+
+            # No extra filters
+            result = provider._query_record("zone123", "www", "example.com", "A", None, {})
+
+            # Should call only once since no extra filters
+            self.assertEqual(mock_request.call_count, 1)
+            self.assertIsNone(result)
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
@@ -508,7 +611,8 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
             # Simulate successful creation with custom options
             mock_request.side_effect = [
                 [{"id": "zone123", "name": "example.com"}],  # _query_zone_id response
-                [],  # _query_record response (no existing record)
+                [],  # _query_record response with extra filter (no existing record)
+                [],  # _query_record fallback without extra filter (no existing record)
                 {"id": "rec123", "name": "www.example.com"},  # _create_record response
             ]
 

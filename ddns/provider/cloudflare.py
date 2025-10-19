@@ -49,14 +49,35 @@ class CloudflareProvider(BaseProvider):
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
         # type: (str, str, str, str, str | None, dict) -> dict | None
-        """https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/"""
+        """
+        查询DNS记录，优先使用extra filter匹配，匹配不到则fallback到不带extra的结果
+        
+        Query DNS records, prioritize extra filters, fallback to query without extra if no match found.
+        https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/
+        """
         # cloudflare的域名查询需要完整域名
         name = join_domain(subdomain, main_domain)
         query = {"name.exact": name}  # type: dict[str, str|None]
+        has_extra_filters = False
+        
+        # 添加extra filter到查询参数
         if extra:
-            query["proxied"] = extra.get("proxied", None)  # 代理状态
+            proxied = extra.get("proxied", None)
+            if proxied is not None:
+                query["proxied"] = proxied  # 代理状态
+                has_extra_filters = True
+        
+        # 先使用extra filter查询
         data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=10000, **query)
         record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
+        
+        # 如果使用了extra filter但没找到记录，尝试不带extra filter查询
+        if not record and has_extra_filters:
+            self.logger.debug("No record found with extra filters, retrying without extra filters")
+            query_no_extra = {"name.exact": name}
+            data = self._request("GET", "/{}/dns_records".format(zone_id), type=record_type, per_page=10000, **query_no_extra)
+            record = next((r for r in data if r.get("name") == name and r.get("type") == record_type), None)
+        
         self.logger.debug("Record queried: %s", record)
         if record:
             return record
