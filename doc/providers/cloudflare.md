@@ -94,6 +94,7 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 | ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | ttl     | TTL 时间      | 整数（秒）     | [参考下方](#ttl)                    | 300/auto | 服务商参数 |
+| proxied | 代理状态      | 布尔           | `true`、`false`                    | 无        | 服务商参数 |
 | proxy   | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
 | ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
 | cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
@@ -104,6 +105,30 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 > - **公用配置**：所有支持的DNS服务商均适用的标准DNS配置参数  
 > - **公用网络**：所有支持的DNS服务商均适用的网络设置参数  
 > - **服务商参数**：当前服务商支持, 值与当前服务商相关
+
+### proxied
+
+`proxied` 参数控制 DNS 记录是否通过 Cloudflare 代理。这是 Cloudflare 特有的功能，用于启用或禁用其 CDN 和安全保护功能。
+
+#### 查询记录匹配逻辑
+
+当配置了 `proxied` 参数时，DDNS 会按照以下优先级查询现有的 DNS 记录：
+
+1. **优先使用 `proxied` 过滤**：首先尝试查询匹配指定 `proxied` 状态的记录
+2. **回退到无过滤查询**：如果带有 `proxied` 过滤的查询没有找到记录，将自动重试不带 `proxied` 过滤的查询
+
+这种回退机制确保了以下场景的正确处理：
+
+- **场景1**: 配置文件从 `"proxied": true` 改为 `"proxied": false`
+  - 即使原记录是 proxied=true，系统也能找到并更新它
+  
+- **场景2**: 配置文件从 `"proxied": false` 改为 `"proxied": true`
+  - 即使原记录是 proxied=false，系统也能找到并更新它
+
+- **场景3**: 配置文件新增 `"proxied": true/false` 参数
+  - 能够找到不带 proxied 过滤创建的记录并进行更新
+
+> **注意**：如果查询时带 `proxied` 过滤找到了记录，则不会执行回退查询，直接使用匹配的记录。
 
 ### ttl
 
