@@ -120,13 +120,13 @@ When the `proxied` parameter is configured, DDNS queries existing DNS records wi
 This fallback mechanism ensures correct handling of the following scenarios:
 
 - **Scenario 1**: Configuration changed from `"proxied": true` to `"proxied": false`
-  - Even if the original record has proxied=true, the system can still find and update it
+  - Even if the original record has `proxied=true`, the system can still find and update it
   
 - **Scenario 2**: Configuration changed from `"proxied": false` to `"proxied": true`
-  - Even if the original record has proxied=false, the system can still find and update it
+  - Even if the original record has `proxied=false`, the system can still find and update it
 
 - **Scenario 3**: Configuration newly adds `"proxied": true/false` parameter
-  - Can find records created without proxied filter and update them
+  - Can find records created without `proxied` filter and update them
 
 > **Note**: If a record is found with the `proxied` filter during the query, the fallback query will not be executed and the matched record will be used directly.
 

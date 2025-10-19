@@ -120,13 +120,13 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 这种回退机制确保了以下场景的正确处理：
 
 - **场景1**: 配置文件从 `"proxied": true` 改为 `"proxied": false`
-  - 即使原记录是 proxied=true，系统也能找到并更新它
+  - 即使原记录是 `proxied=true`，系统也能找到并更新它
   
 - **场景2**: 配置文件从 `"proxied": false` 改为 `"proxied": true`
-  - 即使原记录是 proxied=false，系统也能找到并更新它
+  - 即使原记录是 `proxied=false`，系统也能找到并更新它
 
 - **场景3**: 配置文件新增 `"proxied": true/false` 参数
-  - 能够找到不带 proxied 过滤创建的记录并进行更新
+  - 能够找到不带 `proxied` 过滤创建的记录并进行更新
 
 > **注意**：如果查询时带 `proxied` 过滤找到了记录，则不会执行回退查询，直接使用匹配的记录。
 
