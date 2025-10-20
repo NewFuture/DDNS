@@ -209,12 +209,13 @@ class TestCloudflareProvider(BaseProviderTestCase):
             result = provider._query_record("zone123", "www", "example.com", "A", None, extra)
 
             # Should call only once since record is found with extra filter
+            # Note: proxied is converted to lowercase string "true"
             mock_request.assert_called_once_with(
                 "GET",
                 "/zone123/dns_records",
                 type="A",
                 per_page=10000,
-                **{"name.exact": "www.example.com", "proxied": True}
+                **{"name.exact": "www.example.com", "proxied": "true"}
             )  # fmt: skip
             self.assertIsNotNone(result)
 
@@ -237,12 +238,13 @@ class TestCloudflareProvider(BaseProviderTestCase):
 
             # Should call twice - first with extra filter, then without
             self.assertEqual(mock_request.call_count, 2)
+            # Note: proxied is converted to lowercase string "false"
             mock_request.assert_any_call(
                 "GET",
                 "/zone123/dns_records",
                 type="A",
                 per_page=10000,
-                **{"name.exact": "test.example.net", "proxied": False}
+                **{"name.exact": "test.example.net", "proxied": "false"}
             )  # fmt: skip
             mock_request.assert_any_call(
                 "GET",

@@ -68,7 +68,6 @@ def encode_params(params):
     # type: (dict|list|str|bytes|None) -> str
     """
     编码参数为 URL 查询字符串,参数顺序会排序
-    Boolean值会被转换为小写字符串 (True -> "true", False -> "false")
 
     Args:
         params (dict|list|str|bytes|None): 参数字典、列表或字符串
@@ -80,13 +79,7 @@ def encode_params(params):
     elif isinstance(params, (str, bytes)):
         return params  # type: ignore[return-value]
     items = params.items() if isinstance(params, dict) else params
-    # 规范化布尔值为小写字符串
-    normalized = []
-    for k, v in items:
-        if isinstance(v, bool):
-            v = str(v).lower()  # True -> "true", False -> "false"
-        normalized.append((k, v))
-    return urlencode(sorted(normalized), doseq=True)
+    return urlencode(sorted(items), doseq=True)
 
 
 class SimpleProvider(object):

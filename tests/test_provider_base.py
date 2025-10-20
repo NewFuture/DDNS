@@ -221,51 +221,6 @@ class TestBaseProvider(BaseProviderTestCase):
         self.assertFalse(result)
 
 
-class TestEncodeParams(unittest.TestCase):
-    """测试encode_params函数"""
-
-    def test_encode_params_dict_with_boolean_false(self):
-        """测试Boolean False值被转换为小写字符串"""
-        params = {"proxied": False, "name": "test"}
-        result = encode_params(params)
-        # 应该包含 proxied=false (小写)
-        self.assertIn("proxied=false", result)
-        self.assertNotIn("proxied=False", result)
-
-    def test_encode_params_dict_with_boolean_true(self):
-        """测试Boolean True值被转换为小写字符串"""
-        params = {"proxied": True, "name": "test"}
-        result = encode_params(params)
-        # 应该包含 proxied=true (小写)
-        self.assertIn("proxied=true", result)
-        self.assertNotIn("proxied=True", result)
-
-    def test_encode_params_dict_with_mixed_types(self):
-        """测试混合类型参数"""
-        params = {"bool_false": False, "bool_true": True, "string": "value", "number": 123}
-        result = encode_params(params)
-        self.assertIn("bool_false=false", result)
-        self.assertIn("bool_true=true", result)
-        self.assertIn("string=value", result)
-        self.assertIn("number=123", result)
-
-    def test_encode_params_list_with_boolean(self):
-        """测试列表格式参数中的Boolean值"""
-        params = [("proxied", False), ("name", "test")]
-        result = encode_params(params)
-        self.assertIn("proxied=false", result)
-
-    def test_encode_params_empty(self):
-        """测试空参数"""
-        self.assertEqual(encode_params(None), "")
-        self.assertEqual(encode_params({}), "")
-
-    def test_encode_params_string_passthrough(self):
-        """测试字符串参数直接返回"""
-        result = encode_params("key=value")
-        self.assertEqual(result, "key=value")
-
-
 if __name__ == "__main__":
     # 运行测试
     unittest.main(verbosity=2)
