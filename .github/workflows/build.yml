@@ -111,7 +111,8 @@ jobs:
       
       - name: Test pip install from wheel
         run: |
-          python3 -m pip install --force-reinstall dist/*.whl
+          wheel_file=$(ls dist/*.whl)
+          python3 -m pip install --force-reinstall "$wheel_file"
           ddns --version
           ddns --help
           ddns --new-config /tmp/test-pip-config.json
@@ -121,7 +122,8 @@ jobs:
       - name: Test pip install from source distribution
         run: |
           python3 -m pip uninstall -y ddns
-          python3 -m pip install --force-reinstall dist/*.tar.gz
+          tarball_file=$(ls dist/*.tar.gz)
+          python3 -m pip install --force-reinstall "$tarball_file"
           ddns --version
           python3 -m ddns --help
       
