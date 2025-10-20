@@ -230,7 +230,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
             # First call with extra filter returns empty, second call without filter returns record
             mock_request.side_effect = [
                 [],  # No results with proxied=False
-                [{"id": "rec123", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": True}]
+                [{"id": "rec123", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": True}],
             ]
 
             extra = {"proxied": False}
@@ -268,7 +268,7 @@ class TestCloudflareProvider(BaseProviderTestCase):
             # First call with extra filter returns empty, second call without filter returns record
             mock_request.side_effect = [
                 [],  # No results with proxied=True
-                [{"id": "rec456", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": False}]
+                [{"id": "rec456", "name": "test.example.net", "type": "A", "content": "1.2.3.4", "proxied": False}],
             ]
 
             extra = {"proxied": True}
@@ -431,7 +431,14 @@ class TestCloudflareProvider(BaseProviderTestCase):
         """Test _update_record method with extra parameters overriding old_record values"""
         provider = CloudflareProvider(self.authid, self.token)
 
-        old_record = {"id": "rec123", "name": "www.example.com", "comment": "Old comment", "proxied": False, "tags": ["old_tag"], "settings": {"old": "setting"}}
+        old_record = {
+            "id": "rec123",
+            "name": "www.example.com",
+            "comment": "Old comment",
+            "proxied": False,
+            "tags": ["old_tag"],
+            "settings": {"old": "setting"},
+        }
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"id": "rec123"}
@@ -450,7 +457,9 @@ class TestCloudflareProvider(BaseProviderTestCase):
                 proxied=True,  # extra.get("proxied", old_record.get("proxied")) - extra takes priority
                 priority=20,  # From extra
                 tags=["new_tag"],  # extra.get("tags", old_record.get("tags")) - extra takes priority
-                settings={"old": "setting"},  # extra.get("settings", old_record.get("settings")) - falls back to old_record
+                settings={
+                    "old": "setting"
+                },  # extra.get("settings", old_record.get("settings")) - falls back to old_record
             )
             self.assertTrue(result)
 
