@@ -108,6 +108,23 @@ jobs:
         run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
+      
+      - name: Test pip install from wheel
+        run: |
+          python3 -m pip install --force-reinstall dist/*.whl
+          ddns --version
+          ddns --help
+          ddns --new-config /tmp/test-pip-config.json
+          test -f /tmp/test-pip-config.json
+          python3 -m ddns --version
+      
+      - name: Test pip install from source distribution
+        run: |
+          python3 -m pip uninstall -y ddns
+          python3 -m pip install --force-reinstall dist/*.tar.gz
+          ddns --version
+          python3 -m ddns --help
+      
       - name: run unit tests
         run: python3 -m unittest -v
 
