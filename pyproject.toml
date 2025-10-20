@@ -62,9 +62,8 @@ pytest = [
 # Setuptools configuration
 [tool.setuptools]
 platforms = ["any"]
-packages = ["ddns", "ddns.provider", "ddns.util"]
+packages = ["ddns", "ddns.config", "ddns.provider", "ddns.scheduler", "ddns.util"]
 package-dir= {"ddns" = "ddns"}
-py-modules = ["ddns","ddns.provider", "ddns.util"]
 
 #[tool.setuptools.packages.find]
 #where = ["."]
