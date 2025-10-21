@@ -7,11 +7,16 @@ This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS 
 - Use only Python standard library modules (no external dependencies)
 - Ensure Python 2.7 and 3.x compatibility
 - Run tests before committing to ensure all functionality works correctly
-- Check the linting and formatting using `ruff`
+- Format and lint code using `ruff` before each commit:
+  ```bash
+  ruff check --fix --unsafe-fixes .
+  ruff format .
+  ```
 
 ### Development Flow
 - Test: `python -m unittest discover tests` or `python -m pytest tests/`
-- Format: Use ruff for code formatting and linting
+- Lint: `ruff check --fix --unsafe-fixes .`
+- Format: `ruff format .`
 
 ### Add a New DNS Provider
 

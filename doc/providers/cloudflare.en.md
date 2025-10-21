@@ -94,6 +94,7 @@ You can view and configure permissions in [Cloudflare API Token Management](http
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
 | ttl | TTL time | Integer (seconds) | [Reference below](#ttl) | `300/auto` | Provider Parameter |
+| proxied | Proxy status | Boolean | `true`, `false` | None | Provider Parameter |
 | proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
@@ -104,6 +105,30 @@ You can view and configure permissions in [Cloudflare API Token Management](http
 > - **Common Config**: Standard DNS configuration parameters applicable to all supported DNS providers
 > - **Common Network**: Network setting parameters applicable to all supported DNS providers
 > - **Provider Parameter**: Supported by current provider, values related to current provider
+
+### proxied
+
+The `proxied` parameter controls whether DNS records are proxied through Cloudflare. This is a Cloudflare-specific feature used to enable or disable its CDN and security protection features.
+
+#### Record Query Matching Logic
+
+When the `proxied` parameter is configured, DDNS queries existing DNS records with the following priority:
+
+1. **Priority: Use `proxied` filter**: First attempt to query records matching the specified `proxied` status
+2. **Fallback: Query without filter**: If the query with `proxied` filter finds no records, automatically retry the query without the `proxied` filter
+
+This fallback mechanism ensures correct handling of the following scenarios:
+
+- **Scenario 1**: Configuration changed from `"proxied": true` to `"proxied": false`
+  - Even if the original record has `proxied=true`, the system can still find and update it
+  
+- **Scenario 2**: Configuration changed from `"proxied": false` to `"proxied": true`
+  - Even if the original record has `proxied=false`, the system can still find and update it
+
+- **Scenario 3**: Configuration newly adds `"proxied": true/false` parameter
+  - Can find records created without `proxied` filter and update them
+
+> **Note**: If a record is found with the `proxied` filter during the query, the fallback query will not be executed and the matched record will be used directly.
 
 ### ttl
 
