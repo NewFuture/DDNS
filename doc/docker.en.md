@@ -135,6 +135,94 @@ docker run -d \
 
 ## Advanced Configuration
 
+### Custom Cron Schedule
+
+By default, the DDNS container automatically updates DNS records every 5 minutes. You can customize the scheduled task execution interval using the `DDNS_CRON` environment variable.
+
+The `DDNS_CRON` environment variable uses standard cron expression format: `minute hour day month weekday`
+
+**Examples**:
+
+```bash
+# Run every 10 minutes
+docker run -d \
+  -e DDNS_CRON="*/10 * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# Run every hour
+docker run -d \
+  -e DDNS_CRON="0 * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# Run once daily at 2 AM
+docker run -d \
+  -e DDNS_CRON="0 2 * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# Run every minute (most frequent for cron)
+docker run -d \
+  -e DDNS_CRON="* * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+```
+
+**Cron Expression Reference**:
+
+| Field    | Allowed Values | Allowed Special Characters |
+|----------|----------------|----------------------------|
+| Minute   | 0-59           | * , - /                    |
+| Hour     | 0-23           | * , - /                    |
+| Day      | 1-31           | * , - /                    |
+| Month    | 1-12           | * , - /                    |
+| Weekday  | 0-7            | * , - /                    |
+
+**Common Expression Examples**:
+
+- `*/5 * * * *` - Every 5 minutes (default)
+- `*/10 * * * *` - Every 10 minutes
+- `*/15 * * * *` - Every 15 minutes
+- `0 * * * *` - Every hour
+- `0 */2 * * *` - Every 2 hours
+- `0 0 * * *` - Daily at midnight
+- `0 2 * * *` - Daily at 2 AM
+- `0 0 * * 0` - Weekly on Sunday at midnight
+
+**Docker Compose Example**:
+
+```yaml
+version: "3"
+services:
+    ddns:
+        image: newfuture/ddns:latest
+        restart: always
+        network_mode: host
+        environment:
+            - DDNS_CRON=*/10 * * * *  # Run every 10 minutes
+            - DDNS_DNS=dnspod
+            - DDNS_ID=12345
+            - DDNS_TOKEN=mytokenkey
+            - DDNS_IPV4=example.com
+```
+
 ### Multi-Domain Configuration
 
 Environment variable method for configuring multiple domains:
