@@ -27,6 +27,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
 | `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
 | `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
+| `DDNS_CRON`            | Cron 表达式格式字符串（仅 Docker 环境有效）                                                          | Docker 容器内定时任务周期         | `DDNS_CRON="*/10 * * * *"`                               |
 | `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |
 | `DDNS_LOG_FILE`        | 文件路径                                                                                            | 设置日志输出文件（默认输出到终端）| `DDNS_LOG_FILE="/tmp/ddns.log"`                          |
 | `DDNS_LOG_FORMAT`      | Python logging 格式模板                                                                             | 设置日志格式                      | `DDNS_LOG_FORMAT="%(message)s"`                          |
@@ -246,6 +247,56 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   export DDNS_SSL="auto"     # 自动降级模式
   export DDNS_SSL="/etc/ssl/certs/ca-certificates.crt"  # 自定义CA证书
   ```
+
+### Docker 定时任务配置
+
+#### DDNS_CRON
+
+- **类型**: 字符串
+- **必需**: 否
+- **默认值**: `*/5 * * * *` （每 5 分钟）
+- **说明**: Docker 容器中定时任务的执行周期，仅在 Docker 环境中有效。使用标准的 cron 表达式格式
+- **格式**: `分钟 小时 日 月 星期`
+- **示例**:
+
+  ```bash
+  # 每 10 分钟执行一次
+  export DDNS_CRON="*/10 * * * *"
+  
+  # 每小时执行一次
+  export DDNS_CRON="0 * * * *"
+  
+  # 每天凌晨 2 点执行一次
+  export DDNS_CRON="0 2 * * *"
+  
+  # 每 15 分钟执行一次
+  export DDNS_CRON="*/15 * * * *"
+  
+  # 每 2 小时执行一次
+  export DDNS_CRON="0 */2 * * *"
+  ```
+
+**Cron 表达式说明**:
+
+| 字段 | 允许值 | 允许的特殊字符 |
+|------|--------|----------------|
+| 分钟 | 0-59   | * , - /        |
+| 小时 | 0-23   | * , - /        |
+| 日   | 1-31   | * , - /        |
+| 月   | 1-12   | * , - /        |
+| 星期 | 0-7    | * , - /        |
+
+**常用表达式**:
+- `*/5 * * * *` - 每 5 分钟（默认）
+- `*/10 * * * *` - 每 10 分钟
+- `*/15 * * * *` - 每 15 分钟
+- `0 * * * *` - 每小时
+- `0 */2 * * *` - 每 2 小时
+- `0 0 * * *` - 每天午夜
+- `0 2 * * *` - 每天凌晨 2 点
+- `0 0 * * 0` - 每周日午夜
+
+**注意**: 此环境变量仅在 Docker 容器中生效，不影响通过其他方式运行的 DDNS 程序。
 
 ### 日志配置
 

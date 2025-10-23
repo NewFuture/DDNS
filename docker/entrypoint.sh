@@ -14,8 +14,10 @@ if [ $# -eq 0 ]; then
      echo "[new] -v /host/folder/:/ddns/"
      echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   fi
-  echo "*/5 * * * *  cd /ddns && /bin/ddns" > /etc/crontabs/root
-  /bin/ddns &&  echo "Cron daemon will run every 5 minutes..." && exec crond -f
+  # Use DDNS_CRON environment variable for cron schedule, default to every 5 minutes
+  CRON_SCHEDULE="${DDNS_CRON:-*/5 * * * *}"
+  echo "${CRON_SCHEDULE}  cd /ddns && /bin/ddns" > /etc/crontabs/root
+  /bin/ddns &&  echo "Cron daemon will run with schedule: ${CRON_SCHEDULE}" && exec crond -f
 else
   first=`echo $1 | cut -c1`
   if [ "$first" = "-" ]; then

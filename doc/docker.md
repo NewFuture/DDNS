@@ -135,6 +135,95 @@ docker run -d \
 
 ## 高级配置
 
+### 自定义定时任务周期
+
+默认情况下，DDNS 容器会每 5 分钟自动更新一次 DNS 记录。您可以通过 `DDNS_CRON` 环境变量自定义定时任务的执行周期。
+
+`DDNS_CRON` 环境变量使用标准的 cron 表达式格式：`分钟 小时 日 月 星期`
+
+**示例**：
+
+```bash
+# 每 10 分钟执行一次
+docker run -d \
+  -e DDNS_CRON="*/10 * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# 每小时执行一次
+docker run -d \
+  -e DDNS_CRON="0 * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# 每天凌晨 2 点执行一次
+docker run -d \
+  -e DDNS_CRON="0 2 * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+
+# 每 30 秒执行一次（使用两个 cron 任务）
+# 注意：cron 最小单位是分钟，如需更频繁的更新，可以使用多个任务
+docker run -d \
+  -e DDNS_CRON="* * * * *" \
+  -e DDNS_DNS=dnspod \
+  -e DDNS_ID=12345 \
+  -e DDNS_TOKEN=mytokenkey \
+  -e DDNS_IPV4=example.com \
+  --network host \
+  newfuture/ddns
+```
+
+**Cron 表达式说明**：
+
+| 字段 | 允许值 | 允许的特殊字符 |
+|------|--------|----------------|
+| 分钟 | 0-59   | * , - /        |
+| 小时 | 0-23   | * , - /        |
+| 日   | 1-31   | * , - /        |
+| 月   | 1-12   | * , - /        |
+| 星期 | 0-7    | * , - /        |
+
+**常用表达式示例**：
+
+- `*/5 * * * *` - 每 5 分钟（默认值）
+- `*/10 * * * *` - 每 10 分钟
+- `*/15 * * * *` - 每 15 分钟
+- `0 * * * *` - 每小时
+- `0 */2 * * *` - 每 2 小时
+- `0 0 * * *` - 每天午夜
+- `0 2 * * *` - 每天凌晨 2 点
+- `0 0 * * 0` - 每周日午夜
+
+**Docker Compose 示例**：
+
+```yaml
+version: "3"
+services:
+    ddns:
+        image: newfuture/ddns:latest
+        restart: always
+        network_mode: host
+        environment:
+            - DDNS_CRON=*/10 * * * *  # 每 10 分钟执行一次
+            - DDNS_DNS=dnspod
+            - DDNS_ID=12345
+            - DDNS_TOKEN=mytokenkey
+            - DDNS_IPV4=example.com
+```
+
 ### 多域名配置
 
 环境变量方式配置多域名：

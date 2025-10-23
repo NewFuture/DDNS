@@ -27,6 +27,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_PROXY`             | `http://host:port` or `DIRECT`, multiple values separated by semicolons                             | HTTP proxy settings                       | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                 |
 | `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
 | `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
+| `DDNS_CRON`              | Cron expression format string (Docker only)                                                          | Cron schedule for Docker container        | `DDNS_CRON="*/10 * * * *"`                                  |
 | `DDNS_LOG_LEVEL`         | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                                     | Logging level                             | `DDNS_LOG_LEVEL="DEBUG"`                                    |
 | `DDNS_LOG_FILE`          | File path                                                                                            | Output log file (default: stdout)         | `DDNS_LOG_FILE="/tmp/ddns.log"`                             |
 | `DDNS_LOG_FORMAT`        | Python logging format string                                                                         | Log format template                       | `DDNS_LOG_FORMAT="%(message)s"`                             |
@@ -380,6 +381,56 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   # Use temporary directory
   export DDNS_CACHE="/tmp/ddns.cache"
   ```
+
+### Docker Cron Schedule Configuration
+
+#### DDNS_CRON
+
+- **Type**: String
+- **Required**: No
+- **Default**: `*/5 * * * *` (every 5 minutes)
+- **Description**: Cron schedule for scheduled tasks in Docker containers. Only effective in Docker environments. Uses standard cron expression format
+- **Format**: `minute hour day month weekday`
+- **Examples**:
+
+  ```bash
+  # Run every 10 minutes
+  export DDNS_CRON="*/10 * * * *"
+  
+  # Run every hour
+  export DDNS_CRON="0 * * * *"
+  
+  # Run once daily at 2 AM
+  export DDNS_CRON="0 2 * * *"
+  
+  # Run every 15 minutes
+  export DDNS_CRON="*/15 * * * *"
+  
+  # Run every 2 hours
+  export DDNS_CRON="0 */2 * * *"
+  ```
+
+**Cron Expression Reference**:
+
+| Field    | Allowed Values | Allowed Special Characters |
+|----------|----------------|----------------------------|
+| Minute   | 0-59           | * , - /                    |
+| Hour     | 0-23           | * , - /                    |
+| Day      | 1-31           | * , - /                    |
+| Month    | 1-12           | * , - /                    |
+| Weekday  | 0-7            | * , - /                    |
+
+**Common Expressions**:
+- `*/5 * * * *` - Every 5 minutes (default)
+- `*/10 * * * *` - Every 10 minutes
+- `*/15 * * * *` - Every 15 minutes
+- `0 * * * *` - Every hour
+- `0 */2 * * *` - Every 2 hours
+- `0 0 * * *` - Daily at midnight
+- `0 2 * * *` - Daily at 2 AM
+- `0 0 * * 0` - Weekly on Sunday at midnight
+
+**Note**: This environment variable only works in Docker containers and does not affect DDNS programs running through other methods.
 
 ## Logging Configuration
 
