@@ -97,6 +97,7 @@ class Config(object):
             "debug",
             "config",
             "command",
+            "$schema",  # JSON schema reference, should not be sent to API
         }
 
         # dns related configurations
