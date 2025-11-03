@@ -163,6 +163,27 @@ class TestConfigExtra(unittest.TestCase):
         # Only custom field should be in extra
         self.assertEqual(config.extra.get("custom"), "custom_value")
 
+    def test_extra_does_not_include_schema_field(self):
+        """Test that $schema field from JSON config is not collected as extra"""
+        json_config = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+            "dns": "tencentcloud",
+            "id": "test_id",
+            "token": "test_token",
+            "ipv4": ["example.com"],
+            "extra": {
+                "proxied": True,
+            },
+        }
+        config = Config(json_config=json_config)
+        # $schema should not be in extra
+        self.assertNotIn("$schema", config.extra)
+        # Other extra fields should be collected
+        self.assertTrue(config.extra.get("proxied"))
+        # Known fields should be accessible
+        self.assertEqual(config.dns, "tencentcloud")
+        self.assertEqual(config.id, "test_id")
+
     def test_extra_with_json_extra_object_and_undefined_fields(self):
         """Test JSON config with both extra object and undefined fields"""
         json_config = {
