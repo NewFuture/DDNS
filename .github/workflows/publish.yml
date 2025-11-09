@@ -24,6 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 .github/patch.py docker
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.platforms }}
