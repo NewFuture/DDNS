@@ -349,6 +349,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 .github/patch.py docker
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
       - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
