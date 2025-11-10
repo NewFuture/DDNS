@@ -28,6 +28,7 @@ COPY run.py  .
 COPY ddns ddns
 COPY .github/patch.py .github/patch.py
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
+# Pass version information to patch.py
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 # 运行Docker模式的patch以移除scheduler功能
