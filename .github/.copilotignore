@@ -1,0 +1,93 @@
+# Copilot ignore file
+# Excludes files and directories from GitHub Copilot context to improve performance
+
+# Build artifacts and distribution
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing and coverage
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD logs and artifacts
+.github/workflows/*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.old
+
+# Documentation build artifacts
+doc/_build/
+doc/.doctrees/
+
+# Compiled translations
+*.mo
+*.pot
+
+# Dependency directories (if any exist)
+node_modules/
+bower_components/
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Large binary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.pdf
+
+# Cache files
+*.cache
+.cache/

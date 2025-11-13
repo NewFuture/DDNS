@@ -1,4 +1,17 @@
-This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS records to match the current IP address. It supports multiple DNS providers, IPv4/IPv6, and various configuration methods. Please follow these guidelines when contributing:
+# DDNS Project - GitHub Copilot Instructions
+
+This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS records to match the current IP address. It supports multiple DNS providers, IPv4/IPv6, and various configuration methods.
+
+## Project Overview
+
+DDNS is a production-ready, cross-platform DNS client with:
+- **15+ DNS provider support**: Including Cloudflare, DNSPod, AliDNS, and more
+- **Multi-platform deployment**: Docker, pip package, binary executables, or source
+- **Flexible configuration**: CLI arguments, JSON files, environment variables
+- **Python 2.7 & 3.x compatibility**: Ensures wide compatibility
+- **Zero dependencies**: Uses only Python standard library for core functionality
+
+Please follow these guidelines when contributing:
 
 ## Code Standards
 
@@ -14,9 +27,18 @@ This is a Python-based Dynamic DNS (DDNS) client that automatically updates DNS 
   ```
 
 ### Development Flow
-- Test: `python -m unittest discover tests` or `python -m pytest tests/`
-- Lint: `ruff check --fix --unsafe-fixes .`
-- Format: `ruff format .`
+```bash
+# Test: Run all unit tests
+python3 -m unittest discover tests -v
+# Or with pytest (optional)
+python3 -m pytest tests/ -v
+
+# Lint: Check and fix code issues
+ruff check --fix --unsafe-fixes .
+
+# Format: Auto-format code
+ruff format .
+```
 
 ### Add a New DNS Provider
 
@@ -93,3 +115,41 @@ python -m unittest tests.test_provider_example -v
 ```
 
 See existing tests in `tests/` directory for detailed examples.
+
+## Additional Resources
+
+- **Contributing Guide**: [CONTRIBUTING.md](.github/CONTRIBUTING.md)
+- **Python Standards**: [python.instructions.md](./instructions/python.instructions.md)
+- **Provider Development**: [doc/dev/provider.md](../doc/dev/provider.md)
+- **Security Policy**: [SECURITY.md](.github/SECURITY.md)
+- **Pull Request Template**: [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md)
+
+## Quick Start for Contributors
+
+1. Fork and clone the repository
+2. Install dev dependencies: `pip install -e ".[dev]"`
+3. Make your changes following the coding standards
+4. Run tests: `python3 -m unittest discover tests -v`
+5. Format and lint: `ruff format . && ruff check --fix --unsafe-fixes .`
+6. Submit a pull request with a clear description
+
+## Common Tasks
+
+### Adding a New DNS Provider
+1. Create `ddns/provider/newprovider.py` inheriting from `BaseProvider` or `SimpleProvider`
+2. Implement required methods with proper error handling
+3. Add to `ddns/__init__.py`
+4. Create tests in `tests/test_provider_newprovider.py`
+5. Add documentation in `doc/providers/newprovider.md`
+6. Update `schema/v4.0.json` if needed
+
+### Fixing a Bug
+1. Write a failing test that reproduces the bug
+2. Fix the issue with minimal changes
+3. Ensure all tests pass
+4. Update documentation if needed
+
+### Improving Documentation
+1. Update relevant `.md` files in `doc/` directory
+2. Keep examples synchronized with code
+3. Ensure both English and Chinese docs are updated (if applicable)

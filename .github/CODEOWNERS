@@ -1,0 +1,35 @@
+# CODEOWNERS file for DDNS project
+# This file defines code ownership for automatic review requests
+
+# Default owners for everything in the repo
+* @NewFuture
+
+# Core application code
+/ddns/ @NewFuture
+
+# DNS Provider implementations
+/ddns/provider/ @NewFuture
+
+# Configuration and utilities
+/ddns/config/ @NewFuture
+/ddns/util/ @NewFuture
+
+# Tests
+/tests/ @NewFuture
+
+# Documentation
+/doc/ @NewFuture
+*.md @NewFuture
+
+# CI/CD and GitHub workflows
+/.github/ @NewFuture
+/.github/workflows/ @NewFuture
+
+# Docker files
+/docker/ @NewFuture
+Dockerfile @NewFuture
+
+# Configuration files
+/schema/ @NewFuture
+pyproject.toml @NewFuture
+setup.cfg @NewFuture
