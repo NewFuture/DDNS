@@ -62,7 +62,7 @@ ddns --help
 
 ### Before Making Changes
 
-1. **Understand the codebase**: Read the [Python coding standards](.github/instructions/python.instructions.md)
+1. **Understand the codebase**: Read the [Python coding standards](instructions/python.instructions.md)
 2. **Check existing issues**: Look for related issues or discussions
 3. **Run tests**: Ensure all tests pass before making changes
    ```bash
@@ -109,7 +109,7 @@ ddns --help
 
 ## Coding Standards
 
-Please follow the [Python Coding Standards](.github/instructions/python.instructions.md) which include:
+Please follow the [Python Coding Standards](instructions/python.instructions.md) which include:
 
 ### Key Requirements
 

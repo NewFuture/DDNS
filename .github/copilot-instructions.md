@@ -118,11 +118,11 @@ See existing tests in `tests/` directory for detailed examples.
 
 ## Additional Resources
 
-- **Contributing Guide**: [CONTRIBUTING.md](.github/CONTRIBUTING.md)
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Python Standards**: [python.instructions.md](./instructions/python.instructions.md)
 - **Provider Development**: [doc/dev/provider.md](../doc/dev/provider.md)
-- **Security Policy**: [SECURITY.md](.github/SECURITY.md)
-- **Pull Request Template**: [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md)
+- **Security Policy**: [SECURITY.md](SECURITY.md)
+- **Pull Request Template**: [PULL_REQUEST_TEMPLATE.md](PULL_REQUEST_TEMPLATE.md)
 
 ## Quick Start for Contributors
 

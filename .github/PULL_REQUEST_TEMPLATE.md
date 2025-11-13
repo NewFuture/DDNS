@@ -45,7 +45,7 @@ Related to #
 
 <!-- Mark completed items with an "x" -->
 
-- [ ] My code follows the [Python coding standards](.github/instructions/python.instructions.md)
+- [ ] My code follows the [Python coding standards](instructions/python.instructions.md)
 - [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
