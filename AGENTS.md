@@ -290,16 +290,6 @@ grep -r "argparse" ddns/config/
 
 **CRITICAL**: This project has **ZERO** external runtime dependencies - only Python standard library.
 
-```bash
-# Verify NO runtime dependencies exist
-cat pyproject.toml | grep -A 5 "dependencies"
-# Should show: dependencies = []
-
-# View optional dev dependencies (for development only, not runtime)
-cat pyproject.toml | grep -A 10 "dev ="
-# These are optional: ruff (linting), pytest (testing alternative to unittest)
-```
-
 ### How to Edit or Create Files
 
 #### Code Style Requirements
