@@ -288,12 +288,16 @@ grep -r "argparse" ddns/config/
 
 #### Understanding Dependencies
 
-```bash
-# Check Python dependencies (should be none except dev tools)
-cat pyproject.toml | grep -A 10 "dependencies"
+**CRITICAL**: This project has **ZERO** external runtime dependencies - only Python standard library.
 
-# View dev dependencies (ruff, pytest, etc.)
+```bash
+# Verify NO runtime dependencies exist
+cat pyproject.toml | grep -A 5 "dependencies"
+# Should show: dependencies = []
+
+# View optional dev dependencies (for development only, not runtime)
 cat pyproject.toml | grep -A 10 "dev ="
+# These are optional: ruff (linting), pytest (testing alternative to unittest)
 ```
 
 ### How to Edit or Create Files
