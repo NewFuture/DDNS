@@ -133,8 +133,7 @@ jobs:
                     { role: 'user', content: userPrompt }
                   ],
                   temperature: 1,
-                  max_completion_tokens: 1500,
-                  top_p: 0.95
+                  max_completion_tokens: 2000,
                 })
               });
               
