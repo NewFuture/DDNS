@@ -37,7 +37,7 @@ class TestProviderProxyList(BaseProviderTestCase):
         mock_request.return_value = mock_response
 
         # 创建provider并设置代理列表
-        provider = TestSimpleProvider(self.authid, self.token, proxy=self.proxy_list)
+        provider = TestSimpleProvider(self.id, self.token, proxy=self.proxy_list)
 
         # 调用_http方法
         result = provider._http("GET", "/test")
@@ -59,7 +59,7 @@ class TestProviderProxyList(BaseProviderTestCase):
 
         # 创建provider并设置单个代理列表
         single_proxy_list = ["http://single-proxy:8080"]
-        provider = TestSimpleProvider(self.authid, self.token, proxy=single_proxy_list)
+        provider = TestSimpleProvider(self.id, self.token, proxy=single_proxy_list)
 
         # 调用_http方法
         result = provider._http("GET", "/test")
@@ -80,7 +80,7 @@ class TestProviderProxyList(BaseProviderTestCase):
         mock_request.return_value = mock_response
 
         # 创建provider不设置代理
-        provider = TestSimpleProvider(self.authid, self.token)
+        provider = TestSimpleProvider(self.id, self.token)
 
         # 调用_http方法
         result = provider._http("GET", "/test")
@@ -101,7 +101,7 @@ class TestProviderProxyList(BaseProviderTestCase):
         mock_request.return_value = mock_response
 
         # 创建provider设置空代理列表
-        provider = TestSimpleProvider(self.authid, self.token, proxy=[])
+        provider = TestSimpleProvider(self.id, self.token, proxy=[])
 
         # 调用_http方法
         result = provider._http("GET", "/test")
@@ -121,7 +121,7 @@ class TestProviderProxyList(BaseProviderTestCase):
         mock_request.side_effect = RuntimeError("All proxies failed")
 
         # 创建provider
-        provider = TestSimpleProvider(self.authid, self.token, proxy=self.proxy_list)
+        provider = TestSimpleProvider(self.id, self.token, proxy=self.proxy_list)
 
         # 调用_http方法应该抛出异常
         with self.assertRaises(RuntimeError) as context:
@@ -133,20 +133,20 @@ class TestProviderProxyList(BaseProviderTestCase):
         """测试Provider初始化时不同代理参数类型的处理"""
         # 测试代理列表
         proxy_list = ["http://proxy1:8080", "http://proxy2:8080", None]
-        provider1 = TestSimpleProvider(self.authid, self.token, proxy=proxy_list)
+        provider1 = TestSimpleProvider(self.id, self.token, proxy=proxy_list)
         self.assertEqual(provider1._proxy, proxy_list)
 
         # 测试单项代理列表
         single_proxy_list = ["http://proxy:8080"]
-        provider2 = TestSimpleProvider(self.authid, self.token, proxy=single_proxy_list)
+        provider2 = TestSimpleProvider(self.id, self.token, proxy=single_proxy_list)
         self.assertEqual(provider2._proxy, single_proxy_list)
 
         # 测试None代理
-        provider3 = TestSimpleProvider(self.authid, self.token, proxy=None)
+        provider3 = TestSimpleProvider(self.id, self.token, proxy=None)
         self.assertEqual(provider3._proxy, None)
 
         # 测试空列表代理
-        provider4 = TestSimpleProvider(self.authid, self.token, proxy=[])
+        provider4 = TestSimpleProvider(self.id, self.token, proxy=[])
         self.assertEqual(provider4._proxy, [])
 
 

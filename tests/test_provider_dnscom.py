@@ -15,7 +15,7 @@ class TestDnscomProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestDnscomProvider, self).setUp()
-        self.authid = "test_api_key"
+        self.id = "test_api_key"
         self.token = "test_api_secret"
 
     def test_class_constants(self):
@@ -26,8 +26,8 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_init_with_basic_config(self):
         """Test DnscomProvider initialization with basic configuration"""
-        provider = DnscomProvider(self.authid, self.token)
-        self.assertEqual(provider.id, self.authid)
+        provider = DnscomProvider(self.id, self.token)
+        self.assertEqual(provider.id, self.id)
         self.assertEqual(provider.token, self.token)
         self.assertEqual(provider.endpoint, "https://www.51dns.com")
 
@@ -40,13 +40,13 @@ class TestDnscomProvider(BaseProviderTestCase):
         mock_hash = mock_md5.return_value
         mock_hash.hexdigest.return_value = "test_hash_value"
 
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         params = {"action": "test", "domain": "example.com"}
         signed_params = provider._signature(params)
 
         # Verify standard parameters are added
-        self.assertEqual(signed_params["apiKey"], self.authid)
+        self.assertEqual(signed_params["apiKey"], self.id)
         self.assertEqual(signed_params["timestamp"], 1640995200)
         self.assertEqual(signed_params["hash"], "test_hash_value")
         self.assertIn("action", signed_params)
@@ -54,7 +54,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_signature_filters_none_params(self):
         """Test _signature method filters out None parameters"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch("ddns.provider.dnscom.time") as mock_time, patch("ddns.provider.dnscom.md5") as mock_md5:
             # Mock time to return a fixed timestamp
@@ -73,24 +73,24 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_request_success(self):
         """Test _request method with successful response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-            mock_signature.return_value = {"apiKey": self.authid, "hash": "test_hash"}
+            mock_signature.return_value = {"apiKey": self.id, "hash": "test_hash"}
             mock_http.return_value = {"code": 0, "data": {"result": "success"}}
 
             result = provider._request("test", domain="example.com")
 
             mock_signature.assert_called_once_with({"domain": "example.com"})
-            mock_http.assert_called_once_with("POST", "/api/test/", body={"apiKey": self.authid, "hash": "test_hash"})
+            mock_http.assert_called_once_with("POST", "/api/test/", body={"apiKey": self.id, "hash": "test_hash"})
             self.assertEqual(result, {"result": "success"})
 
     def test_request_failure_none_response(self):
         """Test _request method with None response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-            mock_signature.return_value = {"apiKey": self.authid}
+            mock_signature.return_value = {"apiKey": self.id}
             mock_http.return_value = None
 
             with self.assertRaises(Exception) as cm:
@@ -100,10 +100,10 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_request_failure_api_error(self):
         """Test _request method with API error response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_signature") as mock_signature, patch.object(provider, "_http") as mock_http:
-            mock_signature.return_value = {"apiKey": self.authid}
+            mock_signature.return_value = {"apiKey": self.id}
             mock_http.return_value = {"code": 1, "message": "Invalid API key"}
 
             with self.assertRaises(Exception) as cm:
@@ -113,7 +113,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_zone_id_success(self):
         """Test _query_zone_id method with successful response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"domainID": "example.com"}
@@ -125,7 +125,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_zone_id_not_found(self):
         """Test _query_zone_id method when domain is not found"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = None
@@ -137,7 +137,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_record_success(self):
         """Test _query_record method with successful response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {
@@ -157,7 +157,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_record_with_line(self):
         """Test _query_record method with line parameter"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {
@@ -176,7 +176,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_record_not_found(self):
         """Test _query_record method when no matching record is found"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {
@@ -189,7 +189,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_query_record_empty_response(self):
         """Test _query_record method with empty response"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = None
@@ -200,7 +200,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_create_record_success(self):
         """Test _create_record method with successful creation"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"recordID": "123456"}
@@ -221,7 +221,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_create_record_with_extra_params(self):
         """Test _create_record method with extra parameters"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"recordID": "123456"}
@@ -244,7 +244,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_create_record_failure(self):
         """Test _create_record method with failed creation"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             mock_request.return_value = {"error": "Domain not found"}
@@ -255,7 +255,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_update_record_success(self):
         """Test _update_record method with successful update"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         old_record = {"recordID": "123456", "remark": "Old remark"}
 
@@ -271,7 +271,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_update_record_with_extra_params(self):
         """Test _update_record method with extra parameters"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         old_record = {"recordID": "123456", "remark": "Old remark"}
 
@@ -288,7 +288,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_update_record_extra_priority_over_old_record(self):
         """Test that extra parameters take priority over old_record values"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         old_record = {"recordID": "123456", "remark": "Old remark"}
 
@@ -305,7 +305,7 @@ class TestDnscomProvider(BaseProviderTestCase):
 
     def test_update_record_failure(self):
         """Test _update_record method with failed update"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         old_record = {"recordID": "123456"}
 
@@ -323,12 +323,12 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestDnscomProviderIntegration, self).setUp()
-        self.authid = "test_api_key"
+        self.id = "test_api_key"
         self.token = "test_api_secret"
 
     def test_full_workflow_create_new_record(self):
         """Test complete workflow for creating a new record"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         # Mock only the HTTP layer to simulate API responses
         with patch.object(provider, "_request") as mock_request:
@@ -359,7 +359,7 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_existing_record(self):
         """Test complete workflow for updating an existing record"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         # Mock only the HTTP layer to simulate raw API responses
         with patch.object(provider, "_http") as mock_http:
@@ -383,7 +383,7 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_zone_not_found(self):
         """Test complete workflow when zone is not found"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate API returning None for zone query
@@ -394,7 +394,7 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_create_failure(self):
         """Test complete workflow when record creation fails"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, no existing record, creation fails
@@ -410,7 +410,7 @@ class TestDnscomProviderIntegration(BaseProviderTestCase):
 
     def test_full_workflow_update_failure(self):
         """Test complete workflow when record update fails"""
-        provider = DnscomProvider(self.authid, self.token)
+        provider = DnscomProvider(self.id, self.token)
 
         with patch.object(provider, "_request") as mock_request:
             # Simulate responses: zone found, existing record found, update fails
