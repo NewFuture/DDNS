@@ -26,7 +26,7 @@ jobs:
       
       - name: Generate AI Response
         id: ai_response
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
