@@ -41,14 +41,12 @@ def get_provider_class(provider_name):
         "qcloud": TencentCloudProvider,  # 兼容qcloud
         # tencent cloud edgeone (accelerated domains)
         "edgeone": EdgeOneProvider,
-        "teo": EdgeOneProvider,  # 兼容teo (EdgeOne产品的API名称)
-        "tencentedgeone": EdgeOneProvider,  # 兼容tencentedgeone
         "edgeone_acc": EdgeOneProvider,  # 加速域名
-        "neo_acc": EdgeOneProvider,  # 加速域名别名
-        "neo": EdgeOneProvider,  # 加速域名别名
+        "teo_acc": EdgeOneProvider,  # 加速域名别名
         # tencent cloud edgeone dns (non-accelerated domains)
-        "edgeone_noacc": EdgeOneDnsProvider,  # 非加速域名
         "edgeone_dns": EdgeOneDnsProvider,  # DNS记录管理
+        "teo_dns": EdgeOneDnsProvider,  # DNS记录管理别名
+        "edgeone_noacc": EdgeOneDnsProvider,  # 非加速域名
         # cloudflare
         "cloudflare": CloudflareProvider,
         # aliyun alidns

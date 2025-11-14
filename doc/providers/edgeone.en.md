@@ -65,7 +65,7 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 | Parameter | Description       | Type           | Value Range/Options                    | Default   | Parameter Type |
 | :-------: | :---------------- | :------------- | :------------------------------------- | :-------- | :------------- |
-| dns       | Provider ID       | String         | `edgeone`, `edgeone_acc`, `neo_acc`, `neo` | None      | Provider       |
+| dns       | Provider ID       | String         | `edgeone`, `edgeone_acc`, `teo_acc` | None      | Provider       |
 | id        | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
 | token     | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
 | index4    | IPv4 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |

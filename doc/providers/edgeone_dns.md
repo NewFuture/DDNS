@@ -68,7 +68,7 @@
 
 | 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
 | :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
-| dns     | 服务商标识   | 字符串         | `edgeone_dns`, `edgeone_noacc`     | 无        | 服务商参数 |
+| dns     | 服务商标识   | 字符串         | `edgeone_dns`, `teo_dns`, `edgeone_noacc` | 无        | 服务商参数 |
 | id      | 认证 ID      | 字符串         | 腾讯云 SecretId                    | 无        | 服务商参数 |
 | token   | 认证密钥     | 字符串         | 腾讯云 SecretKey                   | 无        | 服务商参数 |
 | index4  | IPv4 来源     | 数组           | <a>参考配置</a>  | `default` | 公用配置   |
@@ -105,8 +105,8 @@
 
 | 提供商标识 | 用途 | API 操作 | 适用场景 |
 | :--------: | :--- | :------- | :------- |
-| `edgeone`、`edgeone_acc`、`neo_acc`、`neo` | 加速域名 | `CreateAccelerationDomain`, `ModifyAccelerationDomain`, `DescribeAccelerationDomains` | CDN 边缘加速，更新源站 IP |
-| `edgeone_dns`、`edgeone_noacc` | DNS 记录 | `CreateDnsRecord`, `ModifyDnsRecords`, `DescribeDnsRecords` | 普通 DNS 解析服务 |
+| `edgeone`、`edgeone_acc`、`teo_acc` | 加速域名 | `CreateAccelerationDomain`, `ModifyAccelerationDomain`, `DescribeAccelerationDomains` | CDN 边缘加速，更新源站 IP |
+| `edgeone_dns`、`teo_dns`、`edgeone_noacc` | DNS 记录 | `CreateDnsRecord`, `ModifyDnsRecords`, `DescribeDnsRecords` | 普通 DNS 解析服务 |
 
 ## 故障排除
 

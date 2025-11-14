@@ -68,7 +68,7 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 | Parameter | Description       | Type           | Value Range/Options                    | Default   | Parameter Type |
 | :-------: | :---------------- | :------------- | :------------------------------------- | :-------- | :------------- |
-| dns       | Provider ID       | String         | `edgeone_dns`, `edgeone_noacc`         | None      | Provider       |
+| dns       | Provider ID       | String         | `edgeone_dns`, `teo_dns`, `edgeone_noacc` | None      | Provider       |
 | id        | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
 | token     | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
 | index4    | IPv4 Source       | Array          | <a>Reference</a>  | `default` | Common Config  |
@@ -105,8 +105,8 @@ Tencent Cloud EdgeOne supports domestic and international API endpoints, which c
 
 | Provider ID | Purpose | API Operations | Use Cases |
 | :---------: | :------ | :------------- | :-------- |
-| `edgeone`, `edgeone_acc`, `neo_acc`, `neo` | Acceleration Domains | `CreateAccelerationDomain`, `ModifyAccelerationDomain`, `DescribeAccelerationDomains` | CDN edge acceleration, update origin IP |
-| `edgeone_dns`, `edgeone_noacc` | DNS Records | `CreateDnsRecord`, `ModifyDnsRecords`, `DescribeDnsRecords` | Regular DNS resolution service |
+| `edgeone`, `edgeone_acc`, `teo_acc` | Acceleration Domains | `CreateAccelerationDomain`, `ModifyAccelerationDomain`, `DescribeAccelerationDomains` | CDN edge acceleration, update origin IP |
+| `edgeone_dns`, `teo_dns`, `edgeone_noacc` | DNS Records | `CreateDnsRecord`, `ModifyDnsRecords`, `DescribeDnsRecords` | Regular DNS resolution service |
 
 ## Troubleshooting
 
