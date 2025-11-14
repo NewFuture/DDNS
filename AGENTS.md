@@ -952,607 +952,114 @@ docker run --rm -e DDNS_DNS=debug -e DDNS_IPV4=test.com newfuture/ddns:latest
 
 ## Build & Run Instructions
 
-### Platform Support
+### Installation Methods
 
-DDNS supports multiple platforms and installation methods:
-
-1. **Python Source** (any platform with Python 2.7+)
-2. **PyPI Package** (via pip)
-3. **Docker** (multi-architecture)
-4. **Binary Executables** (native, no Python required)
-
-### 1. Running from Source
-
-**Requirements**: Python 2.7 or Python 3.6+
-
+**1. From Source** (Python 2.7+/3.6+)
 ```bash
-# Clone repository
 git clone https://github.com/NewFuture/DDNS.git
 cd DDNS
-
-# Run directly
 python3 -m ddns --help
-python3 -m ddns --dns=debug --ipv4=test.com
-
-# Or use run.py
-python3 run.py --help
-
-# Run with config file
-python3 -m ddns -c config.json
-
-# Run with environment variables
-export DDNS_DNS=debug
-export DDNS_IPV4=test.com
-python3 -m ddns
 ```
 
-### 2. PyPI Installation
-
-**Requirements**: Python 2.7 or Python 3.6+, pip
-
+**2. PyPI**
 ```bash
-# Install from PyPI
 pip install ddns
-
-# Or install in development mode
-pip install -e .
-
-# Run
 ddns --help
-ddns --dns=debug --ipv4=test.com
-
-# Or run as module
-python3 -m ddns --help
 ```
 
-### 3. Docker
-
-**Requirements**: Docker
-
-#### Using Docker Hub Image
-
+**3. Docker**
 ```bash
-# Pull latest image
 docker pull newfuture/ddns:latest
-
-# Run with command-line arguments
 docker run --rm newfuture/ddns:latest --help
-docker run --rm newfuture/ddns:latest --dns=debug --ipv4=test.com
-
-# Run with config file
-docker run -d -v /path/to/config/:/ddns/ newfuture/ddns:latest
-
-# Run with environment variables
-docker run -d \
-  -e DDNS_DNS=cloudflare \
-  -e DDNS_ID=your@email.com \
-  -e DDNS_TOKEN=your-token \
-  -e DDNS_IPV4=test.yourdomain.com \
-  newfuture/ddns:latest
-
-# Run with custom cron schedule
-docker run -d \
-  -e DDNS_CRON="*/10 * * * *" \
-  -e DDNS_DNS=debug \
-  -e DDNS_IPV4=test.com \
-  newfuture/ddns:latest
+# With config: docker run -d -v /path/to/config/:/ddns/ newfuture/ddns:latest
 ```
 
-#### Docker Compose
-
-```yaml
-version: '3'
-services:
-  ddns:
-    image: newfuture/ddns:latest
-    container_name: ddns
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - ./config:/ddns/
-    environment:
-      - DDNS_DNS=cloudflare
-      - DDNS_ID=your@email.com
-      - DDNS_TOKEN=your-token
-      - DDNS_IPV4=test.yourdomain.com
-      - DDNS_CRON=*/5 * * * *
-```
-
-#### Building Docker Image Locally
-
+**4. Binary** (no Python required)
 ```bash
-# Build image
-docker build -t ddns:local -f docker/Dockerfile .
-
-# Build for specific architecture
-docker buildx build --platform linux/amd64 -t ddns:amd64 -f docker/Dockerfile .
-docker buildx build --platform linux/arm64 -t ddns:arm64 -f docker/Dockerfile .
-
-# Build multi-architecture image
-docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t ddns:multi -f docker/Dockerfile .
-
-# Run locally built image
-docker run --rm ddns:local --help
-```
-
-### 4. Binary Executables
-
-**Requirements**: None (self-contained, no Python needed)
-
-#### Download Pre-built Binaries
-
-```bash
-# Download from GitHub Releases
-wget https://github.com/NewFuture/DDNS/releases/latest/download/ddns-linux-amd64
-
-# Make executable
-chmod +x ddns-linux-amd64
-
-# Run
-./ddns-linux-amd64 --help
-```
-
-#### One-click Install Script
-
-```bash
-# Download and install (may require sudo for system directories)
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
-
-# Or with sudo
-curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
-
-# Run
 ddns --help
 ```
 
-#### Building Binaries Locally
+### Platform-Specific
 
-**Requirements**: Docker, buildx plugin
-
+**Linux/macOS/Raspberry Pi**
 ```bash
-# Build for current architecture
-docker build -t ddnsbin --target export -f docker/musl.Dockerfile --output output .
-
-# Find binary
-find output -name ddns
-
-# Build for multiple architectures
-docker buildx build --platform linux/amd64,linux/arm64 --target export -f docker/musl.Dockerfile --output output .
-```
-
-### 5. Platform-Specific Instructions
-
-#### Linux/macOS/Raspberry Pi
-
-```bash
-# Install from source
-git clone https://github.com/NewFuture/DDNS.git
-cd DDNS
-python3 -m ddns --help
-
-# Or use one-click install (Linux/macOS)
-curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
-
-# Or use pip
-pip3 install ddns
-ddns --help
-
-# Or use Docker (recommended for Raspberry Pi)
-docker pull newfuture/ddns:latest
-docker run --rm newfuture/ddns:latest --help
-
-# Set up scheduled task (requires binary or pip install)
+# Install (choose one): source, pip, one-click script, or Docker
+# Set up scheduled task
 ddns task --install 5  # Update every 5 minutes
 ddns task --enable
-ddns task --status
-# Note: Uses systemd/cron on Linux, launchd on macOS
+# Uses systemd/cron on Linux, launchd on macOS
 ```
 
-#### Windows
-
+**Windows**
 ```bash
-# Download binary from releases
-# https://github.com/NewFuture/DDNS/releases/latest
-
-# Run in PowerShell or CMD
+# Download binary from https://github.com/NewFuture/DDNS/releases/latest
 ddns.exe --help
-
-# Or install via pip
-pip install ddns
-ddns --help
-
-# Set up Task Scheduler (requires binary or pip install)
-ddns task --install 5  # Update every 5 minutes
-ddns task --enable
-ddns task --status
-```
-
-### 6. Building PyPI Package
-
-```bash
-# Install build tools
-pip install build twine
-
-# Build package
-python3 -m build
-
-# Check built packages
-ls -la dist/
-
-# Test installation
-pip install dist/ddns-*.whl
-
-# Upload to PyPI (requires credentials)
-python3 -m twine upload dist/*
-
-# Upload to Test PyPI (for testing)
-python3 -m twine upload --repository testpypi dist/*
-```
-
-### 7. Development Build & Run
-
-```bash
-# Install in editable mode
-pip install -e .
-
-# Run directly
-ddns --help
-
-# Or as module
-python3 -m ddns --help
-
-# Rebuild after changes (editable mode updates automatically)
-# No rebuild needed for Python code changes
-
-# Run tests
-python3 -m unittest discover tests -v
-
-# Lint and format
-ruff check --fix --unsafe-fixes .
-ruff format .
+# Or: pip install ddns
+# Set up: ddns task --install 5
 ```
 
 ---
 
 ## Troubleshooting Guidelines
 
-### How to Validate Changes
-
-#### 1. Validate Code Syntax
+### Validation
 
 ```bash
-# Check Python syntax
+# Syntax
 python3 -m py_compile ddns/provider/mynewprovider.py
-
-# Check all Python files
-find ddns -name "*.py" -exec python3 -m py_compile {} \;
-
-# Lint code
 ruff check .
 
-# Format check (without modifying)
-ruff format --check .
-```
-
-#### 2. Validate Tests
-
-```bash
-# Run all tests
+# Tests
 python3 -m unittest discover tests -v
 
-# Run specific tests
-python3 -m unittest tests.test_provider_mynewprovider -v
-
-# Check test coverage
-pytest tests/ --cov=ddns --cov-report=term-missing
-```
-
-#### 3. Validate Configuration
-
-```bash
-# Validate JSON schema
-python3 -c "import json; json.load(open('schema/v4.1.json'))"
-
-# Validate config file
+# Config
 python3 -c "import json; json.load(open('config.json'))"
 
-# Test config loading
-python3 -m ddns -c config.json --help
-```
-
-#### 4. Validate Documentation
-
-```bash
-# Check markdown syntax (requires markdownlint)
-markdownlint doc/**/*.md
-
-# Check links (requires markdown-link-check)
-find doc -name "*.md" -exec markdown-link-check {} \;
-
-# Manual check
-cat doc/providers/mynewprovider.md
-cat doc/providers/mynewprovider.en.md
-```
-
-#### 5. Validate Provider Implementation
-
-```bash
-# Test with debug provider first
+# Provider
 python3 -m ddns --dns=debug --ipv4=test.com --debug
-
-# Test new provider with real credentials (be careful!)
-python3 -m ddns --dns=myprovider --id=test_id --token=test_token --ipv4=test.com --debug
-
-# Check logs
-tail -f dns.log
 ```
 
-### How to Fix Build Errors
+### Common Errors
 
-#### Common Build Errors
+**Import Error**: Check file exists, provider registered in `__init__.py`, PYTHONPATH set
 
-**Error 1: Import Error**
+**Syntax Error**: Check Python 2.7 compatibility (no f-strings, async/await, use type comments)
 
+**Test Failure**: Verify mock setup returns correct values, check `mock_http.call_args`
+
+**Linting Error**: Run `ruff check --fix --unsafe-fixes . && ruff format .`
+
+### CI Failures
+
+Check GitHub Actions logs. Common fixes:
+- **Linting**: `ruff check --fix --unsafe-fixes . && ruff format .`
+- **Python version**: Test locally with `python2.7` or `python3.12`
+- **Docker**: Test with `docker build -t ddns:test -f docker/Dockerfile .`
+
+### Runtime Issues
+
+**Debug Mode**
 ```bash
-# Symptom
-ImportError: No module named 'ddns.provider.mynewprovider'
-
-# Solution 1: Check file exists
-ls -la ddns/provider/mynewprovider.py
-
-# Solution 2: Check provider registration
-grep mynewprovider ddns/provider/__init__.py
-
-# Solution 3: Verify Python path
-python3 -c "import sys; print(sys.path)"
-export PYTHONPATH=/path/to/DDNS:$PYTHONPATH
-```
-
-**Error 2: Syntax Error**
-
-```bash
-# Symptom
-SyntaxError: invalid syntax
-
-# Solution: Check Python version compatibility
-python3 --version
-
-# Common issues:
-# - f-strings (not supported in Python 2.7)
-# - async/await (not supported in Python 2.7)
-# - Type annotations (use type comments instead)
-
-# Fix: Use compatible syntax
-# Bad:  result = f"Value: {value}"
-# Good: result = "Value: {}".format(value)
-```
-
-**Error 3: Test Failures**
-
-```bash
-# Symptom
-FAIL: test_query_zone_id_success
-AssertionError: None != 'zone123'
-
-# Solution: Check mock setup
-# Ensure mock returns correct value
-mock_http.return_value = {"zone_id": "zone123"}
-
-# Check method calls
-self.provider._query_zone_id("example.com")
-
-# Debug: Add print statements
-print("Mock called with:", mock_http.call_args)
-```
-
-**Error 4: Linting Errors**
-
-```bash
-# Symptom
-E501 line too long (121 > 120 characters)
-
-# Solution: Run auto-fix
-ruff check --fix --unsafe-fixes .
-
-# Or format code
-ruff format .
-
-# Manual fix: Break long lines
-# Bad
-result = self.provider.do_something_with_very_long_method_name_and_many_parameters(param1, param2, param3, param4)
-
-# Good
-result = self.provider.do_something_with_very_long_method_name_and_many_parameters(
-    param1, param2, param3, param4
-)
-```
-
-#### CI Build Failures
-
-**Check GitHub Actions logs**:
-1. Go to repository on GitHub
-2. Click "Actions" tab
-3. Click on failed workflow
-4. Review logs for specific error
-
-**Common CI failures**:
-
-1. **Linting failure**:
-   ```bash
-   # Fix locally before pushing
-   ruff check --fix --unsafe-fixes .
-   ruff format .
-   git add .
-   git commit --amend --no-edit
-   git push --force
-   ```
-
-2. **Test failure on specific Python version**:
-   ```bash
-   # Test locally with specific Python version
-   python2.7 -m unittest discover tests -v
-   python3.12 -m unittest discover tests -v
-   
-   # Fix compatibility issues
-   # Use type comments, not annotations
-   # Use .format() or %, not f-strings
-   # Handle unicode strings carefully
-   ```
-
-3. **Docker build failure**:
-   ```bash
-   # Test Docker build locally
-   docker build -t ddns:test -f docker/Dockerfile .
-   
-   # Check entrypoint script
-   docker run --rm --entrypoint sh ddns:test -c "ls -la /bin/ddns"
-   ```
-
-### How to Debug Runtime Issues
-
-#### Enable Debug Mode
-
-```bash
-# Run with debug flag
 python3 -m ddns --debug --dns=myprovider --ipv4=test.com
-
-# Enable debug logging in config
-python3 -m ddns -c config.json --log_level=DEBUG
-
-# Write debug log to file
 python3 -m ddns --debug --log_file=debug.log
 ```
 
-#### Common Runtime Issues
-
-**Issue 1: Authentication Failed**
-
-```bash
-# Symptom
-ERROR: Authentication failed: 401 Unauthorized
-
-# Debug steps:
-# 1. Verify credentials
-python3 -m ddns --dns=myprovider --id=YOUR_ID --token=YOUR_TOKEN --debug
-
-# 2. Check provider API endpoint
-# Look for API calls in debug output
-
-# 3. Test API manually
-curl -H "Authorization: Bearer YOUR_TOKEN" https://api.provider.com/zones
-
-# 4. Check provider implementation
-# Verify authentication headers/params in provider code
-```
-
-**Issue 2: DNS Record Not Updated**
-
-```bash
-# Symptom
-INFO: IP not changed, skipping update
-
-# Debug steps:
-# 1. Check cache
-rm -f /tmp/ddns.cache
-python3 -m ddns --no-cache --debug
-
-# 2. Force update
-python3 -m ddns --debug --ipv4=test.com
-
-# 3. Check IP detection
-python3 -c "from ddns.ip import get_ip; print(get_ip('default', 4))"
-
-# 4. Verify DNS record
-nslookup test.com
-dig test.com A
-```
-
-**Issue 3: Network/Proxy Issues**
-
-```bash
-# Symptom
-ERROR: Connection timeout
-
-# Debug steps:
-# 1. Test without proxy
-python3 -m ddns --dns=myprovider --debug
-
-# 2. Test with proxy
-python3 -m ddns --dns=myprovider --proxy=http://127.0.0.1:1080 --debug
-
-# 3. Test with multiple proxies (fallback)
-python3 -m ddns --dns=myprovider --proxy=SYSTEM --proxy=DIRECT --debug
-
-# 4. Check SSL certificate
-python3 -m ddns --dns=myprovider --ssl=false --debug
-```
-
-**Issue 4: Python Compatibility Issues**
-
-```bash
-# Symptom (Python 2.7)
-SyntaxError: invalid syntax
-AttributeError: 'str' object has no attribute 'format_map'
-
-# Debug steps:
-# 1. Check Python version
-python --version
-
-# 2. Test with Python 3
-python3 -m ddns --help
-
-# 3. Fix compatibility issues
-# Use type comments, not annotations
-# Use .format() or %, not f-strings
-# Import from __future__ for Python 2.7 features
-```
-
-#### Using Python Debugger
-
-```bash
-# Run with pdb debugger
-python3 -m pdb -m ddns --dns=debug --ipv4=test.com
-
-# Set breakpoint in code
-# Add this line where you want to break:
-import pdb; pdb.set_trace()
-
-# Common pdb commands:
-# n - next line
-# s - step into function
-# c - continue execution
-# p variable - print variable
-# l - list source code
-# q - quit debugger
-```
-
-#### Checking Logs
-
-```bash
-# Enable file logging
-python3 -m ddns --log_file=ddns.log --log_level=DEBUG
-
-# View logs
-tail -f ddns.log
-
-# Search logs
-grep ERROR ddns.log
-grep "API" ddns.log
-```
+**Common Issues**:
+- **Auth failed**: Verify credentials with `--debug`, test API manually
+- **Record not updated**: Remove cache (`rm -f /tmp/ddns.cache`), check IP detection
+- **Network/proxy**: Try `--proxy=DIRECT` or `--ssl=false`
+- **Python 2.7 compat**: Use `.format()` not f-strings, type comments not annotations
 
 ### Validation Checklist
 
-Before submitting changes, verify:
-
-- [ ] **Code syntax**: `python3 -m py_compile ddns/**/*.py`
-- [ ] **Tests pass**: `python3 -m unittest discover tests -v`
-- [ ] **Linting**: `ruff check .` (no errors)
-- [ ] **Formatting**: `ruff format --check .` (no changes needed)
-- [ ] **Python 2.7 compatible**: No f-strings, no async/await, type comments
-- [ ] **Documentation updated**: Both Chinese and English versions
-- [ ] **No external dependencies**: Only standard library
-- [ ] **Manual testing**: Tested with debug provider at minimum
-- [ ] **Commit message**: Follows conventional commits format
+Before submitting:
+- [ ] Code syntax: `python3 -m py_compile ddns/**/*.py`
+- [ ] Tests pass: `python3 -m unittest discover tests -v`
+- [ ] Linting: `ruff check .`
+- [ ] Python 2.7 compatible
+- [ ] Documentation updated (both languages)
+- [ ] No external dependencies
 
 ---
 
@@ -1560,123 +1067,53 @@ Before submitting changes, verify:
 
 ### Avoid Harmful Refactors
 
-**Harmful refactors** to avoid:
-- Changing working code just for style preferences
-- Breaking Python 2.7 compatibility for "modern" syntax
-- Removing "redundant" error handling
-- Changing API interfaces without version bump
-- Mass renaming of variables/functions
-- Removing "unnecessary" imports (may be used elsewhere)
+**Don't**:
+- Change working code for style preferences
+- Break Python 2.7 compatibility
+- Remove error handling or "unnecessary" imports
+- Change APIs without version bump
+- Mass rename variables/functions
 
-**Safe refactors**:
-- Fixing actual bugs
-- Improving error messages
-- Adding new features without breaking existing ones
-- Optimizing performance with proven benefits
-- Reducing code duplication with clear benefits
+**Do**:
+- Fix actual bugs
+- Add features without breaking existing ones
+- Optimize with proven benefits
 
-**Before refactoring, ask**:
-1. Is this code actually broken or just different style?
-2. Will this break existing users?
-3. Is there a test covering this code?
-4. Does this maintain Python 2.7 compatibility?
-5. Is this change necessary or just preference?
+**Before refactoring**:
+- Is this broken or just different style?
+- Will this break existing users?
+- Is there test coverage?
+- Does this maintain Python 2.7 compatibility?
 
-**Refactoring checklist**:
-- [ ] Tests pass before refactoring
-- [ ] Tests pass after refactoring
-- [ ] No breaking changes to public APIs
-- [ ] Python 2.7 compatibility maintained
-- [ ] Documentation updated if API changed
-- [ ] Performance not degraded (if applicable)
+### Ask for Confirmation
 
-### Ask for Confirmation Before Large-Scale Edits
-
-**Large-scale edits** requiring confirmation:
-- Renaming files or directories
+Request confirmation before:
+- Renaming files/directories
 - Changing file structure
 - Refactoring multiple modules
 - Changing configuration formats
-- Updating all providers
-- Mass search-and-replace operations
+- Mass search-and-replace
 
-**Always confirm before**:
-```bash
-# Renaming files
-mv ddns/provider/old.py ddns/provider/new.py
+Explain what, why, impacts, and alternatives.
 
-# Mass changes
-find ddns -name "*.py" -exec sed -i 's/old_function/new_function/g' {} \;
+### General Principles
 
-# Restructuring
-mv ddns/utils ddns/util
-
-# Changing formats
-# Converting all config files from JSON to YAML
-```
-
-**How to ask for confirmation**:
-1. Explain what you want to do
-2. Explain why it's necessary
-3. List potential impacts
-4. Ask explicitly for permission
-5. Provide alternative approaches
-
-**Example**:
-```text
-I noticed the provider implementations have duplicated error handling.
-I'd like to refactor this into a shared utility function.
-
-Changes:
-- Add ddns/util/error.py with shared error handler
-- Update 15 provider files to use it
-- Add tests for new utility
-
-Potential impacts:
-- All providers will be modified
-- May introduce bugs if not careful
-- Will require extensive testing
-
-Alternatives:
-- Leave as-is (no risk)
-- Refactor incrementally (lower risk)
-- Refactor only new providers (minimal risk)
-
-May I proceed with this refactoring? Or would you prefer an alternative?
-```
-
-### General Safety Principles
-
-1. **Make minimal changes**: Change only what's necessary
-2. **Test thoroughly**: Test before and after changes
-3. **Maintain compatibility**: Don't break existing users
-4. **Document changes**: Update docs with code changes
-5. **Ask when uncertain**: Better to ask than break things
-6. **Review changes**: Review diff before committing
-7. **Incremental changes**: Small PRs over large rewrites
-8. **Backup first**: Keep original code accessible
-9. **Follow conventions**: Don't introduce new patterns
-10. **Respect existing code**: There may be reasons for "odd" code
+1. **Minimal changes**: Change only what's necessary
+2. **Test thoroughly**: Before and after
+3. **Maintain compatibility**: Don't break users
+4. **Document changes**: Update docs with code
+5. **Ask when uncertain**: Better safe than sorry
+6. **Review changes**: Check diff before committing
+7. **Incremental**: Small PRs over rewrites
+8. **Follow conventions**: Don't introduce new patterns
+9. **Respect existing code**: There may be good reasons
 
 ### Emergency Rollback
 
-If you make a mistake:
-
 ```bash
-# Revert last commit
-git revert HEAD
-
-# Undo uncommitted changes
-git checkout -- file.py
-
-# Restore deleted file
-git checkout HEAD -- deleted_file.py
-
-# Reset to previous state (WARNING: loses changes)
-git reset --hard HEAD~1
-
-# Restore from backup
-cp file.py.backup file.py
+git revert HEAD                    # Revert last commit
+git checkout -- file.py            # Undo uncommitted changes
+git checkout HEAD -- deleted_file  # Restore deleted file
 ```
 
 ---
