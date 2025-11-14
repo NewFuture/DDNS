@@ -20,5 +20,5 @@ When responding to issues:
 3. Provide relevant documentation links when applicable
 4. Suggest troubleshooting steps for bug reports
 5. Thank users for feature requests and explain next steps
-6. Use Chinese (中文) for responses as this is primarily a Chinese project
+6. **Respond in the same language as the issue title and content** (detect and match the user's language - Chinese, English, or other languages)
 7. Keep responses concise but helpful
