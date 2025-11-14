@@ -1,0 +1,205 @@
+name: Auto Reply to Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+# Limit concurrent runs to prevent rate limit issues
+concurrency:
+  group: auto-reply-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  auto-reply:
+    # Skip bot issues, sub-issues, and issues with 'copilot' label
+    if: |
+      github.event.issue.user.login != 'github-actions[bot]' &&
+      !contains(github.event.issue.labels.*.name, 'copilot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Repository Index
+        id: repo_index
+        run: |
+          echo "Building repository index..."
+          
+          # Create a summary of the repository structure and key files
+          cat > /tmp/repo_index.md << 'EOF'
+          # DDNS Repository Index
+          
+          ## Project Structure
+          
+          ### Core Modules
+          - `ddns/`: Main package directory
+            - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, HuaweiDNS, EdgeOne, etc.)
+            - `util/`: Utility modules for HTTP, config, IP detection
+            - `config/`: Configuration management
+          
+          ### DNS Providers Supported
+          EOF
+          
+          # List all providers
+          echo "- Providers available:" >> /tmp/repo_index.md
+          for provider in ddns/provider/*.py; do
+            name=$(basename "$provider" .py)
+            if [[ "$name" != "_"* && "$name" != "__init__" ]]; then
+              echo "  - $name" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add recent changes info
+          echo "" >> /tmp/repo_index.md
+          echo "## Recent Changes" >> /tmp/repo_index.md
+          echo "" >> /tmp/repo_index.md
+          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
+          
+          # Add key documentation files
+          echo "" >> /tmp/repo_index.md
+          echo "## Documentation Available" >> /tmp/repo_index.md
+          echo "- Installation: doc/install.md" >> /tmp/repo_index.md
+          echo "- Configuration: doc/config/cli.md, doc/config/json.md, doc/config/env.md" >> /tmp/repo_index.md
+          echo "- Docker: doc/docker.md" >> /tmp/repo_index.md
+          echo "- Provider Development: doc/dev/provider.md" >> /tmp/repo_index.md
+          
+          # Add providers documentation
+          echo "- Provider Guides:" >> /tmp/repo_index.md
+          for doc in doc/providers/*.md; do
+            if [ -f "$doc" ]; then
+              name=$(basename "$doc" .md)
+              echo "  - $name: $doc" >> /tmp/repo_index.md
+            fi
+          done
+          
+          echo "Repository index built successfully"
+      
+      - name: Generate AI Response
+        id: ai_response
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Read system prompt from markdown file
+            const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
+            
+            // Read repository index
+            const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+            
+            // Combine system prompt with repository index
+            const enhancedSystemPrompt = systemPrompt + '\n\n## Current Repository Context\n\n' + repoIndex + '\n\nUse this repository information to provide more accurate and contextual responses. Reference specific files, providers, or documentation when relevant to the user\'s issue.';
+            
+            // Prepare the API request
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body || '(No description provided)';
+            const issueAuthor = context.payload.issue.user.login;
+            
+            const userPrompt = `A new issue has been opened:
+
+            Title: ${issueTitle}
+
+            Body:
+            ${issueBody}
+
+            Author: @${issueAuthor}
+
+            Please generate a helpful initial response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
+            
+            const apiUrl = process.env.OPENAI_URL;
+            const apiKey = process.env.OPENAI_KEY;
+            
+            if (!apiUrl || !apiKey) {
+              core.setFailed('OPENAI_URL and OPENAI_KEY must be set');
+              return;
+            }
+            
+            // Call Azure OpenAI API
+            try {
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'api-key': apiKey
+                },
+                body: JSON.stringify({
+                  messages: [
+                    { role: 'system', content: enhancedSystemPrompt },
+                    { role: 'user', content: userPrompt }
+                  ],
+                  temperature: 0.7,
+                  max_tokens: 800,
+                  top_p: 0.95
+                })
+              });
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                core.setFailed(`Azure OpenAI API error: ${response.status} ${errorText}`);
+                return;
+              }
+              
+              const data = await response.json();
+              
+              // Validate API response structure
+              if (
+                !data.choices ||
+                !Array.isArray(data.choices) ||
+                !data.choices[0] ||
+                !data.choices[0].message ||
+                typeof data.choices[0].message.content !== 'string'
+              ) {
+                core.setFailed('Invalid API response structure');
+                return;
+              }
+              
+              const aiResponse = data.choices[0].message.content.trim();
+              
+              // Extract classification from response
+              const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
+              let classification = null;
+              let commentBody = aiResponse;
+              
+              if (classificationMatch) {
+                classification = classificationMatch[1].toLowerCase();
+                // Remove classification tag from the comment body
+                commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
+                console.log(`Issue classified as: ${classification}`);
+              }
+              
+              // Post the response as a comment (without classification tag)
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: commentBody
+              });
+              
+              // Add label based on classification
+              if (classification) {
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.payload.issue.number,
+                    labels: [classification]
+                  });
+                  console.log(`Label '${classification}' added successfully`);
+                } catch (labelError) {
+                  console.log(`Failed to add label: ${labelError.message}`);
+                  // Don't fail the workflow if label addition fails
+                }
+              }
+              
+              console.log('AI response posted successfully');
+            } catch (error) {
+              core.setFailed(`Failed to generate AI response: ${error.message}`);
+            }
+        env:
+          OPENAI_URL: ${{ vars.OPENAI_URL }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
