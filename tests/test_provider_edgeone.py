@@ -16,7 +16,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestEdgeOneProvider, self).setUp()
-        self.provider = EdgeOneProvider(self.authid, self.token)
+        self.provider = EdgeOneProvider(self.id, self.token)
         self.logger = self.mock_logger(self.provider)
 
     def test_init(self):
@@ -41,7 +41,7 @@ class TestEdgeOneProvider(BaseProviderTestCase):
     def test_validate_missing_token(self):
         """Test validation with missing token"""
         with self.assertRaises(ValueError) as context:
-            EdgeOneProvider(self.authid, "", self.logger)
+            EdgeOneProvider(self.id, "", self.logger)
         self.assertIn("token", str(context.exception))
 
     @patch.object(EdgeOneProvider, "_request")
@@ -376,7 +376,7 @@ class TestEdgeOneProviderIntegration(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestEdgeOneProviderIntegration, self).setUp()
-        self.provider = EdgeOneProvider(self.authid, self.token)
+        self.provider = EdgeOneProvider(self.id, self.token)
         self.logger = self.mock_logger(self.provider)
 
     @patch.object(EdgeOneProvider, "_request")

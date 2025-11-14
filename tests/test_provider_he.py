@@ -16,7 +16,7 @@ class TestHeProvider(BaseProviderTestCase):
         """Set up test fixtures"""
         super(TestHeProvider, self).setUp()
         # Override default auth values for HE provider - HE uses empty id
-        self.authid = ""
+        self.id = ""
         self.token = "test_password"
 
     def test_init_with_basic_config(self):

@@ -21,25 +21,25 @@ class TestCallbackProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestCallbackProvider, self).setUp()
-        self.authid = "https://example.com/callback?domain=__DOMAIN__&ip=__IP__"
+        self.id = "https://example.com/callback?domain=__DOMAIN__&ip=__IP__"
         self.token = ""  # Use empty string instead of None for token
 
     def test_init_with_basic_config(self):
         """Test CallbackProvider initialization with basic configuration"""
-        provider = CallbackProvider(self.authid, self.token)
-        self.assertEqual(provider.id, self.authid)
+        provider = CallbackProvider(self.id, self.token)
+        self.assertEqual(provider.id, self.id)
         self.assertEqual(provider.token, self.token)
         self.assertFalse(provider.decode_response)
 
     def test_init_with_token_config(self):
         """Test CallbackProvider initialization with token configuration"""
         token = '{"api_key": "__DOMAIN__", "value": "__IP__"}'
-        provider = CallbackProvider(self.authid, token)
+        provider = CallbackProvider(self.id, token)
         self.assertEqual(provider.token, token)
 
     def test_validate_success(self):
         """Test _validate method with valid configuration"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
         # Should not raise any exception since we have a valid id
         provider._validate()
 
@@ -59,7 +59,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_basic(self):
         """Test _replace_vars method with basic replacements"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "Hello __NAME__, your IP is __IP__"
         mapping = {"__NAME__": "World", "__IP__": "192.168.1.1"}
@@ -70,7 +70,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_no_matches(self):
         """Test _replace_vars method with no matching variables"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "No variables here"
         mapping = {"__NAME__": "World"}
@@ -80,7 +80,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_partial_matches(self):
         """Test _replace_vars method with partial matches"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "__DOMAIN__ and __UNKNOWN__ and __IP__"
         mapping = {"__DOMAIN__": "example.com", "__IP__": "1.2.3.4"}
@@ -91,14 +91,14 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_empty_string(self):
         """Test _replace_vars method with empty string"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         result = provider._replace_vars("", {"__TEST__": "value"})
         self.assertEqual(result, "")
 
     def test_replace_vars_empty_mapping(self):
         """Test _replace_vars method with empty mapping"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "__DOMAIN__ test"
         result = provider._replace_vars(test_str, {})
@@ -106,7 +106,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_none_values(self):
         """Test _replace_vars method with None values (should convert to string)"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "TTL: __TTL__, Line: __LINE__"
         mapping = {"__TTL__": None, "__LINE__": None}
@@ -117,7 +117,7 @@ class TestCallbackProvider(BaseProviderTestCase):
 
     def test_replace_vars_numeric_values(self):
         """Test _replace_vars method with numeric values (should convert to string)"""
-        provider = CallbackProvider(self.authid, self.token)
+        provider = CallbackProvider(self.id, self.token)
 
         test_str = "Port: __PORT__, TTL: __TTL__"
         mapping = {"__PORT__": 8080, "__TTL__": 300}
@@ -133,7 +133,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = "Success"
 
-        provider = CallbackProvider(self.authid, None)  # type: ignore
+        provider = CallbackProvider(self.id, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -156,7 +156,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_http.return_value = "Success"
 
         token = {"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}
-        provider = CallbackProvider(self.authid, token)  # type: ignore
+        provider = CallbackProvider(self.id, token)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -184,7 +184,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_http.return_value = "Success"
 
         token = '{"api_key": "test_key", "domain": "__DOMAIN__", "ip": "__IP__"}'
-        provider = CallbackProvider(self.authid, token)
+        provider = CallbackProvider(self.id, token)
 
         result = provider.set_record("example.com", "192.168.1.1", "A", 300, "default")
 
@@ -212,7 +212,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_http.return_value = "Success"
 
         token = {"api_key": 12345, "domain": "__DOMAIN__", "timeout": 30, "enabled": True}
-        provider = CallbackProvider(self.authid, token)  # type: ignore
+        provider = CallbackProvider(self.id, token)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -238,7 +238,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = None  # Simulate failure
 
-        provider = CallbackProvider(self.authid, None)  # type: ignore
+        provider = CallbackProvider(self.id, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -252,7 +252,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_time.return_value = 1634567890.123
         mock_http.return_value = None  # None response
 
-        provider = CallbackProvider(self.authid, None)  # type: ignore
+        provider = CallbackProvider(self.id, None)  # type: ignore
 
         result = provider.set_record("example.com", "192.168.1.1")
 
@@ -265,7 +265,7 @@ class TestCallbackProvider(BaseProviderTestCase):
         mock_jsondecode.side_effect = ValueError("Invalid JSON")
 
         token = "invalid json"
-        provider = CallbackProvider(self.authid, token)
+        provider = CallbackProvider(self.id, token)
 
         # This should raise an exception when trying to decode invalid JSON
         with self.assertRaises(ValueError):

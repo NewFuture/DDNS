@@ -12,12 +12,12 @@ class BaseProviderTestCase(unittest.TestCase):
 
     def setUp(self):
         """Set up common test fixtures"""
-        self.authid = "test_id"
+        self.id = "test_id"
         self.token = "test_token"
 
     def assertProviderInitialized(self, provider, expected_id=None, expected_token=None):
         """Helper method to assert provider is correctly initialized"""
-        self.assertEqual(provider.id, expected_id or self.authid)
+        self.assertEqual(provider.id, expected_id or self.id)
         self.assertEqual(provider.token, expected_token or self.token)
 
     def mock_logger(self, provider):

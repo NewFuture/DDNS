@@ -15,14 +15,14 @@ class TestNoipProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestNoipProvider, self).setUp()
-        # No-IP uses both authid (username) and token (password)
-        self.authid = "test_username"
+        # No-IP uses both id (username) and token (password)
+        self.id = "test_username"
         self.token = "test_password"
 
     def test_init_with_basic_config(self):
         """Test NoipProvider initialization with basic configuration"""
-        provider = NoipProvider(self.authid, self.token)
-        self.assertEqual(provider.id, self.authid)
+        provider = NoipProvider(self.id, self.token)
+        self.assertEqual(provider.id, self.id)
         self.assertEqual(provider.token, self.token)
         # After validation, endpoint should include authentication
         self.assertEqual(provider.endpoint, "https://test_username:test_password@dynupdate.no-ip.com")
@@ -30,7 +30,7 @@ class TestNoipProvider(BaseProviderTestCase):
 
     def test_class_constants(self):
         """Test NoipProvider class constants"""
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         # After validation, endpoint should include authentication
         self.assertEqual(provider.endpoint, "https://test_username:test_password@dynupdate.no-ip.com")
         self.assertFalse(provider.decode_response)
@@ -42,7 +42,7 @@ class TestNoipProvider(BaseProviderTestCase):
 
     def test_validate_success_with_credentials(self):
         """Test _validate method passes with proper credentials"""
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         # Should not raise any exception
         provider._validate()
 
@@ -55,7 +55,7 @@ class TestNoipProvider(BaseProviderTestCase):
     def test_validate_fails_without_token(self):
         """Test _validate method fails when token is missing"""
         with self.assertRaises(ValueError) as cm:
-            NoipProvider(self.authid, "")
+            NoipProvider(self.id, "")
         self.assertIn("No-IP requires password", str(cm.exception))
 
     def test_validate_fails_with_both_missing(self):
@@ -69,7 +69,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'good' response"""
         mock_http.return_value = "good 192.168.1.1"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
 
         result = provider.set_record("example.com", "192.168.1.1", "A")
 
@@ -95,7 +95,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'nochg' response"""
         mock_http.return_value = "nochg 192.168.1.1"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
 
         result = provider.set_record("test.example.com", "192.168.1.1", "A")
 
@@ -118,7 +118,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with IPv6 address"""
         mock_http.return_value = "good 2001:db8::1"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
 
         result = provider.set_record("ipv6.example.com", "2001:db8::1", "AAAA")
 
@@ -136,7 +136,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with all optional parameters"""
         mock_http.return_value = "good 10.0.0.1"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
 
         result = provider.set_record(
             domain="full.example.com", value="10.0.0.1", record_type="A", ttl=300, line="default", extra_param="test"
@@ -156,7 +156,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'nohost' error response"""
         mock_http.return_value = "nohost"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -172,7 +172,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'badauth' error response"""
         mock_http.return_value = "badauth"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -188,7 +188,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'badagent' error response"""
         mock_http.return_value = "badagent"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -204,7 +204,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with '!donator' error response"""
         mock_http.return_value = "!donator"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -220,7 +220,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with 'abuse' error response"""
         mock_http.return_value = "abuse"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -236,7 +236,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with unexpected response"""
         mock_http.return_value = "unknown_response"
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -252,7 +252,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with empty response"""
         mock_http.return_value = ""
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -269,7 +269,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method with None response"""
         mock_http.return_value = None
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -285,7 +285,7 @@ class TestNoipProvider(BaseProviderTestCase):
         """Test set_record method when _http raises an exception"""
         mock_http.side_effect = Exception("Network error")
 
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         result = provider.set_record("example.com", "192.168.1.1")
@@ -322,7 +322,7 @@ class TestNoipProvider(BaseProviderTestCase):
 
     def test_set_record_logger_info_called(self):
         """Test that logger.info is called with correct parameters"""
-        provider = NoipProvider(self.authid, self.token)
+        provider = NoipProvider(self.id, self.token)
         provider.logger = MagicMock()
 
         with patch.object(provider, "_http") as mock_http:

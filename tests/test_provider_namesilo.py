@@ -15,7 +15,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
     def setUp(self):
         """Set up test fixtures"""
         super(TestNamesiloProvider, self).setUp()
-        self.provider = NamesiloProvider(self.authid, self.token)
+        self.provider = NamesiloProvider(self.id, self.token)
 
     def test_init_with_basic_config(self):
         """Test basic provider initialization"""
@@ -26,7 +26,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
     def test_init_with_custom_endpoint(self):
         """Test provider initialization with custom endpoint"""
         custom_endpoint = "https://api.custom.namesilo.com"
-        provider = NamesiloProvider(self.authid, self.token, endpoint=custom_endpoint)
+        provider = NamesiloProvider(self.id, self.token, endpoint=custom_endpoint)
         self.assertEqual(provider.endpoint, custom_endpoint)
 
     def test_validate_success(self):
@@ -40,7 +40,7 @@ class TestNamesiloProvider(BaseProviderTestCase):
     def test_validate_missing_token(self):
         """Test validation with missing token"""
         with self.assertRaises(ValueError) as context:
-            NamesiloProvider(self.authid, "")
+            NamesiloProvider(self.id, "")
         self.assertIn("API key", str(context.exception))
 
     def test_validate_missing_id_allowed(self):
