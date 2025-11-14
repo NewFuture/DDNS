@@ -399,102 +399,37 @@ Documentation exists in both Chinese and English:
 
 #### Running DDNS
 
-**Method 1: Direct Python execution** (recommended for development)
 ```bash
-# Run with help
+# Run from source (recommended for development)
 python3 -m ddns --help
-
-# Run with command-line arguments
 python3 -m ddns --dns=debug --ipv4=test.com
 
 # Run with config file
 python3 -m ddns -c tests/config/debug.json
 
-# Run with remote config
-python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
-
-# Enable debug mode
-python3 -m ddns --debug --dns=debug
-```
-
-**Method 2: Using run.py**
-```bash
-python3 run.py --help
-```
-
-**Method 3: After pip install**
-```bash
-# Install in development mode
-pip install -e .
-
-# Run as command
+# After pip install
 ddns --help
 ```
 
 #### Testing the Project
 
-**Primary method: unittest** (no dependencies required)
 ```bash
-# Run all tests
+# Run all tests (unittest - no dependencies required)
 python3 -m unittest discover tests -v
 
 # Run specific test module
 python3 -m unittest tests.test_provider_cloudflare -v
 
-# Run specific test class
-python3 -m unittest tests.test_provider_cloudflare.TestCloudflareProvider -v
-
-# Run specific test method
-python3 -m unittest tests.test_provider_cloudflare.TestCloudflareProvider.test_init -v
-```
-
-**Alternative: pytest** (requires installation)
-```bash
-# Install pytest (optional)
-pip install pytest pytest-cov
-
-# Run all tests
+# Alternative: pytest (requires installation)
+pip install pytest
 pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=ddns --cov-report=term-missing
-
-# Run specific test file
-pytest tests/test_provider_cloudflare.py -v
-
-# Run tests matching pattern
-pytest tests/ -k "cloudflare" -v
-```
-
-**Running tests in CI environment**
-```bash
-# This mimics the CI test flow
-python3 -m unittest discover tests -v
 ```
 
 #### Linting and Formatting
 
-**Format code** (required before commit):
 ```bash
-# Install ruff (if not already installed)
-pip install ruff
-
-# Check for issues
-ruff check .
-
-# Auto-fix issues
+# Required before commit
 ruff check --fix --unsafe-fixes .
-
-# Format code
-ruff format .
-```
-
-**Run both linting and formatting**:
-```bash
-# Lint and fix
-ruff check --fix --unsafe-fixes .
-
-# Format
 ruff format .
 ```
 
@@ -1650,39 +1585,6 @@ Before submitting changes, verify:
 
 ## Safety Guidelines
 
-### Never Delete Files Unless Explicitly Told
-
-**Rules**:
-- Do NOT delete files unless specifically requested
-- Do NOT remove "unused" code without verification
-- Do NOT delete test files, even if tests are outdated
-- Always ask for confirmation before large-scale deletions
-
-**Safe operations**:
-- Adding new files
-- Editing existing files
-- Creating backup copies before major changes
-- Renaming files (with confirmation)
-
-**Example safe workflow**:
-```bash
-# Safe: Adding new provider
-touch ddns/provider/newprovider.py
-# OK to create
-
-# Safe: Editing existing file
-vim ddns/provider/cloudflare.py
-# OK to edit
-
-# UNSAFE: Deleting provider without confirmation
-rm ddns/provider/oldprovider.py
-# Ask user first!
-
-# UNSAFE: Removing "unused" tests
-rm tests/test_old_feature.py
-# Tests may be needed for compatibility!
-```
-
 ### Avoid Harmful Refactors
 
 **Harmful refactors** to avoid:
@@ -1815,7 +1717,7 @@ This guide provides comprehensive instructions for AI agents working on the DDNS
 3. **Testing**: Use unittest (primary) or pytest (optional), write comprehensive tests
 4. **Building**: Support for Python source, PyPI, Docker, and binary executables
 5. **Documentation**: Maintain both Chinese and English versions
-6. **Safety**: Avoid unnecessary changes, ask before large edits, never delete without confirmation
+6. **Safety**: Avoid unnecessary changes, ask before large edits, respect existing code
 
 For detailed information on specific topics, refer to:
 - **Python Standards**: `.github/instructions/python.instructions.md`
