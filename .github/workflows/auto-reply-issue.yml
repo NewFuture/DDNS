@@ -160,13 +160,41 @@ jobs:
               
               const aiResponse = data.choices[0].message.content.trim();
               
-              // Post the response as a comment
+              // Extract classification from response
+              const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
+              let classification = null;
+              let commentBody = aiResponse;
+              
+              if (classificationMatch) {
+                classification = classificationMatch[1].toLowerCase();
+                // Remove classification tag from the comment body
+                commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
+                console.log(`Issue classified as: ${classification}`);
+              }
+              
+              // Post the response as a comment (without classification tag)
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.issue.number,
-                body: aiResponse
+                body: commentBody
               });
+              
+              // Add label based on classification
+              if (classification) {
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.payload.issue.number,
+                    labels: [classification]
+                  });
+                  console.log(`Label '${classification}' added successfully`);
+                } catch (labelError) {
+                  console.log(`Failed to add label: ${labelError.message}`);
+                  // Don't fail the workflow if label addition fails
+                }
+              }
               
               console.log('AI response posted successfully');
             } catch (error) {
