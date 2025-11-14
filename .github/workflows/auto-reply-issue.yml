@@ -24,6 +24,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Build Repository Index
+        id: repo_index
+        run: |
+          echo "Building repository index..."
+          
+          # Create a summary of the repository structure and key files
+          cat > /tmp/repo_index.md << 'EOF'
+          # DDNS Repository Index
+          
+          ## Project Structure
+          
+          ### Core Modules
+          - `ddns/`: Main package directory
+            - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, HuaweiDNS, EdgeOne, etc.)
+            - `util/`: Utility modules for HTTP, config, IP detection
+            - `config/`: Configuration management
+          
+          ### DNS Providers Supported
+          EOF
+          
+          # List all providers
+          echo "- Providers available:" >> /tmp/repo_index.md
+          for provider in ddns/provider/*.py; do
+            name=$(basename "$provider" .py)
+            if [[ "$name" != "_"* && "$name" != "__init__" ]]; then
+              echo "  - $name" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add recent changes info
+          echo "" >> /tmp/repo_index.md
+          echo "## Recent Changes" >> /tmp/repo_index.md
+          echo "" >> /tmp/repo_index.md
+          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
+          
+          # Add key documentation files
+          echo "" >> /tmp/repo_index.md
+          echo "## Documentation Available" >> /tmp/repo_index.md
+          echo "- Installation: doc/install.md" >> /tmp/repo_index.md
+          echo "- Configuration: doc/config/cli.md, doc/config/json.md, doc/config/env.md" >> /tmp/repo_index.md
+          echo "- Docker: doc/docker.md" >> /tmp/repo_index.md
+          echo "- Provider Development: doc/dev/provider.md" >> /tmp/repo_index.md
+          
+          # Add providers documentation
+          echo "- Provider Guides:" >> /tmp/repo_index.md
+          for doc in doc/providers/*.md; do
+            if [ -f "$doc" ]; then
+              name=$(basename "$doc" .md)
+              echo "  - $name: $doc" >> /tmp/repo_index.md
+            fi
+          done
+          
+          echo "Repository index built successfully"
+      
       - name: Generate AI Response
         id: ai_response
         uses: actions/github-script@v8
@@ -34,6 +88,12 @@ jobs:
             
             // Read system prompt from markdown file
             const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
+            
+            // Read repository index
+            const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+            
+            // Combine system prompt with repository index
+            const enhancedSystemPrompt = systemPrompt + '\n\n## Current Repository Context\n\n' + repoIndex + '\n\nUse this repository information to provide more accurate and contextual responses. Reference specific files, providers, or documentation when relevant to the user\'s issue.';
             
             // Prepare the API request
             const issueTitle = context.payload.issue.title;
@@ -69,7 +129,7 @@ jobs:
                 },
                 body: JSON.stringify({
                   messages: [
-                    { role: 'system', content: systemPrompt },
+                    { role: 'system', content: enhancedSystemPrompt },
                     { role: 'user', content: userPrompt }
                   ],
                   temperature: 0.7,
