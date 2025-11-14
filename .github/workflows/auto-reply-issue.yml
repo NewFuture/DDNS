@@ -52,10 +52,10 @@ jobs:
             Please generate a helpful initial response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
             
             const apiUrl = process.env.OPENAI_URL;
-            const apiKey = process.env.OPENAI_KEY || process.env.AI_TOKEN;
+            const apiKey = process.env.OPENAI_KEY;
             
             if (!apiUrl || !apiKey) {
-              core.setFailed('OPENAI_URL and (OPENAI_KEY or AI_TOKEN) must be set');
+              core.setFailed('OPENAI_URL and OPENAI_KEY must be set');
               return;
             }
             
@@ -108,4 +108,3 @@ jobs:
         env:
           OPENAI_URL: ${{ vars.OPENAI_URL }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          AI_TOKEN: ${{ secrets.ai }}
