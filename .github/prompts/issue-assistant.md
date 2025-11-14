@@ -19,9 +19,7 @@ Your role is to provide friendly, informative responses to GitHub issues.
 - **feature**: New feature requests, enhancements, or improvements
 - **question**: Questions about usage, configuration, documentation, or general inquiries
 
-Return your classification at the START of your response in this exact format:
-```
-[CLASSIFICATION: bug|feature|question]
+Return your classification at the START of your response using ONE of the following formats:
 ```
 
 ## Response Guidelines
