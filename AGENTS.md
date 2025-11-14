@@ -1122,7 +1122,7 @@ docker buildx build --platform linux/amd64,linux/arm64 --target export -f docker
 
 ### 5. Platform-Specific Instructions
 
-#### Linux (Ubuntu/Debian)
+#### Linux/macOS/Raspberry Pi
 
 ```bash
 # Install from source
@@ -1130,31 +1130,22 @@ git clone https://github.com/NewFuture/DDNS.git
 cd DDNS
 python3 -m ddns --help
 
-# Or use one-click install
+# Or use one-click install (Linux/macOS)
 curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
-
-# Set up systemd timer (requires binary or pip install)
-ddns task --install 5  # Update every 5 minutes
-ddns task --enable
-ddns task --status
-```
-
-#### macOS
-
-```bash
-# Install from source
-git clone https://github.com/NewFuture/DDNS.git
-cd DDNS
-python3 -m ddns --help
 
 # Or use pip
 pip3 install ddns
 ddns --help
 
-# Set up launchd (requires binary or pip install)
+# Or use Docker (recommended for Raspberry Pi)
+docker pull newfuture/ddns:latest
+docker run --rm newfuture/ddns:latest --help
+
+# Set up scheduled task (requires binary or pip install)
 ddns task --install 5  # Update every 5 minutes
 ddns task --enable
 ddns task --status
+# Note: Uses systemd/cron on Linux, launchd on macOS
 ```
 
 #### Windows
@@ -1174,24 +1165,6 @@ ddns --help
 ddns task --install 5  # Update every 5 minutes
 ddns task --enable
 ddns task --status
-```
-
-#### Raspberry Pi (ARM)
-
-```bash
-# Use Docker (recommended)
-docker pull newfuture/ddns:latest
-docker run --rm newfuture/ddns:latest --help
-
-# Or download ARM binary
-wget https://github.com/NewFuture/DDNS/releases/latest/download/ddns-linux-arm64
-chmod +x ddns-linux-arm64
-./ddns-linux-arm64 --help
-
-# Or from source
-git clone https://github.com/NewFuture/DDNS.git
-cd DDNS
-python3 -m ddns --help
 ```
 
 ### 6. Building PyPI Package
