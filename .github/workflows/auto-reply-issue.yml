@@ -59,15 +59,9 @@ jobs:
               return;
             }
             
-            // Ensure URL ends with /chat/completions
-            let endpoint = apiUrl;
-            if (!endpoint.endsWith('/chat/completions')) {
-              endpoint = endpoint.endsWith('/') ? endpoint + 'chat/completions' : endpoint + '/chat/completions';
-            }
-            
             // Call Azure OpenAI API
             try {
-              const response = await fetch(endpoint, {
+              const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
