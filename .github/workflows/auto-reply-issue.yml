@@ -85,6 +85,19 @@ jobs:
               }
               
               const data = await response.json();
+              
+              // Validate API response structure
+              if (
+                !data.choices ||
+                !Array.isArray(data.choices) ||
+                !data.choices[0] ||
+                !data.choices[0].message ||
+                typeof data.choices[0].message.content !== 'string'
+              ) {
+                core.setFailed('Invalid API response structure');
+                return;
+              }
+              
               const aiResponse = data.choices[0].message.content.trim();
               
               // Post the response as a comment
