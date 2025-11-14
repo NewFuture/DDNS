@@ -1,0 +1,83 @@
+name: Auto Reply to Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+# Limit concurrent runs to prevent rate limit issues
+concurrency:
+  group: auto-reply-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  auto-reply:
+    # Only run if not exceeding daily limit (200 times per day)
+    # This is controlled via the concurrency group and workflow run history
+    if: github.event.issue.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Check daily run limit
+        id: check_limit
+        run: |
+          # Get workflow runs from the last 24 hours
+          WORKFLOW_NAME="Auto Reply to Issues"
+          RUNS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/workflows/auto-reply-issue.yml/runs?per_page=200&created=>$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)" \
+            --jq '.workflow_runs | length')
+          
+          echo "runs_count=$RUNS" >> $GITHUB_OUTPUT
+          
+          if [ "$RUNS" -ge 200 ]; then
+            echo "⚠️ Daily limit of 200 runs reached. Skipping auto-reply."
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Current runs: $RUNS/200. Proceeding with auto-reply."
+            echo "should_skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Generate AI Response
+        if: steps.check_limit.outputs.should_skip != 'true'
+        id: ai_response
+        run: python3 .github/scripts/auto-reply.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          REPOSITORY: ${{ github.repository }}
+          AI_TOKEN: ${{ secrets.ai }}
+          OPENAI_URL: ${{ vars.OPENAI_URL }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+      
+      - name: Post Comment
+        if: steps.check_limit.outputs.should_skip != 'true' && steps.ai_response.outputs.response != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const response = fs.readFileSync('/tmp/ai_response.txt', 'utf8');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: response
+            });
