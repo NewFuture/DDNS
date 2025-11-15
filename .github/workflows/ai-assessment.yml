@@ -32,7 +32,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
       - name: Run AI assessment
         id: ai-assessment
         uses: github/ai-assessment-comment-labeler@v1
