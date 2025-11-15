@@ -4,7 +4,7 @@ This repository uses the `github/ai-assessment-comment-labeler` action to automa
 
 ## How It Works
 
-When a new issue is created, you can trigger an AI assessment by adding the `request ai review` label to the issue. The system will:
+When you want to get an AI assessment on an issue, add the `request ai review` label to trigger the assessment. The system will:
 
 1. Analyze the issue content based on existing labels
 2. Provide helpful feedback or guidance
