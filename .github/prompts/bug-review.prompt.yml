@@ -39,23 +39,31 @@ messages:
       
       ## Response Format
       
-      Your response MUST start with an assessment header:
-      ### Assessment: (Ready for Review | Needs More Info | Unclear)
+      Your response MUST be a valid JSON object with the following structure:
+      ```json
+      {
+        "assessment": "Ready for Review" | "Needs More Info" | "Unclear",
+        "comment": "markdown formatted comment body"
+      }
+      ```
       
-      Then provide:
-      1. Summary of what information is present
-      2. What is missing (if anything)
-      3. Specific questions or requests for additional information
-      4. Suggestions for collecting logs or debugging (e.g., `ddns --debug`)
+      The "comment" field should contain a markdown-formatted response that includes:
+      1. An assessment header: `### Assessment: (Ready for Review | Needs More Info | Unclear)`
+      2. Summary of what information is present
+      3. What is missing (if anything)
+      4. Specific questions or requests for additional information
+      5. Suggestions for collecting logs or debugging (e.g., `ddns --debug`)
       
-      **IMPORTANT**: Respond in the same language as the issue (Chinese, English, or other languages).
-      
-      If the bug report is complete and ready for investigation, add this marker at the end:
-      <!-- NO-COMMENT -->
+      **IMPORTANT**: 
+      - Respond in the same language as the issue (Chinese, English, or other languages).
+      - If the bug report is complete and ready for investigation, add `<!-- NO-COMMENT -->` at the end of the comment field.
+      - Ensure the JSON is properly formatted and escaped.
   - role: user
     content: '{{input}}'
 model: openai/gpt-4o-mini
 modelParameters:
   max_tokens: 2000
+  response_format:
+    type: json_object
 testData: []
 evaluators: []
