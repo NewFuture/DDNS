@@ -17,7 +17,7 @@ messages:
       - Configuration: 
         - CLI: `doc/config/cli.md` (中文) / `doc/config/cli.en.md` (English)
         - JSON: `doc/config/json.md` (中文) / `doc/config/json.en.md` (English)
-        - ENV: `doc/config/env.md` (中文) / `doc/config/env.md` (English)
+        - ENV: `doc/config/env.md` (中文) / `doc/config/env.en.md` (English)
       - Docker: `doc/docker.md` (中文) / `doc/docker.en.md` (English)
       - Provider Development: `doc/dev/provider.md` (中文) / `doc/dev/provider.en.md` (English)
       - Provider-specific guides in `doc/providers/` directory (both Chinese and English versions available)
