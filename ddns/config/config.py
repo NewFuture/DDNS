@@ -155,7 +155,8 @@ class Config(object):
         extra = {}  # type: dict
 
         # Collect from env config first (lowest priority)
-        # Check for "extra" dict first before processing extra_ prefixed keys
+        # Process "extra" dict first, then extra_ prefixed keys
+        # Within the same source, extra_ prefixed keys override values in the "extra" dict
         if "extra" in self._env_config and isinstance(self._env_config["extra"], dict):
             extra.update(self._env_config["extra"])
         for key, value in self._env_config.items():
@@ -163,12 +164,13 @@ class Config(object):
                 continue  # Already processed above
             elif key.startswith("extra_"):
                 extra_key = key[6:]  # Remove "extra_" prefix
-                extra[extra_key] = value
+                extra[extra_key] = value  # Overrides value from nested "extra" dict if present
             elif key not in self._known_keys:
                 extra[key] = value
 
         # Collect from JSON config (medium priority)
-        # Check for "extra" dict first before processing extra_ prefixed keys
+        # Process "extra" dict first, then extra_ prefixed keys
+        # Within the same source, extra_ prefixed keys override values in the "extra" dict
         if "extra" in self._json_config and isinstance(self._json_config["extra"], dict):
             extra.update(self._json_config["extra"])
         for key, value in self._json_config.items():
@@ -176,7 +178,7 @@ class Config(object):
                 continue  # Already processed above
             elif key.startswith("extra_"):
                 extra_key = key[6:]  # Remove "extra_" prefix
-                extra[extra_key] = value
+                extra[extra_key] = value  # Overrides value from nested "extra" dict if present
             elif key not in self._known_keys:
                 extra[key] = value
 
