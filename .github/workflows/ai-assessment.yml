@@ -38,7 +38,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.issue.number }}
-          issue_body: ${{ github.event.issue.body }}
+          issue_body: |
+            Title: ${{ github.event.issue.title }}
+
+            ${{ github.event.issue.body }}
           repo_name: ${{ github.event.repository.name }}
           owner: ${{ github.repository_owner }}
           ai_review_label: 'request ai review'
