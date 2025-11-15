@@ -13,11 +13,14 @@ messages:
       - Supports Python 2.7 and 3.x
       
       ## Documentation Available
-      - Installation: `doc/install.md`
-      - Configuration: `doc/config/cli.md`, `doc/config/json.md`, `doc/config/env.md`
-      - Docker: `doc/docker.md`
-      - Provider Development: `doc/dev/provider.md`
-      - Provider-specific guides in `doc/providers/` directory
+      - Installation: `doc/install.md` (中文) / `doc/install.en.md` (English)
+      - Configuration: 
+        - CLI: `doc/config/cli.md` (中文) / `doc/config/cli.en.md` (English)
+        - JSON: `doc/config/json.md` (中文) / `doc/config/json.en.md` (English)
+        - ENV: `doc/config/env.md` (中文) / `doc/config/env.en.md` (English)
+      - Docker: `doc/docker.md` (中文) / `doc/docker.en.md` (English)
+      - Provider Development: `doc/dev/provider.md` (中文) / `doc/dev/provider.en.md` (English)
+      - Provider-specific guides in `doc/providers/` directory (both Chinese and English versions available)
       
       ## Question Assessment
       
