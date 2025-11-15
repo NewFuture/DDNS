@@ -126,9 +126,9 @@ Check if the CLI `--dns` parameter's `choices` option needs updating with the ne
 
 #### Schema Compatibility  
 Optionally add provider name to latest JSON schema:
-- `schema/v4.0.json` (latest schema format)
+- `schema/v4.1.json` (latest schema format)
 
-Add to the `enum` list under `dns` or `provider` property. Note: Only v4.0 needs updates as it's the latest format.
+Add to the `enum` list under `dns` or `provider` property. Note: Only v4.1 needs updates as it's the latest format.
 
 ### Step 7: Update Documentation Index
 
