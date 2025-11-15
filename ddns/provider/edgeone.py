@@ -43,16 +43,17 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """
         查询域名信息
-        支持通过 extra 参数的 'dns_record' 键控制查询类型:
-        - dns_record=True: 查询 DNS 记录 (非加速域名)
-        - dns_record=False 或未设置: 查询加速域名 (默认)
+        支持通过 extra 参数的 'teoDomainType' 键控制查询类型:
+        - teoDomainType="dns": 查询 DNS 记录 (非加速域名)
+        - teoDomainType="acceleration" 或未设置: 查询加速域名 (默认)
 
         https://cloud.tencent.com/document/api/1552/86336
         """
         domain = join_domain(subdomain, main_domain)
 
-        # 检查 extra 参数中的 dns_record 标志
-        if extra.get("dns_record"):
+        # 检查 extra 参数中的 teoDomainType 标志 (不分大小写)
+        domain_type = str(extra.get("teoDomainType", "acceleration")).lower()
+        if domain_type == "dns":
             # 查询 DNS 记录
             filters = [{"Name": "name", "Values": [domain], "Fuzzy": False}]  # type: Any
             response = self._request("DescribeDnsRecords", ZoneId=zone_id, Filters=filters)
@@ -83,16 +84,17 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, str, str, str, str, int, str | None, dict) -> bool
         """
         创建域名记录
-        支持通过 extra 参数的 'dns_record' 键控制创建类型:
-        - dns_record=True: 创建 DNS 记录 (非加速域名)
-        - dns_record=False 或未设置: 创建加速域名 (默认)
+        支持通过 extra 参数的 'teoDomainType' 键控制创建类型:
+        - teoDomainType="dns": 创建 DNS 记录 (非加速域名)
+        - teoDomainType="acceleration" 或未设置: 创建加速域名 (默认)
 
         https://cloud.tencent.com/document/api/1552/86338
         """
         domain = join_domain(subdomain, main_domain)
 
-        # 检查 extra 参数中的 dns_record 标志
-        if extra.get("dns_record"):
+        # 检查 extra 参数中的 teoDomainType 标志 (不分大小写)
+        domain_type = str(extra.get("teoDomainType", "acceleration")).lower()
+        if domain_type == "dns":
             # 创建 DNS 记录
             res = self._request("CreateDnsRecord", ZoneId=zone_id, Name=domain, Type=record_type, Content=value)
             if res:
@@ -104,8 +106,10 @@ class EdgeOneProvider(TencentCloudProvider):
         else:
             # 创建加速域名 (默认行为)
             origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
+            # 过滤掉 teoDomainType 参数，避免传递给 API
+            extra_filtered = {k: v for k, v in extra.items() if k != "teoDomainType"}
             res = self._request(
-                "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra
+                "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra_filtered
             )
             if res:
                 self.logger.info("Acceleration domain created (%s)", res.get("RequestId"))
@@ -118,14 +122,15 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """
         更新域名记录
-        支持通过 extra 参数的 'dns_record' 键控制更新类型:
-        - dns_record=True: 更新 DNS 记录 (非加速域名)
-        - dns_record=False 或未设置: 更新加速域名 (默认)
+        支持通过 extra 参数的 'teoDomainType' 键控制更新类型:
+        - teoDomainType="dns": 更新 DNS 记录 (非加速域名)
+        - teoDomainType="acceleration" 或未设置: 更新加速域名 (默认)
 
         https://cloud.tencent.com/document/api/1552/86335
         """
-        # 检查 extra 参数中的 dns_record 标志
-        if extra.get("dns_record"):
+        # 检查 extra 参数中的 teoDomainType 标志 (不分大小写)
+        domain_type = str(extra.get("teoDomainType", "acceleration")).lower()
+        if domain_type == "dns":
             # 更新 DNS 记录
             new_record = {
                 "RecordId": old_record.get("RecordId"),
