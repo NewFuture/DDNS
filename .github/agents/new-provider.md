@@ -146,6 +146,11 @@ Add a row to the provider table with:
 
 ### Step 8: Final Verification
 
+Before running verification steps, install ruff if not already available:
+```bash
+pip3 install ruff
+```
+
 1. **Run all tests**: `python3 -m unittest discover tests -v`
 2. **Format code**: `ruff format <files>`
 3. **Lint code**: `ruff check --fix --unsafe-fixes <files>`
