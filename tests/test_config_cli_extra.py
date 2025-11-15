@@ -92,28 +92,14 @@ class TestCliExtraFields(unittest.TestCase):
 
     def test_cli_extra_numeric_values(self):
         """Test --extra.xxx with numeric string values"""
-        sys.argv = [
-            "ddns",
-            "--dns",
-            "cloudflare",
-            "--extra.priority",
-            "100",
-            "--extra.weight",
-            "0.5",
-        ]
+        sys.argv = ["ddns", "--dns", "cloudflare", "--extra.priority", "100", "--extra.weight", "0.5"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config.get("extra_priority"), "100")
         self.assertEqual(config.get("extra_weight"), "0.5")
 
     def test_cli_extra_special_characters(self):
         """Test --extra.xxx with special characters in value"""
-        sys.argv = [
-            "ddns",
-            "--dns",
-            "cloudflare",
-            "--extra.url",
-            "https://example.com/path?key=value",
-        ]
+        sys.argv = ["ddns", "--dns", "cloudflare", "--extra.url", "https://example.com/path?key=value"]
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config.get("extra_url"), "https://example.com/path?key=value")
 

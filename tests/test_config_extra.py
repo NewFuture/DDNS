@@ -32,11 +32,7 @@ class TestConfigExtra(unittest.TestCase):
         json_config = {
             "dns": "alidns",
             "id": "test_id",
-            "extra": {
-                "proxied": False,
-                "comment": "JSON comment",
-                "tags": ["tag1", "tag2"],
-            },
+            "extra": {"proxied": False, "comment": "JSON comment", "tags": ["tag1", "tag2"]},
         }
         config = Config(json_config=json_config)
         self.assertEqual(config.dns, "alidns")
@@ -47,12 +43,7 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_from_json_undefined_fields(self):
         """Test undefined fields in JSON config are collected as extra"""
-        json_config = {
-            "dns": "dnspod",
-            "id": "test_id",
-            "custom_field": "custom_value",
-            "another_field": 123,
-        }
+        json_config = {"dns": "dnspod", "id": "test_id", "custom_field": "custom_value", "another_field": 123}
         config = Config(json_config=json_config)
         self.assertEqual(config.dns, "dnspod")
         self.assertEqual(config.extra.get("custom_field"), "custom_value")
@@ -60,11 +51,7 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_from_env(self):
         """Test extra fields from environment config"""
-        env_config = {
-            "dns": "cloudflare",
-            "extra_proxied": "true",
-            "extra_ttl_override": "300",
-        }
+        env_config = {"dns": "cloudflare", "extra_proxied": "true", "extra_ttl_override": "300"}
         config = Config(env_config=env_config)
         self.assertEqual(config.dns, "cloudflare")
         self.assertEqual(config.extra.get("proxied"), "true")
@@ -72,11 +59,7 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_from_env_undefined_fields(self):
         """Test undefined fields in env config are collected as extra"""
-        env_config = {
-            "dns": "dnspod",
-            "custom_env_field": "env_value",
-            "another_env_field": "another_value",
-        }
+        env_config = {"dns": "dnspod", "custom_env_field": "env_value", "another_env_field": "another_value"}
         config = Config(env_config=env_config)
         self.assertEqual(config.dns, "dnspod")
         self.assertEqual(config.extra.get("custom_env_field"), "env_value")
@@ -84,17 +67,8 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_priority_cli_over_json(self):
         """Test CLI extra fields have priority over JSON"""
-        cli_config = {
-            "extra_comment": "CLI comment",
-            "extra_field1": "cli_value",
-        }
-        json_config = {
-            "extra": {
-                "comment": "JSON comment",
-                "field1": "json_value",
-                "field2": "json_only",
-            },
-        }
+        cli_config = {"extra_comment": "CLI comment", "extra_field1": "cli_value"}
+        json_config = {"extra": {"comment": "JSON comment", "field1": "json_value", "field2": "json_only"}}
         config = Config(cli_config=cli_config, json_config=json_config)
         self.assertEqual(config.extra.get("comment"), "CLI comment")
         self.assertEqual(config.extra.get("field1"), "cli_value")
@@ -102,17 +76,8 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_priority_json_over_env(self):
         """Test JSON extra fields have priority over ENV"""
-        json_config = {
-            "extra": {
-                "comment": "JSON comment",
-                "field1": "json_value",
-            },
-        }
-        env_config = {
-            "extra_comment": "ENV comment",
-            "extra_field1": "env_value",
-            "extra_field2": "env_only",
-        }
+        json_config = {"extra": {"comment": "JSON comment", "field1": "json_value"}}
+        env_config = {"extra_comment": "ENV comment", "extra_field1": "env_value", "extra_field2": "env_only"}
         config = Config(json_config=json_config, env_config=env_config)
         self.assertEqual(config.extra.get("comment"), "JSON comment")
         self.assertEqual(config.extra.get("field1"), "json_value")
@@ -120,20 +85,9 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_priority_all_sources(self):
         """Test complete priority chain: CLI > JSON > ENV"""
-        cli_config = {
-            "extra_field1": "cli_value",
-        }
-        json_config = {
-            "extra": {
-                "field1": "json_value",
-                "field2": "json_value",
-            },
-        }
-        env_config = {
-            "extra_field1": "env_value",
-            "extra_field2": "env_value",
-            "extra_field3": "env_value",
-        }
+        cli_config = {"extra_field1": "cli_value"}
+        json_config = {"extra": {"field1": "json_value", "field2": "json_value"}}
+        env_config = {"extra_field1": "env_value", "extra_field2": "env_value", "extra_field3": "env_value"}
         config = Config(cli_config=cli_config, json_config=json_config, env_config=env_config)
         self.assertEqual(config.extra.get("field1"), "cli_value")
         self.assertEqual(config.extra.get("field2"), "json_value")
@@ -171,9 +125,7 @@ class TestConfigExtra(unittest.TestCase):
             "id": "test_id",
             "token": "test_token",
             "ipv4": ["example.com"],
-            "extra": {
-                "proxied": True,
-            },
+            "extra": {"proxied": True},
         }
         config = Config(json_config=json_config)
         # $schema should not be in extra
@@ -188,10 +140,7 @@ class TestConfigExtra(unittest.TestCase):
         """Test JSON config with both extra object and undefined fields"""
         json_config = {
             "dns": "cloudflare",
-            "extra": {
-                "proxied": True,
-                "comment": "From extra object",
-            },
+            "extra": {"proxied": True, "comment": "From extra object"},
             "custom_field": "From undefined field",
             "another_field": 123,
         }
@@ -232,13 +181,7 @@ class TestConfigExtra(unittest.TestCase):
 
     def test_extra_env_with_extra_object(self):
         """Test env config with extra object (dict)"""
-        env_config = {
-            "dns": "cloudflare",
-            "extra": {
-                "field1": "value1",
-                "field2": "value2",
-            },
-        }
+        env_config = {"dns": "cloudflare", "extra": {"field1": "value1", "field2": "value2"}}
         config = Config(env_config=env_config)
         self.assertEqual(config.extra.get("field1"), "value1")
         self.assertEqual(config.extra.get("field2"), "value2")
@@ -247,14 +190,10 @@ class TestConfigExtra(unittest.TestCase):
         """Test mixing extra_ prefix and extra object in same source"""
         json_config = {
             "dns": "cloudflare",
-            "extra": {
-                "from_object": "object_value",
-            },
+            "extra": {"from_object": "object_value"},
             "undefined_field": "undefined_value",
         }
-        cli_config = {
-            "extra_from_prefix": "prefix_value",
-        }
+        cli_config = {"extra_from_prefix": "prefix_value"}
         config = Config(cli_config=cli_config, json_config=json_config)
         self.assertEqual(config.extra.get("from_object"), "object_value")
         self.assertEqual(config.extra.get("undefined_field"), "undefined_value")

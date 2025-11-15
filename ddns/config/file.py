@@ -44,7 +44,7 @@ def _flatten_single_config(config, exclude_keys=None, preserve_keys=None):
     # type: (dict, list[str]|None, list[str]|None) -> dict
     """
     Flatten a single config object with optional key exclusion and preservation.
-    
+
     Args:
         config: Configuration dictionary to flatten
         exclude_keys: Keys to completely exclude from result
