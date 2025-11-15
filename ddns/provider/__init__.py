@@ -43,6 +43,7 @@ def get_provider_class(provider_name):
         "edgeone": EdgeOneProvider,
         "edgeone_acc": EdgeOneProvider,  # 加速域名
         "teo_acc": EdgeOneProvider,  # 加速域名别名
+        "teo": EdgeOneProvider,  # 兼容旧版本 (不在文档中提示)
         # tencent cloud edgeone dns (non-accelerated domains)
         "edgeone_dns": EdgeOneDnsProvider,  # DNS记录管理
         "teo_dns": EdgeOneDnsProvider,  # DNS记录管理别名
