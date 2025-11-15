@@ -47,6 +47,8 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 ## Complete Configuration Example
 
+### Acceleration Domain Configuration (Default)
+
 ```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
@@ -61,22 +63,67 @@ Permissions can be viewed and configured in [Access Management](https://console.
 }
 ```
 
+### Switching Domain Type via extra Parameter
+
+The EdgeOne provider supports flexible switching between acceleration domains and regular DNS record management using the `extra.teoDomainType` parameter:
+
+```jsonc
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "edgeone",
+    "id": "your_secret_id",
+    "token": "your_secret_key",
+    "ipv4": ["ddns.newfuture.cc"],
+    "extra": {
+        "teoDomainType": "dns"  // Switch to DNS record mode (non-accelerated domains)
+    }
+}
+```
+
+Or configure via initialization parameters:
+
+```jsonc
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "edgeone",
+    "id": "your_secret_id",
+    "token": "your_secret_key",
+    "ipv4": ["ddns.newfuture.cc"],
+    "teoDomainType": "dns"  // Configure domain type at initialization
+}
+```
+
+#### teoDomainType Parameter Description
+
+| Value          | Description                              | Corresponding API                           |
+| :------------- | :-------------------------------------- | :----------------------------------------- |
+| `acceleration` | Acceleration domains (default)          | DescribeAccelerationDomains, CreateAccelerationDomain, ModifyAccelerationDomain |
+| `dns`         | DNS records (non-accelerated domains)   | DescribeDnsRecords, CreateDnsRecord, ModifyDnsRecords |
+
+> **Note**:
+>
+> - `teoDomainType` parameter is case-insensitive (`dns`, `DNS`, `Dns` are all valid)
+> - `extra` parameter takes priority over initialization parameter
+> - It is recommended to use the dedicated [EdgeOne DNS Provider](./edgeone_dns.en.md) for cleaner and clearer code
+
 ### Parameter Description
 
-| Parameter | Description       | Type           | Value Range/Options                    | Default   | Parameter Type |
-| :-------: | :---------------- | :------------- | :------------------------------------- | :-------- | :------------- |
-| dns       | Provider ID       | String         | `edgeone`, `edgeone_acc`, `teo_acc` | None      | Provider       |
-| id        | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
-| token     | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
-| index4    | IPv4 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
-| index6    | IPv6 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
-| ipv4      | IPv4 Domains      | Array          | Domain list                            | None      | Common Config  |
-| ipv6      | IPv6 Domains      | Array          | Domain list                            | None      | Common Config  |
-| endpoint  | API Endpoint      | URL            | [Reference below](#endpoint)           | `https://teo.tencentcloudapi.com` | Provider  |
-| proxy     | Proxy Settings    | Array          | [Reference](../config/json.en.md#proxy)       | None      | Common Network |
-| ssl       | SSL Verification  | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
-| cache     | Cache Settings    | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
-| log       | Log Configuration | Object         | [Reference](../config/json.en.md#log)        | None      | Common Config  |
+| Parameter      | Description       | Type           | Value Range/Options                    | Default   | Parameter Type |
+| :------------: | :---------------- | :------------- | :------------------------------------- | :-------- | :------------- |
+| dns            | Provider ID       | String         | `edgeone`, `edgeone_acc`, `teo_acc` | None      | Provider       |
+| id             | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
+| token          | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
+| teoDomainType  | Domain Type       | String         | `acceleration`, `dns`                  | `acceleration` | Provider  |
+| index4         | IPv4 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index6         | IPv6 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| ipv4           | IPv4 Domains      | Array          | Domain list                            | None      | Common Config  |
+| ipv6           | IPv6 Domains      | Array          | Domain list                            | None      | Common Config  |
+| extra          | Extra Parameters  | Object         | `{"teoDomainType": "dns"}` etc.        | None      | Provider       |
+| endpoint       | API Endpoint      | URL            | [Reference below](#endpoint)           | `https://teo.tencentcloudapi.com` | Provider  |
+| proxy          | Proxy Settings    | Array          | [Reference](../config/json.en.md#proxy)       | None      | Common Network |
+| ssl            | SSL Verification  | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
+| cache          | Cache Settings    | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
+| log            | Log Configuration | Object         | [Reference](../config/json.en.md#log)        | None      | Common Config  |
 
 > **Parameter Type Description**:  
 >
