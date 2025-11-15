@@ -79,7 +79,7 @@ Key implementation points:
 
 ### Step 3: Register the Provider
 
-Update `/home/runner/work/DDNS/DDNS/ddns/provider/__init__.py`:
+Update `ddns/provider/__init__.py`:
 
 1. Add import statement
 2. Add provider to the mapping in `get_provider_class()`
@@ -87,7 +87,7 @@ Update `/home/runner/work/DDNS/DDNS/ddns/provider/__init__.py`:
 
 ### Step 4: Add Comprehensive Unit Tests
 
-Create test file in `/home/runner/work/DDNS/DDNS/tests/test_provider_<name>.py`:
+Create test file in `tests/test_provider_<name>.py`:
 
 Required test coverage:
 - Provider initialization and validation
@@ -105,8 +105,8 @@ Run tests: `python3 -m unittest tests.test_provider_<name> -v`
 
 Create both Chinese and English documentation:
 
-**Chinese**: `/home/runner/work/DDNS/DDNS/doc/providers/<name>.md`
-**English**: `/home/runner/work/DDNS/DDNS/doc/providers/<name>.en.md`
+**Chinese**: `doc/providers/<name>.md`
+**English**: `doc/providers/<name>.en.md`
 
 Documentation must include:
 - Overview and official links
@@ -122,21 +122,20 @@ Use existing provider docs as templates (e.g., `edgeone.md`, `cloudflare.md`)
 ### Step 6: Verify Compatibility
 
 #### CLI Compatibility
-The CLI is automatically compatible. No changes needed.
+Check if the CLI `--dns` parameter's `choices` option needs updating with the new provider name. The CLI dynamically accepts provider names, but explicit choices may need updates for better validation.
 
 #### Schema Compatibility  
-Optionally add provider name to JSON schemas:
-- `/home/runner/work/DDNS/DDNS/schema/v4.0.json` (single provider format)
-- `/home/runner/work/DDNS/DDNS/schema/v4.1.json` (multi-provider format)
+Optionally add provider name to latest JSON schema:
+- `schema/v4.0.json` (latest schema format)
 
-Add to the `enum` list under `dns` or `provider` property.
+Add to the `enum` list under `dns` or `provider` property. Note: Only v4.0 needs updates as it's the latest format.
 
 ### Step 7: Update Documentation Index
 
 Add provider entry to both index files:
 
-**Chinese**: `/home/runner/work/DDNS/DDNS/doc/providers/README.md`
-**English**: `/home/runner/work/DDNS/DDNS/doc/providers/README.en.md`
+**Chinese**: `doc/providers/README.md`
+**English**: `doc/providers/README.en.md`
 
 Add a row to the provider table with:
 - Provider alias(es)
