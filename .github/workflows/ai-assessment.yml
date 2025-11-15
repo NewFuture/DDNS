@@ -44,7 +44,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           ai_review_label: 'request ai review'
           prompts_directory: '.github/prompts'
-          assessment_regex_pattern: '^###\s*[aA]ssessment:\s*(.+)$'
+          assessment_regex_pattern: '^###\s*(?i)assessment:\s*(.+)$'
           no_comment_regex_pattern: '<!--.*NO.*COMMENT.*-->'
           no_comment_regex_flags: 'i'
           labels_to_prompts_mapping:
