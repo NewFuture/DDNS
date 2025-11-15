@@ -6,7 +6,7 @@ The Tencent Cloud EdgeOne DNS provider is used to manage DNS records for non-acc
 
 > **Difference from EdgeOne Acceleration Domains**:
 >
-> - **EdgeOne (Acceleration Domains)**: Manages origin server IP addresses for edge acceleration domains, primarily used in CDN acceleration scenarios. Use `edgeone`, `edgeone_acc`, `neo_acc`, or `neo` as the dns parameter value.
+> - **EdgeOne (Acceleration Domains)**: Manages origin server IP addresses for edge acceleration domains, primarily used in CDN acceleration scenarios. Use `edgeone`, `edgeone_acc`, `teo`, or `teo_acc` as the dns parameter value.
 > - **EdgeOne DNS (Non-Acceleration Domains)**: Manages regular DNS records, similar to traditional DNS resolution services. Use `edgeone_dns` or `edgeone_noacc` as the dns parameter value.
 
 Official Links:

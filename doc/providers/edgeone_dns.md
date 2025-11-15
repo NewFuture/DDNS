@@ -6,7 +6,7 @@
 
 > **与 EdgeOne 加速域名的区别**：
 >
-> - **EdgeOne (加速域名)**: 用于管理边缘加速域名的源站 IP 地址，主要用于 CDN 加速场景。使用 `edgeone`、`edgeone_acc`、`neo_acc` 或 `neo` 作为 dns 参数值。
+> - **EdgeOne (加速域名)**: 用于管理边缘加速域名的源站 IP 地址，主要用于 CDN 加速场景。使用 `edgeone`、`edgeone_acc`、`teo` 或 `teo_acc` 作为 dns 参数值。
 > - **EdgeOne DNS (非加速域名)**: 用于管理普通 DNS 记录，类似于传统 DNS 解析服务。使用 `edgeone_dns` 或 `edgeone_noacc` 作为 dns 参数值。
 
 官网链接：
