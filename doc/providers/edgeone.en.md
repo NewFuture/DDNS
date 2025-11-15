@@ -80,19 +80,6 @@ The EdgeOne provider supports flexible switching between acceleration domains an
 }
 ```
 
-Or configure via initialization parameters:
-
-```jsonc
-{
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-    "dns": "edgeone",
-    "id": "your_secret_id",
-    "token": "your_secret_key",
-    "ipv4": ["ddns.newfuture.cc"],
-    "teoDomainType": "dns"  // Configure domain type at initialization
-}
-```
-
 #### teoDomainType Parameter Description
 
 | Value          | Description                              | Corresponding API                           |
@@ -103,7 +90,6 @@ Or configure via initialization parameters:
 > **Note**:
 >
 > - `teoDomainType` parameter is case-insensitive (`dns`, `DNS`, `Dns` are all valid)
-> - `extra` parameter takes priority over initialization parameter
 > - It is recommended to use the dedicated [EdgeOne DNS Provider](./edgeone_dns.en.md) for cleaner and clearer code
 
 ### Parameter Description

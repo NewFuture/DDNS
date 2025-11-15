@@ -80,19 +80,6 @@ EdgeOne 提供商支持通过 `extra.teoDomainType` 参数灵活切换加速域�
 }
 ```
 
-或者通过初始化参数配置：
-
-```jsonc
-{
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-    "dns": "edgeone",
-    "id": "your_secret_id",
-    "token": "your_secret_key",
-    "ipv4": ["ddns.newfuture.cc"],
-    "teoDomainType": "dns"  // 在初始化时配置域名类型
-}
-```
-
 #### teoDomainType 参数说明
 
 | 值            | 说明                                     | 对应 API                                    |
@@ -103,7 +90,6 @@ EdgeOne 提供商支持通过 `extra.teoDomainType` 参数灵活切换加速域�
 > **注意**：
 >
 > - `teoDomainType` 参数不区分大小写（`dns`、`DNS`、`Dns` 均有效）
-> - `extra` 参数优先级高于初始化参数
 > - 推荐使用专用的 [EdgeOne DNS 提供商](./edgeone_dns.md)，代码更简洁清晰
 
 ### 参数说明
