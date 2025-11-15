@@ -1,0 +1,62 @@
+name: AI Issue Assessment and Labeling
+
+on:
+  issues:
+    types:
+      - labeled
+
+permissions:
+  issues: write
+  models: read
+  contents: read
+
+# Limit concurrent runs to prevent conflicts
+concurrency:
+  group: ai-assessment-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  ai-assessment:
+    # Skip bot issues and issues with 'copilot' label
+    # Trigger on 'request ai review' label
+    if: |
+      github.event.label.name == 'request ai review' &&
+      github.event.issue.user.login != 'github-actions[bot]' &&
+      !contains(github.event.issue.labels.*.name, 'copilot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run AI assessment
+        id: ai-assessment
+        uses: github/ai-assessment-comment-labeler@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          issue_body: ${{ github.event.issue.body }}
+          repo_name: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+          ai_review_label: 'request ai review'
+          prompts_directory: '.github/prompts'
+          assessment_regex_pattern: '^###\s*[aA]ssessment:\s*(.+)$'
+          no_comment_regex_pattern: '<!--.*NO.*COMMENT.*-->'
+          no_comment_regex_flags: 'i'
+          labels_to_prompts_mapping: |
+            bug,bug-review.prompt.yml|
+            feature,feature-request.prompt.yml|
+            question,question.prompt.yml
+          max_tokens: 2000
+      
+      - name: Log assessment results
+        if: always()
+        run: |
+          echo "AI Assessment completed"
+          echo "Results: ${{ steps.ai-assessment.outputs.ai_assessments }}"
