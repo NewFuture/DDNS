@@ -52,7 +52,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "edgeone_dns",                   // EdgeOne DNS 提供商（非加速域名）
     "id": "your_secret_id",                 // 腾讯云 SecretId
     "token": "your_secret_key",             // 腾讯云 SecretKey

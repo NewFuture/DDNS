@@ -52,7 +52,7 @@ Permissions can be viewed and configured in [Access Management](https://console.
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "edgeone_dns",                   // EdgeOne DNS provider (non-accelerated domains)
     "id": "your_secret_id",                 // Tencent Cloud SecretId
     "token": "your_secret_key",             // Tencent Cloud SecretKey

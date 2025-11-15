@@ -51,7 +51,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "edgeone",                       // 当前服务商
     "id": "your_secret_id",                 // 腾讯云 SecretId
     "token": "your_secret_key",             // 腾讯云 SecretKey
@@ -69,7 +69,7 @@ EdgeOne 提供商支持通过 `extra.teoDomainType` 参数灵活切换加速域�
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "edgeone",
     "id": "your_secret_id",
     "token": "your_secret_key",
