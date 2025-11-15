@@ -34,7 +34,7 @@ jobs:
 
       - name: Run AI assessment
         id: ai-assessment
-        uses: github/ai-assessment-comment-labeler@v1
+        uses: github/ai-assessment-comment-labeler@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.issue.number }}
