@@ -112,8 +112,10 @@ class EdgeOneProvider(TencentCloudProvider):
         else:
             # 创建加速域名 (默认行为)
             origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
+            # Filter out teoDomainType from extra parameters before passing to API
+            api_extra = {k: v for k, v in extra.items() if k != "teoDomainType"}
             res = self._request(
-                "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra
+                "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **api_extra
             )
             if res:
                 self.logger.info("Acceleration domain created (%s)", res.get("RequestId"))
