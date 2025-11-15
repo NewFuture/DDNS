@@ -46,36 +46,36 @@ class EdgeOneProvider(TencentCloudProvider):
         支持通过 extra 参数的 'dns_record' 键控制查询类型:
         - dns_record=True: 查询 DNS 记录 (非加速域名)
         - dns_record=False 或未设置: 查询加速域名 (默认)
-        
+
         https://cloud.tencent.com/document/api/1552/86336
         """
         domain = join_domain(subdomain, main_domain)
-        
+
         # 检查 extra 参数中的 dns_record 标志
         if extra.get("dns_record"):
             # 查询 DNS 记录
             filters = [{"Name": "name", "Values": [domain], "Fuzzy": False}]  # type: Any
             response = self._request("DescribeDnsRecords", ZoneId=zone_id, Filters=filters)
-            
+
             if response and "DnsRecords" in response:
                 for record_info in response.get("DnsRecords", []):
                     if record_info.get("Name") == domain and record_info.get("Type") == record_type:
                         self.logger.debug("Found DNS record: %s", record_info)
                         return record_info
-            
+
             self.logger.warning("No DNS record found for: %s, response: %s", domain, response)
             return None
         else:
             # 查询加速域名 (默认行为)
             filters = [{"Name": "domain-name", "Values": [domain], "Fuzzy": False}]  # type: Any
             response = self._request("DescribeAccelerationDomains", ZoneId=zone_id, Filters=filters)
-            
+
             if response and "AccelerationDomains" in response:
                 for domain_info in response.get("AccelerationDomains", []):
                     if domain_info.get("DomainName") == domain:
                         self.logger.debug("Found acceleration domain: %s", domain_info)
                         return domain_info
-            
+
             self.logger.warning("No acceleration domain found for: %s, response: %s", domain, response)
             return None
 
@@ -86,11 +86,11 @@ class EdgeOneProvider(TencentCloudProvider):
         支持通过 extra 参数的 'dns_record' 键控制创建类型:
         - dns_record=True: 创建 DNS 记录 (非加速域名)
         - dns_record=False 或未设置: 创建加速域名 (默认)
-        
+
         https://cloud.tencent.com/document/api/1552/86338
         """
         domain = join_domain(subdomain, main_domain)
-        
+
         # 检查 extra 参数中的 dns_record 标志
         if extra.get("dns_record"):
             # 创建 DNS 记录
@@ -98,17 +98,19 @@ class EdgeOneProvider(TencentCloudProvider):
             if res:
                 self.logger.info("DNS record created (%s)", res.get("RequestId"))
                 return True
-            
+
             self.logger.error("Failed to create DNS record, response: %s", res)
             return False
         else:
             # 创建加速域名 (默认行为)
             origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
-            res = self._request("CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra)
+            res = self._request(
+                "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **extra
+            )
             if res:
                 self.logger.info("Acceleration domain created (%s)", res.get("RequestId"))
                 return True
-            
+
             self.logger.error("Failed to create acceleration domain, response: %s", res)
             return False
 
@@ -119,7 +121,7 @@ class EdgeOneProvider(TencentCloudProvider):
         支持通过 extra 参数的 'dns_record' 键控制更新类型:
         - dns_record=True: 更新 DNS 记录 (非加速域名)
         - dns_record=False 或未设置: 更新加速域名 (默认)
-        
+
         https://cloud.tencent.com/document/api/1552/86335
         """
         # 检查 extra 参数中的 dns_record 标志
@@ -132,7 +134,7 @@ class EdgeOneProvider(TencentCloudProvider):
                 "Content": value,
             }
             response = self._request("ModifyDnsRecords", ZoneId=zone_id, DnsRecords=[new_record])
-            
+
             if response:
                 self.logger.info("DNS record updated (%s)", response.get("RequestId"))
                 return True
@@ -144,7 +146,7 @@ class EdgeOneProvider(TencentCloudProvider):
             backup = old_record.get("OriginDetail", {}).get("BackupOrigin", "")
             origin = {"OriginType": "IP_DOMAIN", "Origin": value, "BackupOrigin": backup}  # type: Any
             response = self._request("ModifyAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin)
-            
+
             if response:
                 self.logger.info("Acceleration domain updated (%s)", response.get("RequestId"))
                 return True
