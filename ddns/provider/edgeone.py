@@ -99,10 +99,13 @@ class EdgeOneProvider(TencentCloudProvider):
         # 获取域名类型：extra 优先，然后是 options，默认为 "acceleration"
         domain_type = str(extra.get("teoDomainType", self.options.get("teoDomainType", "acceleration"))).lower()
 
+        # Filter out teoDomainType from extra parameters before passing to API
+        api_extra = {k: v for k, v in extra.items() if k != "teoDomainType"}
+        
         # 根据域名类型选择API
         if domain_type == "dns":
             # 创建 DNS 记录
-            res = self._request("CreateDnsRecord", ZoneId=zone_id, Name=domain, Type=record_type, Content=value)
+            res = self._request("CreateDnsRecord", ZoneId=zone_id, Name=domain, Type=record_type, Content=value, **api_extra)
             if res:
                 self.logger.info("DNS record created (%s)", res.get("RequestId"))
                 return True
@@ -112,8 +115,6 @@ class EdgeOneProvider(TencentCloudProvider):
         else:
             # 创建加速域名 (默认行为)
             origin = {"OriginType": "IP_DOMAIN", "Origin": value}  # type: Any
-            # Filter out teoDomainType from extra parameters before passing to API
-            api_extra = {k: v for k, v in extra.items() if k != "teoDomainType"}
             res = self._request(
                 "CreateAccelerationDomain", ZoneId=zone_id, DomainName=domain, OriginInfo=origin, **api_extra
             )
