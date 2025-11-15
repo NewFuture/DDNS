@@ -155,23 +155,33 @@ class Config(object):
         extra = {}  # type: dict
 
         # Collect from env config first (lowest priority)
+        # Check for "extra" dict first before processing extra_ prefixed keys
+        if "extra" in self._env_config and isinstance(self._env_config["extra"], dict):
+            extra.update(self._env_config["extra"])
         for key, value in self._env_config.items():
-            if key.startswith("extra_"):
+            if key == "extra":
+                continue  # Already processed above
+            elif key.startswith("extra_"):
                 extra_key = key[6:]  # Remove "extra_" prefix
                 extra[extra_key] = value
-            elif key == "extra" and isinstance(value, dict):
-                extra.update(value)
             elif key not in self._known_keys:
                 extra[key] = value
 
         # Collect from JSON config (medium priority)
+        # Check for "extra" dict first before processing extra_ prefixed keys
+        if "extra" in self._json_config and isinstance(self._json_config["extra"], dict):
+            extra.update(self._json_config["extra"])
         for key, value in self._json_config.items():
-            if key == "extra" and isinstance(value, dict):
-                extra.update(value)
+            if key == "extra":
+                continue  # Already processed above
+            elif key.startswith("extra_"):
+                extra_key = key[6:]  # Remove "extra_" prefix
+                extra[extra_key] = value
             elif key not in self._known_keys:
                 extra[key] = value
 
         # Collect from CLI config (highest priority)
+        # CLI doesn't support nested extra dict, only extra_ prefixed keys
         for key, value in self._cli_config.items():
             if key.startswith("extra_"):
                 extra_key = key[6:]  # Remove "extra_" prefix
