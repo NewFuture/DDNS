@@ -137,7 +137,7 @@ class TestEdgeOneDnsProvider(BaseProviderTestCase):
             ]
         }
 
-        record = self.provider._query_record("zone-123456789", "@", "example.com", "A", None, {})  # type: dict # type: ignore
+        record = self.provider._query_record("zone-123456789", "@", "example.com", "A", None, {})
 
         self.assertIsNotNone(record)
         self.assertEqual(record["Name"], "example.com")
