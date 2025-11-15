@@ -280,22 +280,12 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
                 "level": "INFO",
                 "file": log_file_path,
                 "format": "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S"
+                "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "providers": [
-                {
-                    "provider": "debug",
-                    "id": "user1@example.com",
-                    "token": "token1",
-                    "ipv4": ["test1.example.com"]
-                },
-                {
-                    "provider": "debug",
-                    "id": "user2@example.com",
-                    "token": "token2",
-                    "ipv4": ["test2.example.com"]
-                }
-            ]
+                {"provider": "debug", "id": "user1@example.com", "token": "token1", "ipv4": ["test1.example.com"]},
+                {"provider": "debug", "id": "user2@example.com", "token": "token2", "ipv4": ["test2.example.com"]},
+            ],
         }
         config_file = self.create_test_file("multi_provider_log.json", multi_provider_config)
 
@@ -317,20 +307,26 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
             # Both configs should have the log settings inherited from global config
             for i, config in enumerate(configs):
-                self.assertEqual(config.log_file, log_file_path,
-                               "Config %d should have log_file from global config" % i)
+                self.assertEqual(
+                    config.log_file, log_file_path, "Config %d should have log_file from global config" % i
+                )
                 # Check log_level - in Python 2.7, getLevelName may return string, so check both
-                self.assertIn(config.log_level, [20, logging.INFO, "INFO"],
-                               "Config %d should have log_level from global config" % i)
-                self.assertEqual(config.log_format,
-                               "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
-                               "Config %d should have log_format from global config" % i)
-                self.assertEqual(config.log_datefmt, "%Y-%m-%d %H:%M:%S",
-                               "Config %d should have log_datefmt from global config" % i)
+                self.assertIn(
+                    config.log_level,
+                    [20, logging.INFO, "INFO"],
+                    "Config %d should have log_level from global config" % i,
+                )
+                self.assertEqual(
+                    config.log_format,
+                    "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s",
+                    "Config %d should have log_format from global config" % i,
+                )
+                self.assertEqual(
+                    config.log_datefmt, "%Y-%m-%d %H:%M:%S", "Config %d should have log_datefmt from global config" % i
+                )
 
             # Verify that log file was actually created (proving logging.basicConfig was called with filename)
-            self.assertTrue(os.path.exists(log_file_path),
-                          "Log file should have been created by logging.basicConfig")
+            self.assertTrue(os.path.exists(log_file_path), "Log file should have been created by logging.basicConfig")
 
         finally:
             sys.argv = original_argv

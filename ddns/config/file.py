@@ -18,7 +18,7 @@ def _process_multi_providers(config):
     result = []
 
     # 提取全局配置（除providers之外的所有配置）
-    global_config = _flatten_single_config(config, exclude_keys=["providers"])
+    global_config = _flatten_single_config(config, exclude_keys=["providers"], preserve_keys=["extra"])
 
     # 检查providers和dns字段不能同时使用
     if global_config.get("dns"):
@@ -33,23 +33,35 @@ def _process_multi_providers(config):
             raise ValueError("provider missing provider field")
 
         flat_config = global_config.copy()  # 从全局配置开始
-        provider_flat = _flatten_single_config(provider_config, exclude_keys=["provider"])
+        provider_flat = _flatten_single_config(provider_config, exclude_keys=["provider"], preserve_keys=["extra"])
         flat_config["dns"] = provider_config.get("provider")
         flat_config.update(provider_flat)
         result.append(flat_config)
     return result
 
 
-def _flatten_single_config(config, exclude_keys=None):
-    # type: (dict, list[str]|None) -> dict
-    """Flatten a single config object with optional key exclusion."""
+def _flatten_single_config(config, exclude_keys=None, preserve_keys=None):
+    # type: (dict, list[str]|None, list[str]|None) -> dict
+    """
+    Flatten a single config object with optional key exclusion and preservation.
+
+    Args:
+        config: Configuration dictionary to flatten
+        exclude_keys: Keys to completely exclude from result
+        preserve_keys: Keys to keep as nested dicts without flattening
+    """
     if exclude_keys is None:
         exclude_keys = []
+    if preserve_keys is None:
+        preserve_keys = []
     flat_config = {}
     for k, v in config.items():
         if k in exclude_keys:
             continue
-        if isinstance(v, dict):
+        if k in preserve_keys:
+            # Keep as-is without flattening
+            flat_config[k] = v
+        elif isinstance(v, dict):
             for subk, subv in v.items():
                 flat_config["{}_{}".format(k, subk)] = subv
         else:
@@ -117,7 +129,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
     if "providers" in config and isinstance(config["providers"], list):
         return _process_multi_providers(config)
     else:
-        return _flatten_single_config(config)
+        return _flatten_single_config(config, preserve_keys=["extra"])
 
 
 def save_config(config_path, config):

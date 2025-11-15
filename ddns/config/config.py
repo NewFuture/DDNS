@@ -146,6 +146,27 @@ class Config(object):
             return split_array_string(value)
         return value
 
+    def _process_extra_from_source(self, source_config, extra, process_nested_extra=True):
+        # type: (dict, dict, bool) -> None
+        """
+        Process extra fields from a single config source.
+        Updates the extra dict in place.
+        Within the same source, extra_ prefixed keys override values in the "extra" dict.
+        """
+        # Process "extra" dict first if it exists and processing is enabled
+        if process_nested_extra and "extra" in source_config and isinstance(source_config["extra"], dict):
+            extra.update(source_config["extra"])
+
+        # Process all keys from the source
+        for key, value in source_config.items():
+            if key == "extra":
+                continue  # Already processed above
+            elif key.startswith("extra_"):
+                extra_key = key[6:]  # Remove "extra_" prefix
+                extra[extra_key] = value  # Overrides value from nested "extra" dict if present
+            elif key not in self._known_keys:
+                extra[key] = value
+
     def _collect_extra(self):
         # type: () -> dict
         """
@@ -155,29 +176,14 @@ class Config(object):
         extra = {}  # type: dict
 
         # Collect from env config first (lowest priority)
-        for key, value in self._env_config.items():
-            if key.startswith("extra_"):
-                extra_key = key[6:]  # Remove "extra_" prefix
-                extra[extra_key] = value
-            elif key == "extra" and isinstance(value, dict):
-                extra.update(value)
-            elif key not in self._known_keys:
-                extra[key] = value
+        self._process_extra_from_source(self._env_config, extra, process_nested_extra=True)
 
         # Collect from JSON config (medium priority)
-        for key, value in self._json_config.items():
-            if key == "extra" and isinstance(value, dict):
-                extra.update(value)
-            elif key not in self._known_keys:
-                extra[key] = value
+        self._process_extra_from_source(self._json_config, extra, process_nested_extra=True)
 
         # Collect from CLI config (highest priority)
-        for key, value in self._cli_config.items():
-            if key.startswith("extra_"):
-                extra_key = key[6:]  # Remove "extra_" prefix
-                extra[extra_key] = value
-            elif key not in self._known_keys:
-                extra[key] = value
+        # CLI does not support nested extra dict by convention
+        self._process_extra_from_source(self._cli_config, extra, process_nested_extra=False)
 
         return extra
 

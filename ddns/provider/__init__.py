@@ -9,6 +9,7 @@ from .dnscom import DnscomProvider
 from .dnspod import DnspodProvider
 from .dnspod_com import DnspodComProvider
 from .edgeone import EdgeOneProvider
+from .edgeone_dns import EdgeOneDnsProvider
 from .he import HeProvider
 from .huaweidns import HuaweiDNSProvider
 from .namesilo import NamesiloProvider
@@ -38,10 +39,15 @@ def get_provider_class(provider_name):
         "tencentcloud": TencentCloudProvider,
         "tencent": TencentCloudProvider,  # 兼容tencent
         "qcloud": TencentCloudProvider,  # 兼容qcloud
-        # tencent cloud edgeone
+        # tencent cloud edgeone (accelerated domains)
         "edgeone": EdgeOneProvider,
-        "teo": EdgeOneProvider,  # 兼容teo (EdgeOne产品的API名称)
-        "tencentedgeone": EdgeOneProvider,  # 兼容tencentedgeone
+        "edgeone_acc": EdgeOneProvider,  # 加速域名
+        "teo_acc": EdgeOneProvider,  # 加速域名别名
+        "teo": EdgeOneProvider,  # 兼容旧版本 (不在文档中提示)
+        # tencent cloud edgeone dns (non-accelerated domains)
+        "edgeone_dns": EdgeOneDnsProvider,  # DNS记录管理
+        "teo_dns": EdgeOneDnsProvider,  # DNS记录管理别名
+        "edgeone_noacc": EdgeOneDnsProvider,  # 非加速域名
         # cloudflare
         "cloudflare": CloudflareProvider,
         # aliyun alidns

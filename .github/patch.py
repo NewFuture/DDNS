@@ -148,20 +148,10 @@ def remove_scheduler_for_docker():
         content = f.read()
 
     # 注释掉scheduler导入
-    content = re.sub(
-        r"^(from \.\.scheduler import get_scheduler)$",
-        r"# \1",
-        content,
-        flags=re.MULTILINE
-    )
+    content = re.sub(r"^(from \.\.scheduler import get_scheduler)$", r"# \1", content, flags=re.MULTILINE)
 
     # 注释掉函数调用
-    content = re.sub(
-        r"^(\s*)(_add_task_subcommand_if_needed\(parser\))$",
-        r"\1# \2",
-        content,
-        flags=re.MULTILINE
-    )
+    content = re.sub(r"^(\s*)(_add_task_subcommand_if_needed\(parser\))$", r"\1# \2", content, flags=re.MULTILINE)
 
     # 注释掉整个函数块，保持行号
     target_functions = ["_add_task_subcommand_if_needed", "_handle_task_command", "_print_status"]

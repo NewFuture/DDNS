@@ -68,7 +68,9 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
             update_success = True
         else:
             try:
-                result = dns.set_record(domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra)
+                result = dns.set_record(
+                    domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
+                )
                 if result:
                     logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
                     update_success = True
@@ -92,12 +94,7 @@ def run(config):
     # dns provider class
     provider_class = get_provider_class(config.dns)
     dns = provider_class(
-        config.id,
-        config.token,
-        endpoint=config.endpoint,
-        logger=logger,
-        proxy=config.proxy,
-        ssl=config.ssl,
+        config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, ssl=config.ssl
     )
     cache = Cache.new(config.cache, config.md5(), logger)
     return (

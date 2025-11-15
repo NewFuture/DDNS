@@ -4,6 +4,8 @@
 
 腾讯云 EdgeOne（边缘安全速平台）是腾讯云提供的边缘计算和加速服务，支持动态管理加速域名的源站 IP 地址。本 DDNS 项目通过 EdgeOne API 进行加速域名的源站 IP 地址动态更新。
 
+> **注意**：此提供商用于管理 EdgeOne 的加速域名。如需管理非加速域名的普通 DNS 记录，请使用 [EdgeOne DNS 提供商](./edgeone_dns.md)。
+
 官网链接：
 
 - 官方网站：<https://cloud.tencent.com/product/teo>
@@ -45,9 +47,11 @@
 
 ## 完整配置示例
 
+### 加速域名配置（默认）
+
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "edgeone",                       // 当前服务商
     "id": "your_secret_id",                 // 腾讯云 SecretId
     "token": "your_secret_key",             // 腾讯云 SecretKey
@@ -59,22 +63,53 @@
 }
 ```
 
+### 通过 extra 参数切换域名类型
+
+EdgeOne 提供商支持通过 `extra.teoDomainType` 参数灵活切换加速域名和普通 DNS 记录管理：
+
+```jsonc
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "dns": "edgeone",
+    "id": "your_secret_id",
+    "token": "your_secret_key",
+    "ipv4": ["ddns.newfuture.cc"],
+    "extra": {
+        "teoDomainType": "dns"  // 切换为 DNS 记录模式（非加速域名）
+    }
+}
+```
+
+#### teoDomainType 参数说明
+
+| 值            | 说明                                     | 对应 API                                    |
+| :------------ | :-------------------------------------- | :----------------------------------------- |
+| `acceleration` | 加速域名（默认）                         | DescribeAccelerationDomains, CreateAccelerationDomain, ModifyAccelerationDomain |
+| `dns`         | DNS 记录（非加速域名）                   | DescribeDnsRecords, CreateDnsRecord, ModifyDnsRecords |
+
+> **注意**：
+>
+> - `teoDomainType` 参数不区分大小写（`dns`、`DNS`、`Dns` 均有效）
+> - 推荐使用专用的 [EdgeOne DNS 提供商](./edgeone_dns.md)，代码更简洁清晰
+
 ### 参数说明
 
-| 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
-| :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
-| dns     | 服务商标识   | 字符串         | `edgeone`                          | 无        | 服务商参数 |
-| id      | 认证 ID      | 字符串         | 腾讯云 SecretId                    | 无        | 服务商参数 |
-| token   | 认证密钥     | 字符串         | 腾讯云 SecretKey                   | 无        | 服务商参数 |
-| index4  | IPv4 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)  | `default` | 公用配置   |
-| index6  | IPv6 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)   | `default` | 公用配置   |
-| ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
-| ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
-| endpoint| API 端点      | URL            | [参考下方](#endpoint)              | `https://teo.tencentcloudapi.com` | 服务商参数 |
-| proxy   | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
-| ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
-| cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
-| log     | 日志配置      | 对象           | [参考配置](../config/json.md#log)             | 无        | 公用配置   |
+| 参数           | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
+| :------------: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
+| dns            | 服务商标识   | 字符串         | `edgeone`, `edgeone_acc`, `teo_acc` | 无        | 服务商参数 |
+| id             | 认证 ID      | 字符串         | 腾讯云 SecretId                    | 无        | 服务商参数 |
+| token          | 认证密钥     | 字符串         | 腾讯云 SecretKey                   | 无        | 服务商参数 |
+| teoDomainType  | 域名类型     | 字符串         | `acceleration`, `dns`              | `acceleration` | 服务商参数 |
+| index4         | IPv4 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)  | `default` | 公用配置   |
+| index6         | IPv6 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)   | `default` | 公用配置   |
+| ipv4           | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| ipv6           | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
+| extra          | 额外参数     | 对象           | `{"teoDomainType": "dns"}` 等      | 无        | 服务商参数 |
+| endpoint       | API 端点      | URL            | [参考下方](#endpoint)              | `https://teo.tencentcloudapi.com` | 服务商参数 |
+| proxy          | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
+| ssl            | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
+| cache          | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
+| log            | 日志配置      | 对象           | [参考配置](../config/json.md#log)             | 无        | 公用配置   |
 
 > **参数类型说明**：  
 >
@@ -122,4 +157,4 @@ ddns -c config.json --debug
 - [EdgeOne 控制台](https://console.cloud.tencent.com/edgeone)
 - [腾讯云技术支持](https://cloud.tencent.com/document/product/282)
 
-> **注意**：EdgeOne 主要用于边缘加速场景，如需传统 DNS 解析服务，建议使用 [腾讯云 DNS](./tencentcloud.md)。
+> **注意**：EdgeOne 主要用于边缘加速场景，如需传统 DNS 解析服务，建议使用 [腾讯云 DNS](./tencentcloud.md)。如需管理 EdgeOne 托管的非加速域名 DNS 记录，请使用 [EdgeOne DNS 提供商](./edgeone_dns.md)。

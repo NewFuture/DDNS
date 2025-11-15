@@ -2,6 +2,7 @@
 """
 Tests for ddns.ip module including integration tests
 """
+
 from __init__ import unittest, patch, MagicMock
 from ddns import ip
 from ddns.__main__ import get_ip
@@ -19,7 +20,7 @@ class TestIpModule(unittest.TestCase):
         """清理测试环境"""
         ip.ssl_verify = self.original_ssl_verify
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_url_v4_success(self, mock_request):
         """测试自定义URL获取IPv4 - 成功"""
         # 模拟成功响应
@@ -32,7 +33,7 @@ class TestIpModule(unittest.TestCase):
         self.assertEqual(result, "1.2.3.4")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_url_v6_success(self, mock_request):
         """测试自定义URL获取IPv6 - 成功"""
         # 模拟成功响应
@@ -45,7 +46,7 @@ class TestIpModule(unittest.TestCase):
         self.assertEqual(result, "2001:db8::1")
         mock_request.assert_called_once_with("GET", "https://test.example.com/ipv6", verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_url_v4_request_failure(self, mock_request):
         """测试自定义URL获取IPv4 - 请求失败"""
         # 模拟请求异常
@@ -56,7 +57,7 @@ class TestIpModule(unittest.TestCase):
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_url_v4_invalid_response(self, mock_request):
         """测试自定义URL获取IPv4 - 无效响应"""
         # 模拟无效响应
@@ -69,7 +70,7 @@ class TestIpModule(unittest.TestCase):
         self.assertIsNone(result)
         mock_request.assert_called_once_with("GET", "https://test.example.com/ip", verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_public_v4_multiple_apis_first_success(self, mock_request):
         """测试公网IPv4获取 - 多个API第一个成功"""
         # 模拟第一个API成功
@@ -83,9 +84,10 @@ class TestIpModule(unittest.TestCase):
         # 应该只调用第一个API
         mock_request.assert_called_once_with("GET", ip.PUBLIC_IPV4_APIS[0], verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_public_v4_multiple_apis_fallback_success(self, mock_request):
         """测试公网IPv4获取 - 多个API第一个失败第二个成功"""
+
         def mock_request_side_effect(method, url, **kwargs):
             if url == ip.PUBLIC_IPV4_APIS[0]:
                 raise Exception("First API failed")
@@ -104,7 +106,7 @@ class TestIpModule(unittest.TestCase):
         mock_request.assert_any_call("GET", ip.PUBLIC_IPV4_APIS[0], verify=ip.ssl_verify, retries=2)
         mock_request.assert_any_call("GET", ip.PUBLIC_IPV4_APIS[1], verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_public_v4_multiple_apis_all_fail(self, mock_request):
         """测试公网IPv4获取 - 多个API全部失败"""
         # 模拟所有API都失败
@@ -116,7 +118,7 @@ class TestIpModule(unittest.TestCase):
         # 应该调用所有API
         self.assertEqual(mock_request.call_count, len(ip.PUBLIC_IPV4_APIS))
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_public_v6_multiple_apis_first_success(self, mock_request):
         """测试公网IPv6获取 - 多个API第一个成功"""
         # 模拟第一个API成功
@@ -130,9 +132,10 @@ class TestIpModule(unittest.TestCase):
         # 应该只调用第一个API
         mock_request.assert_called_once_with("GET", ip.PUBLIC_IPV6_APIS[0], verify=ip.ssl_verify, retries=2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_public_v6_multiple_apis_fallback_success(self, mock_request):
         """测试公网IPv6获取 - 多个API第一个失败第二个成功"""
+
         def mock_request_side_effect(method, url, **kwargs):
             if url == ip.PUBLIC_IPV6_APIS[0]:
                 raise Exception("First API failed")
@@ -173,9 +176,10 @@ class TestIpModule(unittest.TestCase):
         ]
         self.assertEqual(ip.PUBLIC_IPV6_APIS, expected_apis)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_get_ip_public_mode_fallback(self, mock_request):
         """测试通过get_ip使用public模式的自动fallback功能"""
+
         # 模拟第一个API失败，第二个成功
         def mock_request_side_effect(method, url, **kwargs):
             if "api.ipify.cn" in url:
@@ -196,7 +200,7 @@ class TestIpModule(unittest.TestCase):
         # 应该调用了前两个API
         self.assertEqual(mock_request.call_count, 2)
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_get_ip_url_mode_backward_compatibility(self, mock_request):
         """测试通过get_ip使用url:模式的向后兼容性"""
         # 模拟成功响应
@@ -213,7 +217,7 @@ class TestIpModule(unittest.TestCase):
         args, kwargs = mock_request.call_args
         self.assertEqual(args[1], "https://custom.api.com/ip")
 
-    @patch('ddns.ip.request')
+    @patch("ddns.ip.request")
     def test_get_ip_multiple_rules_limitation(self, mock_request):
         """测试get_ip的多规则限制 - 当前实现的限制"""
         # 注意：当前get_ip实现有限制 - 如果一个规则返回None，它不会尝试下一个规则
@@ -235,5 +239,5 @@ class TestIpModule(unittest.TestCase):
         self.assertEqual(mock_request.call_count, len(ip.PUBLIC_IPV4_APIS))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

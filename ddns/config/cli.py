@@ -130,6 +130,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
             "dnspod_com",
             "dnspod",
             "edgeone",
+            "edgeone_dns",
             "he",
             "huaweidns",
             "namesilo",

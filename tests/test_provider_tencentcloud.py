@@ -236,7 +236,14 @@ class TestTencentCloudProvider(BaseProviderTestCase):
 
         mock_http.return_value = {"Response": {"RecordId": 123456}}
 
-        old_record = {"RecordId": 123456, "Domain": "example.com", "DomainId": 12345678, "Name": "www", "Line": "默认", "Remark": "Old remark"}
+        old_record = {
+            "RecordId": 123456,
+            "Domain": "example.com",
+            "DomainId": 12345678,
+            "Name": "www",
+            "Line": "默认",
+            "Remark": "Old remark",
+        }
 
         # extra should override old_record's Remark
         extra = {"Remark": "New remark from extra", "Status": "ENABLE"}
