@@ -449,7 +449,7 @@ class TestEdgeOneDnsProviderRealRequest(BaseProviderTestCase):
             "edgeone api error" in msg.lower() or "authfailure" in msg.lower() or "unauthorized" in msg.lower()
             for msg in logged_messages
         )
-        self.assertTrue(has_auth_error, "Expected EdgeOne authentication error in logs: {0}".format(logged_messages))
+        self.assertTrue(has_auth_error, "EdgeOne authentication error not found in logs. Logged messages: {0}".format(logged_messages))
 
 
 if __name__ == "__main__":
