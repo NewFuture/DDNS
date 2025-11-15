@@ -17,11 +17,13 @@ concurrency:
 
 jobs:
   ai-assessment:
-    # Skip bot issues and issues with 'copilot' label
+    # Skip bot issues (github-actions[bot], dependabot[bot], renovate[bot]) and issues with 'copilot' label
     # Trigger on 'request ai review' label
     if: |
       github.event.label.name == 'request ai review' &&
       github.event.issue.user.login != 'github-actions[bot]' &&
+      github.event.issue.user.login != 'dependabot[bot]' &&
+      github.event.issue.user.login != 'renovate[bot]' &&
       !contains(github.event.issue.labels.*.name, 'copilot')
     runs-on: ubuntu-latest
     timeout-minutes: 10
