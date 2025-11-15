@@ -181,7 +181,7 @@ class Config(object):
                 extra[key] = value
 
         # Collect from CLI config (highest priority)
-        # CLI doesn't support nested extra dict, only extra_ prefixed keys
+        # By convention, CLI does not support nested extra dict, only extra_ prefixed keys; this is not enforced
         for key, value in self._cli_config.items():
             if key.startswith("extra_"):
                 extra_key = key[6:]  # Remove "extra_" prefix
