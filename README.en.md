@@ -41,7 +41,7 @@
   - [DNSPOD China](https://www.dnspod.cn/) ([Configuration Guide](doc/providers/dnspod.en.md))
   - [Alibaba Cloud DNS](http://www.alidns.com/) ([Configuration Guide](doc/providers/alidns.en.md)) ⚡
   - [Alibaba Cloud ESA](https://esa.console.aliyun.com/) ([Configuration Guide](doc/providers/aliesa.en.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) ([Configuration Guide](doc/providers/51dns.en.md)) (@loftor-git)
+  - [DNS.COM](https://www.dns.com/) ([Configuration Guide](doc/providers/dnscom.en.md)) (@loftor-git)
   - [DNSPOD International](https://www.dnspod.com/) ([Configuration Guide](doc/providers/dnspod_com.en.md))
   - [CloudFlare](https://www.cloudflare.com/) ([Configuration Guide](doc/providers/cloudflare.en.md)) (@tongyifan)
   - [HE.net](https://dns.he.net/) ([Configuration Guide](doc/providers/he.en.md)) (@NN708) (Does not support auto-record creation)
@@ -131,7 +131,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
    - **DNSPOD (China)**: [Create token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [Detailed Configuration](doc/providers/dnspod.en.md)
    - **Alibaba Cloud DNS**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](doc/providers/alidns.en.md)
    - **Alibaba Cloud ESA**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](doc/providers/aliesa.en.md)
-   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](doc/providers/51dns.en.md)
+   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](doc/providers/dnscom.en.md)
    - **DNSPOD (International)**: [Get token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [Detailed Configuration](doc/providers/dnspod_com.en.md)
    - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (Besides `email + API KEY`, you can also use `Token`, **requires list Zone permission**) | [Detailed Configuration](doc/providers/cloudflare.en.md)
    - **HE.net**: [DDNS Documentation](https://dns.he.net/docs.html) (Only fill the set password in the `token` field, `id` field can be left empty) | [Detailed Configuration](doc/providers/he.en.md)
