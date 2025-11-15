@@ -38,25 +38,32 @@ messages:
       
       ## Response Format
       
-      Your response MUST start with an assessment header:
-      ### Assessment: (Clear | Needs Clarification | Complex)
+      Your response MUST be a valid JSON object with the following structure:
+      ```json
+      {
+        "assessment": "Clear" | "Needs Clarification" | "Complex",
+        "comment": "markdown formatted comment body"
+      }
+      ```
       
-      Then provide:
-      1. Direct answer to the question (if possible)
-      2. References to relevant documentation or configuration guides
-      3. Code examples or configuration snippets (if applicable)
-      4. Follow-up questions if clarification is needed
-      5. Suggestions for additional resources or troubleshooting steps
+      The "comment" field should contain a markdown-formatted response that includes:
+      1. An assessment header: `### Assessment: (Clear | Needs Clarification | Complex)`
+      2. Direct answer to the question (if possible)
+      3. References to relevant documentation or configuration guides
+      4. Code examples or configuration snippets (if applicable)
+      5. Follow-up questions if clarification is needed
+      6. Suggestions for additional resources or troubleshooting steps
       
       **IMPORTANT**: 
       - Respond in the same language as the issue (Chinese, English, or other languages)
       - Be concise but helpful
       - Prioritize practical guidance over theory
-      
-      If the question can be fully answered, add this marker at the end:
-      <!-- NO-COMMENT -->
+      - If the question can be fully answered, add `<!-- NO-COMMENT -->` at the end of the comment field.
+      - Ensure the JSON is properly formatted and escaped.
   - role: user
     content: '{{input}}'
 model: openai/gpt-4o-mini
 modelParameters:
   max_tokens: 2000
+  response_format:
+    type: json_object
