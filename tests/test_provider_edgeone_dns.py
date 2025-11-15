@@ -98,7 +98,7 @@ class TestEdgeOneDnsProvider(BaseProviderTestCase):
         """Test DNS record query when record not found"""
         mock_request.return_value = {"DnsRecords": []}
 
-        record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})  # type: dict # type: ignore
+        record = self.provider._query_record("zone-123456789", "www", "example.com", "A", None, {})
 
         self.assertIsNone(record)
 
