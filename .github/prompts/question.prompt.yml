@@ -57,5 +57,3 @@ messages:
 model: openai/gpt-4o-mini
 modelParameters:
   max_tokens: 2000
-testData: []
-evaluators: []
