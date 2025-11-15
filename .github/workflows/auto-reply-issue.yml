@@ -132,9 +132,8 @@ jobs:
                     { role: 'system', content: enhancedSystemPrompt },
                     { role: 'user', content: userPrompt }
                   ],
-                  temperature: 0.7,
-                  max_tokens: 800,
-                  top_p: 0.95
+                  temperature: 1,
+                  max_completion_tokens: 2000,
                 })
               });
               
