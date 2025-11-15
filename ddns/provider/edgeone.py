@@ -21,21 +21,6 @@ class EdgeOneProvider(TencentCloudProvider):
     service = "teo"
     version_date = "2022-09-01"
 
-    def __init__(self, id, token, logger=None, ssl="auto", proxy=None, endpoint=None, **options):
-        # type: (str, str, object, bool|str, list[str]|None, str|None, **object) -> None
-        """
-        初始化 EdgeOne 提供商
-
-        Initialize EdgeOne provider.
-
-        Args:
-            teoDomainType (str): 域名类型，"dns" 或 "acceleration"（默认）
-                                 Domain type, "dns" or "acceleration" (default)
-        """
-        super(EdgeOneProvider, self).__init__(id, token, logger, ssl, proxy, endpoint, **options)
-        # 获取域名类型配置，默认为 "acceleration"
-        self._domain_type = str(self.options.get("teoDomainType", "acceleration")).lower()
-
     def _query_zone_id(self, domain):
         # type: (str) -> str | None
         """查询域名的加速域名信息获取 ZoneId https://cloud.tencent.com/document/api/1552/80713"""
@@ -58,16 +43,20 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, str, str, str, str | None, dict) -> dict | None
         """
         查询域名信息
-        根据初始化时的 teoDomainType 配置选择查询类型:
+        支持通过 extra 参数或 options 配置 teoDomainType 控制查询类型:
         - teoDomainType="dns": 查询 DNS 记录 (非加速域名)
         - teoDomainType="acceleration" 或未设置: 查询加速域名 (默认)
+        - extra 参数优先级高于 options
 
         https://cloud.tencent.com/document/api/1552/86336
         """
         domain = join_domain(subdomain, main_domain)
 
-        # 根据实例配置的域名类型选择API
-        if self._domain_type == "dns":
+        # 获取域名类型：extra 优先，然后是 options，默认为 "acceleration"
+        domain_type = str(extra.get("teoDomainType", self.options.get("teoDomainType", "acceleration"))).lower()
+
+        # 根据域名类型选择API
+        if domain_type == "dns":
             # 查询 DNS 记录
             filters = [{"Name": "name", "Values": [domain], "Fuzzy": False}]  # type: Any
             response = self._request("DescribeDnsRecords", ZoneId=zone_id, Filters=filters)
@@ -98,16 +87,20 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, str, str, str, str, int, str | None, dict) -> bool
         """
         创建域名记录
-        根据初始化时的 teoDomainType 配置选择创建类型:
+        支持通过 extra 参数或 options 配置 teoDomainType 控制创建类型:
         - teoDomainType="dns": 创建 DNS 记录 (非加速域名)
         - teoDomainType="acceleration" 或未设置: 创建加速域名 (默认)
+        - extra 参数优先级高于 options
 
         https://cloud.tencent.com/document/api/1552/86338
         """
         domain = join_domain(subdomain, main_domain)
 
-        # 根据实例配置的域名类型选择API
-        if self._domain_type == "dns":
+        # 获取域名类型：extra 优先，然后是 options，默认为 "acceleration"
+        domain_type = str(extra.get("teoDomainType", self.options.get("teoDomainType", "acceleration"))).lower()
+
+        # 根据域名类型选择API
+        if domain_type == "dns":
             # 创建 DNS 记录
             res = self._request("CreateDnsRecord", ZoneId=zone_id, Name=domain, Type=record_type, Content=value)
             if res:
@@ -133,14 +126,18 @@ class EdgeOneProvider(TencentCloudProvider):
         # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
         """
         更新域名记录
-        根据初始化时的 teoDomainType 配置选择更新类型:
+        支持通过 extra 参数或 options 配置 teoDomainType 控制更新类型:
         - teoDomainType="dns": 更新 DNS 记录 (非加速域名)
         - teoDomainType="acceleration" 或未设置: 更新加速域名 (默认)
+        - extra 参数优先级高于 options
 
         https://cloud.tencent.com/document/api/1552/86335
         """
-        # 根据实例配置的域名类型选择API
-        if self._domain_type == "dns":
+        # 获取域名类型：extra 优先，然后是 options，默认为 "acceleration"
+        domain_type = str(extra.get("teoDomainType", self.options.get("teoDomainType", "acceleration"))).lower()
+
+        # 根据域名类型选择API
+        if domain_type == "dns":
             # 更新 DNS 记录
             new_record = {
                 "RecordId": old_record.get("RecordId"),
