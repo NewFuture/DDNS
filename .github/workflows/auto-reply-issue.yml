@@ -134,6 +134,7 @@ jobs:
                   ],
                   temperature: 1,
                   max_completion_tokens: 2000,
+                  response_format: { type: "json_object" }
                 })
               });
               
@@ -157,21 +158,61 @@ jobs:
                 return;
               }
               
-              const aiResponse = data.choices[0].message.content.trim();
+              let aiResponse = data.choices[0].message.content.trim();
               
-              // Extract classification from response
-              const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
+              // Try to parse JSON response
               let classification = null;
               let commentBody = aiResponse;
               
-              if (classificationMatch) {
-                classification = classificationMatch[1].toLowerCase();
-                // Remove classification tag from the comment body
-                commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
-                console.log(`Issue classified as: ${classification}`);
+              try {
+                // Remove markdown code fences if present
+                let jsonContent = aiResponse;
+                if (aiResponse.startsWith('```json') || aiResponse.startsWith('```')) {
+                  jsonContent = aiResponse.replace(/^```(?:json)?\s*\n/, '').replace(/\n```\s*$/, '');
+                }
+                
+                const parsedResponse = JSON.parse(jsonContent);
+                
+                if (parsedResponse.classification && parsedResponse.response) {
+                  classification = parsedResponse.classification.toLowerCase();
+                  commentBody = parsedResponse.response;
+                  console.log(`Issue classified as: ${classification} (JSON format)`);
+                } else {
+                  console.log('JSON response missing required fields, falling back to text format');
+                }
+              } catch (jsonError) {
+                console.log(`Failed to parse JSON response: ${jsonError.message}`);
+                console.log('Falling back to legacy text format extraction');
+                
+                // Fallback: Try legacy format with classification tag
+                const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
+                if (classificationMatch) {
+                  classification = classificationMatch[1].toLowerCase();
+                  commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
+                  console.log(`Issue classified as: ${classification} (legacy format)`);
+                }
               }
               
-              // Post the response as a comment (without classification tag)
+              // Convert file references to URLs
+              // 1. Convert doc/*.md references to documentation URLs
+              commentBody = commentBody.replace(
+                /`(doc\/[^`]+\.md)`/g,
+                (match, path) => {
+                  const htmlPath = path.replace(/\.md$/, '.html');
+                  return `[${path}](https://ddns.newfuture.cc/${htmlPath})`;
+                }
+              );
+              
+              // 2. Convert code file references to GitHub URLs
+              // Match code paths but not those already in links or code blocks
+              commentBody = commentBody.replace(
+                /`((?:ddns|tests|schema|docker)\/[^`]+\.py)`/g,
+                (match, path) => {
+                  return `[${path}](https://github.com/NewFuture/DDNS/blob/master/${path})`;
+                }
+              );
+              
+              // Post the response as a comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
