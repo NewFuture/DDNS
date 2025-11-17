@@ -193,25 +193,6 @@ jobs:
                 }
               }
               
-              // Convert file references to URLs
-              // 1. Convert doc/*.md references to documentation URLs
-              commentBody = commentBody.replace(
-                /`(doc\/[^`]+\.md)`/g,
-                (match, path) => {
-                  const htmlPath = path.replace(/\.md$/, '.html');
-                  return `[${path}](https://ddns.newfuture.cc/${htmlPath})`;
-                }
-              );
-              
-              // 2. Convert code file references to GitHub URLs
-              // Match code paths but not those already in links or code blocks
-              commentBody = commentBody.replace(
-                /`((?:ddns|tests|schema|docker)\/[^`]+\.py)`/g,
-                (match, path) => {
-                  return `[${path}](https://github.com/NewFuture/DDNS/blob/master/${path})`;
-                }
-              );
-              
               // Post the response as a comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,

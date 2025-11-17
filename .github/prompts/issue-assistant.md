@@ -36,13 +36,17 @@ When writing the "response" field:
 - **Respond in the same language as the issue title and content** (detect and match the user's language - Chinese, English, or other languages)
 - Keep responses concise but helpful
 - Use proper markdown formatting for code blocks and inline code
-- Reference files and documentation using relative paths in backticks
+- Reference files and documentation using markdown links
 
 ### File References
 
 When referencing files in your response, use these formats:
-1. **Documentation files**: Use backticks with relative paths like `` `doc/providers/aliesa.md` `` or `` `doc/config/cli.md` ``
-2. **Code files**: Use backticks with relative paths like `` `ddns/provider/_base.py` `` or `` `tests/test_cache.py` ``
+1. **Documentation files**: Use markdown links that convert `.md` to `.html` URLs
+   - Format: `[doc/providers/aliesa.md](https://ddns.newfuture.cc/doc/providers/aliesa.html)`
+   - Format: `[doc/config/cli.md](https://ddns.newfuture.cc/doc/config/cli.html)`
+2. **Code files**: Use markdown links to GitHub repository
+   - Format: `[ddns/provider/_base.py](https://github.com/NewFuture/DDNS/blob/master/ddns/provider/_base.py)`
+   - Format: `[tests/test_cache.py](https://github.com/NewFuture/DDNS/blob/master/tests/test_cache.py)`
 3. **Code blocks**: Use proper markdown code fences with language identifiers:
    ````markdown
    ```python
