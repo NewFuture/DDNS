@@ -41,7 +41,7 @@ When writing the "response" field:
 ### File References
 
 When referencing files in your response, use these formats:
-1. **Documentation files**: Use relative paths like `doc/providers/aliesa.md` or `doc/config/cli.md` (will be converted to `https://ddns.newfuture.cc/doc/...html`)
+1. **Documentation files**: Use relative paths like `doc/providers/aliesa.md` or `doc/config/cli.md` (will be converted to `https://ddns.newfuture.cc/doc/providers/aliesa.html` or `https://ddns.newfuture.cc/doc/config/cli.html`)
 2. **Code files**: Use relative paths like `ddns/provider/_base.py` or `tests/test_cache.py` (will be converted to GitHub repository links)
 3. **Code blocks**: Use proper markdown code fences with language identifiers:
    ````markdown
@@ -50,6 +50,7 @@ When referencing files in your response, use these formats:
    ```
    ````
 4. **Inline code**: Use backticks for inline code: `variable_name` or `function()`
+   - **Note:** Inline code that matches file path patterns (e.g., `ddns/provider/test.py`) will be auto-converted to a URL. If you do not want file references to be converted, avoid using backticks for them.
 
 ## Response Guidelines
 

@@ -168,7 +168,7 @@ jobs:
                 // Remove markdown code fences if present
                 let jsonContent = aiResponse;
                 if (aiResponse.startsWith('```json') || aiResponse.startsWith('```')) {
-                  jsonContent = aiResponse.replace(/^```(?:json)?\s*\n/, '').replace(/\n```\s*$/, '');
+                  jsonContent = aiResponse.replace(/^```(?:json)?\s*\n/, '').replace(/\n```\s*$/, '').trim();
                 }
                 
                 const parsedResponse = JSON.parse(jsonContent);
