@@ -12,6 +12,8 @@ applyTo: '**/*.py'
 - **Windows Compatibility**: Avoid `&&` and `||` operators that may not work on all shells
 - **No Directory Changes**: Avoid `cd` commands; you are always in the project root
 - **terminal Usage**: run command `python3` instead of `python`, and this is the only command you should use
+- **Ruff Setup**: Install ruff before making changes: `pip3 install ruff`
+- **Pre-commit Linting**: Always run `ruff check --fix --unsafe-fixes .` and `ruff format .` before committing
 
 ### Dependencies and Environment
 
@@ -244,7 +246,9 @@ if response is None:
 
 ### Code Validation
 
-- **Linting**: Use editor's Python extensions instead of command-line tools
+- **Install Ruff**: Before making changes, install ruff linter/formatter: `pip3 install ruff`
+- **Linting**: Run `ruff check --fix --unsafe-fixes .` before each commit to fix linting issues
+- **Formatting**: Run `ruff format .` before each commit to format code consistently
 - **Type Checking**: Ensure Pylance compatibility
 - **Testing**: Run tests before committing changes
 - **Documentation**: Update relevant documentation when making changes

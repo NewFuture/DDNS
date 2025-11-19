@@ -76,16 +76,8 @@ class TestLogFileDirectory(unittest.TestCase):
             "index4": "default",
             "index6": "default",
             "providers": [
-                {
-                    "provider": "debug",
-                    "token": "token1",
-                    "ipv6": ["test1.xyz"],
-                },
-                {
-                    "provider": "debug",
-                    "token": "token2",
-                    "ipv6": ["test2.org"],
-                },
+                {"provider": "debug", "token": "token1", "ipv6": ["test1.xyz"]},
+                {"provider": "debug", "token": "token2", "ipv6": ["test2.org"]},
             ],
         }
 
@@ -111,12 +103,7 @@ class TestLogFileDirectory(unittest.TestCase):
         # 创建多级不存在的目录路径
         log_file = os.path.join(self.temp_dir, "a", "b", "c", "d", "ddns.log")
 
-        config_data = {
-            "dns": "debug",
-            "id": "test@example.com",
-            "token": "secret123",
-            "log": {"file": log_file},
-        }
+        config_data = {"dns": "debug", "id": "test@example.com", "token": "secret123", "log": {"file": log_file}}
 
         config_path = os.path.join(self.temp_dir, "config.json")
         with open(config_path, "w") as f:
@@ -138,12 +125,7 @@ class TestLogFileDirectory(unittest.TestCase):
         os.makedirs(log_dir)
         log_file = os.path.join(log_dir, "ddns.log")
 
-        config_data = {
-            "dns": "debug",
-            "id": "test@example.com",
-            "token": "secret123",
-            "log": {"file": log_file},
-        }
+        config_data = {"dns": "debug", "id": "test@example.com", "token": "secret123", "log": {"file": log_file}}
 
         config_path = os.path.join(self.temp_dir, "config.json")
         with open(config_path, "w") as f:
