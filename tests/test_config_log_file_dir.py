@@ -6,7 +6,7 @@ Reproduces the issue where log_file path has non-existent parent directories
 @author: GitHub Copilot
 """
 
-from __init__ import unittest, patch
+from __init__ import unittest
 import tempfile
 import json
 import os
