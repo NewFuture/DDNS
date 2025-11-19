@@ -617,4 +617,14 @@ main() {
 }
 
 # Run main function with all arguments
-main "$@"
+# Wrap in subshell to handle SIGPIPE gracefully (exit code 141)
+# This prevents broken pipe errors when output is piped to commands like 'grep -q'
+( main "$@" ) || {
+    exit_code=$?
+    # Exit code 141 = 128 + 13 (SIGPIPE)
+    # Treat SIGPIPE as success since it just means the reader closed the pipe early
+    if [ $exit_code -eq 141 ]; then
+        exit 0
+    fi
+    exit $exit_code
+}
