@@ -24,6 +24,10 @@ class TestLogFileDirectory(unittest.TestCase):
 
     def tearDown(self):
         sys.argv = self.original_argv
+        # Clean up logging handlers
+        import logging
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
         # Clean up temp directory
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
