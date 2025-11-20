@@ -13,7 +13,6 @@ applyTo: '**/*.py'
 - **No Directory Changes**: Avoid `cd` commands; you are always in the project root
 - **terminal Usage**: run command `python3` instead of `python`, and this is the only command you should use
 
-
 ### Dependencies and Environment
 
 - **Standard Library Only**: Use only Python standard library modules unless explicitly permitted
