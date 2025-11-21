@@ -244,7 +244,9 @@ if response is None:
 
 ### Code Validation
 
-- **Linting**: Use editor's Python extensions instead of command-line tools
+- **Install Ruff**: Before making changes, install ruff linter/formatter: `pip3 install ruff`
+- **Linting**: Run `ruff check --fix --unsafe-fixes .` before each commit to fix linting issues
+- **Formatting**: Run `ruff format .` before each commit to format code consistently
 - **Type Checking**: Ensure Pylance compatibility
 - **Testing**: Run tests before committing changes
 - **Documentation**: Update relevant documentation when making changes

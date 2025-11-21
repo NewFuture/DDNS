@@ -63,6 +63,13 @@ def _setup_logging(cli_config, env_config, all_json_configs):
         log_format = "%(asctime)s %(levelname)s: %(message)s"
     else:
         log_format = "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
+
+    # Create parent directory for log file if it doesn't exist
+    if global_conf.log_file:
+        log_dir = os.path.dirname(global_conf.log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
     logging.basicConfig(
         level=global_conf.log_level, format=log_format, datefmt=global_conf.log_datefmt, filename=global_conf.log_file
     )
