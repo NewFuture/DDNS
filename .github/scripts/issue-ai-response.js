@@ -76,7 +76,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
       const fullPath = path.resolve(repoRoot, filePath);
       const normalizedFull = path.normalize(fullPath);
       const normalizedRoot = path.normalize(repoRoot);
-      if (!normalizedFull.startsWith(normalizedRoot + path.sep) && normalizedFull !== normalizedRoot) {
+      const relativePath = path.relative(normalizedRoot, normalizedFull);
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
         return `[Access denied: ${filePath} is outside the repository]`;
       }
 
@@ -95,8 +96,11 @@ module.exports = async ({ github, context, core, fs, path }) => {
         // Read only first MAX_FILE_SIZE bytes for large files
         const fd = fs.openSync(fullPath, 'r');
         const buffer = Buffer.alloc(MAX_FILE_SIZE);
-        fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
-        fs.closeSync(fd);
+        try {
+          fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
+        } finally {
+          fs.closeSync(fd);
+        }
         const content = buffer.toString('utf8');
         if (content.includes('\0')) {
           return `[${filePath} appears to be a binary file]`;
