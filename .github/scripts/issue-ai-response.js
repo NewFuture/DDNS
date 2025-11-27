@@ -44,7 +44,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       },
       body: JSON.stringify({
         messages: messages,
-        temperature: 0.7,
+        temperature: 1,
         max_completion_tokens: 2000,
         response_format: expectJson ? { type: "json_object" } : undefined
       })
@@ -109,6 +109,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
         return `[${filePath} appears to be a binary file]`;
       }
       return content;
+    } catch (error) {
+      return `[Error reading file ${filePath}: File could not be accessed]`;
+    }
   }
 
   /**
@@ -206,8 +209,16 @@ Please analyze this issue. If you need to see specific files to provide an accur
         break;
       }
 
-      if (!parsed.needs_files || turn === MAX_TURNS) {
-        // Final response
+      if (turn === MAX_TURNS) {
+        // Force final response on last turn
+        finalClassification = parsed.classification?.toLowerCase() || null;
+        finalResponse = parsed.response || aiContent;
+        console.log(`Forced final response on last turn ${turn}`);
+        break;
+      }
+
+      if (!parsed.needs_files) {
+        // Final response provided before last turn
         finalClassification = parsed.classification?.toLowerCase() || null;
         finalResponse = parsed.response || aiContent;
         console.log(`Final response received in turn ${turn}`);
