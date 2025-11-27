@@ -74,7 +74,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
       // Resolve the full path and ensure it's within the repo
       const fullPath = path.resolve(repoRoot, filePath);
-      if (!fullPath.startsWith(repoRoot + path.sep) && fullPath !== repoRoot) {
+      const normalizedFull = path.normalize(fullPath);
+      const normalizedRoot = path.normalize(repoRoot);
+      if (!normalizedFull.startsWith(normalizedRoot + path.sep) && normalizedFull !== normalizedRoot) {
         return `[Access denied: ${filePath} is outside the repository]`;
       }
 
@@ -95,13 +97,18 @@ module.exports = async ({ github, context, core, fs, path }) => {
         const buffer = Buffer.alloc(MAX_FILE_SIZE);
         fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
         fs.closeSync(fd);
-        return buffer.toString('utf8') + '\n\n[File truncated - exceeded 50KB limit]';
+        const content = buffer.toString('utf8');
+        if (content.includes('\0')) {
+          return `[${filePath} appears to be a binary file]`;
+        }
+        return content + '\n\n[File truncated - exceeded 50KB limit]';
       }
 
-      return fs.readFileSync(fullPath, 'utf8');
-    } catch (error) {
-      return `[Error reading file ${filePath}: ${error.message}]`;
-    }
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (content.includes('\0')) {
+        return `[${filePath} appears to be a binary file]`;
+      }
+      return content;
   }
 
   /**
@@ -111,7 +118,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
    */
   function parseJsonResponse(content) {
     let jsonContent = content;
-    // Remove markdown code fences if present
+    // Extract JSON from markdown code block if the entire content is wrapped in fences
     const codeBlockMatch = content.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
     if (codeBlockMatch) {
       jsonContent = codeBlockMatch[1].trim();
