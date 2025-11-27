@@ -2,7 +2,7 @@ name: Auto Reply to Issues
 
 on:
   issues:
-    types: [opened]
+    types: [labeled]
 
 permissions:
   issues: write
@@ -14,10 +14,13 @@ concurrency:
 
 jobs:
   auto-reply:
-    # Skip bot issues, sub-issues, and issues with 'copilot' label
+    # Skip bot issues, issues with 'copilot' label, and classification labels (to prevent infinite loops)
     if: |
       github.event.issue.user.login != 'github-actions[bot]' &&
-      !contains(github.event.issue.labels.*.name, 'copilot')
+      !contains(github.event.issue.labels.*.name, 'copilot') &&
+      github.event.label.name != 'bug' &&
+      github.event.label.name != 'feature' &&
+      github.event.label.name != 'question'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     
@@ -100,7 +103,7 @@ jobs:
             const issueBody = context.payload.issue.body || '(No description provided)';
             const issueAuthor = context.payload.issue.user.login;
             
-            const userPrompt = `A new issue has been opened:
+            const userPrompt = `An issue has been labeled:
 
             Title: ${issueTitle}
 
@@ -109,7 +112,7 @@ jobs:
 
             Author: @${issueAuthor}
 
-            Please generate a helpful initial response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
+            Please generate a helpful response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
             
             const apiUrl = process.env.OPENAI_URL;
             const apiKey = process.env.OPENAI_KEY;
