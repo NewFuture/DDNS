@@ -6,6 +6,7 @@ on:
 
 permissions:
   issues: write
+  contents: read
 
 # Limit concurrent runs to prevent rate limit issues
 concurrency:
@@ -20,7 +21,7 @@ jobs:
       github.event.issue.user.login != 'github-actions[bot]' &&
       !contains(github.event.issue.labels.*.name, 'copilot')
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     
     steps:
       - uses: actions/checkout@v4
@@ -30,87 +31,101 @@ jobs:
         run: |
           echo "Building repository index..."
           
-          # Create a summary of the repository structure and key files
+          # Create a detailed summary of the repository structure
           cat > /tmp/repo_index.md << 'EOF'
-          # DDNS Repository Index
+          # DDNS Repository Structure
           
-          ## Project Structure
+          ## Project Overview
+          DDNS is a Python-based Dynamic DNS client that automatically updates DNS records to match the current IP address.
+          - Supports multiple DNS providers
+          - Supports IPv4/IPv6, public/private IPs
+          - Uses Python standard library only (no external dependencies)
+          - Compatible with Python 2.7 and 3.x
           
-          ### Core Modules
-          - `ddns/`: Main package directory
-            - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, HuaweiDNS, EdgeOne, etc.)
-            - `util/`: Utility modules for HTTP, config, IP detection
-            - `config/`: Configuration management
+          ## Directory Structure
           
-          ### DNS Providers Supported
+          ### Core Application (`ddns/`)
+          - `__init__.py` - Package initialization and main entry
+          - `__main__.py` - CLI entry point
+          - `cache.py` - IP caching mechanism
+          - `ip.py` - IP detection utilities
+          
+          ### Configuration (`ddns/config/`)
+          - Configuration loading and validation
+          
+          ### DNS Providers (`ddns/provider/`)
+          - `_base.py` - Base provider classes (SimpleProvider, BaseProvider)
           EOF
           
-          # List all providers
-          echo "- Providers available:" >> /tmp/repo_index.md
+          # List all provider implementations
+          echo "- Provider implementations:" >> /tmp/repo_index.md
           for provider in ddns/provider/*.py; do
             name=$(basename "$provider" .py)
             if [[ "$name" != "_"* && "$name" != "__init__" ]]; then
-              echo "  - $name" >> /tmp/repo_index.md
+              echo "  - \`$name.py\` - $name DNS provider" >> /tmp/repo_index.md
             fi
           done
           
-          # Add recent changes info
-          echo "" >> /tmp/repo_index.md
-          echo "## Recent Changes" >> /tmp/repo_index.md
-          echo "" >> /tmp/repo_index.md
-          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
+          # Add utility modules
+          cat >> /tmp/repo_index.md << 'EOF'
           
-          # Add key documentation files
-          echo "" >> /tmp/repo_index.md
-          echo "## Documentation Available" >> /tmp/repo_index.md
-          echo "- Installation: doc/install.md" >> /tmp/repo_index.md
-          echo "- Configuration: doc/config/cli.md, doc/config/json.md, doc/config/env.md" >> /tmp/repo_index.md
-          echo "- Docker: doc/docker.md" >> /tmp/repo_index.md
-          echo "- Provider Development: doc/dev/provider.md" >> /tmp/repo_index.md
+          ### Utilities (`ddns/util/`)
+          - HTTP client, configuration management, helper functions
           
-          # Add providers documentation
-          echo "- Provider Guides:" >> /tmp/repo_index.md
+          ### Scheduler (`ddns/scheduler/`)
+          - Scheduled task management
+          
+          ## Documentation (`doc/`)
+          EOF
+          
+          # List documentation structure
+          echo "### Configuration Guides (\`doc/config/\`)" >> /tmp/repo_index.md
+          for doc in doc/config/*.md; do
+            if [ -f "$doc" ]; then
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          echo "" >> /tmp/repo_index.md
+          echo "### Provider Guides (\`doc/providers/\`)" >> /tmp/repo_index.md
           for doc in doc/providers/*.md; do
             if [ -f "$doc" ]; then
-              name=$(basename "$doc" .md)
-              echo "  - $name: $doc" >> /tmp/repo_index.md
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
             fi
           done
+          
+          echo "" >> /tmp/repo_index.md
+          echo "### Developer Guides (\`doc/dev/\`)" >> /tmp/repo_index.md
+          for doc in doc/dev/*.md; do
+            if [ -f "$doc" ]; then
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add test files
+          echo "" >> /tmp/repo_index.md
+          echo "## Tests (\`tests/\`)" >> /tmp/repo_index.md
+          for test in tests/test_*.py; do
+            if [ -f "$test" ]; then
+              echo "- \`$(basename "$test")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add recent changes
+          echo "" >> /tmp/repo_index.md
+          echo "## Recent Changes (last 5 commits)" >> /tmp/repo_index.md
+          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
           
           echo "Repository index built successfully"
       
-      - name: Generate AI Response
+      - name: Multi-turn AI Response
         id: ai_response
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            
-            // Read system prompt from markdown file
-            const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
-            
-            // Read repository index
-            const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
-            
-            // Combine system prompt with repository index
-            const enhancedSystemPrompt = systemPrompt + '\n\n## Current Repository Context\n\n' + repoIndex + '\n\nUse this repository information to provide more accurate and contextual responses. Reference specific files, providers, or documentation when relevant to the user\'s issue.';
-            
-            // Prepare the API request
-            const issueTitle = context.payload.issue.title;
-            const issueBody = context.payload.issue.body || '(No description provided)';
-            const issueAuthor = context.payload.issue.user.login;
-            
-            const userPrompt = `An issue has been labeled for AI Review:
-
-            Title: ${issueTitle}
-
-            Body:
-            ${issueBody}
-
-            Author: @${issueAuthor}
-
-            Please generate a helpful response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
+            const path = require('path');
             
             const apiUrl = process.env.OPENAI_URL;
             const apiKey = process.env.OPENAI_KEY;
@@ -120,8 +135,17 @@ jobs:
               return;
             }
             
-            // Call Azure OpenAI API
-            try {
+            // Read system prompt and repository index
+            const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
+            const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+            
+            // Issue details
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body || '(No description provided)';
+            const issueAuthor = context.payload.issue.user.login;
+            
+            // Helper function to call OpenAI API
+            async function callOpenAI(messages, expectJson = true) {
               const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -129,69 +153,193 @@ jobs:
                   'api-key': apiKey
                 },
                 body: JSON.stringify({
-                  messages: [
-                    { role: 'system', content: enhancedSystemPrompt },
-                    { role: 'user', content: userPrompt }
-                  ],
-                  temperature: 1,
+                  messages: messages,
+                  temperature: 0.7,
                   max_completion_tokens: 2000,
-                  response_format: { type: "json_object" }
+                  response_format: expectJson ? { type: "json_object" } : undefined
                 })
               });
               
               if (!response.ok) {
                 const errorText = await response.text();
-                core.setFailed(`Azure OpenAI API error: ${response.status} ${errorText}`);
-                return;
+                throw new Error(`API error: ${response.status} ${errorText}`);
               }
               
               const data = await response.json();
-              
-              // Validate API response structure
-              if (
-                !data.choices ||
-                !Array.isArray(data.choices) ||
-                !data.choices[0] ||
-                !data.choices[0].message ||
-                typeof data.choices[0].message.content !== 'string'
-              ) {
-                core.setFailed('Invalid API response structure');
-                return;
+              if (!data.choices?.[0]?.message?.content) {
+                throw new Error('Invalid API response structure');
               }
               
-              let aiResponse = data.choices[0].message.content.trim();
-              
-              // Try to parse JSON response
-              let classification = null;
-              let commentBody = aiResponse;
-              
+              return data.choices[0].message.content.trim();
+            }
+            
+            // Constants
+            const MAX_FILES_PER_TURN = 5;
+            const MAX_FILE_SIZE = 50000; // 50KB
+            
+            // Helper function to read file content safely
+            function readFileContent(filePath) {
               try {
-                // Remove markdown code fences if present
-                let jsonContent = aiResponse;
-                if (aiResponse.startsWith('```json') || aiResponse.startsWith('```')) {
-                  jsonContent = aiResponse.replace(/^```(?:json)?\s*\n/, '').replace(/\n```\s*$/, '').trim();
+                const repoRoot = process.cwd();
+                
+                // Resolve the full path and ensure it's within the repo
+                const fullPath = path.resolve(repoRoot, filePath);
+                if (!fullPath.startsWith(repoRoot + path.sep) && fullPath !== repoRoot) {
+                  return `[Access denied: ${filePath} is outside the repository]`;
                 }
                 
-                const parsedResponse = JSON.parse(jsonContent);
+                // Check if file exists
+                if (!fs.existsSync(fullPath)) {
+                  return `[File not found: ${filePath}]`;
+                }
                 
-                if (parsedResponse.classification && parsedResponse.response) {
-                  classification = parsedResponse.classification.toLowerCase();
-                  commentBody = parsedResponse.response;
-                  console.log(`Issue classified as: ${classification} (JSON format)`);
+                const stats = fs.statSync(fullPath);
+                if (stats.isDirectory()) {
+                  return `[${filePath} is a directory, not a file]`;
+                }
+                
+                // Read file with size limit
+                if (stats.size > MAX_FILE_SIZE) {
+                  // Read only first MAX_FILE_SIZE bytes for large files
+                  const fd = fs.openSync(fullPath, 'r');
+                  const buffer = Buffer.alloc(MAX_FILE_SIZE);
+                  fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
+                  fs.closeSync(fd);
+                  return buffer.toString('utf8') + '\n\n[File truncated - exceeded 50KB limit]';
+                }
+                
+                return fs.readFileSync(fullPath, 'utf8');
+              } catch (error) {
+                return `[Error reading file ${filePath}: ${error.message}]`;
+              }
+            }
+            
+            // Helper function to parse JSON response
+            function parseJsonResponse(content) {
+              let jsonContent = content;
+              // Remove markdown code fences if present
+              const codeBlockMatch = content.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
+              if (codeBlockMatch) {
+                jsonContent = codeBlockMatch[1].trim();
+              }
+              return JSON.parse(jsonContent);
+            }
+            
+            try {
+              // Conversation history
+              const messages = [];
+              
+              // System prompt for multi-turn conversation
+              const multiTurnSystemPrompt = `${systemPrompt}
+
+            ## Multi-turn Conversation Mode
+
+            You are in a multi-turn conversation mode. In each turn, you can either:
+            1. Request more files to better understand the issue
+            2. Provide your final response with classification
+
+            ### Response Format
+
+            **If you need more files**, respond with:
+            \`\`\`json
+            {
+              "needs_files": true,
+              "requested_files": ["path/to/file1.py", "path/to/file2.md"],
+              "reason": "Brief explanation of why these files are needed"
+            }
+            \`\`\`
+
+            **If you have enough information**, respond with:
+            \`\`\`json
+            {
+              "needs_files": false,
+              "classification": "bug|feature|question",
+              "response": "Your detailed response to the issue..."
+            }
+            \`\`\`
+
+            ### Guidelines
+            - Request only files that are directly relevant to the issue
+            - Request at most 5 files per turn
+            - After receiving requested files, analyze them and either request more or provide final response
+            - You have at most 3 turns to gather information before providing a final response`;
+
+              messages.push({ role: 'system', content: multiTurnSystemPrompt });
+              
+              // First turn: Provide project context and issue
+              const firstTurnPrompt = `## Repository Context
+
+            ${repoIndex}
+
+            ## Issue Details
+
+            **Title:** ${issueTitle}
+
+            **Author:** @${issueAuthor}
+
+            **Body:**
+            ${issueBody}
+
+            ---
+
+            Please analyze this issue. If you need to see specific files to provide an accurate response, request them. Otherwise, provide your classification and response.`;
+
+              messages.push({ role: 'user', content: firstTurnPrompt });
+              
+              let finalClassification = null;
+              let finalResponse = null;
+              const maxTurns = 3;
+              
+              for (let turn = 1; turn <= maxTurns; turn++) {
+                console.log(`Turn ${turn}/${maxTurns}: Calling OpenAI API...`);
+                
+                const aiContent = await callOpenAI(messages);
+                console.log(`Turn ${turn} response received`);
+                
+                let parsed;
+                try {
+                  parsed = parseJsonResponse(aiContent);
+                } catch (parseError) {
+                  console.log(`Failed to parse JSON in turn ${turn}: ${parseError.message}`);
+                  // If we can't parse JSON, treat as final response
+                  finalResponse = aiContent;
+                  break;
+                }
+                
+                if (!parsed.needs_files || turn === maxTurns) {
+                  // Final response
+                  finalClassification = parsed.classification?.toLowerCase() || null;
+                  finalResponse = parsed.response || aiContent;
+                  console.log(`Final response received in turn ${turn}`);
+                  break;
+                }
+                
+                // Need more files
+                const requestedFiles = parsed.requested_files || [];
+                console.log(`Turn ${turn}: Requested files: ${requestedFiles.join(', ')}`);
+                
+                // Add assistant's response to history
+                messages.push({ role: 'assistant', content: aiContent });
+                
+                // Read requested files and add to conversation
+                let fileContents = '## Requested File Contents\n\n';
+                for (const filePath of requestedFiles.slice(0, MAX_FILES_PER_TURN)) {
+                  const content = readFileContent(filePath);
+                  fileContents += `### \`${filePath}\`\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
+                }
+                
+                if (turn < maxTurns) {
+                  fileContents += `\nYou have ${maxTurns - turn} turn(s) remaining. Please analyze these files and either request more files or provide your final classification and response.`;
                 } else {
-                  console.log('JSON response missing required fields, falling back to text format');
+                  fileContents += `\nThis is your last turn. Please provide your final classification and response now.`;
                 }
-              } catch (jsonError) {
-                console.log(`Failed to parse JSON response: ${jsonError.message}`);
-                console.log('Falling back to legacy text format extraction');
                 
-                // Fallback: Try legacy format with classification tag
-                const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
-                if (classificationMatch) {
-                  classification = classificationMatch[1].toLowerCase();
-                  commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
-                  console.log(`Issue classified as: ${classification} (legacy format)`);
-                }
+                messages.push({ role: 'user', content: fileContents });
+              }
+              
+              if (!finalResponse) {
+                core.setFailed('Failed to get a valid response after all turns');
+                return;
               }
               
               // Post the response as a comment
@@ -199,26 +347,26 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.issue.number,
-                body: commentBody
+                body: finalResponse
               });
+              console.log('Comment posted successfully');
               
               // Add label based on classification
-              if (classification) {
+              if (finalClassification && ['bug', 'feature', 'question'].includes(finalClassification)) {
                 try {
                   await github.rest.issues.addLabels({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: context.payload.issue.number,
-                    labels: [classification]
+                    labels: [finalClassification]
                   });
-                  console.log(`Label '${classification}' added successfully`);
+                  console.log(`Label '${finalClassification}' added successfully`);
                 } catch (labelError) {
                   console.log(`Failed to add label: ${labelError.message}`);
-                  // Don't fail the workflow if label addition fails
                 }
               }
               
-              console.log('AI response posted successfully');
+              console.log('AI response workflow completed successfully');
             } catch (error) {
               core.setFailed(`Failed to generate AI response: ${error.message}`);
             }
