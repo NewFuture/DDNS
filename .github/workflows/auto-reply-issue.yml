@@ -14,13 +14,11 @@ concurrency:
 
 jobs:
   auto-reply:
-    # Skip bot issues, issues with 'copilot' label, and classification labels (to prevent infinite loops)
+    # Only trigger when 'AI Review' label is added, skip bot issues and issues with 'copilot' label
     if: |
+      github.event.label.name == 'AI Review' &&
       github.event.issue.user.login != 'github-actions[bot]' &&
-      !contains(github.event.issue.labels.*.name, 'copilot') &&
-      github.event.label.name != 'bug' &&
-      github.event.label.name != 'feature' &&
-      github.event.label.name != 'question'
+      !contains(github.event.issue.labels.*.name, 'copilot')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     
@@ -103,7 +101,7 @@ jobs:
             const issueBody = context.payload.issue.body || '(No description provided)';
             const issueAuthor = context.payload.issue.user.login;
             
-            const userPrompt = `An issue has been labeled:
+            const userPrompt = `An issue has been labeled for AI Review:
 
             Title: ${issueTitle}
 
