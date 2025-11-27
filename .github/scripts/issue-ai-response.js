@@ -245,8 +245,6 @@ Please analyze this issue. If you need to see specific files to provide an accur
 
       if (turn < MAX_TURNS) {
         fileContents += `\nYou have ${MAX_TURNS - turn} turn(s) remaining. Please analyze these files and either request more files or provide your final classification and response.`;
-      } else {
-        fileContents += `\nThis is your last turn. Please provide your final classification and response now.`;
       }
 
       messages.push({ role: 'user', content: fileContents });
