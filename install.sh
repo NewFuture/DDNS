@@ -78,25 +78,25 @@ select_message() {
 
 # Print colored messages
 print_info() {
-    printf "${BLUE}[INFO]${NC} %s\n" "$(select_message "$1" "$2")"
+    printf "${BLUE}[INFO]${NC} %s\n" "$(select_message "$1" "$2")" 2>/dev/null || true
 }
 
 print_success() {
-    printf "${GREEN}[SUCCESS]${NC} %s\n" "$(select_message "$1" "$2")"
+    printf "${GREEN}[SUCCESS]${NC} %s\n" "$(select_message "$1" "$2")" 2>/dev/null || true
 }
 
 print_warning() {
-    printf "${YELLOW}[WARNING]${NC} %s\n" "$(select_message "$1" "$2")"
+    printf "${YELLOW}[WARNING]${NC} %s\n" "$(select_message "$1" "$2")" 2>/dev/null || true
 }
 
 print_error() {
-    printf "${RED}[ERROR]${NC} %s\n" "$(select_message "$1" "$2")"
+    printf "${RED}[ERROR]${NC} %s\n" "$(select_message "$1" "$2")" 2>/dev/null || true
 }
 
 # Show usage information
 show_usage() {
     if [ "$LANGUAGE" = "zh" ]; then
-        cat << EOF
+        cat << EOF || true
 DDNS 一键安装脚本
 
 用法:
@@ -126,7 +126,7 @@ DDNS 一键安装脚本
 
 EOF
     else
-        cat << EOF
+        cat << EOF || true
 DDNS One-Click Installation Script
 
 Usage:
@@ -617,4 +617,12 @@ main() {
 }
 
 # Run main function with all arguments
-main "$@"
+# Handle SIGPIPE gracefully for piped commands like: sh -s -- --help | grep -q "text"
+(main "$@") || {
+    rc=$?
+    # Exit code 141 = 128 + 13 (SIGPIPE) - treat as success when piped to grep -q
+    if [ "$rc" = "141" ]; then
+        exit 0
+    fi
+    exit "$rc"
+}
