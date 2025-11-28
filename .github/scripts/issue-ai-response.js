@@ -31,7 +31,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
   const issueAuthor = context.payload.issue.user.login;
 
   // Constants
-  const MAX_FILES_PER_TURN = 5;
+  const MAX_FILES_PER_TURN = 10;
   // Maximum file size (in bytes) for context sent to the AI. 50KB was chosen to balance
   // providing enough context for the AI to understand the code, while staying well within
   // OpenAI API token and processing limits. Larger files may exceed token limits or slow
@@ -115,12 +115,16 @@ module.exports = async ({ github, context, core, fs, path }) => {
         // Read only first MAX_FILE_SIZE bytes for large files
         const fd = fs.openSync(fullPath, 'r');
         const buffer = Buffer.alloc(MAX_FILE_SIZE);
+        let bytesRead;
         try {
-          fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
+          bytesRead = fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
         } finally {
           fs.closeSync(fd);
         }
-        const content = buffer.toString('utf8');
+        // Use StringDecoder to handle incomplete multi-byte UTF-8 characters at the truncation point
+        const { StringDecoder } = require('string_decoder');
+        const decoder = new StringDecoder('utf8');
+        const content = decoder.write(buffer.slice(0, bytesRead)) + decoder.end();
         if (isBinaryContent(content)) {
           return `[${filePath} appears to be a binary file]`;
         }
