@@ -2,10 +2,11 @@ name: Auto Reply to Issues
 
 on:
   issues:
-    types: [opened]
+    types: [labeled]
 
 permissions:
   issues: write
+  contents: read
 
 # Limit concurrent runs to prevent rate limit issues
 concurrency:
@@ -14,12 +15,14 @@ concurrency:
 
 jobs:
   auto-reply:
-    # Skip bot issues, sub-issues, and issues with 'copilot' label
+    # Only trigger when 'AI Review' label is added; skip bot-created issues and issues already labeled 'copilot'
     if: |
+      github.event.label.name == 'AI Review' &&
       github.event.issue.user.login != 'github-actions[bot]' &&
       !contains(github.event.issue.labels.*.name, 'copilot')
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Increased timeout to 10 minutes to accommodate multiple API calls, file I/O, and network latency.
+    timeout-minutes: 10
     
     steps:
       - uses: actions/checkout@v4
@@ -29,198 +32,103 @@ jobs:
         run: |
           echo "Building repository index..."
           
-          # Create a summary of the repository structure and key files
+          # Create a detailed summary of the repository structure
           cat > /tmp/repo_index.md << 'EOF'
-          # DDNS Repository Index
+          # DDNS Repository Structure
           
-          ## Project Structure
+          ## Project Overview
+          DDNS is a Python-based Dynamic DNS client that automatically updates DNS records to match the current IP address.
+          - Supports multiple DNS providers
+          - Supports IPv4/IPv6, public/private IPs
+          - Uses Python standard library only (no external dependencies)
+          - Compatible with Python 2.7 and 3.x
           
-          ### Core Modules
-          - `ddns/`: Main package directory
-            - `provider/`: DNS provider implementations (DNSPod, AliDNS, CloudFlare, HuaweiDNS, EdgeOne, etc.)
-            - `util/`: Utility modules for HTTP, config, IP detection
-            - `config/`: Configuration management
+          ## Directory Structure
           
-          ### DNS Providers Supported
+          ### Core Application (`ddns/`)
+          - `__init__.py` - Package initialization and main entry
+          - `__main__.py` - CLI entry point
+          - `cache.py` - IP caching mechanism
+          - `ip.py` - IP detection utilities
+          
+          ### Configuration (`ddns/config/`)
+          - Configuration loading and validation
+          
+          ### DNS Providers (`ddns/provider/`)
+          - `_base.py` - Base provider classes (SimpleProvider, BaseProvider)
           EOF
           
-          # List all providers
-          echo "- Providers available:" >> /tmp/repo_index.md
+          # List all provider implementations
+          echo "- Provider implementations:" >> /tmp/repo_index.md
           for provider in ddns/provider/*.py; do
             name=$(basename "$provider" .py)
             if [[ "$name" != "_"* && "$name" != "__init__" ]]; then
-              echo "  - $name" >> /tmp/repo_index.md
+              echo "  - \`$name.py\` - $name DNS provider" >> /tmp/repo_index.md
             fi
           done
           
-          # Add recent changes info
-          echo "" >> /tmp/repo_index.md
-          echo "## Recent Changes" >> /tmp/repo_index.md
-          echo "" >> /tmp/repo_index.md
-          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
+          # Add utility modules
+          cat >> /tmp/repo_index.md << 'EOF'
           
-          # Add key documentation files
-          echo "" >> /tmp/repo_index.md
-          echo "## Documentation Available" >> /tmp/repo_index.md
-          echo "- Installation: doc/install.md" >> /tmp/repo_index.md
-          echo "- Configuration: doc/config/cli.md, doc/config/json.md, doc/config/env.md" >> /tmp/repo_index.md
-          echo "- Docker: doc/docker.md" >> /tmp/repo_index.md
-          echo "- Provider Development: doc/dev/provider.md" >> /tmp/repo_index.md
+          ### Utilities (`ddns/util/`)
+          - HTTP client, configuration management, helper functions
           
-          # Add providers documentation
-          echo "- Provider Guides:" >> /tmp/repo_index.md
+          ### Scheduler (`ddns/scheduler/`)
+          - Scheduled task management
+          
+          ## Documentation (`doc/`)
+          EOF
+          
+          # List documentation structure
+          echo "### Configuration Guides (\`doc/config/\`)" >> /tmp/repo_index.md
+          for doc in doc/config/*.md; do
+            if [ -f "$doc" ]; then
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          echo "" >> /tmp/repo_index.md
+          echo "### Provider Guides (\`doc/providers/\`)" >> /tmp/repo_index.md
           for doc in doc/providers/*.md; do
             if [ -f "$doc" ]; then
-              name=$(basename "$doc" .md)
-              echo "  - $name: $doc" >> /tmp/repo_index.md
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
             fi
           done
+          
+          echo "" >> /tmp/repo_index.md
+          echo "### Developer Guides (\`doc/dev/\`)" >> /tmp/repo_index.md
+          for doc in doc/dev/*.md; do
+            if [ -f "$doc" ]; then
+              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add test files
+          echo "" >> /tmp/repo_index.md
+          echo "## Tests (\`tests/\`)" >> /tmp/repo_index.md
+          for test in tests/test_*.py; do
+            if [ -f "$test" ]; then
+              echo "- \`$(basename "$test")\`" >> /tmp/repo_index.md
+            fi
+          done
+          
+          # Add recent changes
+          echo "" >> /tmp/repo_index.md
+          echo "## Recent Changes (last 5 commits)" >> /tmp/repo_index.md
+          git log --oneline --no-decorate -5 >> /tmp/repo_index.md
           
           echo "Repository index built successfully"
       
-      - name: Generate AI Response
+      - name: Multi-turn AI Response
         id: ai_response
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            
-            // Read system prompt from markdown file
-            const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
-            
-            // Read repository index
-            const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
-            
-            // Combine system prompt with repository index
-            const enhancedSystemPrompt = systemPrompt + '\n\n## Current Repository Context\n\n' + repoIndex + '\n\nUse this repository information to provide more accurate and contextual responses. Reference specific files, providers, or documentation when relevant to the user\'s issue.';
-            
-            // Prepare the API request
-            const issueTitle = context.payload.issue.title;
-            const issueBody = context.payload.issue.body || '(No description provided)';
-            const issueAuthor = context.payload.issue.user.login;
-            
-            const userPrompt = `A new issue has been opened:
-
-            Title: ${issueTitle}
-
-            Body:
-            ${issueBody}
-
-            Author: @${issueAuthor}
-
-            Please generate a helpful initial response to this issue. The response should acknowledge the issue and provide guidance or ask for more information if needed.`;
-            
-            const apiUrl = process.env.OPENAI_URL;
-            const apiKey = process.env.OPENAI_KEY;
-            
-            if (!apiUrl || !apiKey) {
-              core.setFailed('OPENAI_URL and OPENAI_KEY must be set');
-              return;
-            }
-            
-            // Call Azure OpenAI API
-            try {
-              const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'api-key': apiKey
-                },
-                body: JSON.stringify({
-                  messages: [
-                    { role: 'system', content: enhancedSystemPrompt },
-                    { role: 'user', content: userPrompt }
-                  ],
-                  temperature: 1,
-                  max_completion_tokens: 2000,
-                  response_format: { type: "json_object" }
-                })
-              });
-              
-              if (!response.ok) {
-                const errorText = await response.text();
-                core.setFailed(`Azure OpenAI API error: ${response.status} ${errorText}`);
-                return;
-              }
-              
-              const data = await response.json();
-              
-              // Validate API response structure
-              if (
-                !data.choices ||
-                !Array.isArray(data.choices) ||
-                !data.choices[0] ||
-                !data.choices[0].message ||
-                typeof data.choices[0].message.content !== 'string'
-              ) {
-                core.setFailed('Invalid API response structure');
-                return;
-              }
-              
-              let aiResponse = data.choices[0].message.content.trim();
-              
-              // Try to parse JSON response
-              let classification = null;
-              let commentBody = aiResponse;
-              
-              try {
-                // Remove markdown code fences if present
-                let jsonContent = aiResponse;
-                if (aiResponse.startsWith('```json') || aiResponse.startsWith('```')) {
-                  jsonContent = aiResponse.replace(/^```(?:json)?\s*\n/, '').replace(/\n```\s*$/, '').trim();
-                }
-                
-                const parsedResponse = JSON.parse(jsonContent);
-                
-                if (parsedResponse.classification && parsedResponse.response) {
-                  classification = parsedResponse.classification.toLowerCase();
-                  commentBody = parsedResponse.response;
-                  console.log(`Issue classified as: ${classification} (JSON format)`);
-                } else {
-                  console.log('JSON response missing required fields, falling back to text format');
-                }
-              } catch (jsonError) {
-                console.log(`Failed to parse JSON response: ${jsonError.message}`);
-                console.log('Falling back to legacy text format extraction');
-                
-                // Fallback: Try legacy format with classification tag
-                const classificationMatch = aiResponse.match(/\[CLASSIFICATION:\s*(bug|feature|question)\]/i);
-                if (classificationMatch) {
-                  classification = classificationMatch[1].toLowerCase();
-                  commentBody = aiResponse.replace(/\[CLASSIFICATION:\s*(bug|feature|question)\]\s*/i, '').trim();
-                  console.log(`Issue classified as: ${classification} (legacy format)`);
-                }
-              }
-              
-              // Post the response as a comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.issue.number,
-                body: commentBody
-              });
-              
-              // Add label based on classification
-              if (classification) {
-                try {
-                  await github.rest.issues.addLabels({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.payload.issue.number,
-                    labels: [classification]
-                  });
-                  console.log(`Label '${classification}' added successfully`);
-                } catch (labelError) {
-                  console.log(`Failed to add label: ${labelError.message}`);
-                  // Don't fail the workflow if label addition fails
-                }
-              }
-              
-              console.log('AI response posted successfully');
-            } catch (error) {
-              core.setFailed(`Failed to generate AI response: ${error.message}`);
-            }
+            const path = require('path');
+            const script = require('./.github/scripts/issue-ai-response.js');
+            await script({ github, context, core, fs, path });
         env:
           OPENAI_URL: ${{ vars.OPENAI_URL }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
