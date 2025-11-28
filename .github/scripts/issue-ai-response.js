@@ -26,8 +26,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
   }
 
   // Issue details
-  const issueTitle = context.payload.issue.title;
-  const issueBody = context.payload.issue.body || '(No description provided)';
+  const issueTitle = context.payload.issue.title ? context.payload.issue.title.substring(0, 500) : '(No title)';
+  const issueBody = context.payload.issue.body ? context.payload.issue.body.substring(0, 10000) : '(No description provided)';
   const issueAuthor = context.payload.issue.user.login;
 
   // Constants
