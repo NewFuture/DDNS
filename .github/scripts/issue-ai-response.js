@@ -127,7 +127,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       }
       return content;
     } catch (error) {
-      return `[Error reading file ${filePath}: File could not be accessed]`;
+      return `[Error reading file ${filePath}: ${error?.message||"File could not be accessed"}]`;
     }
   }
 
