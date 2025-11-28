@@ -16,8 +16,14 @@ module.exports = async ({ github, context, core, fs, path }) => {
   }
 
   // Read system prompt and repository index
-  const systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
-  const repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+  let systemPrompt, repoIndex;
+  try {
+    systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
+    repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+  } catch (error) {
+    core.setFailed('Failed to read required prompt or index file: ' + error.message);
+    return;
+  }
 
   // Issue details
   const issueTitle = context.payload.issue.title;
