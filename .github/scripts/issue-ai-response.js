@@ -34,6 +34,15 @@ module.exports = async ({ github, context, core, fs, path }) => {
   const MAX_TURNS = 3;
 
   /**
+   * Check if content appears to be a binary file
+   * @param {string} content - File content to check
+   * @returns {boolean} - True if content appears to be binary
+   */
+  function isBinaryContent(content) {
+    return content.includes('\0');
+  }
+
+  /**
    * Call OpenAI API with messages
    * @param {Array} messages - Array of message objects
    * @param {boolean} expectJson - Whether to expect JSON response
@@ -106,14 +115,14 @@ module.exports = async ({ github, context, core, fs, path }) => {
           fs.closeSync(fd);
         }
         const content = buffer.toString('utf8');
-        if (content.includes('\0')) {
+        if (isBinaryContent(content)) {
           return `[${filePath} appears to be a binary file]`;
         }
         return content + '\n\n[File truncated - exceeded 50KB limit]';
       }
 
       const content = fs.readFileSync(fullPath, 'utf8');
-      if (content.includes('\0')) {
+      if (isBinaryContent(content)) {
         return `[${filePath} appears to be a binary file]`;
       }
       return content;
