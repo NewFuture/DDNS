@@ -41,7 +41,7 @@ jobs:
       - name: Test help with Chinese locale (zh_CN)
         run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help
       - name: Test help Chinese text detection (zh_CN)
-        run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help | grep -q "一键安装脚本"
+        run: set +o pipefail; curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help | grep -q "一键安装脚本"
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
