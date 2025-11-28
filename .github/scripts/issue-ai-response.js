@@ -191,7 +191,7 @@ You are in a multi-turn conversation mode. In each turn, you can either:
 
 ### Guidelines
 - Request only files that are directly relevant to the issue
-- Request at most 5 files per turn
+- Request at most 10 files per turn
 - After receiving requested files, analyze them and either request more or provide final response
 - You have at most 3 turns to gather information before providing a final response`;
 
