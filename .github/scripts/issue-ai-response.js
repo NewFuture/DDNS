@@ -254,7 +254,11 @@ Please analyze this issue. If you need to see specific files to provide an accur
       if (turn === MAX_TURNS) {
         // Force final response on last turn
         finalClassification = parsed.classification?.toLowerCase() || null;
-        finalResponse = parsed.response || aiContent;
+        if (parsed.needs_files) {
+          finalResponse = "Unable to provide a complete analysis within the turn limit. Please provide more specific details about your issue or the relevant files.";
+        } else {
+          finalResponse = parsed.response || aiContent;
+        }
         console.log(`Forced final response on last turn ${turn}`);
         break;
       }
