@@ -256,6 +256,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
         fileContents += `### \`${filePath}\`\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
       }
 
+      // Only append remaining turns message if there will be another turn
       if (turn < MAX_TURNS) {
         fileContents += `\nYou have ${MAX_TURNS - turn} turn(s) remaining. Please analyze these files and either request more files or provide your final classification and response.`;
       }
