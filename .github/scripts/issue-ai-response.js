@@ -53,6 +53,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
    * @param {Array} messages - Array of message objects
    * @param {boolean} expectJson - Whether to expect JSON response
    * @returns {string} - AI response content
+   * @throws {Error} - If API call fails or response is invalid
    */
   async function callOpenAI(messages, expectJson = true) {
     const response = await fetch(apiUrl, {
@@ -64,7 +65,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
       body: JSON.stringify({
         messages: messages,
         temperature: 1,
-        max_completion_tokens: 2000,
+        // max_completion_tokens is configurable via environment variable.
+        // Default is 3000 to allow for more detailed responses. Adjust as needed for your model/cost.
+        max_completion_tokens: parseInt(process.env.MAX_COMPLETION_TOKENS || '3000', 10),
         response_format: expectJson ? { type: "json_object" } : undefined
       })
     });
@@ -145,6 +148,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
    * Parse JSON response, handling markdown code fences
    * @param {string} content - Raw response content
    * @returns {Object} - Parsed JSON object
+   * @throws {SyntaxError} - If content is not valid JSON
    */
   function parseJsonResponse(content) {
     let jsonContent = content;
@@ -284,7 +288,8 @@ Please analyze this issue. If you need to see specific files to provide an accur
     }
 
     if (!finalResponse) {
-      core.setFailed('Failed to get a valid response after all turns');
+      core.setFailed('Failed to get a valid response after all turns. This indicates an unexpected error in the conversation flow.');
+      console.error('Debug info - messages:', JSON.stringify(messages, null, 2));
       return;
     }
 
@@ -314,6 +319,8 @@ Please analyze this issue. If you need to see specific files to provide an accur
 
     console.log('AI response workflow completed successfully');
   } catch (error) {
-    core.setFailed(`Failed to generate AI response: ${error.message}`);
+    const errorDetails = error && error.stack ? error.stack : error.message;
+    core.setFailed(`Failed to generate AI response: ${error.message}\n\nDetails: ${errorDetails}`);
+    console.error('Full error:', error);
   }
 };
