@@ -90,7 +90,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       const normalizedFull = path.normalize(fullPath);
       const normalizedRoot = path.normalize(repoRoot);
       const relativePath = path.relative(normalizedRoot, normalizedFull);
-      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      if (relativePath.startsWith('..')) {
         return `[Access denied: ${filePath} is outside the repository]`;
       }
 
@@ -222,7 +222,18 @@ Please analyze this issue. If you need to see specific files to provide an accur
       } catch (parseError) {
         console.log(`Failed to parse JSON in turn ${turn}: ${parseError.message}`);
         // If we can't parse JSON, treat as final response
+        // Attempt to extract classification using legacy format (e.g., regex)
+        let legacyClassification = null;
+        // Example: look for "Classification: <label>" in the response (case-insensitive)
+        const match = aiContent.match(/classification\s*:\s*([a-zA-Z0-9_-]+)/i);
+        if (match) {
+          legacyClassification = match[1].toLowerCase();
+          console.log(`Extracted legacy classification: ${legacyClassification}`);
+        } else {
+          console.log('Could not extract classification from non-JSON response');
+        }
         finalResponse = aiContent;
+        finalClassification = legacyClassification;
         break;
       }
 
