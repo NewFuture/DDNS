@@ -26,6 +26,10 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
   // Constants
   const MAX_FILES_PER_TURN = 5;
+  // Maximum file size (in bytes) for context sent to the AI. 50KB was chosen to balance
+  // providing enough context for the AI to understand the code, while staying well within
+  // OpenAI API token and processing limits. Larger files may exceed token limits or slow
+  // down processing, while smaller limits may omit important context.
   const MAX_FILE_SIZE = 50000; // 50KB
   const MAX_TURNS = 3;
 
@@ -57,7 +61,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
     const data = await response.json();
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid API response structure');
+      throw new Error(`Invalid API response structure. Received: ${JSON.stringify(data)}`);
     }
 
     return data.choices[0].message.content.trim();
