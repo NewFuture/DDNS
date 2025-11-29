@@ -81,6 +81,7 @@ DDNS/
 │   │   ├── dnspod.py           # DNSPod (China)
 │   │   ├── dnspod_com.py       # DNSPod International
 │   │   ├── edgeone.py          # Tencent EdgeOne
+│   │   ├── edgeone_dns.py      # Tencent EdgeOne DNS
 │   │   ├── he.py               # Hurricane Electric
 │   │   ├── huaweidns.py        # Huawei Cloud DNS
 │   │   ├── namesilo.py         # NameSilo
@@ -152,7 +153,7 @@ DDNS/
 ├── schema/                     # JSON schemas
 │   ├── v2.json                 # Legacy schema v2
 │   ├── v2.8.json               # Legacy schema v2.8
-│   ├── v4.0.json               # Current schema v4.0
+│   ├── v4.0.json               # Previous schema v4.0
 │   └── v4.1.json               # Latest schema v4.1
 │
 ├── run.py                      # Direct run script
