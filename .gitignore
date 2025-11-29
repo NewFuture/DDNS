@@ -2,6 +2,9 @@ config.*.json
 
 *.temp
 
+# Generated files from workflows
+.github/issue_body.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
