@@ -3,8 +3,9 @@
 """
 Script to update the directory structure section in AGENTS.md.
 
-This script scans the repository and generates an updated directory structure
-that can be used to update the AGENTS.md file.
+This script dynamically scans the repository and generates an updated directory
+structure that can be used to update the AGENTS.md file.
+All file listings are generated from the actual filesystem.
 """
 
 import os
@@ -12,7 +13,8 @@ import re
 import sys
 from datetime import datetime
 
-# File descriptions for known files
+# File descriptions for known files (used as fallback for better descriptions)
+# New files will automatically be discovered and get auto-generated descriptions
 FILE_DESCRIPTIONS = {
     # Root level
     "run.py": "Direct run script",
@@ -34,25 +36,10 @@ FILE_DESCRIPTIONS = {
     "ddns/config/config.py": "Configuration loading and merging",
     "ddns/config/env.py": "Environment variable parsing",
     "ddns/config/file.py": "JSON file configuration",
-    # ddns/provider
+    # ddns/provider - base files only, providers are auto-generated
     "ddns/provider/__init__.py": "Provider registry",
     "ddns/provider/_base.py": "Abstract base classes (SimpleProvider, BaseProvider)",
     "ddns/provider/_signature.py": "HMAC signature utilities",
-    "ddns/provider/alidns.py": "Alibaba Cloud DNS",
-    "ddns/provider/aliesa.py": "Alibaba Cloud ESA",
-    "ddns/provider/callback.py": "Custom webhook callbacks",
-    "ddns/provider/cloudflare.py": "Cloudflare DNS",
-    "ddns/provider/debug.py": "Debug provider",
-    "ddns/provider/dnscom.py": "DNS.COM",
-    "ddns/provider/dnspod.py": "DNSPod (China)",
-    "ddns/provider/dnspod_com.py": "DNSPod International",
-    "ddns/provider/edgeone.py": "Tencent EdgeOne",
-    "ddns/provider/edgeone_dns.py": "Tencent EdgeOne DNS",
-    "ddns/provider/he.py": "Hurricane Electric",
-    "ddns/provider/huaweidns.py": "Huawei Cloud DNS",
-    "ddns/provider/namesilo.py": "NameSilo",
-    "ddns/provider/noip.py": "No-IP",
-    "ddns/provider/tencentcloud.py": "Tencent Cloud DNS",
     # ddns/scheduler
     "ddns/scheduler/__init__.py": "",
     "ddns/scheduler/_base.py": "Base scheduler class",
@@ -93,18 +80,35 @@ FILE_DESCRIPTIONS = {
     "doc/dev/provider.en.md": "Provider development guide (English)",
     "doc/dev/config.md": "Config system (Chinese)",
     "doc/dev/config.en.md": "Config system (English)",
-    # doc/providers files
+    # doc/providers - README only, provider docs are auto-generated
     "doc/providers/README.md": "Provider list (Chinese)",
     "doc/providers/README.en.md": "Provider list (English)",
-    # doc/examples files
-    "doc/examples/config-with-extra.json": "Advanced configuration example",
+}
+
+# Provider name mappings for nice display names
+PROVIDER_NAMES = {
+    "alidns": "AliDNS",
+    "aliesa": "AliESA",
+    "cloudflare": "Cloudflare",
+    "dnscom": "DNS.COM",
+    "dnspod": "DNSPod (China)",
+    "dnspod_com": "DNSPod International",
+    "edgeone": "EdgeOne",
+    "edgeone_dns": "EdgeOne DNS",
+    "he": "Hurricane Electric",
+    "huaweidns": "Huawei Cloud DNS",
+    "namesilo": "NameSilo",
+    "noip": "No-IP",
+    "tencentcloud": "Tencent Cloud",
+    "callback": "Callback",
+    "debug": "Debug",
+    "51dns": "51DNS",
 }
 
 
 def extract_current_structure(agents_content):
     # type: (str) -> str | None
     """Extract the current directory structure section from AGENTS.md."""
-    # Find the directory structure section
     pattern = r"### Directory Structure\s*\n\n```text\n(.*?)```"
     match = re.search(pattern, agents_content, re.DOTALL)
     if match:
@@ -123,57 +127,45 @@ def update_agents_structure(agents_content, new_structure):
 def update_version_and_date(agents_content, version, date_str):
     # type: (str, str, str) -> str
     """Update the version and date at the bottom of AGENTS.md."""
-    # Update version - flexible pattern to handle spacing variations
     agents_content = re.sub(r"\*\*Version\*\*\s*:\s*[\d.]+", "**Version**: " + version, agents_content)
-    # Update date - flexible pattern to handle spacing variations
     agents_content = re.sub(r"\*\*Last Updated\*\*\s*:\s*[\d-]+", "**Last Updated**: " + date_str, agents_content)
     return agents_content
+
+
+def get_provider_name(base_name):
+    # type: (str) -> str
+    """Get nice display name for a provider."""
+    return PROVIDER_NAMES.get(base_name, base_name.title())
 
 
 def get_provider_doc_description(filename):
     # type: (str) -> str
     """Generate description for provider documentation files."""
-    # Provider name mappings
-    provider_names = {
-        "alidns": "AliDNS",
-        "aliesa": "AliESA",
-        "cloudflare": "Cloudflare",
-        "dnscom": "DNS.COM",
-        "dnspod": "DNSPod (China)",
-        "dnspod_com": "DNSPod International",
-        "edgeone": "EdgeOne",
-        "edgeone_dns": "EdgeOne DNS",
-        "he": "Hurricane Electric",
-        "huaweidns": "Huawei Cloud DNS",
-        "namesilo": "NameSilo",
-        "noip": "No-IP",
-        "tencentcloud": "Tencent Cloud",
-        "callback": "Callback",
-        "debug": "Debug",
-        "51dns": "51DNS",
-    }
-
     is_english = filename.endswith(".en.md")
     base_name = filename.replace(".en.md", "").replace(".md", "")
 
-    # Handle README files
     if base_name == "README":
         return "Provider list (English)" if is_english else "Provider list (Chinese)"
 
-    # Get provider name from mapping or capitalize
-    provider_name = provider_names.get(base_name, base_name.title())
+    provider_name = get_provider_name(base_name)
     lang = "English" if is_english else "Chinese"
-
     return provider_name + " guide (" + lang + ")"
+
+
+def get_provider_code_description(filename):
+    # type: (str) -> str
+    """Generate description for provider Python files."""
+    base_name = filename.replace(".py", "")
+    provider_name = get_provider_name(base_name)
+    return provider_name + " DNS provider"
 
 
 def version_sort_key(filename):
     # type: (str) -> list
     """Sort key for version-named files like v2.json, v2.8.json, v4.0.json."""
-    # Extract version number from filename (e.g., v2.8.json -> [2, 8])
-    name = filename.rsplit(".", 1)[0]  # Remove extension
+    name = filename.rsplit(".", 1)[0]
     if name.startswith("v"):
-        name = name[1:]  # Remove 'v' prefix
+        name = name[1:]
     parts = name.split(".")
     result = []
     for part in parts:
@@ -184,12 +176,15 @@ def version_sort_key(filename):
     return result
 
 
-def get_sorted_files(directory, extensions=None, version_sort=False):
-    # type: (str, list | None, bool) -> list
+def get_sorted_files(directory, extensions=None, version_sort=False, exclude_dirs=True):
+    # type: (str, list | None, bool, bool) -> list
     """Get sorted list of files from a directory."""
     result = []
     if os.path.isdir(directory):
         for f in os.listdir(directory):
+            filepath = os.path.join(directory, f)
+            if exclude_dirs and os.path.isdir(filepath):
+                continue
             if extensions:
                 if any(f.endswith(ext) for ext in extensions):
                     result.append(f)
@@ -202,12 +197,75 @@ def get_sorted_files(directory, extensions=None, version_sort=False):
     return result
 
 
+def get_subdirs(directory):
+    # type: (str) -> list
+    """Get sorted list of subdirectories."""
+    result = []
+    if os.path.isdir(directory):
+        for f in os.listdir(directory):
+            if os.path.isdir(os.path.join(directory, f)):
+                result.append(f)
+    result.sort()
+    return result
+
+
+def get_file_description(filepath, filename):
+    # type: (str, str) -> str
+    """Get description for a file, using FILE_DESCRIPTIONS or auto-generating."""
+    desc = FILE_DESCRIPTIONS.get(filepath, "")
+    if desc:
+        return desc
+
+    # Auto-generate description based on file type and location
+    if filename == "__init__.py":
+        return ""
+    if filename.startswith("_"):
+        return ""
+    if filename.endswith(".py"):
+        name = filename[:-3]
+        return name.title().replace("_", " ") + " module"
+    if filename.endswith(".md"):
+        name = filename[:-3]
+        is_english = filename.endswith(".en.md")
+        if is_english:
+            name = name[:-3]
+        lang = " (English)" if is_english else " (Chinese)"
+        return name.title().replace("_", " ") + " documentation" + lang
+    if filename.endswith(".json"):
+        return "JSON configuration"
+    if filename.endswith(".sh"):
+        return "Shell script"
+
+    return ""
+
+
+def _generate_files_dynamic(lines, repo_root, rel_dir, prefix_base, extensions=None, version_sort=False):
+    # type: (list, str, str, str, list | None, bool) -> None
+    """Dynamically generate file entries for a directory."""
+    abs_dir = os.path.join(repo_root, rel_dir)
+    files = get_sorted_files(abs_dir, extensions, version_sort)
+
+    for i, f in enumerate(files):
+        filepath = rel_dir + "/" + f
+        desc = get_file_description(filepath, f)
+
+        is_last = i == len(files) - 1
+        prefix = prefix_base + ("\u2514\u2500\u2500 " if is_last else "\u251c\u2500\u2500 ")
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + desc)
+        else:
+            lines.append(prefix + f)
+
+
 def _generate_provider_files(lines, repo_root):
     # type: (list, str) -> None
-    """Generate provider file entries for directory structure."""
+    """Generate provider file entries dynamically."""
     lines.append("\u2502   \u251c\u2500\u2500 provider/               # DNS provider implementations")
     provider_dir = os.path.join(repo_root, "ddns", "provider")
     provider_files = get_sorted_files(provider_dir, [".py"])
+
     for i, f in enumerate(provider_files):
         filepath = "ddns/provider/" + f
         desc = FILE_DESCRIPTIONS.get(filepath, "")
@@ -218,42 +276,173 @@ def _generate_provider_files(lines, repo_root):
         if desc:
             padded_name = f.ljust(20)
             lines.append(prefix + padded_name + "# " + desc)
-        elif f == "__init__.py":
-            # __init__.py without description - no comment needed
-            lines.append(prefix + f)
-        elif f.startswith("_"):
-            # Private files without description - no comment needed
+        elif f == "__init__.py" or f.startswith("_"):
             lines.append(prefix + f)
         else:
-            # Unknown providers - generate a description
-            name = f[:-3]  # Remove .py
-            lines.append(prefix + f.ljust(20) + "# " + name.title() + " DNS provider")
+            # Auto-generate description for unknown providers
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + get_provider_code_description(f))
     lines.append("\u2502   \u2502")
 
 
-def _generate_doc_section(lines, repo_root):
+def _generate_scheduler_files(lines, repo_root):
     # type: (list, str) -> None
-    """Generate doc section for directory structure."""
-    lines.append("\u251c\u2500\u2500 doc/                        # Documentation")
-    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration documentation")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.md              # CLI usage (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.en.md           # CLI usage (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.md              # Environment variables (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.en.md           # Environment variables (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 json.md             # JSON config (Chinese)")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 json.en.md          # JSON config (English)")
-    lines.append("\u2502   \u2502")
-    lines.append("\u2502   \u251c\u2500\u2500 dev/                    # Developer documentation")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.md         # Provider development guide (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.en.md      # Provider development guide (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 config.md           # Config system (Chinese)")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 config.en.md        # Config system (English)")
-    lines.append("\u2502   \u2502")
-    lines.append("\u2502   \u251c\u2500\u2500 providers/              # Provider-specific documentation")
+    """Generate scheduler file entries dynamically."""
+    lines.append("\u2502   \u251c\u2500\u2500 scheduler/              # Task scheduling implementations")
+    scheduler_dir = os.path.join(repo_root, "ddns", "scheduler")
+    scheduler_files = get_sorted_files(scheduler_dir, [".py"])
 
-    # doc/providers - dynamic generation
+    for i, f in enumerate(scheduler_files):
+        filepath = "ddns/scheduler/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+
+        is_last = i == len(scheduler_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + desc)
+        elif f == "__init__.py" or f.startswith("_"):
+            lines.append(prefix + f)
+        else:
+            padded_name = f.ljust(20)
+            name = f[:-3]
+            lines.append(prefix + padded_name + "# " + name.title() + " scheduler")
+    lines.append("\u2502   \u2502")
+
+
+def _generate_util_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate util file entries dynamically."""
+    lines.append("\u2502   \u2514\u2500\u2500 util/                   # Utility modules")
+    util_dir = os.path.join(repo_root, "ddns", "util")
+    util_files = get_sorted_files(util_dir, [".py"])
+
+    for i, f in enumerate(util_files):
+        filepath = "ddns/util/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+
+        is_last = i == len(util_files) - 1
+        prefix = "\u2502       \u2514\u2500\u2500 " if is_last else "\u2502       \u251c\u2500\u2500 "
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + desc)
+        elif f == "__init__.py" or f.startswith("_"):
+            lines.append(prefix + f)
+        else:
+            padded_name = f.ljust(20)
+            name = f[:-3]
+            lines.append(prefix + padded_name + "# " + name.title().replace("_", " ") + " utilities")
+    lines.append("\u2502")
+
+
+def _generate_config_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate ddns/config file entries dynamically."""
+    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration management")
+    config_dir = os.path.join(repo_root, "ddns", "config")
+    config_files = get_sorted_files(config_dir, [".py"])
+
+    for i, f in enumerate(config_files):
+        filepath = "ddns/config/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+
+        is_last = i == len(config_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + desc)
+        elif f == "__init__.py" or f.startswith("_"):
+            lines.append(prefix + f)
+        else:
+            padded_name = f.ljust(20)
+            name = f[:-3]
+            lines.append(prefix + padded_name + "# " + name.title() + " configuration")
+    lines.append("\u2502   \u2502")
+
+
+def _generate_ddns_main_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate main ddns files dynamically."""
+    ddns_dir = os.path.join(repo_root, "ddns")
+    # Get only Python files (exclude .pyi stub files), not directories
+    main_files = get_sorted_files(ddns_dir, [".py"])
+
+    for f in main_files:
+        filepath = "ddns/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append("\u2502   \u251c\u2500\u2500 " + padded_name + "# " + desc)
+        elif f == "__init__.py":
+            lines.append("\u2502   \u251c\u2500\u2500 " + f.ljust(20) + "# Package initialization")
+        elif f.startswith("_"):
+            lines.append("\u2502   \u251c\u2500\u2500 " + f)
+        else:
+            padded_name = f.ljust(20)
+            name = f.rsplit(".", 1)[0]
+            lines.append("\u2502   \u251c\u2500\u2500 " + padded_name + "# " + name.title() + " module")
+    lines.append("\u2502   \u2502")
+
+
+def _generate_doc_config_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc/config section dynamically."""
+    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration documentation")
+    config_dir = os.path.join(repo_root, "doc", "config")
+    config_files = get_sorted_files(config_dir, [".md"])
+
+    for i, f in enumerate(config_files):
+        filepath = "doc/config/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+        if not desc:
+            is_english = f.endswith(".en.md")
+            base_name = f.replace(".en.md", "").replace(".md", "")
+            lang = " (English)" if is_english else " (Chinese)"
+            desc = base_name.upper() + " documentation" + lang
+
+        is_last = i == len(config_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        padded_name = f.ljust(20)
+        lines.append(prefix + padded_name + "# " + desc)
+    lines.append("\u2502   \u2502")
+
+
+def _generate_doc_dev_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc/dev section dynamically."""
+    lines.append("\u2502   \u251c\u2500\u2500 dev/                    # Developer documentation")
+    dev_dir = os.path.join(repo_root, "doc", "dev")
+    dev_files = get_sorted_files(dev_dir, [".md"])
+
+    for i, f in enumerate(dev_files):
+        filepath = "doc/dev/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+        if not desc:
+            is_english = f.endswith(".en.md")
+            base_name = f.replace(".en.md", "").replace(".md", "")
+            lang = " (English)" if is_english else " (Chinese)"
+            desc = base_name.title() + " development guide" + lang
+
+        is_last = i == len(dev_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        padded_name = f.ljust(20)
+        lines.append(prefix + padded_name + "# " + desc)
+    lines.append("\u2502   \u2502")
+
+
+def _generate_doc_providers_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc/providers section dynamically."""
+    lines.append("\u2502   \u251c\u2500\u2500 providers/              # Provider-specific documentation")
     providers_dir = os.path.join(repo_root, "doc", "providers")
     provider_docs = get_sorted_files(providers_dir, [".md"])
+
     for i, f in enumerate(provider_docs):
         filepath = "doc/providers/" + f
         desc = FILE_DESCRIPTIONS.get(filepath)
@@ -267,13 +456,22 @@ def _generate_doc_section(lines, repo_root):
         lines.append(prefix + padded_name + "# " + desc)
     lines.append("\u2502   \u2502")
 
-    # doc/examples - dynamic generation
+
+def _generate_doc_examples_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc/examples section dynamically."""
     lines.append("\u2502   \u251c\u2500\u2500 examples/               # Example configuration files")
     examples_dir = os.path.join(repo_root, "doc", "examples")
     example_files = get_sorted_files(examples_dir)
+
     for i, f in enumerate(example_files):
         filepath = "doc/examples/" + f
-        desc = FILE_DESCRIPTIONS.get(filepath, "Example file")
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+        if not desc:
+            if f.endswith(".json"):
+                desc = "Example configuration"
+            else:
+                desc = "Example file"
 
         is_last = i == len(example_files) - 1
         prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
@@ -282,132 +480,226 @@ def _generate_doc_section(lines, repo_root):
         lines.append(prefix + padded_name + "# " + desc)
     lines.append("\u2502   \u2502")
 
-    lines.append("\u2502   \u251c\u2500\u2500 docker.md               # Docker documentation (Chinese)")
-    lines.append("\u2502   \u251c\u2500\u2500 docker.en.md            # Docker documentation (English)")
-    lines.append("\u2502   \u251c\u2500\u2500 install.md              # Installation guide (Chinese)")
-    lines.append("\u2502   \u251c\u2500\u2500 install.en.md           # Installation guide (English)")
-    lines.append("\u2502   \u251c\u2500\u2500 release.md              # Release notes")
+
+def _generate_doc_root_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc root level files dynamically."""
+    doc_dir = os.path.join(repo_root, "doc")
+    # Get files only (not directories) at doc root
+    doc_files = get_sorted_files(doc_dir, [".md"])
+
+    for f in doc_files:
+        filepath = "doc/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+        if not desc:
+            is_english = f.endswith(".en.md")
+            base_name = f.replace(".en.md", "").replace(".md", "")
+            lang = " (English)" if is_english else " (Chinese)"
+            desc = base_name.title() + " documentation" + lang
+
+        padded_name = f.ljust(24)
+        lines.append("\u2502   \u251c\u2500\u2500 " + padded_name + "# " + desc)
+
     lines.append("\u2502   \u2514\u2500\u2500 img/                    # Images and diagrams")
+    lines.append("\u2502")
+
+
+def _generate_doc_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate entire doc section dynamically."""
+    lines.append("\u251c\u2500\u2500 doc/                        # Documentation")
+    _generate_doc_config_section(lines, repo_root)
+    _generate_doc_dev_section(lines, repo_root)
+    _generate_doc_providers_section(lines, repo_root)
+    _generate_doc_examples_section(lines, repo_root)
+    _generate_doc_root_files(lines, repo_root)
+
+
+def _generate_docker_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate docker section dynamically."""
+    lines.append("\u251c\u2500\u2500 docker/                     # Docker configuration")
+    docker_dir = os.path.join(repo_root, "docker")
+    docker_files = get_sorted_files(docker_dir)
+
+    for i, f in enumerate(docker_files):
+        filepath = "docker/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+        if not desc:
+            if f.endswith("Dockerfile") or f == "Dockerfile":
+                desc = f + " build"
+            elif f.endswith(".sh"):
+                desc = "Shell script"
+            else:
+                desc = "Docker file"
+
+        is_last = i == len(docker_files) - 1
+        prefix = "\u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u251c\u2500\u2500 "
+
+        padded_name = f.ljust(20)
+        lines.append(prefix + padded_name + "# " + desc)
     lines.append("\u2502")
 
 
 def _generate_schema_section(lines, repo_root):
     # type: (list, str) -> None
-    """Generate schema section for directory structure."""
+    """Generate schema section dynamically."""
     lines.append("\u251c\u2500\u2500 schema/                     # JSON schemas")
     schema_dir = os.path.join(repo_root, "schema")
     schema_files = get_sorted_files(schema_dir, [".json"], version_sort=True)
+
     for i, f in enumerate(schema_files):
         is_last = i == len(schema_files) - 1
         prefix = "\u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u251c\u2500\u2500 "
+
         version = f[:-5]  # Remove .json
-        if version == "v2":
-            desc = "Legacy schema v2"
-        elif version == "v2.8":
-            desc = "Legacy schema v2.8"
-        elif version == "v4.0":
-            desc = "Previous schema v4.0"
-        elif version == "v4.1":
-            desc = "Latest schema v4.1"
+        # Determine description based on position in list
+        if i == 0:
+            desc = "Legacy schema " + version
+        elif i == len(schema_files) - 1:
+            desc = "Latest schema " + version
+        elif i == len(schema_files) - 2:
+            desc = "Previous schema " + version
         else:
             desc = "Schema " + version
+
         padded_name = f.ljust(24)
         lines.append(prefix + padded_name + "# " + desc)
     lines.append("\u2502")
 
 
+def _generate_tests_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate tests section dynamically."""
+    lines.append("\u251c\u2500\u2500 tests/                      # Unit tests")
+    tests_dir = os.path.join(repo_root, "tests")
+
+    # Get specific files first
+    specific_files = ["__init__.py", "base_test.py", "README.md"]
+    for f in specific_files:
+        if os.path.exists(os.path.join(tests_dir, f)):
+            filepath = "tests/" + f
+            desc = FILE_DESCRIPTIONS.get(filepath, "")
+            if desc:
+                padded_name = f.ljust(20)
+                lines.append("\u2502   \u251c\u2500\u2500 " + padded_name + "# " + desc)
+            else:
+                lines.append("\u2502   \u251c\u2500\u2500 " + f)
+
+    # Get subdirectories
+    subdirs = get_subdirs(tests_dir)
+    for d in subdirs:
+        lines.append("\u2502   \u251c\u2500\u2500 " + (d + "/").ljust(20) + "# Test " + d + " files")
+
+    # Get test file patterns - group by category
+    test_files = get_sorted_files(tests_dir, [".py"])
+    test_categories = set()
+    standalone_tests = []  # Tests without category suffix like test_cache.py, test_ip.py
+
+    for f in test_files:
+        if f.startswith("test_") and f not in specific_files:
+            # Extract category like "provider", "config", etc.
+            name_without_ext = f[5:-3]  # Remove "test_" prefix and ".py" suffix
+            parts = name_without_ext.split("_")
+            if len(parts) >= 2:
+                # Has underscore, so it's like test_provider_xxx.py
+                category = parts[0]
+                test_categories.add(category)
+            else:
+                # No underscore, so it's like test_cache.py
+                standalone_tests.append(f)
+
+    # Generate pattern lines for each category
+    sorted_categories = sorted(test_categories)
+    for category in sorted_categories:
+        pattern = "test_" + category + "_*.py"
+        lines.append("\u2502   \u251c\u2500\u2500 " + pattern.ljust(24) + "# " + category.title() + " tests")
+
+    # Generate lines for standalone tests
+    for i, f in enumerate(standalone_tests):
+        is_last = i == len(standalone_tests) - 1 and not sorted_categories
+        prefix = "\u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u251c\u2500\u2500 "
+        name = f[5:-3].title()  # Remove test_ and .py
+        lines.append(prefix + f.ljust(20) + "# " + name + " tests")
+
+    lines.append("\u2502")
+
+
+def _generate_root_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate root level files dynamically."""
+    # Priority files to show
+    root_files = [
+        "run.py",
+        "install.sh",
+        "pyproject.toml",
+        "setup.cfg",
+        ".gitignore",
+        "LICENSE",
+        "README.md",
+        "README.en.md",
+    ]
+
+    for i, f in enumerate(root_files):
+        if not os.path.exists(os.path.join(repo_root, f)):
+            continue
+
+        desc = FILE_DESCRIPTIONS.get(f, "")
+        if not desc:
+            if f.endswith(".py"):
+                desc = "Python script"
+            elif f.endswith(".sh"):
+                desc = "Shell script"
+            elif f.endswith(".md"):
+                is_english = f.endswith(".en.md")
+                desc = "README (English)" if is_english else "README (Chinese)"
+            else:
+                desc = "Configuration file"
+
+        is_last = i == len(root_files) - 1
+        prefix = "\u2514\u2500\u2500 " if is_last else "\u251c\u2500\u2500 "
+
+        padded_name = f.ljust(28)
+        lines.append(prefix + padded_name + "# " + desc)
+
+
 def generate_full_structure(repo_root):
     # type: (str) -> str
-    """Generate the full directory structure matching AGENTS.md format."""
+    """Generate the full directory structure dynamically from filesystem."""
     lines = []
 
     # Root
     lines.append("DDNS/")
 
-    # .github section
+    # .github section (static - internal config)
     lines.append("\u251c\u2500\u2500 .github/                    # GitHub configuration")
     lines.append("\u2502   \u251c\u2500\u2500 workflows/              # CI/CD workflows (build, publish, test)")
     lines.append("\u2502   \u251c\u2500\u2500 instructions/           # Agent instructions (python.instructions.md)")
     lines.append("\u2502   \u2514\u2500\u2500 copilot-instructions.md # GitHub Copilot instructions")
     lines.append("\u2502")
 
-    # ddns section
+    # ddns section - dynamic
     lines.append("\u251c\u2500\u2500 ddns/                       # Main application code")
-    lines.append("\u2502   \u251c\u2500\u2500 __init__.py             # Package initialization and version info")
-    lines.append("\u2502   \u251c\u2500\u2500 __main__.py             # Entry point for module execution")
-    lines.append("\u2502   \u251c\u2500\u2500 cache.py                # Cache management")
-    lines.append("\u2502   \u251c\u2500\u2500 ip.py                   # IP address detection logic")
-    lines.append("\u2502   \u2502")
-
-    # ddns/config
-    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration management")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 __init__.py")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.py              # Command-line argument parsing")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 config.py           # Configuration loading and merging")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.py              # Environment variable parsing")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 file.py             # JSON file configuration")
-    lines.append("\u2502   \u2502")
-
-    # ddns/provider - dynamic generation
+    _generate_ddns_main_files(lines, repo_root)
+    _generate_config_files(lines, repo_root)
     _generate_provider_files(lines, repo_root)
+    _generate_scheduler_files(lines, repo_root)
+    _generate_util_files(lines, repo_root)
 
-    # ddns/scheduler
-    lines.append("\u2502   \u251c\u2500\u2500 scheduler/              # Task scheduling implementations")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 __init__.py")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 _base.py            # Base scheduler class")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cron.py             # Cron-based scheduler (Linux/macOS)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 launchd.py          # macOS launchd scheduler")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 schtasks.py         # Windows Task Scheduler")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 systemd.py          # Linux systemd timer")
-    lines.append("\u2502   \u2502")
+    # tests section - dynamic
+    _generate_tests_section(lines, repo_root)
 
-    # ddns/util
-    lines.append("\u2502   \u2514\u2500\u2500 util/                   # Utility modules")
-    lines.append("\u2502       \u251c\u2500\u2500 __init__.py")
-    lines.append("\u2502       \u251c\u2500\u2500 comment.py          # Comment handling")
-    lines.append("\u2502       \u251c\u2500\u2500 fileio.py           # File I/O operations")
-    lines.append("\u2502       \u251c\u2500\u2500 http.py             # HTTP client with proxy support")
-    lines.append("\u2502       \u2514\u2500\u2500 try_run.py          # Safe command execution")
-    lines.append("\u2502")
-
-    # tests section
-    lines.append("\u251c\u2500\u2500 tests/                      # Unit tests")
-    lines.append("\u2502   \u251c\u2500\u2500 __init__.py             # Test initialization (path setup)")
-    lines.append("\u2502   \u251c\u2500\u2500 base_test.py            # Shared test utilities and base classes")
-    lines.append("\u2502   \u251c\u2500\u2500 README.md               # Testing documentation")
-    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Test configuration files")
-    lines.append("\u2502   \u251c\u2500\u2500 scripts/                # Test helper scripts")
-    lines.append("\u2502   \u251c\u2500\u2500 test_cache.py           # Cache tests")
-    lines.append("\u2502   \u251c\u2500\u2500 test_config_*.py        # Configuration tests")
-    lines.append("\u2502   \u251c\u2500\u2500 test_ip.py              # IP detection tests")
-    lines.append("\u2502   \u251c\u2500\u2500 test_provider_*.py      # Provider-specific tests")
-    lines.append("\u2502   \u251c\u2500\u2500 test_scheduler_*.py     # Scheduler tests")
-    lines.append("\u2502   \u2514\u2500\u2500 test_util_*.py          # Utility tests")
-    lines.append("\u2502")
-
-    # doc section
+    # doc section - dynamic
     _generate_doc_section(lines, repo_root)
 
-    # docker section
-    lines.append("\u251c\u2500\u2500 docker/                     # Docker configuration")
-    lines.append("\u2502   \u251c\u2500\u2500 Dockerfile              # Main Dockerfile")
-    lines.append("\u2502   \u251c\u2500\u2500 glibc.Dockerfile        # glibc-based build")
-    lines.append("\u2502   \u251c\u2500\u2500 musl.Dockerfile         # musl-based build")
-    lines.append("\u2502   \u2514\u2500\u2500 entrypoint.sh           # Container entrypoint script")
-    lines.append("\u2502")
+    # docker section - dynamic
+    _generate_docker_section(lines, repo_root)
 
-    # schema section - dynamic generation
+    # schema section - dynamic
     _generate_schema_section(lines, repo_root)
 
-    # Root files
-    lines.append("\u251c\u2500\u2500 run.py                      # Direct run script")
-    lines.append("\u251c\u2500\u2500 install.sh                  # One-click install script")
-    lines.append("\u251c\u2500\u2500 pyproject.toml              # Python project configuration")
-    lines.append("\u251c\u2500\u2500 setup.cfg                   # Setup configuration")
-    lines.append("\u251c\u2500\u2500 .gitignore                  # Git ignore rules")
-    lines.append("\u251c\u2500\u2500 LICENSE                     # MIT License")
-    lines.append("\u251c\u2500\u2500 README.md                   # Main README (Chinese)")
-    lines.append("\u2514\u2500\u2500 README.en.md                # Main README (English)")
+    # Root files - dynamic
+    _generate_root_files(lines, repo_root)
 
     return "\n".join(lines)
 
@@ -415,7 +707,6 @@ def generate_full_structure(repo_root):
 def main():
     # type: () -> None
     """Main function to update AGENTS.md directory structure."""
-    # Determine repository root
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(os.path.dirname(script_dir))
 
@@ -425,48 +716,36 @@ def main():
         print("Error: AGENTS.md not found at " + agents_file)
         sys.exit(1)
 
-    # Read current AGENTS.md
     with open(agents_file, "r", encoding="utf-8") as f:
         agents_content = f.read()
 
-    # Extract current structure
     current_structure = extract_current_structure(agents_content)
     if current_structure is None:
         print("Error: Could not find directory structure section in AGENTS.md")
         sys.exit(1)
 
-    # Generate new structure
     new_structure = generate_full_structure(repo_root)
 
-    # Check if structure has changed
     if current_structure.strip() == new_structure.strip():
         print("No changes detected in directory structure.")
         sys.exit(0)
 
-    # Update AGENTS.md content
     updated_content = update_agents_structure(agents_content, new_structure)
 
-    # Extract current version and increment patch version
     version_match = re.search(r"\*\*Version\*\*\s*:\s*([\d.]+)", agents_content)
     if version_match:
         current_version = version_match.group(1)
         version_parts = current_version.split(".")
-        # Ensure at least 3 parts for semantic versioning (major.minor.patch)
         while len(version_parts) < 3:
             version_parts.append("0")
-        # Increment patch version
         version_parts[2] = str(int(version_parts[2]) + 1)
         new_version = ".".join(version_parts)
     else:
         new_version = "1.0.0"
 
-    # Get current date
     today = datetime.now().strftime("%Y-%m-%d")
-
-    # Update version and date
     updated_content = update_version_and_date(updated_content, new_version, today)
 
-    # Write updated content
     with open(agents_file, "w", encoding="utf-8") as f:
         f.write(updated_content)
 
