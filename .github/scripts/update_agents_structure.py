@@ -10,6 +10,7 @@ that can be used to update the AGENTS.md file.
 import os
 import re
 import sys
+from datetime import datetime
 
 # File descriptions for known files
 FILE_DESCRIPTIONS = {
@@ -74,6 +75,29 @@ FILE_DESCRIPTIONS = {
     "docker/glibc.Dockerfile": "glibc-based build",
     "docker/musl.Dockerfile": "musl-based build",
     "docker/entrypoint.sh": "Container entrypoint script",
+    # doc files
+    "doc/docker.md": "Docker documentation (Chinese)",
+    "doc/docker.en.md": "Docker documentation (English)",
+    "doc/install.md": "Installation guide (Chinese)",
+    "doc/install.en.md": "Installation guide (English)",
+    "doc/release.md": "Release notes",
+    # doc/config files
+    "doc/config/cli.md": "CLI usage (Chinese)",
+    "doc/config/cli.en.md": "CLI usage (English)",
+    "doc/config/env.md": "Environment variables (Chinese)",
+    "doc/config/env.en.md": "Environment variables (English)",
+    "doc/config/json.md": "JSON config (Chinese)",
+    "doc/config/json.en.md": "JSON config (English)",
+    # doc/dev files
+    "doc/dev/provider.md": "Provider development guide (Chinese)",
+    "doc/dev/provider.en.md": "Provider development guide (English)",
+    "doc/dev/config.md": "Config system (Chinese)",
+    "doc/dev/config.en.md": "Config system (English)",
+    # doc/providers files
+    "doc/providers/README.md": "Provider list (Chinese)",
+    "doc/providers/README.en.md": "Provider list (English)",
+    # doc/examples files
+    "doc/examples/config-with-extra.json": "Advanced configuration example",
 }
 
 
@@ -94,6 +118,53 @@ def update_agents_structure(agents_content, new_structure):
     pattern = r"(### Directory Structure\s*\n\n```text\n)(.*?)(```)"
     replacement = r"\g<1>" + new_structure + "\n" + r"\g<3>"
     return re.sub(pattern, replacement, agents_content, flags=re.DOTALL)
+
+
+def update_version_and_date(agents_content, version, date_str):
+    # type: (str, str, str) -> str
+    """Update the version and date at the bottom of AGENTS.md."""
+    # Update version
+    agents_content = re.sub(r"\*\*Version\*\*:\s*[\d.]+", "**Version**: " + version, agents_content)
+    # Update date
+    agents_content = re.sub(r"\*\*Last Updated\*\*:\s*[\d-]+", "**Last Updated**: " + date_str, agents_content)
+    return agents_content
+
+
+def get_provider_doc_description(filename):
+    # type: (str) -> str
+    """Generate description for provider documentation files."""
+    # Provider name mappings
+    provider_names = {
+        "alidns": "AliDNS",
+        "aliesa": "AliESA",
+        "cloudflare": "Cloudflare",
+        "dnscom": "DNS.COM",
+        "dnspod": "DNSPod (China)",
+        "dnspod_com": "DNSPod International",
+        "edgeone": "EdgeOne",
+        "edgeone_dns": "EdgeOne DNS",
+        "he": "Hurricane Electric",
+        "huaweidns": "Huawei Cloud DNS",
+        "namesilo": "NameSilo",
+        "noip": "No-IP",
+        "tencentcloud": "Tencent Cloud",
+        "callback": "Callback",
+        "debug": "Debug",
+        "51dns": "51DNS",
+    }
+
+    is_english = filename.endswith(".en.md")
+    base_name = filename.replace(".en.md", "").replace(".md", "")
+
+    # Handle README files
+    if base_name == "README":
+        return "Provider list (English)" if is_english else "Provider list (Chinese)"
+
+    # Get provider name from mapping or capitalize
+    provider_name = provider_names.get(base_name, base_name.title())
+    lang = "English" if is_english else "Chinese"
+
+    return provider_name + " guide (" + lang + ")"
 
 
 def version_sort_key(filename):
@@ -131,6 +202,117 @@ def get_sorted_files(directory, extensions=None, version_sort=False):
     return result
 
 
+def _generate_provider_files(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate provider file entries for directory structure."""
+    lines.append("\u2502   \u251c\u2500\u2500 provider/               # DNS provider implementations")
+    provider_dir = os.path.join(repo_root, "ddns", "provider")
+    provider_files = get_sorted_files(provider_dir, [".py"])
+    for i, f in enumerate(provider_files):
+        filepath = "ddns/provider/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "")
+
+        is_last = i == len(provider_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        if desc:
+            padded_name = f.ljust(20)
+            lines.append(prefix + padded_name + "# " + desc)
+        else:
+            # For unknown providers, generate a description
+            if f.startswith("_"):
+                lines.append(prefix + f)
+            else:
+                name = f[:-3]  # Remove .py
+                lines.append(prefix + f.ljust(20) + "# " + name.title() + " DNS provider")
+    lines.append("\u2502   \u2502")
+
+
+def _generate_doc_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate doc section for directory structure."""
+    lines.append("\u251c\u2500\u2500 doc/                        # Documentation")
+    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration documentation")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.md              # CLI usage (Chinese)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.en.md           # CLI usage (English)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.md              # Environment variables (Chinese)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.en.md           # Environment variables (English)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 json.md             # JSON config (Chinese)")
+    lines.append("\u2502   \u2502   \u2514\u2500\u2500 json.en.md          # JSON config (English)")
+    lines.append("\u2502   \u2502")
+    lines.append("\u2502   \u251c\u2500\u2500 dev/                    # Developer documentation")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.md         # Provider development guide (Chinese)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.en.md      # Provider development guide (English)")
+    lines.append("\u2502   \u2502   \u251c\u2500\u2500 config.md           # Config system (Chinese)")
+    lines.append("\u2502   \u2502   \u2514\u2500\u2500 config.en.md        # Config system (English)")
+    lines.append("\u2502   \u2502")
+    lines.append("\u2502   \u251c\u2500\u2500 providers/              # Provider-specific documentation")
+
+    # doc/providers - dynamic generation
+    providers_dir = os.path.join(repo_root, "doc", "providers")
+    provider_docs = get_sorted_files(providers_dir, [".md"])
+    for i, f in enumerate(provider_docs):
+        filepath = "doc/providers/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath)
+        if not desc:
+            desc = get_provider_doc_description(f)
+
+        is_last = i == len(provider_docs) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        padded_name = f.ljust(20)
+        lines.append(prefix + padded_name + "# " + desc)
+    lines.append("\u2502   \u2502")
+
+    # doc/examples - dynamic generation
+    lines.append("\u2502   \u251c\u2500\u2500 examples/               # Example configuration files")
+    examples_dir = os.path.join(repo_root, "doc", "examples")
+    example_files = get_sorted_files(examples_dir)
+    for i, f in enumerate(example_files):
+        filepath = "doc/examples/" + f
+        desc = FILE_DESCRIPTIONS.get(filepath, "Example file")
+
+        is_last = i == len(example_files) - 1
+        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
+
+        padded_name = f.ljust(24)
+        lines.append(prefix + padded_name + "# " + desc)
+    lines.append("\u2502   \u2502")
+
+    lines.append("\u2502   \u251c\u2500\u2500 docker.md               # Docker documentation (Chinese)")
+    lines.append("\u2502   \u251c\u2500\u2500 docker.en.md            # Docker documentation (English)")
+    lines.append("\u2502   \u251c\u2500\u2500 install.md              # Installation guide (Chinese)")
+    lines.append("\u2502   \u251c\u2500\u2500 install.en.md           # Installation guide (English)")
+    lines.append("\u2502   \u251c\u2500\u2500 release.md              # Release notes")
+    lines.append("\u2502   \u2514\u2500\u2500 img/                    # Images and diagrams")
+    lines.append("\u2502")
+
+
+def _generate_schema_section(lines, repo_root):
+    # type: (list, str) -> None
+    """Generate schema section for directory structure."""
+    lines.append("\u251c\u2500\u2500 schema/                     # JSON schemas")
+    schema_dir = os.path.join(repo_root, "schema")
+    schema_files = get_sorted_files(schema_dir, [".json"], version_sort=True)
+    for i, f in enumerate(schema_files):
+        is_last = i == len(schema_files) - 1
+        prefix = "\u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u251c\u2500\u2500 "
+        version = f[:-5]  # Remove .json
+        if version == "v2":
+            desc = "Legacy schema v2"
+        elif version == "v2.8":
+            desc = "Legacy schema v2.8"
+        elif version == "v4.0":
+            desc = "Previous schema v4.0"
+        elif version == "v4.1":
+            desc = "Latest schema v4.1"
+        else:
+            desc = "Schema " + version
+        padded_name = f.ljust(24)
+        lines.append(prefix + padded_name + "# " + desc)
+    lines.append("\u2502")
+
+
 def generate_full_structure(repo_root):
     # type: (str) -> str
     """Generate the full directory structure matching AGENTS.md format."""
@@ -164,30 +346,7 @@ def generate_full_structure(repo_root):
     lines.append("\u2502   \u2502")
 
     # ddns/provider - dynamic generation
-    lines.append("\u2502   \u251c\u2500\u2500 provider/               # DNS provider implementations")
-    provider_dir = os.path.join(repo_root, "ddns", "provider")
-    provider_files = get_sorted_files(provider_dir, [".py"])
-    for i, f in enumerate(provider_files):
-        filepath = "ddns/provider/" + f
-        desc = FILE_DESCRIPTIONS.get(filepath, "")
-
-        is_last = i == len(provider_files) - 1
-        prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
-
-        if desc:
-            padded_name = f.ljust(20)
-            lines.append(prefix + padded_name + "# " + desc)
-        else:
-            # For unknown providers, generate a description
-            if f.startswith("_"):
-                if f == "__init__.py":
-                    lines.append(prefix + f)
-                else:
-                    lines.append(prefix + f)
-            else:
-                name = f[:-3]  # Remove .py
-                lines.append(prefix + f.ljust(20) + "# " + name.title() + " DNS provider")
-    lines.append("\u2502   \u2502")
+    _generate_provider_files(lines, repo_root)
 
     # ddns/scheduler
     lines.append("\u2502   \u251c\u2500\u2500 scheduler/              # Task scheduling implementations")
@@ -224,36 +383,7 @@ def generate_full_structure(repo_root):
     lines.append("\u2502")
 
     # doc section
-    lines.append("\u251c\u2500\u2500 doc/                        # Documentation")
-    lines.append("\u2502   \u251c\u2500\u2500 config/                 # Configuration documentation")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.md              # CLI usage (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 cli.en.md           # CLI usage (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.md              # Environment variables (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 env.en.md           # Environment variables (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 json.md             # JSON config (Chinese)")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 json.en.md          # JSON config (English)")
-    lines.append("\u2502   \u2502")
-    lines.append("\u2502   \u251c\u2500\u2500 dev/                    # Developer documentation")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.md         # Provider development guide (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 provider.en.md      # Provider development guide (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 config.md           # Config system (Chinese)")
-    lines.append("\u2502   \u2502   \u2514\u2500\u2500 config.en.md        # Config system (English)")
-    lines.append("\u2502   \u2502")
-    lines.append("\u2502   \u251c\u2500\u2500 providers/              # Provider-specific documentation")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 README.md           # Provider list (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 README.en.md        # Provider list (English)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 alidns.md           # AliDNS guide (Chinese)")
-    lines.append("\u2502   \u2502   \u251c\u2500\u2500 alidns.en.md        # AliDNS guide (English)")
-    lines.append(
-        "\u2502   \u2502   \u2514\u2500\u2500 ...                 # Other providers (Chinese & English versions)"
-    )
-    lines.append("\u2502   \u2502")
-    lines.append("\u2502   \u251c\u2500\u2500 docker.md               # Docker documentation (Chinese)")
-    lines.append("\u2502   \u251c\u2500\u2500 docker.en.md            # Docker documentation (English)")
-    lines.append("\u2502   \u251c\u2500\u2500 install.md              # Installation guide (Chinese)")
-    lines.append("\u2502   \u251c\u2500\u2500 install.en.md           # Installation guide (English)")
-    lines.append("\u2502   \u2514\u2500\u2500 img/                    # Images and diagrams")
-    lines.append("\u2502")
+    _generate_doc_section(lines, repo_root)
 
     # docker section
     lines.append("\u251c\u2500\u2500 docker/                     # Docker configuration")
@@ -264,26 +394,7 @@ def generate_full_structure(repo_root):
     lines.append("\u2502")
 
     # schema section - dynamic generation
-    lines.append("\u251c\u2500\u2500 schema/                     # JSON schemas")
-    schema_dir = os.path.join(repo_root, "schema")
-    schema_files = get_sorted_files(schema_dir, [".json"], version_sort=True)
-    for i, f in enumerate(schema_files):
-        is_last = i == len(schema_files) - 1
-        prefix = "\u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u251c\u2500\u2500 "
-        version = f[:-5]  # Remove .json
-        if version == "v2":
-            desc = "Legacy schema v2"
-        elif version == "v2.8":
-            desc = "Legacy schema v2.8"
-        elif version == "v4.0":
-            desc = "Previous schema v4.0"
-        elif version == "v4.1":
-            desc = "Latest schema v4.1"
-        else:
-            desc = "Schema " + version
-        padded_name = f.ljust(24)
-        lines.append(prefix + padded_name + "# " + desc)
-    lines.append("\u2502")
+    _generate_schema_section(lines, repo_root)
 
     # Root files
     lines.append("\u251c\u2500\u2500 run.py                      # Direct run script")
@@ -332,6 +443,26 @@ def main():
     # Update AGENTS.md content
     updated_content = update_agents_structure(agents_content, new_structure)
 
+    # Extract current version and increment patch version
+    version_match = re.search(r"\*\*Version\*\*:\s*([\d.]+)", agents_content)
+    if version_match:
+        current_version = version_match.group(1)
+        version_parts = current_version.split(".")
+        # Increment patch version
+        if len(version_parts) >= 3:
+            version_parts[2] = str(int(version_parts[2]) + 1)
+        else:
+            version_parts.append("1")
+        new_version = ".".join(version_parts)
+    else:
+        new_version = "1.0.0"
+
+    # Get current date
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Update version and date
+    updated_content = update_version_and_date(updated_content, new_version, today)
+
     # Write updated content
     with open(agents_file, "w", encoding="utf-8") as f:
         f.write(updated_content)
@@ -340,6 +471,8 @@ def main():
     print("\nChanges detected:")
     print("Old structure lines: " + str(len(current_structure.strip().split("\n"))))
     print("New structure lines: " + str(len(new_structure.strip().split("\n"))))
+    print("Version: " + new_version)
+    print("Date: " + today)
 
     sys.exit(0)
 
