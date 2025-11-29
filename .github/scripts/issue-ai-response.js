@@ -38,6 +38,19 @@ module.exports = async ({ github, context, core, fs, path }) => {
   // down processing, while smaller limits may omit important context.
   const MAX_FILE_SIZE = 50000; // 50KB
   const MAX_TURNS = 3;
+  // Delay in milliseconds between API calls to respect rate limits (50,000 TPM).
+  // With ~10,000 tokens per request max (including context), 20 seconds between calls
+  // ensures we stay under the rate limit even at maximum throughput (~30,000 tokens/min).
+  const API_CALL_DELAY_MS = 20000;
+
+  /**
+   * Sleep for a specified number of milliseconds
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise<void>}
+   */
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   /**
    * Check if content appears to be a binary file
@@ -225,6 +238,13 @@ Please analyze this issue. If you need to see specific files to provide an accur
     let finalResponse = null;
 
     for (let turn = 1; turn <= MAX_TURNS; turn++) {
+      // Add delay before API calls (except for the first turn) to respect rate limits
+      if (turn > 1) {
+        const delaySeconds = API_CALL_DELAY_MS / 1000;
+        console.log(`Waiting ${delaySeconds} seconds before next API call to respect rate limits...`);
+        await sleep(API_CALL_DELAY_MS);
+      }
+
       console.log(`Turn ${turn}/${MAX_TURNS}: Calling OpenAI API...`);
 
       const aiContent = await callOpenAI(messages);

@@ -30,89 +30,13 @@ jobs:
       - name: Build Repository Index
         id: repo_index
         run: |
-          echo "Building repository index..."
+          echo "Building repository index from AGENTS.md..."
           
-          # Create a detailed summary of the repository structure
-          cat > /tmp/repo_index.md << 'EOF'
-          # DDNS Repository Structure
+          # Extract sections from AGENTS.md: Project Overview, Project Architecture, and Getting Started
+          # This extracts content from "## Project Overview" up to (but not including) "## Development Guide"
+          sed -n '/^## Project Overview$/,/^## Development Guide$/{ /^## Development Guide$/d; p; }' AGENTS.md > /tmp/repo_index.md
           
-          ## Project Overview
-          DDNS is a Python-based Dynamic DNS client that automatically updates DNS records to match the current IP address.
-          - Supports multiple DNS providers
-          - Supports IPv4/IPv6, public/private IPs
-          - Uses Python standard library only (no external dependencies)
-          - Compatible with Python 2.7 and 3.x
-          
-          ## Directory Structure
-          
-          ### Core Application (`ddns/`)
-          - `__init__.py` - Package initialization and main entry
-          - `__main__.py` - CLI entry point
-          - `cache.py` - IP caching mechanism
-          - `ip.py` - IP detection utilities
-          
-          ### Configuration (`ddns/config/`)
-          - Configuration loading and validation
-          
-          ### DNS Providers (`ddns/provider/`)
-          - `_base.py` - Base provider classes (SimpleProvider, BaseProvider)
-          EOF
-          
-          # List all provider implementations
-          echo "- Provider implementations:" >> /tmp/repo_index.md
-          for provider in ddns/provider/*.py; do
-            name=$(basename "$provider" .py)
-            if [[ "$name" != "_"* && "$name" != "__init__" ]]; then
-              echo "  - \`$name.py\` - $name DNS provider" >> /tmp/repo_index.md
-            fi
-          done
-          
-          # Add utility modules
-          cat >> /tmp/repo_index.md << 'EOF'
-          
-          ### Utilities (`ddns/util/`)
-          - HTTP client, configuration management, helper functions
-          
-          ### Scheduler (`ddns/scheduler/`)
-          - Scheduled task management
-          
-          ## Documentation (`doc/`)
-          EOF
-          
-          # List documentation structure
-          echo "### Configuration Guides (\`doc/config/\`)" >> /tmp/repo_index.md
-          for doc in doc/config/*.md; do
-            if [ -f "$doc" ]; then
-              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
-            fi
-          done
-          
-          echo "" >> /tmp/repo_index.md
-          echo "### Provider Guides (\`doc/providers/\`)" >> /tmp/repo_index.md
-          for doc in doc/providers/*.md; do
-            if [ -f "$doc" ]; then
-              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
-            fi
-          done
-          
-          echo "" >> /tmp/repo_index.md
-          echo "### Developer Guides (\`doc/dev/\`)" >> /tmp/repo_index.md
-          for doc in doc/dev/*.md; do
-            if [ -f "$doc" ]; then
-              echo "- \`$(basename "$doc")\`" >> /tmp/repo_index.md
-            fi
-          done
-          
-          # Add test files
-          echo "" >> /tmp/repo_index.md
-          echo "## Tests (\`tests/\`)" >> /tmp/repo_index.md
-          for test in tests/test_*.py; do
-            if [ -f "$test" ]; then
-              echo "- \`$(basename "$test")\`" >> /tmp/repo_index.md
-            fi
-          done
-          
-          # Add recent changes
+          # Add recent changes for additional context
           echo "" >> /tmp/repo_index.md
           echo "## Recent Changes (last 5 commits)" >> /tmp/repo_index.md
           git log --oneline --no-decorate -5 >> /tmp/repo_index.md
