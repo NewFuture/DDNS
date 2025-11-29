@@ -76,191 +76,9 @@ FILE_DESCRIPTIONS = {
     "docker/entrypoint.sh": "Container entrypoint script",
 }
 
-# Directory descriptions
-DIR_DESCRIPTIONS = {
-    ".github/": "GitHub configuration",
-    ".github/workflows/": "CI/CD workflows (build, publish, test)",
-    ".github/instructions/": "Agent instructions (python.instructions.md)",
-    "ddns/": "Main application code",
-    "ddns/config/": "Configuration management",
-    "ddns/provider/": "DNS provider implementations",
-    "ddns/scheduler/": "Task scheduling implementations",
-    "ddns/util/": "Utility modules",
-    "tests/": "Unit tests",
-    "tests/config/": "Test configuration files",
-    "tests/scripts/": "Test helper scripts",
-    "doc/": "Documentation",
-    "doc/config/": "Configuration documentation",
-    "doc/dev/": "Developer documentation",
-    "doc/providers/": "Provider-specific documentation",
-    "doc/img/": "Images and diagrams",
-    "docker/": "Docker configuration",
-    "schema/": "JSON schemas",
-}
-
-# Special file patterns for tests directory
-TEST_PATTERNS = {
-    "test_cache.py": "Cache tests",
-    "test_config_*.py": "Configuration tests",
-    "test_ip.py": "IP detection tests",
-    "test_provider_*.py": "Provider-specific tests",
-    "test_scheduler_*.py": "Scheduler tests",
-    "test_util_*.py": "Utility tests",
-}
-
-# Directories to skip
-SKIP_DIRS = {".git", "__pycache__", ".vscode", "node_modules", ".github/agents"}
-
-# Files to skip
-SKIP_FILES = {"*.pyc", "*.pyo", ".DS_Store"}
-
-
-def get_file_description(filepath):
-    """Get description for a file based on filepath."""
-    # Check exact match first
-    if filepath in FILE_DESCRIPTIONS:
-        return FILE_DESCRIPTIONS[filepath]
-
-    # Check for pattern matches in tests
-    filename = os.path.basename(filepath)
-    parent_dir = os.path.dirname(filepath)
-
-    if parent_dir == "tests":
-        for pattern, desc in TEST_PATTERNS.items():
-            if "*" in pattern:
-                prefix = pattern.split("*")[0]
-                suffix = pattern.split("*")[1] if "*" in pattern else ""
-                if filename.startswith(prefix) and filename.endswith(suffix):
-                    return desc
-
-    # For doc files, generate description based on filename
-    if parent_dir.startswith("doc/"):
-        if filename.endswith(".en.md"):
-            base = filename[:-6]  # Remove .en.md
-            return base.replace("_", " ").title() + " (English)"
-        elif filename.endswith(".md"):
-            base = filename[:-3]  # Remove .md
-            return base.replace("_", " ").title() + " (Chinese)"
-
-    # For schema files
-    if parent_dir == "schema":
-        if filename.endswith(".json"):
-            version = filename[:-5]  # Remove .json
-            return "Schema " + version
-
-    return ""
-
-
-def should_skip(name, is_dir=False):
-    """Check if file/dir should be skipped."""
-    if is_dir and name in SKIP_DIRS:
-        return True
-    if not is_dir:
-        for pattern in SKIP_FILES:
-            if pattern.startswith("*") and name.endswith(pattern[1:]):
-                return True
-            if pattern == name:
-                return True
-    return False
-
-
-def scan_directory(root_path, rel_path="", depth=0, max_depth=3):
-    """Scan directory and return structure as list of (name, is_dir, description, depth)."""
-    result = []
-    full_path = os.path.join(root_path, rel_path) if rel_path else root_path
-
-    if depth > max_depth:
-        return result
-
-    try:
-        entries = sorted(os.listdir(full_path))
-    except OSError:
-        return result
-
-    dirs = []
-    files = []
-
-    for entry in entries:
-        entry_path = os.path.join(full_path, entry)
-        entry_rel = os.path.join(rel_path, entry) if rel_path else entry
-
-        if os.path.isdir(entry_path):
-            if not should_skip(entry, is_dir=True):
-                dirs.append((entry, entry_rel))
-        else:
-            if not should_skip(entry):
-                files.append((entry, entry_rel))
-
-    # Add directories first
-    for name, entry_rel in dirs:
-        dir_key = entry_rel + "/"
-        desc = DIR_DESCRIPTIONS.get(dir_key, "")
-        result.append((name + "/", True, desc, depth))
-
-        # Recursively scan subdirectory
-        sub_entries = scan_directory(root_path, entry_rel, depth + 1, max_depth)
-        result.extend(sub_entries)
-
-    # Then add files
-    for name, entry_rel in files:
-        desc = get_file_description(entry_rel)
-        result.append((name, False, desc, depth))
-
-    return result
-
-
-def generate_tree_structure(entries, base_name="DDNS"):
-    """Generate tree structure string from entries."""
-    lines = [base_name + "/"]
-
-    # Filter and organize entries by depth
-    for i, (name, is_dir, desc, depth) in enumerate(entries):
-        # Determine prefix based on depth
-        prefix_parts = []
-        for d in range(depth):
-            # Check if there are more items at this level after current
-            has_more_at_level = False
-            for j, (_, _, _, check_depth) in enumerate(entries[i + 1 :], i + 1):
-                if check_depth == d:
-                    has_more_at_level = True
-                    break
-                if check_depth < d:
-                    break
-            if has_more_at_level:
-                prefix_parts.append("\u2502   ")
-            else:
-                prefix_parts.append("    ")
-
-        # Check if this is the last item at its depth
-        is_last = True
-        for j in range(i + 1, len(entries)):
-            if entries[j][3] == depth:
-                is_last = False
-                break
-            if entries[j][3] < depth:
-                break
-
-        if is_last:
-            prefix_parts.append("\u2514\u2500\u2500 ")
-        else:
-            prefix_parts.append("\u251c\u2500\u2500 ")
-
-        prefix = "".join(prefix_parts)
-
-        # Format description
-        if desc:
-            # Pad name to align descriptions
-            padded_name = name.ljust(24 - len(prefix) + len(name))
-            line = prefix + padded_name + "# " + desc
-        else:
-            line = prefix + name
-
-        lines.append(line)
-
-    return "\n".join(lines)
-
 
 def extract_current_structure(agents_content):
+    # type: (str) -> str | None
     """Extract the current directory structure section from AGENTS.md."""
     # Find the directory structure section
     pattern = r"### Directory Structure\s*\n\n```text\n(.*?)```"
@@ -271,14 +89,15 @@ def extract_current_structure(agents_content):
 
 
 def update_agents_structure(agents_content, new_structure):
+    # type: (str, str) -> str
     """Update the directory structure section in AGENTS.md content."""
     pattern = r"(### Directory Structure\s*\n\n```text\n)(.*?)(```)"
     replacement = r"\g<1>" + new_structure + "\n" + r"\g<3>"
     return re.sub(pattern, replacement, agents_content, flags=re.DOTALL)
 
 
-# (Function `generate_structure_for_section()` removed)
 def version_sort_key(filename):
+    # type: (str) -> list
     """Sort key for version-named files like v2.json, v2.8.json, v4.0.json."""
     # Extract version number from filename (e.g., v2.8.json -> [2, 8])
     name = filename.rsplit(".", 1)[0]  # Remove extension
@@ -295,6 +114,7 @@ def version_sort_key(filename):
 
 
 def get_sorted_files(directory, extensions=None, version_sort=False):
+    # type: (str, list | None, bool) -> list
     """Get sorted list of files from a directory."""
     result = []
     if os.path.isdir(directory):
@@ -312,6 +132,7 @@ def get_sorted_files(directory, extensions=None, version_sort=False):
 
 
 def generate_full_structure(repo_root):
+    # type: (str) -> str
     """Generate the full directory structure matching AGENTS.md format."""
     lines = []
 
@@ -478,6 +299,7 @@ def generate_full_structure(repo_root):
 
 
 def main():
+    # type: () -> None
     """Main function to update AGENTS.md directory structure."""
     # Determine repository root
     script_dir = os.path.dirname(os.path.abspath(__file__))
