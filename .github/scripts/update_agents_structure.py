@@ -123,10 +123,10 @@ def update_agents_structure(agents_content, new_structure):
 def update_version_and_date(agents_content, version, date_str):
     # type: (str, str, str) -> str
     """Update the version and date at the bottom of AGENTS.md."""
-    # Update version
-    agents_content = re.sub(r"\*\*Version\*\*:\s*[\d.]+", "**Version**: " + version, agents_content)
-    # Update date
-    agents_content = re.sub(r"\*\*Last Updated\*\*:\s*[\d-]+", "**Last Updated**: " + date_str, agents_content)
+    # Update version - flexible pattern to handle spacing variations
+    agents_content = re.sub(r"\*\*Version\*\*\s*:\s*[\d.]+", "**Version**: " + version, agents_content)
+    # Update date - flexible pattern to handle spacing variations
+    agents_content = re.sub(r"\*\*Last Updated\*\*\s*:\s*[\d-]+", "**Last Updated**: " + date_str, agents_content)
     return agents_content
 
 
@@ -218,13 +218,16 @@ def _generate_provider_files(lines, repo_root):
         if desc:
             padded_name = f.ljust(20)
             lines.append(prefix + padded_name + "# " + desc)
+        elif f == "__init__.py":
+            # __init__.py without description - no comment needed
+            lines.append(prefix + f)
+        elif f.startswith("_"):
+            # Private files without description - no comment needed
+            lines.append(prefix + f)
         else:
-            # For unknown providers, generate a description
-            if f.startswith("_"):
-                lines.append(prefix + f)
-            else:
-                name = f[:-3]  # Remove .py
-                lines.append(prefix + f.ljust(20) + "# " + name.title() + " DNS provider")
+            # Unknown providers - generate a description
+            name = f[:-3]  # Remove .py
+            lines.append(prefix + f.ljust(20) + "# " + name.title() + " DNS provider")
     lines.append("\u2502   \u2502")
 
 
@@ -444,15 +447,15 @@ def main():
     updated_content = update_agents_structure(agents_content, new_structure)
 
     # Extract current version and increment patch version
-    version_match = re.search(r"\*\*Version\*\*:\s*([\d.]+)", agents_content)
+    version_match = re.search(r"\*\*Version\*\*\s*:\s*([\d.]+)", agents_content)
     if version_match:
         current_version = version_match.group(1)
         version_parts = current_version.split(".")
+        # Ensure at least 3 parts for semantic versioning (major.minor.patch)
+        while len(version_parts) < 3:
+            version_parts.append("0")
         # Increment patch version
-        if len(version_parts) >= 3:
-            version_parts[2] = str(int(version_parts[2]) + 1)
-        else:
-            version_parts.append("1")
+        version_parts[2] = str(int(version_parts[2]) + 1)
         new_version = ".".join(version_parts)
     else:
         new_version = "1.0.0"
