@@ -39,8 +39,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
   const MAX_FILE_SIZE = 50000; // 50KB
   const MAX_TURNS = 3;
   // Delay in milliseconds between API calls to respect rate limits (50K tokens per minute).
-  // Configurable via RATE_LIMIT_DELAY_MS environment variable. Default is 60 seconds.
-  const RATE_LIMIT_DELAY_MS = parseInt(process.env.RATE_LIMIT_DELAY_MS || '60000', 10);
+  // Configurable via RATE_LIMIT_DELAY_MS environment variable. Default is 31 seconds.
+  const RATE_LIMIT_DELAY_MS = parseInt(process.env.RATE_LIMIT_DELAY_MS || '31000', 10);
 
   /**
    * Check if content appears to be a binary file
