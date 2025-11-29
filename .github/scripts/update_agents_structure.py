@@ -340,7 +340,6 @@ def generate_full_structure(repo_root):
     ddns_root_files = sorted(
         [f for f in os.listdir(ddns_dir) if os.path.isfile(os.path.join(ddns_dir, f)) and f.endswith(".py")]
     )
-    sorted([d for d in os.listdir(ddns_dir) if os.path.isdir(os.path.join(ddns_dir, d)) and not d.startswith("_")])
 
     for f in ddns_root_files:
         filepath = "ddns/" + f
