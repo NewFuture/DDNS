@@ -276,7 +276,7 @@ def generate_full_structure(repo_root):
         elif version == "v2.8":
             desc = "Legacy schema v2.8"
         elif version == "v4.0":
-            desc = "Current schema v4.0"
+            desc = "Previous schema v4.0"
         elif version == "v4.1":
             desc = "Latest schema v4.1"
         else:
