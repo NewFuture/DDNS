@@ -237,7 +237,7 @@ Platform-specific implementations:
 ```bash
 git clone https://github.com/NewFuture/DDNS.git
 cd DDNS
-python3 -m ddns --help
+python -m ddns --help
 ```
 
 **PyPI**
@@ -262,13 +262,13 @@ ddns --help
 
 ```bash
 # Run with config file
-python3 -m ddns -c config.json
+python -m ddns -c config.json
 
 # Run with command-line args
-python3 -m ddns --dns=cloudflare --id=EMAIL --token=TOKEN --ipv4=domain.com
+python -m ddns --dns=cloudflare --id=EMAIL --token=TOKEN --ipv4=domain.com
 
 # Enable debug mode
-python3 -m ddns --debug
+python -m ddns --debug
 ```
 
 ### Platform Setup
@@ -365,8 +365,8 @@ docs(providers): update provider documentation
 
 ### Development Workflow
 
-1. **Setup**: `pip install -e ".[dev]"` or `pip install ruff pytest`
-2. **Branch**: `feat/feature-name` or `fix/issue-description`
+1. **Setup**: `pip install ruff pytest`
+2. **Branch**: `copilot/feature-name` or `copilot/issue-description`
 3. **Code**: Make minimal changes, follow standards
 4. **Test**: `python3 -m unittest discover tests -v`
 5. **Lint**: `ruff check --fix --unsafe-fixes . && ruff format .`
@@ -381,8 +381,8 @@ docs(providers): update provider documentation
 
 **unittest** (recommended - no dependencies)
 ```bash
-python3 -m unittest discover tests -v
-python3 -m unittest tests.test_provider_cloudflare -v
+python -m unittest discover tests -v
+python -m unittest tests.test_provider_cloudflare -v
 ```
 
 **pytest** (optional)
@@ -449,18 +449,11 @@ python3 -m ddns --dns=debug --ipv4=test.com --debug
 
 **Linting Error**: Run `ruff check --fix --unsafe-fixes . && ruff format .`
 
-### CI Failures
-
-Check GitHub Actions logs. Common fixes:
-- **Linting**: `ruff check --fix --unsafe-fixes . && ruff format .`
-- **Python version**: Test locally with `python2.7` or `python3.12`
-- **Docker**: Test with `docker build -t ddns:test -f docker/Dockerfile .`
-
 ### Debug Mode
 
 ```bash
-python3 -m ddns --debug --dns=myprovider --ipv4=test.com
-python3 -m ddns --debug --log_file=debug.log
+python -m ddns --debug --dns=myprovider --ipv4=test.com
+python -m ddns --debug --log_file=debug.log
 ```
 
 **Common Issues**:
@@ -538,6 +531,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: 2025-11-14  
+**Version**: 1.0.1  
+**Last Updated**: 2025-11-29  
 **Maintained by**: DDNS Project Contributors
