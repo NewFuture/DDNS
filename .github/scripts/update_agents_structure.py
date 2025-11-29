@@ -277,20 +277,7 @@ def update_agents_structure(agents_content, new_structure):
     return re.sub(pattern, replacement, agents_content, flags=re.DOTALL)
 
 
-def generate_structure_for_section():
-    """Generate the directory structure for the specific sections documented in AGENTS.md."""
-    lines = ["DDNS/"]
-
-    # .github section
-    lines.append("\u251c\u2500\u2500 .github/                    # GitHub configuration")
-    lines.append("\u2502   \u251c\u2500\u2500 workflows/              # CI/CD workflows (build, publish, test)")
-    lines.append("\u2502   \u251c\u2500\u2500 instructions/           # Agent instructions (python.instructions.md)")
-    lines.append("\u2502   \u2514\u2500\u2500 copilot-instructions.md # GitHub Copilot instructions")
-    lines.append("\u2502")
-
-    return "\n".join(lines)
-
-
+# (Function `generate_structure_for_section()` removed)
 def version_sort_key(filename):
     """Sort key for version-named files like v2.json, v2.8.json, v4.0.json."""
     # Extract version number from filename (e.g., v2.8.json -> [2, 8])
@@ -322,55 +309,6 @@ def get_sorted_files(directory, extensions=None, version_sort=False):
     else:
         result.sort()
     return result
-
-
-def generate_ddns_provider_section(repo_root):
-    """Generate the provider section based on actual files."""
-    provider_dir = os.path.join(repo_root, "ddns", "provider")
-    files = get_sorted_files(provider_dir, [".py"])
-
-    lines = []
-    for i, f in enumerate(files):
-        filepath = "ddns/provider/" + f
-        desc = FILE_DESCRIPTIONS.get(filepath, "")
-
-        # Determine prefix (last item uses └── otherwise ├──)
-        is_last = i == len(files) - 1
-        prefix = "\u2502   \u2502   " + ("\u2514\u2500\u2500 " if is_last else "\u251c\u2500\u2500 ")
-
-        if desc:
-            padded_name = f.ljust(20)
-            lines.append(prefix + padded_name + "# " + desc)
-        else:
-            lines.append(prefix + f)
-
-    return lines
-
-
-def generate_schema_section(repo_root):
-    """Generate the schema section based on actual files."""
-    schema_dir = os.path.join(repo_root, "schema")
-    files = get_sorted_files(schema_dir, [".json"])
-
-    lines = []
-    for i, f in enumerate(files):
-        is_last = i == len(files) - 1
-        prefix = "\u251c\u2500\u2500 " if not is_last else "\u2514\u2500\u2500 "
-        version = f[:-5]  # Remove .json
-        desc = "Schema " + version
-        if version == "v2":
-            desc = "Legacy schema v2"
-        elif version == "v2.8":
-            desc = "Legacy schema v2.8"
-        elif version == "v4.0":
-            desc = "Current schema v4.0"
-        elif version == "v4.1":
-            desc = "Latest schema v4.1"
-
-        padded_name = f.ljust(24)
-        lines.append("    " + prefix + padded_name + "# " + desc)
-
-    return lines
 
 
 def generate_full_structure(repo_root):
