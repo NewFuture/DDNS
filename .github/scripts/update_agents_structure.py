@@ -132,14 +132,67 @@ def update_version_and_date(agents_content, version, date_str):
     return agents_content
 
 
-def get_provider_name(base_name):
-    # type: (str) -> str
-    """Get nice display name for a provider."""
-    return PROVIDER_NAMES.get(base_name, base_name.title())
+def _parse_provider_init(repo_root):
+    # type: (str) -> dict
+    """Parse ddns/provider/__init__.py to extract provider name mappings."""
+    provider_init_path = os.path.join(repo_root, "ddns", "provider", "__init__.py")
+    provider_mapping = {}
+
+    if not os.path.exists(provider_init_path):
+        return provider_mapping
+
+    try:
+        with open(provider_init_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Parse the mapping dictionary to extract provider names
+        # Match patterns like: "dnspod": DnspodProvider,
+        pattern = r'"([^"]+)":\s*(\w+Provider)'
+        matches = re.findall(pattern, content)
+
+        for provider_key, class_name in matches:
+            # Extract base name from class name (e.g., DnspodProvider -> Dnspod)
+            # Remove 'Provider' suffix and format nicely
+            if class_name.endswith("Provider"):
+                base_class_name = class_name[:-8]  # Remove 'Provider'
+                # Only add the primary provider name (first occurrence of each class)
+                if provider_key not in provider_mapping:
+                    provider_mapping[provider_key] = base_class_name
+    except (OSError, IOError):
+        pass
+
+    return provider_mapping
 
 
-def get_provider_doc_description(filename):
-    # type: (str) -> str
+# Cache for provider init parsing
+_PROVIDER_INIT_CACHE = {}
+
+
+def get_provider_name(base_name, repo_root=None):
+    # type: (str, str | None) -> str
+    """Get nice display name for a provider.
+
+    First checks PROVIDER_NAMES, then reads from ddns/provider/__init__.py.
+    """
+    # Check static mapping first
+    if base_name in PROVIDER_NAMES:
+        return PROVIDER_NAMES[base_name]
+
+    # Try to read from provider __init__.py if repo_root is provided
+    if repo_root:
+        global _PROVIDER_INIT_CACHE
+        if not _PROVIDER_INIT_CACHE:
+            _PROVIDER_INIT_CACHE = _parse_provider_init(repo_root)
+
+        if base_name in _PROVIDER_INIT_CACHE:
+            return _PROVIDER_INIT_CACHE[base_name]
+
+    # Fallback to title case
+    return base_name.title()
+
+
+def get_provider_doc_description(filename, repo_root=None):
+    # type: (str, str | None) -> str
     """Generate description for provider documentation files."""
     is_english = filename.endswith(".en.md")
     base_name = filename.replace(".en.md", "").replace(".md", "")
@@ -147,16 +200,16 @@ def get_provider_doc_description(filename):
     if base_name == "README":
         return "Provider list (English)" if is_english else "Provider list (Chinese)"
 
-    provider_name = get_provider_name(base_name)
+    provider_name = get_provider_name(base_name, repo_root)
     lang = "English" if is_english else "Chinese"
     return provider_name + " guide (" + lang + ")"
 
 
-def get_provider_code_description(filename):
-    # type: (str) -> str
+def get_provider_code_description(filename, repo_root=None):
+    # type: (str, str | None) -> str
     """Generate description for provider Python files."""
     base_name = filename.replace(".py", "")
-    provider_name = get_provider_name(base_name)
+    provider_name = get_provider_name(base_name, repo_root)
     return provider_name + " DNS provider"
 
 
@@ -281,7 +334,7 @@ def _generate_provider_files(lines, repo_root):
         else:
             # Auto-generate description for unknown providers
             padded_name = f.ljust(20)
-            lines.append(prefix + padded_name + "# " + get_provider_code_description(f))
+            lines.append(prefix + padded_name + "# " + get_provider_code_description(f, repo_root))
     lines.append("\u2502   \u2502")
 
 
@@ -447,7 +500,7 @@ def _generate_doc_providers_section(lines, repo_root):
         filepath = "doc/providers/" + f
         desc = FILE_DESCRIPTIONS.get(filepath)
         if not desc:
-            desc = get_provider_doc_description(f)
+            desc = get_provider_doc_description(f, repo_root)
 
         is_last = i == len(provider_docs) - 1
         prefix = "\u2502   \u2502   \u2514\u2500\u2500 " if is_last else "\u2502   \u2502   \u251c\u2500\u2500 "
