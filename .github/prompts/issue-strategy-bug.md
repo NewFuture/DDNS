@@ -1,4 +1,4 @@
-# Response Strategy for BUG Reports
+# Response Strategy for Bug Reports
 
 You are now responding to a **BUG** report. Follow these guidelines:
 
