@@ -32,6 +32,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
   }
 
   // Load classification-specific strategy prompts
+  // Classification names must match the file naming pattern: issue-strategy-{classification}.md
   const strategyPrompts = {};
   const classifications = ['bug', 'feature', 'question'];
   for (const classification of classifications) {
@@ -325,7 +326,7 @@ Please analyze this issue. First classify it, then either request files you need
 
       // Step 2: Inject classification-specific strategy prompt if not yet injected
       // This ensures strategy is added once per classification, and handles classification changes
-      if (currentClassification && classifications.includes(currentClassification) && !injectedStrategies.has(currentClassification)) {
+      if (currentClassification && !injectedStrategies.has(currentClassification)) {
         const strategy = strategyPrompts[currentClassification];
         if (strategy) {
           injectedStrategies.add(currentClassification);
