@@ -1,15 +1,13 @@
 /**
  * Multi-turn AI Response Script for GitHub Issues
  * 
- * This script handles AI-powered responses to GitHub issues using a two-step
- * conversation approach:
+ * This script handles AI-powered responses to GitHub issues using a multi-turn
+ * conversation approach with upfront strategy guidance:
  * 
- * Step 1: Basic system prompt + issue + context → Get classification + file requests
- * Step 2: Based on classification, inject strategy-specific prompts + iterate with files
- * 
- * Classification-specific strategy prompts are loaded dynamically based on the 
- * classification returned in Step 1, and added to subsequent turns if classification
- * changes during iteration.
+ * - All classification-specific strategies are included in the initial system prompt
+ * - This allows the AI to use "Relevant Files to Consider" guidance when requesting files
+ * - The AI classifies the issue and requests appropriate files in turn 1
+ * - Subsequent turns provide requested files until a final response is generated
  */
 
 module.exports = async ({ github, context, core, fs, path }) => {
@@ -183,18 +181,32 @@ module.exports = async ({ github, context, core, fs, path }) => {
   try {
     // Conversation history
     const messages = [];
-    // Track which classification strategies have been injected into the conversation
-    const injectedStrategies = new Set();
+
+    // Build combined strategy section with all classification strategies
+    // This ensures AI has file selection guidance before requesting files in turn 1
+    let allStrategies = '';
+    for (const classification of classifications) {
+      const strategy = strategyPrompts[classification];
+      if (strategy) {
+        allStrategies += `\n### For ${classification.toUpperCase()} issues:\n\n${strategy}\n`;
+      }
+    }
 
     // Step 1: Basic system prompt for classification and initial analysis
-    // Response Strategy is NOT included here - it will be added in Step 2 based on classification
+    // All classification strategies are included upfront to guide file requests
     const step1SystemPrompt = `${systemPrompt}
 
-## Step 1: Classification and Initial Analysis
+## Classification-Specific Response Strategies
 
-You are in the first step of a multi-turn conversation. Your primary goal is to:
+After classifying the issue, follow the appropriate strategy below:
+${allStrategies}
+
+## Multi-turn Conversation Mode
+
+You are in a multi-turn conversation. Your primary goals are to:
 1. **Classify the issue** as one of: bug, feature, or question
-2. **Identify what files you need** to provide an accurate response
+2. **Apply the appropriate strategy** based on your classification
+3. **Identify what files you need** using the "Relevant Files to Consider" guidance above
 
 ### Response Format
 
@@ -219,6 +231,7 @@ If you have enough information to respond without additional files:
 
 ### Guidelines
 - Always provide a classification first
+- Use the classification-specific strategy guidance when deciding which files to request
 - Request only files that are directly relevant to the issue
 - Request at most 10 files per turn
 - You have at most 3 turns to gather information before providing a final response`;
@@ -317,22 +330,11 @@ Please analyze this issue. First classify it, then either request files you need
       // Add assistant's response to history
       messages.push({ role: 'assistant', content: aiContent });
 
-      // Build the next user message with files and strategy prompt if applicable
+      // Build the next user message with requested file contents
       let fileContents = '## Requested File Contents\n\n';
       for (const filePath of requestedFiles.slice(0, MAX_FILES_PER_TURN)) {
         const content = readFileContent(filePath);
         fileContents += `### \`${filePath}\`\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
-      }
-
-      // Step 2: Inject classification-specific strategy prompt if not yet injected
-      // This ensures strategy is added once per classification, and handles classification changes
-      if (currentClassification && !injectedStrategies.has(currentClassification)) {
-        const strategy = strategyPrompts[currentClassification];
-        if (strategy) {
-          injectedStrategies.add(currentClassification);
-          fileContents += `\n---\n\n## Response Strategy\n\n${strategy}\n\n---\n\n`;
-          console.log(`Injected ${currentClassification} strategy into user message`);
-        }
       }
 
       // Append remaining turns message (this code is only reached when turn < MAX_TURNS)
