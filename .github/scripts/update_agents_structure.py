@@ -35,7 +35,7 @@ def parse_agents_md():
     with open(agents_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    match = re.search(r"```text\n(.*?)```", content, re.DOTALL)
+    match = re.search(r"### Directory Structure.*?```text\n(.*?)```", content, re.DOTALL)
     if not match:
         return set()
 
@@ -62,7 +62,11 @@ def parse_agents_md():
 
 def main():
     # type: () -> None
-    actual = scan_files("ddns", (".py", ".pyi")) | scan_files("doc", (".md", ".json"))
+    actual = (
+        scan_files("ddns", (".py", ".pyi")) |
+        scan_files("doc", (".md", ".json")) |
+        scan_files("schema", (".json",))
+    )
     documented = parse_agents_md()
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)
@@ -86,7 +90,7 @@ def main():
     with open(os.path.join(REPO_ROOT, ".github", "issue_body.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("\n".join(lines))
-    print("\nAdded: %d, Deleted: %d" % (len(added), len(deleted)))
+    sys.stderr.write("\nAdded: %d, Deleted: %d\n" % (len(added), len(deleted)))
 
 
 if __name__ == "__main__":
