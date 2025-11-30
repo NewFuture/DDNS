@@ -137,14 +137,44 @@ doc/:	Documentation
 	providers/:	Provider-specific documentation
 		README.md:	Provider list (Chinese)
 		README.en.md:	Provider list (English)
+		51dns.md:	51DNS guide (Chinese)
+		51dns.en.md:	51DNS guide (English)
 		alidns.md:	AliDNS guide (Chinese)
 		alidns.en.md:	AliDNS guide (English)
-		...:	Other providers (Chinese & English versions)
+		aliesa.md:	Alibaba Cloud ESA guide (Chinese)
+		aliesa.en.md:	Alibaba Cloud ESA guide (English)
+		callback.md:	Callback guide (Chinese)
+		callback.en.md:	Callback guide (English)
+		cloudflare.md:	Cloudflare guide (Chinese)
+		cloudflare.en.md:	Cloudflare guide (English)
+		debug.md:	Debug guide (Chinese)
+		debug.en.md:	Debug guide (English)
+		dnscom.md:	DNS.COM guide (Chinese)
+		dnscom.en.md:	DNS.COM guide (English)
+		dnspod.md:	DNSPod guide (Chinese)
+		dnspod.en.md:	DNSPod guide (English)
+		dnspod_com.md:	DNSPod International guide (Chinese)
+		dnspod_com.en.md:	DNSPod International guide (English)
+		edgeone.md:	Tencent EdgeOne guide (Chinese)
+		edgeone.en.md:	Tencent EdgeOne guide (English)
+		edgeone_dns.md:	Tencent EdgeOne DNS guide (Chinese)
+		edgeone_dns.en.md:	Tencent EdgeOne DNS guide (English)
+		he.md:	Hurricane Electric guide (Chinese)
+		he.en.md:	Hurricane Electric guide (English)
+		huaweidns.md:	Huawei Cloud DNS guide (Chinese)
+		huaweidns.en.md:	Huawei Cloud DNS guide (English)
+		namesilo.md:	NameSilo guide (Chinese)
+		namesilo.en.md:	NameSilo guide (English)
+		noip.md:	No-IP guide (Chinese)
+		noip.en.md:	No-IP guide (English)
+		tencentcloud.md:	Tencent Cloud DNS guide (Chinese)
+		tencentcloud.en.md:	Tencent Cloud DNS guide (English)
 
 	docker.md:	Docker documentation (Chinese)
 	docker.en.md:	Docker documentation (English)
 	install.md:	Installation guide (Chinese)
 	install.en.md:	Installation guide (English)
+	release.md:	Release notes (Chinese)
 	img/:	Images and diagrams
 
 docker/:	Docker configuration
@@ -535,6 +565,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.1  
-**Last Updated**: 2025-11-29  
+**Version**: 1.0.2  
+**Last Updated**: 2025-11-30  
 **Maintained by**: DDNS Project Contributors
