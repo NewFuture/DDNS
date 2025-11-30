@@ -38,7 +38,7 @@ DDNS is a Python-based Dynamic DNS client that automatically updates DNS records
 ### Project Status
 
 - **License**: MIT
-- **Python Versions**: 2.7, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14-dev
+- **Python Versions**: 2.7, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
 - **Platforms**: Windows, Linux, macOS
 - **Architectures**: amd64, arm64, arm/v7, arm/v6, 386, ppc64le, riscv64, s390x
 
@@ -48,122 +48,123 @@ DDNS is a Python-based Dynamic DNS client that automatically updates DNS records
 
 ### Directory Structure
 
+Here is the folder and file structure for the DDNS project.
+
 ```text
-DDNS/
-├── .github/                    # GitHub configuration
-│   ├── workflows/              # CI/CD workflows (build, publish, test)
-│   ├── instructions/           # Agent instructions (python.instructions.md)
-│   └── copilot-instructions.md # GitHub Copilot instructions
-│
-├── ddns/                       # Main application code
-│   ├── __init__.py             # Package initialization and version info
-│   ├── __main__.py             # Entry point for module execution
-│   ├── cache.py                # Cache management
-│   ├── ip.py                   # IP address detection logic
-│   │
-│   ├── config/                 # Configuration management
-│   │   ├── __init__.py
-│   │   ├── cli.py              # Command-line argument parsing
-│   │   ├── config.py           # Configuration loading and merging
-│   │   ├── env.py              # Environment variable parsing
-│   │   └── file.py             # JSON file configuration
-│   │
-│   ├── provider/               # DNS provider implementations
-│   │   ├── __init__.py         # Provider registry
-│   │   ├── _base.py            # Abstract base classes (SimpleProvider, BaseProvider)
-│   │   ├── _signature.py       # HMAC signature utilities
-│   │   ├── alidns.py           # Alibaba Cloud DNS
-│   │   ├── aliesa.py           # Alibaba Cloud ESA
-│   │   ├── callback.py         # Custom webhook callbacks
-│   │   ├── cloudflare.py       # Cloudflare DNS
-│   │   ├── debug.py            # Debug provider
-│   │   ├── dnscom.py           # DNS.COM
-│   │   ├── dnspod.py           # DNSPod (China)
-│   │   ├── dnspod_com.py       # DNSPod International
-│   │   ├── edgeone.py          # Tencent EdgeOne
-│   │   ├── edgeone_dns.py      # Tencent EdgeOne DNS
-│   │   ├── he.py               # Hurricane Electric
-│   │   ├── huaweidns.py        # Huawei Cloud DNS
-│   │   ├── namesilo.py         # NameSilo
-│   │   ├── noip.py             # No-IP
-│   │   └── tencentcloud.py     # Tencent Cloud DNS
-│   │
-│   ├── scheduler/              # Task scheduling implementations
-│   │   ├── __init__.py
-│   │   ├── _base.py            # Base scheduler class
-│   │   ├── cron.py             # Cron-based scheduler (Linux/macOS)
-│   │   ├── launchd.py          # macOS launchd scheduler
-│   │   ├── schtasks.py         # Windows Task Scheduler
-│   │   └── systemd.py          # Linux systemd timer
-│   │
-│   └── util/                   # Utility modules
-│       ├── __init__.py
-│       ├── comment.py          # Comment handling
-│       ├── fileio.py           # File I/O operations
-│       ├── http.py             # HTTP client with proxy support
-│       └── try_run.py          # Safe command execution
-│
-├── tests/                      # Unit tests
-│   ├── __init__.py             # Test initialization (path setup)
-│   ├── base_test.py            # Shared test utilities and base classes
-│   ├── README.md               # Testing documentation
-│   ├── config/                 # Test configuration files
-│   ├── scripts/                # Test helper scripts
-│   ├── test_cache.py           # Cache tests
-│   ├── test_config_*.py        # Configuration tests
-│   ├── test_ip.py              # IP detection tests
-│   ├── test_provider_*.py      # Provider-specific tests
-│   ├── test_scheduler_*.py     # Scheduler tests
-│   └── test_util_*.py          # Utility tests
-│
-├── doc/                        # Documentation
-│   ├── config/                 # Configuration documentation
-│   │   ├── cli.md              # CLI usage (Chinese)
-│   │   ├── cli.en.md           # CLI usage (English)
-│   │   ├── env.md              # Environment variables (Chinese)
-│   │   ├── env.en.md           # Environment variables (English)
-│   │   ├── json.md             # JSON config (Chinese)
-│   │   └── json.en.md          # JSON config (English)
-│   │
-│   ├── dev/                    # Developer documentation
-│   │   ├── provider.md         # Provider development guide (Chinese)
-│   │   ├── provider.en.md      # Provider development guide (English)
-│   │   ├── config.md           # Config system (Chinese)
-│   │   └── config.en.md        # Config system (English)
-│   │
-│   ├── providers/              # Provider-specific documentation
-│   │   ├── README.md           # Provider list (Chinese)
-│   │   ├── README.en.md        # Provider list (English)
-│   │   ├── alidns.md           # AliDNS guide (Chinese)
-│   │   ├── alidns.en.md        # AliDNS guide (English)
-│   │   └── ...                 # Other providers (Chinese & English versions)
-│   │
-│   ├── docker.md               # Docker documentation (Chinese)
-│   ├── docker.en.md            # Docker documentation (English)
-│   ├── install.md              # Installation guide (Chinese)
-│   ├── install.en.md           # Installation guide (English)
-│   └── img/                    # Images and diagrams
-│
-├── docker/                     # Docker configuration
-│   ├── Dockerfile              # Main Dockerfile
-│   ├── glibc.Dockerfile        # glibc-based build
-│   ├── musl.Dockerfile         # musl-based build
-│   └── entrypoint.sh           # Container entrypoint script
-│
-├── schema/                     # JSON schemas
-│   ├── v2.json                 # Legacy schema v2
-│   ├── v2.8.json               # Legacy schema v2.8
-│   ├── v4.0.json               # Previous schema v4.0
-│   └── v4.1.json               # Latest schema v4.1
-│
-├── run.py                      # Direct run script
-├── install.sh                  # One-click install script
-├── pyproject.toml              # Python project configuration
-├── setup.cfg                   # Setup configuration
-├── .gitignore                  # Git ignore rules
-├── LICENSE                     # MIT License
-├── README.md                   # Main README (Chinese)
-└── README.en.md                # Main README (English)
+.github/:	GitHub configuration
+	workflows/:	CI/CD workflows (build, publish, test)
+	instructions/:	Agent instructions (python.instructions.md)
+	copilot-instructions.md:	GitHub Copilot instructions
+
+ddns/:	Main application code
+	__init__.py:	Package initialization and version info
+	__main__.py:	Entry point for module execution
+	cache.py:	Cache management
+	ip.py:	IP address detection logic
+
+	config/:	Configuration management
+		__init__.py
+		cli.py:	Command-line argument parsing
+		config.py:	Configuration loading and merging
+		env.py:	Environment variable parsing
+		file.py:	JSON file configuration
+
+	provider/:	DNS provider implementations
+		__init__.py:	Provider registry
+		_base.py:	Abstract base classes (SimpleProvider, BaseProvider)
+		_signature.py:	HMAC signature utilities
+		alidns.py:	Alibaba Cloud DNS
+		aliesa.py:	Alibaba Cloud ESA
+		callback.py:	Custom webhook callbacks
+		cloudflare.py:	Cloudflare DNS
+		debug.py:	Debug provider
+		dnscom.py:	DNS.COM
+		dnspod.py:	DNSPod (China)
+		dnspod_com.py:	DNSPod International
+		edgeone.py:	Tencent EdgeOne
+		edgeone_dns.py:	Tencent EdgeOne DNS
+		he.py:	Hurricane Electric
+		huaweidns.py:	Huawei Cloud DNS
+		namesilo.py:	NameSilo
+		noip.py:	No-IP
+		tencentcloud.py:	Tencent Cloud DNS
+
+	scheduler/:	Task scheduling implementations
+		__init__.py
+		_base.py:	Base scheduler class
+		cron.py:	Cron-based scheduler (Linux/macOS)
+		launchd.py:	macOS launchd scheduler
+		schtasks.py:	Windows Task Scheduler
+		systemd.py:	Linux systemd timer
+
+	util/:	Utility modules
+		__init__.py
+		comment.py:	Comment handling
+		fileio.py:	File I/O operations
+		http.py:	HTTP client with proxy support
+		try_run.py:	Safe command execution
+
+tests/:	Unit tests
+	__init__.py:	Test initialization (path setup)
+	base_test.py:	Shared test utilities and base classes
+	README.md:	Testing documentation
+	config/:	Test configuration files
+	scripts/:	Test helper scripts
+	test_cache.py:	Cache tests
+	test_config_*.py:	Configuration tests
+	test_ip.py:	IP detection tests
+	test_provider_*.py:	Provider-specific tests
+	test_scheduler_*.py:	Scheduler tests
+	test_util_*.py:	Utility tests
+
+doc/:	Documentation
+	config/
+		cli.md:	CLI usage (Chinese)
+		cli.en.md:	CLI usage (English)
+		env.md:	Environment variables (Chinese)
+		env.en.md:	Environment variables (English)
+		json.md:	JSON config (Chinese)
+		json.en.md:	JSON config (English)
+
+	dev/
+		provider.md:	Provider development guide (Chinese)
+		provider.en.md:	Provider development guide (English)
+		config.md:	Config system (Chinese)
+		config.en.md:	Config system (English)
+
+	providers/:	Provider-specific documentation
+		README.md:	Provider list (Chinese)
+		README.en.md:	Provider list (English)
+		alidns.md:	AliDNS guide (Chinese)
+		alidns.en.md:	AliDNS guide (English)
+		...:	Other providers (Chinese & English versions)
+
+	docker.md:	Docker documentation (Chinese)
+	docker.en.md:	Docker documentation (English)
+	install.md:	Installation guide (Chinese)
+	install.en.md:	Installation guide (English)
+	img/:	Images and diagrams
+
+docker/:	Docker configuration
+	Dockerfile:	Main Dockerfile
+	glibc.Dockerfile:	glibc-based build
+	musl.Dockerfile:	musl-based build
+	entrypoint.sh:	Container entrypoint script
+
+schema/:	JSON schemas
+	v2.json:	Legacy schema v2
+	v2.8.json:	Legacy schema v2.8
+	v4.0.json:	Previous schema v4.0
+	v4.1.json:	Latest schema v4.1
+
+run.py:	Direct run script
+install.sh:	One-click install script
+pyproject.toml:	Python project configuration
+setup.cfg:	Setup configuration
+.gitignore:	Git ignore rules
+LICENSE:	MIT License
+README.md:	Main README (Chinese)
+README.en.md:	Main README (English)
 ```
 
 ### Module Dependencies
