@@ -1,9 +1,15 @@
 /**
  * Multi-turn AI Response Script for GitHub Issues
  * 
- * This script handles AI-powered responses to GitHub issues using a multi-turn
- * conversation approach. It provides project context, allows the AI to request
- * specific files, and generates classification labels and responses.
+ * This script handles AI-powered responses to GitHub issues using a two-step
+ * conversation approach:
+ * 
+ * Step 1: Basic system prompt + issue + context → Get classification + file requests
+ * Step 2: Based on classification, inject strategy-specific prompts + iterate with files
+ * 
+ * Classification-specific strategy prompts are loaded dynamically based on the 
+ * classification returned in Step 1, and added to subsequent turns if classification
+ * changes during iteration.
  */
 
 module.exports = async ({ github, context, core, fs, path }) => {
@@ -23,6 +29,19 @@ module.exports = async ({ github, context, core, fs, path }) => {
   } catch (error) {
     core.setFailed('Failed to read required prompt or index file: ' + error.message);
     return;
+  }
+
+  // Load classification-specific strategy prompts
+  const strategyPrompts = {};
+  const classifications = ['bug', 'feature', 'question'];
+  for (const classification of classifications) {
+    try {
+      const promptPath = `.github/prompts/issue-strategy-${classification}.md`;
+      strategyPrompts[classification] = fs.readFileSync(promptPath, 'utf8');
+    } catch (error) {
+      console.log(`Warning: Could not load strategy prompt for ${classification}: ${error.message}`);
+      strategyPrompts[classification] = '';
+    }
   }
 
   // Issue details
@@ -68,9 +87,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
       body: JSON.stringify({
         messages: messages,
         temperature: 1,
-        // max_completion_tokens is configurable via environment variable.
-        // Default is 3000 to allow for more detailed responses. Adjust as needed for your model/cost.
-        max_completion_tokens: parseInt(process.env.MAX_COMPLETION_TOKENS || '3000', 10),
         response_format: expectJson ? { type: "json_object" } : undefined
       })
     });
@@ -166,43 +182,47 @@ module.exports = async ({ github, context, core, fs, path }) => {
   try {
     // Conversation history
     const messages = [];
+    // Track which classification strategies have been added
+    const addedStrategies = new Set();
 
-    // System prompt for multi-turn conversation
-    const multiTurnSystemPrompt = `${systemPrompt}
+    // Step 1: Basic system prompt for classification and initial analysis
+    // Response Strategy is NOT included here - it will be added in Step 2 based on classification
+    const step1SystemPrompt = `${systemPrompt}
 
-## Multi-turn Conversation Mode
+## Step 1: Classification and Initial Analysis
 
-You are in a multi-turn conversation mode. In each turn, you can either:
-1. Request more files to better understand the issue
-2. Provide your final response with classification
+You are in the first step of a multi-turn conversation. Your primary goal is to:
+1. **Classify the issue** as one of: bug, feature, or question
+2. **Identify what files you need** to provide an accurate response
 
 ### Response Format
 
-**If you need more files**, respond with:
+Respond with a JSON object:
 \`\`\`json
 {
-  "needs_files": true,
+  "classification": "bug|feature|question",
+  "needs_files": true|false,
   "requested_files": ["path/to/file1.py", "path/to/file2.md"],
-  "reason": "Brief explanation of why these files are needed"
+  "reason": "Brief explanation of your classification and why these files are needed"
 }
 \`\`\`
 
-**If you have enough information**, respond with:
+If you have enough information to respond without additional files:
 \`\`\`json
 {
-  "needs_files": false,
   "classification": "bug|feature|question",
+  "needs_files": false,
   "response": "Your detailed response to the issue..."
 }
 \`\`\`
 
 ### Guidelines
+- Always provide a classification first
 - Request only files that are directly relevant to the issue
 - Request at most 10 files per turn
-- After receiving requested files, analyze them and either request more or provide final response
 - You have at most 3 turns to gather information before providing a final response`;
 
-    messages.push({ role: 'system', content: multiTurnSystemPrompt });
+    messages.push({ role: 'system', content: step1SystemPrompt });
 
     // First turn: Provide project context and issue
     const firstTurnPrompt = `## Repository Context
@@ -220,12 +240,13 @@ ${issueBody}
 
 ---
 
-Please analyze this issue. If you need to see specific files to provide an accurate response, request them. Otherwise, provide your classification and response.`;
+Please analyze this issue. First classify it, then either request files you need or provide your response.`;
 
     messages.push({ role: 'user', content: firstTurnPrompt });
 
     let finalClassification = null;
     let finalResponse = null;
+    let currentClassification = null;
 
     for (let turn = 1; turn <= MAX_TURNS; turn++) {
       // Add delay before subsequent turns to ensure token usage stays under rate limits
@@ -260,9 +281,28 @@ Please analyze this issue. If you need to see specific files to provide an accur
         break;
       }
 
+      // Extract classification from response
+      const newClassification = parsed.classification?.toLowerCase() || null;
+      
+      // Step 2: If classification is provided and we haven't added its strategy yet, add it
+      if (newClassification && classifications.includes(newClassification) && !addedStrategies.has(newClassification)) {
+        const strategy = strategyPrompts[newClassification];
+        if (strategy) {
+          // Add strategy prompt as a system message for subsequent turns
+          console.log(`Adding ${newClassification} strategy prompt to conversation`);
+          addedStrategies.add(newClassification);
+          // We'll inject this into the next user message
+        }
+      }
+
+      // Update current classification
+      if (newClassification) {
+        currentClassification = newClassification;
+      }
+
       if (turn === MAX_TURNS) {
         // Force final response on last turn
-        finalClassification = parsed.classification?.toLowerCase() || null;
+        finalClassification = currentClassification;
         if (parsed.needs_files) {
           finalResponse = "Unable to provide a complete analysis within the turn limit. Please provide more specific details about your issue or the relevant files.";
         } else {
@@ -274,7 +314,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
 
       if (!parsed.needs_files) {
         // Final response provided before last turn
-        finalClassification = parsed.classification?.toLowerCase() || null;
+        finalClassification = currentClassification;
         finalResponse = parsed.response || aiContent;
         console.log(`Final response received in turn ${turn}`);
         break;
@@ -287,11 +327,25 @@ Please analyze this issue. If you need to see specific files to provide an accur
       // Add assistant's response to history
       messages.push({ role: 'assistant', content: aiContent });
 
-      // Read requested files and add to conversation
+      // Build the next user message with files and strategy prompt if applicable
       let fileContents = '## Requested File Contents\n\n';
       for (const filePath of requestedFiles.slice(0, MAX_FILES_PER_TURN)) {
         const content = readFileContent(filePath);
         fileContents += `### \`${filePath}\`\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
+      }
+
+      // Step 2: Add classification-specific strategy prompt
+      // Only inject strategy when it's newly added (first time for this classification)
+      if (currentClassification && addedStrategies.has(currentClassification)) {
+        const strategy = strategyPrompts[currentClassification];
+        // Check if this is the first turn where we're adding this strategy
+        // We use a separate flag in the Set to track if we've already injected it
+        const injectionKey = `injected_${currentClassification}`;
+        if (strategy && !addedStrategies.has(injectionKey)) {
+          addedStrategies.add(injectionKey);
+          fileContents += `\n---\n\n## Response Strategy\n\n${strategy}\n\n---\n\n`;
+          console.log(`Injected ${currentClassification} strategy into user message`);
+        }
       }
 
       // Append remaining turns message (this code is only reached when turn < MAX_TURNS)
