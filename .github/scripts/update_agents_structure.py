@@ -63,7 +63,7 @@ def parse_agents_md():
 def main():
     # type: () -> None
     actual = (
-        scan_files("ddns", (".py", ".pyi")) | scan_files("doc", (".md",)) | scan_files("schema", (".json",))
+        scan_files("ddns", (".py")) | scan_files("doc", (".md",)) | scan_files("schema", (".json",))
     )
     documented = parse_agents_md()
 
