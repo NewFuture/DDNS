@@ -5,6 +5,16 @@ Script to compare the directory structure in AGENTS.md with actual files.
 
 Scans ddns/ and doc/ directories (excluding images) and compares with
 what's documented in AGENTS.md. Creates an issue body if differences found.
+
+Directory structure format in AGENTS.md:
+- Uses 2-space indentation for hierarchy (efficient for AI/parsing)
+- Directories end with /
+- Comments after #
+- Example:
+    ddns/
+      __init__.py       # Package init
+      config/
+        cli.py          # CLI parsing
 """
 
 import os
@@ -34,19 +44,47 @@ def scan_directory(repo_root, directory, extensions):
     return result
 
 
-def parse_tree_line(line):
+def parse_structure_line(line):
     # type: (str) -> tuple
-    """Parse a tree line and return (depth, name, is_dir)."""
-    # Find connector position (├ or └)
-    for i, char in enumerate(line):
-        if char in "├└":
-            depth = i // 4
-            # Extract name after ├── or └──
-            rest = line[i:].lstrip("├└─ ")
-            name = rest.split("#")[0].strip()
-            is_dir = name.endswith("/")
-            return (depth, name.rstrip("/"), is_dir)
-    return (-1, "", False)
+    """
+    Parse a directory structure line.
+
+    Supports two formats:
+    1. New format (2-space indent): "  filename.py  # comment"
+    2. Legacy tree format: "│   ├── filename.py  # comment"
+
+    Returns: (depth, name, is_dir)
+    """
+    if not line or not line.strip():
+        return (-1, "", False)
+
+    # Check for legacy tree format (contains box-drawing chars)
+    if any(c in line for c in "│├└─"):
+        # Legacy format: find connector position
+        for i, char in enumerate(line):
+            if char in "├└":
+                depth = i // 4
+                rest = line[i:].lstrip("├└─ ")
+                name = rest.split("#")[0].strip()
+                is_dir = name.endswith("/")
+                return (depth, name.rstrip("/"), is_dir)
+        return (-1, "", False)
+
+    # New format: count leading spaces (2 spaces = 1 level)
+    stripped = line.lstrip()
+    if not stripped:
+        return (-1, "", False)
+
+    leading_spaces = len(line) - len(stripped)
+    depth = leading_spaces // 2
+
+    # Extract name (before # comment)
+    name = stripped.split("#")[0].strip()
+    if not name:
+        return (-1, "", False)
+
+    is_dir = name.endswith("/")
+    return (depth, name.rstrip("/"), is_dir)
 
 
 def extract_files_from_agents(agents_content):
@@ -61,10 +99,14 @@ def extract_files_from_agents(agents_content):
     path_stack = []  # type: list
 
     for line in match.group(1).split("\n"):
-        if not line.strip() or line.strip() == "DDNS/" or all(c in "│ \t" for c in line):
+        stripped = line.strip()
+        if not stripped or stripped in ("DDNS/", "DDNS"):
+            continue
+        # Skip lines that only contain tree chars or whitespace
+        if all(c in "│ \t" for c in line):
             continue
 
-        depth, name, is_dir = parse_tree_line(line)
+        depth, name, is_dir = parse_structure_line(line)
         if depth < 0 or not name or "*" in name or name == "...":
             continue
 
