@@ -55,7 +55,7 @@ def parse_agents_md():
             stack.append(name.rstrip("/"))
         else:
             path = "/".join(stack + [name])
-            if path.startswith(("ddns/", "doc/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
+            if path.startswith(("ddns/", "doc/", "schema/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
                 files.add(path)
     return files
 
@@ -63,7 +63,7 @@ def parse_agents_md():
 def main():
     # type: () -> None
     actual = (
-        scan_files("ddns", (".py", ".pyi")) | scan_files("doc", (".md", ".json")) | scan_files("schema", (".json",))
+        scan_files("ddns", (".py", ".pyi")) | scan_files("doc", (".md",)) | scan_files("schema", (".json",))
     )
     documented = parse_agents_md()
 
