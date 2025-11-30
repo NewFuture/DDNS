@@ -1,178 +1,91 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Script to compare the directory structure in AGENTS.md with actual files.
-
-Scans ddns/ and doc/ directories (excluding images) and compares with
-what's documented in AGENTS.md. Creates an issue body if differences found.
-
-Directory structure format in AGENTS.md uses Tab (\\t) indentation:
-- Each level is one tab
-- Format: "name:" or "folder/:" with optional description after colon
-"""
+"""Compare AGENTS.md directory structure with actual files."""
 
 import os
 import re
 import sys
 
-# Image extensions to ignore
-IMAGE_EXTENSIONS = (".png", ".svg", ".jpg", ".jpeg", ".gif", ".ico")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def scan_directory(repo_root, directory, extensions):
-    # type: (str, str, tuple) -> set
-    """Recursively scan a directory and return file paths."""
+def scan_files(directory, extensions):
+    # type: (str, tuple) -> set
+    """Scan directory for files with given extensions."""
     result = set()
-    dir_path = os.path.join(repo_root, directory)
-    if not os.path.isdir(dir_path):
+    base = os.path.join(REPO_ROOT, directory)
+    if not os.path.isdir(base):
         return result
-
-    for root, dirs, files in os.walk(dir_path):
+    for root, dirs, files in os.walk(base):
         dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
         for f in files:
-            if f.startswith(".") or f.endswith(".pyc"):
-                continue
-            if not f.endswith(extensions):
-                continue
-            result.add(os.path.relpath(os.path.join(root, f), repo_root).replace(os.sep, "/"))
+            if not f.startswith(".") and f.endswith(extensions):
+                result.add(os.path.relpath(os.path.join(root, f), REPO_ROOT).replace(os.sep, "/"))
     return result
 
 
-def parse_structure_line(line):
-    # type: (str) -> tuple
-    """
-    Parse a directory structure line with Tab indentation.
-
-    Format: "<tabs>name:	description" or "<tabs>name/:" for directories
-    Depth = number of leading tabs
-
-    Returns: (depth, name, is_dir)
-    """
-    if not line or not line.strip():
-        return (-1, "", False)
-
-    # Count leading tabs for depth
-    depth = 0
-    for char in line:
-        if char == "\t":
-            depth += 1
-        else:
-            break
-
-    # Get the content after tabs
-    content = line[depth:]
-    if not content:
-        return (-1, "", False)
-
-    # Extract name (before : or end of line)
-    # Format can be "name:" or "name/:	description"
-    if ":" in content:
-        name = content.split(":")[0].strip()
-    else:
-        name = content.strip()
-
-    if not name:
-        return (-1, "", False)
-
-    # Check if directory (ends with /)
-    is_dir = name.endswith("/")
-    name = name.rstrip("/")
-
-    return (depth, name, is_dir)
-
-
-def extract_files_from_agents(agents_content):
-    # type: (str) -> set
-    """Extract file paths from AGENTS.md directory structure."""
-    # Find the directory structure section
-    match = re.search(r"```text\n(.*?)```", agents_content, re.DOTALL)
-    if not match:
-        return set()
-
-    files = set()
-    path_stack = []  # type: list
-
-    for line in match.group(1).split("\n"):
-        # Skip empty lines
-        if not line.strip():
-            continue
-
-        depth, name, is_dir = parse_structure_line(line)
-        if depth < 0 or not name or "*" in name or name == "...":
-            continue
-
-        # Adjust path stack to current depth
-        path_stack = path_stack[:depth]
-
-        if is_dir:
-            path_stack.append(name)
-        else:
-            file_path = "/".join(path_stack + [name]) if path_stack else name
-            # Only include ddns/ and doc/ files, exclude images
-            if file_path.startswith("ddns/") or file_path.startswith("doc/"):
-                if not file_path.endswith(IMAGE_EXTENSIONS):
-                    files.add(file_path)
-
-    return files
-
-
-def main():
-    # type: () -> None
-    """Compare AGENTS.md with actual files and output differences."""
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    agents_file = os.path.join(repo_root, "AGENTS.md")
-
+def parse_agents_md():
+    # type: () -> set
+    """Extract file paths from AGENTS.md directory structure (Tab-indented)."""
+    agents_file = os.path.join(REPO_ROOT, "AGENTS.md")
     if not os.path.exists(agents_file):
         print("Error: AGENTS.md not found")
         sys.exit(1)
 
     with open(agents_file, "r", encoding="utf-8") as f:
-        agents_content = f.read()
+        content = f.read()
 
-    # Get actual files (ddns: .py/.pyi, doc: .md/.json, no images)
-    actual = set()
-    actual.update(scan_directory(repo_root, "ddns", (".py", ".pyi")))
-    actual.update(scan_directory(repo_root, "doc", (".md", ".json")))
+    match = re.search(r"```text\n(.*?)```", content, re.DOTALL)
+    if not match:
+        return set()
 
-    # Get documented files from AGENTS.md
-    documented = extract_files_from_agents(agents_content)
+    files = set()
+    stack = []  # type: list
+    for line in match.group(1).split("\n"):
+        if not line.strip():
+            continue
+        # Count leading tabs as depth
+        depth = len(line) - len(line.lstrip("\t"))
+        name = line.lstrip("\t").split(":")[0].strip()
+        if not name or "*" in name or name == "...":
+            continue
 
-    # Compare
-    added = sorted(actual - documented)
-    deleted = sorted(documented - actual)
+        stack = stack[:depth]
+        if name.endswith("/"):
+            stack.append(name.rstrip("/"))
+        else:
+            path = "/".join(stack + [name])
+            if path.startswith(("ddns/", "doc/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
+                files.add(path)
+    return files
 
+
+def main():
+    # type: () -> None
+    actual = scan_files("ddns", (".py", ".pyi")) | scan_files("doc", (".md", ".json"))
+    documented = parse_agents_md()
+
+    added, deleted = sorted(actual - documented), sorted(documented - actual)
     if not added and not deleted:
         print("changed=false")
         sys.exit(0)
 
     print("changed=true")
-
-    # Build issue body
     lines = ["AGENTS.md directory structure is out of sync.\n"]
-
     if added:
-        lines.append("## New Files (not in AGENTS.md)\n")
+        lines.append("## New Files\n")
         lines.extend("- `%s`" % f for f in added)
         lines.append("")
-
     if deleted:
-        lines.append("## Missing Files (in AGENTS.md but not found)\n")
+        lines.append("## Missing Files\n")
         lines.extend("- `%s`" % f for f in deleted)
         lines.append("")
-
-    lines.append("## Required Updates\n")
-    lines.append("1. Update directory structure section")
-    lines.append("2. Update version and date at the bottom")
+    lines.append("## Required Updates\n1. Update directory structure\n2. Update version/date")
     lines.append("\n---\n*Auto-generated by update-agents workflow.*")
 
-    issue_body = "\n".join(lines)
-
-    # Write issue body file
-    output_file = os.path.join(repo_root, ".github", "issue_body.md")
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(issue_body)
-
-    print("\n" + issue_body)
+    with open(os.path.join(REPO_ROOT, ".github", "issue_body.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print("\n".join(lines))
     print("\nAdded: %d, Deleted: %d" % (len(added), len(deleted)))
 
 
