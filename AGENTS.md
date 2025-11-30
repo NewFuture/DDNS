@@ -50,6 +50,8 @@ DDNS is a Python-based Dynamic DNS client that automatically updates DNS records
 
 Here is the folder and file structure for the DDNS project.
 
+**Format:** `<TAB depth>{filename}:<TAB>{description}`
+
 ```text
 .github/:	GitHub configuration
 	workflows/:	CI/CD workflows (build, publish, test)
