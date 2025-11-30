@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   auto-reply:
-    # Only trigger when 'AI Review' label is added; skip bot-created issues and issues already labeled 'copilot'
+    # Only trigger when 'ai-reply' label is added; skip bot-created issues and issues already labeled 'copilot'
     if: |
-      github.event.label.name == 'AI Review' &&
+      github.event.label.name == 'ai-reply' &&
       github.event.issue.user.login != 'github-actions[bot]' &&
       !contains(github.event.issue.labels.*.name, 'copilot')
     runs-on: ubuntu-latest
