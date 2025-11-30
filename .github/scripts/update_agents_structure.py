@@ -36,7 +36,7 @@ def parse_agents_md():
     with open(agents_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    match = re.search(r"### Directory Structure.*?```text\n(.*?)```", content, re.DOTALL)
+    match = re.search(r"### Directory Structure.*?```text\s*\n(.*?)```\s*", content, re.DOTALL)
     if not match:
         return set()
 
