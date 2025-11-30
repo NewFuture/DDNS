@@ -30,7 +30,7 @@ def scan_directory(repo_root, directory, extensions):
                 continue
             if not f.endswith(extensions):
                 continue
-            result.add(os.path.relpath(os.path.join(root, f), repo_root))
+            result.add(os.path.relpath(os.path.join(root, f), repo_root).replace(os.sep, "/"))
     return result
 
 
