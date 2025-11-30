@@ -182,8 +182,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
   try {
     // Conversation history
     const messages = [];
-    // Track which classification strategies have been added
-    const addedStrategies = new Set();
+    // Track which classification strategies have been injected into the conversation
+    const injectedStrategies = new Set();
 
     // Step 1: Basic system prompt for classification and initial analysis
     // Response Strategy is NOT included here - it will be added in Step 2 based on classification
@@ -283,17 +283,6 @@ Please analyze this issue. First classify it, then either request files you need
 
       // Extract classification from response
       const newClassification = parsed.classification?.toLowerCase() || null;
-      
-      // Step 2: If classification is provided and we haven't added its strategy yet, add it
-      if (newClassification && classifications.includes(newClassification) && !addedStrategies.has(newClassification)) {
-        const strategy = strategyPrompts[newClassification];
-        if (strategy) {
-          // Add strategy prompt as a system message for subsequent turns
-          console.log(`Adding ${newClassification} strategy prompt to conversation`);
-          addedStrategies.add(newClassification);
-          // We'll inject this into the next user message
-        }
-      }
 
       // Update current classification
       if (newClassification) {
@@ -334,15 +323,12 @@ Please analyze this issue. First classify it, then either request files you need
         fileContents += `### \`${filePath}\`\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
       }
 
-      // Step 2: Add classification-specific strategy prompt
-      // Only inject strategy when it's newly added (first time for this classification)
-      if (currentClassification && addedStrategies.has(currentClassification)) {
+      // Step 2: Inject classification-specific strategy prompt if not yet injected
+      // This ensures strategy is added once per classification, and handles classification changes
+      if (currentClassification && classifications.includes(currentClassification) && !injectedStrategies.has(currentClassification)) {
         const strategy = strategyPrompts[currentClassification];
-        // Check if this is the first turn where we're adding this strategy
-        // We use a separate flag in the Set to track if we've already injected it
-        const injectionKey = `injected_${currentClassification}`;
-        if (strategy && !addedStrategies.has(injectionKey)) {
-          addedStrategies.add(injectionKey);
+        if (strategy) {
+          injectedStrategies.add(currentClassification);
           fileContents += `\n---\n\n## Response Strategy\n\n${strategy}\n\n---\n\n`;
           console.log(`Injected ${currentClassification} strategy into user message`);
         }
