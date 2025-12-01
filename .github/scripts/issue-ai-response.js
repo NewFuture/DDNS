@@ -35,8 +35,10 @@ module.exports = async ({ github, context, core, fs, path }) => {
     directoryStructure = structureMatch[1].trim();
 
     // Replace {{DirectoryStructure}} placeholder in system prompt
+    if (!systemPrompt.includes('{{DirectoryStructure}}')) {
+      console.log('Warning: {{DirectoryStructure}} placeholder not found in system prompt');
+    }
     systemPrompt = systemPrompt.replace('{{DirectoryStructure}}', directoryStructure);
-  } catch (error) {
     console.error('Error reading required files:', error);
     core.setFailed('Failed to read required files: ' + error.message);
     return;

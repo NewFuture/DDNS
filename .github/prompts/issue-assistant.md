@@ -91,4 +91,4 @@ Platform-specific implementations:
 - Linux: systemd timers or cron
 - macOS: launchd or cron
 - Windows: Task Scheduler (schtasks)
-- Docker: Built-in cron with configurable intervals 
+- Docker: Built-in cron with configurable intervals
