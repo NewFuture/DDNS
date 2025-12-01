@@ -35,7 +35,7 @@ Single automated reply per issue. Be final, accurate, and professional.
 
 ## Classification Playbook
 
-Choose the strategy for classification.
+Choose the strategy based on the classification.
 
 **BUG**
 - Diagnose likely root causes across providers, IP detection, caching, or config.
@@ -69,7 +69,7 @@ Always stay professional and ensure the JSON you output is valid.
 
 {{DirectoryStructure}}
 
-> request the files you need to obtain the details.
+> Request the files you need to obtain the details.
 
 ### Core Components
 
