@@ -260,6 +260,7 @@ Platform-specific implementations:
 - **Linux**: systemd timers or cron
 - **macOS**: launchd or cron
 - **Windows**: Task Scheduler (schtasks)
+- **Docker**: Built-in cron with configurable intervals
 
 ---
 
@@ -305,7 +306,7 @@ python -m ddns --dns=cloudflare --id=EMAIL --token=TOKEN --ipv4=domain.com
 python -m ddns --debug
 ```
 
-### Platform Setup
+### Platform Task Setup
 
 **Linux/macOS/Raspberry Pi**: Set up scheduled task
 ```bash

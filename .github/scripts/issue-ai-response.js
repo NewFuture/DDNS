@@ -2,8 +2,12 @@
  * Multi-turn AI Response Script for GitHub Issues
  * 
  * This script handles AI-powered responses to GitHub issues using a multi-turn
- * conversation approach. It provides project context, allows the AI to request
- * specific files, and generates classification labels and responses.
+ * conversation approach with upfront strategy guidance:
+ * 
+ * - All classification-specific strategies are included in the initial system prompt
+ * - This allows the AI to use "Relevant Files to Consider" guidance when requesting files
+ * - The AI classifies the issue and requests appropriate files in turn 1
+ * - Subsequent turns provide requested files until a final response is generated
  */
 
 module.exports = async ({ github, context, core, fs, path }) => {
@@ -15,15 +19,32 @@ module.exports = async ({ github, context, core, fs, path }) => {
     return;
   }
 
-  // Read system prompt and repository index
-  let systemPrompt, repoIndex;
+  // Read system prompt and extract directory structure from AGENTS.md
+  let systemPrompt, directoryStructure;
   try {
     systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
-    repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
-  } catch (error) {
-    core.setFailed('Failed to read required prompt or index file: ' + error.message);
+    const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
+
+    // Extract Directory Structure section from AGENTS.md
+    // Flexible regex: allow any heading level, variable whitespace, optional code block language, case-insensitive
+    const structureMatch = agentsMd.match(/#{2,6}\s+Directory Structure[\s\S]*?```(?:\w+)?\s*\n([\s\S]*?)\n```/i);
+    if (!structureMatch) {
+      core.setFailed('Failed to extract Directory Structure from AGENTS.md. Expected a heading like "## Directory Structure" followed by a code block (optionally with a language specifier).');
+      return;
+    }
+    directoryStructure = structureMatch[1].trim();
+
+    // Replace {{DirectoryStructure}} placeholder in system prompt
+    if (!systemPrompt.includes('{{DirectoryStructure}}')) {
+      console.log('Warning: {{DirectoryStructure}} placeholder not found in system prompt');
+    }
+    systemPrompt = systemPrompt.replace('{{DirectoryStructure}}', directoryStructure);
+    console.error('Error reading required files:', error);
+    core.setFailed('Failed to read required files: ' + error.message);
     return;
   }
+
+  const classifications = ['bug', 'feature', 'question'];
 
   // Issue details
   const issueTitle = context.payload.issue.title ? context.payload.issue.title.substring(0, 500) : '(No title)';
@@ -67,24 +88,23 @@ module.exports = async ({ github, context, core, fs, path }) => {
       },
       body: JSON.stringify({
         messages: messages,
-        temperature: 1,
-        // max_completion_tokens is configurable via environment variable.
-        // Default is 3000 to allow for more detailed responses. Adjust as needed for your model/cost.
-        max_completion_tokens: parseInt(process.env.MAX_COMPLETION_TOKENS || '3000', 10),
         response_format: expectJson ? { type: "json_object" } : undefined
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} ${errorText}`);
       throw new Error(`API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
     if (!data.choices?.[0]?.message?.content) {
+      console.error(`Invalid API response structure.`, data);
       throw new Error(`Invalid API response structure. Received: ${JSON.stringify(data)}`);
     }
 
+    console.log(`OpenAI API response received successfully.`, data);
     return data.choices[0].message.content.trim();
   }
 
@@ -143,7 +163,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       }
       return content;
     } catch (error) {
-      return `[Error reading file ${filePath}: ${error?.message||"File could not be accessed"}]`;
+      return `[Error reading file ${filePath}: ${error?.message || "File could not be accessed"}]`;
     }
   }
 
@@ -167,47 +187,13 @@ module.exports = async ({ github, context, core, fs, path }) => {
     // Conversation history
     const messages = [];
 
-    // System prompt for multi-turn conversation
-    const multiTurnSystemPrompt = `${systemPrompt}
+    // Send the consolidated system prompt directly (already contains workflow + guidelines)
+    messages.push({ role: 'system', content: systemPrompt });
 
-## Multi-turn Conversation Mode
+    // First turn: Provide issue details
+    const firstTurnPrompt = `Please analyze this issue. First classify it, then either request files you need or provide your response.
 
-You are in a multi-turn conversation mode. In each turn, you can either:
-1. Request more files to better understand the issue
-2. Provide your final response with classification
-
-### Response Format
-
-**If you need more files**, respond with:
-\`\`\`json
-{
-  "needs_files": true,
-  "requested_files": ["path/to/file1.py", "path/to/file2.md"],
-  "reason": "Brief explanation of why these files are needed"
-}
-\`\`\`
-
-**If you have enough information**, respond with:
-\`\`\`json
-{
-  "needs_files": false,
-  "classification": "bug|feature|question",
-  "response": "Your detailed response to the issue..."
-}
-\`\`\`
-
-### Guidelines
-- Request only files that are directly relevant to the issue
-- Request at most 10 files per turn
-- After receiving requested files, analyze them and either request more or provide final response
-- You have at most 3 turns to gather information before providing a final response`;
-
-    messages.push({ role: 'system', content: multiTurnSystemPrompt });
-
-    // First turn: Provide project context and issue
-    const firstTurnPrompt = `## Repository Context
-
-${repoIndex}
+---
 
 ## Issue Details
 
@@ -215,17 +201,18 @@ ${repoIndex}
 
 **Author:** @${issueAuthor}
 
+**Original Labels:** ${context.payload.issue.labels.map(label => label.name).join(', ') || '(None)'}
+
 **Body:**
 ${issueBody}
 
----
-
-Please analyze this issue. If you need to see specific files to provide an accurate response, request them. Otherwise, provide your classification and response.`;
+`;
 
     messages.push({ role: 'user', content: firstTurnPrompt });
 
     let finalClassification = null;
     let finalResponse = null;
+    let currentClassification = null;
 
     for (let turn = 1; turn <= MAX_TURNS; turn++) {
       // Add delay before subsequent turns to ensure token usage stays under rate limits
@@ -233,7 +220,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
         console.log(`Waiting ${RATE_LIMIT_DELAY_MS / 1000} seconds before turn ${turn} to respect rate limits...`);
         await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
-      
+
       console.log(`Turn ${turn}/${MAX_TURNS}: Calling OpenAI API...`);
 
       const aiContent = await callOpenAI(messages);
@@ -260,9 +247,17 @@ Please analyze this issue. If you need to see specific files to provide an accur
         break;
       }
 
+      // Extract classification from response
+      const newClassification = parsed.classification?.toLowerCase() || null;
+
+      // Update current classification
+      if (newClassification) {
+        currentClassification = newClassification;
+      }
+
       if (turn === MAX_TURNS) {
         // Force final response on last turn
-        finalClassification = parsed.classification?.toLowerCase() || null;
+        finalClassification = currentClassification;
         if (parsed.needs_files) {
           finalResponse = "Unable to provide a complete analysis within the turn limit. Please provide more specific details about your issue or the relevant files.";
         } else {
@@ -274,7 +269,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
 
       if (!parsed.needs_files) {
         // Final response provided before last turn
-        finalClassification = parsed.classification?.toLowerCase() || null;
+        finalClassification = currentClassification;
         finalResponse = parsed.response || aiContent;
         console.log(`Final response received in turn ${turn}`);
         break;
@@ -287,7 +282,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
       // Add assistant's response to history
       messages.push({ role: 'assistant', content: aiContent });
 
-      // Read requested files and add to conversation
+      // Build the next user message with requested file contents
       let fileContents = '## Requested File Contents\n\n';
       for (const filePath of requestedFiles.slice(0, MAX_FILES_PER_TURN)) {
         const content = readFileContent(filePath);
@@ -316,7 +311,7 @@ Please analyze this issue. If you need to see specific files to provide an accur
     console.log('Comment posted successfully');
 
     // Add label based on classification
-    if (finalClassification && ['bug', 'feature', 'question'].includes(finalClassification)) {
+    if (finalClassification && classifications.includes(finalClassification)) {
       try {
         await github.rest.issues.addLabels({
           owner: context.repo.owner,

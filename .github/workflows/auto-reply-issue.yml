@@ -27,29 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Build Repository Index
-        id: repo_index
-        run: |
-          echo "Building repository index from AGENTS.md..."
-          
-          # Verify AGENTS.md exists
-          if [ ! -f "AGENTS.md" ]; then
-            echo "Error: AGENTS.md not found"
-            exit 1
-          fi
-          
-          # Extract sections 1-3 from AGENTS.md (up to but not including "## Development Guide")
-          # This covers: Project Overview, Project Architecture, and Getting Started
-          awk '/^## Development Guide/{exit} {print}' AGENTS.md > /tmp/repo_index.md
-          
-          # Verify extraction was successful (file should not be empty)
-          if [ ! -s "/tmp/repo_index.md" ]; then
-            echo "Error: Failed to extract content from AGENTS.md"
-            exit 1
-          fi
-          
-          echo "Repository index built successfully ($(wc -l < /tmp/repo_index.md) lines)"
-      
       - name: Multi-turn AI Response
         id: ai_response
         uses: actions/github-script@v8
