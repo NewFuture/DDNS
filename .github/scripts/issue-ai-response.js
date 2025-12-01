@@ -26,9 +26,10 @@ module.exports = async ({ github, context, core, fs, path }) => {
     const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
 
     // Extract Directory Structure section from AGENTS.md
-    const structureMatch = agentsMd.match(/### Directory Structure\n\n[\s\S]*?\n```text\n([\s\S]*?)\n```/);
+    // Flexible regex: allow any heading level, variable whitespace, optional code block language, case-insensitive
+    const structureMatch = agentsMd.match(/#{2,6}\s+Directory Structure[\s\S]*?```(?:\w+)?\s*\n([\s\S]*?)\n```/i);
     if (!structureMatch) {
-      core.setFailed('Failed to extract Directory Structure from AGENTS.md');
+      core.setFailed('Failed to extract Directory Structure from AGENTS.md. Expected a heading like "## Directory Structure" followed by a code block (optionally with a language specifier).');
       return;
     }
     directoryStructure = structureMatch[1].trim();
