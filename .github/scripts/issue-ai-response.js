@@ -19,29 +19,29 @@ module.exports = async ({ github, context, core, fs, path }) => {
     return;
   }
 
-  // Read system prompt and repository index
-  let systemPrompt, repoIndex;
+  // Read system prompt and extract directory structure from AGENTS.md
+  let systemPrompt, directoryStructure;
   try {
     systemPrompt = fs.readFileSync('.github/prompts/issue-assistant.md', 'utf8');
-    repoIndex = fs.readFileSync('/tmp/repo_index.md', 'utf8');
+    const agentsMd = fs.readFileSync('AGENTS.md', 'utf8');
+
+    // Extract Directory Structure section from AGENTS.md
+    const structureMatch = agentsMd.match(/### Directory Structure\n\n[\s\S]*?\n```text\n([\s\S]*?)\n```/);
+    if (!structureMatch) {
+      core.setFailed('Failed to extract Directory Structure from AGENTS.md');
+      return;
+    }
+    directoryStructure = structureMatch[1].trim();
+
+    // Replace {{DirectoryStructure}} placeholder in system prompt
+    systemPrompt = systemPrompt.replace('{{DirectoryStructure}}', directoryStructure);
   } catch (error) {
-    core.setFailed('Failed to read required prompt or index file: ' + error.message);
+    console.error('Error reading required files:', error);
+    core.setFailed('Failed to read required files: ' + error.message);
     return;
   }
 
-  // Load classification-specific strategy prompts
-  // Classification names must match the file naming pattern: issue-strategy-{classification}.md
-  const strategyPrompts = {};
   const classifications = ['bug', 'feature', 'question'];
-  for (const classification of classifications) {
-    try {
-      const promptPath = `.github/prompts/issue-strategy-${classification}.md`;
-      strategyPrompts[classification] = fs.readFileSync(promptPath, 'utf8');
-    } catch (error) {
-      console.log(`Warning: Could not load strategy prompt for ${classification}: ${error.message}`);
-      strategyPrompts[classification] = '';
-    }
-  }
 
   // Issue details
   const issueTitle = context.payload.issue.title ? context.payload.issue.title.substring(0, 500) : '(No title)';
@@ -85,21 +85,23 @@ module.exports = async ({ github, context, core, fs, path }) => {
       },
       body: JSON.stringify({
         messages: messages,
-        temperature: 1,
         response_format: expectJson ? { type: "json_object" } : undefined
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} ${errorText}`);
       throw new Error(`API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
     if (!data.choices?.[0]?.message?.content) {
+      console.error(`Invalid API response structure.`, data);
       throw new Error(`Invalid API response structure. Received: ${JSON.stringify(data)}`);
     }
 
+    console.log(`OpenAI API response received successfully.`, data);
     return data.choices[0].message.content.trim();
   }
 
@@ -158,7 +160,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       }
       return content;
     } catch (error) {
-      return `[Error reading file ${filePath}: ${error?.message||"File could not be accessed"}]`;
+      return `[Error reading file ${filePath}: ${error?.message || "File could not be accessed"}]`;
     }
   }
 
@@ -182,66 +184,13 @@ module.exports = async ({ github, context, core, fs, path }) => {
     // Conversation history
     const messages = [];
 
-    // Build combined strategy section with all classification strategies
-    // This ensures AI has file selection guidance before requesting files in turn 1
-    let allStrategies = '';
-    for (const classification of classifications) {
-      const strategy = strategyPrompts[classification];
-      if (strategy) {
-        allStrategies += `\n### For ${classification.toUpperCase()} issues:\n\n${strategy}\n`;
-      }
-    }
+    // Send the consolidated system prompt directly (already contains workflow + guidelines)
+    messages.push({ role: 'system', content: systemPrompt });
 
-    // Step 1: Basic system prompt for classification and initial analysis
-    // All classification strategies are included upfront to guide file requests
-    const step1SystemPrompt = `${systemPrompt}
+    // First turn: Provide issue details
+    const firstTurnPrompt = `Please analyze this issue. First classify it, then either request files you need or provide your response.
 
-## Classification-Specific Response Strategies
-
-After classifying the issue, follow the appropriate strategy below:
-${allStrategies}
-
-## Multi-turn Conversation Mode
-
-You are in a multi-turn conversation. Your primary goals are to:
-1. **Classify the issue** as one of: bug, feature, or question
-2. **Apply the appropriate strategy** based on your classification
-3. **Identify what files you need** using the "Relevant Files to Consider" guidance above
-
-### Response Format
-
-Respond with a JSON object:
-\`\`\`json
-{
-  "classification": "bug|feature|question",
-  "needs_files": true|false,
-  "requested_files": ["path/to/file1.py", "path/to/file2.md"],
-  "reason": "Brief explanation of your classification and why these files are needed"
-}
-\`\`\`
-
-If you have enough information to respond without additional files:
-\`\`\`json
-{
-  "classification": "bug|feature|question",
-  "needs_files": false,
-  "response": "Your detailed response to the issue..."
-}
-\`\`\`
-
-### Guidelines
-- Always provide a classification first
-- Use the classification-specific strategy guidance when deciding which files to request
-- Request only files that are directly relevant to the issue
-- Request at most 10 files per turn
-- You have at most 3 turns to gather information before providing a final response`;
-
-    messages.push({ role: 'system', content: step1SystemPrompt });
-
-    // First turn: Provide project context and issue
-    const firstTurnPrompt = `## Repository Context
-
-${repoIndex}
+---
 
 ## Issue Details
 
@@ -249,12 +198,12 @@ ${repoIndex}
 
 **Author:** @${issueAuthor}
 
+**Original Labels:** ${context.payload.issue.labels.map(label => label.name).join(', ') || '(None)'}
+
 **Body:**
 ${issueBody}
 
----
-
-Please analyze this issue. First classify it, then either request files you need or provide your response.`;
+`;
 
     messages.push({ role: 'user', content: firstTurnPrompt });
 
@@ -268,7 +217,7 @@ Please analyze this issue. First classify it, then either request files you need
         console.log(`Waiting ${RATE_LIMIT_DELAY_MS / 1000} seconds before turn ${turn} to respect rate limits...`);
         await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
-      
+
       console.log(`Turn ${turn}/${MAX_TURNS}: Calling OpenAI API...`);
 
       const aiContent = await callOpenAI(messages);
@@ -359,7 +308,7 @@ Please analyze this issue. First classify it, then either request files you need
     console.log('Comment posted successfully');
 
     // Add label based on classification
-    if (finalClassification && ['bug', 'feature', 'question'].includes(finalClassification)) {
+    if (finalClassification && classifications.includes(finalClassification)) {
       try {
         await github.rest.issues.addLabels({
           owner: context.repo.owner,
