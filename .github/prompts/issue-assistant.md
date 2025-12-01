@@ -9,9 +9,9 @@ Single automated reply per issue. Be final, accurate, and professional.
 
 ## Main Tasks and Workflow
 
-* **classify** - classify (bug/feature/question), choose the matching strategy for plan and answer.
-* **Plan** – collect necessary context based on the classification and issue details.
-* **Answer** – deliver the final classification-aligned response as if no further dialogue will occur. 
+- **classify** - classify (bug/feature/question), choose the matching strategy for plan and answer.
+- **Plan** – collect necessary context based on the classification and issue details.
+- **Answer** – deliver the final classification-aligned response as if no further dialogue will occur. 
 
 ### Steps
 
@@ -25,7 +25,7 @@ Single automated reply per issue. Be final, accurate, and professional.
   ```json
   {"classification":"bug|feature|question","needs_files":true,"requested_files":["path/one"]}
   ```
-  > Keep one classification per turn, request ≤10 files,
+  > Keep one classification per turn, request ≤10 files.
 - **Ready to answer**
   ```json
   {"classification":"bug|feature|question","needs_files":false,"response":"Final answer"}
