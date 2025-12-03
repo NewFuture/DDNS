@@ -49,10 +49,13 @@ module.exports = async ({ github, context, core, fs, path }) => {
       body: JSON.stringify({ messages, response_format: { type: "json_object" } })
     });
     if (!response.ok) {
-      throw new Error('API error: ' + response.status);
+      const errorText = await response.text();
+      console.error('API error:', response.status, errorText);
+      throw new Error('API error: ' + response.status + ' ' + errorText);
     }
     const data = await response.json();
     if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid API response:', JSON.stringify(data));
       throw new Error('Invalid API response');
     }
     const content = data.choices[0].message.content.trim();
@@ -156,7 +159,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
     let result = processResponse(r1);
 
     // ========== Query 2: Provide files, get response or more files ==========
-    if (!result.response && result.files.length > 0) {
+    if (!result.response) {
       await delay();
       messages.push({ role: 'assistant', content: r1 });
       messages.push({ role: 'user', content: 
@@ -168,7 +171,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       result = processResponse(r2);
 
       // ========== Query 3: Provide more files, must respond ==========
-      if (!result.response && result.files.length > 0) {
+      if (!result.response) {
         await delay();
         messages.push({ role: 'assistant', content: r2 });
         messages.push({ role: 'user', content: 
