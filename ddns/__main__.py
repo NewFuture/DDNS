@@ -43,6 +43,46 @@ def get_ip(ip_type, rules):
             logger.error("Failed to get %s address: %s", ip_type, e)
     return None
 
+def update_ip_all(dns, cache, config):
+    # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config) -> bool | None
+    """
+    更新IP并变更A/AAAA记录
+    """
+    domains = config.ipv4 + config.ipv6
+    if not domains:
+        return None
+
+    record_type = "A/AAAA"
+    address_4 = get_ip('4', config.index4)
+    address_6 = get_ip('6', config.index6)
+    address = ",".join(filter(None,[address_4,address_6]))
+    if not address:
+        logger.error("Fail to get %s ipv4 or ipv6 address!")
+        return False
+
+    update_success = False
+
+    for domain in domains:
+        domain = domain.lower()
+        cache_key = "{}:{}".format(domain, record_type)
+        if cache and cache.get(cache_key) == address:
+            logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
+            update_success = True
+        else:
+            try:
+                result = dns.set_record(
+                    domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
+                )
+                if result:
+                    logger.warning("set %s: %s successfully.", domain, address)
+                    update_success = True
+                    if isinstance(cache, dict):
+                        cache[cache_key] = address
+                else:
+                    logger.error("Failed to update %s record for %s", record_type, domain)
+            except Exception as e:
+                logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
+    return update_success
 
 def update_ip(dns, cache, index_rule, domains, record_type, config):
     # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config) -> bool | None
@@ -97,6 +137,10 @@ def run(config):
         config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, ssl=config.ssl
     )
     cache = Cache.new(config.cache, config.md5(), logger)
+    
+    if(config.dns == "aliesa"):
+        return update_ip_all(dns, cache, config)
+    
     return (
         update_ip(dns, cache, config.index4, config.ipv4, "A", config) is not False
         and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config) is not False
