@@ -32,7 +32,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
     return;
   }
 
-  const classifications = ['bug', 'feature', 'question'];
   const MAX_FILES = 10;
   const MAX_FILE_SIZE = 50000;
   const RATE_LIMIT_DELAY_MS = parseInt(process.env.RATE_LIMIT_DELAY_MS || '31000', 10);
@@ -94,20 +93,15 @@ module.exports = async ({ github, context, core, fs, path }) => {
     }
   }
 
-  function parseJson(content) {
-    const match = content.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
-    return JSON.parse(match ? match[1].trim() : content);
-  }
-
   function extractClassification(parsed, raw) {
     if (parsed?.classification) {
       const c = parsed.classification.toLowerCase();
-      if (classifications.includes(c)) return c;
+      return c;
     }
     const match = raw.match(/classification\s*:\s*([a-zA-Z0-9_-]+)/i);
     if (match) {
       const c = match[1].toLowerCase();
-      if (classifications.includes(c)) return c;
+      return c;
     }
     return null;
   }
@@ -124,7 +118,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
   function processResponse(raw) {
     let parsed;
     try {
-      parsed = parseJson(raw);
+      const match = raw.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
+      content = JSON.parse(match ? match[1].trim() : raw);
+      parsed = parseJson(content);
     } catch (e) {
       return { classification: extractClassification(null, raw), response: raw, files: [] };
     }
@@ -181,9 +177,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
         console.log('Query 3: Final response...');
         const r3 = await callOpenAI(messages);
         result = processResponse(r3);
-        if (!result.response) {
-          result.response = 'Unable to provide analysis. Please provide more details.';
-        }
       }
     }
 
@@ -201,7 +194,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
     });
 
     // Add label
-    if (result.classification && classifications.includes(result.classification)) {
+    if (result.classification) {
       try {
         await github.rest.issues.addLabels({
           owner: context.repo.owner,
