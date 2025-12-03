@@ -117,116 +117,94 @@ module.exports = async ({ github, context, core, fs, path }) => {
     return msg;
   }
 
+  // Process AI response, return { classification, response, files }
+  function processResponse(raw) {
+    let parsed;
+    try {
+      parsed = parseJson(raw);
+    } catch (e) {
+      return { classification: extractClassification(null, raw), response: raw, files: [] };
+    }
+    
+    const response = parsed.response && typeof parsed.response === 'string' && parsed.response.trim() 
+      ? parsed.response : null;
+    const files = (parsed.requested_files || []).slice(0, MAX_FILES);
+    const classification = response ? extractClassification(parsed, raw) : null;
+    
+    return { classification, response, files };
+  }
+
+  async function delay() {
+    console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's...');
+    await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
+  }
+
   try {
     const issue = context.payload.issue;
     const messages = [{ role: 'system', content: systemPrompt }];
-    let finalClassification = null;
-    let finalResponse = null;
 
     // ========== Query 1: Analyze issue, request files ==========
-    const prompt1 = 'Analyze this issue and request relevant files.\n\n' +
-      '## Issue Details\n\n' +
+    messages.push({ role: 'user', content: 
+      'Analyze this issue and request relevant files.\n\n## Issue Details\n\n' +
       '**Title:** ' + (issue.title || '').substring(0, 500) + '\n\n' +
       '**Author:** @' + issue.user.login + '\n\n' +
       '**Labels:** ' + (issue.labels.map(l => l.name).join(', ') || '(None)') + '\n\n' +
-      '**Body:**\n' + (issue.body || '').substring(0, 10000);
-    
-    messages.push({ role: 'user', content: prompt1 });
+      '**Body:**\n' + (issue.body || '').substring(0, 10000)
+    });
     console.log('Query 1: Analyzing issue...');
-    const response1 = await callOpenAI(messages);
-    
-    let parsed1;
-    try {
-      parsed1 = parseJson(response1);
-    } catch (e) {
-      finalClassification = extractClassification(null, response1);
-      finalResponse = response1;
-    }
+    const r1 = await callOpenAI(messages);
+    let result = processResponse(r1);
 
-    if (!finalResponse) {
-      const files1 = (parsed1.requested_files || []).slice(0, MAX_FILES);
-      
-      if (files1.length === 0) {
-        finalResponse = 'Unable to determine relevant files. Please provide more details.';
-      } else {
-        // ========== Query 2: Provide files, get response or more files ==========
-        console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's...');
-        await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
-        
-        messages.push({ role: 'assistant', content: response1 });
-        const prompt2 = 'Here are the requested files. Provide your response OR request more files.\n\n' +
-          buildFileContents(files1);
-        messages.push({ role: 'user', content: prompt2 });
-        
-        console.log('Query 2: Processing files...');
-        const response2 = await callOpenAI(messages);
-        
-        let parsed2;
-        try {
-          parsed2 = parseJson(response2);
-        } catch (e) {
-          finalClassification = extractClassification(null, response2);
-          finalResponse = response2;
-        }
+    // ========== Query 2: Provide files, get response or more files ==========
+    if (!result.response && result.files.length > 0) {
+      await delay();
+      messages.push({ role: 'assistant', content: r1 });
+      messages.push({ role: 'user', content: 
+        'Here are the requested files. Provide your response OR request more files.\n\n' + 
+        buildFileContents(result.files)
+      });
+      console.log('Query 2: Processing files...');
+      const r2 = await callOpenAI(messages);
+      result = processResponse(r2);
 
-        if (!finalResponse) {
-          const hasResponse2 = parsed2.response && typeof parsed2.response === 'string' && parsed2.response.trim();
-          const files2 = (parsed2.requested_files || []).slice(0, MAX_FILES);
-
-          if (hasResponse2) {
-            finalClassification = extractClassification(parsed2, response2);
-            finalResponse = parsed2.response;
-          } else if (files2.length > 0) {
-            // ========== Query 3: Provide more files, must respond ==========
-            console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's...');
-            await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
-            
-            messages.push({ role: 'assistant', content: response2 });
-            const prompt3 = 'Here are the additional files. You must provide your final response now.\n\n' +
-              buildFileContents(files2);
-            messages.push({ role: 'user', content: prompt3 });
-            
-            console.log('Query 3: Final response...');
-            const response3 = await callOpenAI(messages);
-            
-            let parsed3;
-            try {
-              parsed3 = parseJson(response3);
-            } catch (e) {
-              finalClassification = extractClassification(null, response3);
-              finalResponse = response3;
-            }
-
-            if (!finalResponse) {
-              finalClassification = extractClassification(parsed3, response3);
-              finalResponse = parsed3.response || 'Unable to provide analysis. Please provide more details.';
-            }
-          } else {
-            finalResponse = 'Unable to process this issue. Please provide more details.';
-          }
+      // ========== Query 3: Provide more files, must respond ==========
+      if (!result.response && result.files.length > 0) {
+        await delay();
+        messages.push({ role: 'assistant', content: r2 });
+        messages.push({ role: 'user', content: 
+          'Here are the additional files. You must provide your final response now.\n\n' + 
+          buildFileContents(result.files)
+        });
+        console.log('Query 3: Final response...');
+        const r3 = await callOpenAI(messages);
+        result = processResponse(r3);
+        if (!result.response) {
+          result.response = 'Unable to provide analysis. Please provide more details.';
         }
       }
     }
 
-    if (!finalResponse) {
-      core.setFailed('Failed to get valid response');
-      return;
+    // Fallback if no response
+    if (!result.response) {
+      result.response = 'Unable to process this issue. Please provide more details.';
     }
 
+    // Post comment
     await github.rest.issues.createComment({
       owner: context.repo.owner,
       repo: context.repo.repo,
       issue_number: issue.number,
-      body: finalResponse
+      body: result.response
     });
 
-    if (finalClassification && classifications.includes(finalClassification)) {
+    // Add label
+    if (result.classification && classifications.includes(result.classification)) {
       try {
         await github.rest.issues.addLabels({
           owner: context.repo.owner,
           repo: context.repo.repo,
           issue_number: issue.number,
-          labels: [finalClassification]
+          labels: [result.classification]
         });
       } catch (e) {
         console.log('Failed to add label: ' + e.message);
