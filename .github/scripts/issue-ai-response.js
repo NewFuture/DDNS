@@ -35,7 +35,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
   const classifications = ['bug', 'feature', 'question'];
   const MAX_FILES = 10;
   const MAX_FILE_SIZE = 50000;
-  const MAX_TURNS = 3;
   const RATE_LIMIT_DELAY_MS = parseInt(process.env.RATE_LIMIT_DELAY_MS || '31000', 10);
 
   // Helper functions
@@ -109,7 +108,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
   }
 
   function buildFileContents(files) {
-    let msg = '## Requested File Contents\n\n';
+    let msg = '';
     for (const f of files.slice(0, MAX_FILES)) {
       msg += '### `' + f + '`\n\n```\n' + readFileContent(f) + '\n```\n\n';
     }
@@ -118,53 +117,92 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
   try {
     const issue = context.payload.issue;
-    const issueDetails = '## Issue Details\n\n' +
+    const messages = [{ role: 'system', content: systemPrompt }];
+    let finalClassification = null;
+    let finalResponse = null;
+
+    // ========== Query 1: Analyze issue, request files ==========
+    const prompt1 = 'Analyze this issue and request relevant files.\n\n' +
+      '## Issue Details\n\n' +
       '**Title:** ' + (issue.title || '').substring(0, 500) + '\n\n' +
       '**Author:** @' + issue.user.login + '\n\n' +
       '**Labels:** ' + (issue.labels.map(l => l.name).join(', ') || '(None)') + '\n\n' +
       '**Body:**\n' + (issue.body || '').substring(0, 10000);
-
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: issueDetails }
-    ];
     
-    let finalClassification = null;
-    let finalResponse = null;
+    messages.push({ role: 'user', content: prompt1 });
+    console.log('Query 1: Analyzing issue...');
+    const response1 = await callOpenAI(messages);
+    
+    let parsed1;
+    try {
+      parsed1 = parseJson(response1);
+    } catch (e) {
+      finalClassification = extractClassification(null, response1);
+      finalResponse = response1;
+    }
 
-    for (let turn = 1; turn <= MAX_TURNS && !finalResponse; turn++) {
-      if (turn > 1) {
-        console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's before turn ' + turn);
-        await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
-      }
-
-      console.log('Turn ' + turn + '/' + MAX_TURNS);
-      const content = await callOpenAI(messages);
+    if (!finalResponse) {
+      const files1 = (parsed1.requested_files || []).slice(0, MAX_FILES);
       
-      let parsed;
-      try {
-        parsed = parseJson(content);
-      } catch (e) {
-        // Non-JSON response treated as final
-        finalClassification = extractClassification(null, content);
-        finalResponse = content;
-        break;
-      }
-
-      const hasResponse = parsed.response && typeof parsed.response === 'string' && parsed.response.trim();
-      const hasFiles = parsed.requested_files && Array.isArray(parsed.requested_files) && parsed.requested_files.length > 0;
-
-      if (hasResponse) {
-        finalClassification = extractClassification(parsed, content);
-        finalResponse = parsed.response;
-      } else if (hasFiles && turn < MAX_TURNS) {
-        messages.push({ role: 'assistant', content });
-        messages.push({ role: 'user', content: buildFileContents(parsed.requested_files) });
-      } else if (turn === MAX_TURNS) {
-        finalResponse = parsed.response || 'Unable to provide analysis. Please provide more details.';
-        finalClassification = extractClassification(parsed, content);
+      if (files1.length === 0) {
+        finalResponse = 'Unable to determine relevant files. Please provide more details.';
       } else {
-        finalResponse = 'Unable to process this issue. Please provide more details.';
+        // ========== Query 2: Provide files, get response or more files ==========
+        console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's...');
+        await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
+        
+        messages.push({ role: 'assistant', content: response1 });
+        const prompt2 = 'Here are the requested files. Provide your response OR request more files.\n\n' +
+          buildFileContents(files1);
+        messages.push({ role: 'user', content: prompt2 });
+        
+        console.log('Query 2: Processing files...');
+        const response2 = await callOpenAI(messages);
+        
+        let parsed2;
+        try {
+          parsed2 = parseJson(response2);
+        } catch (e) {
+          finalClassification = extractClassification(null, response2);
+          finalResponse = response2;
+        }
+
+        if (!finalResponse) {
+          const hasResponse2 = parsed2.response && typeof parsed2.response === 'string' && parsed2.response.trim();
+          const files2 = (parsed2.requested_files || []).slice(0, MAX_FILES);
+
+          if (hasResponse2) {
+            finalClassification = extractClassification(parsed2, response2);
+            finalResponse = parsed2.response;
+          } else if (files2.length > 0) {
+            // ========== Query 3: Provide more files, must respond ==========
+            console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + 's...');
+            await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY_MS));
+            
+            messages.push({ role: 'assistant', content: response2 });
+            const prompt3 = 'Here are the additional files. You must provide your final response now.\n\n' +
+              buildFileContents(files2);
+            messages.push({ role: 'user', content: prompt3 });
+            
+            console.log('Query 3: Final response...');
+            const response3 = await callOpenAI(messages);
+            
+            let parsed3;
+            try {
+              parsed3 = parseJson(response3);
+            } catch (e) {
+              finalClassification = extractClassification(null, response3);
+              finalResponse = response3;
+            }
+
+            if (!finalResponse) {
+              finalClassification = extractClassification(parsed3, response3);
+              finalResponse = parsed3.response || 'Unable to provide analysis. Please provide more details.';
+            }
+          } else {
+            finalResponse = 'Unable to process this issue. Please provide more details.';
+          }
+        }
       }
     }
 
