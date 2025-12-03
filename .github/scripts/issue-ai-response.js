@@ -55,7 +55,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
     if (!data.choices?.[0]?.message?.content) {
       throw new Error('Invalid API response');
     }
-    return data.choices[0].message.content.trim();
+    const content = data.choices[0].message.content.trim();
+    console.log('OpenAI response:', content);
+    return content;
   }
 
   function readFileContent(filePath) {
@@ -132,7 +134,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
     messages.push({ role: 'user', content: prompt1 });
     console.log('Query 1: Analyzing issue...');
     const response1 = await callOpenAI(messages);
-    console.log('Query 1 response:', response1);
     
     let parsed1;
     try {
@@ -159,7 +160,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
         
         console.log('Query 2: Processing files...');
         const response2 = await callOpenAI(messages);
-        console.log('Query 2 response:', response2);
         
         let parsed2;
         try {
@@ -188,7 +188,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
             
             console.log('Query 3: Final response...');
             const response3 = await callOpenAI(messages);
-            console.log('Query 3 response:', response3);
             
             let parsed3;
             try {
