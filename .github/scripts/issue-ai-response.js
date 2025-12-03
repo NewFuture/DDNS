@@ -119,8 +119,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
     let parsed;
     try {
       const match = raw.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
-      content = JSON.parse(match ? match[1].trim() : raw);
-      parsed = parseJson(content);
+      parsed = JSON.parse(match ? match[1].trim() : raw);
     } catch (e) {
       return { classification: extractClassification(null, raw), response: raw, files: [] };
     }
