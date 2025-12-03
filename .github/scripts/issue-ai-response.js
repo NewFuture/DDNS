@@ -5,19 +5,19 @@
  *
  * STEP 1: Issue-only analysis
  *   - Input: Only issue details (title, body, labels, author)
- *   - Output: { classification?, requested_files[] }
+ *   - Output: { requested_files[] }
  *   - AI analyzes issue and requests first batch of files
  *
  * STEP 2: First batch of files (mutually exclusive)
  *   - Input: Issue + first batch file contents
- *   - Output: EITHER { classification?, response } OR { classification?, requested_files[] }
- *   - AI must choose: final response OR request more files (not both)
+ *   - Output: EITHER { classification, response } OR { requested_files[] }
+ *   - AI must choose: final response (with classification) OR request more files
  *   - If response provided, workflow ends
  *
  * STEP 3: Second batch of files (final mandatory answer)
  *   - Input: Issue + first batch + second batch file contents
- *   - Output: { classification?, response }
- *   - AI must provide final response (requested_files ignored)
+ *   - Output: { classification, response }
+ *   - AI must provide final response with classification (requested_files ignored)
  */
 
 module.exports = async ({ github, context, core, fs, path }) => {
@@ -222,7 +222,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
     // ========== STEP 1 ==========
     console.log('Step 1: Issue-only analysis...');
-    const step1Prompt = 'Step 1: Analyze this issue. Return JSON with classification (optional) and requested_files.\n\n' + issueDetailsBlock;
+    const step1Prompt = 'Step 1: Analyze this issue. Return JSON with requested_files.\n\n' + issueDetailsBlock;
     messages.push({ role: 'user', content: step1Prompt });
 
     const step1Content = await callOpenAI(messages);
@@ -238,7 +238,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
     }
 
     if (!finalResponse) {
-      finalClassification = extractClassification(step1Parsed, step1Content);
+      // Step 1 only requests files, no classification expected
       firstBatchFiles = (step1Parsed.requested_files || []).slice(0, MAX_FILES_PER_STEP);
       console.log('Step 1: Requested files: ' + firstBatchFiles.join(', '));
 
@@ -258,8 +258,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
       messages.push({ role: 'assistant', content: step1Content });
 
       const step2Prompt = 'Step 2: Here are the requested files. Choose ONE:\n' +
-        '- Option A: Provide final response → { "classification": "...", "response": "..." }\n' +
-        '- Option B: Request more files → { "classification": "...", "requested_files": [...] }\n' +
+        '- Option A: Provide final response → { "classification": "bug|feature|question", "response": "..." }\n' +
+        '- Option B: Request more files → { "requested_files": [...] }\n' +
         'Do NOT include both response and requested_files.\n\n' +
         buildFileContentsMessage(firstBatchFiles);
       messages.push({ role: 'user', content: step2Prompt });
@@ -278,9 +278,6 @@ module.exports = async ({ github, context, core, fs, path }) => {
       }
 
       if (!finalResponse) {
-        const newClass = extractClassification(step2Parsed, step2Content);
-        if (newClass) finalClassification = newClass;
-
         const hasResponse = step2Parsed.response && typeof step2Parsed.response === 'string' && step2Parsed.response.trim().length > 0;
         const hasFiles = step2Parsed.requested_files && Array.isArray(step2Parsed.requested_files) && step2Parsed.requested_files.length > 0;
 
@@ -289,11 +286,13 @@ module.exports = async ({ github, context, core, fs, path }) => {
           console.log('Step 2: Protocol violation - both response and requested_files present');
           finalResponse = 'An internal error occurred while processing this issue. Please try again or provide more details.';
         } else if (hasResponse) {
-          // Option A: Final response
+          // Option A: Final response - extract classification only here
+          const newClass = extractClassification(step2Parsed, step2Content);
+          if (newClass) finalClassification = newClass;
           finalResponse = step2Parsed.response;
           console.log('Step 2: Final response received (Option A)');
         } else if (hasFiles) {
-          // Option B: Request more files
+          // Option B: Request more files - no classification needed
           secondBatchFiles = step2Parsed.requested_files.slice(0, MAX_FILES_PER_STEP);
           console.log('Step 2: Requested more files (Option B): ' + secondBatchFiles.join(', '));
         } else {
@@ -313,7 +312,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
       messages.push({ role: 'assistant', content: step2Content });
 
       const step3Prompt = 'Step 3: Final step. You MUST provide a response now.\n' +
-        'Return: { "classification": "...", "response": "..." }\n' +
+        'Return: { "classification": "bug|feature|question", "response": "..." }\n' +
         'Do NOT request more files.\n\n' +
         buildFileContentsMessage(secondBatchFiles);
       messages.push({ role: 'user', content: step3Prompt });
