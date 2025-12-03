@@ -78,7 +78,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
    */
   async function callOpenAI(messages, expectJson) {
     if (expectJson === undefined) expectJson = true;
-    var response = await fetch(apiUrl, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -91,12 +91,12 @@ module.exports = async ({ github, context, core, fs, path }) => {
     });
 
     if (!response.ok) {
-      var errorText = await response.text();
+      const errorText = await response.text();
       console.error('OpenAI API error: ' + response.status + ' ' + errorText);
       throw new Error('API error: ' + response.status + ' ' + errorText);
     }
 
-    var data = await response.json();
+    const data = await response.json();
     if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
       console.error('Invalid API response structure.', data);
       throw new Error('Invalid API response structure.');
@@ -111,11 +111,11 @@ module.exports = async ({ github, context, core, fs, path }) => {
    */
   function readFileContent(filePath) {
     try {
-      var repoRoot = process.cwd();
-      var fullPath = path.resolve(repoRoot, filePath);
-      var normalizedFull = path.normalize(fullPath);
-      var normalizedRoot = path.normalize(repoRoot);
-      var relativePath = path.relative(normalizedRoot, normalizedFull);
+      const repoRoot = process.cwd();
+      const fullPath = path.resolve(repoRoot, filePath);
+      const normalizedFull = path.normalize(fullPath);
+      const normalizedRoot = path.normalize(repoRoot);
+      const relativePath = path.relative(normalizedRoot, normalizedFull);
       if (relativePath.startsWith('..')) {
         return '[Access denied: ' + filePath + ' is outside the repository]';
       }
@@ -124,30 +124,30 @@ module.exports = async ({ github, context, core, fs, path }) => {
         return '[File not found: ' + filePath + ']';
       }
 
-      var stats = fs.statSync(fullPath);
+      const stats = fs.statSync(fullPath);
       if (stats.isDirectory()) {
         return '[' + filePath + ' is a directory, not a file]';
       }
 
       if (stats.size > MAX_FILE_SIZE) {
-        var fd = fs.openSync(fullPath, 'r');
-        var buffer = Buffer.alloc(MAX_FILE_SIZE);
-        var bytesRead;
+        const fd = fs.openSync(fullPath, 'r');
+        const buffer = Buffer.alloc(MAX_FILE_SIZE);
+        let bytesRead;
         try {
           bytesRead = fs.readSync(fd, buffer, 0, MAX_FILE_SIZE, 0);
         } finally {
           fs.closeSync(fd);
         }
-        var StringDecoder = require('string_decoder').StringDecoder;
-        var decoder = new StringDecoder('utf8');
-        var content = decoder.write(buffer.slice(0, bytesRead)) + decoder.end();
+        const { StringDecoder } = require('string_decoder');
+        const decoder = new StringDecoder('utf8');
+        const content = decoder.write(buffer.slice(0, bytesRead)) + decoder.end();
         if (isBinaryContent(content)) {
           return '[' + filePath + ' appears to be a binary file]';
         }
         return content + '\n\n[File truncated - exceeded 50KB limit]';
       }
 
-      var content = fs.readFileSync(fullPath, 'utf8');
+      const content = fs.readFileSync(fullPath, 'utf8');
       if (isBinaryContent(content)) {
         return '[' + filePath + ' appears to be a binary file]';
       }
@@ -161,8 +161,8 @@ module.exports = async ({ github, context, core, fs, path }) => {
    * Parse JSON response, handling markdown code fences
    */
   function parseJsonResponse(content) {
-    var jsonContent = content;
-    var codeBlockMatch = content.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
+    let jsonContent = content;
+    const codeBlockMatch = content.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
     if (codeBlockMatch) {
       jsonContent = codeBlockMatch[1].trim();
     }
@@ -174,15 +174,15 @@ module.exports = async ({ github, context, core, fs, path }) => {
    */
   function extractClassification(parsed, rawContent) {
     if (parsed && parsed.classification) {
-      var c = parsed.classification.toLowerCase();
+      const c = parsed.classification.toLowerCase();
       if (classifications.indexOf(c) !== -1) {
         return c;
       }
     }
     // Legacy pattern: "Classification: bug"
-    var match = rawContent.match(/classification\s*:\s*([a-zA-Z0-9_-]+)/i);
+    const match = rawContent.match(/classification\s*:\s*([a-zA-Z0-9_-]+)/i);
     if (match) {
-      var c = match[1].toLowerCase();
+      const c = match[1].toLowerCase();
       if (classifications.indexOf(c) !== -1) {
         return c;
       }
@@ -194,41 +194,41 @@ module.exports = async ({ github, context, core, fs, path }) => {
    * Build file contents message from file paths
    */
   function buildFileContentsMessage(filePaths) {
-    var msg = '## Requested File Contents\n\n';
-    var paths = filePaths.slice(0, MAX_FILES_PER_STEP);
-    for (var i = 0; i < paths.length; i++) {
-      var filePath = paths[i];
-      var content = readFileContent(filePath);
+    let msg = '## Requested File Contents\n\n';
+    const paths = filePaths.slice(0, MAX_FILES_PER_STEP);
+    for (let i = 0; i < paths.length; i++) {
+      const filePath = paths[i];
+      const content = readFileContent(filePath);
       msg += '### `' + filePath + '`\n\n```\n' + content + '\n```\n\n';
     }
     return msg;
   }
 
   try {
-    var messages = [];
+    const messages = [];
     messages.push({ role: 'system', content: systemPrompt });
 
     // Issue details for all steps
-    var issueDetailsBlock = '## Issue Details\n\n' +
+    const issueDetailsBlock = '## Issue Details\n\n' +
       '**Title:** ' + issueTitle + '\n\n' +
       '**Author:** @' + issueAuthor + '\n\n' +
       '**Labels:** ' + issueLabels + '\n\n' +
       '**Body:**\n' + issueBody;
 
-    var finalClassification = null;
-    var finalResponse = null;
-    var firstBatchFiles = [];
-    var secondBatchFiles = [];
+    let finalClassification = null;
+    let finalResponse = null;
+    let firstBatchFiles = [];
+    let secondBatchFiles = [];
 
     // ========== STEP 1 ==========
     console.log('Step 1: Issue-only analysis...');
-    var step1Prompt = 'Step 1: Analyze this issue. Return JSON with classification (optional) and requested_files.\n\n' + issueDetailsBlock;
+    const step1Prompt = 'Step 1: Analyze this issue. Return JSON with classification (optional) and requested_files.\n\n' + issueDetailsBlock;
     messages.push({ role: 'user', content: step1Prompt });
 
-    var step1Content = await callOpenAI(messages);
+    const step1Content = await callOpenAI(messages);
     console.log('Step 1 response received');
 
-    var step1Parsed;
+    let step1Parsed;
     try {
       step1Parsed = parseJsonResponse(step1Content);
     } catch (parseError) {
@@ -249,6 +249,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
     }
 
     // ========== STEP 2 ==========
+    let step2Content;
     if (!finalResponse && firstBatchFiles.length > 0) {
       console.log('Waiting ' + (RATE_LIMIT_DELAY_MS / 1000) + ' seconds before Step 2...');
       await new Promise(function(resolve) { setTimeout(resolve, RATE_LIMIT_DELAY_MS); });
@@ -256,32 +257,32 @@ module.exports = async ({ github, context, core, fs, path }) => {
       console.log('Step 2: First batch of files...');
       messages.push({ role: 'assistant', content: step1Content });
 
-      var step2Prompt = 'Step 2: Here are the requested files. Choose ONE:\n' +
+      const step2Prompt = 'Step 2: Here are the requested files. Choose ONE:\n' +
         '- Option A: Provide final response → { "classification": "...", "response": "..." }\n' +
         '- Option B: Request more files → { "classification": "...", "requested_files": [...] }\n' +
         'Do NOT include both response and requested_files.\n\n' +
         buildFileContentsMessage(firstBatchFiles);
       messages.push({ role: 'user', content: step2Prompt });
 
-      var step2Content = await callOpenAI(messages);
+      step2Content = await callOpenAI(messages);
       console.log('Step 2 response received');
 
-      var step2Parsed;
+      let step2Parsed;
       try {
         step2Parsed = parseJsonResponse(step2Content);
       } catch (parseError) {
         console.log('Step 2: Failed to parse JSON, treating as final response');
-        var newClass = extractClassification(null, step2Content);
+        const newClass = extractClassification(null, step2Content);
         if (newClass) finalClassification = newClass;
         finalResponse = step2Content;
       }
 
       if (!finalResponse) {
-        var newClass = extractClassification(step2Parsed, step2Content);
+        const newClass = extractClassification(step2Parsed, step2Content);
         if (newClass) finalClassification = newClass;
 
-        var hasResponse = step2Parsed.response && typeof step2Parsed.response === 'string' && step2Parsed.response.trim().length > 0;
-        var hasFiles = step2Parsed.requested_files && Array.isArray(step2Parsed.requested_files) && step2Parsed.requested_files.length > 0;
+        const hasResponse = step2Parsed.response && typeof step2Parsed.response === 'string' && step2Parsed.response.trim().length > 0;
+        const hasFiles = step2Parsed.requested_files && Array.isArray(step2Parsed.requested_files) && step2Parsed.requested_files.length > 0;
 
         if (hasResponse && hasFiles) {
           // Protocol violation: both response and requested_files present
@@ -311,27 +312,27 @@ module.exports = async ({ github, context, core, fs, path }) => {
       console.log('Step 3: Second batch of files (final answer)...');
       messages.push({ role: 'assistant', content: step2Content });
 
-      var step3Prompt = 'Step 3: Final step. You MUST provide a response now.\n' +
+      const step3Prompt = 'Step 3: Final step. You MUST provide a response now.\n' +
         'Return: { "classification": "...", "response": "..." }\n' +
         'Do NOT request more files.\n\n' +
         buildFileContentsMessage(secondBatchFiles);
       messages.push({ role: 'user', content: step3Prompt });
 
-      var step3Content = await callOpenAI(messages);
+      const step3Content = await callOpenAI(messages);
       console.log('Step 3 response received');
 
-      var step3Parsed;
+      let step3Parsed;
       try {
         step3Parsed = parseJsonResponse(step3Content);
       } catch (parseError) {
         console.log('Step 3: Failed to parse JSON, treating as final response');
-        var newClass = extractClassification(null, step3Content);
+        const newClass = extractClassification(null, step3Content);
         if (newClass) finalClassification = newClass;
         finalResponse = step3Content;
       }
 
       if (!finalResponse) {
-        var newClass = extractClassification(step3Parsed, step3Content);
+        const newClass = extractClassification(step3Parsed, step3Content);
         if (newClass) finalClassification = newClass;
 
         if (step3Parsed.response && typeof step3Parsed.response === 'string') {
@@ -379,7 +380,7 @@ module.exports = async ({ github, context, core, fs, path }) => {
 
     console.log('AI response workflow completed successfully');
   } catch (error) {
-    var errorDetails = error && error.stack ? error.stack : error.message;
+    const errorDetails = error && error.stack ? error.stack : error.message;
     core.setFailed('Failed to generate AI response: ' + error.message + '\n\nDetails: ' + errorDetails);
     console.error('Full error:', error);
   }
