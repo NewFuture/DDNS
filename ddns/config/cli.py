@@ -136,6 +136,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
             "namesilo",
             "noip",
             "tencentcloud",
+            "west",
         ],
     )
     ddns.add_argument("--id", help="API ID or email [对应账号ID或邮箱]")
