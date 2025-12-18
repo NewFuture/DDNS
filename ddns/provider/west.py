@@ -30,7 +30,7 @@ class WestProvider(BaseProvider):
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def _auth_params(self, domain):
-        # type: (str) -> dict
+        # type: (str) -> dict[str, str]
         params = {"domain": domain}
         if self.id:
             params["username"] = self.id
@@ -76,7 +76,7 @@ class WestProvider(BaseProvider):
         return host + "." + main_domain
 
     def _request(self, action, domain, **params):
-        # type: (str, str, **object) -> dict | None
+        # type: (str, str, **object) -> dict[str, object] | None
         payload = self._auth_params(domain)
         payload["act"] = action
         for key, value in params.items():
@@ -98,7 +98,7 @@ class WestProvider(BaseProvider):
         return None
 
     def _extract_records(self, response):
-        # type: (dict | None) -> list
+        # type: (dict | None) -> list[dict]
         if not response:
             return []
         for key in ("data", "list", "lists", "records"):
@@ -115,7 +115,7 @@ class WestProvider(BaseProvider):
         return None
 
     def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
-        # type: (str, str, str, str, str | None, dict) -> dict | None
+        # type: (str, str, str, str, str | None, dict[str, object] | None) -> dict | None
         hostname = self._hostname(subdomain, main_domain)
         resp = self._request("dnsrec.list", zone_id, hostname=hostname)
         records = self._extract_records(resp)
@@ -127,7 +127,7 @@ class WestProvider(BaseProvider):
         return None
 
     def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
-        # type: (str, str, str, str, str, int | str | None, str | None, dict) -> bool
+        # type: (str, str, str, str, str, int | str | None, str | None, dict[str, object] | None) -> bool
         hostname = self._hostname(subdomain, main_domain)
         params = {
             "hostname": hostname,
@@ -145,7 +145,7 @@ class WestProvider(BaseProvider):
         return False
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
+        # type: (str, dict, str, str, int | str | None, str | None, dict[str, object] | None) -> bool
         hostname = self._record_hostname(old_record, zone_id)
         params = {
             "hostname": hostname,
