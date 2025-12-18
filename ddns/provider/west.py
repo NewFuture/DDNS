@@ -28,6 +28,8 @@ class WestProvider(BaseProvider):
             raise ValueError("token (apidomainkey/apikey) must be configured for West.cn")
         if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
+        if not self.id:
+            self.logger.info("Using domain-level apidomainkey authentication")
 
     def _auth_params(self, domain):
         # type: (str) -> dict[str, str]
@@ -45,7 +47,7 @@ class WestProvider(BaseProvider):
             code_int = int(code)  # type: ignore[arg-type]
             if code_int in (0, 1, 200, 201):
                 return True
-        except Exception:
+        except (TypeError, ValueError):
             pass
         if isinstance(code, str):
             lower = code.lower()
@@ -103,7 +105,7 @@ class WestProvider(BaseProvider):
             return []
         for key in ("data", "list", "lists", "records"):
             records = response.get(key)  # type: ignore[index]
-            if records:
+            if isinstance(records, list) and records:
                 return records  # type: ignore[return-value]
         return []
 
