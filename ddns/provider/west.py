@@ -45,7 +45,7 @@ class WestProvider(BaseProvider):
         # type: (object) -> bool
         try:
             code_int = int(code)  # type: ignore[arg-type]
-            if code_int in (0, 1, 200, 201):
+            if code_int in (1, 200, 201):
                 return True
         except (TypeError, ValueError):
             pass
@@ -64,6 +64,7 @@ class WestProvider(BaseProvider):
 
     def _record_hostname(self, record, main_domain):
         # type: (dict, str) -> str
+        # 官方返回字段为 hostname，以下别名用于兼容可能的字段命名差异
         host = (
             record.get("hostname")
             or record.get("host")
@@ -104,6 +105,7 @@ class WestProvider(BaseProvider):
         if not response:
             return []
         for key in ("data", "list", "lists", "records"):
+            # West.cn 文档使用 data 返回记录，其他键用于兼容示例或非标准响应
             records = response.get(key)  # type: ignore[index]
             if isinstance(records, list) and records:
                 return records  # type: ignore[return-value]
