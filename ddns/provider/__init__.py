@@ -15,6 +15,7 @@ from .huaweidns import HuaweiDNSProvider
 from .namesilo import NamesiloProvider
 from .noip import NoipProvider
 from .tencentcloud import TencentCloudProvider
+from .west import WestProvider
 
 __all__ = ["SimpleProvider", "get_provider_class"]
 
@@ -74,6 +75,9 @@ def get_provider_class(provider_name):
         "noip": NoipProvider,
         "no-ip": NoipProvider,  # 兼容no-ip
         "noip_com": NoipProvider,  # 兼容noip.com
+        # west.cn
+        "west": WestProvider,
+        "westcn": WestProvider,
         # callback
         "callback": CallbackProvider,
         "webhook": CallbackProvider,  # 兼容

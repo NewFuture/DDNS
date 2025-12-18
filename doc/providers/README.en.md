@@ -17,6 +17,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](he.en.md) | ⚠️ Pending verification, no auto-record creation |
 | `huaweidns` | [Huawei Cloud DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns 中文文档](huaweidns.md) | [huaweidns English Doc](huaweidns.en.md) | ⚠️ Pending verification |
 | `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](noip.en.md) | Popular dynamic DNS service |
+| `west` | [West.cn](https://www.west.cn/) | [west 中文文档](west.md) | [west English Doc](west.en.md) | Domain-level or user-level ApiKey, supports A/AAAA |
 | `tencentcloud` | [Tencent Cloud DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | Tencent Cloud DNSPod service |
 | `edgeone` | [Tencent Cloud EdgeOne](https://edgeone.ai) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | Tencent Cloud Edge Security Platform (Acceleration Domains) |
 | `edgeone_dns` | [Tencent Cloud EdgeOne DNS](https://edgeone.ai) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](edgeone_dns.en.md) | Tencent Cloud EdgeOne DNS Records |
