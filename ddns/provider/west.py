@@ -24,25 +24,20 @@ class WestProvider(SimpleProvider):
         """
         if not self.token:
             raise ValueError("West.cn requires `token` (apidomainkey or apikey).")
-        if self.id is None:
-            self.id = ""
         if not self.endpoint:
-            raise ValueError("API endpoint must be defined in WestProvider")
+            raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         # type: (str, str, str, str | int | None, str | None, **object) -> bool
         """
         更新或创建 DNS 记录。
+
+        西部数码的 `dnsrec.update` 接口不支持自定义 TTL/线路参数，传入的 ttl/line 将被忽略。
         """
         self.logger.info("%s => %s(%s)", domain, value, record_type)
         params = {"act": "dnsrec.update", "domain": domain, "hostname": domain, "record_value": value}
 
-        domain_key = None
-        if extra:
-            domain_key = extra.get("domain_key") or extra.get("apidomainkey")
-        if domain_key:
-            params["apidomainkey"] = domain_key
-        elif self.id:
+        if self.id:
             params["username"] = self.id
             params["apikey"] = self.token
         else:
