@@ -85,7 +85,6 @@ def get_provider_class(provider_name):
         # west.cn
         "west": WestProvider,
         "west_cn": WestProvider,  # 兼容west.cn
-        "35": WestProvider,  # 三五互联 (使用相同API)
-        "35cn": WestProvider,  # 兼容三五互联
+        "35cn": WestProvider,  # 三五互联 (使用相同API)
     }
     return mapping.get(provider_name)  # type: ignore[return-value]

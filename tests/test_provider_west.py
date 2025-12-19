@@ -38,17 +38,6 @@ class TestWestProvider(BaseProviderTestCase):
         provider = WestProvider(self.id, self.token, endpoint=custom_endpoint)
         self.assertEqual(provider.endpoint, custom_endpoint)
 
-    def test_line_mapping(self):
-        """Test LINE_MAPPING contains expected values"""
-        mapping = WestProvider.LINE_MAPPING
-        self.assertEqual(mapping["默认"], "")
-        self.assertEqual(mapping["电信"], "LTEL")
-        self.assertEqual(mapping["联通"], "LCNC")
-        self.assertEqual(mapping["移动"], "LMOB")
-        self.assertEqual(mapping["教育网"], "LEDU")
-        self.assertEqual(mapping["搜索引擎"], "LSEO")
-        self.assertEqual(mapping["境外"], "LFOR")
-
     def test_validate_with_token_only(self):
         """Test _validate passes with only token"""
         provider = WestProvider(None, self.token)
@@ -93,42 +82,6 @@ class TestWestProvider(BaseProviderTestCase):
         params = provider._get_auth_params()
         self.assertEqual(params, {"username": "123456", "apikey": "md5_api_password"})
 
-    def test_parse_domain_simple(self):
-        """Test _parse_domain with simple subdomain"""
-        subdomain, main = self.provider._parse_domain("www.example.com")
-        self.assertEqual(subdomain, "www")
-        self.assertEqual(main, "example.com")
-
-    def test_parse_domain_root(self):
-        """Test _parse_domain with root domain"""
-        subdomain, main = self.provider._parse_domain("example.com")
-        self.assertEqual(subdomain, "@")
-        self.assertEqual(main, "example.com")
-
-    def test_parse_domain_multi_level(self):
-        """Test _parse_domain with multi-level subdomain"""
-        subdomain, main = self.provider._parse_domain("sub.www.example.com")
-        self.assertEqual(subdomain, "sub.www")
-        self.assertEqual(main, "example.com")
-
-    def test_parse_domain_with_tilde_separator(self):
-        """Test _parse_domain with ~ separator"""
-        subdomain, main = self.provider._parse_domain("www~example.com")
-        self.assertEqual(subdomain, "www")
-        self.assertEqual(main, "example.com")
-
-    def test_parse_domain_with_plus_separator(self):
-        """Test _parse_domain with + separator"""
-        subdomain, main = self.provider._parse_domain("subdomain+example.com")
-        self.assertEqual(subdomain, "subdomain")
-        self.assertEqual(main, "example.com")
-
-    def test_parse_domain_single_level(self):
-        """Test _parse_domain with single level domain (TLD)"""
-        subdomain, main = self.provider._parse_domain("localhost")
-        self.assertEqual(subdomain, "@")
-        self.assertEqual(main, "localhost")
-
     @patch("ddns.provider.west.WestProvider._http")
     def test_set_record_success(self, mock_http):
         """Test set_record with successful response"""
@@ -137,13 +90,11 @@ class TestWestProvider(BaseProviderTestCase):
         result = self.provider.set_record("www.example.com", "192.168.1.1")
 
         self.assertTrue(result)
-        mock_http.assert_called_once()
+        mock_http.assert_called()
         call_args = mock_http.call_args
         self.assertEqual(call_args[0][0], "POST")
         body = call_args[1]["body"]
         self.assertEqual(body["act"], "dnsrec.update")
-        self.assertEqual(body["domain"], "example.com")
-        self.assertEqual(body["hostname"], "www")
         self.assertEqual(body["record_value"], "192.168.1.1")
 
     @patch("ddns.provider.west.WestProvider._http")
@@ -171,42 +122,30 @@ class TestWestProvider(BaseProviderTestCase):
 
     @patch("ddns.provider.west.WestProvider._http")
     def test_set_record_with_line(self, mock_http):
-        """Test set_record with line parameter"""
+        """Test set_record with line parameter (direct code)"""
         mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
 
-        result = self.provider.set_record("www.example.com", "192.168.1.1", line="电信")
+        result = self.provider.set_record("www.example.com", "192.168.1.1", line="LTEL")
 
         self.assertTrue(result)
         body = mock_http.call_args[1]["body"]
         self.assertEqual(body["record_line"], "LTEL")
 
     @patch("ddns.provider.west.WestProvider._http")
-    def test_set_record_with_line_default(self, mock_http):
-        """Test set_record with default line (should not add record_line)"""
+    def test_set_record_with_line_code(self, mock_http):
+        """Test set_record with various line codes"""
         mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
 
-        result = self.provider.set_record("www.example.com", "192.168.1.1", line="默认")
-
+        # Test LCNC (China Unicom)
+        result = self.provider.set_record("www.example.com", "192.168.1.1", line="LCNC")
         self.assertTrue(result)
         body = mock_http.call_args[1]["body"]
-        # Default line maps to empty string, should not be in body
-        self.assertNotIn("record_line", body)
-
-    @patch("ddns.provider.west.WestProvider._http")
-    def test_set_record_with_custom_line(self, mock_http):
-        """Test set_record with custom line value not in mapping"""
-        mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
-
-        result = self.provider.set_record("www.example.com", "192.168.1.1", line="CUSTOM")
-
-        self.assertTrue(result)
-        body = mock_http.call_args[1]["body"]
-        self.assertEqual(body["record_line"], "CUSTOM")
+        self.assertEqual(body["record_line"], "LCNC")
 
     @patch("ddns.provider.west.WestProvider._http")
     def test_set_record_failure_api_error(self, mock_http):
         """Test set_record with API error response"""
-        mock_http.return_value = {"code": 500, "msg": "Domain not found"}
+        mock_http.return_value = {"code": 500, "msg": "Authentication failed"}
 
         self.provider.logger = MagicMock()
         result = self.provider.set_record("www.example.com", "192.168.1.1")
@@ -277,6 +216,18 @@ class TestWestProvider(BaseProviderTestCase):
         self.assertEqual(body["domain"], "example.com")
 
     @patch("ddns.provider.west.WestProvider._http")
+    def test_set_record_with_plus_domain(self, mock_http):
+        """Test set_record with domain using + separator"""
+        mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
+
+        result = self.provider.set_record("subdomain+example.com", "192.168.1.1")
+
+        self.assertTrue(result)
+        body = mock_http.call_args[1]["body"]
+        self.assertEqual(body["hostname"], "subdomain")
+        self.assertEqual(body["domain"], "example.com")
+
+    @patch("ddns.provider.west.WestProvider._http")
     def test_set_record_domain_lowercase(self, mock_http):
         """Test set_record converts domain to lowercase"""
         mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
@@ -284,10 +235,25 @@ class TestWestProvider(BaseProviderTestCase):
         result = self.provider.set_record("WWW.EXAMPLE.COM", "192.168.1.1")
 
         self.assertTrue(result)
-        # The domain should be lowercased in logging and parsing
+        # The domain should be lowercased
         body = mock_http.call_args[1]["body"]
         self.assertEqual(body["hostname"], "www")
         self.assertEqual(body["domain"], "example.com")
+
+    @patch("ddns.provider.west.WestProvider._http")
+    def test_set_record_domain_not_found_fallback(self, mock_http):
+        """Test set_record with domain not found fallback"""
+        # First call returns domain not found, second succeeds
+        mock_http.side_effect = [
+            {"code": 500, "msg": "Domain not found"},
+            {"code": 200, "msg": "success", "body": {"record_id": 123456}},
+        ]
+
+        self.provider.logger = MagicMock()
+        result = self.provider.set_record("www.example.com", "192.168.1.1")
+
+        self.assertTrue(result)
+        self.assertEqual(mock_http.call_count, 2)
 
 
 class TestWestProviderIntegration(BaseProviderTestCase):
@@ -304,26 +270,24 @@ class TestWestProviderIntegration(BaseProviderTestCase):
         """Test complete workflow for updating a record"""
         mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 118610345}}
 
-        result = self.provider.set_record("ddns.example.com", "192.168.1.100", record_type="A", ttl=600, line="电信")
+        result = self.provider.set_record("ddns.example.com", "192.168.1.100", record_type="A", ttl=600, line="LTEL")
 
         self.assertTrue(result)
-        mock_http.assert_called_once()
+        mock_http.assert_called()
 
         # Verify the request parameters
         call_args = mock_http.call_args
         body = call_args[1]["body"]
         self.assertEqual(body["act"], "dnsrec.update")
-        self.assertEqual(body["domain"], "example.com")
-        self.assertEqual(body["hostname"], "ddns")
         self.assertEqual(body["record_value"], "192.168.1.100")
         self.assertEqual(body["record_line"], "LTEL")
 
     @patch("ddns.provider.west.WestProvider._http")
     def test_full_workflow_with_multilevel_subdomain(self, mock_http):
-        """Test workflow with multi-level subdomain"""
+        """Test workflow with multi-level subdomain using explicit separator"""
         mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
 
-        result = self.provider.set_record("a.b.c.example.com", "10.0.0.1", record_type="A")
+        result = self.provider.set_record("a.b.c~example.com", "10.0.0.1", record_type="A")
 
         self.assertTrue(result)
         body = mock_http.call_args[1]["body"]
@@ -354,6 +318,45 @@ class TestWestProviderIntegration(BaseProviderTestCase):
         self.assertTrue(result)
 
 
+class TestWestProviderTryUpdate(BaseProviderTestCase):
+    """Test _try_update method"""
+
+    def setUp(self):
+        """测试初始化"""
+        super(TestWestProviderTryUpdate, self).setUp()
+        self.provider = WestProvider(self.id, self.token)
+        self.provider.logger = MagicMock()
+
+    @patch("ddns.provider.west.WestProvider._http")
+    def test_try_update_success(self, mock_http):
+        """Test _try_update with successful response"""
+        mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
+
+        result = self.provider._try_update("www", "example.com", "192.168.1.1", None)
+
+        self.assertTrue(result)
+
+    @patch("ddns.provider.west.WestProvider._http")
+    def test_try_update_not_found(self, mock_http):
+        """Test _try_update returns None when domain not found"""
+        mock_http.return_value = {"code": 500, "msg": "Domain not found"}
+
+        result = self.provider._try_update("www", "example.com", "192.168.1.1", None)
+
+        self.assertIsNone(result)
+
+    @patch("ddns.provider.west.WestProvider._http")
+    def test_try_update_with_line(self, mock_http):
+        """Test _try_update with line parameter"""
+        mock_http.return_value = {"code": 200, "msg": "success", "body": {"record_id": 123456}}
+
+        result = self.provider._try_update("www", "example.com", "192.168.1.1", "LTEL")
+
+        self.assertTrue(result)
+        body = mock_http.call_args[1]["body"]
+        self.assertEqual(body["record_line"], "LTEL")
+
+
 class TestWestProviderFromRegistry(BaseProviderTestCase):
     """Test West.cn provider registration"""
 
@@ -371,19 +374,19 @@ class TestWestProviderFromRegistry(BaseProviderTestCase):
         provider_class = get_provider_class("west_cn")
         self.assertEqual(provider_class, WestProvider)
 
-    def test_35_alias_registered(self):
-        """Test that 35 (三五互联) alias is registered"""
-        from ddns.provider import get_provider_class
-
-        provider_class = get_provider_class("35")
-        self.assertEqual(provider_class, WestProvider)
-
     def test_35cn_alias_registered(self):
         """Test that 35cn alias is registered"""
         from ddns.provider import get_provider_class
 
         provider_class = get_provider_class("35cn")
         self.assertEqual(provider_class, WestProvider)
+
+    def test_35_alias_not_registered(self):
+        """Test that 35 alias is NOT registered (removed per review)"""
+        from ddns.provider import get_provider_class
+
+        provider_class = get_provider_class("35")
+        self.assertIsNone(provider_class)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ Official Links:
 - Official Website: <https://www.west.cn/>
 - API Documentation: <https://console-docs.apipost.cn/preview/bf57a993975b67e0/7b363d9b8808faa2>
 
-> **Note**: 35.cn (三五互联) uses the same API and can use `35` or `35cn` as the provider identifier.
+> **Note**: 35.cn (三五互联) uses the same API and can use `35cn` as the provider identifier.
 
 ## Authentication Information
 
@@ -58,7 +58,7 @@ Authenticate using member account and API password.
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "west",
     "token": "ec4c66e34561428b2e9ad65048f9bsed",
     "index4": ["url:http://api.ipify.cn", "public"],
@@ -73,7 +73,7 @@ Authenticate using member account and API password.
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "west",
     "id": "your_username",
     "token": "md5_of_your_api_password",
@@ -91,8 +91,8 @@ Authenticate using member account and API password.
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-    "dns": "35",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "dns": "35cn",
     "token": "your_apidomainkey",
     "endpoint": "https://api.35.cn/API/v2/domain/dns/",
     "ipv4": ["ddns.example.com"]
@@ -103,7 +103,7 @@ Authenticate using member account and API password.
 
 | Parameter | Description | Type | Range/Options | Default | Parameter Type |
 | :-------: | :---------- | :--- | :------------ | :------ | :------------- |
-| dns | Provider identifier | String | `west`, `west_cn`, `35`, `35cn` | None | Provider Parameter |
+| dns | Provider identifier | String | `west`, `35cn` | None | Provider Parameter |
 | id | Member account | String | Required for account auth | None | Provider Parameter |
 | token | Auth credential | String | apidomainkey or MD5(API password) | None | Provider Parameter |
 | endpoint | API endpoint | String | Custom API endpoint | West.cn | Provider Parameter |
@@ -126,17 +126,17 @@ Authenticate using member account and API password.
 
 ### line
 
-The `line` parameter specifies DNS resolution lines. West.cn supported lines:
+The `line` parameter specifies DNS resolution lines. West.cn supported line codes:
 
-| Line Name | Line Code | Description |
-| :-------- | :-------- | :---------- |
-| 默认 | (empty) | Default line |
-| 电信 | LTEL | China Telecom |
-| 联通 | LCNC | China Unicom |
-| 移动 | LMOB | China Mobile |
-| 教育网 | LEDU | China Education Network |
-| 搜索引擎 | LSEO | Search Engine |
-| 境外 | LFOR | Overseas |
+| Line Code | Description |
+| :-------- | :---------- |
+| (empty) | Default line |
+| LTEL | China Telecom |
+| LCNC | China Unicom |
+| LMOB | China Mobile |
+| LEDU | China Education Network |
+| LSEO | Search Engine |
+| LFOR | Overseas |
 
 ## Troubleshooting
 

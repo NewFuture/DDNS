@@ -26,18 +26,6 @@ class WestProvider(SimpleProvider):
     endpoint = "https://api.west.cn/API/v2/domain/dns/"
     content_type = TYPE_FORM
 
-    # Line mapping for West.cn (线路映射)
-    LINE_MAPPING = {
-        "": "",  # Default line
-        "默认": "",  # Default
-        "电信": "LTEL",  # China Telecom
-        "联通": "LCNC",  # China Unicom
-        "移动": "LMOB",  # China Mobile
-        "教育网": "LEDU",  # Education Network
-        "搜索引擎": "LSEO",  # Search Engine
-        "境外": "LFOR",  # Overseas
-    }
-
     def _validate(self):
         # type: () -> None
         """
@@ -76,12 +64,16 @@ class WestProvider(SimpleProvider):
         This uses West.cn's DDNS update API which automatically handles
         creating or updating records based on whether they exist.
 
+        Tries domain parsing from shortest to longest subdomain:
+        e.g., ipv6.ddns.test.com => try ipv6.ddns+test.com first,
+        if 404 then try ipv6+ddns.test.com, until ipv6.ddns.test.com
+
         Args:
             domain (str): Full domain name (e.g., 'www.example.com')
             value (str): Record value (IP address)
             record_type (str): Record type (A or AAAA), auto-detected based on value
             ttl (int | None): TTL value (not used by dnsrec.update)
-            line (str | None): Line routing option
+            line (str | None): Line routing option (e.g., LTEL, LCNC, LMOB)
             extra (dict): Extra parameters
 
         Returns:
@@ -90,9 +82,52 @@ class WestProvider(SimpleProvider):
         domain = domain.lower()
         self.logger.info("%s => %s (%s)", domain, value, record_type)
 
-        # Parse domain to get subdomain and main domain
-        subdomain, main_domain = self._parse_domain(domain)
+        # Check for custom separator (~ or +) for explicit domain splitting
+        subdomain = None
+        main_domain = None
+        for sep in ("~", "+"):
+            if sep in domain:
+                subdomain, main_domain = domain.split(sep, 1)
+                break
 
+        if subdomain is not None and main_domain is not None:
+            # Use explicit domain splitting
+            return self._try_update(subdomain, main_domain, value, line)
+
+        # Try domain parsing from shortest to longest main domain
+        # e.g., ipv6.ddns.test.com => try ipv6.ddns+test.com, then ipv6+ddns.test.com
+        parts = domain.split(".")
+        if len(parts) <= 2:
+            # Root domain or simple domain
+            return self._try_update("@", domain, value, line)
+
+        # Try from shortest subdomain to longest
+        # For ipv6.ddns.test.com: try (ipv6.ddns, test.com) then (ipv6, ddns.test.com)
+        for i in range(len(parts) - 2, 0, -1):
+            subdomain = ".".join(parts[:i])
+            main_domain = ".".join(parts[i:])
+            self.logger.debug("Trying: %s + %s", subdomain, main_domain)
+            result = self._try_update(subdomain, main_domain, value, line)
+            if result is not None:
+                return result
+
+        # Final fallback: try as root domain
+        return self._try_update("@", domain, value, line) or False
+
+    def _try_update(self, subdomain, main_domain, value, line):
+        # type: (str, str, str, str | None) -> bool | None
+        """
+        Try to update DNS record with given subdomain and main_domain.
+
+        Args:
+            subdomain (str): Subdomain part (e.g., 'www' or '@')
+            main_domain (str): Main domain part (e.g., 'example.com')
+            value (str): Record value (IP address)
+            line (str | None): Line routing option
+
+        Returns:
+            bool: True on success, False on failure, None if domain not found (404)
+        """
         # Build request parameters
         params = {"act": "dnsrec.update", "domain": main_domain, "hostname": subdomain, "record_value": value}
 
@@ -101,9 +136,7 @@ class WestProvider(SimpleProvider):
 
         # Add line if specified
         if line:
-            record_line = self.LINE_MAPPING.get(line, line)
-            if record_line:
-                params["record_line"] = record_line
+            params["record_line"] = line
 
         # Make API request
         try:
@@ -112,10 +145,14 @@ class WestProvider(SimpleProvider):
                 code = response.get("code")
                 if code == 200:
                     record_id = response.get("body", {}).get("record_id")
-                    self.logger.info("Record updated successfully: %s (id=%s)", domain, record_id)
+                    self.logger.info("Record updated successfully: %s.%s (id=%s)", subdomain, main_domain, record_id)
                     return True
                 else:
                     msg = response.get("msg", "Unknown error")
+                    # Check if domain not found (try next combination)
+                    if "not found" in msg.lower() or "不存在" in msg:
+                        self.logger.debug("Domain not found: %s.%s, trying next...", subdomain, main_domain)
+                        return None
                     self.logger.error("Failed to update record: %s", msg)
                     return False
             else:
@@ -124,34 +161,3 @@ class WestProvider(SimpleProvider):
         except Exception as e:
             self.logger.error("API request failed: %s", e)
             return False
-
-    def _parse_domain(self, domain):
-        # type: (str) -> tuple[str, str]
-        """
-        Parse full domain name into subdomain and main domain.
-
-        Supports custom separator format (~ or +) for explicit domain splitting.
-
-        Args:
-            domain (str): Full domain name
-
-        Returns:
-            tuple[str, str]: (subdomain, main_domain)
-        """
-        # Check for custom separator
-        for sep in ("~", "+"):
-            if sep in domain:
-                parts = domain.split(sep, 1)
-                return parts[0], parts[1]
-
-        # Default domain parsing: assume last two parts are main domain
-        # e.g., 'www.example.com' -> ('www', 'example.com')
-        parts = domain.split(".")
-        if len(parts) <= 2:
-            # Root domain or simple domain
-            return "@", domain
-        else:
-            # Subdomain
-            main_domain = ".".join(parts[-2:])
-            subdomain = ".".join(parts[:-2])
-            return subdomain, main_domain

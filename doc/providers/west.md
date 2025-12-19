@@ -9,7 +9,7 @@
 - 官方网站：<https://www.west.cn/>
 - API文档：<https://console-docs.apipost.cn/preview/bf57a993975b67e0/7b363d9b8808faa2>
 
-> **注意**：三五互联 (35.cn) 使用相同的 API，可以使用 `35` 或 `35cn` 作为服务商标识。
+> **注意**：三五互联 (35.cn) 使用相同的 API，可以使用 `35cn` 作为服务商标识。
 
 ## 认证信息
 
@@ -58,7 +58,7 @@
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "west",
     "token": "ec4c66e34561428b2e9ad65048f9bsed",
     "index4": ["url:http://api.ipify.cn", "public"],
@@ -73,7 +73,7 @@
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "west",
     "id": "your_username",
     "token": "md5_of_your_api_password",
@@ -91,8 +91,8 @@
 
 ```json
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
-    "dns": "35",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "dns": "35cn",
     "token": "your_apidomainkey",
     "endpoint": "https://api.35.cn/API/v2/domain/dns/",
     "ipv4": ["ddns.example.com"]
@@ -103,7 +103,7 @@
 
 | 参数    | 说明         | 类型           | 取值范围/选项                       | 默认值    | 参数类型   |
 | :-----: | :----------- | :------------- | :--------------------------------- | :-------- | :--------- |
-| dns     | 服务商标识   | 字符串         | `west`, `west_cn`, `35`, `35cn`    | 无        | 服务商参数 |
+| dns     | 服务商标识   | 字符串         | `west`, `35cn`                     | 无        | 服务商参数 |
 | id      | 会员账号     | 字符串         | 账号认证时必填                      | 无        | 服务商参数 |
 | token   | 认证密钥     | 字符串         | apidomainkey 或 MD5(API密码)       | 无        | 服务商参数 |
 | endpoint | API地址     | 字符串         | 自定义API端点                       | 西部数码  | 服务商参数 |
@@ -126,17 +126,17 @@
 
 ### line
 
-`line` 参数指定 DNS 解析线路，西部数码支持的线路：
+`line` 参数指定 DNS 解析线路，西部数码支持的线路代码：
 
-| 线路标识   | 线路代码 | 说明         |
-| :-------- | :------- | :----------- |
-| 默认      | （空）   | 默认线路     |
-| 电信      | LTEL     | 中国电信     |
-| 联通      | LCNC     | 中国联通     |
-| 移动      | LMOB     | 中国移动     |
-| 教育网    | LEDU     | 中国教育网   |
-| 搜索引擎  | LSEO     | 搜索引擎     |
-| 境外      | LFOR     | 境外访问     |
+| 线路代码 | 说明         |
+| :------- | :----------- |
+| （空）   | 默认线路     |
+| LTEL     | 中国电信     |
+| LCNC     | 中国联通     |
+| LMOB     | 中国移动     |
+| LEDU     | 中国教育网   |
+| LSEO     | 搜索引擎     |
+| LFOR     | 境外访问     |
 
 ## 故障排除
 
