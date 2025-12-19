@@ -21,6 +21,7 @@
 | `tencentcloud` | [腾讯云DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | 腾讯云DNSPod服务 |
 | `edgeone` | [腾讯云EdgeOne](https://cloud.tencent.com/product/teo) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | 腾讯云边缘安全加速平台（加速域名） |
 | `edgeone_dns` | [腾讯云EdgeOne DNS](https://cloud.tencent.com/product/teo) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](edgeone_dns.en.md) | 腾讯云EdgeOne DNS记录管理 |
+| `west` | [西部数码](https://www.west.cn/) | [west 中文文档](west.md) | [west English Doc](west.en.md) | 域名/账户密钥均可 |
 
 > 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
 

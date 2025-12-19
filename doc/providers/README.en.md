@@ -20,6 +20,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `tencentcloud` | [Tencent Cloud DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | Tencent Cloud DNSPod service |
 | `edgeone` | [Tencent Cloud EdgeOne](https://edgeone.ai) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | Tencent Cloud Edge Security Platform (Acceleration Domains) |
 | `edgeone_dns` | [Tencent Cloud EdgeOne DNS](https://edgeone.ai) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](edgeone_dns.en.md) | Tencent Cloud EdgeOne DNS Records |
+| `west` | [West.cn](https://www.west.cn/) | [west 中文文档](west.md) | [west English Doc](west.en.md) | Domain or account key supported |
 
 > To add a new provider, [create an issue and fill in the template](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
 

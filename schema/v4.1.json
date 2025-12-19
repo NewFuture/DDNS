@@ -43,7 +43,8 @@
               "huaweidns",
               "namesilo",
               "noip",
-              "tencentcloud"
+              "tencentcloud",
+              "west"
             ]
           },
           "id": {
@@ -295,7 +296,8 @@
         "huaweidns",
         "namesilo",
         "noip",
-        "tencentcloud"
+        "tencentcloud",
+        "west"
       ]
     },
     "ipv4": {
