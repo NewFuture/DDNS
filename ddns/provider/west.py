@@ -145,13 +145,14 @@ class WestProvider(SimpleProvider):
                 code = response.get("code")
                 if code == 200:
                     record_id = response.get("body", {}).get("record_id")
-                    self.logger.info("Record updated successfully: %s.%s (id=%s)", subdomain, main_domain, record_id)
+                    domain_str = main_domain if subdomain == "@" else "{}.{}".format(subdomain, main_domain)
+                    self.logger.info("Record updated successfully: %s (id=%s)", domain_str, record_id)
                     return True
                 else:
                     msg = response.get("msg", "Unknown error")
                     # Check if domain not found (try next combination)
                     if "not found" in msg.lower() or "不存在" in msg:
-                        self.logger.debug("Domain not found: %s.%s, trying next...", subdomain, main_domain)
+                        self.logger.debug("Domain not found: %s+%s, trying next...", subdomain, main_domain)
                         return None
                     self.logger.error("Failed to update record: %s", msg)
                     return False
