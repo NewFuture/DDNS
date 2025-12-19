@@ -43,14 +43,14 @@ class TestWestProvider(BaseProviderTestCase):
         self.assertTrue(result)
         mock_http.assert_called_once()
         args, kwargs = mock_http.call_args
-        self.assertEqual(args[0], "GET")
+        self.assertEqual(args[0], "POST")
         self.assertEqual(args[1], "/")
-        queries = kwargs["queries"]
-        self.assertEqual(queries["act"], "dnsrec.update")
-        self.assertEqual(queries["domain"], "test.example.com")
-        self.assertEqual(queries["hostname"], "test.example.com")
-        self.assertEqual(queries["record_value"], "1.2.3.4")
-        self.assertEqual(queries["apidomainkey"], "domainkey")
+        body = kwargs["body"]
+        self.assertEqual(body["act"], "dnsrec.update")
+        self.assertEqual(body["domain"], "example.com")
+        self.assertEqual(body["hostname"], "test.example.com")
+        self.assertEqual(body["record_value"], "1.2.3.4")
+        self.assertEqual(body["apidomainkey"], "domainkey")
 
     @patch.object(WestProvider, "_http")
     def test_set_record_success_with_account_auth(self, mock_http):
@@ -62,10 +62,12 @@ class TestWestProvider(BaseProviderTestCase):
         result = provider.set_record("ipv6.example.com", "::1")
 
         self.assertTrue(result)
-        queries = mock_http.call_args[1]["queries"]
-        self.assertEqual(queries["username"], self.id)
-        self.assertEqual(queries["apikey"], self.token)
-        self.assertEqual(queries["record_value"], "::1")
+        body = mock_http.call_args[1]["body"]
+        self.assertEqual(body["username"], self.id)
+        self.assertEqual(body["apikey"], self.token)
+        self.assertEqual(body["record_value"], "::1")
+        self.assertEqual(body["domain"], "example.com")
+        self.assertEqual(body["hostname"], "ipv6.example.com")
 
     @patch.object(WestProvider, "_http")
     def test_set_record_error_code(self, mock_http):

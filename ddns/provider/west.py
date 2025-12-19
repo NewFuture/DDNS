@@ -35,7 +35,12 @@ class WestProvider(SimpleProvider):
         西部数码的 `dnsrec.update` 接口不支持自定义 TTL/线路参数，传入的 ttl/line 将被忽略。
         """
         self.logger.info("%s => %s(%s)", domain, value, record_type)
-        params = {"act": "dnsrec.update", "domain": domain, "hostname": domain, "record_value": value}
+        parts = domain.split(".")
+        if len(parts) >= 2:
+            main_domain = ".".join(parts[-2:])
+        else:
+            main_domain = domain
+        params = {"act": "dnsrec.update", "domain": main_domain, "hostname": domain, "record_value": value}
 
         if self.id:
             params["username"] = self.id
@@ -44,7 +49,7 @@ class WestProvider(SimpleProvider):
             params["apidomainkey"] = self.token
 
         try:
-            res = self._http("GET", "/", queries=params)
+            res = self._http("POST", "/", body=params)
         except Exception as e:
             self.logger.error("Error updating West.cn record for %s: %s", domain, e)
             return False
