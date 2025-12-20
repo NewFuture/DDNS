@@ -66,7 +66,7 @@ class WestProvider(SimpleProvider):
 
         Tries domain parsing from longest subdomain to shortest:
         e.g., ipv6.ddns.test.com => try ipv6.ddns+test.com first (longest subdomain),
-        if domain not found (code=500) then try ipv6+ddns.test.com (shorter subdomain)
+        if domain not found (code=404) then try ipv6+ddns.test.com (shorter subdomain)
 
         Args:
             domain (str): Full domain name (e.g., 'www.example.com')
@@ -126,8 +126,8 @@ class WestProvider(SimpleProvider):
             line (str | None): Line routing option
 
         Returns:
-            bool: True on success (code=200), False on failure (code=500 with error)
-            None: if domain not found (code=500 with "not found" message), to try next combination
+            bool: True on success (code=200), False on other errors
+            None: if domain not found (code=404), to try next combination
         """
         # Build request parameters
         params = {"act": "dnsrec.update", "domain": main_domain, "hostname": subdomain, "record_value": value}
@@ -149,20 +149,13 @@ class WestProvider(SimpleProvider):
                     domain_str = main_domain if subdomain == "@" else "{}.{}".format(subdomain, main_domain)
                     self.logger.info("Record updated successfully: %s (id=%s)", domain_str, record_id)
                     return True
-                elif code == 500:
-                    msg = response.get("msg", "Unknown error")
-                    # Check if domain not found (try next combination)
-                    # West.cn API returns code=500 with message containing "not found" or "不存在"
-                    if "not found" in msg.lower() or "不存在" in msg:
-                        self.logger.debug(
-                            "Domain not found (code=%s): %s+%s, trying next...", code, subdomain, main_domain
-                        )
-                        return None
-                    self.logger.error("Failed to update record (code=%s): %s", code, msg)
-                    return False
+                elif code == 404:
+                    # Domain not found, try next combination
+                    self.logger.debug("Domain not found (code=404): %s+%s, trying next...", subdomain, main_domain)
+                    return None
                 else:
                     msg = response.get("msg", "Unknown error")
-                    self.logger.error("Unexpected response code=%s: %s", code, msg)
+                    self.logger.error("Failed to update record (code=%s): %s", code, msg)
                     return False
             else:
                 self.logger.error("Invalid API response: %s", response)

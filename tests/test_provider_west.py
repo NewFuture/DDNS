@@ -243,9 +243,9 @@ class TestWestProvider(BaseProviderTestCase):
     @patch("ddns.provider.west.WestProvider._http")
     def test_set_record_domain_not_found_fallback(self, mock_http):
         """Test set_record with domain not found fallback"""
-        # First call returns domain not found, second succeeds
+        # First call returns domain not found (code=404), second succeeds
         mock_http.side_effect = [
-            {"code": 500, "msg": "Domain not found"},
+            {"code": 404, "msg": "Domain not found"},
             {"code": 200, "msg": "success", "body": {"record_id": 123456}},
         ]
 
@@ -338,8 +338,8 @@ class TestWestProviderTryUpdate(BaseProviderTestCase):
 
     @patch("ddns.provider.west.WestProvider._http")
     def test_try_update_not_found(self, mock_http):
-        """Test _try_update returns None when domain not found"""
-        mock_http.return_value = {"code": 500, "msg": "Domain not found"}
+        """Test _try_update returns None when domain not found (code=404)"""
+        mock_http.return_value = {"code": 404, "msg": "Domain not found"}
 
         result = self.provider._try_update("www", "example.com", "192.168.1.1", None)
 
