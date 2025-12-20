@@ -7,7 +7,7 @@ Unit tests for NamecomProvider
 
 import base64
 
-from base_test import BaseProviderTestCase, MagicMock, patch, unittest
+from base_test import BaseProviderTestCase, patch, unittest
 
 from ddns.provider.namecom import NamecomProvider
 
@@ -225,6 +225,8 @@ class TestNamecomProvider(BaseProviderTestCase):
 
             result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
+            call_args = mock_request.call_args
+            self.assertNotIn("ttl", call_args[0][2])  # TTL field should not be present when None
             self.assertFalse(result)
 
     def test_create_record_root_domain(self):
@@ -238,6 +240,7 @@ class TestNamecomProvider(BaseProviderTestCase):
 
             call_args = mock_request.call_args
             self.assertEqual(call_args[0][2]["host"], "")  # Empty string for root
+            self.assertNotIn("ttl", call_args[0][2])  # TTL field should not be present when None
             self.assertTrue(result)
 
     def test_create_record_with_priority(self):
