@@ -16,7 +16,7 @@ class WestProvider(SimpleProvider):
     西部数码 DNS 服务商接口
 
     Supports two authentication methods:
-    1. Domain auth (apidomainkey): Set id to domain name and token to apidomainkey
+    1. Domain auth (apidomainkey): Uses token only (apidomainkey, MD5 of domain password); id is not used and may be None
     2. Account auth (username + apikey): Set id to username and token to MD5 of API password
 
     API Documentation:
