@@ -163,7 +163,7 @@ class NamecomProvider(BaseProvider):
         body = {"host": host, "type": record_type, "answer": value}
 
         # Add TTL if specified (minimum 300)
-        if ttl:
+        if ttl is not None:
             body["ttl"] = max(int(ttl), 300)
 
         # Add priority for MX/SRV records
@@ -212,7 +212,7 @@ class NamecomProvider(BaseProvider):
         body = {"host": old_record.get("host", ""), "type": record_type, "answer": value}
 
         # Use provided TTL or keep existing
-        if ttl:
+        if ttl is not None:
             body["ttl"] = max(int(ttl), 300)
         elif old_record.get("ttl"):
             body["ttl"] = old_record["ttl"]

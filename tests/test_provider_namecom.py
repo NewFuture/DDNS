@@ -5,6 +5,8 @@ Unit tests for NamecomProvider
 @author: GitHub Copilot
 """
 
+import base64
+
 from base_test import BaseProviderTestCase, MagicMock, patch, unittest
 
 from ddns.provider.namecom import NamecomProvider
@@ -56,8 +58,6 @@ class TestNamecomProvider(BaseProviderTestCase):
         auth_header = provider._get_auth_header()
 
         # Basic auth should be base64 encoded "username:token"
-        import base64
-
         expected = "Basic " + base64.b64encode("{}:{}".format(self.id, self.token).encode()).decode()
         self.assertEqual(auth_header, expected)
 
@@ -271,6 +271,20 @@ class TestNamecomProvider(BaseProviderTestCase):
 
             # Try to set TTL less than 300
             result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 60, None, {})
+
+            call_args = mock_request.call_args
+            self.assertEqual(call_args[0][2]["ttl"], 300)  # Should be enforced to minimum 300
+            self.assertTrue(result)
+
+    def test_create_record_ttl_zero(self):
+        """Test _create_record method handles TTL of 0 correctly"""
+        provider = NamecomProvider(self.id, self.token)
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.return_value = {"id": 123}
+
+            # TTL of 0 should be enforced to minimum 300
+            result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 0, None, {})
 
             call_args = mock_request.call_args
             self.assertEqual(call_args[0][2]["ttl"], 300)  # Should be enforced to minimum 300
