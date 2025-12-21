@@ -26,7 +26,7 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 5. 选择要管理的域名区域
 6. 复制生成的 **API Token**，令牌只显示一次，请妥善保存
 
-```json
+```jsonc
 {
     "dns": "cloudflare",
     "token": "your_cloudflare_api_token"  // Cloudflare API Token, ID 留空或者不填
@@ -43,7 +43,7 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 2. 进入"我的个人资料" > "API 令牌"
 3. 查看"Global API Key"并复制
 
-```json
+```jsonc
 {
     "dns": "cloudflare",
     "id": "your-email@example.com",    // Cloudflare 账户邮箱
@@ -68,7 +68,7 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "cloudflare",                // 当前服务商

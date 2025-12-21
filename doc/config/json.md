@@ -39,7 +39,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 自v4.1.0版本开始，配置文件支持单行注释。
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json"
 }
@@ -114,7 +114,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 配置示例：
 
-```json
+```jsonc
 {
     "index4": ["public", "url:http://ipv4.icanhazip.com"], // 优先使用公网IP，失败后使用指定URL获取
     "index6": ["shell:ip route", "regex:2003:.*"], // 使用shell命令,失败换成正则匹配IPv6地址
@@ -146,7 +146,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 配置示例
 
-```json
+```jsonc
 {
     "proxy": "http://127.0.0.1:1080",                    // 单个代理地址
     "proxy": "SYSTEM",                                   // 使用系统代理设置
@@ -193,7 +193,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ### 单Provider格式
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
@@ -219,7 +219,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 从v4.1.0版本开始，支持在单个配置文件中定义多个DNS Provider，使用新的 `providers` 数组格式：
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "ssl": "auto",

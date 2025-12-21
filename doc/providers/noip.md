@@ -22,7 +22,7 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
 3. 创建或编辑动态 DNS 主机名
 4. 生成 DDNS KEY 用于 API 认证
 
-```json
+```jsonc
 {
     "dns": "noip",
     "id": "your_ddns_id",    // DDNS ID
@@ -40,7 +40,7 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
 2. 使用注册的用户名和密码
 3. 在控制面板中创建主机名（hostname）
 
-```json
+```jsonc
 {
     "dns": "noip",
     "id": "your_username",    // No-IP 用户名
@@ -50,7 +50,7 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "noip",                      // 当前服务商

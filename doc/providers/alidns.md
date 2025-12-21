@@ -23,7 +23,7 @@
 4. 复制生成的 **AccessKey ID** 和 **AccessKey Secret**，请妥善保存
 5. 确保账号具有云解析(`AliyunDNSFullAccess`)的操作权限
 
-```json
+```jsonc
 {
     "dns": "alidns",
     "id": "AccessKey_ID",     // 阿里云 AccessKey ID
@@ -42,7 +42,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "alidns",                    // 当前服务商

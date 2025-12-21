@@ -19,7 +19,7 @@ Debug Provider 是一个专门用于调试和测试的虚拟 DNS 服务商。它
 
 Debug Provider 不需要任何认证信息，无需配置 `id` 和 `token` 参数。
 
-```json
+```jsonc
 {
     "dns": "debug"  // 仅需指定服务商为 debug
 }
@@ -27,7 +27,7 @@ Debug Provider 不需要任何认证信息，无需配置 `id` 和 `token` 参�
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "debug",                     // 当前服务商

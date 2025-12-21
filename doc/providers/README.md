@@ -63,7 +63,7 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 
 #### 单Provider格式
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "dns": "dnspod",
@@ -77,7 +77,7 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 
 #### 多Provider格式
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "ssl": "auto",

@@ -25,7 +25,7 @@ NameSilo 使用 API Key 进行身份验证，这是唯一的认证方式。
 
 > **注意**：API Key 具有账户的完整权限，请确保妥善保管，不要泄露给他人。
 
-```json
+```jsonc
 {
     "dns": "namesilo",
     "token": "your_api_key_here" // NameSilo API Key, ID 不需要
@@ -34,7 +34,7 @@ NameSilo 使用 API Key 进行身份验证，这是唯一的认证方式。
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "namesilo",                  // 当前服务商

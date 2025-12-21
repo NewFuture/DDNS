@@ -210,7 +210,7 @@ python -m ddns --dns=cloudflare --endpoint=https://api.custom.com/v4/
 
 ### JSON 配置
 
-```json
+```jsonc
 {
   "dns": "cloudflare",
   "endpoint": "https://api.custom.com/v4/",

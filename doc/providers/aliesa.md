@@ -23,7 +23,7 @@
 4. 复制生成的 **AccessKey ID** 和 **AccessKey Secret**，请妥善保存
 5. 确保账号具有边缘安全加速 (`AliyunESAFullAccess`) 的操作权限
 
-```json
+```jsonc
 {
     "dns": "aliesa",
     "id": "your_access_key_id",      // AccessKey ID
@@ -46,7 +46,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "aliesa",                    // 当前服务商

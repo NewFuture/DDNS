@@ -19,7 +19,7 @@ Official Links:
 
 Debug Provider does not require any authentication information, no need to configure `id` and `token` parameters.
 
-```json
+```jsonc
 {
     "dns": "debug"  // Only need to specify provider as debug
 }
@@ -27,7 +27,7 @@ Debug Provider does not require any authentication information, no need to confi
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "debug",                     // Current provider

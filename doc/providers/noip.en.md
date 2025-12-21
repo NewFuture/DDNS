@@ -22,7 +22,7 @@ Use DDNS ID and DDNS KEY for authentication, which is more secure.
 3. Create or edit dynamic DNS hostname
 4. Generate DDNS KEY for API authentication
 
-```json
+```jsonc
 {
     "dns": "noip",
     "id": "your_ddns_id",    // DDNS ID
@@ -40,7 +40,7 @@ Use No-IP account username and password for authentication, which is the simples
 2. Use your registered username and password
 3. Create hostnames in the control panel
 
-```json
+```jsonc
 {
     "dns": "noip",
     "id": "your_username",    // No-IP username
@@ -50,7 +50,7 @@ Use No-IP account username and password for authentication, which is the simples
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "noip",                      // Current provider

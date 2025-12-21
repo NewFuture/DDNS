@@ -26,7 +26,7 @@ API Token method is more secure and supports fine-grained permission control, wh
 5. Select the domain zones to manage
 6. Copy the generated **API Token**. The token is only displayed once, please save it securely
 
-```json
+```jsonc
 {
     "dns": "cloudflare",
     "token": "your_cloudflare_api_token"  // Cloudflare API Token, leave ID empty or omit
@@ -43,7 +43,7 @@ Uses Cloudflare account email and Global API Key, with excessive permissions and
 2. Go to "My Profile" > "API Tokens"
 3. View "Global API Key" and copy
 
-```json
+```jsonc
 {
     "dns": "cloudflare",
     "id": "your-email@example.com",    // Cloudflare account email
@@ -68,7 +68,7 @@ You can view and configure permissions in [Cloudflare API Token Management](http
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "cloudflare",                // Current provider

@@ -23,7 +23,7 @@ Use Alibaba Cloud AccessKey ID and AccessKey Secret for authentication.
 4. Copy the generated **AccessKey ID** and **AccessKey Secret**, please keep them safe
 5. Ensure the account has `AliyunDNSFullAccess` permission
 
-```json
+```jsonc
 {
     "dns": "alidns",
     "id": "your_access_key_id",      // AccessKey ID
@@ -42,7 +42,7 @@ You can view and configure permissions in the [RAM Console](https://ram.console.
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "alidns",                    // Current provider

@@ -21,7 +21,7 @@
 3. 点击"创建API密钥"
 4. 记录生成的 **API Key** 和 **Secret Key**，请妥善保存
 
-```json
+```jsonc
 {
     "dns": "dnscom",
     "id": "your_api_key",      // 51DNS API Key
@@ -31,7 +31,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "dnscom",                    // 当前服务商
