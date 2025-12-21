@@ -25,7 +25,7 @@
 4. 复制生成的 **Access Key ID** 和 **Secret Access Key**，请妥善保存
 5. 确保账号具有云解析 DNS 的操作权限
 
-```json
+```jsonc
 {
     "dns": "huaweidns",
     "id": "your_access_key_id",     // 华为云 Access Key ID
@@ -44,7 +44,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "huaweidns",                 // 当前服务商

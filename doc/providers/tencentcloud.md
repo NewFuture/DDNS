@@ -17,7 +17,7 @@
 
 #### 获取API密钥
 
-```json
+```jsonc
 {
     "dns": "tencentcloud",
     "id": "Your_Secret_Id",     // 腾讯云 SecretId
@@ -52,7 +52,7 @@
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "tencentcloud",              // 当前服务商

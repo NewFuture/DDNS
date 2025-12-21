@@ -13,7 +13,7 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -49,7 +49,7 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 
 ### GET 请求示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -65,7 +65,7 @@ GET https://api.example.com/update?domain=ddns.newfuture.cc&ip=192.168.1.100&typ
 
 ### POST 请求示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -108,7 +108,7 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 
 将 DDNS 更新通知发送到自定义 webhook：
 
-```json
+```jsonc
 {
     "endpoint": "https://hooks.example.com",
     "id":"/webhook",
@@ -128,7 +128,7 @@ Callback Provider 支持以下内置变量，在请求时会自动替换：
 
 当需要动态构造复杂的 JSON 字符串时：
 
-```json
+```jsonc
 {
     "id": "https://api.example.com/ddns",
     "token": "{\"auth\": \"your_key\", \"record\": {\"name\": \"__DOMAIN__\", \"value\": \"__IP__\", \"type\": \"__RECORDTYPE__\"}}",

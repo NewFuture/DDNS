@@ -21,7 +21,7 @@ Official Website: <https://www.51dns.com/>
 3. Click "Create API Key"
 4. Record the generated **API Key** and **Secret Key**, please keep them safe
 
-```json
+```jsonc
 {
     "dns": "dnscom",
     "id": "your_api_key",      // 51DNS API Key
@@ -31,7 +31,7 @@ Official Website: <https://www.51dns.com/>
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "dnscom",                    // Current provider

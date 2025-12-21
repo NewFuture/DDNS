@@ -21,7 +21,7 @@ API Token method is more secure and is the recommended integration method by DNS
 3. Click "Create Token", fill in description, select domain management permissions, and complete creation
 4. Copy the **ID** (numeric) and **Token** (string). The token is only displayed once, please save it securely
 
-```json
+```jsonc
 {
     "dns": "dnspod_com",
     "id": "123456",            // DNSPod International API Token ID
@@ -33,7 +33,7 @@ API Token method is more secure and is the recommended integration method by DNS
 
 Uses DNSPod account email and password. Lower security, only recommended for special scenarios.
 
-```json
+```jsonc
 {
     "dns": "dnspod_com",
     "id": "your-email@example.com",  // DNSPod account email
@@ -43,7 +43,7 @@ Uses DNSPod account email and password. Lower security, only recommended for spe
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "dnspod_com",                // Current provider

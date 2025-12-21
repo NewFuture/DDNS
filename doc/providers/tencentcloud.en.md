@@ -17,7 +17,7 @@ TencentCloud DNS uses `SecretId` and `SecretKey` for API authentication, which i
 
 #### Obtaining API Keys
 
-```json
+```jsonc
 {
     "dns": "tencentcloud",
     "id": "Your_Secret_Id",     // TencentCloud SecretId
@@ -45,7 +45,7 @@ The simplest and quickest way to obtain keys
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "tencentcloud",              // Current provider

@@ -26,7 +26,7 @@ DNS records and DNS must be created in advance
 3. **Enable DDNS**: Enable dynamic DNS functionality for the record
 4. **Get Password**: Click `Generate a DDNS key` or `Enable entry for DDNS` next to the record
 
-```json
+```jsonc
 {
     "dns": "he",
     "token": "your_ddns_key" // HE.net dynamic DNS password, no ID required
@@ -35,7 +35,7 @@ DNS records and DNS must be created in advance
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "he",                        // Current provider

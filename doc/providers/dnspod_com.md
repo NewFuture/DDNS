@@ -26,7 +26,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 3. 点击"Create Token"，填写描述，选择域名管理权限，完成创建
 4. 复制 **ID**（数字）和 **Token**（字符串），密钥只显示一次，请妥善保存
 
-```json
+```jsonc
 {
     "dns": "dnspod_com",
     "id": "123456",            // DNSPod International API Token ID
@@ -38,7 +38,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 使用 DNSPod 账号邮箱和密码，安全性较低，仅建议特殊场景使用。
 
-```json
+```jsonc
 {
     "dns": "dnspod_com",
     "id": "your-email@example.com",  // DNSPod 账号邮箱
@@ -48,7 +48,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 ## 完整配置示例
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
     "dns": "dnspod_com",                // 当前服务商

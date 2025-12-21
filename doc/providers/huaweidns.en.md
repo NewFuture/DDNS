@@ -25,7 +25,7 @@ Use Huawei Cloud Access Key ID and Secret Access Key for authentication.
 4. Copy the generated **Access Key ID** and **Secret Access Key**, please keep them safe
 5. Ensure the account has operation permissions for Cloud DNS
 
-```json
+```jsonc
 {
     "dns": "huaweidns",
     "id": "your_access_key_id",     // Huawei Cloud Access Key ID
@@ -44,7 +44,7 @@ You can view and configure permissions in [Identity and Access Management](https
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "huaweidns",                 // Current provider

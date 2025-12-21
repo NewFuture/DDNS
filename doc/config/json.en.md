@@ -44,7 +44,7 @@ DDNS configuration files follow JSON Schema standards. It's recommended to add t
 
 Since v4.1, configuration files support single-line comments.
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json"
 }
@@ -119,7 +119,7 @@ Supported types:
 
 Configuration examples:
 
-```json
+```jsonc
 {
     "index4": ["public", "url:http://ipv4.icanhazip.com"], // Prefer public IP, fallback to specified URL
     "index6": ["shell:ip route", "regex:2003:.*"], // Use shell command, fallback to regex matching IPv6 addresses
@@ -151,7 +151,7 @@ Proxy types:
 
 Configuration examples:
 
-```json
+```jsonc
 {
     "proxy": "http://127.0.0.1:1080",                    // Single proxy address
     "proxy": "SYSTEM",                                   // Use system proxy settings
@@ -198,7 +198,7 @@ The `log` parameter is used to configure logging. It's an object that supports t
 
 ### Single-Provider Format
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
   "id": "12345",
@@ -224,7 +224,7 @@ The `log` parameter is used to configure logging. It's an object that supports t
 
 Starting from v4.1.0, you can define multiple DNS providers in a single configuration file using the new `providers` array format:
 
-```json
+```jsonc
 {
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "ssl": "auto",

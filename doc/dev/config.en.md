@@ -57,7 +57,7 @@ class Config(object):
 
 First, add the new parameter to the JSON schema files:
 
-```json
+```jsonc
 // schema/v4.0.json
 {
     "properties": {
@@ -261,7 +261,7 @@ The DDNS configuration system uses JSON Schema for validation:
 
 ### Schema Structure
 
-```json
+```jsonc
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",

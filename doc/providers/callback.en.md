@@ -13,7 +13,7 @@ Callback Provider is a universal custom callback interface that allows you to fo
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -49,7 +49,7 @@ Callback Provider is a universal custom callback interface that allows you to fo
 
 ### GET Request Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -65,7 +65,7 @@ GET https://api.example.com/update?domain=ddns.newfuture.cc&ip=192.168.1.100&typ
 
 ### POST Request Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
     "dns": "callback",
@@ -110,7 +110,7 @@ Callback Provider supports the following built-in variables that are automatical
 
 Send DDNS update notifications to custom webhooks:
 
-```json
+```jsonc
 {
     "endpoint": "https://hooks.example.com",
     "id": "/webhook",
@@ -130,7 +130,7 @@ Send DDNS update notifications to custom webhooks:
 
 When you need to dynamically construct complex JSON strings:
 
-```json
+```jsonc
 {
     "id": "https://api.example.com/ddns",
     "token": "{\"auth\": \"your_key\", \"record\": {\"name\": \"__DOMAIN__\", \"value\": \"__IP__\", \"type\": \"__RECORDTYPE__\"}}",

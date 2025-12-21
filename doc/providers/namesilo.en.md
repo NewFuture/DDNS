@@ -25,7 +25,7 @@ NameSilo uses API Key for authentication, which is the only authentication metho
 
 > **Note**: The API Key has full account permissions. Please keep it secure and do not share it with others.
 
-```json
+```jsonc
 {
     "dns": "namesilo",
     "token": "your_api_key_here" // NameSilo API Key, no ID required
@@ -34,7 +34,7 @@ NameSilo uses API Key for authentication, which is the only authentication metho
 
 ## Complete Configuration Example
 
-```json
+```jsonc
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
     "dns": "namesilo",                  // Current provider
