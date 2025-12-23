@@ -17,6 +17,7 @@
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](he.en.md) | ⚠️ 等待验证，不支持自动创建记录 |
 | `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns 中文文档](huaweidns.md) | [huaweidns English Doc](huaweidns.en.md) | ⚠️ 等待验证 |
 | `namesilo` | [NameSilo](https://www.namesilo.com/) | [namesilo 中文文档](namesilo.md) | [namesilo English Doc](namesilo.en.md) | ⚠️ 等待验证 |
+| `namecom` | [Name.com](https://www.name.com/) | [namecom 中文文档](namecom.md) | [namecom English Doc](namecom.en.md) | 域名注册商DNS服务 |
 | `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](noip.en.md) | 不支持自动创建记录 |
 | `tencentcloud` | [腾讯云DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | 腾讯云DNSPod服务 |
 | `edgeone` | [腾讯云EdgeOne](https://cloud.tencent.com/product/teo) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | 腾讯云边缘安全加速平台（加速域名） |
