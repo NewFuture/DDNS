@@ -5,6 +5,11 @@ config.*.json
 # Generated files from workflows
 .github/issue_body.md
 
+# MkDocs generated files
+site/
+docs/
+mkdocs.yml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

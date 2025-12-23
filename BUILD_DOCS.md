@@ -1,209 +1,237 @@
 # Documentation Build Script
 
-This document describes how to build the DDNS documentation website from markdown files.
+This document describes how to build the DDNS documentation website using MkDocs with Material theme.
 
 ## Overview
 
-The `build_docs.py` script converts markdown documentation into a static HTML website with the following features:
+The documentation is built using mature, industry-standard tools:
 
-1. **Responsive Navigation Bar** - Global navigation with collapsible directory tree, adapts to screen size
-2. **In-Page Table of Contents** - Right sidebar with page TOC for quick navigation (hidden on small screens)
-3. **Language Switcher** - Easy switching between Chinese and English versions
-4. **Pure Static HTML** - No server-side processing required, can be hosted anywhere
-5. **Footer with Links** - Includes GitHub repository, issues, and edit page links
+- **[MkDocs](https://www.mkdocs.org/)** - Popular static site generator for project documentation
+- **[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)** - Modern, responsive theme with extensive features
+
+## Features
+
+### Built-in Features from Material Theme
+
+1. **Responsive Navigation**
+   - Automatic navigation from directory structure
+   - Collapsible sections
+   - Mobile-friendly hamburger menu
+   - Search functionality
+
+2. **Table of Contents**
+   - Automatic TOC generation from headers
+   - Sticky TOC sidebar
+   - Smooth scrolling navigation
+   - Responsive (integrates on small screens)
+
+3. **Language Support**
+   - Multi-language documentation support via i18n plugin
+   - Language switcher in header
+   - Separate navigation for each language
+
+4. **Theme Features**
+   - Light/dark mode toggle
+   - Code syntax highlighting with copy button
+   - Admonitions (notes, warnings, tips)
+   - Tabbed content blocks
+   - Icon support (Material Design, FontAwesome)
+   - Social links in footer
+
+5. **GitHub Integration**
+   - Edit page link on every page
+   - Repository link in header
+   - Social media links
 
 ## Requirements
 
-- Python 3.x (no external dependencies, uses only standard library)
+- Python 3.6+
+- pip
+
+## Installation
+
+The build script will automatically install dependencies if needed:
+
+```bash
+python3 build_docs.py
+```
+
+Or install manually:
+
+```bash
+pip install mkdocs-material
+```
 
 ## Usage
 
 ### Building the Documentation
 
-Run the build script from the project root:
+Run the build script:
 
 ```bash
 python3 build_docs.py
 ```
 
 This will:
-- Parse all markdown files in the `doc/` directory
-- Generate HTML files in the `build/` directory
-- Copy static assets (images, favicon, CNAME)
-- Create both Chinese and English versions
+1. Check for required dependencies (install if missing)
+2. Generate `mkdocs.yml` configuration
+3. Prepare documentation files
+4. Build the static site to `site/` directory
 
-### Output Structure
+### Preview Locally
 
-```
-build/
-├── index.html              # Homepage (Chinese)
-├── index.en.html          # Homepage (English)
-├── config/                # Configuration documentation
-│   ├── cli.html
-│   ├── cli.en.html
-│   └── ...
-├── providers/             # DNS provider guides
-│   ├── dnspod.html
-│   ├── dnspod.en.html
-│   └── ...
-├── dev/                   # Developer documentation
-│   ├── provider.html
-│   ├── provider.en.html
-│   └── ...
-└── doc/                   # Static assets
-    └── img/
-```
-
-### Testing Locally
-
-After building, you can test the documentation website locally:
+After building, preview the documentation:
 
 ```bash
-cd build
-python3 -m http.server 8080
+mkdocs serve
 ```
 
-Then open http://localhost:8080 in your browser.
+Then open http://localhost:8000 in your browser.
 
-## Features Details
+### Deploy to GitHub Pages
 
-### 1. Responsive Navigation
+Deploy directly to GitHub Pages:
 
-The navigation sidebar shows:
-- Top-level documentation files (Docker, Install, Release)
-- Grouped sections:
-  - **配置方式** / **Configuration** - CLI, JSON, Environment configuration
-  - **DNS 服务商** / **DNS Providers** - All provider guides
-  - **开发文档** / **Development** - Developer guides
+```bash
+mkdocs gh-deploy
+```
 
-On mobile devices (width < 768px):
-- Navigation is hidden by default
-- Toggle button appears in header
-- Click to show/hide navigation
+## Configuration
 
-### 2. In-Page Table of Contents
+The build script automatically generates `mkdocs.yml` with:
 
-For pages in the `doc/` directory:
-- Automatically generates TOC from H1-H3 headers
-- Fixed position on the right side
-- Click to jump to sections
-- Hidden on screens < 1200px wide
+- Site metadata (name, URL, description)
+- Material theme configuration
+- Navigation structure from doc/ directory
+- Markdown extensions (code highlighting, admonitions, etc.)
+- Language support (Chinese and English)
+- Social links and GitHub integration
 
-### 3. Language Switcher
+To customize, edit the generated `mkdocs.yml` or modify `build_docs.py`.
 
-- Automatically detects language version (.md vs .en.md)
-- Shows "Switch to English" on Chinese pages
-- Shows "切换到中文" on English pages
-- Navigation and labels adapt to current language
-- Link to alternate version if it exists
+## Directory Structure
 
-### 4. Footer
+```
+.
+├── build_docs.py          # Build script
+├── mkdocs.yml            # Generated configuration (after build)
+├── docs/                 # Generated docs directory (after build)
+│   ├── index.md         # Homepage (from README.md)
+│   └── doc/             # Documentation files
+│       ├── config/      # Configuration guides
+│       ├── providers/   # DNS provider documentation
+│       └── dev/         # Developer documentation
+└── site/                # Built static site (after build)
+    └── ...              # HTML files ready for deployment
+```
 
-Each page includes footer with:
-- Link to GitHub repository
-- Link to GitHub issues
-- Link to edit the current page on GitHub
-- Copyright notice
+## Adding Documentation
 
-## Markdown Features Supported
+1. Add markdown files to `doc/` directory
+2. For bilingual docs, use `.md` (Chinese) and `.en.md` (English)
+3. Update navigation in `build_docs.py` if needed
+4. Run `python3 build_docs.py` to rebuild
 
-The build script supports standard markdown:
+## Markdown Extensions
 
-- Headers (H1-H6)
-- Paragraphs
-- Lists (ordered and unordered)
-- Code blocks with language highlighting
-- Inline code
-- Links and images
-- Bold and italic text
-- Blockquotes
-- Horizontal rules
-- YAML front matter (for page metadata)
+Material for MkDocs supports many markdown extensions:
 
-### Front Matter
+### Code Blocks
 
-Pages can include YAML front matter for metadata:
+````markdown
+```python
+def hello():
+    print("Hello, World!")
+```
+````
+
+### Admonitions
 
 ```markdown
----
-title: Page Title
-description: Page description
----
+!!! note "Note Title"
+    This is a note admonition.
 
-# Content starts here
+!!! warning
+    This is a warning.
+
+!!! tip
+    This is a helpful tip.
 ```
 
-## Customization
+### Tabs
 
-### Styling
+```markdown
+=== "Tab 1"
+    Content for tab 1
 
-All CSS is embedded in the HTML template. To customize:
-1. Edit the `HTML_TEMPLATE` variable in `build_docs.py`
-2. Modify the `<style>` section
-3. Rebuild the documentation
-
-### Navigation Structure
-
-The navigation tree is automatically generated from the directory structure. Directory labels are defined in the `build_nav_tree()` function:
-
-```python
-dir_labels = {
-    "config": {"zh": "配置方式", "en": "Configuration"},
-    "dev": {"zh": "开发文档", "en": "Development"},
-    "providers": {"zh": "DNS 服务商", "en": "DNS Providers"}
-}
+=== "Tab 2"
+    Content for tab 2
 ```
 
-### GitHub Links
+### Task Lists
 
-Update the repository and branch in the script header:
-
-```python
-GITHUB_REPO = "NewFuture/DDNS"
-GITHUB_BRANCH = "master"
+```markdown
+- [x] Completed task
+- [ ] Pending task
 ```
 
-## Deployment
+See [Material for MkDocs documentation](https://squidfunk.github.io/mkdocs-material/reference/) for more features.
 
-The generated `build/` directory can be deployed to any static hosting service:
+## Deployment Options
 
-- **GitHub Pages**: Push to `gh-pages` branch
-- **Netlify**: Deploy from `build/` directory
-- **Vercel**: Deploy from `build/` directory
-- **Any web server**: Copy `build/` contents to web root
+The generated `site/` directory can be deployed to:
+
+- **GitHub Pages**: `mkdocs gh-deploy`
+- **Netlify**: Deploy from `site/` directory
+- **Vercel**: Deploy from `site/` directory
+- **Any web server**: Copy `site/` contents to web root
 
 ## Troubleshooting
 
+### Dependencies Not Found
+
+If dependencies are missing:
+
+```bash
+pip install mkdocs-material pyyaml
+```
+
 ### Build Errors
 
-If the build fails:
-1. Check that all markdown files have valid syntax
-2. Ensure `doc/` directory exists with markdown files
-3. Verify Python 3.x is installed
+Check that:
+1. All markdown files are valid
+2. `doc/` directory exists
+3. Python 3.6+ is installed
 
-### Missing Pages
+### Preview Not Working
 
-If some pages don't appear:
-1. Check that files end with `.md` or `.en.md`
-2. Verify file permissions
-3. Check for errors in console output
+Ensure port 8000 is available or specify a different port:
 
-### Language Switcher Not Working
+```bash
+mkdocs serve -a localhost:8080
+```
 
-If language switching doesn't work:
-1. Ensure both language versions exist (e.g., `file.md` and `file.en.md`)
-2. Check that file names match except for `.en` suffix
-3. Verify paths are correct
+## Advantages Over Custom Solution
 
-## Contributing
+Using MkDocs with Material theme provides:
 
-When adding new documentation:
+✅ **Mature, well-tested codebase** - Used by thousands of projects  
+✅ **Active development** - Regular updates and bug fixes  
+✅ **Extensive documentation** - Comprehensive guides and examples  
+✅ **Rich features** - Search, i18n, versioning, etc.  
+✅ **Beautiful design** - Professional, modern appearance  
+✅ **Easy maintenance** - Configuration-based, not code  
+✅ **Plugin ecosystem** - Extend functionality as needed  
+✅ **Accessibility** - WCAG compliant, keyboard navigation  
+✅ **Performance** - Optimized static site generation  
+✅ **Community support** - Large user base and contributors  
 
-1. Create both Chinese (.md) and English (.en.md) versions
-2. Use consistent naming (same base name)
-3. Include front matter with title
-4. Test the build locally before committing
-5. Run `python3 build_docs.py` to generate HTML
+## Resources
+
+- [MkDocs Documentation](https://www.mkdocs.org/)
+- [Material for MkDocs Documentation](https://squidfunk.github.io/mkdocs-material/)
+- [Material for MkDocs Reference](https://squidfunk.github.io/mkdocs-material/reference/)
+- [MkDocs Plugins](https://github.com/mkdocs/mkdocs/wiki/MkDocs-Plugins)
 
 ## License
 
