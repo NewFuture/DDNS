@@ -65,32 +65,36 @@ The documentation is built using **[VitePress](https://vitepress.dev/)** - a Vue
 
 ### Quick Start
 
-```bash
-# Run the build script (installs dependencies automatically)
-bash build_docs.sh
-```
-
-### Manual Installation
+One command to install, setup, and build:
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
-npm run docs:dev
-
-# Build for production
-npm run docs:build
-
-# Preview production build
-npm run docs:preview
+npm run build
 ```
+
+This automatically:
+1. Installs dependencies
+2. Sets up directory structure
+3. Builds the static site
 
 ## Usage
 
+### One-Command Build
+
+```bash
+npm run build
+```
+
+This command automatically:
+1. Sets up the docs directory structure
+2. Copies README and doc/ files
+3. Builds the production site
+
+Output: `docs/.vitepress/dist/` directory
+
 ### Development
 
-Start the development server with hot reload:
+Start the development server (auto-setup included):
 
 ```bash
 npm run docs:dev
@@ -105,8 +109,6 @@ Build the static site:
 ```bash
 npm run docs:build
 ```
-
-Output will be in `docs/.vitepress/dist/` directory.
 
 ### Preview
 
