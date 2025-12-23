@@ -8,6 +8,7 @@ Official Links:
 
 - Official Website: <https://www.alibabacloud.com/product/esa>
 - Service Console: <https://esa.console.aliyun.com/>
+- Free Trial Registration: <https://tianchi.aliyun.com/specials/promotion/freetier/esa?taskCode=25254&recordId=21a3141c2fca892c81ed9490eb6fd677>
 
 ## Authentication Information
 
