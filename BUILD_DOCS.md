@@ -1,238 +1,312 @@
-# Documentation Build Script
+# Documentation Website Builder
 
-This document describes how to build the DDNS documentation website using MkDocs with Material theme.
+This document describes how to build the DDNS documentation website using VitePress.
 
 ## Overview
 
-The documentation is built using mature, industry-standard tools:
+The documentation is built using **[VitePress](https://vitepress.dev/)** - a Vue-powered static site generator specifically designed for documentation websites.
 
-- **[MkDocs](https://www.mkdocs.org/)** - Popular static site generator for project documentation
-- **[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)** - Modern, responsive theme with extensive features
+### Why VitePress?
+
+- **专为文档设计** - Purpose-built for documentation sites
+- **快速构建** - Lightning-fast build times with Vite
+- **现代化** - Vue 3 + Vite stack, modern developer experience
+- **内置功能丰富** - Search, i18n, dark mode, responsive design out of the box
+- **中文友好** - Created by Evan You (Vue creator), excellent Chinese community support
 
 ## Features
 
-### Built-in Features from Material Theme
+### Built-in Features
 
-1. **Responsive Navigation**
+1. **响应式导航**
    - Automatic navigation from directory structure
-   - Collapsible sections
+   - Collapsible sidebar sections
    - Mobile-friendly hamburger menu
-   - Search functionality
+   - Active page highlighting
 
-2. **Table of Contents**
-   - Automatic TOC generation from headers
-   - Sticky TOC sidebar
-   - Smooth scrolling navigation
-   - Responsive (integrates on small screens)
-
-3. **Language Support**
-   - Multi-language documentation support via i18n plugin
-   - Language switcher in header
+2. **双语支持 (Bilingual Support)**
+   - Built-in i18n (internationalization)
+   - Chinese (简体中文) and English versions
+   - Language switcher in navigation
    - Separate navigation for each language
 
-4. **Theme Features**
-   - Light/dark mode toggle
-   - Code syntax highlighting with copy button
-   - Admonitions (notes, warnings, tips)
-   - Tabbed content blocks
-   - Icon support (Material Design, FontAwesome)
-   - Social links in footer
+3. **页内目录 (Table of Contents)**
+   - Automatically generated from H2-H3 headers
+   - Sticky sidebar on desktop
+   - Integrated into content on mobile
+   - Smooth scroll navigation
 
-5. **GitHub Integration**
-   - Edit page link on every page
-   - Repository link in header
-   - Social media links
+4. **搜索功能 (Search)**
+   - Full-text local search
+   - Keyboard shortcuts
+   - Instant results
+
+5. **主题切换 (Theme Toggle)**
+   - Light/Dark mode toggle
+   - Smooth transitions
+   - Persistent user preference
+
+6. **GitHub 集成**
+   - "Edit this page" link on every page
+   - Repository link in navigation
+   - Last updated timestamp
+
+7. **代码高亮 (Code Highlighting)**
+   - Syntax highlighting for multiple languages
+   - Line numbers
+   - Code groups and tabs
 
 ## Requirements
 
-- Python 3.6+
-- pip
+- **Node.js** 18+ or 20+
+- **npm** (comes with Node.js)
 
 ## Installation
 
-The build script will automatically install dependencies if needed:
+### Quick Start
 
 ```bash
-python3 build_docs.py
+# Run the build script (installs dependencies automatically)
+bash build_docs.sh
 ```
 
-Or install manually:
+### Manual Installation
 
 ```bash
-pip install mkdocs-material
+# Install dependencies
+npm install
+
+# Start development server
+npm run docs:dev
+
+# Build for production
+npm run docs:build
+
+# Preview production build
+npm run docs:preview
 ```
 
 ## Usage
 
-### Building the Documentation
+### Development
 
-Run the build script:
-
-```bash
-python3 build_docs.py
-```
-
-This will:
-1. Check for required dependencies (install if missing)
-2. Generate `mkdocs.yml` configuration
-3. Prepare documentation files
-4. Build the static site to `site/` directory
-
-### Preview Locally
-
-After building, preview the documentation:
+Start the development server with hot reload:
 
 ```bash
-mkdocs serve
+npm run docs:dev
 ```
 
-Then open http://localhost:8000 in your browser.
+Then open http://localhost:5173 in your browser.
 
-### Deploy to GitHub Pages
+### Building
 
-Deploy directly to GitHub Pages:
+Build the static site:
 
 ```bash
-mkdocs gh-deploy
+npm run docs:build
 ```
 
-## Configuration
+Output will be in `docs/.vitepress/dist/` directory.
 
-The build script automatically generates `mkdocs.yml` with:
+### Preview
 
-- Site metadata (name, URL, description)
-- Material theme configuration
-- Navigation structure from doc/ directory
-- Markdown extensions (code highlighting, admonitions, etc.)
-- Language support (Chinese and English)
-- Social links and GitHub integration
+Preview the production build locally:
 
-To customize, edit the generated `mkdocs.yml` or modify `build_docs.py`.
+```bash
+npm run docs:preview
+```
 
 ## Directory Structure
 
 ```
 .
-├── build_docs.py          # Build script
-├── mkdocs.yml            # Generated configuration (after build)
-├── docs/                 # Generated docs directory (after build)
-│   ├── index.md         # Homepage (from README.md)
-│   └── doc/             # Documentation files
-│       ├── config/      # Configuration guides
-│       ├── providers/   # DNS provider documentation
-│       └── dev/         # Developer documentation
-└── site/                # Built static site (after build)
-    └── ...              # HTML files ready for deployment
+├── package.json              # Node.js dependencies and scripts
+├── build_docs.sh            # Build script
+├── docs/                    # VitePress docs directory
+│   ├── .vitepress/         # VitePress configuration
+│   │   ├── config.mts      # Main configuration file
+│   │   └── dist/           # Built static site (after build)
+│   ├── index.md            # Homepage (Chinese)
+│   ├── doc/                # Documentation files (Chinese)
+│   │   ├── config/         # Configuration guides
+│   │   ├── providers/      # DNS provider documentation
+│   │   └── dev/            # Developer documentation
+│   └── en/                 # English version
+│       ├── index.md        # Homepage (English)
+│       └── doc/            # Documentation files (English)
 ```
+
+## Configuration
+
+The main configuration file is `docs/.vitepress/config.mts`. It includes:
+
+- **Site metadata** - Title, description, base URL
+- **Navigation** - Top navbar structure
+- **Sidebar** - Side navigation for different sections
+- **i18n** - Multi-language configuration
+- **Theme** - Colors, logos, social links
+- **Search** - Local search configuration
+- **Markdown** - Code highlighting, line numbers
+
+### Customizing
+
+To customize the documentation:
+
+1. Edit `docs/.vitepress/config.mts` for configuration
+2. Add/edit markdown files in `docs/` directory
+3. For Chinese version: `docs/doc/**/*.md`
+4. For English version: `docs/en/doc/**/*.en.md`
 
 ## Adding Documentation
 
-1. Add markdown files to `doc/` directory
-2. For bilingual docs, use `.md` (Chinese) and `.en.md` (English)
-3. Update navigation in `build_docs.py` if needed
-4. Run `python3 build_docs.py` to rebuild
+### Chinese Documentation
 
-## Markdown Extensions
+1. Create markdown file in `docs/doc/` directory
+2. Add to sidebar configuration in `config.mts`
+3. Run `npm run docs:dev` to preview
 
-Material for MkDocs supports many markdown extensions:
+### English Documentation
+
+1. Create markdown file with `.en.md` extension
+2. Place in corresponding directory structure under `docs/en/doc/`
+3. Add to English sidebar configuration
+4. Run `npm run docs:dev` to preview
+
+## Markdown Features
+
+VitePress supports enhanced markdown features:
 
 ### Code Blocks
 
 ````markdown
-```python
-def hello():
-    print("Hello, World!")
+```js
+console.log('Hello, World!')
 ```
 ````
 
-### Admonitions
+### Containers (Admonitions)
 
 ```markdown
-!!! note "Note Title"
-    This is a note admonition.
+::: tip
+This is a tip
+:::
 
-!!! warning
-    This is a warning.
+::: warning
+This is a warning
+:::
 
-!!! tip
-    This is a helpful tip.
+::: danger
+This is a danger notice
+:::
+
+::: details Click to expand
+This is hidden by default
+:::
 ```
 
-### Tabs
+### Code Groups
 
 ```markdown
-=== "Tab 1"
-    Content for tab 1
-
-=== "Tab 2"
-    Content for tab 2
+::: code-group
+```sh [npm]
+npm install vitepress
 ```
 
-### Task Lists
+```sh [pnpm]
+pnpm add vitepress
+```
+:::
+```
+
+### Custom Containers
 
 ```markdown
-- [x] Completed task
-- [ ] Pending task
+::: info Custom Title
+This is an info box with custom title
+:::
 ```
 
-See [Material for MkDocs documentation](https://squidfunk.github.io/mkdocs-material/reference/) for more features.
+See [VitePress Markdown Features](https://vitepress.dev/guide/markdown) for more.
 
-## Deployment Options
+## Deployment
 
-The generated `site/` directory can be deployed to:
+The built static site in `docs/.vitepress/dist/` can be deployed to:
 
-- **GitHub Pages**: `mkdocs gh-deploy`
-- **Netlify**: Deploy from `site/` directory
-- **Vercel**: Deploy from `site/` directory
-- **Any web server**: Copy `site/` contents to web root
+- **GitHub Pages** - Use GitHub Actions or `gh-pages` branch
+- **Netlify** - Drag & drop or CI/CD
+- **Vercel** - Import from GitHub
+- **Any static hosting** - Upload `dist/` contents
+
+### GitHub Pages Example
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Docs
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install
+      - run: bash build_docs.sh
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/.vitepress/dist
+```
+
+## Advantages Over Other Solutions
+
+✅ **Faster than Jekyll/Hugo** - Vite-powered instant HMR  
+✅ **More flexible than Docusaurus** - Lighter weight, Vue ecosystem  
+✅ **Better i18n than Sphinx** - Built-in multi-language support  
+✅ **Easier than custom solutions** - Configuration over code  
+✅ **Modern developer experience** - Vue 3, TypeScript, Vite  
+✅ **Chinese-friendly** - Excellent Chinese documentation and community  
 
 ## Troubleshooting
 
-### Dependencies Not Found
+### Node.js Version
 
-If dependencies are missing:
+If you encounter errors, ensure you're using Node.js 18+ or 20+:
 
 ```bash
-pip install mkdocs-material pyyaml
+node --version  # Should be v18.x.x or v20.x.x
+```
+
+### Port Already in Use
+
+If port 5173 is in use, specify a different port:
+
+```bash
+npm run docs:dev -- --port 8080
 ```
 
 ### Build Errors
 
-Check that:
-1. All markdown files are valid
-2. `doc/` directory exists
-3. Python 3.6+ is installed
-
-### Preview Not Working
-
-Ensure port 8000 is available or specify a different port:
+Clear cache and reinstall:
 
 ```bash
-mkdocs serve -a localhost:8080
+rm -rf node_modules package-lock.json docs/.vitepress/cache
+npm install
+npm run docs:build
 ```
-
-## Advantages Over Custom Solution
-
-Using MkDocs with Material theme provides:
-
-✅ **Mature, well-tested codebase** - Used by thousands of projects  
-✅ **Active development** - Regular updates and bug fixes  
-✅ **Extensive documentation** - Comprehensive guides and examples  
-✅ **Rich features** - Search, i18n, versioning, etc.  
-✅ **Beautiful design** - Professional, modern appearance  
-✅ **Easy maintenance** - Configuration-based, not code  
-✅ **Plugin ecosystem** - Extend functionality as needed  
-✅ **Accessibility** - WCAG compliant, keyboard navigation  
-✅ **Performance** - Optimized static site generation  
-✅ **Community support** - Large user base and contributors  
 
 ## Resources
 
-- [MkDocs Documentation](https://www.mkdocs.org/)
-- [Material for MkDocs Documentation](https://squidfunk.github.io/mkdocs-material/)
-- [Material for MkDocs Reference](https://squidfunk.github.io/mkdocs-material/reference/)
-- [MkDocs Plugins](https://github.com/mkdocs/mkdocs/wiki/MkDocs-Plugins)
+- [VitePress Documentation](https://vitepress.dev/)
+- [VitePress中文文档](https://vitejs.cn/vitepress/)
+- [Vue.js Documentation](https://vuejs.org/)
+- [Vite Documentation](https://vitejs.dev/)
 
 ## License
 
-This build script is part of the DDNS project and is licensed under the MIT License.
+This build configuration is part of the DDNS project and is licensed under the MIT License.
