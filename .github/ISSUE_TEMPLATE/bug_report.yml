@@ -1,0 +1,103 @@
+name: Bug Report
+description: Report a bug or issue (出错和调试)
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        感谢您填写此错误报告！
+        
+        > **Note**: 如果存在相同问题，请直接评论在相关问题下，不用新开 issue。
+        > If a similar issue exists, please comment on that issue instead of opening a new one.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug (描述问题)
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS Version (操作系统版本)
+      placeholder: e.g., Ubuntu 20.04, Windows 10, macOS 12.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: run-type
+    attributes:
+      label: Run Type (运行方式)
+      description: How are you running DDNS?
+      options:
+        - Binary
+        - Python 2
+        - Python 3
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: DDNS Version (版本)
+      description: Run `ddns --version` to get the version
+      placeholder: e.g., v2.9.0
+    validations:
+      required: true
+
+  - type: input
+    id: related-issues
+    attributes:
+      label: Related Issues (相关问题)
+      description: Link to related issues if any
+      placeholder: "#123"
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce (复现步骤)
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Run command '....'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration (配置)
+      description: Paste your configuration (remove your id and token / 注意打码)
+      placeholder: |
+        ```json
+        {
+          "dns": "dnspod",
+          "id": "YOUR_ID",
+          "token": "********"
+        }
+        ```
+      render: json
+
+  - type: textarea
+    id: debug-output
+    attributes:
+      label: Debug Output (调试输出)
+      description: Run with `--debug` flag and paste the output (运行时，命令行加上 `--debug` 开启调试模式)
+      placeholder: Paste debug output here
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context (补充说明)
+      description: Add any other context about the problem here
