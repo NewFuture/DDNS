@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Documentation (文档)
-    url: https://github.com/NewFuture/DDNS/tree/master/doc
+    url: https://ddns.newfuture.cc
     about: Check the documentation for help (查看文档获取帮助)
   - name: Discussions (讨论区)
     url: https://github.com/NewFuture/DDNS/discussions
