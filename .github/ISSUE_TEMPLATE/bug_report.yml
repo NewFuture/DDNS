@@ -85,6 +85,8 @@ body:
         }
         ```
       render: json
+    validations:
+      required: true
 
   - type: textarea
     id: debug-output
