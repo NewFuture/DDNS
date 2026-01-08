@@ -26,39 +26,6 @@
 const GITHUB_REPO = 'NewFuture/DDNS';
 
 /**
- * 主请求处理器 (Main request handler)
- */
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event));
-});
-
-/**
- * 处理传入请求 (Handle incoming requests)
- * @param {Request} request - 传入的请求 (The incoming request)
- * @param {FetchEvent} event - 获取事件 (The fetch event)
- * @returns {Promise<Response>} 响应 (The response)
- */
-async function handleRequest(request, event) {
-  const url = new URL(request.url);
-  const path = url.pathname;
-
-  // 解析请求路径 (Parse the request path)
-  // 格式: /releases/{version}/{binary_file}
-  // version 可以是 v4.1.3-beta1 或 latest
-  const match = path.match(/^\/releases\/([\w.-]+)\/([\w.-]+)$/);
-
-  if (match) {
-    const [, version, binaryFile] = match;
-    return handleRelease(request, version, binaryFile, event);
-  } else {
-    return new Response('Not Found\n\nValid pattern:\n- /releases/{version}/{binary}\n  (version can be specific version or "latest")', {
-      status: 404,
-      headers: { 'Content-Type': 'text/plain' }
-    });
-  }
-}
-
-/**
  * 构建响应头 (Build response headers)
  * @param {Headers} originalHeaders - 原始响应头 (Original response headers)
  * @param {boolean} isLatest - 是否为latest版本 (Whether it's latest version)
@@ -192,3 +159,39 @@ async function handleRelease(request, version, binaryFile, event) {
 
   return streamResponse;
 }
+
+/**
+ * 处理传入请求 (Handle incoming requests)
+ * @param {Request} request - 传入的请求 (The incoming request)
+ * @param {FetchEvent} event - 获取事件 (The fetch event)
+ * @returns {Promise<Response>} 响应 (The response)
+ */
+async function handleRequest(request, event) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  // 解析请求路径 (Parse the request path)
+  // 格式: /releases/{version}/{binary_file}
+  // version 可以是 v4.1.3-beta1 或 latest
+  const match = path.match(/^\/releases\/([\w.-]+)\/([\w.-]+)$/);
+
+  if (match) {
+    const [, version, binaryFile] = match;
+    return handleRelease(request, version, binaryFile, event);
+  } else {
+    return new Response('Not Found\n\nValid pattern:\n- /releases/{version}/{binary}\n  (version can be specific version or "latest")', {
+      status: 404,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
+
+/**
+ * ES模块导出格式 (ES Module export format)
+ * 阿里云ESA要求导出包含fetch函数的对象 (Alibaba Cloud ESA requires exporting an object with a fetch function)
+ */
+export default {
+  async fetch(request, env, ctx) {
+    return handleRequest(request, ctx);
+  }
+};
