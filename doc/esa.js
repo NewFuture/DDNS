@@ -100,11 +100,9 @@ async function handleRelease(request, version, binaryFile, event) {
     : `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   const cacheKey = githubUrl;
   
-  // 获取cache实例 (Get cache instance)
-  const cache = caches.default;
-
   // 尝试从缓存获取 (Try to get from cache first)
-  let response = await cache.match(cacheKey);
+  // 阿里云ESA仅支持 cache.get() 和 cache.put() (Alibaba Cloud ESA only supports cache.get() and cache.put())
+  let response = await cache.get(cacheKey);
   
   if (response) {
     // 如果是latest版本，检查缓存是否仍然有效（12小时）
@@ -175,6 +173,7 @@ async function handleRelease(request, version, binaryFile, event) {
   });
 
   // 异步缓存响应（不阻塞流式传输）(Cache response asynchronously without blocking streaming)
+  // 阿里云ESA使用 cache.put() 存储 (Alibaba Cloud ESA uses cache.put() to store)
   event.waitUntil(
     (async () => {
       try {
