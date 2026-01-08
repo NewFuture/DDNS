@@ -6,10 +6,12 @@
  * - 统一格式代理: /releases/{version}/{binary_file}
  * - 版本可以是具体版本号(如 v4.1.3-beta1) 或 latest
  * - 具体版本: 无限缓存 | latest版本: 12小时缓存
+ * - 流式传输: 直接返回响应流，无需等待完整下载（异步后台缓存）
  * 
  * Unified format: /releases/{version}/{binary_file}
  * - version can be specific version (e.g., v4.1.3-beta1) or "latest"
  * - Specific versions: infinite cache | latest: 12-hour cache
+ * - Streaming: Returns response stream directly without buffering (async background caching)
  * 
  * 使用方法 (Usage):
  * 1. 在阿里云ESA控制台创建边缘函数
@@ -133,12 +135,9 @@ async function handleRelease(request, version, binaryFile, event) {
     });
   }
 
-  // 克隆响应用于缓存 (Clone the response for caching)
-  const responseToCache = response.clone();
-  
   // 创建带缓存头的新响应 (Create a new response with cache headers)
   const headers = new Headers({
-    ...Object.fromEntries(responseToCache.headers),
+    ...Object.fromEntries(response.headers),
     'X-Cache': 'MISS',
     'X-Cache-Type': isLatest ? 'latest' : 'versioned',
     'X-GitHub-URL': githubUrl
@@ -154,14 +153,43 @@ async function handleRelease(request, version, binaryFile, event) {
     headers.set('Cache-Control', 'public, max-age=31536000, immutable');
   }
   
-  const cachedResponse = new Response(responseToCache.body, {
-    status: responseToCache.status,
-    statusText: responseToCache.statusText,
+  // 直接返回响应流，同时异步缓存 (Return response stream directly, cache asynchronously)
+  const streamResponse = new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
     headers: headers
   });
 
-  // 存入缓存 (Store in cache)
-  event.waitUntil(cache.put(cacheKey, cachedResponse.clone()));
+  // 异步缓存响应（不阻塞流式传输）(Cache response asynchronously without blocking streaming)
+  event.waitUntil(
+    fetch(githubUrl, { redirect: 'follow' }).then(cacheResponse => {
+      if (cacheResponse.ok) {
+        const cacheHeaders = new Headers({
+          ...Object.fromEntries(cacheResponse.headers),
+          'X-Cache': 'MISS',
+          'X-Cache-Type': isLatest ? 'latest' : 'versioned',
+          'X-GitHub-URL': githubUrl
+        });
+        
+        if (isLatest) {
+          cacheHeaders.set('Cache-Control', 'public, max-age=43200');
+          cacheHeaders.set('X-Cache-Time', Date.now().toString());
+        } else {
+          cacheHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+        
+        const responseToPut = new Response(cacheResponse.body, {
+          status: cacheResponse.status,
+          statusText: cacheResponse.statusText,
+          headers: cacheHeaders
+        });
+        
+        return cache.put(cacheKey, responseToPut);
+      }
+    }).catch(err => {
+      console.error('Cache error:', err);
+    })
+  );
 
-  return cachedResponse;
+  return streamResponse;
 }
