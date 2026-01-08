@@ -100,11 +100,9 @@ async function handleRelease(request, version, binaryFile, event) {
     
     if (response) {
       // 返回缓存响应 (Return cached response)
-      const headers = new Headers({
-        ...Object.fromEntries(response.headers),
-        'X-Cache': 'HIT',
-        'X-Cache-Type': isLatest ? 'latest' : 'versioned'
-      });
+      const headers = new Headers(response.headers);
+      headers.set('X-Cache', 'HIT');
+      headers.set('X-Cache-Type', isLatest ? 'latest' : 'versioned');
       
       // 如果是latest，添加Age头 (Add Age header for latest)
       if (isLatest) {
@@ -129,8 +127,12 @@ async function handleRelease(request, version, binaryFile, event) {
   });
 
   if (!response.ok) {
-    return new Response(`Release not found: ${version}/${binaryFile}`, {
-      status: 404,
+    const status = response && typeof response.status === 'number' ? response.status : 502;
+    const message = status === 404
+      ? 'Release not found: ' + version + '/' + binaryFile
+      : 'Error fetching release from GitHub (' + status + '): ' + version + '/' + binaryFile;
+    return new Response(message, {
+      status: status,
       headers: { 'Content-Type': 'text/plain' }
     });
   }
@@ -164,12 +166,12 @@ async function handleRelease(request, version, binaryFile, event) {
   event.waitUntil(
     fetch(githubUrl, { redirect: 'follow' }).then(cacheResponse => {
       if (cacheResponse.ok) {
-        const cacheHeaders = new Headers({
-          ...Object.fromEntries(cacheResponse.headers),
-          'X-Cache': 'MISS',
-          'X-Cache-Type': isLatest ? 'latest' : 'versioned',
-          'X-GitHub-URL': githubUrl
-        });
+        // Preserve all original headers (including multi-value) and then
+        // add or override our custom caching headers.
+        const cacheHeaders = new Headers(cacheResponse.headers);
+        cacheHeaders.set('X-Cache', 'MISS');
+        cacheHeaders.set('X-Cache-Type', isLatest ? 'latest' : 'versioned');
+        cacheHeaders.set('X-GitHub-URL', githubUrl);
         
         if (isLatest) {
           cacheHeaders.set('Cache-Control', 'public, max-age=43200');
