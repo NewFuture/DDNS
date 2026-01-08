@@ -59,6 +59,30 @@ async function handleRequest(request, event) {
 }
 
 /**
+ * 构建响应头 (Build response headers)
+ * @param {Headers} originalHeaders - 原始响应头 (Original response headers)
+ * @param {boolean} isLatest - 是否为latest版本 (Whether it's latest version)
+ * @param {string} githubUrl - GitHub URL
+ * @param {string} cacheStatus - 缓存状态 (Cache status: HIT or MISS)
+ * @returns {Headers} 构建好的响应头 (Constructed response headers)
+ */
+function buildResponseHeaders(originalHeaders, isLatest, githubUrl, cacheStatus) {
+  const headers = new Headers(originalHeaders);
+  headers.set('X-Cache', cacheStatus);
+  headers.set('X-Cache-Type', isLatest ? 'latest' : 'versioned');
+  headers.set('X-GitHub-URL', githubUrl);
+  
+  if (isLatest) {
+    headers.set('Cache-Control', 'public, max-age=43200');
+    headers.set('X-Cache-Time', Date.now().toString());
+  } else {
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  
+  return headers;
+}
+
+/**
  * 处理发布请求 (Handle release requests)
  * @param {Request} request - 传入的请求 (The incoming request)
  * @param {string} version - 版本标签，可以是具体版本(如v4.1.3-beta1)或latest (Version tag, can be specific version or "latest")
@@ -137,25 +161,13 @@ async function handleRelease(request, version, binaryFile, event) {
     });
   }
 
-  // 创建带缓存头的新响应 (Create a new response with cache headers)
-  const headers = new Headers({
-    ...Object.fromEntries(response.headers),
-    'X-Cache': 'MISS',
-    'X-Cache-Type': isLatest ? 'latest' : 'versioned',
-    'X-GitHub-URL': githubUrl
-  });
+  // 克隆响应用于缓存（避免重复请求）(Clone response for caching to avoid duplicate requests)
+  const responseToCache = response.clone();
   
-  // 根据版本类型设置不同的缓存策略 (Set different cache policies based on version type)
-  if (isLatest) {
-    // latest: 12小时缓存 (12-hour cache)
-    headers.set('Cache-Control', 'public, max-age=43200');
-    headers.set('X-Cache-Time', Date.now().toString());
-  } else {
-    // 具体版本: 无限缓存 (Specific version: infinite cache)
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-  }
+  // 构建响应头 (Build response headers)
+  const headers = buildResponseHeaders(response.headers, isLatest, githubUrl, 'MISS');
   
-  // 直接返回响应流，同时异步缓存 (Return response stream directly, cache asynchronously)
+  // 直接返回响应流 (Return response stream directly)
   const streamResponse = new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -164,33 +176,19 @@ async function handleRelease(request, version, binaryFile, event) {
 
   // 异步缓存响应（不阻塞流式传输）(Cache response asynchronously without blocking streaming)
   event.waitUntil(
-    fetch(githubUrl, { redirect: 'follow' }).then(cacheResponse => {
-      if (cacheResponse.ok) {
-        // Preserve all original headers (including multi-value) and then
-        // add or override our custom caching headers.
-        const cacheHeaders = new Headers(cacheResponse.headers);
-        cacheHeaders.set('X-Cache', 'MISS');
-        cacheHeaders.set('X-Cache-Type', isLatest ? 'latest' : 'versioned');
-        cacheHeaders.set('X-GitHub-URL', githubUrl);
-        
-        if (isLatest) {
-          cacheHeaders.set('Cache-Control', 'public, max-age=43200');
-          cacheHeaders.set('X-Cache-Time', Date.now().toString());
-        } else {
-          cacheHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-        
-        const responseToPut = new Response(cacheResponse.body, {
-          status: cacheResponse.status,
-          statusText: cacheResponse.statusText,
+    (async () => {
+      try {
+        const cacheHeaders = buildResponseHeaders(responseToCache.headers, isLatest, githubUrl, 'MISS');
+        const responseToPut = new Response(responseToCache.body, {
+          status: responseToCache.status,
+          statusText: responseToCache.statusText,
           headers: cacheHeaders
         });
-        
-        return cache.put(cacheKey, responseToPut);
+        await cache.put(cacheKey, responseToPut);
+      } catch (err) {
+        console.error('Cache error:', err);
       }
-    }).catch(err => {
-      console.error('Cache error:', err);
-    })
+    })()
   );
 
   return streamResponse;
