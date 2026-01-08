@@ -16,6 +16,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `dnspod` | [DNSPod China](https://www.dnspod.cn/) | [dnspod 中文文档](dnspod.md) | [dnspod English Doc](dnspod.en.md) | Largest DNS provider in China |
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](he.en.md) | ⚠️ Pending verification, no auto-record creation |
 | `huaweidns` | [Huawei Cloud DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns 中文文档](huaweidns.md) | [huaweidns English Doc](huaweidns.en.md) | ⚠️ Pending verification |
+| `namecom` | [Name.com](https://www.name.com/) | [namecom 中文文档](namecom.md) | [namecom English Doc](namecom.en.md) | Domain registrar DNS service |
 | `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](noip.en.md) | Popular dynamic DNS service |
 | `tencentcloud` | [Tencent Cloud DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | Tencent Cloud DNSPod service |
 | `edgeone` | [Tencent Cloud EdgeOne](https://edgeone.ai) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | Tencent Cloud Edge Security Platform (Acceleration Domains) |
