@@ -5,12 +5,12 @@
  * 功能说明 (Features):
  * - 统一格式代理: /releases/{version}/{binary_file}
  * - 版本可以是具体版本号(如 v4.1.3-beta1)、latest 或 beta
- * - 具体版本: 无限缓存 | latest/beta: 12小时缓存
+ * - 具体版本: 无限缓存 | latest: 12小时缓存 | beta: 转换为具体版本后无限缓存
  * - 流式传输: 直接返回响应流，先缓存后返回
  * 
  * Unified format: /releases/{version}/{binary_file}
  * - version can be specific version (e.g., v4.1.3-beta1), "latest", or "beta"
- * - Specific versions: infinite cache | latest/beta: 12-hour cache
+ * - Specific versions: infinite cache | latest: 12-hour cache | beta: infinite cache after conversion to specific version
  * - Streaming: Returns response stream directly, cache first then return
  * 
  * 使用方法 (Usage):
