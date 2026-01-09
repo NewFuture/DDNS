@@ -34,7 +34,7 @@ const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
  */
 async function getLatestBetaVersion() {
   // 尝试从EdgeKV获取缓存的beta版本 (Try to get cached beta version from EdgeKV)
-  const cacheKey = 'beta';
+  const cacheKey = 'ddns-beta-version';
   try {
     const cachedVersion = await edgeKv.get(cacheKey);
     if (cachedVersion) {
