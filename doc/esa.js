@@ -101,22 +101,24 @@ function buildResponseHeaders(originalHeaders, isDynamic, githubUrl) {
  * @returns {Promise<Response>} 响应 (The response)
  */
 async function handleRelease(version, binaryFile) {
-  // 判断是否为动态版本 (Check if it's a dynamic version)
-  const isDynamic = version === 'latest' || version === 'beta';
-  
   // 构建GitHub URL (Build GitHub URL)
   let githubUrl;
+  let isDynamic = false;
   
   if (version === 'latest') {
+    // latest使用GitHub的latest重定向，动态版本 (latest uses GitHub's latest redirect, dynamic version)
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/latest/download/${binaryFile}`;
+    isDynamic = true;
   } else if (version === 'beta') {
-    // 获取最新beta版本 (Get latest beta version)
+    // 获取最新beta版本号，转换为具体版本 (Get latest beta version number, convert to specific version)
     const betaVersion = await getLatestBetaVersion();
     if (!betaVersion) {
       return new Response('Beta release not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
     }
+    // beta已转换为具体版本，按静态版本处理 (Beta converted to specific version, treat as static)
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${betaVersion}/${binaryFile}`;
   } else {
+    // 具体版本号，静态版本 (Specific version, static)
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   }
   
