@@ -122,8 +122,11 @@ async function handleRelease(version, binaryFile) {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   }
   
+  // 缓存key使用HTTP协议(ESA Cache引擎要求) (Cache key uses HTTP protocol, required by ESA Cache engine)
+  const cacheKey = githubUrl.replace('https://', 'http://');
+  
   // 尝试从缓存获取 (Try to get from cache first)
-  const cachedResponse = await cache.get(githubUrl);
+  const cachedResponse = await cache.get(cacheKey);
   if (cachedResponse) {
     return cachedResponse;
   }
@@ -145,7 +148,7 @@ async function handleRelease(version, binaryFile) {
   });
 
   // 先缓存再返回 (Cache first then return)
-  cache.put(githubUrl, finalResponse.clone()).catch(err => {
+  cache.put(cacheKey, finalResponse.clone()).catch(err => {
     console.error('Cache error:', err);
   });
 
