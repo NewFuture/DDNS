@@ -30,12 +30,11 @@ const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
 
 /**
  * 获取最新beta版本 (Get latest beta version)
- * @param {string} binaryFile - 二进制文件名 (Binary filename)
  * @returns {Promise<string>} beta版本号 (Beta version number)
  */
-async function getLatestBetaVersion(binaryFile) {
+async function getLatestBetaVersion() {
   // 尝试从EdgeKV获取缓存的beta版本 (Try to get cached beta version from EdgeKV)
-  const cacheKey = `beta:${binaryFile}`;
+  const cacheKey = 'beta';
   try {
     const cachedVersion = await edgeKv.get(cacheKey);
     if (cachedVersion) {
@@ -56,12 +55,12 @@ async function getLatestBetaVersion(binaryFile) {
 
   if (apiResponse.ok) {
     const releases = await apiResponse.json();
-    // 查找第一个prerelease (Find first prerelease)
+    // 查找第一个prerelease或tag_name包含beta的release (Find first prerelease or release with beta in tag_name)
     for (const release of releases) {
-      if (release.prerelease && release.tag_name) {
-        // 缓存到EdgeKV，12小时过期 (Cache to EdgeKV, 12-hour expiration)
+      if ((release.prerelease || (release.tag_name && release.tag_name.includes('beta'))) && release.tag_name) {
+        // 缓存到EdgeKV，6小时过期 (Cache to EdgeKV, 6-hour expiration)
         try {
-          await edgeKv.put(cacheKey, release.tag_name, { expiration_ttl: 43200 });
+          await edgeKv.put(cacheKey, release.tag_name, { expiration_ttl: 21600 });
         } catch (err) {
           console.log('EdgeKV put error:', err);
         }
@@ -83,7 +82,6 @@ async function getLatestBetaVersion(binaryFile) {
  */
 function buildResponseHeaders(originalHeaders, version, githubUrl) {
   const headers = new Headers(originalHeaders);
-  headers.set('X-Cache', 'MISS');
   headers.set('X-GitHub-URL', githubUrl);
   
   // 判断是否为动态版本，设置不同的缓存策略 (Check if dynamic version, set different cache policy)
@@ -105,26 +103,24 @@ function buildResponseHeaders(originalHeaders, version, githubUrl) {
 async function handleRelease(version, binaryFile) {
   // 构建GitHub URL (Build GitHub URL)
   let githubUrl;
-  let actualVersion = version;
   
   if (version === 'latest') {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/latest/download/${binaryFile}`;
   } else if (version === 'beta') {
     // 获取最新beta版本 (Get latest beta version)
-    const betaVersion = await getLatestBetaVersion(binaryFile);
+    const betaVersion = await getLatestBetaVersion();
     if (!betaVersion) {
       return new Response('Beta release not found', {
         status: 404,
         headers: { 'Content-Type': 'text/plain' }
       });
     }
-    actualVersion = betaVersion;
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${betaVersion}/${binaryFile}`;
   } else {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   }
   
-  const cacheKey = version === 'latest' || version === 'beta' ? `${version}:${binaryFile}` : githubUrl;
+  const cacheKey = githubUrl;
   
   // 尝试从缓存获取 (Try to get from cache first)
   let cachedResponse = await cache.get(cacheKey);
