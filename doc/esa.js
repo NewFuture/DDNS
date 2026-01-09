@@ -17,6 +17,7 @@
  * 1. 在阿里云ESA控制台创建边缘函数
  * 2. 复制此代码到函数编辑器
  * 3. 配置路由规则匹配 /releases/*
+ * 4. 创建EdgeKV命名空间用于存储beta版本映射
  * 
  * 示例 (Examples):
  * - https://your-domain.com/releases/v4.1.3-beta1/ddns-windows-x64.exe
@@ -25,22 +26,68 @@
  */
 
 const GITHUB_REPO = 'NewFuture/DDNS';
+const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
+
+/**
+ * 获取最新beta版本 (Get latest beta version)
+ * @param {string} binaryFile - 二进制文件名 (Binary filename)
+ * @returns {Promise<string>} beta版本号 (Beta version number)
+ */
+async function getLatestBetaVersion(binaryFile) {
+  // 尝试从EdgeKV获取缓存的beta版本 (Try to get cached beta version from EdgeKV)
+  const cacheKey = `beta:${binaryFile}`;
+  try {
+    const cachedVersion = await edgeKv.get(cacheKey);
+    if (cachedVersion) {
+      return cachedVersion;
+    }
+  } catch (err) {
+    console.log('EdgeKV get error:', err);
+  }
+
+  // 从GitHub API获取最新的beta版本 (Fetch latest beta version from GitHub API)
+  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
+  const apiResponse = await fetch(apiUrl, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'ESA-Edge-Function'
+    }
+  });
+
+  if (apiResponse.ok) {
+    const releases = await apiResponse.json();
+    // 查找第一个prerelease (Find first prerelease)
+    for (const release of releases) {
+      if (release.prerelease && release.tag_name) {
+        // 缓存到EdgeKV，12小时过期 (Cache to EdgeKV, 12-hour expiration)
+        try {
+          await edgeKv.put(cacheKey, release.tag_name, { expiration_ttl: 43200 });
+        } catch (err) {
+          console.log('EdgeKV put error:', err);
+        }
+        return release.tag_name;
+      }
+    }
+  }
+
+  // 如果没找到beta版本，返回null (If no beta version found, return null)
+  return null;
+}
 
 /**
  * 构建响应头 (Build response headers)
  * @param {Headers} originalHeaders - 原始响应头 (Original response headers)
- * @param {boolean} isDynamic - 是否为动态版本(latest/beta) (Whether it's a dynamic version like latest/beta)
+ * @param {string} version - 版本号 (Version number)
  * @param {string} githubUrl - GitHub URL
- * @param {string} cacheStatus - 缓存状态 (Cache status: HIT or MISS)
  * @returns {Headers} 构建好的响应头 (Constructed response headers)
  */
-function buildResponseHeaders(originalHeaders, isDynamic, githubUrl, cacheStatus) {
+function buildResponseHeaders(originalHeaders, version, githubUrl) {
   const headers = new Headers(originalHeaders);
-  headers.set('X-Cache', cacheStatus);
-  headers.set('X-Cache-Type', isDynamic ? 'dynamic' : 'versioned');
+  headers.set('X-Cache', 'MISS');
   headers.set('X-GitHub-URL', githubUrl);
   
-  if (isDynamic) {
+  // 判断是否为动态版本，设置不同的缓存策略 (Check if dynamic version, set different cache policy)
+  if (version === 'latest' || version === 'beta') {
     headers.set('Cache-Control', 'public, max-age=43200');
   } else {
     headers.set('Cache-Control', 'public, max-age=31536000, immutable');
@@ -56,39 +103,35 @@ function buildResponseHeaders(originalHeaders, isDynamic, githubUrl, cacheStatus
  * @returns {Promise<Response>} 响应 (The response)
  */
 async function handleRelease(version, binaryFile) {
-  // 判断是否为动态版本 (Check if it's a dynamic version)
-  const isDynamic = version === 'latest' || version === 'beta';
-  
   // 构建GitHub URL (Build GitHub URL)
-  // latest: /releases/latest/download/{file}
-  // beta: 获取最新带beta标签的release的文件
-  // 版本号: /releases/download/{version}/{file}
   let githubUrl;
+  let actualVersion = version;
+  
   if (version === 'latest') {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/latest/download/${binaryFile}`;
   } else if (version === 'beta') {
-    // beta 使用 GitHub API 获取最新 prerelease
-    // 暂时简化为直接重定向，由GitHub处理
-    githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/beta/${binaryFile}`;
+    // 获取最新beta版本 (Get latest beta version)
+    const betaVersion = await getLatestBetaVersion(binaryFile);
+    if (!betaVersion) {
+      return new Response('Beta release not found', {
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+    actualVersion = betaVersion;
+    githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${betaVersion}/${binaryFile}`;
   } else {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   }
   
-  const cacheKey = isDynamic ? `${version}:${binaryFile}` : githubUrl;
+  const cacheKey = version === 'latest' || version === 'beta' ? `${version}:${binaryFile}` : githubUrl;
   
   // 尝试从缓存获取 (Try to get from cache first)
-  // 阿里云ESA仅支持 cache.get() 和 cache.put() (Alibaba Cloud ESA only supports cache.get() and cache.put())
   let cachedResponse = await cache.get(cacheKey);
   
-  // 有缓存直接返回，无需验证 (If cached, return directly without validation)
+  // 有缓存直接返回 (If cached, return directly)
   if (cachedResponse) {
-    const headers = new Headers(cachedResponse.headers);
-    headers.set('X-Cache', 'HIT');
-    return new Response(cachedResponse.body, {
-      status: cachedResponse.status,
-      statusText: cachedResponse.statusText,
-      headers: headers
-    });
+    return cachedResponse;
   }
 
   // 从GitHub获取 (Fetch from GitHub)
@@ -97,18 +140,11 @@ async function handleRelease(version, binaryFile) {
   });
 
   if (!response.ok) {
-    const status = response.status;
-    const message = status === 404
-      ? 'Release not found: ' + version + '/' + binaryFile
-      : 'Error fetching release from GitHub (' + status + '): ' + version + '/' + binaryFile;
-    return new Response(message, {
-      status: status,
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    return response;
   }
 
   // 构建响应头 (Build response headers)
-  const headers = buildResponseHeaders(response.headers, isDynamic, githubUrl, 'MISS');
+  const headers = buildResponseHeaders(response.headers, version, githubUrl);
   
   // 创建最终响应 (Create final response)
   const finalResponse = new Response(response.body, {
@@ -117,8 +153,7 @@ async function handleRelease(version, binaryFile) {
     headers: headers
   });
 
-  // 阿里云不支持event.waitUntil，先缓存再返回 (Aliyun doesn't support event.waitUntil, cache first then return)
-  // 使用 .catch() 避免缓存失败影响响应 (Use .catch() to prevent cache failures from affecting response)
+  // 先缓存再返回 (Cache first then return)
   cache.put(cacheKey, finalResponse.clone()).catch(err => {
     console.error('Cache error:', err);
   });
