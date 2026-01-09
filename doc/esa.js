@@ -76,16 +76,16 @@ async function getLatestBetaVersion() {
 /**
  * 构建响应头 (Build response headers)
  * @param {Headers} originalHeaders - 原始响应头 (Original response headers)
- * @param {string} version - 版本号 (Version number)
+ * @param {boolean} isDynamic - 是否为动态版本(latest/beta) (Whether it's a dynamic version)
  * @param {string} githubUrl - GitHub URL
  * @returns {Headers} 构建好的响应头 (Constructed response headers)
  */
-function buildResponseHeaders(originalHeaders, version, githubUrl) {
+function buildResponseHeaders(originalHeaders, isDynamic, githubUrl) {
   const headers = new Headers(originalHeaders);
   headers.set('X-GitHub-URL', githubUrl);
   
-  // 判断是否为动态版本，设置不同的缓存策略 (Check if dynamic version, set different cache policy)
-  if (version === 'latest' || version === 'beta') {
+  // 动态版本12小时缓存，静态版本永久缓存 (Dynamic versions: 12h cache, static versions: permanent cache)
+  if (isDynamic) {
     headers.set('Cache-Control', 'public, max-age=43200');
   } else {
     headers.set('Cache-Control', 'public, max-age=31536000, immutable');
@@ -101,6 +101,9 @@ function buildResponseHeaders(originalHeaders, version, githubUrl) {
  * @returns {Promise<Response>} 响应 (The response)
  */
 async function handleRelease(version, binaryFile) {
+  // 判断是否为动态版本 (Check if it's a dynamic version)
+  const isDynamic = version === 'latest' || version === 'beta';
+  
   // 构建GitHub URL (Build GitHub URL)
   let githubUrl;
   
@@ -110,37 +113,27 @@ async function handleRelease(version, binaryFile) {
     // 获取最新beta版本 (Get latest beta version)
     const betaVersion = await getLatestBetaVersion();
     if (!betaVersion) {
-      return new Response('Beta release not found', {
-        status: 404,
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      return new Response('Beta release not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
     }
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${betaVersion}/${binaryFile}`;
   } else {
     githubUrl = `https://github.com/${GITHUB_REPO}/releases/download/${version}/${binaryFile}`;
   }
   
-  const cacheKey = githubUrl;
-  
   // 尝试从缓存获取 (Try to get from cache first)
-  let cachedResponse = await cache.get(cacheKey);
-  
-  // 有缓存直接返回 (If cached, return directly)
+  const cachedResponse = await cache.get(githubUrl);
   if (cachedResponse) {
     return cachedResponse;
   }
 
   // 从GitHub获取 (Fetch from GitHub)
-  let response = await fetch(githubUrl, {
-    redirect: 'follow'
-  });
-
+  const response = await fetch(githubUrl, { redirect: 'follow' });
   if (!response.ok) {
     return response;
   }
 
   // 构建响应头 (Build response headers)
-  const headers = buildResponseHeaders(response.headers, version, githubUrl);
+  const headers = buildResponseHeaders(response.headers, isDynamic, githubUrl);
   
   // 创建最终响应 (Create final response)
   const finalResponse = new Response(response.body, {
@@ -150,7 +143,7 @@ async function handleRelease(version, binaryFile) {
   });
 
   // 先缓存再返回 (Cache first then return)
-  cache.put(cacheKey, finalResponse.clone()).catch(err => {
+  cache.put(githubUrl, finalResponse.clone()).catch(err => {
     console.error('Cache error:', err);
   });
 
