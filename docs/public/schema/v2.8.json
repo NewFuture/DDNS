@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://ddns.newfuture.cc/schema/v2.8.json",
+  "description": "DNS 配置文件 https://github.com/NewFuture/DDNS",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "please use https://ddns.newfuture.cc/schema/v2.8.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v2.8.json",
+      "default": "https://ddns.newfuture.cc/schema/v2.8.json",
+      "enum": [
+        "https://ddns.newfuture.cc/schema/v2.8.json",
+        "http://ddns.newfuture.cc/schema/v2.8.json",
+        "./schema/v2.8.json"
+      ]
+    },
+    "id": {
+      "$id": "/properties/id",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "ID or Email",
+      "description": "DNS服务API认证的ID或者邮箱"
+    },
+    "token": {
+      "$id": "/properties/token",
+      "type": "string",
+      "title": "API Token",
+      "description": "DNS服务商的访问Token或者Key"
+    },
+    "dns": {
+      "$id": "/properties/dns",
+      "type": "string",
+      "title": "DNS Provider",
+      "description": "dns服务商:阿里为alidns,DNS.COM为dnscom,DNSPOD国际版为(dnspod_com),cloudflare,HE.net为he,华为DNS为huaweidns,自定义回调为callback",
+      "default": "dnspod",
+      "examples": [
+        "dnspod",
+        "alidns",
+        "cloudflare"
+      ],
+      "enum": [
+        "dnspod",
+        "alidns",
+        "cloudflare",
+        "dnspod_com",
+        "dnscom",
+        "he",
+        "huaweidns",
+        "callback"
+      ]
+    },
+    "ipv4": {
+      "$id": "/properties/ipv4",
+      "title": "IPv4 domain list",
+      "description": "待更新的IPv4 域名列表",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv4/items",
+        "title": "ipv4 domain for DDNS",
+        "type": "string",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "examples": [
+          "newfuture.cc",
+          "ipv4.example.newfuture.cc"
+        ]
+      }
+    },
+    "ipv6": {
+      "$id": "/properties/ipv6",
+      "type": "array",
+      "title": "IPv6 domain list",
+      "description": "待更新的IPv6 域名列表",
+      "uniqueItems": true,
+      "items": {
+        "$id": "/properties/ipv6/items",
+        "title": "The ipv6 domain for DDNS",
+        "type": "string",
+        "pattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+        "examples": [
+          "newfuture.cc",
+          "ipv6.example.newfuture.cc"
+        ]
+      }
+    },
+    "index4": {
+      "$id": "/properties/index4",
+      "type": [
+        "string",
+        "integer",
+        "boolean",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
+      "title": "IPv4 address Setting",
+      "description": "本机 IPv4 获取方式设置",
+      "default": "default",
+      "examples": [
+        "default",
+        "public",
+        0,
+        1,
+        "192\\\\.168\\\\..*",
+        false
+      ]
+    },
+    "index6": {
+      "$id": "/properties/index6",
+      "type": [
+        "string",
+        "integer",
+        "boolean",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ],
+        "minimum": 0
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "minimum": 0,
+      "title": "IPv6 address Setting",
+      "description": "本机 IPv6 获取方式设置",
+      "default": "default",
+      "examples": [
+        "default",
+        "public",
+        0,
+        1,
+        "2404:f801:10:.*",
+        false
+      ]
+    },
+    "ttl": {
+      "$id": "/properties/ttl",
+      "type": [
+        "number",
+        "null"
+      ],
+      "title": "TTL",
+      "description": "设置DNS TTL,默认不填读取DNS服务商的配置",
+      "default": null,
+      "examples": [
+        600,
+        null
+      ]
+    },
+    "proxy": {
+      "$id": "/properties/proxy",
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "HTTP Proxy Setting",
+      "description": "DIRECT表示直连,多个代理分号(;)分割逐个尝试直到成功",
+      "pattern": "^[a-zA-Z0-9\\-;_:\\.]*$",
+      "examples": [
+        "127.0.0.1:1080;DIRECT"
+      ]
+    },
+    "debug": {
+      "$id": "/properties/debug",
+      "type": "boolean",
+      "title": "Enable Debug Mode (deprecated, use logger instead)",
+      "description": "是否启用调试模式显示更多信息（已废弃，请使用 logger 字段）",
+      "default": false,
+      "examples": [
+        false,
+        true
+      ],
+      "deprecated": true
+    },
+    "cache": {
+      "$id": "/properties/cache",
+      "type": [
+        "string",
+        "boolean"
+      ],
+      "title": "Enable Cache",
+      "description": "是否启用缓存记录以避免频繁更新",
+      "default": true,
+      "examples": [
+        true,
+        false,
+        "/path/to/cache/ddns.cache"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "token"
+  ],
+  "additionalProperties": false
+}
