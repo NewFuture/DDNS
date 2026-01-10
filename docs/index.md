@@ -1,4 +1,4 @@
-# [<img src="/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
+# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
 
 > 自动更新 DNS 解析到本机 IP 地址，支持 IPv4/IPv6，内网/公网 IP，自动创建 DNS 记录
 
@@ -56,7 +56,7 @@
 
 - #### Docker（推荐）
 
-  详细说明和高级用法请查看 [Docker 使用文档](/docker.md)
+  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
 
   <details>
   <summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
@@ -262,7 +262,7 @@ ddns task --enable
 ddns task --disable
 ```
 
-详细配置指南请参考：[命令行参数文档](/config/cli.md#task-management-定时任务管理)
+详细配置指南请参考：[命令行参数文档](/doc/config/cli.md#task-management-定时任务管理)
 
 ### Docker
 

@@ -1,4 +1,4 @@
-# [<img src="/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
 
 > Automatically update DNS records to the current IP address, supporting IPv4 and IPv6, local (private) IP and public IP.
 > Proxy mode supported, with automatic DNS record creation.
@@ -19,10 +19,10 @@
   - [Binary files](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - **Configuration Methods:**
-  - [Command Line Arguments](/config/cli.en.md)
-  - [JSON Configuration File](/config/json.en.md) (supports single-file multi-provider, multiple config files, and remote URL)
-  - [Environment Variables](/config/env.en.md)
-  - [Provider Configuration Guide](/providers/)
+  - [Command Line Arguments](/doc/config/cli.en.md)
+  - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider, multiple config files, and remote URL)
+  - [Environment Variables](/doc/config/env.en.md)
+  - [Provider Configuration Guide](/doc/providers/)
 
 - **Domain Support:**
   - Multiple domain support
@@ -70,7 +70,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
 - #### Docker (Recommended)
 
-  For detailed instructions and advanced usage, see [Docker Usage Documentation](/docker.en.md)
+  For detailed instructions and advanced usage, see [Docker Usage Documentation](/doc/docker.en.md)
 
   <details>
   <summary markdown="span">Supports command line, configuration file, and environment variable parameters</summary>
@@ -299,7 +299,7 @@ ddns task --disable
 > - ✅ Supports all DDNS configuration parameters
 > - ✅ Unified command-line interface
 
-For detailed configuration guide, see: [CLI Parameters Documentation](/config/cli.en.md#task-management)
+For detailed configuration guide, see: [CLI Parameters Documentation](/doc/config/cli.en.md#task-management)
 
 #### Docker
 

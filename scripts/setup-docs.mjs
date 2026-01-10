@@ -20,46 +20,42 @@ if (!existsSync(docsDir)) {
   mkdirSync(docsDir, { recursive: true });
 }
 
-// Copy README as index and fix paths
+// Copy README as index (without modifying paths)
 const readmeZh = join(rootDir, 'README.md');
 if (existsSync(readmeZh)) {
-  let content = readFileSync(readmeZh, 'utf-8');
-  // Remove /doc/ prefix from paths since doc/ is now the web root
-  content = content.replace(/\/doc\//g, '/');
-  writeFileSync(join(docsDir, 'index.md'), content);
-  console.log('✓ Copied README.md to docs/index.md (paths fixed)');
+  copyFileSync(readmeZh, join(docsDir, 'index.md'));
+  console.log('✓ Copied README.md to docs/index.md');
 }
 
-// Copy English README if exists and fix paths
+// Copy English README if exists (without modifying paths)
 const readmeEn = join(rootDir, 'README.en.md');
 if (existsSync(readmeEn)) {
   const enDir = join(docsDir, 'en');
   if (!existsSync(enDir)) {
     mkdirSync(enDir, { recursive: true });
   }
-  let content = readFileSync(readmeEn, 'utf-8');
-  // Remove /doc/ prefix from paths
-  content = content.replace(/\/doc\//g, '/');
-  writeFileSync(join(enDir, 'index.md'), content);
-  console.log('✓ Copied README.en.md to docs/en/index.md (paths fixed)');
+  copyFileSync(readmeEn, join(enDir, 'index.md'));
+  console.log('✓ Copied README.en.md to docs/en/index.md');
 }
 
-// Copy doc directory contents to root (doc/ becomes web root)
+// Copy doc directory (keep structure intact for /doc/ paths in README)
 const docDir = join(rootDir, 'doc');
 if (existsSync(docDir)) {
-  // Copy doc contents directly to docs root
-  cpSync(docDir, docsDir, { recursive: true, force: true });
-  console.log('✓ Copied doc/ contents to docs root');
+  // Copy to docs/doc/ to preserve /doc/ paths
+  const targetDocDir = join(docsDir, 'doc');
+  cpSync(docDir, targetDocDir, { recursive: true, force: true });
+  console.log('✓ Copied doc/ directory');
   
   // For English version, also copy the doc directory
   const enDir = join(docsDir, 'en');
   if (existsSync(enDir)) {
-    cpSync(docDir, enDir, { recursive: true, force: true });
-    console.log('✓ Copied doc/ contents to English version');
+    const enDocDir = join(enDir, 'doc');
+    cpSync(docDir, enDocDir, { recursive: true, force: true });
+    console.log('✓ Copied doc/ to English version');
   }
 }
 
-// Copy schema directory to public (so it's available in the built site)
+// Copy schema directory to public/schema (accessible as /schema/ in build)
 const schemaDir = join(rootDir, 'schema');
 const publicDir = join(docsDir, 'public');
 if (existsSync(schemaDir)) {

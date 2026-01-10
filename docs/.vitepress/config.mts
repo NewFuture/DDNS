@@ -17,80 +17,80 @@ export default defineConfig({
   // 主题配置
   themeConfig: {
     // Logo
-    logo: '/img/ddns.svg',
+    logo: '/doc/img/ddns.svg',
     siteTitle: 'DDNS',
     
     // 导航栏
     nav: [
       { text: '首页', link: '/' },
-      { text: 'Docker', link: '/docker' },
-      { text: '安装', link: '/install' },
+      { text: 'Docker', link: '/doc/docker' },
+      { text: '安装', link: '/doc/install' },
       { 
         text: '配置方式',
         items: [
-          { text: '命令行参数', link: '/config/cli' },
-          { text: '环境变量', link: '/config/env' },
-          { text: 'JSON配置', link: '/config/json' }
+          { text: '命令行参数', link: '/doc/config/cli' },
+          { text: '环境变量', link: '/doc/config/env' },
+          { text: 'JSON配置', link: '/doc/config/json' }
         ]
       },
       {
         text: 'DNS服务商',
         items: [
-          { text: '概述', link: '/providers/README' },
-          { text: '阿里DNS', link: '/providers/alidns' },
-          { text: 'DNSPod', link: '/providers/dnspod' },
-          { text: 'Cloudflare', link: '/providers/cloudflare' }
+          { text: '概述', link: '/doc/providers/README' },
+          { text: '阿里DNS', link: '/doc/providers/alidns' },
+          { text: 'DNSPod', link: '/doc/providers/dnspod' },
+          { text: 'Cloudflare', link: '/doc/providers/cloudflare' }
         ]
       },
       {
         text: '开发文档',
         items: [
-          { text: '配置文档', link: '/dev/config' },
-          { text: 'Provider开发', link: '/dev/provider' }
+          { text: '配置文档', link: '/doc/dev/config' },
+          { text: 'Provider开发', link: '/doc/dev/provider' }
         ]
       }
     ],
 
     // 侧边栏
     sidebar: {
-      '/config/': [
+      '/doc/config/': [
         {
           text: '配置方式',
           items: [
-            { text: '命令行参数', link: '/config/cli' },
-            { text: '环境变量', link: '/config/env' },
-            { text: 'JSON配置文件', link: '/config/json' }
+            { text: '命令行参数', link: '/doc/config/cli' },
+            { text: '环境变量', link: '/doc/config/env' },
+            { text: 'JSON配置文件', link: '/doc/config/json' }
           ]
         }
       ],
-      '/providers/': [
+      '/doc/providers/': [
         {
           text: 'DNS 服务商',
           items: [
-            { text: '概述', link: '/providers/README' },
-            { text: '阿里DNS', link: '/providers/alidns' },
-            { text: '阿里云ESA', link: '/providers/aliesa' },
-            { text: '51DNS', link: '/providers/51dns' },
-            { text: 'Cloudflare', link: '/providers/cloudflare' },
-            { text: 'DNSPod', link: '/providers/dnspod' },
-            { text: 'DNSPod国际版', link: '/providers/dnspod_com' },
-            { text: '腾讯云DNS', link: '/providers/tencentcloud' },
-            { text: '腾讯云EdgeOne', link: '/providers/edgeone' },
-            { text: '华为云DNS', link: '/providers/huaweidns' },
-            { text: 'HE.net', link: '/providers/he' },
-            { text: 'NameSilo', link: '/providers/namesilo' },
-            { text: 'No-IP', link: '/providers/noip' },
-            { text: '回调API', link: '/providers/callback' },
-            { text: '调试模式', link: '/providers/debug' }
+            { text: '概述', link: '/doc/providers/README' },
+            { text: '阿里DNS', link: '/doc/providers/alidns' },
+            { text: '阿里云ESA', link: '/doc/providers/aliesa' },
+            { text: '51DNS', link: '/doc/providers/51dns' },
+            { text: 'Cloudflare', link: '/doc/providers/cloudflare' },
+            { text: 'DNSPod', link: '/doc/providers/dnspod' },
+            { text: 'DNSPod国际版', link: '/doc/providers/dnspod_com' },
+            { text: '腾讯云DNS', link: '/doc/providers/tencentcloud' },
+            { text: '腾讯云EdgeOne', link: '/doc/providers/edgeone' },
+            { text: '华为云DNS', link: '/doc/providers/huaweidns' },
+            { text: 'HE.net', link: '/doc/providers/he' },
+            { text: 'NameSilo', link: '/doc/providers/namesilo' },
+            { text: 'No-IP', link: '/doc/providers/noip' },
+            { text: '回调API', link: '/doc/providers/callback' },
+            { text: '调试模式', link: '/doc/providers/debug' }
           ]
         }
       ],
-      '/dev/': [
+      '/doc/dev/': [
         {
           text: '开发文档',
           items: [
-            { text: '配置文档', link: '/dev/config' },
-            { text: 'Provider开发指南', link: '/dev/provider' }
+            { text: '配置文档', link: '/doc/dev/config' },
+            { text: 'Provider开发指南', link: '/doc/dev/provider' }
           ]
         }
       ]
@@ -106,9 +106,9 @@ export default defineConfig({
         if (filePath === 'en/index.md') {
           return 'https://github.com/NewFuture/DDNS/edit/master/README.en.md';
         }
-        // 其他文件：移除 docs/ 前缀，添加 doc/ 前缀
+        // 其他文件：移除 docs/ 前缀
         const cleanPath = filePath.replace(/^en\//, '');
-        return `https://github.com/NewFuture/DDNS/edit/master/doc/${cleanPath}`;
+        return `https://github.com/NewFuture/DDNS/edit/master/${cleanPath}`;
       },
       text: '在 GitHub 上编辑此页'
     },
@@ -208,72 +208,72 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/' },
-          { text: 'Docker', link: '/en/docker' },
-          { text: 'Install', link: '/en/install' },
+          { text: 'Docker', link: '/en/doc/docker' },
+          { text: 'Install', link: '/en/doc/install' },
           { 
             text: 'Configuration',
             items: [
-              { text: 'CLI', link: '/en/config/cli' },
-              { text: 'Environment', link: '/en/config/env' },
-              { text: 'JSON Config', link: '/en/config/json' }
+              { text: 'CLI', link: '/en/doc/config/cli' },
+              { text: 'Environment', link: '/en/doc/config/env' },
+              { text: 'JSON Config', link: '/en/doc/config/json' }
             ]
           },
           {
             text: 'DNS Providers',
             items: [
-              { text: 'Overview', link: '/en/providers/README' },
-              { text: 'AliDNS', link: '/en/providers/alidns' },
-              { text: 'DNSPod', link: '/en/providers/dnspod' },
-              { text: 'Cloudflare', link: '/en/providers/cloudflare' }
+              { text: 'Overview', link: '/en/doc/providers/README' },
+              { text: 'AliDNS', link: '/en/doc/providers/alidns' },
+              { text: 'DNSPod', link: '/en/doc/providers/dnspod' },
+              { text: 'Cloudflare', link: '/en/doc/providers/cloudflare' }
             ]
           },
           {
             text: 'Development',
             items: [
-              { text: 'Config Docs', link: '/en/dev/config' },
-              { text: 'Provider Guide', link: '/en/dev/provider' }
+              { text: 'Config Docs', link: '/en/doc/dev/config' },
+              { text: 'Provider Guide', link: '/en/doc/dev/provider' }
             ]
           }
         ],
         sidebar: {
-          '/en/config/': [
+          '/en/doc/config/': [
             {
               text: 'Configuration',
               items: [
-                { text: 'CLI Parameters', link: '/en/config/cli' },
-                { text: 'Environment Variables', link: '/en/config/env' },
-                { text: 'JSON Configuration', link: '/en/config/json' }
+                { text: 'CLI Parameters', link: '/en/doc/config/cli' },
+                { text: 'Environment Variables', link: '/en/doc/config/env' },
+                { text: 'JSON Configuration', link: '/en/doc/config/json' }
               ]
             }
           ],
-          '/en/providers/': [
+          '/en/doc/providers/': [
             {
               text: 'DNS Providers',
               items: [
-                { text: 'Overview', link: '/en/providers/README' },
-                { text: 'AliDNS', link: '/en/providers/alidns' },
-                { text: 'Ali ESA', link: '/en/providers/aliesa' },
-                { text: '51DNS', link: '/en/providers/51dns' },
-                { text: 'Cloudflare', link: '/en/providers/cloudflare' },
-                { text: 'DNSPod', link: '/en/providers/dnspod' },
-                { text: 'DNSPod Global', link: '/en/providers/dnspod_com' },
-                { text: 'Tencent Cloud DNS', link: '/en/providers/tencentcloud' },
-                { text: 'Tencent Cloud EdgeOne', link: '/en/providers/edgeone' },
-                { text: 'Huawei Cloud DNS', link: '/en/providers/huaweidns' },
-                { text: 'HE.net', link: '/en/providers/he' },
-                { text: 'NameSilo', link: '/en/providers/namesilo' },
-                { text: 'No-IP', link: '/en/providers/noip' },
-                { text: 'Callback API', link: '/en/providers/callback' },
-                { text: 'Debug Mode', link: '/en/providers/debug' }
+                { text: 'Overview', link: '/en/doc/providers/README' },
+                { text: 'AliDNS', link: '/en/doc/providers/alidns' },
+                { text: 'Ali ESA', link: '/en/doc/providers/aliesa' },
+                { text: '51DNS', link: '/en/doc/providers/51dns' },
+                { text: 'Cloudflare', link: '/en/doc/providers/cloudflare' },
+                { text: 'DNSPod', link: '/en/doc/providers/dnspod' },
+                { text: 'DNSPod Global', link: '/en/doc/providers/dnspod_com' },
+                { text: 'Tencent Cloud DNS', link: '/en/doc/providers/tencentcloud' },
+                { text: 'Tencent Cloud EdgeOne', link: '/en/doc/providers/edgeone' },
+                { text: 'Huawei Cloud DNS', link: '/en/doc/providers/huaweidns' },
+                { text: 'HE.net', link: '/en/doc/providers/he' },
+                { text: 'NameSilo', link: '/en/doc/providers/namesilo' },
+                { text: 'No-IP', link: '/en/doc/providers/noip' },
+                { text: 'Callback API', link: '/en/doc/providers/callback' },
+                { text: 'Debug Mode', link: '/en/doc/providers/debug' }
               ]
             }
           ],
-          '/en/dev/': [
+          '/en/doc/dev/': [
             {
               text: 'Development',
               items: [
-                { text: 'Config Documentation', link: '/en/dev/config' },
-                { text: 'Provider Development', link: '/en/dev/provider' }
+                { text: 'Config Documentation', link: '/en/doc/dev/config' },
+                { text: 'Provider Development', link: '/en/doc/dev/provider' }
               ]
             }
           ]
@@ -287,9 +287,9 @@ export default defineConfig({
             if (filePath === 'en/index.md') {
               return 'https://github.com/NewFuture/DDNS/edit/master/README.en.md';
             }
-            // 其他文件：移除 en/ 前缀，添加 doc/ 前缀
+            // 其他文件：移除 en/ 前缀
             const cleanPath = filePath.replace(/^en\//, '');
-            return `https://github.com/NewFuture/DDNS/edit/master/doc/${cleanPath}`;
+            return `https://github.com/NewFuture/DDNS/edit/master/${cleanPath}`;
           },
           text: 'Edit this page on GitHub'
         },
