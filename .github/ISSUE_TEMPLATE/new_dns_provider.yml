@@ -1,0 +1,114 @@
+name: New DNS Provider
+description: Request to integrate a new DNS provider (接入新DNS服务商)
+title: "[DNS Provider]: "
+labels: ["NewDNSProvider"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request a new DNS provider integration
+        请求接入新的 DNS 服务商
+        
+        > **Note**: 务必准确提供各种文档链接，以方便 AI 自动生成
+        > Please provide accurate documentation links to facilitate AI generation
+
+  - type: input
+    id: website
+    attributes:
+      label: Website (官网)
+      description: Official website URL
+      placeholder: https://example.com
+    validations:
+      required: true
+
+  - type: input
+    id: name-chinese
+    attributes:
+      label: Chinese Name (中文名称)
+      placeholder: e.g., 阿里云DNS
+    validations:
+      required: true
+
+  - type: input
+    id: name-english
+    attributes:
+      label: English Name (英文名称)
+      placeholder: e.g., Alibaba Cloud DNS
+    validations:
+      required: true
+
+  - type: dropdown
+    id: standard-provider
+    attributes:
+      label: Standard DNS Provider (标准DNS服务商)
+      description: Does this provider support standard DNS operations?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: input
+    id: api-auth-doc
+    attributes:
+      label: API Authentication Documentation (API 认证与签名)
+      description: Link to API authentication and signature documentation
+      placeholder: https://example.com/docs/api/auth
+
+  - type: input
+    id: api-list-domains
+    attributes:
+      label: List Domains API (查询/列出域名)
+      description: Link to API documentation for querying/listing domains
+      placeholder: https://example.com/docs/api/domains
+
+  - type: input
+    id: api-list-records
+    attributes:
+      label: List DNS Records API (查询/列出解析记录)
+      description: Link to API documentation for querying/listing DNS records
+      placeholder: https://example.com/docs/api/records
+    validations:
+      required: true
+
+  - type: input
+    id: api-create-record
+    attributes:
+      label: Create DNS Record API (创建解析记录)
+      description: Link to API documentation for creating DNS records
+      placeholder: https://example.com/docs/api/records/create
+    validations:
+      required: true
+
+  - type: input
+    id: api-update-record
+    attributes:
+      label: Update DNS Record API (修改解析记录)
+      description: Link to API documentation for updating DNS records
+      placeholder: https://example.com/docs/api/records/update
+    validations:
+      required: true
+
+  - type: input
+    id: api-other-docs
+    attributes:
+      label: Other Documentation (其它配置或使用文档)
+      description: Links to other configuration or usage documentation (optional)
+      placeholder: https://example.com/docs/guide
+
+  - type: input
+    id: python-sdk
+    attributes:
+      label: Python SDK (官方或第三方Python SDK)
+      description: Link to official or third-party Python SDK (optional)
+      placeholder: https://github.com/example/python-sdk
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information (其他补充信息)
+      description: Any other helpful information such as common issues, limitations, or special requirements
+      placeholder: |
+        - Rate limits: 100 requests per minute
+        - Special authentication requirements
+        - Known issues or limitations
