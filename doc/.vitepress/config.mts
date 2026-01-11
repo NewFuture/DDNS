@@ -67,7 +67,7 @@ export default defineConfig({
         {
           text: 'DNS 服务商',
           items: [
-            { text: '概述', link: '/providers/README' },
+            { text: '所有服务商', link: '/providers/index' },
             { text: '阿里DNS', link: '/providers/alidns' },
             { text: '阿里云ESA', link: '/providers/aliesa' },
             { text: '51DNS', link: '/providers/51dns' },
@@ -302,7 +302,7 @@ export default defineConfig({
         },
         footer: {
           message: 'Released under the MIT License',
-          copyright: 'Copyright © 2016 ~ 2024 NewFuture'
+          copyright: `Copyright © 2016 ~ ${new Date().getFullYear()} NewFuture`
         },
         outline: {
           label: 'On this page'
