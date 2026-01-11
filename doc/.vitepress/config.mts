@@ -130,7 +130,7 @@ export default defineConfig({
     // 页脚
     footer: {
       message: 'Released under the MIT License',
-      copyright: 'Copyright © 2024 NewFuture'
+      copyright: 'Copyright © 2016 ~ 2024 NewFuture'
     },
 
     // 搜索
@@ -302,7 +302,7 @@ export default defineConfig({
         },
         footer: {
           message: 'Released under the MIT License',
-          copyright: 'Copyright © 2024 NewFuture'
+          copyright: 'Copyright © 2016 ~ 2024 NewFuture'
         },
         outline: {
           label: 'On this page'
