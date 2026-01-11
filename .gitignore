@@ -5,6 +5,18 @@ config.*.json
 # Generated files from workflows
 .github/issue_body.md
 
+# VitePress generated files and dependencies
+node_modules/
+doc/.vitepress/dist/
+doc/.vitepress/cache/
+package-lock.json
+.DS_Store
+
+# VitePress intermediate files (copied during setup) - don't commit these
+doc/index.md
+doc/en/
+doc/public/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

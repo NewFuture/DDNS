@@ -164,6 +164,20 @@ async function handleRequest(request) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  // Handle redirects for old /doc/ URLs
+  // Redirect /doc/xxx to /xxx
+  if (path.startsWith('/doc/')) {
+    const newPath = path.replace('/doc/', '/');
+    return Response.redirect(url.origin + newPath + url.search + url.hash, 301);
+  }
+  
+  // Redirect /doc/xxx.en.html to /en/xxx.html
+  const enHtmlMatch = path.match(/^\/doc\/(.+)\.en\.html$/);
+  if (enHtmlMatch) {
+    const pagePath = enHtmlMatch[1];
+    return Response.redirect(url.origin + `/en/${pagePath}.html` + url.search + url.hash, 301);
+  }
+
   // 解析请求路径 (Parse the request path)
   // 格式: /releases/{version}/{binary_file}
   // version 可以是 v4.1.3-beta1、latest 或 beta

@@ -1,0 +1,16 @@
+{
+  "name": "ddns-docs",
+  "version": "1.0.0",
+  "description": "DDNS Documentation Website",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup-docs.mjs",
+    "docs:dev": "npm run setup && vitepress dev .",
+    "docs:build": "vitepress build .",
+    "docs:preview": "vitepress preview .",
+    "build": "npm run setup && npm run docs:build"
+  },
+  "devDependencies": {
+    "vitepress": "next"
+  }
+}
