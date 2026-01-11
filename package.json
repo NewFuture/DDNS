@@ -4,7 +4,7 @@
   "description": "DDNS Documentation Website",
   "type": "module",
   "scripts": {
-    "setup": "node scripts/setup-docs.mjs",
+    "setup": "node doc/setup-docs.mjs",
     "docs:dev": "npm run setup && vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",

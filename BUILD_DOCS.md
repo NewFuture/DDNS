@@ -123,19 +123,19 @@ npm run docs:preview
 ```
 .
 ├── package.json              # Node.js dependencies and scripts
-├── build_docs.sh            # Build script
-├── docs/                    # VitePress docs directory
+├── doc/                     # Source documentation directory
+│   ├── build_docs.sh       # Build script
+│   ├── setup-docs.mjs      # Setup script
+│   ├── config/             # Configuration guides
+│   ├── providers/          # DNS provider documentation
+│   └── dev/                # Developer documentation
+├── docs/                    # VitePress docs directory (generated)
 │   ├── .vitepress/         # VitePress configuration
 │   │   ├── config.mts      # Main configuration file
 │   │   └── dist/           # Built static site (after build)
-│   ├── index.md            # Homepage (Chinese)
-│   ├── doc/                # Documentation files (Chinese)
-│   │   ├── config/         # Configuration guides
-│   │   ├── providers/      # DNS provider documentation
-│   │   └── dev/            # Developer documentation
-│   └── en/                 # English version
-│       ├── index.md        # Homepage (English)
-│       └── doc/            # Documentation files (English)
+│   ├── index.md            # Homepage (Chinese, generated)
+│   └── en/                 # English version (generated)
+│       └── index.md        # Homepage (English, generated)
 ```
 
 ## Configuration
@@ -258,7 +258,7 @@ jobs:
         with:
           node-version: 18
       - run: npm install
-      - run: bash build_docs.sh
+      - run: bash doc/build_docs.sh
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
