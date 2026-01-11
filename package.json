@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "setup": "node doc/setup-docs.mjs",
-    "docs:dev": "npm run setup && vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
+    "docs:dev": "npm run setup && vitepress dev doc",
+    "docs:build": "vitepress build doc",
+    "docs:preview": "vitepress preview doc",
     "build": "npm run setup && npm run docs:build"
   },
   "devDependencies": {

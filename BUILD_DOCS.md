@@ -86,11 +86,11 @@ npm run build
 ```
 
 This command automatically:
-1. Sets up the docs directory structure
-2. Copies README and doc/ files
+1. Sets up the doc directory structure
+2. Copies README files
 3. Builds the production site
 
-Output: `docs/.vitepress/dist/` directory
+Output: `doc/.vitepress/dist/` directory
 
 ### Development
 
@@ -123,24 +123,25 @@ npm run docs:preview
 ```
 .
 ├── package.json              # Node.js dependencies and scripts
-├── doc/                     # Source documentation directory
-│   ├── build_docs.sh       # Build script
-│   ├── setup-docs.mjs      # Setup script
-│   ├── config/             # Configuration guides
-│   ├── providers/          # DNS provider documentation
-│   └── dev/                # Developer documentation
-├── docs/                    # VitePress docs directory (generated)
+├── doc/                     # Single documentation directory
 │   ├── .vitepress/         # VitePress configuration
 │   │   ├── config.mts      # Main configuration file
-│   │   └── dist/           # Built static site (after build)
-│   ├── index.md            # Homepage (Chinese, generated)
-│   └── en/                 # English version (generated)
-│       └── index.md        # Homepage (English, generated)
+│   │   ├── cache/          # Build cache (gitignored)
+│   │   └── dist/           # Built static site (gitignored)
+│   ├── build_docs.sh       # Build script
+│   ├── setup-docs.mjs      # Setup script
+│   ├── config/             # Configuration guides (source)
+│   ├── providers/          # DNS provider documentation (source)
+│   ├── dev/                # Developer documentation (source)
+│   ├── img/                # Images (source)
+│   ├── index.md            # Homepage (generated, gitignored)
+│   ├── en/                 # English version (generated, gitignored)
+│   └── public/             # Static assets (generated, gitignored)
 ```
 
 ## Configuration
 
-The main configuration file is `docs/.vitepress/config.mts`. It includes:
+The main configuration file is `doc/.vitepress/config.mts`. It includes:
 
 - **Site metadata** - Title, description, base URL
 - **Navigation** - Top navbar structure
@@ -154,23 +155,23 @@ The main configuration file is `docs/.vitepress/config.mts`. It includes:
 
 To customize the documentation:
 
-1. Edit `docs/.vitepress/config.mts` for configuration
-2. Add/edit markdown files in `docs/` directory
-3. For Chinese version: `docs/doc/**/*.md`
-4. For English version: `docs/en/doc/**/*.en.md`
+1. Edit `doc/.vitepress/config.mts` for configuration
+2. Add/edit markdown files in `doc/` subdirectories
+3. For Chinese version: `doc/**/*.md`
+4. For English version: `doc/**/*.en.md`
 
 ## Adding Documentation
 
 ### Chinese Documentation
 
-1. Create markdown file in `docs/doc/` directory
-2. Add to sidebar configuration in `config.mts`
+1. Create markdown file in `doc/` directory (e.g., `doc/config/new-guide.md`)
+2. Add to sidebar configuration in `doc/.vitepress/config.mts`
 3. Run `npm run docs:dev` to preview
 
 ### English Documentation
 
 1. Create markdown file with `.en.md` extension
-2. Place in corresponding directory structure under `docs/en/doc/`
+2. Place in same directory structure (e.g., `doc/config/new-guide.en.md`)
 3. Add to English sidebar configuration
 4. Run `npm run docs:dev` to preview
 
@@ -232,7 +233,7 @@ See [VitePress Markdown Features](https://vitepress.dev/guide/markdown) for more
 
 ## Deployment
 
-The built static site in `docs/.vitepress/dist/` can be deployed to:
+The built static site in `doc/.vitepress/dist/` can be deployed to:
 
 - **GitHub Pages** - Use GitHub Actions or `gh-pages` branch
 - **Netlify** - Drag & drop or CI/CD
@@ -262,7 +263,7 @@ jobs:
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/.vitepress/dist
+          publish_dir: doc/.vitepress/dist
 ```
 
 ## Advantages Over Other Solutions
@@ -297,7 +298,7 @@ npm run docs:dev -- --port 8080
 Clear cache and reinstall:
 
 ```bash
-rm -rf node_modules package-lock.json docs/.vitepress/cache
+rm -rf node_modules package-lock.json doc/.vitepress/cache
 npm install
 npm run docs:build
 ```
