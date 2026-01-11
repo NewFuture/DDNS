@@ -68,6 +68,7 @@ The documentation is built using **[VitePress](https://vitepress.dev/)** - a Vue
 One command to install, setup, and build:
 
 ```bash
+cd doc
 npm install
 npm run build
 ```
@@ -82,6 +83,7 @@ This automatically:
 ### One-Command Build
 
 ```bash
+cd doc
 npm run build
 ```
 
@@ -97,6 +99,7 @@ Output: `doc/.vitepress/dist/` directory
 Start the development server (auto-setup included):
 
 ```bash
+cd doc
 npm run docs:dev
 ```
 
@@ -107,6 +110,7 @@ Then open http://localhost:5173 in your browser.
 Build the static site:
 
 ```bash
+cd doc
 npm run docs:build
 ```
 
@@ -115,6 +119,7 @@ npm run docs:build
 Preview the production build locally:
 
 ```bash
+cd doc
 npm run docs:preview
 ```
 
@@ -122,8 +127,8 @@ npm run docs:preview
 
 ```
 .
-├── package.json              # Node.js dependencies and scripts
 ├── doc/                     # Single documentation directory
+│   ├── package.json        # Node.js dependencies and scripts
 │   ├── .vitepress/         # VitePress configuration
 │   │   ├── config.mts      # Main configuration file
 │   │   ├── cache/          # Build cache (gitignored)
