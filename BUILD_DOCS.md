@@ -47,14 +47,20 @@ The documentation is built using **[VitePress](https://vitepress.dev/)** - a Vue
    - Persistent user preference
 
 6. **GitHub 集成**
-   - "Edit this page" link on every page
+   - "Edit this page" link on every page (index.html → README.md)
    - Repository link in navigation
    - Last updated timestamp
+   - Direct access to install.sh at /install.sh
 
 7. **代码高亮 (Code Highlighting)**
    - Syntax highlighting for multiple languages
    - Line numbers
    - Code groups and tabs
+
+8. **自动重定向 (Auto Redirects)**
+   - Old `/doc/xxx` URLs redirect to `/xxx`
+   - Old `/doc/xxx.en.html` URLs redirect to `/en/xxx.html`
+   - Maintains backward compatibility
 
 ## Requirements
 

@@ -70,4 +70,14 @@ if (existsSync(schemaDir)) {
   console.log('✓ Copied schema/ to doc/public directory');
 }
 
+// Copy install.sh to doc/public (accessible as /install.sh in build)
+const installSh = join(rootDir, 'install.sh');
+if (existsSync(installSh)) {
+  if (!existsSync(publicDir)) {
+    mkdirSync(publicDir, { recursive: true });
+  }
+  copyFileSync(installSh, join(publicDir, 'install.sh'));
+  console.log('✓ Copied install.sh to doc/public directory');
+}
+
 console.log('\nDocumentation structure setup complete!\n');
