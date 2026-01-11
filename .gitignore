@@ -12,6 +12,23 @@ docs/.vitepress/cache/
 package-lock.json
 .DS_Store
 
+# VitePress intermediate files (copied from doc/ during setup) - don't commit these
+docs/index.md
+docs/en/index.md
+docs/en/
+docs/docker.md
+docs/docker.en.md
+docs/install.md
+docs/install.en.md
+docs/release.md
+docs/config/
+docs/providers/
+docs/dev/
+docs/img/
+docs/examples/
+docs/esa.js
+docs/public/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

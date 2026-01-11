@@ -4,7 +4,7 @@
  * Prepares the docs directory structure before building
  */
 
-import { copyFileSync, existsSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -20,38 +20,55 @@ if (!existsSync(docsDir)) {
   mkdirSync(docsDir, { recursive: true });
 }
 
-// Copy README as index (without modifying paths)
+// Copy README as index (Chinese version)
 const readmeZh = join(rootDir, 'README.md');
 if (existsSync(readmeZh)) {
-  copyFileSync(readmeZh, join(docsDir, 'index.md'));
+  const content = readFileSync(readmeZh, 'utf8');
+  // Replace /doc/ paths with / in README for clean URLs
+  const modifiedContent = content
+    .replace(/\(\/doc\//g, '(/')
+    .replace(/src="\/doc\//g, 'src="/');
+  writeFileSync(join(docsDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.md to docs/index.md');
 }
 
-// Copy English README if exists (without modifying paths)
+// Copy English README if exists
 const readmeEn = join(rootDir, 'README.en.md');
 if (existsSync(readmeEn)) {
   const enDir = join(docsDir, 'en');
   if (!existsSync(enDir)) {
     mkdirSync(enDir, { recursive: true });
   }
-  copyFileSync(readmeEn, join(enDir, 'index.md'));
+  const content = readFileSync(readmeEn, 'utf8');
+  // Replace /doc/ paths with / in README for clean URLs
+  const modifiedContent = content
+    .replace(/\(\/doc\//g, '(/')
+    .replace(/src="\/doc\//g, 'src="/');
+  writeFileSync(join(enDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.en.md to docs/en/index.md');
 }
 
-// Copy doc directory (keep structure intact for /doc/ paths in README)
+// Copy doc directory contents to docs root (remove /doc/ prefix from URLs)
 const docDir = join(rootDir, 'doc');
 if (existsSync(docDir)) {
-  // Copy to docs/doc/ to preserve /doc/ paths
-  const targetDocDir = join(docsDir, 'doc');
-  cpSync(docDir, targetDocDir, { recursive: true, force: true });
-  console.log('✓ Copied doc/ directory');
+  // Copy each item from doc/ to docs/ root
+  const items = readdirSync(docDir);
+  for (const item of items) {
+    const sourcePath = join(docDir, item);
+    const targetPath = join(docsDir, item);
+    cpSync(sourcePath, targetPath, { recursive: true, force: true });
+  }
+  console.log('✓ Copied doc/ contents to docs/ root');
   
-  // For English version, also copy the doc directory
+  // For English version, also copy the doc directory contents
   const enDir = join(docsDir, 'en');
   if (existsSync(enDir)) {
-    const enDocDir = join(enDir, 'doc');
-    cpSync(docDir, enDocDir, { recursive: true, force: true });
-    console.log('✓ Copied doc/ to English version');
+    for (const item of items) {
+      const sourcePath = join(docDir, item);
+      const targetPath = join(enDir, item);
+      cpSync(sourcePath, targetPath, { recursive: true, force: true });
+    }
+    console.log('✓ Copied doc/ contents to English version');
   }
 }
 
