@@ -11,6 +11,6 @@
     "build": "npm run setup && npm run docs:build"
   },
   "devDependencies": {
-    "vitepress": "^1.0.0"
+    "vitepress": "next"
   }
 }

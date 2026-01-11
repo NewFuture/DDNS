@@ -4,7 +4,7 @@ This document describes how to build the DDNS documentation website using VitePr
 
 ## Overview
 
-The documentation is built using **[VitePress](https://vitepress.dev/)** - a Vue-powered static site generator specifically designed for documentation websites.
+The documentation is built using **[VitePress 2.0](https://vitepress.dev/)** - a Vue-powered static site generator specifically designed for documentation websites.
 
 ### Why VitePress?
 
