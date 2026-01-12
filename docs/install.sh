@@ -316,7 +316,7 @@ build_binary_name() {
 # Download and install binary
 install_binary() {
     # Build candidate URLs (prefer official CDN, fallback to GitHub releases)
-    local download_url success temp_file version_candidate github_path msg_en msg_zh used_version
+    local download_url success temp_file version_candidate github_path used_version
     local versions="$VERSION"
     if [ "$VERSION" = "beta" ]; then
         versions="$VERSION latest"
@@ -333,23 +333,20 @@ install_binary() {
         else
             github_path="releases/download/$version_candidate/$BINARY_FILE"
         fi
-        set -- "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE" "${PROXY_URL}https://github.com/$REPO/$github_path"
+        set -- "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE"
         if [ -n "$PROXY_URL" ]; then
-            set -- "$@" "https://github.com/$REPO/$github_path"
+            set -- "$@" "${PROXY_URL}https://github.com/$REPO/$github_path"
         fi
+        set -- "$@" "https://github.com/$REPO/$github_path"
 
         for download_url in "$@"; do
-            msg_en="Trying URL: $download_url"
-            msg_zh="尝试下载: $download_url"
-            print_info "$msg_en" "$msg_zh"
+            print_info "Trying URL: $download_url" "尝试下载: $download_url"
             if download_file "$download_url" "$temp_file"; then
                 success=true
                 used_version="$version_candidate"
                 break 2
             fi
-            msg_en="Download failed, trying next source..."
-            msg_zh="下载失败，尝试下一个源..."
-            print_warning "$msg_en" "$msg_zh"
+            print_warning "Download failed, trying next source..." "下载失败，尝试下一个源..."
         done
     done
 
