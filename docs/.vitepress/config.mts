@@ -51,20 +51,17 @@ function setupDocs() {
   // Copy schema directory to docs/public/schema
   const schemaDir = path.join(rootDir, 'schema')
   const publicDir = path.join(docsDir, 'public')
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true })
+  }
   if (fs.existsSync(schemaDir)) {
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true })
-    }
     const targetSchemaDir = path.join(publicDir, 'schema')
     fs.cpSync(schemaDir, targetSchemaDir, { recursive: true, force: true })
     console.log('✓ Copied schema/ to docs/public directory')
   }
   // Copy install.sh to docs/public so it is downloadable at /install.sh
-  const installScriptPath = path.join(docsDir, 'install.sh')
+  const installScriptPath = path.join(rootDir, 'docs', 'install.sh')
   if (fs.existsSync(installScriptPath)) {
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true })
-    }
     fs.copyFileSync(
       installScriptPath,
       path.join(publicDir, 'install.sh')
