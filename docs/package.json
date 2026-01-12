@@ -1,0 +1,15 @@
+{
+  "name": "ddns-docs",
+  "version": "1.0.0",
+  "description": "DDNS Documentation Website",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev .",
+    "docs:build": "vitepress build .",
+    "docs:preview": "vitepress preview .",
+    "build": "vitepress build ."
+  },
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.15"
+  }
+}
