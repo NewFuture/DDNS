@@ -1,4 +1,6 @@
 import { defineConfig } from 'vitepress'
+import * as fs from 'fs'
+import * as path from 'path'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -11,8 +13,95 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
   
-  // 忽略死链接检查
-  ignoreDeadLinks: true,
+  // 启用死链接检查
+  ignoreDeadLinks: false,
+  
+  // 生成站点地图
+  sitemap: {
+    hostname: 'https://ddns.newfuture.cc'
+  },
+  
+  // 构建完成后生成 llms.txt
+  buildEnd: async (siteConfig) => {
+    const distPath = path.join(siteConfig.outDir, 'llms.txt')
+    const content = `# DDNS Documentation - AI/LLM Context
+
+> This file provides structured documentation for AI language models and assistants.
+
+## Project Overview
+
+**Name:** DDNS - Dynamic DNS Client
+**Repository:** https://github.com/NewFuture/DDNS
+**Documentation:** https://ddns.newfuture.cc
+**License:** MIT
+
+## Description
+
+DDNS is a Python-based dynamic DNS client that automatically updates DNS records to match your current IP address. It supports multiple DNS providers including DNSPod, Cloudflare, AliDNS, and many others. The project supports both IPv4 and IPv6, and can be run via command line, Docker, or as a system service.
+
+## Key Features
+
+- Automatic IP detection (IPv4/IPv6)
+- Multiple DNS provider support (20+ providers)
+- Multiple configuration methods (CLI, Environment Variables, JSON)
+- Docker support with multi-architecture images
+- Python 2.7+ and 3.x compatible
+- Standard library only (no external dependencies)
+
+## Main Documentation Sections
+
+- Homepage: /
+- Installation: /install
+- Docker Guide: /docker
+- Configuration:
+  - CLI Arguments: /config/cli
+  - Environment Variables: /config/env
+  - JSON Configuration: /config/json
+- DNS Providers: /providers/
+- Development Guide: /dev/provider
+
+## Usage Examples
+
+### Docker:
+\`\`\`bash
+docker run -it --rm -e DNS=dnspod -e ID=your_id -e TOKEN=your_token newfuture/ddns
+\`\`\`
+
+### Command Line:
+\`\`\`bash
+python3 run.py --dns dnspod --id your_id --token your_token
+\`\`\`
+
+### pip Install:
+\`\`\`bash
+pip install ddns
+ddns --dns dnspod --id your_id --token your_token
+\`\`\`
+
+## Supported DNS Providers
+
+DNSPod, Cloudflare, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, GoDaddy, Namecheap, CloudXNS, HE.net, DynDNS, and many more.
+
+## Technical Details
+
+- **Language:** Python 2.7+ and 3.x
+- **Dependencies:** Standard library only
+- **Platform:** Cross-platform (Windows, Linux, macOS)
+- **Docker:** Multi-architecture support (amd64, arm64, arm/v7)
+
+## Links
+
+- GitHub: https://github.com/NewFuture/DDNS
+- Documentation: https://ddns.newfuture.cc
+- Docker Hub: https://hub.docker.com/r/newfuture/ddns
+- PyPI: https://pypi.org/project/ddns/
+
+---
+Generated: ${new Date().toISOString()}
+`
+    fs.writeFileSync(distPath, content, 'utf-8')
+    console.log('✓ Generated llms.txt')
+  },
   
   // 主题配置
   themeConfig: {

@@ -177,7 +177,7 @@ async function handleRequest(request) {
     return Response.redirect(url.origin + `/en/${pagePath}.html` + url.search + url.hash, 301);
   }
   
-  // Redirect /doc/xxx to /xxx
+  // Redirect /doc/xxx to /xxx (301 permanent redirect)
   if (path.startsWith('/doc/')) {
     const newPath = path.replace('/doc/', '/');
     return Response.redirect(url.origin + newPath + url.search + url.hash, 301);
