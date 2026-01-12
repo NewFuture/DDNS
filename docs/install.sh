@@ -316,7 +316,7 @@ build_binary_name() {
 # Download and install binary
 install_binary() {
     # Build candidate URLs (prefer official CDN, fallback to GitHub releases)
-    local download_url success temp_file version_candidate github_path
+    local download_url success temp_file version_candidate github_path msg_en msg_zh
     local versions="$VERSION"
     if [ "$VERSION" = "beta" ]; then
         versions="$VERSION latest"
@@ -341,12 +341,16 @@ install_binary() {
 
     success=false
     for download_url in "$@"; do
-        print_info "Trying URL: $download_url" "尝试下载: $download_url"
+        msg_en="Trying URL: $download_url"
+        msg_zh="尝试下载: $download_url"
+        print_info "$msg_en" "$msg_zh"
         if download_file "$download_url" "$temp_file"; then
             success=true
             break
         fi
-        print_warning "Download failed, trying next source..." "下载失败，尝试下一个源..."
+        msg_en="Download failed, trying next source..."
+        msg_zh="下载失败，尝试下一个源..."
+        print_warning "$msg_en" "$msg_zh"
     done
 
     if [ "$success" != "true" ]; then
