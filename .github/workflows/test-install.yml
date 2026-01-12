@@ -73,18 +73,18 @@ jobs:
         run: wget "$RAW_URL" && chmod +x install.sh
 
       - name: Test install script help
-        run: ./docs/install.sh --help
+        run: ./install.sh --help
 
       - name: Test install latest
-        run: ./docs/install.sh
+        run: ./install.sh
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: ./docs/install.sh --uninstall
+        run: ./install.sh --uninstall
 
       - name: Test install beta with language detection (zh_CN)
-        run: LANG=zh_CN.UTF-8 ./docs/install.sh beta
+        run: LANG=zh_CN.UTF-8 ./install.sh beta
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: ./docs/install.sh --uninstall
+        run: ./install.sh --uninstall
