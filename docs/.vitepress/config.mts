@@ -62,9 +62,10 @@ function setupDocs() {
   // Copy install.sh to docs/public so it is downloadable at /install.sh
   const installScriptPath = path.join(docsDir, 'install.sh')
   if (fs.existsSync(installScriptPath)) {
-    fs.copyFileSync(
+    fs.cpSync(
       installScriptPath,
-      path.join(publicDir, 'install.sh')
+      path.join(publicDir, 'install.sh'),
+      { force: true }
     )
     console.log('✓ Copied install.sh to docs/public directory')
   }
