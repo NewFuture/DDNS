@@ -316,7 +316,7 @@ build_binary_name() {
 # Download and install binary
 install_binary() {
     # Build candidate URLs (prefer official CDN, fallback to GitHub releases)
-    local download_url success temp_file version_candidate
+    local download_url success temp_file version_candidate github_path
     local versions="$VERSION"
     if [ "$VERSION" = "beta" ]; then
         versions="$VERSION latest"
@@ -326,21 +326,20 @@ install_binary() {
     for version_candidate in $versions; do
         set -- "$@" "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE"
         if [ "$version_candidate" = "latest" ]; then
-            set -- "$@" "${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
-            if [ -n "$PROXY_URL" ]; then
-                set -- "$@" "https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
-            fi
+            github_path="releases/latest/download/$BINARY_FILE"
         else
-            set -- "$@" "${PROXY_URL}https://github.com/$REPO/releases/download/$version_candidate/$BINARY_FILE"
-            if [ -n "$PROXY_URL" ]; then
-                set -- "$@" "https://github.com/$REPO/releases/download/$version_candidate/$BINARY_FILE"
-            fi
+            github_path="releases/download/$version_candidate/$BINARY_FILE"
+        fi
+        set -- "$@" "${PROXY_URL}https://github.com/$REPO/$github_path"
+        if [ -n "$PROXY_URL" ]; then
+            set -- "$@" "https://github.com/$REPO/$github_path"
         fi
     done
 
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
 
+    success=false
     for download_url in "$@"; do
         print_info "Trying URL: $download_url" "尝试下载: $download_url"
         if download_file "$download_url" "$temp_file"; then
