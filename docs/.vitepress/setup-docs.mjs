@@ -25,8 +25,7 @@ function processReadme(sourcePath, targetPath, pathPrefix) {
   // Replace docs/ paths with / for clean web URLs
   const modifiedContent = content
     .replace(new RegExp(`\\(${pathPrefix}`, 'g'), '(/')
-    .replace(/src="docs\//g, 'src="/')
-    .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
+    .replace(/src="docs\//g, 'src="/');
   
   const targetDir = dirname(targetPath);
   if (!existsSync(targetDir)) {
