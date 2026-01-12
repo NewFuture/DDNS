@@ -59,6 +59,17 @@ function setupDocs() {
     fs.cpSync(schemaDir, targetSchemaDir, { recursive: true, force: true })
     console.log('✓ Copied schema/ to docs/public directory')
   }
+
+  // Copy tests/config directory to docs/public/tests/config
+  const testsConfigDir = path.join(rootDir, 'tests', 'config')
+  if (fs.existsSync(testsConfigDir)) {
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true })
+    }
+    const targetTestsConfigDir = path.join(publicDir, 'tests', 'config')
+    fs.cpSync(testsConfigDir, targetTestsConfigDir, { recursive: true, force: true })
+    console.log('✓ Copied tests/config/ to docs/public directory')
+  }
   
   console.log('\nDocumentation structure setup complete!\n')
 }
