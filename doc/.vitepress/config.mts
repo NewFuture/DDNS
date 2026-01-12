@@ -21,86 +21,17 @@ export default defineConfig({
     hostname: 'https://ddns.newfuture.cc'
   },
   
-  // 构建完成后生成 llms.txt
+  // 构建完成后生成 llms.txt (从模板文件)
   buildEnd: async (siteConfig) => {
+    const templatePath = path.resolve(__dirname, '../llms.txt')
     const distPath = path.join(siteConfig.outDir, 'llms.txt')
-    const content = `# DDNS Documentation - AI/LLM Context
-
-> This file provides structured documentation for AI language models and assistants.
-
-## Project Overview
-
-**Name:** DDNS - Dynamic DNS Client
-**Repository:** https://github.com/NewFuture/DDNS
-**Documentation:** https://ddns.newfuture.cc
-**License:** MIT
-
-## Description
-
-DDNS is a Python-based dynamic DNS client that automatically updates DNS records to match your current IP address. It supports multiple DNS providers including DNSPod, Cloudflare, AliDNS, and many others. The project supports both IPv4 and IPv6, and can be run via command line, Docker, or as a system service.
-
-## Key Features
-
-- Automatic IP detection (IPv4/IPv6)
-- Multiple DNS provider support (20+ providers)
-- Multiple configuration methods (CLI, Environment Variables, JSON)
-- Docker support with multi-architecture images
-- Python 2.7+ and 3.x compatible
-- Standard library only (no external dependencies)
-
-## Main Documentation Sections
-
-- Homepage: /
-- Installation: /install
-- Docker Guide: /docker
-- Configuration:
-  - CLI Arguments: /config/cli
-  - Environment Variables: /config/env
-  - JSON Configuration: /config/json
-- DNS Providers: /providers/
-- Development Guide: /dev/provider
-
-## Usage Examples
-
-### Docker:
-\`\`\`bash
-docker run -it --rm -e DNS=dnspod -e ID=your_id -e TOKEN=your_token newfuture/ddns
-\`\`\`
-
-### Command Line:
-\`\`\`bash
-python3 run.py --dns dnspod --id your_id --token your_token
-\`\`\`
-
-### pip Install:
-\`\`\`bash
-pip install ddns
-ddns --dns dnspod --id your_id --token your_token
-\`\`\`
-
-## Supported DNS Providers
-
-DNSPod, Cloudflare, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, GoDaddy, Namecheap, CloudXNS, HE.net, DynDNS, and many more.
-
-## Technical Details
-
-- **Language:** Python 2.7+ and 3.x
-- **Dependencies:** Standard library only
-- **Platform:** Cross-platform (Windows, Linux, macOS)
-- **Docker:** Multi-architecture support (amd64, arm64, arm/v7)
-
-## Links
-
-- GitHub: https://github.com/NewFuture/DDNS
-- Documentation: https://ddns.newfuture.cc
-- Docker Hub: https://hub.docker.com/r/newfuture/ddns
-- PyPI: https://pypi.org/project/ddns/
-
----
-Generated: ${new Date().toISOString()}
-`
+    
+    // Read template and replace variables
+    let content = fs.readFileSync(templatePath, 'utf-8')
+    content = content.replace('{{DATE}}', new Date().toISOString().split('T')[0])
+    
     fs.writeFileSync(distPath, content, 'utf-8')
-    console.log('✓ Generated llms.txt')
+    console.log('✓ Generated llms.txt from template')
   },
   
   // 主题配置
@@ -283,29 +214,28 @@ Generated: ${new Date().toISOString()}
       dark: 'github-dark'
     },
     config: (md) => {
-      // Transform code links like /ddns/provider/dnspod.py to GitHub links
+      // Transform link hrefs that point to code files to GitHub blob URLs
       md.core.ruler.after('inline', 'transform-code-links', (state) => {
         const tokens = state.tokens;
         for (let i = 0; i < tokens.length; i++) {
           if (tokens[i].type === 'inline' && tokens[i].children) {
             const children = tokens[i].children;
             for (let j = 0; j < children.length; j++) {
-              if (children[j].type === 'code_inline') {
-                const content = children[j].content;
-                // Match paths like /ddns/xxx.py or /ddns/xxx/yyy.py
-                if (content.match(/^\/ddns\/[a-zA-Z0-9_/.-]+\.(py|md|json|sh|txt)$/)) {
-                  // Convert to link token
-                  const linkToken = new state.Token('link_open', 'a', 1);
-                  linkToken.attrs = [['href', `https://github.com/NewFuture/DDNS/blob/master${content}`], ['target', '_blank']];
-                  
-                  const textToken = new state.Token('text', '', 0);
-                  textToken.content = content;
-                  
-                  const closeLinkToken = new state.Token('link_close', 'a', -1);
-                  
-                  // Replace code token with link tokens
-                  children.splice(j, 1, linkToken, textToken, closeLinkToken);
-                  j += 2; // Skip the newly added tokens
+              if (children[j].type === 'link_open') {
+                const attrs = children[j].attrs || [];
+                for (let k = 0; k < attrs.length; k++) {
+                  if (attrs[k][0] === 'href') {
+                    const href = attrs[k][1];
+                    // Match project file paths like /ddns/xxx.py, /tests/xxx.py
+                    if (href.match(/^\/[a-zA-Z0-9_/.-]+\.(py|md|json|sh|txt)$/)) {
+                      attrs[k][1] = `https://github.com/NewFuture/DDNS/blob/master${href}`;
+                      // Add target="_blank" if not present
+                      const hasTarget = attrs.some(attr => attr[0] === 'target');
+                      if (!hasTarget) {
+                        attrs.push(['target', '_blank']);
+                      }
+                    }
+                  }
                 }
               }
             }
