@@ -300,34 +300,6 @@ find_working_proxy() {
     return 0
 }
 
-# Get latest beta version from api.github.com only
-get_beta_version() {
-    local temp_file url
-    # Reset VERSION to avoid using a stale value on API failures
-    VERSION=""
-    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.releases.$$")"
-    url="https://api.github.com/repos/$REPO/tags?per_page=1"
-
-    print_info "Fetching version from api.github.com..." "正在从 api.github.com 获取版本信息..."
-    
-    # Simple download and parse - let download_file handle errors and retries
-    if download_file "$url" "$temp_file" && [ -s "$temp_file" ]; then
-        # Tags API returns objects with a "name" field for the tag
-        VERSION=$(grep -m1 -o '"name":"[^"]*"' "$temp_file" | cut -d '"' -f4)
-    fi
-
-    # Cleanup temp file
-    rm -f "$temp_file" 2>/dev/null || true
-
-    # Validate result
-    if [ -z "$VERSION" ]; then
-        print_error "Failed to get version from GitHub API. Try using 'latest' instead." "无法从 GitHub API 获取版本，请尝试使用 'latest'。"
-        exit 1
-    fi
-
-    print_success "Found version: $VERSION" "找到版本: $VERSION"
-}
-
 # Build binary filename based on OS and architecture
 build_binary_name() {
     case "$OS" in
@@ -343,20 +315,36 @@ build_binary_name() {
 
 # Download and install binary
 install_binary() {
-    # Build release path and original GitHub URL
-    local download_url
+    # Build candidate URLs (prefer official CDN, fallback to GitHub releases)
+    local download_urls download_url success temp_file
+    download_urls="https://ddns.newfuture.cc/release/$VERSION/$BINARY_FILE"
     if [ "$VERSION" = "latest" ]; then
-        download_url="${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
+        download_urls="$download_urls ${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
     else
-        download_url="${PROXY_URL}https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
+        download_urls="$download_urls ${PROXY_URL}https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
+    fi
+    # If a proxy is set, also try direct GitHub as a final fallback
+    if [ -n "$PROXY_URL" ]; then
+        if [ "$VERSION" = "latest" ]; then
+            download_urls="$download_urls https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
+        else
+            download_urls="$download_urls https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
+        fi
     fi
 
-    local temp_file
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
-    print_info "URL: $download_url"
 
-    if ! download_file "$download_url" "$temp_file"; then
+    for download_url in $download_urls; do
+        print_info "Trying URL: $download_url" "尝试下载: $download_url"
+        if download_file "$download_url" "$temp_file"; then
+            success=true
+            break
+        fi
+        print_warning "Download failed, trying next source..." "下载失败，尝试下一个源..."
+    done
+
+    if [ "$success" != "true" ]; then
         print_error "Failed to download binary" "下载二进制文件失败"
         print_error "Make sure the version $VERSION exists and supports your platform" "请确保版本 $VERSION 存在并支持您的平台"
         rm -f "$temp_file" 2>/dev/null || true
@@ -596,13 +584,6 @@ main() {
     # Auto-select proxy only when not explicitly set
     if [ -z "$PROXY_URL" ]; then
         find_working_proxy
-    fi
-    
-    # Version handling
-    # For 'latest', skip API query and use GitHub's latest download URL directly.
-    # For 'beta', fetch the latest available tag via API.
-    if [ "$VERSION" = "beta" ]; then
-        get_beta_version
     fi
     
     # Build and install
