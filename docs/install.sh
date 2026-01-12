@@ -316,12 +316,13 @@ build_binary_name() {
 # Download and install binary
 install_binary() {
     # Build candidate URLs (prefer official CDN, fallback to GitHub releases)
-    local download_url success temp_file version_candidate github_path msg_en msg_zh
+    local download_url success temp_file version_candidate github_path msg_en msg_zh used_version
     local versions="$VERSION"
     if [ "$VERSION" = "beta" ]; then
         versions="$VERSION latest"
     fi
 
+    # Use positional parameters as a simple list container (POSIX sh has no arrays)
     set --
     for version_candidate in $versions; do
         set -- "$@" "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE"
@@ -346,12 +347,17 @@ install_binary() {
         print_info "$msg_en" "$msg_zh"
         if download_file "$download_url" "$temp_file"; then
             success=true
+            used_version="$version_candidate"
             break
         fi
         msg_en="Download failed, trying next source..."
         msg_zh="下载失败，尝试下一个源..."
         print_warning "$msg_en" "$msg_zh"
     done
+
+    if [ "$success" = "true" ] && [ "$VERSION" = "beta" ] && [ "$used_version" != "beta" ]; then
+        print_warning "Beta download unavailable, fell back to latest release" "Beta 下载不可用，已回退到最新稳定版"
+    fi
 
     if [ "$success" != "true" ]; then
         print_error "Failed to download binary" "下载二进制文件失败"
