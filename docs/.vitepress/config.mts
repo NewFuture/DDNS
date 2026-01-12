@@ -68,7 +68,7 @@ function setupDocs() {
   } else if (fs.existsSync(docsInstallPath)) {
     installScriptPath = docsInstallPath
   } else {
-    console.log('⚠ install.sh not found in root or docs directory, skipping copy')
+    console.warn('⚠ install.sh not found in root or docs directory, skipping copy')
   }
   if (installScriptPath) {
     fs.cpSync(
