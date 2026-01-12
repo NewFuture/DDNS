@@ -146,7 +146,7 @@ When using `DDNS_DNS="callback"`, configure custom callbacks with these environm
 - **DDNS_ID**: Callback URL address with variable substitution support
 - **DDNS_TOKEN**: POST request parameters (JSON string), empty for GET requests
 
-For detailed configuration, see: [Callback Provider Configuration Documentation](providers/callback.md)
+For detailed configuration, see: [Callback Provider Configuration Documentation](../providers/callback.md)
 
 **Examples**:
 
@@ -607,5 +607,5 @@ When using environment variables, DDNS will validate the configuration and provi
 
 - [Command Line Arguments](cli.md)
 - [JSON Configuration File](json.md)
-- [Docker Usage](docker.md)
-- [Provider-specific Configuration](providers/)
+- [Docker Usage](../docker.md)
+- [Provider-specific Configuration](../providers/)

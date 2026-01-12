@@ -93,7 +93,7 @@ Debug Provider also simulates some common error scenarios to help test error han
 
 ## Support and Resources
 
-- [DDNS Project Documentation](../../README.md)
+- [DDNS Project Documentation](/en/)
 - [Configuration File Format](../config/json.md)
 - [Command Line Usage Guide](../config/cli.md)
 - [Developer Guide](../dev/provider.md)

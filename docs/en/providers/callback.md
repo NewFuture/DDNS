@@ -165,7 +165,7 @@ curl -X POST "https://httpbin.org/post" \
 
 ## Related Links
 
-- [DDNS Project Homepage](../../README.md)
+- [DDNS Project Homepage](/en/)
 - [Configuration File Format](../config/json.md)
 - [Command Line Usage](../config/cli.md)
 - [Developer Guide](../dev/provider.md)

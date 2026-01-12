@@ -162,4 +162,4 @@ ddns --debug
 
 ---
 
-如有疑问或需要帮助，请查看[FAQ](../../README.md#FAQ) 或在 [GitHub Issues](https://github.com/NewFuture/DDNS/issues) 中提问。
+如有疑问或需要帮助，请查看[FAQ](/#FAQ) 或在 [GitHub Issues](https://github.com/NewFuture/DDNS/issues) 中提问。

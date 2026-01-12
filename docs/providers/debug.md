@@ -93,7 +93,7 @@ Debug Provider 也会模拟一些常见错误场景，帮助测试错误处理�
 
 ## 支持与资源
 
-- [DDNS 项目文档](../../README.md)
+- [DDNS 项目文档](/)
 - [配置文件格式说明](../config/json.md)
 - [命令行使用指南](../config/cli.md)
 - [开发者指南](../dev/provider.md)

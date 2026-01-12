@@ -69,7 +69,7 @@ ddns --ipv4=example.com,www.example.com
 | `-c, --config`  | 字符串列表      | 指定配置文件路径，支持多个配置文件和远程HTTP(S) URL                                                                                                                         | `--config config.json` <br> `--config config1.json --config config2.json` <br> `--config https://ddns.newfuture.cc/tests/config/debug.json`                                   |
 | `--new-config`  | 标志/字符串   | 生成新的配置文件（可指定路径）                                                                                                                          | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       | 标志       | 开启调试模式                                                                                                                                   | `--debug`                                                |
-| `--dns`         | 选择项      | [DNS服务提供商](providers/)包括：<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--dns`         | 选择项      | [DNS服务提供商](../providers/)包括：<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
 | `--endpoint`    | 字符串      | 自定义API 端点 URL(更换服务节点)                                                                                                            | `--endpoint https://api.private.com`                     |
 | `--id`          | 字符串      | API 访问 ID、邮箱或 Access ID                                                                                                                 | `--id user@example.com`                                  |
 | `--token`       | 字符串      | API 授权令牌或密钥（Secret Key）                                                                                                                  | `--token abcdef123456`                                   |
@@ -136,7 +136,7 @@ ddns -c local-config.json -c https://remote.example.com/config.json
 
 ### `--dns DNS_PROVIDER`
 
-[DNS服务提供商](providers/)详细列表。
+[DNS服务提供商](../providers/)详细列表。
 
 ### `--id ID`
 
@@ -170,7 +170,7 @@ ddns --dns callback --id "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP
 ddns --dns callback --id "https://api.example.com/ddns" --token '{"api_key": "your_key", "domain": "__DOMAIN__"}'
 ```
 
-详细配置请参考：[Callback Provider 配置文档](providers/callback.md)
+详细配置请参考：[Callback Provider 配置文档](../providers/callback.md)
 
 ## 域名配置参数
 

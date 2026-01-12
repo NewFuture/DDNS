@@ -24,6 +24,7 @@ if (existsSync(readmeZh)) {
     .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
     .replace(/\(docs\//g, '(/')
     .replace(/src="docs\//g, 'src="/')
+    .replace(/\]\(doc\//g, '](/')  // Fix ]( doc/ links
     .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
   writeFileSync(join(docsDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.md to docs/index.md');
@@ -42,6 +43,7 @@ if (existsSync(readmeEn)) {
     .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
     .replace(/\(docs\/en\//g, '(/')
     .replace(/src="docs\//g, 'src="/')
+    .replace(/\]\(doc\//g, '](/')  // Fix ]( doc/ links
     .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
   writeFileSync(join(enDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.en.md to docs/en/index.md');

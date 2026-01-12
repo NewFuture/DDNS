@@ -163,7 +163,7 @@ curl -X POST "https://httpbin.org/post" \
 
 ## 相关链接
 
-- [DDNS 项目首页](../../README.md)
+- [DDNS 项目首页](/)
 - [配置文件格式](../config/json.md)
 - [命令行使用](../config/cli.md)
 - [开发者指南](../dev/provider.md)
