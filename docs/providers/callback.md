@@ -2,6 +2,8 @@
 
 Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS 更新请求转发到任何自定义的 HTTP API 端点或者webhook。这个 Provider 非常灵活，支持 GET 和 POST 请求，并提供变量替换功能。
 
+返回 [所有服务商](/providers/) 查看更多选项
+
 ## 基本配置
 
 | 参数 | 说明 | 必填 | 示例 |

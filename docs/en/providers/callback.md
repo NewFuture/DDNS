@@ -2,6 +2,8 @@
 
 Callback Provider is a universal custom callback interface that allows you to forward DDNS update requests to any custom HTTP API endpoint or webhook. This provider is highly flexible, supporting GET and POST requests with variable substitution functionality.
 
+Return to [All Providers](/en/providers/) to see more options
+
 ## Basic Configuration
 
 | Parameter | Description | Required | Example |

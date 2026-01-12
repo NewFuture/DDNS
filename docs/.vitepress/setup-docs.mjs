@@ -21,8 +21,10 @@ if (existsSync(readmeZh)) {
   const content = readFileSync(readmeZh, 'utf8');
   // Replace docs/ paths with / for clean web URLs
   const modifiedContent = content
+    .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
     .replace(/\(docs\//g, '(/')
-    .replace(/src="docs\//g, 'src="/');
+    .replace(/src="docs\//g, 'src="/')
+    .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
   writeFileSync(join(docsDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.md to docs/index.md');
 }
@@ -37,8 +39,10 @@ if (existsSync(readmeEn)) {
   const content = readFileSync(readmeEn, 'utf8');
   // Replace docs/en/ paths with / for clean web URLs
   const modifiedContent = content
+    .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
     .replace(/\(docs\/en\//g, '(/')
-    .replace(/src="docs\//g, 'src="/');
+    .replace(/src="docs\//g, 'src="/')
+    .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
   writeFileSync(join(enDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.en.md to docs/en/index.md');
 }
