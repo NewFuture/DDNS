@@ -112,7 +112,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
   ```
   Note: Installing to system directories (e.g., /usr/local/bin) may require root or sudo; if permissions are insufficient, run as `sudo sh`.
 
-  For detailed instructions, see [Installation Documentation](doc/install.en.md)
+  For detailed instructions, see [Installation Documentation](docs/en/install.md)
 
 - #### pip Installation (Requires pip or easy_install)
 
@@ -128,8 +128,8 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
 1. Apply for API `token`, fill in the corresponding `id` and `token` fields:
 
-   - **DNSPOD (China)**: [Create token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [Detailed Configuration](doc/providers/dnspod.en.md)
-   - **Alibaba Cloud DNS**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](doc/providers/alidns.en.md)
+   - **DNSPOD (China)**: [Create token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [Detailed Configuration](docs/en/providers/dnspod.md)
+   - **Alibaba Cloud DNS**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/alidns.md)
    - **Alibaba Cloud ESA**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](doc/providers/aliesa.en.md)
    - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](doc/providers/dnscom.en.md)
    - **DNSPOD (International)**: [Get token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [Detailed Configuration](doc/providers/dnspod_com.en.md)

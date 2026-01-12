@@ -98,7 +98,7 @@
   ```
   提示：安装到系统目录（如 /usr/local/bin）可能需要 root 或 sudo 权限；若权限不足，可改为 `sudo sh` 运行。
 
-  详细说明请查看 [一键安装文档](doc/install.md)
+  详细说明请查看 [一键安装文档](docs/install.md)
 
 - #### pip 安装（需要 pip 或 easy_install）
 
@@ -114,16 +114,16 @@
 
 1. 申请 api `token`，填写到对应的 `id` 和 `token` 字段:
 
-   - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](doc/providers/dnspod.md)
-   - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/alidns.md)
-   - **阿里云边缘安全加速(ESA)**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](doc/providers/aliesa.md)
-   - **51DNS(dns.com)**: [API Key/Secret](https://www.dns.com/member/apiSet) | [详细配置文档](doc/providers/51dns.md)
-   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [详细配置文档](doc/providers/dnspod_com.md)
-   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**） | [详细配置文档](doc/providers/cloudflare.md)
-   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](doc/providers/he.md)
-   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](doc/providers/huaweidns.md)
-   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager)（API Manager 中获取 API Key） | [详细配置文档](doc/providers/namesilo.md)
-   - **腾讯云 DNS**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/tencentcloud.md)
+   - **DNSPOD(中国版)**: [创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [详细配置文档](docs/providers/dnspod.md)
+   - **阿里云 DNS**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](docs/providers/alidns.md)
+   - **阿里云边缘安全加速(ESA)**: [申请 accesskey](https://help.aliyun.com/document_detail/87745.htm) | [详细配置文档](docs/providers/aliesa.md)
+   - **51DNS(dns.com)**: [API Key/Secret](https://www.dns.com/member/apiSet) | [详细配置文档](docs/providers/51dns.md)
+   - **DNSPOD(国际版)**: [获取 token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [详细配置文档](docs/providers/dnspod_com.md)
+   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-)（除了 `email + API KEY`，也可使用 `Token`，**需要list Zone 权限**） | [详细配置文档](docs/providers/cloudflare.md)
+   - **HE.net**: [DDNS 文档](https://dns.he.net/docs.html)（仅需将设置的密码填入 `token` 字段，`id` 字段可留空） | [详细配置文档](docs/providers/he.md)
+   - **华为云 DNS**: [APIKEY 申请](https://console.huaweicloud.com/iam/)（点左边访问密钥，然后点新增访问密钥） | [详细配置文档](docs/providers/huaweidns.md)
+   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager)（API Manager 中获取 API Key） | [详细配置文档](docs/providers/namesilo.md)
+   - **腾讯云 DNS**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](docs/providers/tencentcloud.md)
    - **腾讯云 EdgeOne**: [API Secret](https://console.cloud.tencent.com/cam/capi) | [详细配置文档](doc/providers/edgeone.md)
    - **No-IP**: [用户名和密码](https://www.noip.com/)（使用 No-IP 账户的用户名和密码） | [详细配置文档](doc/providers/noip.md)
    - **自定义回调**: 参数填写方式请查看下方的自定义回调配置说明
