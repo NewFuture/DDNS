@@ -59,6 +59,18 @@ function setupDocs() {
     fs.cpSync(schemaDir, targetSchemaDir, { recursive: true, force: true })
     console.log('✓ Copied schema/ to docs/public directory')
   }
+  // Copy install.sh to docs/public so it is downloadable at /install.sh
+  const installScriptPath = path.join(docsDir, 'install.sh')
+  if (fs.existsSync(installScriptPath)) {
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true })
+    }
+    fs.copyFileSync(
+      installScriptPath,
+      path.join(publicDir, 'install.sh')
+    )
+    console.log('✓ Copied install.sh to docs/public directory')
+  }
   
   console.log('\nDocumentation structure setup complete!\n')
 }
