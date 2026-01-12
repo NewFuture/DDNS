@@ -16,6 +16,12 @@ export default defineConfig({
   // 启用死链接检查
   ignoreDeadLinks: false,
   
+  // URL rewrites to handle /providers/index -> /providers/
+  rewrites: {
+    'providers/README.md': 'providers/index.md',
+    'en/providers/README.md': 'en/providers/index.md'
+  },
+  
   // 生成站点地图
   sitemap: {
     hostname: 'https://ddns.newfuture.cc'
@@ -87,7 +93,7 @@ export default defineConfig({
         {
           text: 'DNS 服务商',
           items: [
-            { text: '所有服务商', link: '/providers/index' },
+            { text: '所有服务商', link: '/providers/' },
             { text: '阿里DNS', link: '/providers/alidns' },
             { text: '阿里云ESA', link: '/providers/aliesa' },
             { text: '51DNS', link: '/providers/51dns' },
@@ -299,7 +305,7 @@ export default defineConfig({
             {
               text: 'DNS Providers',
               items: [
-                { text: 'Overview', link: '/en/providers/' },
+                { text: 'All Providers', link: '/en/providers/' },
                 { text: 'AliDNS', link: '/en/providers/alidns' },
                 { text: 'Ali ESA', link: '/en/providers/aliesa' },
                 { text: '51DNS', link: '/en/providers/51dns' },
