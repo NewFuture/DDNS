@@ -62,9 +62,14 @@ function setupDocs() {
   // Copy install.sh to docs/public so it is downloadable at /install.sh
   const rootInstallPath = path.join(rootDir, 'install.sh')
   const docsInstallPath = path.join(docsDir, 'install.sh')
-  const installScriptPath = fs.existsSync(rootInstallPath)
-    ? rootInstallPath
-    : (fs.existsSync(docsInstallPath) ? docsInstallPath : null)
+  let installScriptPath = null
+  if (fs.existsSync(rootInstallPath)) {
+    installScriptPath = rootInstallPath
+  } else if (fs.existsSync(docsInstallPath)) {
+    installScriptPath = docsInstallPath
+  } else {
+    console.log('⚠ install.sh not found in root or docs directory, skipping copy')
+  }
   if (installScriptPath) {
     fs.cpSync(
       installScriptPath,
