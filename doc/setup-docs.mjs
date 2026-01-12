@@ -46,7 +46,7 @@ if (existsSync(readmeEn)) {
   const items = readdirSync(docDir);
   for (const item of items) {
     if (item === 'en' || item === '.vitepress' || item === 'index.md' || 
-        item === 'setup-docs.mjs' || item === 'build_docs.sh' || item === 'public') continue;
+        item === 'setup-docs.mjs' || item === 'public') continue;
     
     const sourcePath = join(docDir, item);
     const targetPath = join(enDir, item);

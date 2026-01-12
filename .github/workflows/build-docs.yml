@@ -32,11 +32,11 @@ jobs:
       with:
         node-version: '24'
         cache: 'npm'
-        cache-dependency-path: 'doc/package-lock.json'
+        cache-dependency-path: 'doc/package.json'
         
     - name: Install dependencies
       working-directory: doc
-      run: npm ci
+      run: npm install
       
     - name: Build documentation
       working-directory: doc

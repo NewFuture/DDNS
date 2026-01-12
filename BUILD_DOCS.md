@@ -33,7 +33,7 @@ npm run docs:preview   # Preview production build
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 22+
 - npm
 
 ## Resources

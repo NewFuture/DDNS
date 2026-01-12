@@ -219,7 +219,7 @@ Generated: ${new Date().toISOString()}
     // 页脚
     footer: {
       message: 'Released under the MIT License',
-      copyright: 'Copyright © 2016 ~ 2024 NewFuture'
+      copyright: `Copyright © 2016 ~ ${new Date().getFullYear()} NewFuture`
     },
 
     // 搜索
@@ -341,7 +341,7 @@ Generated: ${new Date().toISOString()}
           {
             text: 'DNS Providers',
             items: [
-              { text: 'Overview', link: '/en/providers/README' },
+              { text: 'Overview', link: '/en/providers/' },
               { text: 'AliDNS', link: '/en/providers/alidns' },
               { text: 'DNSPod', link: '/en/providers/dnspod' },
               { text: 'Cloudflare', link: '/en/providers/cloudflare' }
@@ -370,7 +370,7 @@ Generated: ${new Date().toISOString()}
             {
               text: 'DNS Providers',
               items: [
-                { text: 'Overview', link: '/en/providers/README' },
+                { text: 'Overview', link: '/en/providers/' },
                 { text: 'AliDNS', link: '/en/providers/alidns' },
                 { text: 'Ali ESA', link: '/en/providers/aliesa' },
                 { text: '51DNS', link: '/en/providers/51dns' },
