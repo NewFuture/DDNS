@@ -14,8 +14,8 @@ You are a specialized agent for maintaining the DDNS project documentation built
 
 ## Your Responsibilities
 
-1. **Documentation Updates**: Update markdown files in `doc/` directories (config/, providers/, dev/)
-2. **Configuration Management**: Maintain VitePress config in `doc/.vitepress/config.mts`
+1. **Documentation Updates**: Update markdown files in `docs/` and `docs/en/` directories
+2. **Configuration Management**: Maintain VitePress config in `docs/.vitepress/config.mts`
 3. **Build Process**: Ensure documentation builds successfully
 4. **Link Verification**: Check for broken links and fix them
 5. **Content Accuracy**: Keep documentation in sync with code changes
@@ -23,23 +23,31 @@ You are a specialized agent for maintaining the DDNS project documentation built
 ## Documentation Structure
 
 ```
-doc/
+docs/
 ├── .vitepress/
 │   ├── config.mts          # VitePress configuration
 │   └── theme/index.ts      # Custom theme
 ├── setup-docs.mjs          # Setup script (runs before build)
 ├── llms.txt                # AI context template
-├── config/                 # Configuration guides
+├── install.sh              # Installation script (source)
+├── favicon.ico             # Site favicon (source)
+├── config/                 # Configuration guides (Chinese)
 │   ├── cli.md
 │   ├── env.md
 │   └── json.md
-├── providers/              # DNS provider docs
+├── providers/              # DNS provider docs (Chinese)
 │   ├── README.md          # Overview
 │   ├── dnspod.md
 │   ├── cloudflare.md
 │   └── ...
-├── dev/                    # Developer docs
+├── dev/                    # Developer docs (Chinese)
 │   └── provider.md        # Provider development guide
+├── en/                     # English versions
+│   ├── config/
+│   ├── providers/
+│   ├── dev/
+│   ├── docker.md
+│   └── install.md
 ├── docker.md
 ├── install.md
 └── release.md
@@ -47,30 +55,29 @@ doc/
 
 ## Key Files
 
-### VitePress Configuration (`doc/.vitepress/config.mts`)
+### VitePress Configuration (`docs/.vitepress/config.mts`)
 - Bilingual navigation (Chinese/English)
 - Sitemap generation
 - Dead link checking (`ignoreDeadLinks: false`)
 - Custom markdown transformers
 - Edit links mapping to GitHub source
 
-### Setup Script (`doc/setup-docs.mjs`)
-- Copies README.md → doc/index.md
-- Copies README.en.md → doc/en/index.md
-- Copies doc/ content to doc/en/ for English version
-- Copies schema/ to doc/public/schema/
-- Copies install.sh to doc/public/
+### Setup Script (`docs/setup-docs.mjs`)
+- Copies README.md → docs/index.md
+- Copies README.en.md → docs/en/index.md
+- Copies schema/ to docs/public/schema/
+- No longer copies install.sh or English .md files (use source files directly)
 
-### llms.txt Template (`doc/llms.txt`)
+### llms.txt Template (`docs/llms.txt`)
 - AI/LLM context file template
 - Contains links to all documentation pages
-- Contains links to all schema files
+- Contains links to all schema files (v4.1, v4.0, v2.8, v2)
 - Updated with current date during build
 
 ## Build Commands
 
 ```bash
-cd doc
+cd docs
 npm install           # Install dependencies
 npm run build         # Build production site
 npm run docs:dev      # Start dev server

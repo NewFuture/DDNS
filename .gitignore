@@ -7,15 +7,15 @@ config.*.json
 
 # VitePress generated files and dependencies
 node_modules/
-doc/.vitepress/dist/
-doc/.vitepress/cache/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 package-lock.json
 .DS_Store
 
-# VitePress intermediate files (copied during setup) - don't commit these
-doc/index.md
-doc/en/
-doc/public/
+# VitePress intermediate files (generated during setup) - don't commit these
+docs/index.md
+docs/en/index.md
+docs/public/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

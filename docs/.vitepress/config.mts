@@ -126,9 +126,8 @@ export default defineConfig({
         if (filePath === 'en/index.md') {
           return 'https://github.com/NewFuture/DDNS/edit/master/README.en.md';
         }
-        // 其他文件：移除 en/ 前缀，添加 doc/ 前缀
-        const cleanPath = filePath.replace(/^en\//, '');
-        return `https://github.com/NewFuture/DDNS/edit/master/doc/${cleanPath}`;
+        // 其他文件：映射到 docs/ 目录
+        return `https://github.com/NewFuture/DDNS/edit/master/docs/${filePath}`;
       },
       text: '在 GitHub 上编辑此页'
     },
@@ -337,9 +336,8 @@ export default defineConfig({
             if (filePath === 'en/index.md') {
               return 'https://github.com/NewFuture/DDNS/edit/master/README.en.md';
             }
-            // 其他文件：移除 en/ 前缀，添加 doc/ 前缀
-            const cleanPath = filePath.replace(/^en\//, '');
-            return `https://github.com/NewFuture/DDNS/edit/master/doc/${cleanPath}`;
+            // 其他文件：映射到 docs/ 目录
+            return `https://github.com/NewFuture/DDNS/edit/master/docs/${filePath}`;
           },
           text: 'Edit this page on GitHub'
         },

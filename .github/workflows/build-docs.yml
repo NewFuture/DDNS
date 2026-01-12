@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master, main ]
     paths:
-      - 'doc/**'
+      - 'docs/**'
       - 'README.md'
       - 'README.en.md'
       - 'schema/**'
@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [ master, main ]
     paths:
-      - 'doc/**'
+      - 'docs/**'
       - 'README.md'
       - 'README.en.md'
       - 'schema/**'
@@ -32,21 +32,21 @@ jobs:
       with:
         node-version: '24'
         cache: 'npm'
-        cache-dependency-path: 'doc/package.json'
+        cache-dependency-path: 'docs/package.json'
         
     - name: Install dependencies
-      working-directory: doc
+      working-directory: docs
       run: npm install
       
     - name: Build documentation
-      working-directory: doc
+      working-directory: docs
       run: npm run build
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: docs-dist
-        path: doc/.vitepress/dist/
+        path: docs/.vitepress/dist/
         retention-days: 7
         
     - name: Deploy to GitHub Pages (on push to main/master)
@@ -54,5 +54,5 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: doc/.vitepress/dist
+        publish_dir: docs/.vitepress/dist
         cname: ddns.newfuture.cc
