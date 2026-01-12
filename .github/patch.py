@@ -450,11 +450,11 @@ def main():
         print("Usage: python patch.py [version|release|docker]")
         exit(1)
     elif mode == "release":
-        # 同步修改 doc/release.md 的版本与链接
+        # 同步修改 docs/release.md 的版本与链接
         release_md_path = os.path.join(ROOT, "doc", "release.md")
         if os.path.exists(release_md_path):
             replace_links_for_release_in_file(
-                release_md_path, version, label="doc/release.md", tag=os.environ.get("GITHUB_REF_NAME")
+                release_md_path, version, label="docs/release.md", tag=os.environ.get("GITHUB_REF_NAME")
             )
         exit(0)
 

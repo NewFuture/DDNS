@@ -105,7 +105,7 @@ jobs:
         run: pip install build
       - run: python3 .github/patch.py version
       - name: Replace url in Readme
-        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+        run: sed -i'' -E 's#([("'\''`])(/docs/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/docs/#\1https://ddns.newfuture.cc/docs/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       

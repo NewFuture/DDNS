@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       # Remote installer from the current repository and commit
-      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/install.sh', github.repository, github.sha) }}
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +63,7 @@ jobs:
     container: ${{ matrix.container }}
     env:
       # Remote installer from the current repository and commit
-      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/install.sh', github.repository, github.sha) }}
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/install.sh', github.repository, github.sha) }}
 
     steps:
       - name: install wget
@@ -73,18 +73,18 @@ jobs:
         run: wget "$RAW_URL" && chmod +x install.sh
 
       - name: Test install script help
-        run: ./install.sh --help
+        run: ./docs/install.sh --help
 
       - name: Test install latest
-        run: ./install.sh
+        run: ./docs/install.sh
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: ./install.sh --uninstall
+        run: ./docs/install.sh --uninstall
 
       - name: Test install beta with language detection (zh_CN)
-        run: LANG=zh_CN.UTF-8 ./install.sh beta
+        run: LANG=zh_CN.UTF-8 ./docs/install.sh beta
       - name: Check DDNS
         run: ddns --version
       - name: Test uninstall
-        run: ./install.sh --uninstall
+        run: ./docs/install.sh --uninstall
