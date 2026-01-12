@@ -15,37 +15,43 @@ const docsDir = join(__dirname, '..'); // docs/ is parent directory
 
 console.log('Setting up documentation structure...\n');
 
-// Copy README as index (Chinese version) to docs/
-const readmeZh = join(rootDir, 'README.md');
-if (existsSync(readmeZh)) {
-  const content = readFileSync(readmeZh, 'utf8');
+// Process README files (both Chinese and English)
+function processReadme(sourcePath, targetPath, pathPrefix) {
+  if (!existsSync(sourcePath)) {
+    return false;
+  }
+  
+  const content = readFileSync(sourcePath, 'utf8');
   // Replace docs/ paths with / for clean web URLs
   const modifiedContent = content
-    .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
-    .replace(/\(docs\//g, '(/')
+    .replace(new RegExp(`\\(${pathPrefix}`, 'g'), '(/')
     .replace(/src="docs\//g, 'src="/')
-    .replace(/\]\(doc\//g, '](/')  // Fix ]( doc/ links
     .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
-  writeFileSync(join(docsDir, 'index.md'), modifiedContent);
+  
+  const targetDir = dirname(targetPath);
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+  
+  writeFileSync(targetPath, modifiedContent);
+  return true;
+}
+
+// Copy README as index (Chinese version) to docs/
+if (processReadme(
+  join(rootDir, 'README.md'),
+  join(docsDir, 'index.md'),
+  'docs/'
+)) {
   console.log('✓ Copied README.md to docs/index.md');
 }
 
 // Copy English README if exists
-const readmeEn = join(rootDir, 'README.en.md');
-if (existsSync(readmeEn)) {
-  const enDir = join(docsDir, 'en');
-  if (!existsSync(enDir)) {
-    mkdirSync(enDir, { recursive: true });
-  }
-  const content = readFileSync(readmeEn, 'utf8');
-  // Replace docs/en/ paths with / for clean web URLs
-  const modifiedContent = content
-    .replace(/\(\.\/doc\//g, '(/') // Fix ./doc/ links
-    .replace(/\(docs\/en\//g, '(/')
-    .replace(/src="docs\//g, 'src="/')
-    .replace(/\]\(doc\//g, '](/')  // Fix ]( doc/ links
-    .replace(/\/providers\/index/g, '/providers/'); // Fix providers/index → providers/
-  writeFileSync(join(enDir, 'index.md'), modifiedContent);
+if (processReadme(
+  join(rootDir, 'README.en.md'),
+  join(docsDir, 'en', 'index.md'),
+  'docs/en/'
+)) {
   console.log('✓ Copied README.en.md to docs/en/index.md');
 }
 
