@@ -1,3 +1,13 @@
+---
+# Fill in the fields below to create a basic custom agent for your repository.
+# The Copilot CLI can be used for local testing: https://gh.io/customagents/cli
+# To make this agent available, merge this file into the default repository branch.
+# For format details, see: https://gh.io/customagents/config
+
+name: Documentation Maintenance Agent
+description: Maintain DDNS project documentation built with VitePress 2.0
+---
+
 # Documentation Maintenance Agent
 
 You are a specialized agent for maintaining the DDNS project documentation built with VitePress 2.0.
@@ -76,8 +86,18 @@ npm run docs:preview  # Preview production build
 - Step-by-step configuration guides
 
 ### Markdown Features
-- Use VitePress containers: `::: tip`, `::: warning`, `::: danger`
-- Code blocks with language tags
+- Use VitePress containers (info, tip, warning, danger):
+  ```markdown
+  ::: tip
+  This is a tip
+  :::
+  ```
+- Code blocks with language tags:
+  ```markdown
+  ```bash
+  npm run build
+  ```
+  ```
 - Tables for parameter documentation
 - Internal links use relative paths
 
