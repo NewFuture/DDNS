@@ -1,4 +1,4 @@
-# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
+# [<img src="docs/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
 
 > 自动更新 DNS 解析到本机 IP 地址，支持 IPv4/IPv6，内网/公网 IP，自动创建 DNS 记录
 
@@ -15,26 +15,26 @@
 
 ### 🚀 多平台支持
 
-- **Docker**: 推荐方式，支持 `amd64`、`arm64`、`arm/v7` 等多架构 ([使用文档](doc/docker.md))
+- **Docker**: 推荐方式，支持 `amd64`、`arm64`、`arm/v7` 等多架构 ([使用文档](docs/docker.md))
 - **二进制文件**: 单文件运行，支持 Windows/Linux/macOS ([下载地址](https://github.com/NewFuture/DDNS/releases/latest))
 - **pip 安装**: `pip install ddns`
 - **源码运行**: 无依赖，仅需 Python 环境
 
 ### ⚙️ 灵活配置
 
-- **命令行参数**: `ddns --dns=dnspod --id=xxx --token=xxx` ([配置文档](doc/config/cli.md))
-- **JSON 配置文件**: 支持多域名、多服务商配置，支持远程URL配置 ([配置文档](doc/config/json.md))
-- **环境变量**: Docker 友好的配置方式 ([配置文档](doc/config/env.md))
+- **命令行参数**: `ddns --dns=dnspod --id=xxx --token=xxx` ([配置文档](docs/config/cli.md))
+- **JSON 配置文件**: 支持多域名、多服务商配置，支持远程URL配置 ([配置文档](docs/config/json.md))
+- **环境变量**: Docker 友好的配置方式 ([配置文档](docs/config/env.md))
 
 ### 🌍 DNS 服务商支持
 
 支持 15+ 主流 DNS 服务商，包括：
 
-- **国内**: [阿里DNS](doc/providers/alidns.md) ⚡、[阿里云ESA](doc/providers/aliesa.md) ⚡、[DNSPOD](doc/providers/dnspod.md)、[腾讯云DNS](doc/providers/tencentcloud.md) ⚡、[腾讯云EdgeOne](doc/providers/edgeone.md) ⚡、[华为云DNS](doc/providers/huaweidns.md) ⚡、[DNS.COM](doc/providers/51dns.md)
-- **国际**: [Cloudflare](doc/providers/cloudflare.md)、[DNSPOD国际版](doc/providers/dnspod_com.md)、[HE.net](doc/providers/he.md)、[NameSilo](doc/providers/namesilo.md)、[No-IP](doc/providers/noip.md)
-- **自定义**: [回调 API](doc/providers/callback.md)、[调试模式](doc/providers/debug.md)
+- **国内**: [阿里DNS](docs/providers/alidns.md) ⚡、[阿里云ESA](docs/providers/aliesa.md) ⚡、[DNSPOD](docs/providers/dnspod.md)、[腾讯云DNS](docs/providers/tencentcloud.md) ⚡、[腾讯云EdgeOne](docs/providers/edgeone.md) ⚡、[华为云DNS](docs/providers/huaweidns.md) ⚡、[DNS.COM](docs/providers/51dns.md)
+- **国际**: [Cloudflare](docs/providers/cloudflare.md)、[DNSPOD国际版](docs/providers/dnspod_com.md)、[HE.net](docs/providers/he.md)、[NameSilo](docs/providers/namesilo.md)、[No-IP](docs/providers/noip.md)
+- **自定义**: [回调 API](docs/providers/callback.md)、[调试模式](docs/providers/debug.md)
 
-> ⚡ 表示支持 HMAC-SHA256 企业级安全认证 | [查看所有服务商](doc/providers/)
+> ⚡ 表示支持 HMAC-SHA256 企业级安全认证 | [查看所有服务商](docs/providers/)
 
 ### 🔧 高级功能
 
@@ -44,7 +44,7 @@
 - 内网/公网 IP 自动检测
 - HTTP 代理和多代理切换
 - 本地缓存减少 API 调用
-- [定时任务](doc/config/cli.md#task-management-定时任务管理)和日志管理
+- [定时任务](docs/config/cli.md#task-management-定时任务管理)和日志管理
 
 ## 使用
 
@@ -56,7 +56,7 @@
 
 - #### Docker（推荐）
 
-  详细说明和高级用法请查看 [Docker 使用文档](/doc/docker.md)
+  详细说明和高级用法请查看 [Docker 使用文档](docs/docker.md)
 
   <details>
   <summary markdown="span">支持命令行，配置文件，和环境变量传参</summary>
@@ -262,7 +262,7 @@ ddns task --enable
 ddns task --disable
 ```
 
-详细配置指南请参考：[命令行参数文档](/doc/config/cli.md#task-management-定时任务管理)
+详细配置指南请参考：[命令行参数文档](docs/config/cli.md#task-management-定时任务管理)
 
 ### Docker
 

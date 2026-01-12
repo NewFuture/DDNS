@@ -1,4 +1,4 @@
-# [<img src="/doc/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="docs/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
 
 > Automatically update DNS records to the current IP address, supporting IPv4 and IPv6, local (private) IP and public IP.
 > Proxy mode supported, with automatic DNS record creation.
@@ -19,10 +19,10 @@
   - [Binary files](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
   
 - **Configuration Methods:**
-  - [Command Line Arguments](/doc/config/cli.en.md)
-  - [JSON Configuration File](/doc/config/json.en.md) (supports single-file multi-provider, multiple config files, and remote URL)
-  - [Environment Variables](/doc/config/env.en.md)
-  - [Provider Configuration Guide](/doc/providers/)
+  - [Command Line Arguments](docs/en/config/cli.md)
+  - [JSON Configuration File](docs/en/config/json.md) (supports single-file multi-provider, multiple config files, and remote URL)
+  - [Environment Variables](docs/en/config/env.md)
+  - [Provider Configuration Guide](docs/en/providers/)
 
 - **Domain Support:**
   - Multiple domain support
@@ -38,19 +38,19 @@
   - HTTP proxy support
   - Automatic multi-proxy switching
 - **DNS Provider Support:**
-  - [DNSPOD China](https://www.dnspod.cn/) ([Configuration Guide](doc/providers/dnspod.en.md))
-  - [Alibaba Cloud DNS](http://www.alidns.com/) ([Configuration Guide](doc/providers/alidns.en.md)) ⚡
-  - [Alibaba Cloud ESA](https://esa.console.aliyun.com/) ([Configuration Guide](doc/providers/aliesa.en.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) ([Configuration Guide](doc/providers/dnscom.en.md)) (@loftor-git)
-  - [DNSPOD International](https://www.dnspod.com/) ([Configuration Guide](doc/providers/dnspod_com.en.md))
-  - [CloudFlare](https://www.cloudflare.com/) ([Configuration Guide](doc/providers/cloudflare.en.md)) (@tongyifan)
-  - [HE.net](https://dns.he.net/) ([Configuration Guide](doc/providers/he.en.md)) (@NN708) (Does not support auto-record creation)
-  - [Huawei Cloud](https://huaweicloud.com/) ([Configuration Guide](doc/providers/huaweidns.en.md)) (@cybmp3) ⚡
-  - [NameSilo](https://www.namesilo.com/) ([Configuration Guide](doc/providers/namesilo.en.md))
-  - [Tencent Cloud DNS](https://cloud.tencent.com/) ([Configuration Guide](doc/providers/tencentcloud.en.md)) ⚡
-  - [Tencent Cloud EdgeOne](https://cloud.tencent.com/product/teo) ([Configuration Guide](doc/providers/edgeone.en.md)) ⚡
-  - [No-IP](https://www.noip.com/) ([Configuration Guide](doc/providers/noip.en.md))
-  - Custom Callback API ([Configuration Guide](doc/providers/callback.en.md))
+  - [DNSPOD China](https://www.dnspod.cn/) ([Configuration Guide](docs/en/providers/dnspod.md))
+  - [Alibaba Cloud DNS](http://www.alidns.com/) ([Configuration Guide](docs/en/providers/alidns.md)) ⚡
+  - [Alibaba Cloud ESA](https://esa.console.aliyun.com/) ([Configuration Guide](docs/en/providers/aliesa.md)) ⚡
+  - [DNS.COM](https://www.dns.com/) ([Configuration Guide](docs/en/providers/dnscom.md)) (@loftor-git)
+  - [DNSPOD International](https://www.dnspod.com/) ([Configuration Guide](docs/en/providers/dnspod_com.md))
+  - [CloudFlare](https://www.cloudflare.com/) ([Configuration Guide](docs/en/providers/cloudflare.md)) (@tongyifan)
+  - [HE.net](https://dns.he.net/) ([Configuration Guide](docs/en/providers/he.md)) (@NN708) (Does not support auto-record creation)
+  - [Huawei Cloud](https://huaweicloud.com/) ([Configuration Guide](docs/en/providers/huaweidns.md)) (@cybmp3) ⚡
+  - [NameSilo](https://www.namesilo.com/) ([Configuration Guide](docs/en/providers/namesilo.md))
+  - [Tencent Cloud DNS](https://cloud.tencent.com/) ([Configuration Guide](docs/en/providers/tencentcloud.md)) ⚡
+  - [Tencent Cloud EdgeOne](https://cloud.tencent.com/product/teo) ([Configuration Guide](docs/en/providers/edgeone.md)) ⚡
+  - [No-IP](https://www.noip.com/) ([Configuration Guide](docs/en/providers/noip.md))
+  - Custom Callback API ([Configuration Guide](docs/en/providers/callback.md))
   
   > ⚡ Providers marked with lightning use advanced HMAC-SHA256 signature authentication for enterprise-level security
 - **Other Features:**
@@ -70,7 +70,7 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
 - #### Docker (Recommended)
 
-  For detailed instructions and advanced usage, see [Docker Usage Documentation](/doc/docker.en.md)
+  For detailed instructions and advanced usage, see [Docker Usage Documentation](docs/en/docker.md)
 
   <details>
   <summary markdown="span">Supports command line, configuration file, and environment variable parameters</summary>
@@ -299,7 +299,7 @@ ddns task --disable
 > - ✅ Supports all DDNS configuration parameters
 > - ✅ Unified command-line interface
 
-For detailed configuration guide, see: [CLI Parameters Documentation](/doc/config/cli.en.md#task-management)
+For detailed configuration guide, see: [CLI Parameters Documentation](docs/en/config/cli.md#task-management)
 
 #### Docker
 

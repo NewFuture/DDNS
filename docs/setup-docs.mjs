@@ -19,10 +19,12 @@ console.log('Setting up documentation structure...\n');
 const readmeZh = join(rootDir, 'README.md');
 if (existsSync(readmeZh)) {
   const content = readFileSync(readmeZh, 'utf8');
-  // Replace /doc/ paths with / in README for clean URLs
+  // Replace /doc/ paths with docs/ for correct GitHub links, and then with / for clean web URLs
   const modifiedContent = content
-    .replace(/\(\/doc\//g, '(/')
-    .replace(/src="\/doc\//g, 'src="/');
+    .replace(/\(\/doc\//g, '(/docs/')
+    .replace(/src="\/doc\//g, 'src="/docs/')
+    .replace(/\(\/docs\//g, '(/')
+    .replace(/src="\/docs\//g, 'src="/');
   writeFileSync(join(docsDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.md to docs/index.md');
 }
@@ -35,10 +37,12 @@ if (existsSync(readmeEn)) {
     mkdirSync(enDir, { recursive: true });
   }
   const content = readFileSync(readmeEn, 'utf8');
-  // Replace /doc/ paths with / in README for clean URLs
+  // Replace /doc/ paths with docs/ for correct GitHub links, and then with / for clean web URLs
   const modifiedContent = content
-    .replace(/\(\/doc\//g, '(/')
-    .replace(/src="\/doc\//g, 'src="/');
+    .replace(/\(\/doc\//g, '(/docs/')
+    .replace(/src="\/doc\//g, 'src="/docs/')
+    .replace(/\(\/docs\//g, '(/')
+    .replace(/src="\/docs\//g, 'src="/');
   writeFileSync(join(enDir, 'index.md'), modifiedContent);
   console.log('✓ Copied README.en.md to docs/en/index.md');
 }
