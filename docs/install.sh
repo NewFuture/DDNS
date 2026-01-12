@@ -322,37 +322,35 @@ install_binary() {
         versions="$VERSION latest"
     fi
 
-    # Use positional parameters as a simple list container (POSIX sh has no arrays)
-    set --
+    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
+    print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
+
+    success=false
     for version_candidate in $versions; do
-        set -- "$@" "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE"
+        # Build URL list for this version (POSIX sh friendly)
         if [ "$version_candidate" = "latest" ]; then
             github_path="releases/latest/download/$BINARY_FILE"
         else
             github_path="releases/download/$version_candidate/$BINARY_FILE"
         fi
-        set -- "$@" "${PROXY_URL}https://github.com/$REPO/$github_path"
+        set -- "https://ddns.newfuture.cc/release/$version_candidate/$BINARY_FILE" "${PROXY_URL}https://github.com/$REPO/$github_path"
         if [ -n "$PROXY_URL" ]; then
             set -- "$@" "https://github.com/$REPO/$github_path"
         fi
-    done
 
-    temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
-    print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
-
-    success=false
-    for download_url in "$@"; do
-        msg_en="Trying URL: $download_url"
-        msg_zh="尝试下载: $download_url"
-        print_info "$msg_en" "$msg_zh"
-        if download_file "$download_url" "$temp_file"; then
-            success=true
-            used_version="$version_candidate"
-            break
-        fi
-        msg_en="Download failed, trying next source..."
-        msg_zh="下载失败，尝试下一个源..."
-        print_warning "$msg_en" "$msg_zh"
+        for download_url in "$@"; do
+            msg_en="Trying URL: $download_url"
+            msg_zh="尝试下载: $download_url"
+            print_info "$msg_en" "$msg_zh"
+            if download_file "$download_url" "$temp_file"; then
+                success=true
+                used_version="$version_candidate"
+                break 2
+            fi
+            msg_en="Download failed, trying next source..."
+            msg_zh="下载失败，尝试下一个源..."
+            print_warning "$msg_en" "$msg_zh"
+        done
     done
 
     if [ "$success" = "true" ] && [ "$VERSION" = "beta" ] && [ "$used_version" != "beta" ]; then
