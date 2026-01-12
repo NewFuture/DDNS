@@ -4,11 +4,10 @@
   "description": "DDNS Documentation Website",
   "type": "module",
   "scripts": {
-    "setup": "node .vitepress/setup-docs.mjs",
-    "docs:dev": "npm run setup && vitepress dev .",
+    "docs:dev": "vitepress dev .",
     "docs:build": "vitepress build .",
     "docs:preview": "vitepress preview .",
-    "build": "npm run setup && npm run docs:build"
+    "build": "vitepress build ."
   },
   "devDependencies": {
     "vitepress": "2.0.0-alpha.15"

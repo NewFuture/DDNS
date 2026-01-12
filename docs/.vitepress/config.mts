@@ -1,6 +1,70 @@
 import { defineConfig } from 'vitepress'
 import * as fs from 'fs'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Setup documentation structure before VitePress processes files
+function setupDocs() {
+  const rootDir = path.resolve(__dirname, '../..')
+  const docsDir = path.resolve(__dirname, '..')
+  
+  console.log('Setting up documentation structure...\n')
+  
+  // Process README files
+  const processReadme = (sourcePath, targetPath, pathPrefix) => {
+    if (!fs.existsSync(sourcePath)) return false
+    
+    const content = fs.readFileSync(sourcePath, 'utf8')
+    const modifiedContent = content
+      .replace(new RegExp(`\\(${pathPrefix}`, 'g'), '(/')
+      .replace(/src="docs\//g, 'src="/')
+    
+    const targetDir = path.dirname(targetPath)
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true })
+    }
+    
+    fs.writeFileSync(targetPath, modifiedContent)
+    return true
+  }
+  
+  // Copy README.md as docs/index.md (Chinese)
+  if (processReadme(
+    path.join(rootDir, 'README.md'),
+    path.join(docsDir, 'index.md'),
+    'docs/'
+  )) {
+    console.log('✓ Copied README.md to docs/index.md')
+  }
+  
+  // Copy README.en.md as docs/en/index.md (English)
+  if (processReadme(
+    path.join(rootDir, 'README.en.md'),
+    path.join(docsDir, 'en', 'index.md'),
+    'docs/en/'
+  )) {
+    console.log('✓ Copied README.en.md to docs/en/index.md')
+  }
+  
+  // Copy schema directory to docs/public/schema
+  const schemaDir = path.join(rootDir, 'schema')
+  const publicDir = path.join(docsDir, 'public')
+  if (fs.existsSync(schemaDir)) {
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true })
+    }
+    const targetSchemaDir = path.join(publicDir, 'schema')
+    fs.cpSync(schemaDir, targetSchemaDir, { recursive: true, force: true })
+    console.log('✓ Copied schema/ to docs/public directory')
+  }
+  
+  console.log('\nDocumentation structure setup complete!\n')
+}
+
+// Run setup before exporting config
+setupDocs()
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
