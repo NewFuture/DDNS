@@ -2,9 +2,9 @@
 title: DDNS JSON Configuration
 post_tile: JSON File Configuration
 header_pages:
-  - /README.en.md
-  - /doc/config/
-  - /docs/proivders/README.en.md
+  - /
+  - /config/
+  - /docs/proivders/
 ---
 # DDNS JSON Configuration File Reference
 
@@ -18,7 +18,7 @@ By default, DDNS looks for a `config.json` file in the current directory. You ca
 * Current user directory `~/.ddns/config.json`
 * Linux system directory `/etc/ddns/config.json`
 
-> Note: When using configuration files in Docker, you need to mount the configuration file to the container's `/ddns/` directory through volume mapping. For details, please refer to the [Docker documentation](docker.en.md).
+> Note: When using configuration files in Docker, you need to mount the configuration file to the container's `/ddns/` directory through volume mapping. For details, please refer to the [Docker documentation](docker.md).
 
 ```bash
 # Generate configuration file
@@ -73,7 +73,7 @@ Configuration Parameters Table
 
 ### dns
 
-The `dns` parameter specifies the DNS provider identifier. For supported values, please refer to the [Provider List](providers/README.en.md):
+The `dns` parameter specifies the DNS provider identifier. For supported values, please refer to the [Provider List](providers/):
 
 > When in debug mode and no dns parameter is configured, the debug provider is used.
 

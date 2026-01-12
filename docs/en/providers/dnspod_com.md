@@ -65,16 +65,16 @@ Uses DNSPod account email and password. Lower security, only recommended for spe
 | dns | Provider identifier | String | `dnspod_com` | None | Provider Parameter |
 | id | Authentication ID | String | DNSPod API Token ID or email | None | Provider Parameter |
 | token | Authentication key | String | DNSPod API Token secret or password | None | Provider Parameter |
-| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
-| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
+| index4 | IPv4 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
 | line | Resolution line | String | [Reference below](#line) | `default` | Provider Parameter |
 | ttl | TTL time | Integer (seconds) | [Reference below](#ttl) | `600` | Provider Parameter |
-| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
+| proxy | Proxy settings | Array | [Reference](../config/json.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
-| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Config |
+| log | Log configuration | Object | [Reference](../config/json.md#log) | None | Common Config |
 
 > **Parameter Type Description**:
 >
@@ -136,6 +136,6 @@ ddns -c config.json --debug
 - [DNSPod International Product Documentation](https://www.dnspod.com/docs/)
 - [DNSPod International API Reference](https://www.dnspod.com/docs/index.html)
 - [DNSPod International Console](https://www.dnspod.com/)
-- [DNSPod China Configuration Guide](./dnspod.en.md)
+- [DNSPod China Configuration Guide](./dnspod.md)
 
-> **Recommendation**: Use API Token method to improve security and management convenience, avoid using email/password method. For mainland China users, it is recommended to use [DNSPod China version](./dnspod.en.md).
+> **Recommendation**: Use API Token method to improve security and management convenience, avoid using email/password method. For mainland China users, it is recommended to use [DNSPod China version](./dnspod.md).

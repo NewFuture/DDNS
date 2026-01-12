@@ -68,17 +68,17 @@ The simplest and quickest way to obtain keys
 | dns | Provider identifier | String | `tencentcloud` | None | Provider Parameter |
 | id | Authentication ID | String | TencentCloud SecretId | None | Provider Parameter |
 | token | Authentication key | String | TencentCloud SecretKey | None | Provider Parameter |
-| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Configuration |
-| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Configuration |
+| index4 | IPv4 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Configuration |
+| index6 | IPv6 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Configuration |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Configuration |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Configuration |
 | endpoint | API endpoint | URL | [See below](#endpoint) | `https://dnspod.tencentcloudapi.com` | Provider Parameter |
 | line | Resolution line | String | [See below](#line) | `默认` | Provider Parameter |
 | ttl | TTL time | Integer (seconds) | [See below](#ttl) | `600` | Provider Parameter |
-| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
+| proxy | Proxy settings | Array | [Reference](../config/json.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Configuration |
-| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Configuration |
+| log | Log configuration | Object | [Reference](../config/json.md#log) | None | Common Configuration |
 
 > **Parameter Type Description**:  
 >

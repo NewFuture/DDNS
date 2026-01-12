@@ -1,5 +1,5 @@
 ---
-redirect_to: /doc/providers/51dns.html
+redirect_to: /providers/51dns.html
 ---
 
 # DNS.COM 配置指南

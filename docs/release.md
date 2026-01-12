@@ -1,6 +1,6 @@
 # DDNS Release Information
 
-[<img src="https://ddns.newfuture.cc/doc/img/ddns.svg" height="32px"/>](https://ddns.newfuture.cc)[![Github Release](https://img.shields.io/github/v/release/newfuture/ddns?style=for-the-badge&logo=github&label=DDNS)](https://github.com/NewFuture/DDNS/releases/latest)[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/latest?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns/tags?name=latest)[![PyPI version](https://img.shields.io/pypi/v/ddns?logo=python&style=for-the-badge)](https://pypi.org/project/ddns)
+[<img src="https://ddns.newfuture.cc/img/ddns.svg" height="32px"/>](https://ddns.newfuture.cc)[![Github Release](https://img.shields.io/github/v/release/newfuture/ddns?style=for-the-badge&logo=github&label=DDNS)](https://github.com/NewFuture/DDNS/releases/latest)[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns/latest?label=Docker&logo=docker&style=for-the-badge)](https://hub.docker.com/r/newfuture/ddns/tags?name=latest)[![PyPI version](https://img.shields.io/pypi/v/ddns?logo=python&style=for-the-badge)](https://pypi.org/project/ddns)
 
 ## 各版本一览表 | Download Methods Overview
 

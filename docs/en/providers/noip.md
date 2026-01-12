@@ -71,14 +71,14 @@ Use No-IP account username and password for authentication, which is the simples
 | dns       | Provider ID      | String         | `noip`                                 | None                          | Provider Param |
 | id        | Authentication ID| String         | No-IP username or DDNS ID              | None                          | Provider Param |
 | token     | Authentication Key| String        | No-IP password or DDNS KEY             | None                          | Provider Param |
-| index4    | IPv4 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default`                     | Common Config  |
-| index6    | IPv6 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default`                     | Common Config  |
+| index4    | IPv4 Source      | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default`                     | Common Config  |
+| index6    | IPv6 Source      | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default`                     | Common Config  |
 | ipv4      | IPv4 Domain      | Array          | Domain list                            | `all.ddnskey.com`             | Common Config  |
 | ipv6      | IPv6 Domain      | Array          | Domain list                            | `all.ddnskey.com`             | Common Config  |
-| proxy     | Proxy Settings   | Array          | [Reference](../config/json.en.md#proxy)      | None                          | Common Network |
+| proxy     | Proxy Settings   | Array          | [Reference](../config/json.md#proxy)      | None                          | Common Network |
 | ssl       | SSL Verification | Boolean/String | `"auto"`, `true`, `false`              | `auto`                        | Common Network |
 | cache     | Cache Settings   | Boolean/String | `true`, `false`, `filepath`            | `true`                        | Common Config  |
-| log       | Log Config       | Object         | [Reference](../config/json.en.md#log)        | None                          | Common Config  |
+| log       | Log Config       | Object         | [Reference](../config/json.md#log)        | None                          | Common Config  |
 
 > **Parameter Type Description**:
 >

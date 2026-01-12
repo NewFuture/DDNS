@@ -4,7 +4,7 @@
 
 Tencent Cloud EdgeOne is an edge computing and acceleration service provided by Tencent Cloud, supporting dynamic management of acceleration domain origin server IP addresses. This DDNS project dynamically updates origin server IP addresses of acceleration domains through the EdgeOne API.
 
-> **Note**: This provider is for managing EdgeOne acceleration domains. For managing regular DNS records of non-accelerated domains, please use the [EdgeOne DNS Provider](./edgeone_dns.en.md).
+> **Note**: This provider is for managing EdgeOne acceleration domains. For managing regular DNS records of non-accelerated domains, please use the [EdgeOne DNS Provider](./edgeone_dns.md).
 
 Official Links:
 
@@ -18,7 +18,7 @@ Official Links:
 
 Uses Tencent Cloud SecretId and SecretKey for authentication, same as Tencent Cloud DNS.
 
-> Same as [Tencent Cloud DNS](tencentcloud.en.md), EdgeOne uses SecretId and SecretKey for authentication. However, the permission requirements are different, and you need to ensure that the account has EdgeOne operation permissions.
+> Same as [Tencent Cloud DNS](tencentcloud.md), EdgeOne uses SecretId and SecretKey for authentication. However, the permission requirements are different, and you need to ensure that the account has EdgeOne operation permissions.
 
 #### Getting Authentication Information
 
@@ -90,7 +90,7 @@ The EdgeOne provider supports flexible switching between acceleration domains an
 > **Note**:
 >
 > - `teoDomainType` parameter is case-insensitive (`dns`, `DNS`, `Dns` are all valid)
-> - It is recommended to use the dedicated [EdgeOne DNS Provider](./edgeone_dns.en.md) for cleaner and clearer code
+> - It is recommended to use the dedicated [EdgeOne DNS Provider](./edgeone_dns.md) for cleaner and clearer code
 
 ### Parameter Description
 
@@ -100,16 +100,16 @@ The EdgeOne provider supports flexible switching between acceleration domains an
 | id             | Authentication ID | String         | Tencent Cloud SecretId                 | None      | Provider       |
 | token          | Authentication Key| String         | Tencent Cloud SecretKey                | None      | Provider       |
 | teoDomainType  | Domain Type       | String         | `acceleration`, `dns`                  | `acceleration` | Provider  |
-| index4         | IPv4 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
-| index6         | IPv6 Source       | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default` | Common Config  |
+| index4         | IPv4 Source       | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default` | Common Config  |
+| index6         | IPv6 Source       | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default` | Common Config  |
 | ipv4           | IPv4 Domains      | Array          | Domain list                            | None      | Common Config  |
 | ipv6           | IPv6 Domains      | Array          | Domain list                            | None      | Common Config  |
 | extra          | Extra Parameters  | Object         | `{"teoDomainType": "dns"}` etc.        | None      | Provider       |
 | endpoint       | API Endpoint      | URL            | [Reference below](#endpoint)           | `https://teo.tencentcloudapi.com` | Provider  |
-| proxy          | Proxy Settings    | Array          | [Reference](../config/json.en.md#proxy)       | None      | Common Network |
+| proxy          | Proxy Settings    | Array          | [Reference](../config/json.md#proxy)       | None      | Common Network |
 | ssl            | SSL Verification  | Boolean/String | `"auto"`, `true`, `false`              | `auto`    | Common Network |
 | cache          | Cache Settings    | Boolean/String | `true`, `false`, `filepath`            | `true`    | Common Config  |
-| log            | Log Configuration | Object         | [Reference](../config/json.en.md#log)        | None      | Common Config  |
+| log            | Log Configuration | Object         | [Reference](../config/json.md#log)        | None      | Common Config  |
 
 > **Parameter Type Description**:  
 >
@@ -157,4 +157,4 @@ ddns -c config.json --debug
 - [EdgeOne Console](https://console.cloud.tencent.com/edgeone)
 - [Tencent Cloud Technical Support](https://cloud.tencent.com/document/product/282)
 
-> **Note**: EdgeOne is primarily designed for edge acceleration scenarios. For traditional DNS resolution services, consider using [Tencent Cloud DNS](./tencentcloud.en.md). For managing DNS records of non-accelerated domains hosted in EdgeOne, please use the [EdgeOne DNS Provider](./edgeone_dns.en.md).
+> **Note**: EdgeOne is primarily designed for edge acceleration scenarios. For traditional DNS resolution services, consider using [Tencent Cloud DNS](./tencentcloud.md). For managing DNS records of non-accelerated domains hosted in EdgeOne, please use the [EdgeOne DNS Provider](./edgeone_dns.md).

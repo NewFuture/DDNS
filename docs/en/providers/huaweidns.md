@@ -67,17 +67,17 @@ You can view and configure permissions in [Identity and Access Management](https
 | dns       | Provider ID      | String         | `huaweidns`                            | None                           | Provider Param |
 | id        | Authentication ID| String         | Huawei Cloud Access Key ID             | None                           | Provider Param |
 | token     | Authentication Key| String        | Huawei Cloud Secret Access Key         | None                           | Provider Param |
-| index4    | IPv4 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default`                      | Common Config  |
-| index6    | IPv6 Source      | Array          | [Reference](../config/json.en.md#ipv4-ipv6)  | `default`                      | Common Config  |
+| index4    | IPv4 Source      | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default`                      | Common Config  |
+| index6    | IPv6 Source      | Array          | [Reference](../config/json.md#ipv4-ipv6)  | `default`                      | Common Config  |
 | ipv4      | IPv4 Domain      | Array          | Domain list                            | None                           | Common Config  |
 | ipv6      | IPv6 Domain      | Array          | Domain list                            | None                           | Common Config  |
 | endpoint  | API Endpoint     | URL            | [Reference below](#endpoint)           | `https://dns.myhuaweicloud.com`| Provider Param |
 | line      | Resolution Line  | String         | [Reference below](#line)               | `default`                      | Provider Param |
 | ttl       | TTL Time         | Integer (seconds)| 1~2147483647                         | `300`                          | Provider Param |
-| proxy     | Proxy Settings   | Array          | [Reference](../config/json.en.md#proxy)      | None                           | Common Network |
+| proxy     | Proxy Settings   | Array          | [Reference](../config/json.md#proxy)      | None                           | Common Network |
 | ssl       | SSL Verification | Boolean/String | `"auto"`, `true`, `false`              | `auto`                         | Common Network |
 | cache     | Cache Settings   | Boolean/String | `true`, `false`, `filepath`            | `true`                         | Common Config  |
-| log       | Log Config       | Object         | [Reference](../config/json.en.md#log)        | None                           | Common Config  |
+| log       | Log Config       | Object         | [Reference](../config/json.md#log)        | None                           | Common Config  |
 
 > **Parameter Type Description**:
 >

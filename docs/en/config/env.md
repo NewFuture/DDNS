@@ -2,7 +2,7 @@
 
 ## Overview
 
-DDNS supports configuration through environment variables with the following priority order: **[Command Line Arguments](cli.en.md) > [Configuration File](json.en.md) > Environment Variables**
+DDNS supports configuration through environment variables with the following priority order: **[Command Line Arguments](cli.md) > [Configuration File](json.md) > Environment Variables**
 
 All environment variables use the `DDNS_` prefix followed by the parameter name (recommended uppercase).
 
@@ -14,7 +14,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | Environment Variable     | Accepted Values                                                                                     | Description                              | Example                                                     |
 |--------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------|-------------------------------------------------------------|
 | `DDNS_CONFIG`            | File path, supports comma or semicolon-separated multiple paths, supports remote HTTP(S) URLs                                    | Specify config file path, supports multiple files and remote configs | `DDNS_CONFIG="config.json"` or `DDNS_CONFIG="cloudflare.json,dnspod.json"` <br> `DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"` |
-| `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/README.en.md)    | `DDNS_DNS=cloudflare`                                       |
+| `DDNS_DNS`               | `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `he`, `huaweidns`, `noip`, `tencentcloud` | [DNS Provider](./providers/)    | `DDNS_DNS=cloudflare`                                       |
 | `DDNS_ID`                | Depends on the provider                                                                              | API account or ID                        | `DDNS_ID="user@example.com"`                                |
 | `DDNS_TOKEN`             | Depends on the provider                                                                              | API token or secret                      | `DDNS_TOKEN="abcdef123456"`                                 |
 | `DDNS_ENDPOINT`          | URL (starting with http or https)                                                                   | Custom API endpoint                       | `DDNS_ENDPOINT=https://api.dns.cn`                          |
@@ -146,7 +146,7 @@ When using `DDNS_DNS="callback"`, configure custom callbacks with these environm
 - **DDNS_ID**: Callback URL address with variable substitution support
 - **DDNS_TOKEN**: POST request parameters (JSON string), empty for GET requests
 
-For detailed configuration, see: [Callback Provider Configuration Documentation](providers/callback.en.md)
+For detailed configuration, see: [Callback Provider Configuration Documentation](providers/callback.md)
 
 **Examples**:
 
@@ -605,7 +605,7 @@ When using environment variables, DDNS will validate the configuration and provi
 
 ## See Also
 
-- [Command Line Arguments](cli.en.md)
-- [JSON Configuration File](json.en.md)
-- [Docker Usage](docker.en.md)
+- [Command Line Arguments](cli.md)
+- [JSON Configuration File](json.md)
+- [Docker Usage](docker.md)
 - [Provider-specific Configuration](providers/)

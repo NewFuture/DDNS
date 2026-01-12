@@ -66,7 +66,7 @@ ddns --ipv4=example.com,www.example.com
 | `-c, --config`  | String List | Specify configuration file path, supports multiple config files and remote HTTP(S) URLs                                                                                              | `--config config.json` or `--config config1.json --config config2.json` <br> `--config https://ddns.newfuture.cc/tests/config/debug.json`                                   |
 | `--new-config`  | Flag/String | Generate a new config file (optional file path)                                                                                                                           | `--new-config` <br> `--new-config=config.json`           |
 | `--debug`       |     Flag    | Enable debug mode                                                                                                                                                         | `--debug`                                                |
-| `--dns`         |    Choice   | [DNS Providers](../providers/README.en.md) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
+| `--dns`         |    Choice   | [DNS Providers](../providers/) include:<br>51dns, alidns, aliesa, callback, cloudflare,<br>debug, dnscom, dnspod\_com, dnspod, edgeone, he,<br>huaweidns, noip, tencentcloud | `--dns cloudflare`                                       |
 | `--endpoint`    |    String   | Custom API endpoint URL (useful for self-hosted services)                                                                                                                 | `--endpoint https://api.private.com`                     |
 | `--id`          |    String   | API Access ID, email, or Access Key                                                                                                                                       | `--id user@example.com`                                  |
 | `--token`       |    String   | API token or secret key                                                                                                                                                   | `--token abcdef123456`                                   |
@@ -500,7 +500,7 @@ This means command line arguments will override any settings in configuration fi
 
 ## See Also
 
-- [Environment Variables Configuration](env.en.md)
-- [JSON Configuration File](json.en.md)
-- [Docker Usage](../docker.en.md)
+- [Environment Variables Configuration](env.md)
+- [JSON Configuration File](json.md)
+- [Docker Usage](../docker.md)
 - [Provider-specific Configuration](../providers/)

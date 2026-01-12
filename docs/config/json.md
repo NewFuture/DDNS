@@ -68,7 +68,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ### dns
 
-`dns`参数指定使用的DNS服务商标识，支持以下值, 请参考 [服务商列表](providers/README.md):
+`dns`参数指定使用的DNS服务商标识，支持以下值, 请参考 [服务商列表](providers/):
 
 > 当 debug 模式，且未配置dns参数时,使用 debug provider。
 

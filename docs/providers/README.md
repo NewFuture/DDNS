@@ -6,21 +6,21 @@
 
 | Provider | 服务商 | 配置文档 | 英文文档 | 特点 |
 |----------|--------|----------|----------|------|
-| `alidns` | [阿里云DNS](https://dns.console.aliyun.com/) | [alidns 中文文档](alidns.md) | [alidns English Doc](alidns.en.md) | 阿里云生态集成 |
-| `aliesa` | [阿里云ESA](https://esa.console.aliyun.com/) | [aliesa 中文文档](aliesa.md) | [aliesa English Doc](aliesa.en.md) | 阿里云边缘安全加速 |
-| `callback` | 自定义API (Webhook) | [callback 中文文档](callback.md) | [callback English Doc](callback.en.md) | 自定义HTTP API |
-| `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](cloudflare.md) | [cloudflare English Doc](cloudflare.en.md) | 全球CDN和DNS服务 |
-| `debug` | 调试Provider | [debug 中文文档](debug.md) | [debug English Doc](debug.en.md) | 仅打印IP地址，用于调试|
-| `dnscom`(51dns) | [51DNS](https://www.51dns.com/) | [51dns 中文文档](51dns.md) | [51dns English Doc](51dns.en.md) | ⚠️ 等待验证  |
-| `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](dnspod_com.md) | [dnspod_com English Doc](dnspod_com.en.md) | ⚠️ 等待验证  |
-| `dnspod` | [DNSPod 中国版](https://www.dnspod.cn/) | [dnspod 中文文档](dnspod.md) | [dnspod English Doc](dnspod.en.md) | 国内最大DNS服务商|
-| `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](he.en.md) | ⚠️ 等待验证，不支持自动创建记录 |
-| `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns 中文文档](huaweidns.md) | [huaweidns English Doc](huaweidns.en.md) | ⚠️ 等待验证 |
-| `namesilo` | [NameSilo](https://www.namesilo.com/) | [namesilo 中文文档](namesilo.md) | [namesilo English Doc](namesilo.en.md) | ⚠️ 等待验证 |
-| `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](noip.en.md) | 不支持自动创建记录 |
-| `tencentcloud` | [腾讯云DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](tencentcloud.en.md) | 腾讯云DNSPod服务 |
-| `edgeone` | [腾讯云EdgeOne](https://cloud.tencent.com/product/teo) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](edgeone.en.md) | 腾讯云边缘安全加速平台（加速域名） |
-| `edgeone_dns` | [腾讯云EdgeOne DNS](https://cloud.tencent.com/product/teo) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](edgeone_dns.en.md) | 腾讯云EdgeOne DNS记录管理 |
+| `alidns` | [阿里云DNS](https://dns.console.aliyun.com/) | [alidns 中文文档](alidns.md) | [alidns English Doc](../en/providers/alidns.md) | 阿里云生态集成 |
+| `aliesa` | [阿里云ESA](https://esa.console.aliyun.com/) | [aliesa 中文文档](aliesa.md) | [aliesa English Doc](../en/providers/aliesa.md) | 阿里云边缘安全加速 |
+| `callback` | 自定义API (Webhook) | [callback 中文文档](callback.md) | [callback English Doc](../en/providers/callback.md) | 自定义HTTP API |
+| `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](cloudflare.md) | [cloudflare English Doc](../en/providers/cloudflare.md) | 全球CDN和DNS服务 |
+| `debug` | 调试Provider | [debug 中文文档](debug.md) | [debug English Doc](../en/providers/debug.md) | 仅打印IP地址，用于调试|
+| `dnscom`(51dns) | [51DNS](https://www.51dns.com/) | [51dns 中文文档](51dns.md) | [51dns English Doc](../en/providers/51dns.md) | ⚠️ 等待验证  |
+| `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](dnspod_com.md) | [dnspod_com English Doc](../en/providers/dnspod_com.md) | ⚠️ 等待验证  |
+| `dnspod` | [DNSPod 中国版](https://www.dnspod.cn/) | [dnspod 中文文档](dnspod.md) | [dnspod English Doc](../en/providers/dnspod.md) | 国内最大DNS服务商|
+| `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](../en/providers/he.md) | ⚠️ 等待验证，不支持自动创建记录 |
+| `huaweidns` | [华为云 DNS](https://www.huaweicloud.com/product/dns.html) | [huaweidns 中文文档](huaweidns.md) | [huaweidns English Doc](../en/providers/huaweidns.md) | ⚠️ 等待验证 |
+| `namesilo` | [NameSilo](https://www.namesilo.com/) | [namesilo 中文文档](namesilo.md) | [namesilo English Doc](../en/providers/namesilo.md) | ⚠️ 等待验证 |
+| `noip` | [No-IP](https://www.noip.com/) | [noip 中文文档](noip.md) | [noip English Doc](../en/providers/noip.md) | 不支持自动创建记录 |
+| `tencentcloud` | [腾讯云DNSPod](https://cloud.tencent.com/product/dns) | [tencentcloud 中文文档](tencentcloud.md) | [tencentcloud English Doc](../en/providers/tencentcloud.md) | 腾讯云DNSPod服务 |
+| `edgeone` | [腾讯云EdgeOne](https://cloud.tencent.com/product/teo) | [edgeone 中文文档](edgeone.md) | [edgeone English Doc](../en/providers/edgeone.md) | 腾讯云边缘安全加速平台（加速域名） |
+| `edgeone_dns` | [腾讯云EdgeOne DNS](https://cloud.tencent.com/product/teo) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](../en/providers/edgeone_dns.md) | 腾讯云EdgeOne DNS记录管理 |
 
 > 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
 

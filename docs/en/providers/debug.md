@@ -7,7 +7,7 @@ Debug Provider is a virtual DNS provider specifically designed for debugging and
 Official Links:
 
 - Project Homepage: [DDNS Project](https://github.com/NewFuture/DDNS)
-- Development Documentation: [Provider Development Guide](../dev/provider.en.md)
+- Development Documentation: [Provider Development Guide](../dev/provider.md)
 
 ### Important Notice
 
@@ -47,12 +47,12 @@ Debug Provider does not require any authentication information, no need to confi
 | Parameter | Description | Type | Range/Options | Default | Parameter Type |
 | :-------: | :---------- | :--- | :------------ | :------ | :------------- |
 | dns | Provider identifier | String | `debug` | None | Provider Parameter |
-| index4 | IPv4 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
-| index6 | IPv6 source | Array | [Reference](../config/json.en.md#ipv4-ipv6) | `default` | Common Config |
-| proxy | Proxy settings | Array | [Reference](../config/json.en.md#proxy) | None | Common Network |
+| index4 | IPv4 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
+| index6 | IPv6 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
+| proxy | Proxy settings | Array | [Reference](../config/json.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `false` | Common Config |
-| log | Log configuration | Object | [Reference](../config/json.en.md#log) | None | Common Config |
+| log | Log configuration | Object | [Reference](../config/json.md#log) | None | Common Config |
 
 > **Parameter Type Description**:
 >
@@ -92,6 +92,6 @@ Debug Provider also simulates some common error scenarios to help test error han
 ## Support and Resources
 
 - [DDNS Project Documentation](../../README.md)
-- [Configuration File Format](../config/json.en.md)
-- [Command Line Usage Guide](../config/cli.en.md)
-- [Developer Guide](../dev/provider.en.md)
+- [Configuration File Format](../config/json.md)
+- [Command Line Usage Guide](../config/cli.md)
+- [Developer Guide](../dev/provider.md)
