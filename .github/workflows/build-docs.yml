@@ -30,7 +30,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: 'doc/package-lock.json'
         
@@ -47,7 +47,7 @@ jobs:
       with:
         name: docs-dist
         path: doc/.vitepress/dist/
-        retention-days: 30
+        retention-days: 7
         
     - name: Deploy to GitHub Pages (on push to main/master)
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
