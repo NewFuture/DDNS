@@ -165,17 +165,22 @@ async function handleRequest(request) {
   const path = url.pathname;
 
   // Handle redirects for old /doc/ URLs
-  // Redirect /doc/xxx to /xxx
-  if (path.startsWith('/doc/')) {
-    const newPath = path.replace('/doc/', '/');
-    return Response.redirect(url.origin + newPath + url.search + url.hash, 301);
+  // Redirect /index.en.html to /en/
+  if (path === '/index.en.html') {
+    return Response.redirect(url.origin + '/en/' + url.search + url.hash, 301);
   }
   
-  // Redirect /doc/xxx.en.html to /en/xxx.html
+  // Redirect /doc/xxx.en.html to /en/xxx.html (must be before /doc/ redirect)
   const enHtmlMatch = path.match(/^\/doc\/(.+)\.en\.html$/);
   if (enHtmlMatch) {
     const pagePath = enHtmlMatch[1];
     return Response.redirect(url.origin + `/en/${pagePath}.html` + url.search + url.hash, 301);
+  }
+  
+  // Redirect /doc/xxx to /xxx
+  if (path.startsWith('/doc/')) {
+    const newPath = path.replace('/doc/', '/');
+    return Response.redirect(url.origin + newPath + url.search + url.hash, 301);
   }
 
   // 解析请求路径 (Parse the request path)

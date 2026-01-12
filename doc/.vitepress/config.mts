@@ -36,7 +36,7 @@ export default defineConfig({
       {
         text: 'DNS服务商',
         items: [
-          { text: '概述', link: '/providers/README' },
+          { text: '概述', link: '/providers/' },
           { text: '阿里DNS', link: '/providers/alidns' },
           { text: 'DNSPod', link: '/providers/dnspod' },
           { text: 'Cloudflare', link: '/providers/cloudflare' }
@@ -192,6 +192,37 @@ export default defineConfig({
     theme: {
       light: 'github-light',
       dark: 'github-dark'
+    },
+    config: (md) => {
+      // Transform code links like /ddns/provider/dnspod.py to GitHub links
+      md.core.ruler.after('inline', 'transform-code-links', (state) => {
+        const tokens = state.tokens;
+        for (let i = 0; i < tokens.length; i++) {
+          if (tokens[i].type === 'inline' && tokens[i].children) {
+            const children = tokens[i].children;
+            for (let j = 0; j < children.length; j++) {
+              if (children[j].type === 'code_inline') {
+                const content = children[j].content;
+                // Match paths like /ddns/xxx.py or /ddns/xxx/yyy.py
+                if (content.match(/^\/ddns\/[a-zA-Z0-9_/.-]+\.(py|md|json|sh|txt)$/)) {
+                  // Convert to link token
+                  const linkToken = new state.Token('link_open', 'a', 1);
+                  linkToken.attrs = [['href', `https://github.com/NewFuture/DDNS/blob/master${content}`], ['target', '_blank']];
+                  
+                  const textToken = new state.Token('text', '', 0);
+                  textToken.content = content;
+                  
+                  const closeLinkToken = new state.Token('link_close', 'a', -1);
+                  
+                  // Replace code token with link tokens
+                  children.splice(j, 1, linkToken, textToken, closeLinkToken);
+                  j += 2; // Skip the newly added tokens
+                }
+              }
+            }
+          }
+        }
+      });
     }
   },
 
