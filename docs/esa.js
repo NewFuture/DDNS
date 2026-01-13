@@ -197,22 +197,22 @@ async function handleRequest(request) {
   // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
   if (path !== '/404.html') {
     // 缓存key使用HTTP协议 (Cache key uses HTTP protocol)
-    const notFoundUrl = new URL('/404.html', url.origin);
-    const cacheKey = notFoundUrl.toString().replace('https://', 'http://');
+    const notFoundUrl = 'http://ddns.newfuture.cc/404.html';
     
     // 尝试从缓存获取 (Try to get from cache first)
-    const cachedResponse = await cache.get(cacheKey);
+    const cachedResponse = await cache.get(notFoundUrl);
     if (cachedResponse) {
       return cachedResponse;
     }
     
     try {
-      const notFoundResponse = await fetch(notFoundUrl.toString(), { redirect: 'follow' });
+      const notFoundResponse = await fetch(notFoundUrl, { redirect: 'follow' });
       
       if (notFoundResponse.ok) {
         // Return 404.html with 404 status code and appropriate headers
         const headers = new Headers();
-        headers.set('Content-Type', notFoundResponse.headers.get('Content-Type') || 'text/html; charset=utf-8');
+        // Ensure correct content type for HTML 404 page
+        headers.set('Content-Type', 'text/html; charset=utf-8');
         headers.set('Cache-Control', 'public, max-age=21600'); // Cache 404 page for 6 hours
         
         const finalResponse = new Response(notFoundResponse.body, {
@@ -222,8 +222,8 @@ async function handleRequest(request) {
         });
         
         // 先缓存再返回 (Cache first then return)
-        cache.put(cacheKey, finalResponse.clone()).catch(err => {
-          console.error(`Failed to cache 404 response for ${cacheKey}:`, err);
+        cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
+          console.log(`Failed to cache 404 response for ${notFoundUrl}:`, err);
         });
         
         return finalResponse;
