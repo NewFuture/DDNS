@@ -286,7 +286,7 @@ export default defineConfig({
                 for (let k = 0; k < attrs.length; k++) {
                   if (attrs[k][0] === 'href') {
                     const href = attrs[k][1];
-                    if (href.match(/^\/ddns.+\.(py|json|sh|txt)$/)) {
+                    if (href.match(/^\/(ddns|docker|tests)\/.+(py|json|sh|txt|Dockerfile)$/)) {
                       attrs[k][1] = `https://github.com/NewFuture/DDNS/blob/master${href}`;
                       // Add target="_blank" if not present
                       const hasTarget = attrs.some(attr => attr[0] === 'target');
