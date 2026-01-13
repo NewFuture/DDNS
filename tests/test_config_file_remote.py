@@ -14,6 +14,12 @@ import json
 import sys
 import socket
 import re
+try:
+    from typing import Optional
+except ImportError:
+    Optional = None  # type: ignore
+
+HTTP_STATUS_RE = re.compile(r"HTTP(?:\s+Error)?\s+(\d{3})")
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
@@ -53,7 +59,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         sys.stderr = self.original_stderr
 
     def _extract_status_code(self, exception):
-        # type: (Exception) -> int or None
+        # type: (Exception) -> Optional[int]
         """
         Extract an HTTP status code from various exception formats.
 
@@ -63,13 +69,15 @@ class TestRemoteConfigFile(unittest.TestCase):
         Returns:
             int or None: Parsed HTTP status code if available, otherwise None.
         """
-        status = getattr(exception, "code", None)
-        if status is None:
-            status = getattr(exception, "status", None)
+        status = None
+        for attr in ("code", "status"):
+            status = getattr(exception, attr, None)
+            if status is not None:
+                break
         if status is not None:
             return status
         message = str(exception)
-        match = re.search(r"HTTP(?:\s+Error)?\s+(\d{3})", message)
+        match = HTTP_STATUS_RE.search(message)
         if match:
             return int(match.group(1))
         return None
