@@ -13,16 +13,6 @@ import os
 import json
 import sys
 import socket
-import re
-try:
-    from typing import Optional
-except ImportError:
-    try:
-        from typing_extensions import Optional  # type: ignore
-    except ImportError:
-        Optional = type(None)  # type: ignore
-
-HTTP_STATUS_RE = re.compile(r"HTTP[:\s]+(?:Error\s+)?(\d{3})")
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
@@ -60,30 +50,6 @@ class TestRemoteConfigFile(unittest.TestCase):
         """Clean up after tests"""
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
-
-    def _extract_status_code(self, exception):
-        # type: (Exception) -> Optional[int]
-        """
-        Extract an HTTP status code from various exception formats.
-
-        Args:
-            exception (Exception): The exception raised while loading the config.
-
-        Returns:
-            int or None: Parsed HTTP status code if available, otherwise None.
-        """
-        status = None
-        for attr in ("code", "status"):
-            status = getattr(exception, attr, None)
-            if status is not None:
-                break
-        if status is not None:
-            return status
-        message = str(exception)
-        match = HTTP_STATUS_RE.search(message)
-        if match:
-            return int(match.group(1))
-        return None
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_http_success(self, mock_http):
@@ -409,20 +375,17 @@ class TestRemoteConfigFile(unittest.TestCase):
         except (URLError, HTTPError, socket.timeout, socket.gaierror, socket.herror) as e:
             # Only skip for network connection issues (URLError, HTTPError 5xx, timeout)
             if isinstance(e, HTTPError):
-                # For HTTPError, skip if it's a server error (5xx) or the resource is missing (404)
-                if e.code >= 500 or e.code == 404:
-                    self.skipTest("Real remote URL test skipped due to HTTP error %s: %s" % (e.code, str(e)))
+                # For HTTPError, only skip if it's a server error (5xx)
+                if e.code >= 500:
+                    self.skipTest("Real remote URL test skipped due to server error %s: %s" % (e.code, str(e)))
                 else:
-                    # For other client errors (4xx except 404), the test should fail as it indicates a real problem
+                    # For client errors (4xx), the test should fail as it indicates a real problem
                     self.fail("Remote URL returned client error %s: %s" % (e.code, str(e)))
             else:
                 # For URLError, socket errors, skip the test
                 self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
-            # For other exceptions (like JSON parsing errors), skip if the resource is missing, otherwise fail
-            status_code = self._extract_status_code(e)
-            if status_code == 404:
-                self.skipTest("Real remote URL test skipped due to missing resource: %s" % str(e))
+            # For other exceptions (like JSON parsing errors), the test should fail
             self.fail("Real remote URL test failed with unexpected error: %s" % str(e))
 
 
