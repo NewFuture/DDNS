@@ -17,9 +17,12 @@ import re
 try:
     from typing import Optional
 except ImportError:
-    Optional = None  # type: ignore
+    try:
+        from typing_extensions import Optional  # type: ignore
+    except ImportError:
+        Optional = type(None)  # type: ignore
 
-HTTP_STATUS_RE = re.compile(r"HTTP(?:\s+Error)?\s+(\d{3})")
+HTTP_STATUS_RE = re.compile(r"HTTP[:\s]+(?:Error\s+)?(\d{3})")
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
