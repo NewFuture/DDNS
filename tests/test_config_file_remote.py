@@ -386,9 +386,11 @@ class TestRemoteConfigFile(unittest.TestCase):
                 self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
             # For other exceptions (like JSON parsing errors), skip if the resource is missing, otherwise fail
-            status_code = None
+            status_code = getattr(e, "code", None)
             message = str(e)
-            if message.startswith("HTTP"):
+            if status_code is None:
+                status_code = getattr(e, "status", None)
+            if status_code is None and message.startswith("HTTP"):
                 parts = message.split()
                 if len(parts) > 1:
                     code_part = parts[1].rstrip(":")
