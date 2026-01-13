@@ -203,7 +203,7 @@ async function handleRequest(request) {
         // Return 404.html with 404 status code and appropriate headers
         const headers = new Headers();
         headers.set('Content-Type', notFoundResponse.headers.get('Content-Type') || 'text/html; charset=utf-8');
-        headers.set('Cache-Control', 'public, max-age=60'); // Cache 404 page for 1 minute
+        headers.set('Cache-Control', 'public, max-age=21600'); // Cache 404 page for 6 hours
         
         return new Response(notFoundResponse.body, {
           status: 404,
