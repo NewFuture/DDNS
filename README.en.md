@@ -130,15 +130,15 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
    - **DNSPOD (China)**: [Create token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [Detailed Configuration](docs/en/providers/dnspod.md)
    - **Alibaba Cloud DNS**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/alidns.md)
-   - **Alibaba Cloud ESA**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/aliesa.en.md)
-   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](docs/en/providers/dnscom.en.md)
-   - **DNSPOD (International)**: [Get token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [Detailed Configuration](docs/en/providers/dnspod_com.en.md)
-   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (Besides `email + API KEY`, you can also use `Token`, **requires list Zone permission**) | [Detailed Configuration](docs/en/providers/cloudflare.en.md)
-   - **HE.net**: [DDNS Documentation](https://dns.he.net/docs.html) (Only fill the set password in the `token` field, `id` field can be left empty) | [Detailed Configuration](docs/en/providers/he.en.md)
-   - **Huawei Cloud DNS**: [APIKEY Application](https://console.huaweicloud.com/iam/) (Click Access Keys on the left, then click Create Access Key) | [Detailed Configuration](docs/en/providers/huaweidns.en.md)
-   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager) (Get API Key from API Manager) | [Detailed Configuration](docs/en/providers/namesilo.en.md)
-   - **Tencent Cloud DNS**: [Detailed Configuration](docs/en/providers/tencentcloud.en.md)
-   - **No-IP**: [Username and Password](https://www.noip.com/) (Use No-IP account username and password) | [Detailed Configuration](docs/en/providers/noip.en.md)
+   - **Alibaba Cloud ESA**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/aliesa.md)
+   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](docs/en/providers/dnscom.md)
+   - **DNSPOD (International)**: [Get token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [Detailed Configuration](docs/en/providers/dnspod_com.md)
+   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (Besides `email + API KEY`, you can also use `Token`, **requires list Zone permission**) | [Detailed Configuration](docs/en/providers/cloudflare.md)
+   - **HE.net**: [DDNS Documentation](https://dns.he.net/docs.html) (Only fill the set password in the `token` field, `id` field can be left empty) | [Detailed Configuration](docs/en/providers/he.md)
+   - **Huawei Cloud DNS**: [APIKEY Application](https://console.huaweicloud.com/iam/) (Click Access Keys on the left, then click Create Access Key) | [Detailed Configuration](docs/en/providers/huaweidns.md)
+   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager) (Get API Key from API Manager) | [Detailed Configuration](docs/en/providers/namesilo.md)
+   - **Tencent Cloud DNS**: [Detailed Configuration](docs/en/providers/tencentcloud.md)
+   - **No-IP**: [Username and Password](https://www.noip.com/) (Use No-IP account username and password) | [Detailed Configuration](docs/en/providers/noip.md)
    - **Custom Callback**: For parameter configuration, please refer to the custom callback configuration instructions below
 
 2. Modify the configuration file, `ipv4` and `ipv6` fields for domains to be updated, refer to configuration instructions for details
@@ -147,11 +147,11 @@ Docker version is recommended for best compatibility, small size, and optimized 
 
 All fields can be configured through three methods, with priority: **Command Line Parameters > JSON Configuration File > Environment Variables**
 
-1. [Command Line Parameters](docs/en/config/cli.en.md) `ddns --key=value` (use `ddns -h` for details), highest priority
-2. [JSON Configuration File](docs/en/config/json.en.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
-3. [Environment Variables](docs/en/config/env.en.md) with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
+1. [Command Line Parameters](docs/en/config/cli.md) `ddns --key=value` (use `ddns -h` for details), highest priority
+2. [JSON Configuration File](docs/en/config/json.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
+3. [Environment Variables](docs/en/config/env.md) with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
 
-> 📖 **Environment Variables Documentation**: See [Environment Variables Configuration](docs/en/config/env.en.md) for detailed usage and examples of all environment variables
+> 📖 **Environment Variables Documentation**: See [Environment Variables Configuration](docs/en/config/env.md) for detailed usage and examples of all environment variables
 
 <details open>
 <summary markdown="span">config.json Configuration File</summary>
@@ -159,7 +159,7 @@ All fields can be configured through three methods, with priority: **Command Lin
 - A template configuration file will be automatically generated on first run
 - Use `-c` to specify a configuration file (defaults to config.json in the current directory)
 - Recommended to use editors that support JsonSchema like VSCode for editing configuration files
-- See [JSON Configuration File Documentation](docs/en/config/json.en.md) for complete configuration options and examples
+- See [JSON Configuration File Documentation](docs/en/config/json.md) for complete configuration options and examples
 
 ```bash
 ddns -c path/to/config.json
@@ -207,7 +207,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 - `id` field: Fill in callback URL starting with HTTP or HTTPS, HTTPS recommended, supports variable replacement
 - `token` field: POST request parameters (JSON object or JSON string), use GET request if this field is empty or missing. When JSON parameter values contain constants from the table below, they will be automatically replaced with actual content
 
-For detailed configuration guide, see: [Callback Provider Configuration](docs/en/providers/callback.en.md)
+For detailed configuration guide, see: [Callback Provider Configuration](docs/en/providers/callback.md)
 
 | Constant Name    | Constant Content             | Description |
 | ---------------- | ---------------------------- | ----------- |
