@@ -15,8 +15,6 @@ package-lock.json
 # VitePress intermediate files (generated during setup) - don't commit these
 docs/index.md
 docs/en/index.md
-docs/public/schema/
-docs/public/tests/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
