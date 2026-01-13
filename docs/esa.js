@@ -221,13 +221,13 @@ async function handleRequest(request) {
         
         // 先缓存再返回 (Cache first then return)
         cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
-          console.alert(`Failed to cache 404 response for ${notFoundUrl}:`, err);
+          console.log(`Failed to cache 404 response for ${notFoundUrl}:`, err);
         });
         
         return finalResponse;
       }
     } catch (err) {
-      console.alert('Failed to fetch 404.html:', err);
+      console.log('Failed to fetch 404.html:', err);
     }
   }
   
