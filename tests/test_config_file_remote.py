@@ -13,6 +13,7 @@ import os
 import json
 import sys
 import socket
+import re
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
@@ -50,6 +51,19 @@ class TestRemoteConfigFile(unittest.TestCase):
         """Clean up after tests"""
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
+
+    def _extract_status_code(self, exception):
+        # type: (Exception) -> int | None
+        status = getattr(exception, "code", None)
+        if status is None:
+            status = getattr(exception, "status", None)
+        if status is not None:
+            return status
+        message = str(exception)
+        match = re.search(r"HTTP\s+(\d{3})", message)
+        if match:
+            return int(match.group(1))
+        return None
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_http_success(self, mock_http):
@@ -386,18 +400,9 @@ class TestRemoteConfigFile(unittest.TestCase):
                 self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
             # For other exceptions (like JSON parsing errors), skip if the resource is missing, otherwise fail
-            status_code = getattr(e, "code", None)
-            message = str(e)
-            if status_code is None:
-                status_code = getattr(e, "status", None)
-            if status_code is None and message.startswith("HTTP"):
-                parts = message.split()
-                if len(parts) > 1:
-                    code_part = parts[1].rstrip(":")
-                    if code_part.isdigit():
-                        status_code = int(code_part)
+            status_code = self._extract_status_code(e)
             if status_code == 404:
-                self.skipTest("Real remote URL test skipped due to missing resource: %s" % message)
+                self.skipTest("Real remote URL test skipped due to missing resource: %s" % str(e))
             self.fail("Real remote URL test failed with unexpected error: %s" % str(e))
 
 
