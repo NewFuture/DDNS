@@ -41,7 +41,7 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
-# Official download base URL (default official mirror; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
+# Official download base URL (default official domain ddns.newfuture.cc; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
 OFFICIAL_DOWNLOAD_BASE="${OFFICIAL_DOWNLOAD_BASE:-https://ddns.newfuture.cc/download}"
 # Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
 SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
@@ -309,7 +309,7 @@ find_working_proxy() {
         print_info "Failed to connect to $test_url" "无法连接到 $test_url"
     done
     print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
-    return 0
+    return 1
 }
 
 # Ensure proxy is configured or warn about direct GitHub fallback
@@ -317,11 +317,17 @@ ensure_proxy_configured() {
     if [ -n "$PROXY_URL" ]; then
         return 0
     fi
-    find_working_proxy
+    if ! find_working_proxy; then
+        print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
+        print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
+        return 1
+    fi
     if [ -z "$PROXY_URL" ]; then
         print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
         print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
+        return 1
     fi
+    return 0
 }
 
 # Get latest beta version from api.github.com only
@@ -387,7 +393,7 @@ build_official_download_url() {
 install_binary() {
     local temp_file
     local download_url
-    local success=false
+    local success="false"
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
 
@@ -396,7 +402,7 @@ install_binary() {
         download_url=$(build_official_download_url)
         print_info "Trying official site: $download_url" "优先尝试官网下载: $download_url"
         if download_file "$download_url" "$temp_file"; then
-            success=true
+            success="true"
         else
             print_warning "Official download failed, will try GitHub or mirrors" "官网下载失败，尝试 GitHub 或镜像"
         fi
@@ -405,7 +411,7 @@ install_binary() {
     fi
 
     # Fallback to GitHub/proxy (auto-detect when not set)
-    if [ "$success" = false ]; then
+    if [ "$success" != "true" ]; then
         ensure_proxy_configured
         download_url=$(build_github_download_url)
         print_info "Using GitHub/mirror: $download_url" "使用 GitHub 或镜像: $download_url"
