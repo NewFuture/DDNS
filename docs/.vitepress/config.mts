@@ -48,17 +48,24 @@ function setupDocs() {
     console.log('✓ Copied README.en.md to docs/en/index.md')
   }
   
-  // Copy schema directory to docs/public/schema
   const schemaDir = path.join(rootDir, 'schema')
+  const testsConfigDir = path.join(rootDir, 'tests', 'config')
   const publicDir = path.join(docsDir, 'public')
-  if (fs.existsSync(schemaDir)) {
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true })
+
+  const copyTargets = [
+    { src: schemaDir, dest: path.join(publicDir, 'schema'), message: '✓ Copied schema/ to docs/public directory' },
+    { src: testsConfigDir, dest: path.join(publicDir, 'tests', 'config'), message: '✓ Copied tests/config/ to docs/public directory' },
+  ]
+
+  copyTargets.forEach(({ src, dest, message }) => {
+    if (fs.existsSync(src)) {
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true })
+      }
+      fs.cpSync(src, dest, { recursive: true, force: true })
+      console.log(message)
     }
-    const targetSchemaDir = path.join(publicDir, 'schema')
-    fs.cpSync(schemaDir, targetSchemaDir, { recursive: true, force: true })
-    console.log('✓ Copied schema/ to docs/public directory')
-  }
+  })
   
   console.log('\nDocumentation structure setup complete!\n')
 }
