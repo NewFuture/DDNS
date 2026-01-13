@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       # Remote installer from the current repository and commit
-      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/install.sh', github.repository, github.sha) }}
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/public/install.sh', github.repository, github.sha) }}
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +63,7 @@ jobs:
     container: ${{ matrix.container }}
     env:
       # Remote installer from the current repository and commit
-      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/install.sh', github.repository, github.sha) }}
+      RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/public/install.sh', github.repository, github.sha) }}
 
     steps:
       - name: install wget
