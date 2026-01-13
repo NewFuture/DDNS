@@ -234,7 +234,7 @@ async function handleRequest(request) {
   }
   
   // Fallback if 404.html is not available
-  return new Response('Not Found\n\nValid pattern:\n- /releases/{version}/{binary}\n  (version can be specific version, "latest", or "beta")', {
+  return new Response('Not Found', {
     status: 404,
     headers: { 'Content-Type': 'text/plain' }
   });
