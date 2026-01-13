@@ -41,7 +41,7 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
-# Official download base (official mirror; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
+# Official download base URL (default official mirror; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
 OFFICIAL_DOWNLOAD_BASE="${OFFICIAL_DOWNLOAD_BASE:-https://ddns.newfuture.cc/download}"
 # Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
 SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
@@ -315,7 +315,7 @@ find_working_proxy() {
 # Ensure proxy is configured or warn about direct GitHub fallback
 ensure_proxy_configured() {
     if [ -n "$PROXY_URL" ]; then
-        return
+        return 0
     fi
     find_working_proxy
     if [ -z "$PROXY_URL" ]; then
@@ -387,8 +387,7 @@ build_official_download_url() {
 install_binary() {
     local temp_file
     local download_url
-    local success
-    success=false
+    local success=false
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
 
