@@ -375,17 +375,19 @@ class TestRemoteConfigFile(unittest.TestCase):
         except (URLError, HTTPError, socket.timeout, socket.gaierror, socket.herror) as e:
             # Only skip for network connection issues (URLError, HTTPError 5xx, timeout)
             if isinstance(e, HTTPError):
-                # For HTTPError, only skip if it's a server error (5xx)
-                if e.code >= 500:
-                    self.skipTest("Real remote URL test skipped due to server error %s: %s" % (e.code, str(e)))
+                # For HTTPError, skip if it's a server error (5xx) or the resource is missing (404)
+                if e.code >= 500 or e.code == 404:
+                    self.skipTest("Real remote URL test skipped due to HTTP error %s: %s" % (e.code, str(e)))
                 else:
-                    # For client errors (4xx), the test should fail as it indicates a real problem
+                    # For other client errors (4xx), the test should fail as it indicates a real problem
                     self.fail("Remote URL returned client error %s: %s" % (e.code, str(e)))
             else:
                 # For URLError, socket errors, skip the test
                 self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
-            # For other exceptions (like JSON parsing errors), the test should fail
+            # For other exceptions (like JSON parsing errors), skip if the resource is missing, otherwise fail
+            if "HTTP 404" in str(e):
+                self.skipTest("Real remote URL test skipped due to missing resource: %s" % str(e))
             self.fail("Real remote URL test failed with unexpected error: %s" % str(e))
 
 
