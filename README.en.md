@@ -1,4 +1,4 @@
-# [<img src="docs/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="docs/public/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
 
 > Automatically update DNS records to the current IP address, supporting IPv4 and IPv6, local (private) IP and public IP.
 > Proxy mode supported, with automatic DNS record creation.

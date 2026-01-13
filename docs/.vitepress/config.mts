@@ -48,24 +48,8 @@ function setupDocs() {
     console.log('✓ Copied README.en.md to docs/en/index.md')
   }
   
-  const schemaDir = path.join(rootDir, 'schema')
-  const testsConfigDir = path.join(rootDir, 'tests', 'config')
-  const publicDir = path.join(docsDir, 'public')
-
-  const copyTargets = [
-    { src: schemaDir, dest: path.join(publicDir, 'schema'), message: '✓ Copied schema/ to docs/public directory' },
-    { src: testsConfigDir, dest: path.join(publicDir, 'tests', 'config'), message: '✓ Copied tests/config/ to docs/public directory' },
-  ]
-
-  copyTargets.forEach(({ src, dest, message }) => {
-    if (fs.existsSync(src)) {
-      if (!fs.existsSync(publicDir)) {
-        fs.mkdirSync(publicDir, { recursive: true })
-      }
-      fs.cpSync(src, dest, { recursive: true, force: true })
-      console.log(message)
-    }
-  })
+  // Note: schema/ and tests/ are available via symbolic links in docs/public/
+  // No need to copy them as they're linked directly
   
   console.log('\nDocumentation structure setup complete!\n')
 }
@@ -442,6 +426,13 @@ export default defineConfig({
         lightModeSwitchTitle: 'Switch to light mode',
         darkModeSwitchTitle: 'Switch to dark mode'
       }
+    }
+  },
+
+  // Vite configuration for handling symbolic links
+  vite: {
+    resolve: {
+      preserveSymlinks: true
     }
   }
 })

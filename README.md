@@ -1,4 +1,4 @@
-# [<img src="docs/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
+# [<img src="docs/public/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) DDNS
 
 > 自动更新 DNS 解析到本机 IP 地址，支持 IPv4/IPv6，内网/公网 IP，自动创建 DNS 记录
 
