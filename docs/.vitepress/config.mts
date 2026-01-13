@@ -50,13 +50,11 @@ function setupDocs() {
   
   const schemaDir = path.join(rootDir, 'schema')
   const testsConfigDir = path.join(rootDir, 'tests', 'config')
-  const installScript = path.join(docsDir, 'install.sh')
   const publicDir = path.join(docsDir, 'public')
 
   const copyTargets = [
     { src: schemaDir, dest: path.join(publicDir, 'schema'), message: '✓ Copied schema/ to docs/public directory' },
     { src: testsConfigDir, dest: path.join(publicDir, 'tests', 'config'), message: '✓ Copied tests/config/ to docs/public directory' },
-    { src: installScript, dest: path.join(publicDir, 'install.sh'), message: '✓ Copied install.sh to docs/public directory' },
   ]
 
   copyTargets.forEach(({ src, dest, message }) => {
