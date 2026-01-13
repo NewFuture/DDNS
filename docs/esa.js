@@ -207,7 +207,7 @@ async function handleRequest(request) {
     }
     
     try {
-      const notFoundResponse = await fetch(notFoundUrl.toString());
+      const notFoundResponse = await fetch(notFoundUrl.toString(), { redirect: 'follow' });
       
       if (notFoundResponse.ok) {
         // Return 404.html with 404 status code and appropriate headers
