@@ -211,6 +211,8 @@ async function handleRequest(request) {
       if (notFoundResponse.ok) {
         // Return 404.html with 404 status code and appropriate headers
         const headers = new Headers();
+        // Ensure correct content type for HTML 404 page
+        headers.set('Content-Type', 'text/html; charset=utf-8');
         headers.set('Cache-Control', 'public, max-age=21600'); // Cache 404 page for 6 hours
         
         const finalResponse = new Response(notFoundResponse.body, {
