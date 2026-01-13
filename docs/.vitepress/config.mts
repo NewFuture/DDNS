@@ -427,5 +427,12 @@ export default defineConfig({
         darkModeSwitchTitle: 'Switch to dark mode'
       }
     }
+  },
+
+  // Vite configuration for handling symbolic links
+  vite: {
+    resolve: {
+      preserveSymlinks: true
+    }
   }
 })
