@@ -31,7 +31,7 @@ WORKDIR /app
 
 FROM ${BUILDER} AS builder
 # 拷贝项目文件
-COPY run.py .github/patch.py docs/img/ddns.svg .
+COPY run.py .github/patch.py docs/public/img/ddns.svg .
 COPY ddns ddns
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}

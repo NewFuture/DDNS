@@ -154,11 +154,11 @@ jobs:
           mode: onefile
           output-dir: dist
           lto: yes
-          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'docs/favicon.ico' || '' }}
-          linux-icon: ${{ runner.os == 'Linux' && 'docs/img/ddns.svg' || '' }}
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'docs/public/favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && 'docs/public/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
-          macos-app-icon: ${{ runner.os == 'macOS' && 'docs/img/ddns.png' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'docs/public/img/ddns.png' || '' }}
 
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -v
@@ -182,7 +182,7 @@ jobs:
           lto: yes
           file-description: "DDNS客户端 ${{ github.ref_name }}"
           windows-console-mode: attach
-          windows-icon-from-ico: docs/favicon.ico
+          windows-icon-from-ico: docs/public/favicon.ico
 
       - name: Package Windows app as ddns.zip
         if: runner.os == 'Windows'
