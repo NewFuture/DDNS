@@ -41,7 +41,7 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
-# Official download base (HTTPS mirror of GitHub releases; falls back to GitHub/proxies on failure)
+# Official download base (official mirror; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
 OFFICIAL_DOWNLOAD_BASE="${OFFICIAL_DOWNLOAD_BASE:-https://ddns.newfuture.cc/download}"
 # Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
 SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
@@ -97,7 +97,7 @@ print_error() {
     printf "${RED}[ERROR]${NC} %s\n" "$(select_message "$1" "$2")"
 }
 
-# Truthy helper (accepts 1/true/yes/on, case-insensitive)
+# Truthy helper (accepts 1/true/yes/on for any case)
 is_true() {
     case "$1" in
         1|true|TRUE|True|yes|YES|on|ON) return 0 ;;
@@ -312,6 +312,18 @@ find_working_proxy() {
     return 0
 }
 
+# Ensure proxy is configured or warn about direct GitHub fallback
+ensure_proxy_configured() {
+    if [ -n "$PROXY_URL" ]; then
+        return
+    fi
+    find_working_proxy
+    if [ -z "$PROXY_URL" ]; then
+        print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
+        print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
+    fi
+}
+
 # Get latest beta version from api.github.com only
 get_beta_version() {
     local temp_file url
@@ -395,13 +407,7 @@ install_binary() {
 
     # Fallback to GitHub/proxy (auto-detect when not set)
     if [ "$success" = false ]; then
-        if [ -z "$PROXY_URL" ]; then
-            find_working_proxy
-            if [ -z "$PROXY_URL" ]; then
-                print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
-                print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
-            fi
-        fi
+        ensure_proxy_configured
         download_url=$(build_github_download_url)
         print_info "Using GitHub/mirror: $download_url" "使用 GitHub 或镜像: $download_url"
         if ! download_file "$download_url" "$temp_file"; then
