@@ -191,12 +191,27 @@ async function handleRequest(request) {
   if (match) {
     const [, version, binaryFile] = match;
     return handleRelease(version, binaryFile);
-  } else {
-    return new Response('Not Found\n\nValid pattern:\n- /releases/{version}/{binary}\n  (version can be specific version, "latest", or "beta")', {
+  }
+  
+  // No match found - return 404.html page
+  // 未匹配任何URL模式 - 返回404.html页面
+  const notFoundUrl = new URL('/404.html', url.origin);
+  const notFoundResponse = await fetch(notFoundUrl.toString());
+  
+  if (notFoundResponse.ok) {
+    // Return 404.html with 404 status code
+    return new Response(notFoundResponse.body, {
       status: 404,
-      headers: { 'Content-Type': 'text/plain' }
+      statusText: 'Not Found',
+      headers: notFoundResponse.headers
     });
   }
+  
+  // Fallback if 404.html is not available
+  return new Response('Not Found\n\nValid pattern:\n- /releases/{version}/{binary}\n  (version can be specific version, "latest", or "beta")', {
+    status: 404,
+    headers: { 'Content-Type': 'text/plain' }
+  });
 }
 
 /**
