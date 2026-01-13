@@ -53,14 +53,23 @@ class TestRemoteConfigFile(unittest.TestCase):
         sys.stderr = self.original_stderr
 
     def _extract_status_code(self, exception):
-        # type: (Exception) -> int | None
+        # type: (Exception) -> int or None
+        """
+        Extract an HTTP status code from various exception formats.
+
+        Args:
+            exception (Exception): The exception raised while loading the config.
+
+        Returns:
+            int or None: Parsed HTTP status code if available, otherwise None.
+        """
         status = getattr(exception, "code", None)
         if status is None:
             status = getattr(exception, "status", None)
         if status is not None:
             return status
         message = str(exception)
-        match = re.search(r"HTTP\s+(\d{3})", message)
+        match = re.search(r"HTTP(?:\s+Error)?\s+(\d{3})", message)
         if match:
             return int(match.group(1))
         return None
