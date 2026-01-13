@@ -41,8 +41,10 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
-# Official download base (preferred)
+# Official download base (preferred when no proxy is specified; falls back to GitHub/proxies on failure)
 OFFICIAL_DOWNLOAD_BASE="https://ddns.newfuture.cc/download"
+# Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
+SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
 # Optional proxy base URL to prefix the original GitHub URL, e.g.
 # Final download will be: "$PROXY_URL" + "https://github.com/..." (PROXY_URL always ends with '/')
 PROXY_URL=""
@@ -363,13 +365,15 @@ build_official_download_url() {
 
 # Download and install binary
 install_binary() {
-    local temp_file download_url success
+    local temp_file
+    local download_url
+    local success
     success=false
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
 
-    # Prefer official site download first (when proxy not explicitly set)
-    if [ -z "$PROXY_URL" ]; then
+    # Prefer official site download first unless explicitly skipped
+    if [ "$SKIP_OFFICIAL_DOWNLOAD" != "1" ] && [ "$SKIP_OFFICIAL_DOWNLOAD" != "true" ]; then
         download_url=$(build_official_download_url)
         print_info "Trying official site: $download_url" "优先尝试官网下载: $download_url"
         if download_file "$download_url" "$temp_file"; then
@@ -377,12 +381,17 @@ install_binary() {
         else
             print_warning "Official download failed, will try GitHub or mirrors" "官网下载失败，尝试 GitHub 或镜像"
         fi
+    else
+        print_info "Skipping official download per configuration" "按配置跳过官网下载"
     fi
 
     # Fallback to GitHub/proxy (auto-detect when not set)
     if [ "$success" = false ]; then
         if [ -z "$PROXY_URL" ]; then
             find_working_proxy
+            if [ -z "$PROXY_URL" ]; then
+                print_warning "No working proxy detected; trying direct GitHub. Use --proxy if required." "未检测到可用代理，将直接尝试 GitHub。如需代理请使用 --proxy 指定"
+            fi
         fi
         download_url=$(build_github_download_url)
         print_info "Using GitHub/mirror: $download_url" "使用 GitHub 或镜像: $download_url"
