@@ -223,7 +223,7 @@ async function handleRequest(request) {
         
         // 先缓存再返回 (Cache first then return)
         cache.put(cacheKey, finalResponse.clone()).catch(err => {
-          console.error('404 cache error:', err);
+          console.error(`Failed to cache 404 response for ${cacheKey}:`, err);
         });
         
         return finalResponse;
