@@ -193,22 +193,27 @@ async function handleRequest(request) {
     return handleRelease(version, binaryFile);
   }
   
-  // No match found - return 404.html page
-  // 未匹配任何URL模式 - 返回404.html页面
-  const notFoundUrl = new URL('/404.html', url.origin);
-  const notFoundResponse = await fetch(notFoundUrl.toString());
-  
-  if (notFoundResponse.ok) {
-    // Return 404.html with 404 status code and appropriate headers
-    const headers = new Headers();
-    headers.set('Content-Type', notFoundResponse.headers.get('Content-Type') || 'text/html; charset=utf-8');
-    headers.set('Cache-Control', 'public, max-age=300'); // Cache 404 page for 5 minutes
-    
-    return new Response(notFoundResponse.body, {
-      status: 404,
-      statusText: 'Not Found',
-      headers: headers
-    });
+  // No match found - return 404.html page (avoid infinite loop by not fetching if already requesting 404.html)
+  // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
+  if (path !== '/404.html') {
+    try {
+      const notFoundResponse = await fetch(new URL('/404.html', url.origin).toString());
+      
+      if (notFoundResponse.ok) {
+        // Return 404.html with 404 status code and appropriate headers
+        const headers = new Headers();
+        headers.set('Content-Type', notFoundResponse.headers.get('Content-Type') || 'text/html; charset=utf-8');
+        headers.set('Cache-Control', 'public, max-age=60'); // Cache 404 page for 1 minute
+        
+        return new Response(notFoundResponse.body, {
+          status: 404,
+          statusText: 'Not Found',
+          headers: headers
+        });
+      }
+    } catch (err) {
+      console.log('Failed to fetch 404.html:', err);
+    }
   }
   
   // Fallback if 404.html is not available
