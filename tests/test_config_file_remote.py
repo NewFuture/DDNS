@@ -13,7 +13,6 @@ import os
 import json
 import sys
 import socket
-import re
 from ddns.config.file import load_config
 from ddns.util.http import HttpResponse
 
@@ -387,8 +386,16 @@ class TestRemoteConfigFile(unittest.TestCase):
                 self.skipTest("Real remote URL test skipped due to network error: %s" % str(e))
         except Exception as e:
             # For other exceptions (like JSON parsing errors), skip if the resource is missing, otherwise fail
-            if re.search(r"HTTP\s+404\b", str(e)):
-                self.skipTest("Real remote URL test skipped due to missing resource: %s" % str(e))
+            status_code = None
+            message = str(e)
+            if message.startswith("HTTP"):
+                parts = message.split()
+                if len(parts) > 1:
+                    code_part = parts[1].rstrip(":")
+                    if code_part.isdigit():
+                        status_code = int(code_part)
+            if status_code == 404:
+                self.skipTest("Real remote URL test skipped due to missing resource: %s" % message)
             self.fail("Real remote URL test failed with unexpected error: %s" % str(e))
 
 
