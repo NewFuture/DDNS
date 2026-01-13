@@ -119,63 +119,77 @@ tests/:	Unit tests
 	test_scheduler_*.py:	Scheduler tests
 	test_util_*.py:	Utility tests
 
-doc/:	Documentation
-	config/
-		cli.md:	CLI usage (Chinese)
-		cli.en.md:	CLI usage (English)
-		env.md:	Environment variables (Chinese)
-		env.en.md:	Environment variables (English)
-		json.md:	JSON config (Chinese)
-		json.en.md:	JSON config (English)
+docs/:	Documentation (VitePress-based)
+	.vitepress/:	VitePress configuration and theme
+	
+	config/:	Configuration documentation (Chinese)
+		cli.md:	CLI usage guide
+		env.md:	Environment variables guide
+		json.md:	JSON configuration guide
 
-	dev/
-		provider.md:	Provider development guide (Chinese)
-		provider.en.md:	Provider development guide (English)
-		config.md:	Config system (Chinese)
-		config.en.md:	Config system (English)
+	dev/:	Developer guides (Chinese)
+		provider.md:	Provider development guide
+		config.md:	Configuration system design
 
-	providers/:	Provider-specific documentation
-		README.md:	Provider list (Chinese)
-		README.en.md:	Provider list (English)
-		51dns.md:	51DNS guide (Chinese)
-		51dns.en.md:	51DNS guide (English)
-		alidns.md:	AliDNS guide (Chinese)
-		alidns.en.md:	AliDNS guide (English)
-		aliesa.md:	Alibaba Cloud ESA guide (Chinese)
-		aliesa.en.md:	Alibaba Cloud ESA guide (English)
-		callback.md:	Callback guide (Chinese)
-		callback.en.md:	Callback guide (English)
-		cloudflare.md:	Cloudflare guide (Chinese)
-		cloudflare.en.md:	Cloudflare guide (English)
-		debug.md:	Debug guide (Chinese)
-		debug.en.md:	Debug guide (English)
-		dnscom.md:	DNS.COM guide (Chinese)
-		dnscom.en.md:	DNS.COM guide (English)
-		dnspod.md:	DNSPod guide (Chinese)
-		dnspod.en.md:	DNSPod guide (English)
-		dnspod_com.md:	DNSPod International guide (Chinese)
-		dnspod_com.en.md:	DNSPod International guide (English)
-		edgeone.md:	Tencent EdgeOne guide (Chinese)
-		edgeone.en.md:	Tencent EdgeOne guide (English)
-		edgeone_dns.md:	Tencent EdgeOne DNS guide (Chinese)
-		edgeone_dns.en.md:	Tencent EdgeOne DNS guide (English)
-		he.md:	Hurricane Electric guide (Chinese)
-		he.en.md:	Hurricane Electric guide (English)
-		huaweidns.md:	Huawei Cloud DNS guide (Chinese)
-		huaweidns.en.md:	Huawei Cloud DNS guide (English)
-		namesilo.md:	NameSilo guide (Chinese)
-		namesilo.en.md:	NameSilo guide (English)
-		noip.md:	No-IP guide (Chinese)
-		noip.en.md:	No-IP guide (English)
-		tencentcloud.md:	Tencent Cloud DNS guide (Chinese)
-		tencentcloud.en.md:	Tencent Cloud DNS guide (English)
+	providers/:	Provider-specific documentation (Chinese)
+		README.md:	Provider list and overview
+		51dns.md:	51DNS provider guide
+		alidns.md:	Alibaba Cloud DNS guide
+		aliesa.md:	Alibaba Cloud ESA guide
+		callback.md:	Custom webhook callbacks guide
+		cloudflare.md:	Cloudflare DNS guide
+		debug.md:	Debug provider guide
+		dnscom.md:	DNS.COM provider guide
+		dnspod.md:	DNSPod (China) guide
+		dnspod_com.md:	DNSPod International guide
+		edgeone.md:	Tencent EdgeOne guide
+		edgeone_dns.md:	Tencent EdgeOne DNS guide
+		he.md:	Hurricane Electric guide
+		huaweidns.md:	Huawei Cloud DNS guide
+		namesilo.md:	NameSilo guide
+		noip.md:	No-IP guide
+		tencentcloud.md:	Tencent Cloud DNS guide
+
+	en/:	English documentation
+		config/:	Configuration documentation (English)
+			cli.md:	CLI usage guide
+			env.md:	Environment variables guide
+			json.md:	JSON configuration guide
+		dev/:	Developer guides (English)
+			provider.md:	Provider development guide
+			config.md:	Configuration system design
+		providers/:	Provider-specific documentation (English)
+			README.md:	Provider list and overview
+			51dns.md:	51DNS provider guide
+			alidns.md:	Alibaba Cloud DNS guide
+			aliesa.md:	Alibaba Cloud ESA guide
+			callback.md:	Custom webhook callbacks guide
+			cloudflare.md:	Cloudflare DNS guide
+			debug.md:	Debug provider guide
+			dnscom.md:	DNS.COM provider guide
+			dnspod.md:	DNSPod (China) guide
+			dnspod_com.md:	DNSPod International guide
+			edgeone.md:	Tencent EdgeOne guide
+			edgeone_dns.md:	Tencent EdgeOne DNS guide
+			he.md:	Hurricane Electric guide
+			huaweidns.md:	Huawei Cloud DNS guide
+			namesilo.md:	NameSilo guide
+			noip.md:	No-IP guide
+			tencentcloud.md:	Tencent Cloud DNS guide
+		docker.md:	Docker documentation
+		install.md:	Installation guide
+
+	public/:	Public static assets
+		img/:	Images and diagrams
+		schema/:	JSON schema files (symlink)
+		tests/:	Test configuration examples
 
 	docker.md:	Docker documentation (Chinese)
-	docker.en.md:	Docker documentation (English)
 	install.md:	Installation guide (Chinese)
-	install.en.md:	Installation guide (English)
 	release.md:	Release notes (Chinese)
-	img/:	Images and diagrams
+	esa.js:	ESA provider JavaScript helper
+	llms.txt:	LLM context information
+	package.json:	VitePress dependencies
 
 docker/:	Docker configuration
 	Dockerfile:	Main Dockerfile
@@ -348,10 +362,10 @@ grep -r "def set_record" ddns/provider/
 ### Creating a DNS Provider
 
 1. Create `ddns/provider/myprovider.py` inheriting from `BaseProvider` or `SimpleProvider`
-2. Implement required methods (see `doc/dev/provider.md`)
+2. Implement required methods (see `docs/dev/provider.md`)
 3. Register in `ddns/provider/__init__.py`
 4. Add tests in `tests/test_provider_myprovider.py`
-5. Create documentation: `doc/providers/myprovider.md` and `doc/providers/myprovider.en.md`
+5. Create documentation: `docs/providers/myprovider.md` and `docs/en/providers/myprovider.md`
 
 **Template**:
 ```python
@@ -379,7 +393,7 @@ class MyProvider(BaseProvider):
 
 ### Documentation
 
-**Bilingual**: Always update both Chinese (`.md`) and English (`.en.md`) versions
+**Bilingual**: Always update both Chinese (`docs/*.md`) and English (`docs/en/*.md`) versions
 
 **Structure**: Keep same headings, code examples identical, translate only text
 
@@ -560,12 +574,12 @@ This guide provides comprehensive instructions for AI agents working on the DDNS
 For detailed information on specific topics, refer to:
 - **Python Standards**: `.github/instructions/python.instructions.md`
 - **Repository Instructions**: `.github/copilot-instructions.md`
-- **Provider Development**: `doc/dev/provider.md`
+- **Provider Development**: `docs/dev/provider.md`
 - **Testing Guide**: `tests/README.md`
-- **Configuration**: `doc/config/*.md`
+- **Configuration**: `docs/config/*.md`
 
 ---
 
-**Version**: 1.0.2  
-**Last Updated**: 2025-11-30  
+**Version**: 1.0.3  
+**Last Updated**: 2026-01-13  
 **Maintained by**: DDNS Project Contributors
