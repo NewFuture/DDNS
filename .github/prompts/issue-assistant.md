@@ -63,12 +63,12 @@ Request the files you need to obtain the details.
 
 - Answer directly using docs or code, link sources.
 - Provide config/command examples.
-- References: `doc/config/*.md`, `doc/providers/*.md`, `README(.en).md`, `schema/v4.1.json`.
+- References: `docs/config/*.md`, `docs/providers/*.md`, `en/**.md`, `schema/v4.1.json`.
 
 ## Response Guidelines
 
 - Match user's language, use Markdown with code blocks.
-- Link docs/code: `[doc/providers/aliyun.md](https://ddns.newfuture.cc/doc/providers/aliyun.html)`
+- Link docs/code: `[docs/providers/aliyun.md](https://ddns.newfuture.cc/providers/aliyun)`
 - Cover plausible scenarios, call out assumptions.
 - If info missing: explain what's needed (`ddns --debug`, logs, repro steps).
 - Ensure the JSON you output is valid.
