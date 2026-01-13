@@ -197,11 +197,10 @@ async function handleRequest(request) {
   // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
   if (path !== '/404.html') {
     // 缓存key使用HTTP协议 (Cache key uses HTTP protocol)
-    const notFoundUrl = new URL('/404.html', request.url).toString();
-    const cacheKey = notFoundUrl.replace('https://', 'http://');
+    const notFoundUrl = 'http://ddns.newfuture.cc/404.html';
     
     // 尝试从缓存获取 (Try to get from cache first)
-    const cachedResponse = await cache.get(cacheKey);
+    const cachedResponse = await cache.get(notFoundUrl);
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -221,14 +220,14 @@ async function handleRequest(request) {
         });
         
         // 先缓存再返回 (Cache first then return)
-        cache.put(cacheKey, finalResponse.clone()).catch(err => {
-          console.error(`Failed to cache 404 response for ${cacheKey}:`, err);
+        cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
+          console.alert(`Failed to cache 404 response for ${cacheKey}:`, err);
         });
         
         return finalResponse;
       }
     } catch (err) {
-      console.log('Failed to fetch 404.html:', err);
+      console.alert('Failed to fetch 404.html:', err);
     }
   }
   
