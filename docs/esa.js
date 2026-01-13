@@ -221,7 +221,7 @@ async function handleRequest(request) {
         
         // 先缓存再返回 (Cache first then return)
         cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
-          console.alert(`Failed to cache 404 response for ${cacheKey}:`, err);
+          console.alert(`Failed to cache 404 response for ${notFoundUrl}:`, err);
         });
         
         return finalResponse;
