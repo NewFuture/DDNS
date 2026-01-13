@@ -41,8 +41,8 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
-# Official download base (HTTPS mirror of GitHub releases; falls back to GitHub/proxies on failure, checksum verification TBD)
-OFFICIAL_DOWNLOAD_BASE="https://ddns.newfuture.cc/download"
+# Official download base (HTTPS mirror of GitHub releases; falls back to GitHub/proxies on failure)
+OFFICIAL_DOWNLOAD_BASE="${OFFICIAL_DOWNLOAD_BASE:-https://ddns.newfuture.cc/download}"
 # Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
 SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
 # Optional proxy base URL to prefix the original GitHub URL, e.g.
@@ -398,7 +398,8 @@ install_binary() {
         if [ -z "$PROXY_URL" ]; then
             find_working_proxy
             if [ -z "$PROXY_URL" ]; then
-                print_warning "No working proxy detected; trying direct GitHub. Use --proxy (e.g., https://hub.gitmirror.com/) if required." "未检测到可用代理，将直接尝试 GitHub。如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
+                print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
+                print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
             fi
         fi
         download_url=$(build_github_download_url)
