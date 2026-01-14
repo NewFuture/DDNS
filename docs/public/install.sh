@@ -41,6 +41,10 @@ USER_VERSION_SPECIFIED=false
 UNINSTALL_MODE=false
 # Default network timeout (seconds) for downloads; override with env DOWNLOAD_TIMEOUT
 DOWNLOAD_DEFAULT_TIMEOUT="${DOWNLOAD_TIMEOUT:-90}"
+# Official download base URL (default official domain ddns.newfuture.cc; override with OFFICIAL_DOWNLOAD_BASE; falls back to GitHub/proxies on failure)
+OFFICIAL_DOWNLOAD_BASE="${OFFICIAL_DOWNLOAD_BASE:-https://ddns.newfuture.cc/releases}"
+# Set SKIP_OFFICIAL_DOWNLOAD=1/true to bypass the official attempt (still tries GitHub/proxies)
+SKIP_OFFICIAL_DOWNLOAD="${SKIP_OFFICIAL_DOWNLOAD:-}"
 # Optional proxy base URL to prefix the original GitHub URL, e.g.
 # Final download will be: "$PROXY_URL" + "https://github.com/..." (PROXY_URL always ends with '/')
 PROXY_URL=""
@@ -91,6 +95,14 @@ print_warning() {
 
 print_error() {
     printf "${RED}[ERROR]${NC} %s\n" "$(select_message "$1" "$2")"
+}
+
+# Truthy helper (accepts 1/true/yes/on for any case)
+is_true() {
+    case "$1" in
+        1|true|TRUE|True|yes|YES|on|ON) return 0 ;;
+        *) return 1 ;;
+    esac
 }
 
 # Show usage information
@@ -297,6 +309,19 @@ find_working_proxy() {
         print_info "Failed to connect to $test_url" "无法连接到 $test_url"
     done
     print_warning "All proxy checks failed; using direct GitHub" "所有代理检查失败，使用直连 GitHub"
+    return 1
+}
+
+# Ensure proxy is configured or warn about direct GitHub fallback
+ensure_proxy_configured() {
+    if [ -n "$PROXY_URL" ]; then
+        return 0
+    fi
+    if ! find_working_proxy; then
+        print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
+        print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
+        return 1
+    fi
     return 0
 }
 
@@ -341,26 +366,60 @@ build_binary_name() {
     print_info "Target binary: $BINARY_FILE" "二进制文件: $BINARY_FILE"
 }
 
+# Build GitHub download URL (with optional proxy prefix)
+build_github_download_url() {
+    if [ "$VERSION" = "latest" ]; then
+        echo "${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
+    else
+        echo "${PROXY_URL}https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
+    fi
+}
+
+# Build official site download URL (preferred)
+build_official_download_url() {
+    if [ "$VERSION" = "latest" ]; then
+        echo "$OFFICIAL_DOWNLOAD_BASE/latest/$BINARY_FILE"
+    else
+        echo "$OFFICIAL_DOWNLOAD_BASE/$VERSION/$BINARY_FILE"
+    fi
+}
+
 # Download and install binary
 install_binary() {
-    # Build release path and original GitHub URL
-    local download_url
-    if [ "$VERSION" = "latest" ]; then
-        download_url="${PROXY_URL}https://github.com/$REPO/releases/latest/download/$BINARY_FILE"
-    else
-        download_url="${PROXY_URL}https://github.com/$REPO/releases/download/$VERSION/$BINARY_FILE"
-    fi
-
     local temp_file
+    local download_url
+    local success="false"
     temp_file="$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/ddns.bin.$$")"
     print_info "Downloading DDNS binary..." "正在下载 DDNS 二进制文件..."
-    print_info "URL: $download_url"
 
-    if ! download_file "$download_url" "$temp_file"; then
-        print_error "Failed to download binary" "下载二进制文件失败"
-        print_error "Make sure the version $VERSION exists and supports your platform" "请确保版本 $VERSION 存在并支持您的平台"
-        rm -f "$temp_file" 2>/dev/null || true
-        exit 1
+    # Prefer official site download first unless explicitly skipped
+    if ! is_true "$SKIP_OFFICIAL_DOWNLOAD"; then
+        download_url=$(build_official_download_url)
+        print_info "Trying official site: $download_url" "优先尝试官网下载: $download_url"
+        if download_file "$download_url" "$temp_file"; then
+            success="true"
+        else
+            print_warning "Official download failed, will try GitHub or mirrors" "官网下载失败，尝试 GitHub 或镜像"
+        fi
+    else
+        print_info "Skipping official download per configuration" "按配置跳过官网下载"
+    fi
+
+    # Fallback to GitHub/proxy (auto-detect when not set)
+    if [ "$success" != "true" ]; then
+        if [ "$VERSION" = "beta" ]; then
+            print_info "Official beta download failed; fetching beta tag from GitHub API" "官网下载 beta 失败，改为从 GitHub API 获取 beta 版本"
+            get_beta_version
+        fi
+        ensure_proxy_configured
+        download_url=$(build_github_download_url)
+        print_info "Using GitHub/mirror: $download_url" "使用 GitHub 或镜像: $download_url"
+        if ! download_file "$download_url" "$temp_file"; then
+            print_error "Failed to download binary" "下载二进制文件失败"
+            print_error "Make sure the version $VERSION exists and supports your platform" "请确保版本 $VERSION 存在并支持您的平台"
+            rm -f "$temp_file" 2>/dev/null || true
+            exit 1
+        fi
     fi
     
     # Verify download
@@ -593,17 +652,10 @@ main() {
     detect_arch
     detect_libc
     check_download_tool
-    # Auto-select proxy only when not explicitly set
-    if [ -z "$PROXY_URL" ]; then
-        find_working_proxy
-    fi
     
     # Version handling
     # For 'latest', skip API query and use GitHub's latest download URL directly.
-    # For 'beta', fetch the latest available tag via API.
-    if [ "$VERSION" = "beta" ]; then
-        get_beta_version
-    fi
+    # For 'beta', prefer official beta download first; fall back to GitHub API in install_binary().
     
     # Build and install
     build_binary_name
