@@ -17,7 +17,6 @@ export default {
     const enBase = enLink.endsWith('/') ? enLink : `${enLink}/`
 
     let target: string | null = null
-
     if (pathname === '/index.en.html') {
       target = enBase
     } else if (pathname.startsWith(DOC_PREFIX)) {
@@ -31,9 +30,8 @@ export default {
       }
     }
 
-    if (!target) return
-
-    if (cleanUrls && target.endsWith(HTML_EXT)) {
+    // Apply clean URLs by trimming .html when requested; treat roots as "/"
+    if (target && cleanUrls && target.endsWith(HTML_EXT)) {
       target = target.slice(0, -HTML_EXT.length) || '/'
     }
 
