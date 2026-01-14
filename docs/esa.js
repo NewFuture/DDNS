@@ -201,25 +201,21 @@ async function handleRequest(request) {
     const notFoundUrl = 'http://ddns.newfuture.cc/404.html';
     const inline404 = INLINE_404_PLACEHOLDER !== '__INLINE_404_HTML__' ? INLINE_404_PLACEHOLDER : null;
     
-    // 尝试从缓存获取 (Try to get from cache first)
-    const cachedResponse = await cache.get(notFoundUrl);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
     if (inline404) {
       const headers = new Headers();
       headers.set('Content-Type', 'text/html; charset=utf-8');
       headers.set('Cache-Control', 'public, max-age=21600');
-      const finalResponse = new Response(inline404, {
+      return new Response(inline404, {
         status: 404,
         statusText: 'Not Found',
         headers: headers
       });
-      cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
-        console.log('Failed to cache inline 404 response:', err);
-      });
-      return finalResponse;
+    }
+    
+    // 尝试从缓存获取 (Try to get from cache first)
+    const cachedResponse = await cache.get(notFoundUrl);
+    if (cachedResponse) {
+      return cachedResponse;
     }
     
     try {
