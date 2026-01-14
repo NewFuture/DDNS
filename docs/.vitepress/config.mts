@@ -96,25 +96,21 @@ export default defineConfig({
 
     const esaSource = path.resolve(__dirname, '../esa.js')
     if (fs.existsSync(esaSource)) {
-      try {
-        let esaContent = fs.readFileSync(esaSource, 'utf-8')
-        const match = esaContent.match(/INLINE_404_PLACEHOLDER\s*=\s*([`'"])([^`'"]*?)\1/)
-        const ph = match ? match[2] : '__INLINE_404_HTML__'
-        const notFoundPath = path.join(siteConfig.outDir, '404.html')
-        if (fs.existsSync(notFoundPath)) {
-          const notFoundHtml = fs.readFileSync(notFoundPath, 'utf-8')
-          const re = new RegExp(ph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
-          esaContent = esaContent.replace(re, JSON.stringify(notFoundHtml))
-          console.log('✓ Inlined 404.html into esa.js')
-        } else {
-          console.warn('⚠ 404.html not found, copying esa.js without inline 404 content')
-        }
-        fs.writeFileSync(path.join(siteConfig.outDir, 'esa.js'), esaContent, 'utf-8')
-      } catch (error) {
-        console.warn('⚠ Failed to inline 404.html into esa.js:', error)
+      let esaContent = fs.readFileSync(esaSource, 'utf-8')
+      const match = esaContent.match(/INLINE_404_PLACEHOLDER\s*=\s*([`'"])([^`'"]*?)\1/)
+      const ph = match ? match[2] : '__INLINE_404_HTML__'
+      const notFoundPath = path.join(siteConfig.outDir, '404.html')
+      if (!fs.existsSync(notFoundPath)) {
+        throw new Error('404.html not found for inlining')
       }
+      const notFoundHtml = fs.readFileSync(notFoundPath, 'utf-8')
+      const re = new RegExp(ph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+      const inlineHtml = '`' + notFoundHtml.replace(/`/g, '\\`') + '`'
+      esaContent = esaContent.replace(re, inlineHtml)
+      fs.writeFileSync(path.resolve(__dirname, '../esa.inline.js'), esaContent, 'utf-8')
+      console.log('✓ Inlined 404.html into esa.js')
     } else {
-      console.warn('⚠ esa.js not found, skip copying to output directory')
+      throw new Error('esa.js not found, cannot inline 404.html')
     }
   },
   
