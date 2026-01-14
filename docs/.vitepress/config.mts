@@ -100,12 +100,13 @@ export default defineConfig({
     if (fs.existsSync(esaSource)) {
       try {
         let esaContent = fs.readFileSync(esaSource, 'utf-8')
+        const DEFAULT_INLINE_404_PLACEHOLDER = '__INLINE_404_HTML__'
         const placeholderMatch = esaContent.match(
-          /const\s+INLINE_404_HTML\s*=\s*([`'"])([\s\S]*?)\1/
+          /const\s+INLINE_404_PLACEHOLDER\s*=\s*([`'"])([\s\S]*?)\1/
         )
         const INLINE_404_PLACEHOLDER = placeholderMatch
           ? placeholderMatch[2]
-          : '__INLINE_404_HTML__'
+          : DEFAULT_INLINE_404_PLACEHOLDER
         if (fs.existsSync(notFoundPath)) {
           const notFoundHtml = fs.readFileSync(notFoundPath, 'utf-8')
           const escapeRegExp = (value) =>
