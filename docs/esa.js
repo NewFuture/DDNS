@@ -211,26 +211,11 @@ async function handleRequest(request) {
         headers: headers,
       });
     }
-
-    try {
-      const notFoundResponse = await fetch('http://ddns.newfuture.cc/404.html', {
-        redirect: 'follow',
-      });
-
-      if (notFoundResponse.ok) {
-        const headers = new Headers();
-        headers.set('Content-Type', 'text/html; charset=utf-8');
-        headers.set('Cache-Control', 'public, max-age=21600');
-
-        return new Response(notFoundResponse.body, {
-          status: 404,
-          statusText: 'Not Found',
-          headers: headers,
-        });
-      }
-    } catch (err) {
-      console.log('Failed to fetch 404.html:', err);
-    }
+    return new Response('Not Found', {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'Content-Type': 'text/plain' },
+    });
   }
   
   // Fallback if 404.html is not available
