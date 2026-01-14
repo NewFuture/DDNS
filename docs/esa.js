@@ -197,10 +197,10 @@ async function handleRequest(request) {
   // No match found - return 404.html page (avoid infinite loop by not fetching if already requesting 404.html)
   // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
   if (path !== '/404.html') {
-    // 缓存key使用HTTP协议 (Cache key uses HTTP protocol)
-    const notFoundUrl = 'http://ddns.newfuture.cc/404.html';
-    const inline404 = INLINE_404_PLACEHOLDER !== '__INLINE_404_HTML__' ? INLINE_404_PLACEHOLDER : null;
-    
+    const inline404 =
+      INLINE_404_PLACEHOLDER !== '__INLINE_404_HTML__'
+        ? INLINE_404_PLACEHOLDER
+        : null;
     if (inline404) {
       const headers = new Headers();
       headers.set('Content-Type', 'text/html; charset=utf-8');
@@ -208,38 +208,25 @@ async function handleRequest(request) {
       return new Response(inline404, {
         status: 404,
         statusText: 'Not Found',
-        headers: headers
+        headers: headers,
       });
     }
-    
-    // 尝试从缓存获取 (Try to get from cache first)
-    const cachedResponse = await cache.get(notFoundUrl);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
+
     try {
-      const notFoundResponse = await fetch(notFoundUrl, { redirect: 'follow' });
-      
+      const notFoundResponse = await fetch('http://ddns.newfuture.cc/404.html', {
+        redirect: 'follow',
+      });
+
       if (notFoundResponse.ok) {
-        // Return 404.html with 404 status code and appropriate headers
         const headers = new Headers();
-        // Ensure correct content type for HTML 404 page
         headers.set('Content-Type', 'text/html; charset=utf-8');
-        headers.set('Cache-Control', 'public, max-age=21600'); // Cache 404 page for 6 hours
-        
-        const finalResponse = new Response(notFoundResponse.body, {
+        headers.set('Cache-Control', 'public, max-age=21600');
+
+        return new Response(notFoundResponse.body, {
           status: 404,
           statusText: 'Not Found',
-          headers: headers
+          headers: headers,
         });
-        
-        // 先缓存再返回 (Cache first then return)
-        cache.put(notFoundUrl, finalResponse.clone()).catch(err => {
-          console.log(`Failed to cache 404 response for ${notFoundUrl}:`, err);
-        });
-        
-        return finalResponse;
       }
     } catch (err) {
       console.log('Failed to fetch 404.html:', err);
