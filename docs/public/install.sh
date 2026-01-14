@@ -322,11 +322,6 @@ ensure_proxy_configured() {
         print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
         return 1
     fi
-    if [ -z "$PROXY_URL" ]; then
-        print_warning "No working proxy detected; trying direct GitHub." "未检测到可用代理，将直接尝试 GitHub。"
-        print_warning "Use --proxy (e.g., https://hub.gitmirror.com/) if required." "如需代理请使用 --proxy（例如：https://hub.gitmirror.com/）。"
-        return 1
-    fi
     return 0
 }
 
