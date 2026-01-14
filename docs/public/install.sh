@@ -407,6 +407,10 @@ install_binary() {
 
     # Fallback to GitHub/proxy (auto-detect when not set)
     if [ "$success" != "true" ]; then
+        if [ "$VERSION" = "beta" ]; then
+            print_info "Official beta download failed; fetching beta tag from GitHub API" "官网下载 beta 失败，改为从 GitHub API 获取 beta 版本"
+            get_beta_version
+        fi
         ensure_proxy_configured
         download_url=$(build_github_download_url)
         print_info "Using GitHub/mirror: $download_url" "使用 GitHub 或镜像: $download_url"
@@ -651,10 +655,7 @@ main() {
     
     # Version handling
     # For 'latest', skip API query and use GitHub's latest download URL directly.
-    # For 'beta', fetch the latest available tag via API.
-    if [ "$VERSION" = "beta" ]; then
-        get_beta_version
-    fi
+    # For 'beta', prefer official beta download first; fall back to GitHub API in install_binary().
     
     # Build and install
     build_binary_name
