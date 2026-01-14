@@ -24,15 +24,14 @@ export default {
       if (!rest) {
         target = '/'
       } else if (rest.endsWith(EN_HTML_SUFFIX)) {
-        target = `${enBase}${rest.slice(0, -EN_HTML_SUFFIX.length)}`
+        target = `${enBase}${rest.slice(0, -EN_HTML_SUFFIX.length)}${cleanUrls ? "" : HTML_EXT}`
+      } else if(cleanUrls && rest.endsWith(HTML_EXT)) {
+        target = `/${rest.slice(0, -HTML_EXT.length)}` // Apply clean URLs
       } else {
         target = `/${rest}`
       }
-    }
-
-    // Apply clean URLs inline with target resolution
-    if (target && cleanUrls && target.endsWith(HTML_EXT)) {
-      target = target.slice(0, -HTML_EXT.length) || '/'
+    } else{
+      return
     }
 
     const resolved = new URL(target + search + hash, window.location.origin)
