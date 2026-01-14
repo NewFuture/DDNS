@@ -27,7 +27,8 @@
 
 const GITHUB_REPO = 'NewFuture/DDNS';
 const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
-const INLINE_404_HTML = '__INLINE_404_HTML__';
+const INLINE_404_PLACEHOLDER = '__INLINE_404_HTML__';
+const INLINE_404_HTML = INLINE_404_PLACEHOLDER;
 
 /**
  * 获取最新beta版本 (Get latest beta version)
@@ -199,7 +200,7 @@ async function handleRequest(request) {
   if (path !== '/404.html') {
     // 缓存key使用HTTP协议 (Cache key uses HTTP protocol)
     const notFoundUrl = 'http://ddns.newfuture.cc/404.html';
-    const inline404 = INLINE_404_HTML && INLINE_404_HTML !== '__INLINE_404_HTML__' ? INLINE_404_HTML : null;
+    const inline404 = INLINE_404_HTML && INLINE_404_HTML !== INLINE_404_PLACEHOLDER ? INLINE_404_HTML : null;
     
     // 尝试从缓存获取 (Try to get from cache first)
     const cachedResponse = await cache.get(notFoundUrl);

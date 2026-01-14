@@ -101,7 +101,7 @@ export default defineConfig({
       try {
         let esaContent = fs.readFileSync(esaSource, 'utf-8')
         const placeholderMatch = esaContent.match(
-          /INLINE_404_HTML\s*=\s*([`'"])([\s\S]*?)\1/
+          /const\s+INLINE_404_HTML\s*=\s*([`'"])([\s\S]*?)\1/
         )
         const INLINE_404_PLACEHOLDER = placeholderMatch
           ? placeholderMatch[2]
@@ -111,7 +111,7 @@ export default defineConfig({
           const escapeRegExp = (value) =>
             value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
           const placeholderPattern = new RegExp(
-            "['\"]" + escapeRegExp(INLINE_404_PLACEHOLDER) + "['\"]",
+            escapeRegExp(INLINE_404_PLACEHOLDER),
             'g'
           )
           esaContent = esaContent.replace(
