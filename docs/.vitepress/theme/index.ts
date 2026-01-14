@@ -25,12 +25,12 @@ export default {
         target = '/'
       } else if (rest.endsWith(EN_HTML_SUFFIX)) {
         target = `${enBase}${rest.slice(0, -EN_HTML_SUFFIX.length)}${cleanUrls ? "" : HTML_EXT}`
-      } else if(cleanUrls && rest.endsWith(HTML_EXT)) {
+      } else if (cleanUrls && rest.endsWith(HTML_EXT)) {
         target = `/${rest.slice(0, -HTML_EXT.length)}` // Apply clean URLs
       } else {
         target = `/${rest}`
       }
-    } else{
+    } else {
       return
     }
 
