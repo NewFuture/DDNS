@@ -93,6 +93,19 @@ export default defineConfig({
     
     fs.writeFileSync(distPath, content, 'utf-8')
     console.log('✓ Generated llms.txt from template')
+
+    const esaSource = path.resolve(__dirname, '../esa.js')
+    if (fs.existsSync(esaSource)) {
+      const esaTarget = path.join(siteConfig.outDir, 'esa.js')
+      try {
+        fs.copyFileSync(esaSource, esaTarget)
+        console.log('✓ Copied esa.js to output directory')
+      } catch (error) {
+        console.warn('⚠ Failed to copy esa.js to output directory:', error)
+      }
+    } else {
+      console.warn('⚠ esa.js not found, skip copying to output directory')
+    }
   },
   
   // 主题配置
