@@ -24,7 +24,7 @@ export default {
       if (!rest) {
         target = '/'
       } else if (rest.endsWith(EN_HTML_SUFFIX)) {
-        target = `${enBase}${rest.slice(0, -EN_HTML_SUFFIX.length)}${HTML_EXT}`
+        target = `${enBase}${rest.slice(0, -EN_HTML_SUFFIX.length)}`
       } else {
         target = `/${rest}`
       }
