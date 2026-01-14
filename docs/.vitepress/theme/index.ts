@@ -11,8 +11,8 @@ export default {
 
     const { pathname, search, hash } = window.location
     const cleanUrls = !!siteData?.value?.cleanUrls
-    const enBase =
-      (siteData?.value?.locales?.en?.link || EN_BASE).replace(/\/?$/, '/')
+    const enLink = siteData?.value?.locales?.en?.link || EN_BASE
+    const enBase = enLink.endsWith('/') ? enLink : `${enLink}/`
 
     let target: string | null = null
 
@@ -34,7 +34,7 @@ export default {
     if (cleanUrls) {
       if (target === '/index.html') {
         target = '/'
-      } else if (target === `/en/${INDEX_HTML}`) {
+      } else if (target === `${EN_BASE}${INDEX_HTML}`) {
         target = EN_BASE
       } else if (target.endsWith(`/${INDEX_HTML}`)) {
         target = target.slice(0, -INDEX_HTML.length)
