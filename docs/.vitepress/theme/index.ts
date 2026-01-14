@@ -30,7 +30,7 @@ export default {
       }
     }
 
-    // Apply clean URLs by trimming .html when requested; treat roots as "/"
+    // Apply clean URLs inline with target resolution
     if (target && cleanUrls && target.endsWith(HTML_EXT)) {
       target = target.slice(0, -HTML_EXT.length) || '/'
     }
