@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import type { Theme } from 'vitepress'
 
 const EN_BASE = '/en/'
+const INDEX_HTML = 'index.html'
 
 export default {
   extends: DefaultTheme,
@@ -17,6 +18,8 @@ export default {
 
     if (pathname === '/index.en.html') {
       target = enBase
+    } else if (pathname === '/doc/') {
+      target = '/'
     } else {
       const enDoc = pathname.match(/^\/doc\/(.+)\.en\.html$/)
       if (enDoc) {
@@ -29,8 +32,8 @@ export default {
     if (!target) return
 
     if (cleanUrls) {
-      if (target.endsWith('/index.html')) {
-        target = target.slice(0, -'index.html'.length) || '/'
+      if (target.endsWith('/' + INDEX_HTML)) {
+        target = target.slice(0, -INDEX_HTML.length) || '/'
       } else if (target.endsWith('.html')) {
         target = target.slice(0, -'.html'.length)
       }
