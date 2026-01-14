@@ -34,8 +34,8 @@ export default {
     if (cleanUrls) {
       if (target === '/index.html') {
         target = '/'
-      } else if (target === `${EN_BASE}${INDEX_HTML}`) {
-        target = EN_BASE
+      } else if (target === `${enBase}${INDEX_HTML}`) {
+        target = enBase
       } else if (target.endsWith(`/${INDEX_HTML}`)) {
         target = target.slice(0, -INDEX_HTML.length)
       } else if (target.endsWith('.html')) {
