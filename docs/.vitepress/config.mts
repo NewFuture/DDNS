@@ -98,32 +98,18 @@ export default defineConfig({
     if (fs.existsSync(esaSource)) {
       try {
         let esaContent = fs.readFileSync(esaSource, 'utf-8')
-        const DEFAULT_INLINE_404_PLACEHOLDER = '__INLINE_404_HTML__'
+        const match = esaContent.match(/INLINE_404_PLACEHOLDER\s*=\s*([`'"])([^`'"]*?)\1/)
+        const ph = match ? match[2] : '__INLINE_404_HTML__'
         const notFoundPath = path.join(siteConfig.outDir, '404.html')
-        const placeholderMatch = esaContent.match(
-          /const\s+INLINE_404_PLACEHOLDER\s*=\s*([`'"])([^`'"]*?)\1/
-        )
-        const INLINE_404_PLACEHOLDER = placeholderMatch
-          ? placeholderMatch[2]
-          : DEFAULT_INLINE_404_PLACEHOLDER
         if (fs.existsSync(notFoundPath)) {
           const notFoundHtml = fs.readFileSync(notFoundPath, 'utf-8')
-          const escapeRegExp = (value) =>
-            value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const placeholderPattern = new RegExp(
-            escapeRegExp(INLINE_404_PLACEHOLDER),
-            'g'
-          )
-          esaContent = esaContent.replace(
-            placeholderPattern,
-            JSON.stringify(notFoundHtml)
-          )
+          const re = new RegExp(ph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+          esaContent = esaContent.replace(re, JSON.stringify(notFoundHtml))
           console.log('✓ Inlined 404.html into esa.js')
         } else {
           console.warn('⚠ 404.html not found, copying esa.js without inline 404 content')
         }
-        const esaTarget = path.join(siteConfig.outDir, 'esa.js')
-        fs.writeFileSync(esaTarget, esaContent, 'utf-8')
+        fs.writeFileSync(path.join(siteConfig.outDir, 'esa.js'), esaContent, 'utf-8')
       } catch (error) {
         console.warn('⚠ Failed to inline 404.html into esa.js:', error)
       }

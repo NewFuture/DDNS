@@ -197,24 +197,13 @@ async function handleRequest(request) {
   // No match found - return 404.html page (avoid infinite loop by not fetching if already requesting 404.html)
   // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
   if (path !== '/404.html') {
-    const inline404 =
-      INLINE_404_PLACEHOLDER !== '__INLINE_404_HTML__'
-        ? INLINE_404_PLACEHOLDER
-        : null;
-    if (inline404) {
-      const headers = new Headers();
-      headers.set('Content-Type', 'text/html; charset=utf-8');
-      headers.set('Cache-Control', 'public, max-age=21600');
-      return new Response(inline404, {
-        status: 404,
-        statusText: 'Not Found',
-        headers: headers,
-      });
-    }
-    return new Response('Not Found', {
+    const headers = new Headers();
+    headers.set('Content-Type', 'text/html; charset=utf-8');
+    headers.set('Cache-Control', 'public, max-age=600');
+    return new Response(INLINE_404_PLACEHOLDER, {
       status: 404,
       statusText: 'Not Found',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: headers,
     });
   }
   
