@@ -36,7 +36,7 @@ export default {
         target = '/'
       } else if (target === `/en/${INDEX_HTML}`) {
         target = '/en/'
-      } else if (target.endsWith('/' + INDEX_HTML)) {
+      } else if (target.endsWith(`/${INDEX_HTML}`)) {
         target = target.slice(0, -INDEX_HTML.length)
       } else if (target.endsWith('.html')) {
         target = target.slice(0, -'.html'.length)
