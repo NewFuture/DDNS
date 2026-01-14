@@ -3,6 +3,7 @@ import type { Theme } from 'vitepress'
 
 const EN_BASE = '/en/'
 const INDEX_HTML = 'index.html'
+const HTML_EXT = '.html'
 
 export default {
   extends: DefaultTheme,
@@ -38,8 +39,8 @@ export default {
         target = enBase
       } else if (target.endsWith(`/${INDEX_HTML}`)) {
         target = target.slice(0, -INDEX_HTML.length)
-      } else if (target.endsWith('.html')) {
-        target = target.slice(0, -'.html'.length)
+      } else if (target.endsWith(HTML_EXT)) {
+        target = target.slice(0, -HTML_EXT.length)
       }
     }
 
