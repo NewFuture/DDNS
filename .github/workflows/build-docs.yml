@@ -8,6 +8,7 @@ on:
       - 'README.md'
       - 'README.en.md'
       - 'schema/**'
+      - 'tests/config/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
     branches: [ master, main ]
@@ -15,7 +16,6 @@ on:
       - 'docs/**'
       - 'README.md'
       - 'README.en.md'
-      - 'schema/**'
       - '.github/workflows/build-docs.yml'
   workflow_dispatch:
 
@@ -32,7 +32,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '24'
         cache: 'npm'
@@ -52,6 +52,6 @@ jobs:
         path: docs/.vitepress/dist/
 
     - name: Deploy to GitHub Pages
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
       id: deployment
       uses: actions/deploy-pages@v4
