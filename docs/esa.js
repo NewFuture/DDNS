@@ -27,7 +27,6 @@
 
 const GITHUB_REPO = 'NewFuture/DDNS';
 const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
-const INLINE_404_PLACEHOLDER = `404_NOT_FOUND`;
 
 /**
  * 获取最新beta版本 (Get latest beta version)
@@ -196,10 +195,12 @@ async function handleRequest(request) {
   
   // No match found - return 404.html page (avoid infinite loop by not fetching if already requesting 404.html)
   // 未匹配任何URL模式 - 返回404.html页面（避免无限循环，如果已经在请求404.html则不再获取）
+  // Inline 404 content injected at build time.
+  const inline404Html = `404_NOT_FOUND`;
   const headers = new Headers();
   headers.set('Content-Type', 'text/html; charset=utf-8');
   headers.set('Cache-Control', 'public, max-age=600');
-  return new Response(INLINE_404_PLACEHOLDER, {
+  return new Response(inline404Html, {
     status: 404,
     statusText: 'Not Found',
     headers: headers,
