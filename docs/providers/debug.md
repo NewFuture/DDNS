@@ -31,7 +31,7 @@ Debug Provider 不需要任何认证信息，无需配置 `id` 和 `token` 参�
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "debug",                     // 当前服务商
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源

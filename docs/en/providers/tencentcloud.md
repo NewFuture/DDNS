@@ -47,7 +47,7 @@ The simplest and quickest way to obtain keys
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "tencentcloud",              // Current provider
     "id": "Your_Secret_Id",     // TencentCloud SecretId
     "token": "Your_Secret_Key", // TencentCloud SecretKey

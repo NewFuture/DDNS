@@ -41,7 +41,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ```jsonc
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json"
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json"
 }
 ```
 
@@ -195,7 +195,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 ```jsonc
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "cloudflare",

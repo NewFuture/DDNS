@@ -33,7 +33,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "dnscom",                    // 当前服务商
     "id": "your_api_key",               // 51DNS API Key
     "token": "your_secret_key",         // 51DNS Secret Key

@@ -46,7 +46,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "huaweidns",                 // 当前服务商
     "id": "your_access_key_id",         // 华为云 Access Key ID
     "token": "your_secret_access_key",  // 华为云 Secret Access Key

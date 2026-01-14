@@ -45,7 +45,7 @@ Uses DNSPod account email and password. Lower security, only recommended for spe
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "dnspod_com",                // Current provider
     "id": "123456",                     // DNSPod International API Token ID
     "token": "YOUR_API_TOKEN",           // DNSPod International API Token Secret

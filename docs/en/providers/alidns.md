@@ -44,7 +44,7 @@ You can view and configure permissions in the [RAM Console](https://ram.console.
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "alidns",                    // Current provider
     "id": "your_access_key_id",              // AccessKey ID
     "token": "your_access_key_secret",              // AccessKey Secret

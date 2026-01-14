@@ -100,7 +100,7 @@ class TestRemoveComment(unittest.TestCase):
         """测试复杂JSON配置与多种注释"""
         content = """{
     // Configuration file for DDNS
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Schema validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Schema validation
     "debug": false,  # false=disable, true=enable
     "dns": "dnspod_com",  // DNS provider
     "id": "1008666",      # ID or Email
@@ -113,7 +113,7 @@ class TestRemoveComment(unittest.TestCase):
 }"""
         expected = """{
 
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "debug": false,
     "dns": "dnspod_com",
     "id": "1008666",

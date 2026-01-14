@@ -36,7 +36,7 @@ NameSilo uses API Key for authentication, which is the only authentication metho
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "namesilo",                  // Current provider
     "token": "c40031261ee449dda629d2df14e9cb63", // NameSilo API Key
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source

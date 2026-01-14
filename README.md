@@ -224,7 +224,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
 ```json
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "dnspod 或 dnspod_com 或 alidns 或 aliesa 或 dnscom 或 cloudflare 或 he 或 huaweidns 或 namesilo 或 tencentcloud 或 noip 或 callback",

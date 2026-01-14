@@ -65,7 +65,7 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 
 ```jsonc
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "dns": "dnspod",
   "id": "12345",
   "token": "your_token_here",
@@ -158,7 +158,7 @@ ddns --debug
 - [JSON配置](../config/json.md) - JSON配置文件格式说明  
 - [环境变量配置](../config/env.md) - 环境变量配置方式
 - [Provider开发指南](../dev/provider.md) - 如何开发新的provider
-- [JSON Schema](../../schema/v4.0.json) - 配置文件验证架构
+- [JSON Schema](../../schema/v4.1.json) - 配置文件验证架构
 
 ---
 
