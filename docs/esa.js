@@ -27,7 +27,7 @@
 
 const GITHUB_REPO = 'NewFuture/DDNS';
 const edgeKv = new EdgeKV({ namespace: 'ddns-releases' });
-const INLINE_404_PLACEHOLDER = '404_NOT_FOUND';
+const INLINE_404_PLACEHOLDER = `404_NOT_FOUND`;
 
 /**
  * 获取最新beta版本 (Get latest beta version)

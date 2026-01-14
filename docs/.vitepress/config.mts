@@ -103,9 +103,9 @@ export default defineConfig({
         throw new Error('404.html not found for inlining')
       }
       const notFoundHtml = fs.readFileSync(notFoundPath, 'utf-8')
-      const inlineHtml = '`' + notFoundHtml.replace(/`/g, '\\`') + '`'
+      const inlineHtml = 'String.raw`' + notFoundHtml.replace(/`/g, '\\`') + '`'
       esaContent = esaContent.split(ph).join(inlineHtml)
-      fs.writeFileSync(path.resolve(__dirname, '../esa.inline.js'), esaContent, 'utf-8')
+      fs.writeFileSync(path.join(siteConfig.outDir, 'esa.js'), esaContent, 'utf-8')
       console.log('✓ Inlined 404.html into esa.js')
     } else {
       throw new Error('esa.js not found, cannot inline 404.html')
