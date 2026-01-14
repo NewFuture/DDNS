@@ -70,7 +70,7 @@ API Token 方式更安全，支持精细化权限控制，是 Cloudflare 推荐�
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "cloudflare",                // 当前服务商
     "token": "your_cloudflare_api_token", // Cloudflare API Token
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源

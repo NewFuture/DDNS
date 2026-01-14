@@ -61,7 +61,7 @@ ddns --dns noip --id your_username --token your_password --ipv4 ddns.newfuture.c
 
 ```jsonc
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "dns": "dnspod",
   "id": "12345",
   "token": "your_token_here",

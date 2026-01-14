@@ -70,7 +70,7 @@ You can view and configure permissions in [Cloudflare API Token Management](http
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "cloudflare",                // Current provider
     "token": "your_cloudflare_api_token", // Cloudflare API Token
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source

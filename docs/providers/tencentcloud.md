@@ -54,7 +54,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "tencentcloud",              // 当前服务商
     "id": "Your_Secret_Id",     // 腾讯云 SecretId
     "token": "Your_Secret_Key", // 腾讯云 SecretKey

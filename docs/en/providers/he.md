@@ -37,7 +37,7 @@ DNS records and DNS must be created in advance
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "he",                        // Current provider
     "token": "your_ddns_key",      // HE.net dynamic DNS password
     "index4": ["public", 0],       // IPv4 address source, corresponds to A record value

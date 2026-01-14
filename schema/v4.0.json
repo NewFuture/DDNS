@@ -1,16 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$id": "https://ddns.newfuture.cc/schema/v4.1.json",
   "description": "DNS 配置文件 https://github.com/NewFuture/DDNS",
   "type": "object",
   "properties": {
     "$schema": {
       "type": "string",
-      "title": "please use https://ddns.newfuture.cc/schema/v4.0.json",
-      "description": "请更换为 https://ddns.newfuture.cc/schema/v4.0.json",
-      "default": "https://ddns.newfuture.cc/schema/v4.0.json",
+      "title": "please use https://ddns.newfuture.cc/schema/v4.1.json",
+      "description": "请更换为 https://ddns.newfuture.cc/schema/v4.1.json",
+      "default": "https://ddns.newfuture.cc/schema/v4.1.json",
       "enum": [
-        "https://ddns.newfuture.cc/schema/v4.0.json",
+        "https://ddns.newfuture.cc/schema/v4.1.json",
         "http://ddns.newfuture.cc/schema/v4.0.json",
         "./schema/v4.0.json"
       ]

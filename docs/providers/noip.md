@@ -52,7 +52,7 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "noip",                      // 当前服务商
     "id": "myusername",                 // No-IP 用户名或 DDNS ID
     "token": "mypassword",              // No-IP 密码或 DDNS KEY

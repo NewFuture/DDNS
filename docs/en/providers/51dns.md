@@ -33,7 +33,7 @@ Official Website: <https://www.51dns.com/>
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "dnscom",                    // Current provider
     "id": "your_api_key",               // 51DNS API Key
     "token": "your_secret_key",         // 51DNS Secret Key

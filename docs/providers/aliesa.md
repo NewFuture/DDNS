@@ -49,7 +49,7 @@
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "aliesa",                    // 当前服务商
     "id": "your_access_key_id",              // AccessKey ID
     "token": "your_access_key_secret",              // AccessKey Secret

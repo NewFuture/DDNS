@@ -46,7 +46,7 @@ You can view and configure permissions in [Identity and Access Management](https
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "huaweidns",                 // Current provider
     "id": "your_access_key_id",         // Huawei Cloud Access Key ID
     "token": "your_secret_access_key",  // Huawei Cloud Secret Access Key

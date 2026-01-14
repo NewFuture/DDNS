@@ -52,7 +52,7 @@ For users using Tencent Cloud AccessKey, please refer to [Tencent Cloud DNSPod C
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "dnspod",                    // Current provider
     "id": "123456",                     // DNSPod API Token ID
     "token": "Your-API-TOKEN",           // DNSPod API Token

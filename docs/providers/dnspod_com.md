@@ -50,7 +50,7 @@ API Token 方式更安全，是 DNSPod 推荐的集成方法。
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "dnspod_com",                // 当前服务商
     "id": "123456",                     // DNSPod 国际版 API Token ID
     "token": "YOUR_API_TOKEN",           // DNSPod 国际版 API Token Secret

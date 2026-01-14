@@ -52,7 +52,7 @@ Use No-IP account username and password for authentication, which is the simples
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "noip",                      // Current provider
     "id": "myusername",                 // No-IP username or DDNS ID
     "token": "mypassword",              // No-IP password or DDNS KEY

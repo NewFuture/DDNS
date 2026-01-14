@@ -31,7 +31,7 @@ Debug Provider does not require any authentication information, no need to confi
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Format validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "debug",                     // Current provider
     "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source

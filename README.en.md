@@ -221,7 +221,7 @@ For detailed configuration guide, see: [Callback Provider Configuration](docs/en
 
 ```json
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "dnspod or dnspod_com or alidns or aliesa or dnscom or cloudflare or he or huaweidns or namesilo or tencentcloud or noip or callback",

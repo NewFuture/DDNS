@@ -1,5 +1,5 @@
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "noip", // NoIP DNS service
     "id": "TEST", // Unique identifier for the configuration
     "token": "TEST", # Token for authentication, can be empty for NoIP

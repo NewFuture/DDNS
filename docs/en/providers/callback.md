@@ -17,7 +17,7 @@ Return to [All Providers](/en/providers/) to see more options
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "callback",
     "endpoint": "https://api.example.com", // endpoint can be merged with id parameter
     "id": "/ddns?domain=__DOMAIN__&ip=__IP__", // endpoint and id cannot both be empty
@@ -53,7 +53,7 @@ Return to [All Providers](/en/providers/) to see more options
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "callback",
     "id": "https://api.example.com/update?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__",
     "index4": ["url:http://api.ipify.cn", "public"],
@@ -69,7 +69,7 @@ GET https://api.example.com/update?domain=ddns.newfuture.cc&ip=192.168.1.100&typ
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
     "dns": "callback",
     "endpoint": "https://api.example.com",
     "token": {

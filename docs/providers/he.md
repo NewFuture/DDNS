@@ -37,7 +37,7 @@ HE.net 使用专门的动态 DNS 密码进行认证，不使用账户登录密�
 
 ```jsonc
 {
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // 格式验证
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "he",                        // 当前服务商
     "token": "your_ddns_key",      // HE.net 动态 DNS 密码
     "index4": ["public", 0],       // IPv4地址来源, 与A记录值对应

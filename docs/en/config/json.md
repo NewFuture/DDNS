@@ -200,7 +200,7 @@ The `log` parameter is used to configure logging. It's an object that supports t
 
 ```jsonc
 {
-  "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "id": "12345",
   "token": "mytokenkey",
   "dns": "cloudflare",
