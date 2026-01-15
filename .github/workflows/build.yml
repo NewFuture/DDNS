@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.version }}
         if: matrix.version == '2.7' || matrix.version == '3'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: matrix.version != '2.7' && matrix.version != '3'
         with:
           python-version: ${{ matrix.version }}
@@ -98,7 +98,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Install dependencies
@@ -173,7 +173,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: ${{ matrix.arch }}
