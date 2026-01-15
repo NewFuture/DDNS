@@ -1,5 +1,7 @@
 name: Test Install Script
 run-name: "Install Test: ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} | ${{ github.event.pull_request.title || 'Manual trigger' }} by ${{ github.actor }}"
+permissions:
+  contents: read
 
 on:
   push:
