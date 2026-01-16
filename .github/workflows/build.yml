@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
         with:
           src: "."
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.version }}
         if: matrix.version == '2.7' || matrix.version == '3'
       - uses: actions/setup-python@v6
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
@@ -171,7 +171,7 @@ jobs:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
     timeout-minutes: ${{ matrix.arch == 'x86' && 20 || contains(matrix.os, 'windows') && 12 || 8 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
@@ -284,7 +284,7 @@ jobs:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
@@ -347,7 +347,7 @@ jobs:
           'linux/ppc64le,linux/riscv64,linux/s390x' 
         }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: python3 .github/patch.py docker
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
