@@ -196,7 +196,7 @@ jobs:
         run: python3 -m ddns -c tests/config/callback.json
 
       - name: Build Executable
-        uses: Nuitka/Nuitka-Action@v1.3
+        uses: Nuitka/Nuitka-Action@v1.4
         with:
           nuitka-version: main
           script-name: run.py
@@ -233,7 +233,7 @@ jobs:
 
       - name: Build Windows App (standalone)
         if: runner.os == 'Windows'
-        uses: Nuitka/Nuitka-Action@v1.3
+        uses: Nuitka/Nuitka-Action@v1.4
         with:
           nuitka-version: main
           script-name: run.py
