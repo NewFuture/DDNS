@@ -77,7 +77,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Install dependencies
@@ -127,7 +127,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
