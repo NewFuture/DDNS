@@ -22,7 +22,7 @@ jobs:
     env:
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: python3 .github/patch.py docker
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -76,7 +76,7 @@ jobs:
       # IMPORTANT: this permission is mandatory for Trusted Publishing
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
@@ -126,7 +126,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -222,7 +222,7 @@ jobs:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
@@ -271,7 +271,7 @@ jobs:
       contents: write
     needs: [publish-docker, publish-pypi, publish-binary, publish-linux-binary]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - run: python3 .github/patch.py release
 
