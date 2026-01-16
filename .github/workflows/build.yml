@@ -141,7 +141,7 @@ jobs:
       - run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
       - run: python3 -m ddns -c tests/config/he-proxies.json --debug
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pypi
           path: dist/
@@ -259,7 +259,7 @@ jobs:
 
       # Upload build result
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ddns-${{ env.OS_NAME }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -318,7 +318,7 @@ jobs:
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ddns-${{ matrix.libc }}-${{ matrix.host}}
           path: dist/*
@@ -422,7 +422,7 @@ jobs:
       
       # 上传测试结果和镜像
       - name: Upload images
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-${{ matrix.host }}
           path: ddns-oci-*.tar
