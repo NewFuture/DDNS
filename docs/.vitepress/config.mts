@@ -347,8 +347,7 @@ export default defineConfig({
             text: 'Development',
             items: [
               { text: 'Config Docs', link: '/en/dev/config' },
-              { text: 'Provider Guide', link: '/en/dev/provider' },
-              { text: 'ESA Pages Deploy', link: '/esa-deploy' }
+              { text: 'Provider Guide', link: '/en/dev/provider' }
             ]
           }
         ],
@@ -391,12 +390,6 @@ export default defineConfig({
               items: [
                 { text: 'Config Documentation', link: '/en/dev/config' },
                 { text: 'Provider Development', link: '/en/dev/provider' }
-              ]
-            },
-            {
-              text: 'Deployment',
-              items: [
-                { text: 'ESA Pages Deploy', link: '/esa-deploy' }
               ]
             }
           ]
