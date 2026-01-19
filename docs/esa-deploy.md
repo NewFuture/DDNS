@@ -306,3 +306,5 @@ DDNS 文档使用 VitePress 2.0 构建，构建过程包括：
 - [DDNS GitHub 仓库](https://github.com/NewFuture/DDNS)
 
 Tags: #阿里云ESA Pages #阿里云云工开物
+
+![esa](https://edge-ddns-proxy.newfuture.cc/images/esa.png)
