@@ -40,7 +40,6 @@ jobs:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: check-changes
-    if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
     env:
       # Remote installer from the current repository and commit
       RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/public/install.sh', github.repository, github.sha) }}
@@ -51,30 +50,41 @@ jobs:
 
     steps:
       - name: Test install script help
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | sh -s -- --help
       - name: Test with bash (if available)
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | bash -s -- --help
 
       - name: Test install latest
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | sh
       - name: Check DDNS
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: ddns --version
       - name: Test uninstall
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | sh -s -- --uninstall
 
 
       - name: Test install beta with language detection (zh_CN)
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- beta
       - name: Test install help with language detection (zh_CN)
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | LANG=zh_CN.UTF-8 sh -s -- --help
       - name: Check DDNS
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: ddns --version
       - name: Test uninstall
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: curl -fsSL "$RAW_URL" | sh -s -- --uninstall
 
       - name: Test install location by wget
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: wget -qO - "$RAW_URL" | sh -s -- --install-dir /tmp/ddns
       - name: Check DDNS in custom location
+        if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
         run: /tmp/ddns/ddns --version
 
   test-with-container:
