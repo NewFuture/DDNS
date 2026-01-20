@@ -14,7 +14,7 @@ on:
 
 jobs:
   check-changes:
-    name: Check install.sh changes
+    name: Check install.sh or workflow changes
     runs-on: ubuntu-latest
     outputs:
       install-sh-changed: ${{ steps.filter.outputs.install-sh }}
@@ -22,14 +22,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 2
-      - name: Check if install.sh changed
+      - name: Check if install.sh or workflow changed
         id: filter
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "install-sh=true" >> $GITHUB_OUTPUT
           else
-            # For push events, check if install.sh changed in the last commit
-            if git diff --name-only HEAD^ HEAD | grep -q "^docs/public/install.sh$"; then
+            # For push events, check if install.sh or workflow file changed in the last commit
+            if git diff --name-only HEAD^ HEAD | grep -qE "^(docs/public/install.sh|\.github/workflows/test-install\.yml)$"; then
               echo "install-sh=true" >> $GITHUB_OUTPUT
             else
               echo "install-sh=false" >> $GITHUB_OUTPUT
