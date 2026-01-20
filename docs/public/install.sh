@@ -33,7 +33,7 @@ VERSION=""
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="ddns"
 REPO="NewFuture/DDNS"
-USER_AGENT="DDNS-Installer/1.0"
+USER_AGENT="DDNS-Installer/2.0"
 FORCE_INSTALL=false
 # Whether user explicitly passed a VERSION argument
 USER_VERSION_SPECIFIED=false
