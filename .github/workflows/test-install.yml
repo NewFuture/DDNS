@@ -6,7 +6,6 @@ permissions:
 on:
   push:
     branches: [ master ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
     paths:
@@ -27,9 +26,6 @@ jobs:
         id: filter
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "install-sh=true" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref_type }}" == "tag" ]; then
-            # For tag events (releases), always run all tests
             echo "install-sh=true" >> $GITHUB_OUTPUT
           else
             # For push events, check if install.sh changed in the last commit
