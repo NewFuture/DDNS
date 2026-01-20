@@ -26,31 +26,32 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 
 ### Core Documentation
 - Homepage: https://ddns.newfuture.cc/
-- Installation: https://ddns.newfuture.cc/install.html
-- Docker Guide: https://ddns.newfuture.cc/docker.html
-- Release Notes: https://ddns.newfuture.cc/release.html
+- Installation: https://ddns.newfuture.cc/install
+- Docker Guide: https://ddns.newfuture.cc/docker
+- Release Notes: https://ddns.newfuture.cc/release
 
 ### Configuration Guides
-- CLI Arguments: https://ddns.newfuture.cc/config/cli.html
-- Environment Variables: https://ddns.newfuture.cc/config/env.html
-- JSON Configuration: https://ddns.newfuture.cc/config/json.html
+- CLI Arguments: https://ddns.newfuture.cc/config/cli
+- Environment Variables: https://ddns.newfuture.cc/config/env
+- JSON Configuration: https://ddns.newfuture.cc/config/json
 
 ### DNS Provider Guides
 - Provider Overview: https://ddns.newfuture.cc/providers/
-- DNSPod (Tencent): https://ddns.newfuture.cc/providers/dnspod.html
-- Cloudflare: https://ddns.newfuture.cc/providers/cloudflare.html
-- AliDNS (Alibaba): https://ddns.newfuture.cc/providers/alidns.html
-- Huawei Cloud: https://ddns.newfuture.cc/providers/huaweicloud.html
-- Namecheap: https://ddns.newfuture.cc/providers/namecheap.html
-- GoDaddy: https://ddns.newfuture.cc/providers/godaddy.html
-- DynDNS: https://ddns.newfuture.cc/providers/dyndns.html
-- HE.net: https://ddns.newfuture.cc/providers/he.html
-- 51Dns: https://ddns.newfuture.cc/providers/51dns.html
-- Aliesa: https://ddns.newfuture.cc/providers/aliesa.html
-- Callback: https://ddns.newfuture.cc/providers/callback.html
+- DNSPod: https://ddns.newfuture.cc/providers/dnspod
+- Cloudflare: https://ddns.newfuture.cc/providers/cloudflare
+- AliDNS (Alibaba): https://ddns.newfuture.cc/providers/alidns
+- Tencent Cloud: https://ddns.newfuture.cc/providers/tecentcloud
+- Huawei Cloud: https://ddns.newfuture.cc/providers/huaweicloud
+- Namecheap: https://ddns.newfuture.cc/providers/namecheap
+- GoDaddy: https://ddns.newfuture.cc/providers/godaddy
+- DynDNS: https://ddns.newfuture.cc/providers/dyndns
+- HE.net: https://ddns.newfuture.cc/providers/he
+- 51Dns: https://ddns.newfuture.cc/providers/51dns
+- Aliesa: https://ddns.newfuture.cc/providers/aliesa
+- Callback: https://ddns.newfuture.cc/providers/callback
 
 ### Developer Documentation
-- Provider Development Guide: https://ddns.newfuture.cc/dev/provider.html
+- Provider Development Guide: https://ddns.newfuture.cc/dev/provider
 
 ### Configuration Schemas
 - v4.1 Schema: https://ddns.newfuture.cc/schema/v4.1.json
@@ -64,12 +65,6 @@ docker run -it --rm -e DNS=dnspod -e ID=your_id -e TOKEN=your_token newfuture/dd
 
 ### Command Line:
 ```bash
-python3 run.py --dns dnspod --id your_id --token your_token
-```
-
-### pip Install:
-```bash
-pip install ddns
 ddns --dns dnspod --id your_id --token your_token
 ```
 
