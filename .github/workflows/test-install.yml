@@ -41,7 +41,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: check-changes
     # Skip non-ubuntu runners when install.sh hasn't changed
-    if: needs.check-changes.outputs.install-sh-changed == 'true' || !matrix.always-run
+    if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.always-run
     env:
       # Remote installer from the current repository and commit
       RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/public/install.sh', github.repository, github.sha) }}
