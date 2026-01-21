@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       install-sh-changed: ${{ steps.filter.outputs.install-sh }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -25,7 +26,7 @@ jobs:
       - name: Check if install.sh or workflow changed
         id: filter
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "install-sh=true" >> $GITHUB_OUTPUT
           else
             # For push events, check if install.sh or workflow file changed in the last commit
@@ -35,19 +36,28 @@ jobs:
               echo "install-sh=false" >> $GITHUB_OUTPUT
             fi
           fi
+      - name: Set matrix based on changes
+        id: set-matrix
+        run: |
+          if [ "${{ steps.filter.outputs.install-sh }}" = "true" ]; then
+            # Test all platforms when install.sh changed
+            echo 'matrix=["ubuntu-latest", "ubuntu-24.04-arm", "macos-latest", "macos-15-intel"]' >> $GITHUB_OUTPUT
+          else
+            # Test only ubuntu-latest when install.sh hasn't changed
+            echo 'matrix=["ubuntu-latest"]' >> $GITHUB_OUTPUT
+          fi
 
   test-install-script:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: check-changes
-    if: needs.check-changes.outputs.install-sh-changed == 'true' || matrix.os == 'ubuntu-latest'
     env:
       # Remote installer from the current repository and commit
       RAW_URL: ${{ format('https://raw.githubusercontent.com/{0}/{1}/docs/public/install.sh', github.repository, github.sha) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest,  ubuntu-24.04-arm, macos-latest, macos-15-intel]
+        os: ${{ fromJSON(needs.check-changes.outputs.matrix) }}
 
     steps:
       - name: Test install script help
