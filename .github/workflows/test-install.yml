@@ -26,7 +26,7 @@ jobs:
       - name: Check if install.sh or workflow changed
         id: filter
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "install-sh=true" >> $GITHUB_OUTPUT
           else
             # For push events, check if install.sh or workflow file changed in the last commit
@@ -39,7 +39,7 @@ jobs:
       - name: Set matrix based on changes
         id: set-matrix
         run: |
-          if [ "${{ steps.filter.outputs.install-sh }}" == "true" ]; then
+          if [ "${{ steps.filter.outputs.install-sh }}" = "true" ]; then
             # Test all platforms when install.sh changed
             echo 'matrix=["ubuntu-latest", "ubuntu-24.04-arm", "macos-latest", "macos-15-intel"]' >> $GITHUB_OUTPUT
           else
