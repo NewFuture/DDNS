@@ -9,6 +9,12 @@ Official Links:
 - Official Website: <https://www.noip.com/>
 - Provider Console: <https://www.noip.com/members/>
 
+### 💡 For Router/Modem Users
+
+For router/modem built-in DDNS protocol conversion to modern DNS providers, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**.
+
+---
+
 ## Authentication Information
 
 ### 1. DDNS KEY + ID Authentication (Recommended)

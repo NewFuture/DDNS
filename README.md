@@ -244,6 +244,12 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
 </details>
 
+## 🌐 路由器/光猫用户？
+
+如果您的路由器或光猫仅支持传统 DDNS 协议，但想使用现代 DNS 服务商，可以使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** 实现协议转换。
+
+---
+
 ## 定时任务
 
 <details>

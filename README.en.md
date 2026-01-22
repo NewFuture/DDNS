@@ -307,6 +307,12 @@ Docker images, without additional parameters, have a scheduled task enabled by d
 
 </details>
 
+## 🌐 Router/Modem Users?
+
+If your router or modem only supports traditional DDNS protocols but you want to use modern DNS providers, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** for protocol conversion.
+
+---
+
 ## FAQ
 
 <details>

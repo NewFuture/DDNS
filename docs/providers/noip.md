@@ -9,6 +9,12 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
 - 官方网站：<https://www.noip.com/>
 - 服务商控制台：<https://www.noip.com/members/>
 
+### 💡 路由器/光猫用户
+
+路由器/光猫内置 DDNS 协议转换到现代 DNS 服务商，可使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**。
+
+---
+
 ## 认证信息
 
 ### 1. DDNS KEY + ID 认证（推荐）

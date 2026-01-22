@@ -10,6 +10,12 @@ Official Links:
 - Service Console: <https://esa.console.aliyun.com/>
 - Free Trial Registration: <https://tianchi.aliyun.com/specials/promotion/freetier/esa?taskCode=25254&recordId=21a3141c2fca892c81ed9490eb6fd677>
 
+### 💡 For Router/Modem Users
+
+For router/modem built-in DDNS protocol conversion to Alibaba Cloud ESA, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**.
+
+---
+
 ## Authentication Information
 
 ### AccessKey Authentication (Recommended)
