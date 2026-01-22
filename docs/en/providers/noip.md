@@ -9,6 +9,18 @@ Official Links:
 - Official Website: <https://www.noip.com/>
 - Provider Console: <https://www.noip.com/members/>
 
+### 💡 For Router/Modem Users
+
+If your device only supports the traditional No-IP DDNS protocol, but your domain is hosted with other DNS providers (such as Cloudflare, Alibaba Cloud, Tencent Cloud, etc.), you can use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** to convert protocols without running a client.
+
+```
+Router/Modem (No-IP Protocol) → edge-ddns-proxy → Modern DNS Providers
+```
+
+> 📖 Learn more: <https://github.com/NewFuture/edge-ddns-proxy>
+
+---
+
 ## Authentication Information
 
 ### 1. DDNS KEY + ID Authentication (Recommended)

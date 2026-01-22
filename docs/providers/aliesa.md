@@ -10,6 +10,23 @@
 - 服务商控制台：<https://esa.console.aliyun.com/>
 - 注册试用：<https://tianchi.aliyun.com/specials/promotion/freetier/esa?taskCode=25254&recordId=21a3141c2fca892c81ed9490eb6fd677>
 
+### 💡 路由器/光猫用户
+
+如果您的路由器或光猫仅支持传统 DDNS 协议（如 DynDNS、No-IP 等），但想使用阿里云 ESA 作为 DNS 服务商，可以使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** 部署在阿里云 ESA 上，实现协议转换。
+
+```
+路由器/光猫 (传统DDNS协议) → edge-ddns-proxy (ESA边缘函数) → 阿里云ESA DNS
+```
+
+**优势：**
+- ✅ 无需安装客户端，利用设备内置 DDNS 功能
+- ✅ 部署在阿里云 ESA 边缘节点，低延迟、高可用
+- ✅ 无服务器架构，零维护成本
+
+> 📖 查看部署指南：<https://github.com/NewFuture/edge-ddns-proxy>
+
+---
+
 ## 认证信息
 
 ### AccessKey 认证
