@@ -246,28 +246,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
 ## 🌐 路由器/光猫用户？
 
-如果您的路由器或光猫内置了传统 DDNS 功能（如 DynDNS、No-IP 协议），但想使用现代 DNS 服务商（Cloudflare、阿里云、腾讯云等），推荐使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**。
-
-### 特点
-
-- ✅ **无需安装客户端**：利用路由器/光猫内置的 DDNS 功能
-- ✅ **协议转换**：传统 DDNS 协议 → 现代 DNS API
-- ✅ **边缘计算**：运行在阿里云ESA/腾讯云EdgeOne/Cloudflare Workers
-- ✅ **零维护**：无服务器架构，自动伸缩
-
-### 工作原理
-
-```
-路由器/光猫 (传统DDNS协议) → edge-ddns-proxy (边缘函数) → DNS服务商 (现代API)
-```
-
-### 适用场景
-
-- 路由器/光猫仅支持传统 DDNS 协议（DynDNS、no-ip、花生壳等）
-- 域名托管在 Cloudflare、阿里云 DNS、腾讯云 DNS 等现代服务商
-- 不想运行额外的 DDNS 客户端程序
-
-> 📖 详细文档和部署指南：<https://github.com/NewFuture/edge-ddns-proxy>
+如果您的路由器或光猫仅支持传统 DDNS 协议，但想使用现代 DNS 服务商，可以使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** 实现协议转换。
 
 ---
 

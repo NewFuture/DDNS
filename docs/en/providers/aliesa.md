@@ -12,18 +12,7 @@ Official Links:
 
 ### 💡 For Router/Modem Users
 
-If your router or modem only supports traditional DDNS protocols (such as DynDNS, No-IP, etc.), but you want to use Alibaba Cloud ESA as your DNS provider, you can deploy **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** on Alibaba Cloud ESA to enable protocol conversion.
-
-```
-Router/Modem (Traditional DDNS) → edge-ddns-proxy (ESA Edge Function) → Alibaba Cloud ESA DNS
-```
-
-**Advantages:**
-- ✅ No client installation required, uses device's built-in DDNS functionality
-- ✅ Deployed on Alibaba Cloud ESA edge nodes, low latency and high availability
-- ✅ Serverless architecture, zero maintenance cost
-
-> 📖 View deployment guide: <https://github.com/NewFuture/edge-ddns-proxy>
+For router/modem built-in DDNS protocol conversion to Alibaba Cloud ESA, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**.
 
 ---
 

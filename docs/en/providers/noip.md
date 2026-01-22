@@ -11,13 +11,7 @@ Official Links:
 
 ### 💡 For Router/Modem Users
 
-If your device only supports the traditional No-IP DDNS protocol, but your domain is hosted with other DNS providers (such as Cloudflare, Alibaba Cloud, Tencent Cloud, etc.), you can use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** to convert protocols without running a client.
-
-```
-Router/Modem (No-IP Protocol) → edge-ddns-proxy → Modern DNS Providers
-```
-
-> 📖 Learn more: <https://github.com/NewFuture/edge-ddns-proxy>
+For router/modem built-in DDNS protocol conversion to modern DNS providers, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**.
 
 ---
 

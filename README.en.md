@@ -309,28 +309,7 @@ Docker images, without additional parameters, have a scheduled task enabled by d
 
 ## 🌐 Router/Modem Users?
 
-If your router or modem has built-in traditional DDNS functionality (such as DynDNS, No-IP protocols), but you want to use modern DNS providers (Cloudflare, Alibaba Cloud, Tencent Cloud, etc.), we recommend using **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)**.
-
-### Features
-
-- ✅ **No Client Installation Required**: Utilizes router/modem's built-in DDNS functionality
-- ✅ **Protocol Conversion**: Traditional DDNS protocols → Modern DNS APIs
-- ✅ **Edge Computing**: Runs on Alibaba Cloud ESA/Tencent Cloud EdgeOne/Cloudflare Workers
-- ✅ **Zero Maintenance**: Serverless architecture with automatic scaling
-
-### How It Works
-
-```
-Router/Modem (Traditional DDNS) → edge-ddns-proxy (Edge Function) → DNS Provider (Modern API)
-```
-
-### Use Cases
-
-- Router/modem only supports traditional DDNS protocols (DynDNS, no-ip, Oray, etc.)
-- Domain is hosted on modern providers like Cloudflare, Alibaba Cloud DNS, Tencent Cloud DNS
-- Don't want to run additional DDNS client software
-
-> 📖 Detailed documentation and deployment guide: <https://github.com/NewFuture/edge-ddns-proxy>
+If your router or modem only supports traditional DDNS protocols but you want to use modern DNS providers, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** for protocol conversion.
 
 ---
 
