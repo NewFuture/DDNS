@@ -16,7 +16,7 @@ class CloudnsProvider(BaseProvider):
 
     endpoint = "https://api.cloudns.net"
     content_type = TYPE_FORM
-    DEFAULT_TTL = 3600  # 1 hour default TTL
+    DEFAULT_TTL = 60  # Minimum TTL (60 seconds) for faster updates
 
     def _request(self, action, **params):
         # type: (str, **(str | int | None)) -> dict | None

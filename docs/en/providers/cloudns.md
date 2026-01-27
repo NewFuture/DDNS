@@ -53,7 +53,7 @@ If using a sub-account, assign the appropriate permissions to the sub-account fr
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.example.com"],           // IPv4 domains
     "ipv6": ["ddns.example.com", "ipv6.example.com"], // IPv6 domains
-    "ttl": 3600                             // DNS record TTL (seconds)
+    "ttl": 60                               // DNS record TTL (seconds)
 }
 ```
 
@@ -68,7 +68,7 @@ If using a sub-account, assign the appropriate permissions to the sub-account fr
 | index6 | IPv6 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
-| ttl | TTL time | Integer (seconds) | 60 - 2592000 (30 days) | 3600 | Provider Parameter |
+| ttl | TTL time | Integer (seconds) | 60 - 2592000 (30 days) | 60 | Provider Parameter |
 | proxy | Proxy settings | Array | [Reference](../config/json.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
@@ -91,7 +91,7 @@ ClouDNS supported TTL ranges:
 | Free | 60 - 86400 | Minimum 60 seconds, maximum 1 day |
 | Premium | 60 - 2592000 | Minimum 60 seconds, maximum 30 days |
 
-Default TTL is **3600 seconds** (1 hour).
+Default TTL is **60 seconds** (minimum value), suitable for fast DDNS record updates.
 
 > Reference: [ClouDNS TTL Documentation](https://www.cloudns.net/wiki/article/12/)
 

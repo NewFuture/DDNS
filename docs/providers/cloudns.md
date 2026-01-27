@@ -53,7 +53,7 @@ ClouDNS 使用 **Auth-ID** 和 **Auth-Password** 进行 API 认证。
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.example.com"],           // IPv4 域名
     "ipv6": ["ddns.example.com", "ipv6.example.com"], // IPv6 域名
-    "ttl": 3600                             // DNS记录TTL（秒）
+    "ttl": 60                               // DNS记录TTL（秒）
 }
 ```
 
@@ -68,7 +68,7 @@ ClouDNS 使用 **Auth-ID** 和 **Auth-Password** 进行 API 认证。
 | index6  | IPv6 来源     | 数组           | [参考配置](../config/json.md#ipv4-ipv6)   | `default` | 公用配置   |
 | ipv4    | IPv4 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
 | ipv6    | IPv6 域名     | 数组           | 域名列表                           | 无        | 公用配置   |
-| ttl     | TTL 时间      | 整数（秒）     | 60 - 2592000（30天）               | 3600      | 服务商参数 |
+| ttl     | TTL 时间      | 整数（秒）     | 60 - 2592000（30天）               | 60        | 服务商参数 |
 | proxy   | 代理设置      | 数组           | [参考配置](../config/json.md#proxy)        | 无        | 公用网络   |
 | ssl     | SSL 验证方式  | 布尔/字符串    | `"auto"`、`true`、`false`            | `auto`    | 公用网络   |
 | cache   | 缓存设置      | 布尔/字符串    | `true`、`false`、`filepath`        | `true`    | 公用配置   |
@@ -91,7 +91,7 @@ ClouDNS 支持的 TTL 范围：
 | 免费版   |     60 - 86400        | 最低 60 秒，最高 1 天  |
 | 高级版   |     60 - 2592000      | 最低 60 秒，最高 30 天 |
 
-默认 TTL 为 **3600 秒**（1 小时）。
+默认 TTL 为 **60 秒**（最小值），适合快速更新 DDNS 记录。
 
 > 参考：[ClouDNS TTL 说明](https://www.cloudns.net/wiki/article/12/)
 

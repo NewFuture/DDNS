@@ -108,7 +108,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
             # Verify default TTL was used
             call_args = mock_http.call_args
             body = call_args[1]["body"]
-            self.assertEqual(body["ttl"], 3600)
+            self.assertEqual(body["ttl"], 60)
 
     def test_create_record_failure(self):
         """Test _create_record method with failed creation"""
@@ -166,7 +166,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
             # Verify default TTL was used
             call_args = mock_http.call_args
             body = call_args[1]["body"]
-            self.assertEqual(body["ttl"], 3600)
+            self.assertEqual(body["ttl"], 60)
 
     def test_request_adds_auth(self):
         """Test _request method adds authentication parameters"""
