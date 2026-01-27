@@ -93,7 +93,8 @@ class CloudnsProvider(BaseProvider):
         # For @ (root) records, ClouDNS uses empty string
         host = "" if subdomain == "@" else subdomain
 
-        data = self._request("/dns/records.json", **{"domain-name": zone_id, "host": host, "type": record_type})
+        params = {"domain-name": zone_id, "host": host, "type": record_type}
+        data = self._request("/dns/records.json", **params)
 
         if not data or not isinstance(data, dict):
             return None
@@ -141,10 +142,8 @@ class CloudnsProvider(BaseProvider):
         # For @ (root) records, use empty string
         host = "" if subdomain == "@" else subdomain
 
-        data = self._request(
-            "/dns/add-record.json",
-            **{"domain-name": zone_id, "record-type": record_type, "host": host, "record": value, "ttl": ttl},
-        )
+        params = {"domain-name": zone_id, "record-type": record_type, "host": host, "record": value, "ttl": ttl}
+        data = self._request("/dns/add-record.json", **params)
 
         if data and data.get("status") == "Success":
             self.logger.info("Record created successfully")
@@ -185,10 +184,8 @@ class CloudnsProvider(BaseProvider):
         # Get original host from record
         host = old_record.get("host", "")
 
-        data = self._request(
-            "/dns/mod-record.json",
-            **{"domain-name": zone_id, "record-id": record_id, "host": host, "record": value, "ttl": ttl},
-        )
+        params = {"domain-name": zone_id, "record-id": record_id, "host": host, "record": value, "ttl": ttl}
+        data = self._request("/dns/mod-record.json", **params)
 
         if data and data.get("status") == "Success":
             self.logger.info("Record updated successfully")
