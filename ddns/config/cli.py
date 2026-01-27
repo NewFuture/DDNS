@@ -125,6 +125,7 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
             "aliesa",
             "callback",
             "cloudflare",
+            "cloudns",
             "debug",
             "dnscom",
             "dnspod_com",
