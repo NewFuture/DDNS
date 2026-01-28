@@ -69,7 +69,7 @@ def main():
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)
     
-    # Check if any changes are in docs/ directory
+    # Check if any changes are in doc/ directory
     docs_changes = any(f.startswith("doc/") for f in added + deleted)
 
     # Remove old issue body file if exists
