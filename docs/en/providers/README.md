@@ -10,6 +10,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `aliesa` | [Alibaba Cloud ESA](https://esa.console.aliyun.com/) | [aliesa 中文文档](../../providers/aliesa.md) | [aliesa English Doc](aliesa.md) | Alibaba Cloud Edge Security Acceleration |
 | `callback` | Custom API (Webhook) | [callback 中文文档](../../providers/callback.md) | [callback English Doc](callback.md) | Custom HTTP API |
 | `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](../../providers/cloudflare.md) | [cloudflare English Doc](cloudflare.md) | Global CDN and DNS service |
+| `cloudns` | [ClouDNS](https://www.cloudns.net/) | [cloudns 中文文档](../../providers/cloudns.md) | [cloudns English Doc](cloudns.md) | Global DNS hosting service |
 | `debug` | Debug Provider | [debug 中文文档](../../providers/debug.md) | [debug English Doc](debug.md) | IP address printing for debugging |
 | `dnscom` | [DNS.COM](https://www.dns.com/) | [51dns 中文文档](../../providers/51dns.md) | [51DNS English Doc](51dns.md) | ⚠️ Pending verification |
 | `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](../../providers/dnspod_com.md) | [dnspod_com English Doc](dnspod_com.md) | ⚠️ Pending verification |
