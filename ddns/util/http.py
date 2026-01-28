@@ -15,32 +15,32 @@ import socket
 
 from .. import __version__
 
-try:  # python 3
-    from urllib.request import (
-        BaseHandler,
-        build_opener,
-        HTTPBasicAuthHandler,
-        HTTPDefaultErrorHandler,
-        HTTPPasswordMgrWithDefaultRealm,
-        HTTPSHandler,
-        ProxyHandler,
-        Request,
-    )
-    from urllib.parse import quote, urlencode, unquote
-    from http.client import HTTPSConnection
-except ImportError:  # python 2
-    from urllib2 import (  # type: ignore[no-redef]
-        BaseHandler,
-        build_opener,
-        HTTPBasicAuthHandler,
-        HTTPDefaultErrorHandler,
-        HTTPPasswordMgrWithDefaultRealm,
-        HTTPSHandler,
-        ProxyHandler,
-        Request,
-    )
-    from urllib import urlencode, quote, unquote  # type: ignore[no-redef]
-    from httplib import HTTPSConnection  # type: ignore[no-redef]
+
+from urllib.request import (
+BaseHandler,
+build_opener,
+HTTPBasicAuthHandler,
+HTTPDefaultErrorHandler,
+HTTPPasswordMgrWithDefaultRealm,
+HTTPSHandler,
+ProxyHandler,
+Request,
+)
+from urllib.parse import quote, urlencode, unquote
+from http.client import HTTPSConnection
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 __all__ = ["request", "HttpResponse", "quote", "urlencode", "USER_AGENT"]
 # Default user-agent for DDNS requests
@@ -209,10 +209,10 @@ class AutoSSLHandler(HTTPSHandler):  # type: ignore[misc]
         self._verify = verify
         self._context = self._ssl_context()
         # 兼容性：优先使用context参数，失败时降级
-        try:  # python 3 / python 2.7.9+
-            HTTPSHandler.__init__(self, context=self._context)
-        except (TypeError, AttributeError):  # python 2.7.8-
-            HTTPSHandler.__init__(self)
+
+        HTTPSHandler.__init__(self, context=self._context)
+
+
 
     def https_open(self, req):
         """处理HTTPS请求，自动处理SSL错误"""
@@ -230,11 +230,11 @@ class AutoSSLHandler(HTTPSHandler):  # type: ignore[misc]
                 raise
 
     def _open(self, req):
-        try:  # python 3
-            return self.do_open(HTTPSConnection, req, context=self._context)
-        except (TypeError, AttributeError):  # python 2.7.6- Fallback for older Python versions
-            logger.info("Falling back to parent https_open method for compatibility")
-            return HTTPSHandler.https_open(self, req)
+
+        return self.do_open(HTTPSConnection, req, context=self._context)
+
+
+
 
     def _ssl_context(self):
         # type: () -> ssl.SSLContext | None
