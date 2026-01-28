@@ -68,7 +68,7 @@ def main():
     documented = parse_agents_md()
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)
-    
+
     # Check if any changes are in doc/ directory
     docs_changes = any(f.startswith("doc/") for f in added + deleted)
 
