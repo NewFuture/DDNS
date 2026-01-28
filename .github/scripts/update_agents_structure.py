@@ -55,7 +55,7 @@ def parse_agents_md():
             stack.append(name.rstrip("/"))
         else:
             path = "/".join(stack + [name])
-            if path.startswith(("ddns/", "doc/", "schema/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
+            if path.startswith(("ddns/", "docs/", "schema/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
                 files.add(path)
     return files
 
@@ -63,14 +63,14 @@ def parse_agents_md():
 def main():
     # type: () -> None
     actual = (
-        scan_files("ddns", (".py")) | scan_files("doc", (".md",)) | scan_files("schema", (".json",))
+        scan_files("ddns", (".py")) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
     )
     documented = parse_agents_md()
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)
 
-    # Check if any changes are in doc/ directory
-    docs_changes = any(f.startswith("doc/") for f in added + deleted)
+    # Check if any changes are in docs/ directory
+    docs_changes = any(f.startswith("docs/") for f in added + deleted)
 
     # Remove old issue body file if exists
     if os.path.exists(ISSUE_BODY_FILE):
