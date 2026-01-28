@@ -116,7 +116,7 @@ tests/:	Unit tests
 	test_cache.py:	Cache tests
 	test_config_*.py:	Configuration tests
 	test_ip.py:	IP detection tests
-	test_provider_*.py:	Provider-specific tests (includes test_provider_cloudns.py)
+	test_provider_*.py:	Provider-specific tests
 	test_scheduler_*.py:	Scheduler tests
 	test_util_*.py:	Utility tests
 
