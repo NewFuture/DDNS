@@ -39,6 +39,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 - Provider Overview: https://ddns.newfuture.cc/providers/
 - DNSPod: https://ddns.newfuture.cc/providers/dnspod
 - Cloudflare: https://ddns.newfuture.cc/providers/cloudflare
+- ClouDNS: https://ddns.newfuture.cc/providers/cloudns
 - AliDNS (Alibaba): https://ddns.newfuture.cc/providers/alidns
 - Tencent Cloud: https://ddns.newfuture.cc/providers/tecentcloud
 - Huawei Cloud: https://ddns.newfuture.cc/providers/huaweicloud
@@ -70,7 +71,7 @@ ddns --dns dnspod --id your_id --token your_token
 
 ## Supported DNS Providers
 
-DNSPod, Cloudflare, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, GoDaddy, Namecheap, CloudXNS, HE.net, DynDNS, NoIP, 51Dns, Aliesa, Callback, and more.
+DNSPod, Cloudflare, ClouDNS, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, GoDaddy, Namecheap, CloudXNS, HE.net, DynDNS, NoIP, 51Dns, Aliesa, Callback, and more.
 
 ## Technical Details
 
