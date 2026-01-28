@@ -11,10 +11,10 @@ from ..util.fileio import read_file_safely, write_file
 from ..util.try_run import try_run
 from ._base import BaseScheduler
 
-
-PermissionError  # type: ignore
-
-
+try:  # python 3
+    PermissionError  # type: ignore
+except NameError:  # python 2 doesn't have PermissionError, use OSError instead
+    PermissionError = IOError
 
 
 class SystemdScheduler(BaseScheduler):
