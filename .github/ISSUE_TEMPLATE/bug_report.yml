@@ -77,13 +77,11 @@ body:
       label: Configuration (配置)
       description: Paste your configuration (remove your id and token / 注意打码)
       placeholder: |
-        ```json
         {
           "dns": "dnspod",
           "id": "YOUR_ID",
           "token": "********"
         }
-        ```
       render: json
     validations:
       required: true
