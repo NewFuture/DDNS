@@ -79,6 +79,7 @@ ddns/:	Main application code
 		aliesa.py:	Alibaba Cloud ESA
 		callback.py:	Custom webhook callbacks
 		cloudflare.py:	Cloudflare DNS
+		cloudns.py:	ClouDNS
 		debug.py:	Debug provider
 		dnscom.py:	DNS.COM
 		dnspod.py:	DNSPod (China)
@@ -115,7 +116,7 @@ tests/:	Unit tests
 	test_cache.py:	Cache tests
 	test_config_*.py:	Configuration tests
 	test_ip.py:	IP detection tests
-	test_provider_*.py:	Provider-specific tests
+	test_provider_*.py:	Provider-specific tests (includes test_provider_cloudns.py)
 	test_scheduler_*.py:	Scheduler tests
 	test_util_*.py:	Utility tests
 
@@ -138,6 +139,7 @@ docs/:	Documentation (VitePress-based)
 		aliesa.md:	Alibaba Cloud ESA guide
 		callback.md:	Custom webhook callbacks guide
 		cloudflare.md:	Cloudflare DNS guide
+		cloudns.md:	ClouDNS guide
 		debug.md:	Debug provider guide
 		dnscom.md:	DNS.COM provider guide
 		dnspod.md:	DNSPod (China) guide
@@ -165,6 +167,7 @@ docs/:	Documentation (VitePress-based)
 			aliesa.md:	Alibaba Cloud ESA guide
 			callback.md:	Custom webhook callbacks guide
 			cloudflare.md:	Cloudflare DNS guide
+			cloudns.md:	ClouDNS guide
 			debug.md:	Debug provider guide
 			dnscom.md:	DNS.COM provider guide
 			dnspod.md:	DNSPod (China) guide
@@ -580,6 +583,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.3  
-**Last Updated**: 2026-01-13  
+**Version**: 1.0.4  
+**Last Updated**: 2026-01-28  
 **Maintained by**: DDNS Project Contributors
