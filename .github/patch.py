@@ -451,7 +451,7 @@ def main():
         exit(1)
     elif mode == "release":
         # 同步修改 docs/release.md 的版本与链接
-        release_md_path = os.path.join(ROOT, "doc", "release.md")
+        release_md_path = os.path.join(ROOT, "docs", "release.md")
         if os.path.exists(release_md_path):
             replace_links_for_release_in_file(
                 release_md_path, version, label="docs/release.md", tag=os.environ.get("GITHUB_REF_NAME")
