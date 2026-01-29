@@ -61,9 +61,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          annotations: |
-            ${{ steps.meta.outputs.annotations }}
-            index,manifest:org.opencontainers.image.description=DDNS Docker Image [${{ github.ref_name }}] - automatically update DNS records to my IP [域名自动指向本机IP]
+          annotations: ${{ steps.meta.outputs.annotations }}
           build-args: |
             BUILDER=ghcr.io/newfuture/nuitka-builder:master   
             GITHUB_REF_NAME=${{ github.ref_name }}
@@ -182,6 +180,7 @@ jobs:
           mode: standalone
           output-dir: dist-app
           lto: yes
+          file-description: "DDNS客户端 ${{ github.ref_name }}"
           windows-console-mode: attach
           windows-icon-from-ico: docs/public/favicon.ico
 
