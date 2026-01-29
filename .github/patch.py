@@ -38,10 +38,9 @@ def update_nuitka_version(pyfile, version=None):
     return False
 
 
-def add_nuitka_file_description(pyfile, version=None):
+def add_nuitka_file_description(pyfile):
     """
     添加 --file-description 配置，使用 __description__ 变量的值
-    如果提供了 version 参数，则在描述中包含版本号
     """
     with open(init_py_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -52,22 +51,9 @@ def add_nuitka_file_description(pyfile, version=None):
         print(f"No __description__ found in {init_py_path}")
         return False
     description = desc_match.group(1)
-    
-    # 如果提供了版本号，将其附加到描述中
-    if version:
-        # 从环境变量中获取原始的 tag 名称（如 v4.1.0），而不是使用规范化的版本
-        tag = os.environ.get("GITHUB_REF_NAME", "")
-        if tag and re.match(r"^v\d+\.\d+", tag):
-            # 使用原始的 tag 名称（如 v4.1.0）
-            description = f"{description} [{tag}]"
-        else:
-            # 降级处理：使用规范化的版本号
-            description = f"{description} [{version}]"
-    
     description_line = f'\n# nuitka-project: --file-description="{description}"\n'
     with open(pyfile, "a", encoding="utf-8") as f:
         f.write(description_line)
-    print(f"Added file description: {description}")
     return True
 
 
@@ -486,7 +472,7 @@ def main():
     # 默认模式：继续执行原有逻辑
     run_py_path = os.path.join(ROOT, "run.py")
     update_nuitka_version(run_py_path, version)
-    add_nuitka_file_description(run_py_path, version)
+    add_nuitka_file_description(run_py_path)
     add_nuitka_windows_unbuffered(run_py_path)
     # add_nuitka_include_modules(run_py_path)
 
