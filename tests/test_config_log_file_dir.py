@@ -26,6 +26,7 @@ class TestLogFileDirectory(unittest.TestCase):
         sys.argv = self.original_argv
         # Clean up logging handlers
         import logging
+
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
         # Clean up temp directory

@@ -190,9 +190,6 @@ docs/:	Documentation (VitePress-based)
 	docker.md:	Docker documentation (Chinese)
 	install.md:	Installation guide (Chinese)
 	release.md:	Release notes (Chinese)
-	esa.js:	ESA provider JavaScript helper
-	llms.txt:	LLM context information
-	package.json:	VitePress dependencies
 
 docker/:	Docker configuration
 	Dockerfile:	Main Dockerfile
