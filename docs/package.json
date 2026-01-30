@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev .",
-    "docs:build": "vitepress build .",
+    "docs:build": "vitepress build . && node .vitepress/format-sitemap.mjs",
     "docs:preview": "vitepress preview .",
-    "build": "vitepress build ."
+    "build": "vitepress build . && node .vitepress/format-sitemap.mjs"
   },
   "devDependencies": {
-    "vitepress": "2.0.0-alpha.15"
+    "vitepress": "^1.6.4"
   }
 }
