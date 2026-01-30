@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev .",
-    "docs:build": "vitepress build . && node .vitepress/format-sitemap.mjs",
+    "docs:build": "vitepress build .",
     "docs:preview": "vitepress preview .",
-    "build": "vitepress build . && node .vitepress/format-sitemap.mjs"
+    "build": "vitepress build ."
   },
   "devDependencies": {
     "vitepress": "^1.6.4"
