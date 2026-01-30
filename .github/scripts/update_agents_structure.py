@@ -14,13 +14,8 @@ def scan_files(directory, extensions):
     # type: (str, tuple) -> set
     """Scan directory for files with given extensions."""
     # Files to exclude from directory structure tracking
-    exclude_files = {
-        "docs/esa-deploy.md",
-        "docs/esa.js",
-        "docs/llms.txt",
-        "docs/package.json",
-    }
-    
+    exclude_files = {"docs/esa-deploy.md", "docs/esa.js", "docs/llms.txt", "docs/package.json"}
+
     result = set()
     base = os.path.join(REPO_ROOT, directory)
     if not os.path.isdir(base):
@@ -65,16 +60,16 @@ def parse_agents_md():
             stack.append(name.rstrip("/"))
         else:
             path = "/".join(stack + [name])
-            if path.startswith(("ddns/", "docs/", "schema/")) and not path.endswith((".png", ".svg", ".jpg", ".gif", ".ico")):
+            if path.startswith(("ddns/", "docs/", "schema/")) and not path.endswith(
+                (".png", ".svg", ".jpg", ".gif", ".ico")
+            ):
                 files.add(path)
     return files
 
 
 def main():
     # type: () -> None
-    actual = (
-        scan_files("ddns", (".py")) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
-    )
+    actual = scan_files("ddns", (".py")) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
     documented = parse_agents_md()
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)

@@ -85,10 +85,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
         provider = CloudnsProvider(self.id, self.token)
 
         with patch.object(provider, "_http") as mock_http:
-            mock_http.return_value = {
-                "status": "Success",
-                "statusDescription": "Successfully added"
-            }
+            mock_http.return_value = {"status": "Success", "statusDescription": "Successfully added"}
 
             result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 3600, None, {})
 
@@ -99,9 +96,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
         provider = CloudnsProvider(self.id, self.token)
 
         with patch.object(provider, "_http") as mock_http:
-            mock_http.return_value = {
-                "status": "Success"
-            }
+            mock_http.return_value = {"status": "Success"}
 
             provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", None, None, {})
 
@@ -115,10 +110,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
         provider = CloudnsProvider(self.id, self.token)
 
         with patch.object(provider, "_http") as mock_http:
-            mock_http.return_value = {
-                "status": "Failed",
-                "statusDescription": "Invalid authentication"
-            }
+            mock_http.return_value = {"status": "Failed", "statusDescription": "Invalid authentication"}
 
             result = provider._create_record("example.com", "www", "example.com", "1.2.3.4", "A", 3600, None, {})
 
@@ -131,10 +123,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
         old_record = {"id": "12345", "host": "www", "type": "A", "record": "5.6.7.8"}
 
         with patch.object(provider, "_http") as mock_http:
-            mock_http.return_value = {
-                "status": "Success",
-                "statusDescription": "Successfully updated"
-            }
+            mock_http.return_value = {"status": "Success", "statusDescription": "Successfully updated"}
 
             result = provider._update_record("example.com", old_record, "1.2.3.4", "A", 3600, None, {})
 
@@ -157,9 +146,7 @@ class TestCloudnsProvider(BaseProviderTestCase):
         old_record = {"id": "12345", "host": "www"}
 
         with patch.object(provider, "_http") as mock_http:
-            mock_http.return_value = {
-                "status": "Success"
-            }
+            mock_http.return_value = {"status": "Success"}
 
             provider._update_record("example.com", old_record, "1.2.3.4", "A", None, None, {})
 
@@ -200,7 +187,7 @@ class TestCloudnsProviderIntegration(BaseProviderTestCase):
             # Simulate API responses
             mock_request.side_effect = [
                 {},  # No existing record (empty dict)
-                {"status": "Success"}  # Record created
+                {"status": "Success"},  # Record created
             ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 3600)
@@ -216,7 +203,7 @@ class TestCloudnsProviderIntegration(BaseProviderTestCase):
             existing_record = {"id": "12345", "host": "www", "type": "A", "record": "5.6.7.8"}
             mock_request.side_effect = [
                 {"12345": existing_record},  # Existing record found
-                {"status": "Success"}  # Record updated
+                {"status": "Success"},  # Record updated
             ]
 
             result = provider.set_record("www.example.com", "1.2.3.4", "A", 3600)
@@ -230,7 +217,7 @@ class TestCloudnsProviderIntegration(BaseProviderTestCase):
         with patch.object(provider, "_request") as mock_request:
             mock_request.side_effect = [
                 {},  # No existing record (empty dict)
-                {"status": "Success"}  # Record created
+                {"status": "Success"},  # Record created
             ]
 
             result = provider.set_record("example.com", "1.2.3.4", "A", 3600)
