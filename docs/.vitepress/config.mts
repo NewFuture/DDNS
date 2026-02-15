@@ -82,7 +82,7 @@ export default defineConfig({
     hostname: 'https://ddns.newfuture.cc'
   },
   
-  // 构建完成后生成 llms.txt (从模板文件)
+  // 构建完成后生成 llms.txt (从模板文件) 并复制 markdown 文件
   buildEnd: async (siteConfig) => {
     const templatePath = path.resolve(__dirname, '../llms.txt')
     const distPath = path.join(siteConfig.outDir, 'llms.txt')
@@ -93,6 +93,40 @@ export default defineConfig({
     
     fs.writeFileSync(distPath, content, 'utf-8')
     console.log('✓ Generated llms.txt from template')
+    
+    // 复制所有 markdown 文件到构建输出目录
+    const docsDir = path.resolve(__dirname, '..')
+    const outDir = siteConfig.outDir
+    
+    function copyMarkdownFiles(srcDir, destDir, relativePath = '') {
+      const entries = fs.readdirSync(srcDir, { withFileTypes: true })
+      
+      for (const entry of entries) {
+        const srcPath = path.join(srcDir, entry.name)
+        const destPath = path.join(destDir, entry.name)
+        const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
+        
+        // 跳过特殊目录
+        if (entry.isDirectory()) {
+          if (entry.name === '.vitepress' || entry.name === 'node_modules' || entry.name === 'public') {
+            continue
+          }
+          // 递归处理子目录
+          if (!fs.existsSync(destPath)) {
+            fs.mkdirSync(destPath, { recursive: true })
+          }
+          copyMarkdownFiles(srcPath, destPath, relPath)
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          // 复制 markdown 文件
+          fs.copyFileSync(srcPath, destPath)
+          console.log(`  ✓ Copied ${relPath}`)
+        }
+      }
+    }
+    
+    console.log('\nCopying markdown files to build output...')
+    copyMarkdownFiles(docsDir, outDir)
+    console.log('✓ All markdown files copied\n')
   },
   
   // 主题配置
