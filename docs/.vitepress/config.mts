@@ -97,35 +97,44 @@ export default defineConfig({
     // 复制所有 markdown 文件到构建输出目录
     const docsDir = path.resolve(__dirname, '..')
     const outDir = siteConfig.outDir
-    
-    function copyMarkdownFiles(srcDir, destDir, relativePath = '') {
-      const entries = fs.readdirSync(srcDir, { withFileTypes: true })
-      
-      for (const entry of entries) {
-        const srcPath = path.join(srcDir, entry.name)
-        const destPath = path.join(destDir, entry.name)
-        const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
-        
-        // 跳过特殊目录
-        if (entry.isDirectory()) {
-          if (entry.name === '.vitepress' || entry.name === 'node_modules' || entry.name === 'public') {
-            continue
-          }
-          // 递归处理子目录
-          if (!fs.existsSync(destPath)) {
-            fs.mkdirSync(destPath, { recursive: true })
-          }
-          copyMarkdownFiles(srcPath, destPath, relPath)
-        } else if (entry.isFile() && entry.name.endsWith('.md')) {
-          // 复制 markdown 文件
-          fs.copyFileSync(srcPath, destPath)
-          console.log(`  ✓ Copied ${relPath}`)
-        }
-      }
-    }
+    const excludeDirs = new Set(['.vitepress', 'node_modules', 'public'])
     
     console.log('\nCopying markdown files to build output...')
-    copyMarkdownFiles(docsDir, outDir)
+    
+    // 递归获取所有 markdown 文件
+    function getMarkdownFiles(dir, baseDir = dir) {
+      const files = []
+      const entries = fs.readdirSync(dir, { withFileTypes: true })
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name)
+        
+        if (entry.isDirectory() && !excludeDirs.has(entry.name)) {
+          files.push(...getMarkdownFiles(fullPath, baseDir))
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          files.push({
+            src: fullPath,
+            rel: path.relative(baseDir, fullPath)
+          })
+        }
+      }
+      
+      return files
+    }
+    
+    // 复制所有找到的 markdown 文件
+    const markdownFiles = getMarkdownFiles(docsDir)
+    for (const { src, rel } of markdownFiles) {
+      const dest = path.join(outDir, rel)
+      const destDir = path.dirname(dest)
+      
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true })
+      }
+      fs.copyFileSync(src, dest)
+      console.log(`  ✓ Copied ${rel}`)
+    }
+    
     console.log('✓ All markdown files copied\n')
   },
   
