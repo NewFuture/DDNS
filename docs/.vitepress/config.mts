@@ -82,7 +82,7 @@ export default defineConfig({
     hostname: 'https://ddns.newfuture.cc'
   },
   
-  // 构建完成后生成 llms.txt (从模板文件)
+  // 构建完成后生成 llms.txt (从模板文件) 并复制 markdown 文件
   buildEnd: async (siteConfig) => {
     const templatePath = path.resolve(__dirname, '../llms.txt')
     const distPath = path.join(siteConfig.outDir, 'llms.txt')
@@ -93,6 +93,49 @@ export default defineConfig({
     
     fs.writeFileSync(distPath, content, 'utf-8')
     console.log('✓ Generated llms.txt from template')
+    
+    // 复制所有 markdown 文件到构建输出目录
+    const docsDir = path.resolve(__dirname, '..')
+    const outDir = siteConfig.outDir
+    const excludeDirs = new Set(['.vitepress', 'node_modules', 'public'])
+    
+    console.log('\nCopying markdown files to build output...')
+    
+    // 递归获取所有 markdown 文件
+    function getMarkdownFiles(dir, baseDir = dir) {
+      const files = []
+      const entries = fs.readdirSync(dir, { withFileTypes: true })
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name)
+        
+        if (entry.isDirectory() && !excludeDirs.has(entry.name)) {
+          files.push(...getMarkdownFiles(fullPath, baseDir))
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          files.push({
+            src: fullPath,
+            rel: path.relative(baseDir, fullPath)
+          })
+        }
+      }
+      
+      return files
+    }
+    
+    // 复制所有找到的 markdown 文件
+    const markdownFiles = getMarkdownFiles(docsDir)
+    for (const { src, rel } of markdownFiles) {
+      const dest = path.join(outDir, rel)
+      const destDir = path.dirname(dest)
+      
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true })
+      }
+      fs.copyFileSync(src, dest)
+      console.log(`  ✓ Copied ${rel}`)
+    }
+    
+    console.log('✓ All markdown files copied\n')
   },
   
   // 主题配置
