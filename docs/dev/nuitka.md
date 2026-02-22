@@ -27,8 +27,8 @@
 
 ### 必需依赖
 
-1. **Python 3.12** - Nuitka 编译器运行环境
-2. **Nuitka 4.0** - 编译工具
+1. **Python 3.12**（推荐）或 Python 3.8+ - Nuitka 编译器运行环境
+2. **Nuitka 4.0**（推荐）或更高版本 - 编译工具
 
 ```bash
 pip install nuitka==4.0
@@ -189,9 +189,11 @@ ghcr.io/newfuture/nuitka-builder:glibc-master  # Debian Buster (glibc)
 ```
 
 这些镜像已预装：
-- Python 3.8
-- Nuitka main 分支
+- Python 3.8（Docker 镜像使用，本地建议 Python 3.12）
+- Nuitka main 分支（或可指定版本如 4.0）
 - 编译工具链（gcc、ccache、patchelf 等）
+
+**说明：** Docker 镜像使用 Python 3.8 是为了更好的跨平台兼容性，本地开发建议使用 Python 3.12 配合 Nuitka 4.0。
 
 ### 编译示例
 
@@ -249,10 +251,15 @@ docker buildx build \
 
 ```dockerfile
 ARG BUILDER=ghcr.io/newfuture/nuitka-builder:master  # Builder 镜像
-ARG PYTHON_VERSION=3.8                               # Python 版本
-ARG NUITKA_VERSION=main                              # Nuitka 版本/分支
+ARG PYTHON_VERSION=3.8                               # Python 版本（Docker 用）
+ARG NUITKA_VERSION=main                              # Nuitka 版本/分支（可用：main, 4.0, 2.8.10 等）
 ARG GITHUB_REF_NAME                                  # Git 标签/分支名（用于版本标记）
 ```
+
+**版本说明：**
+- Docker 镜像默认使用 Python 3.8 以获得更好的跨平台兼容性
+- 本地开发推荐 Python 3.12 + Nuitka 4.0
+- `NUITKA_VERSION` 可以是版本号（如 `4.0`）或分支名（如 `main`）
 
 **使用示例：**
 
