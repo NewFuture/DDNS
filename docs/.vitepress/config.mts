@@ -162,6 +162,7 @@ export default defineConfig({
         items: [
           { text: '配置文档', link: '/dev/config' },
           { text: 'Provider开发', link: '/dev/provider' },
+          { text: 'Nuitka编译', link: '/dev/nuitka' },
           { text: 'ESA Pages部署', link: '/esa-deploy' }
         ]
       }
@@ -206,7 +207,8 @@ export default defineConfig({
           text: '开发文档',
           items: [
             { text: '配置文档', link: '/dev/config' },
-            { text: 'Provider开发指南', link: '/dev/provider' }
+            { text: 'Provider开发指南', link: '/dev/provider' },
+            { text: 'Nuitka编译指南', link: '/dev/nuitka' }
           ]
         },
         {
@@ -381,7 +383,8 @@ export default defineConfig({
             text: 'Development',
             items: [
               { text: 'Config Docs', link: '/en/dev/config' },
-              { text: 'Provider Guide', link: '/en/dev/provider' }
+              { text: 'Provider Guide', link: '/en/dev/provider' },
+              { text: 'Nuitka Build', link: '/en/dev/nuitka' }
             ]
           }
         ],
@@ -423,7 +426,8 @@ export default defineConfig({
               text: 'Development',
               items: [
                 { text: 'Config Documentation', link: '/en/dev/config' },
-                { text: 'Provider Development', link: '/en/dev/provider' }
+                { text: 'Provider Development', link: '/en/dev/provider' },
+                { text: 'Nuitka Build Guide', link: '/en/dev/nuitka' }
               ]
             }
           ]
