@@ -189,9 +189,9 @@ ghcr.io/newfuture/nuitka-builder:glibc-master  # Debian Buster (glibc)
 ```
 
 这些镜像已预装：
-- Python 3.8（Docker 镜像使用，本地建议 Python 3.12）
-- Nuitka main 分支（或可指定版本如 4.0）
-- 编译工具链（gcc、ccache、patchelf 等）
+- Python 3.8 (Docker 镜像使用, 本地建议 Python 3.12)
+- Nuitka main 分支 (或可指定版本如 4.0)
+- 编译工具链 (gcc、ccache、patchelf 等)
 
 **说明：** Docker 镜像使用 Python 3.8 是为了更好的跨平台兼容性，本地开发建议使用 Python 3.12 配合 Nuitka 4.0。
 
@@ -251,9 +251,9 @@ docker buildx build \
 
 ```dockerfile
 ARG BUILDER=ghcr.io/newfuture/nuitka-builder:master  # Builder 镜像
-ARG PYTHON_VERSION=3.8                               # Python 版本（Docker 用）
-ARG NUITKA_VERSION=main                              # Nuitka 版本/分支（可用：main, 4.0, 2.8.10 等）
-ARG GITHUB_REF_NAME                                  # Git 标签/分支名（用于版本标记）
+ARG PYTHON_VERSION=3.8                               # Python 版本 (Docker 用)
+ARG NUITKA_VERSION=main                              # Nuitka 版本/分支 (可用: main, 4.0, 2.8.10 等)
+ARG GITHUB_REF_NAME                                  # Git 标签/分支名 (用于版本标记)
 ```
 
 **版本说明：**
