@@ -28,10 +28,10 @@ This document explains how to compile the DDNS project into standalone binary ex
 ### Required Dependencies
 
 1. **Python 3.12** (recommended) or Python 3.8+ - Nuitka compiler runtime
-2. **Nuitka 4.0** (recommended) or higher - Build tool
+2. **Nuitka 4.0.1** (recommended) or higher - Build tool
 
 ```bash
-pip install nuitka==4.0
+pip install nuitka==4.0.1
 ```
 
 ### Platform-Specific Dependencies
@@ -190,10 +190,10 @@ ghcr.io/newfuture/nuitka-builder:glibc-master  # Debian Buster (glibc)
 
 These images come pre-installed with:
 - Python 3.8 (Docker images use this, Python 3.12 recommended for local development)
-- Nuitka main branch (or specify version like 4.0)
+- Nuitka main branch (or specify version like 4.0.1)
 - Build toolchain (gcc, ccache, patchelf, etc.)
 
-**Note:** Docker images use Python 3.8 for better cross-platform compatibility, but Python 3.12 is recommended for local development with Nuitka 4.0.
+**Note:** Docker images use Python 3.8 for better cross-platform compatibility, but Python 3.12 is recommended for local development with Nuitka 4.0.1.
 
 ### Compilation Examples
 
@@ -252,21 +252,21 @@ docker buildx build \
 ```dockerfile
 ARG BUILDER=ghcr.io/newfuture/nuitka-builder:master  # Builder image
 ARG PYTHON_VERSION=3.8                               # Python version (for Docker)
-ARG NUITKA_VERSION=main                              # Nuitka version/branch (options: main, 4.0, 2.8.10, etc.)
+ARG NUITKA_VERSION=main                              # Nuitka version/branch (options: main, 4.0.1, 2.8.10, etc.)
 ARG GITHUB_REF_NAME                                  # Git tag/branch name (for version tagging)
 ```
 
 **Version Notes:**
 - Docker images default to Python 3.8 for better cross-platform compatibility
-- Python 3.12 + Nuitka 4.0 recommended for local development
-- `NUITKA_VERSION` can be a version number (e.g., `4.0`) or branch name (e.g., `main`)
+- Python 3.12 + Nuitka 4.0.1 recommended for local development
+- `NUITKA_VERSION` can be a version number (e.g., `4.0.1`) or branch name (e.g., `main`)
 
 **Usage Example:**
 
 ```bash
 docker buildx build \
   --file docker/musl.Dockerfile \
-  --build-arg NUITKA_VERSION=4.0 \
+  --build-arg NUITKA_VERSION=4.0.1 \
   --build-arg GITHUB_REF_NAME=v3.0.0 \
   --platform linux/amd64 \
   --target export \
@@ -304,7 +304,7 @@ GitHub Actions uses [Nuitka/Nuitka-Action@v1.4](https://github.com/Nuitka/Nuitka
 - name: Build Executable
   uses: Nuitka/Nuitka-Action@v1.4
   with:
-    nuitka-version: 4.0
+    nuitka-version: 4.0.1
     script-name: run.py
     mode: onefile
     output-dir: dist
