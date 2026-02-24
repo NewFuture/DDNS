@@ -239,5 +239,77 @@ class TestIpModule(unittest.TestCase):
         self.assertEqual(mock_request.call_count, len(ip.PUBLIC_IPV4_APIS))
 
 
+class TestIpRegexMatch(unittest.TestCase):
+    """测试regex_v4和regex_v6使用subprocess而非shell"""
+
+    @patch("ddns.ip.subprocess.check_output")
+    def test_regex_v4_uses_ip_address_first(self, mock_check_output):
+        """测试regex_v4优先使用 ip address 命令（无shell）"""
+        mock_check_output.return_value = "    inet 192.168.1.100/24 brd 192.168.1.255 scope global eth0\n"
+
+        result = ip.regex_v4("192.168.*")
+
+        self.assertEqual(result, "192.168.1.100")
+        # 验证使用了 ["ip", "address"] 而非 shell 命令
+        mock_check_output.assert_called_once()
+        args, kwargs = mock_check_output.call_args
+        self.assertEqual(args[0], ["ip", "address"])
+        self.assertFalse(kwargs.get("shell", False))
+
+    @patch("ddns.ip.subprocess.check_output")
+    def test_regex_v4_fallback_to_ifconfig(self, mock_check_output):
+        """测试ip address失败后回退到ifconfig（无shell）"""
+        ifconfig_output = (
+            "eth0      Link encap:Ethernet\n          inet addr:10.0.0.1  Bcast:10.0.0.255  Mask:255.255.255.0\n"
+        )
+
+        def side_effect(cmd, **kwargs):
+            if cmd == ["ip", "address"]:
+                raise OSError("ip command not found")
+            return ifconfig_output
+
+        mock_check_output.side_effect = side_effect
+
+        result = ip.regex_v4("10.*")
+
+        self.assertEqual(result, "10.0.0.1")
+        self.assertEqual(mock_check_output.call_count, 2)
+        # 第一次调用是 ip address，第二次是 ifconfig
+        calls = mock_check_output.call_args_list
+        self.assertEqual(calls[0][0][0], ["ip", "address"])
+        self.assertEqual(calls[1][0][0], ["ifconfig"])
+
+    @patch("ddns.ip.subprocess.check_output")
+    def test_regex_v6_uses_ip_address_first(self, mock_check_output):
+        """测试regex_v6优先使用 ip address 命令（无shell）"""
+        mock_check_output.return_value = "    inet6 2409:abcd::1/64 scope global\n"
+
+        result = ip.regex_v6("2409.*")
+
+        self.assertEqual(result, "2409:abcd::1")
+        mock_check_output.assert_called_once()
+        args, kwargs = mock_check_output.call_args
+        self.assertEqual(args[0], ["ip", "address"])
+        self.assertFalse(kwargs.get("shell", False))
+
+    @patch("ddns.ip.subprocess.check_output")
+    def test_regex_match_no_match_returns_none(self, mock_check_output):
+        """测试没有匹配时返回None"""
+        mock_check_output.return_value = "    inet 192.168.1.100/24 scope global eth0\n"
+
+        result = ip.regex_v4("10.*")
+
+        self.assertIsNone(result)
+
+    @patch("ddns.ip.subprocess.check_output")
+    def test_regex_match_all_commands_fail_returns_none(self, mock_check_output):
+        """测试所有命令失败时返回None"""
+        mock_check_output.side_effect = OSError("command not found")
+
+        result = ip.regex_v4(".*")
+
+        self.assertIsNone(result)
+
+
 if __name__ == "__main__":
     unittest.main()
