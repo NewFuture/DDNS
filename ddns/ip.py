@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+import subprocess
 from re import compile
-from os import name as os_name, popen
+from os import name as os_name
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
 
@@ -119,14 +120,23 @@ def _ip_regex_match(parrent_regex, match_regex):
     matcher = compile(match_regex)
 
     if os_name == "nt":  # windows:
-        cmd = "ipconfig"
+        cmds = [["ipconfig"]]
     else:
-        cmd = "ip address || ifconfig 2>/dev/null"
+        cmds = [["ip", "address"], ["ifconfig"]]
 
-    for s in popen(cmd).readlines():
-        addr = ip_pattern.search(s)
-        if addr and matcher.match(addr.group(1)):
-            return addr.group(1)
+    output = None
+    for cmd in cmds:
+        try:
+            output = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.PIPE)
+            break
+        except (OSError, subprocess.CalledProcessError):  # command not found or non-zero exit
+            continue
+
+    if output:
+        for s in output.splitlines():
+            addr = ip_pattern.search(s)
+            if addr and matcher.match(addr.group(1)):
+                return addr.group(1)
 
 
 def regex_v4(reg):  # ipv4 正则提取
