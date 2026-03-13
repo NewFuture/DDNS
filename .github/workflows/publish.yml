@@ -52,7 +52,7 @@ jobs:
             type=raw,value=next,enable=${{ !contains(github.ref_name, 'alpha')}} 
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         id: push
         with:
           context: .
@@ -225,7 +225,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/${{ matrix.libc }}.Dockerfile
