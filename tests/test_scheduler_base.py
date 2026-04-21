@@ -118,7 +118,14 @@ class TestBaseScheduler(unittest.TestCase):
 
     def test_build_ddns_command_with_single_values(self):
         """Test _build_ddns_command with single value arguments"""
-        ddns_args = {"dns": "alidns", "id": "test_id", "token": "test_token", "ttl": 600, "log_level": "INFO"}
+        ddns_args = {
+            "dns": "alidns",
+            "id": "test_id",
+            "token": "test_token",
+            "ttl": 600,
+            "log_level": "INFO",
+            "cache_verify_every": 5,
+        }
 
         command = self.scheduler._build_ddns_command(ddns_args)
 
@@ -128,6 +135,8 @@ class TestBaseScheduler(unittest.TestCase):
         self.assertIn("test_token", command)
         self.assertIn("--ttl", command)
         self.assertIn("600", command)
+        self.assertIn("--cache_verify_every", command)
+        self.assertIn("5", command)
 
     def test_build_ddns_command_excludes_none_values(self):
         """Test _build_ddns_command behavior with None values"""

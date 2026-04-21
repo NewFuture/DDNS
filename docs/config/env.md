@@ -11,27 +11,28 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 
 ## 环境变量完整参数列表
 
-| 环境变量               | 参数格式                                                                                             | 描述                              | 示例                                                     |
-|------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------|----------------------------------------------------------|
-| `DDNS_CONFIG`          | 文件路径，支持逗号或分号分隔多个路径，支持远程HTTP(S) URL                                                              | 指定配置文件路径，支持多个配置文件和远程配置 | `DDNS_CONFIG="config.json"` 或 `DDNS_CONFIG="cloudflare.json,dnspod.json"` <br> `DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"` |
-| `DDNS_DNS`             | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`edgeone`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](../providers/) | `DDNS_DNS=cloudflare`                                    |
-| `DDNS_ID`              | 依 DNS 服务商而定                                                                                   | API 账号 或 ID                    | `DDNS_ID="user@example.com"`                             |
-| `DDNS_TOKEN`           | 依 DNS 服务商而定                                                                                   | API 授权令牌或 Secret             | `DDNS_TOKEN="abcdef123456"`                              |
-| `DDNS_ENDPOINT`        | URL（http 或 https 协议）                                                                           | 自定义 API 地址                   | `DDNS_ENDPOINT=https://api.dns.cn`                       |
-| `DDNS_IPV4`            | 域名，数组或逗号分隔字符串                                                                          | IPv4 域名列表                     | `DDNS_IPV4='["t.com","4.t.com"]'`                        |
-| `DDNS_IPV6`            | 域名，数组或逗号分隔字符串                                                                          | IPv6 域名列表                     | `DDNS_IPV6=t.com,6.t.com`                                |
-| `DDNS_INDEX4`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv4 获取方式                     | `DDNS_INDEX4="[0,'regex:192.168.*']"`                    |
-| `DDNS_INDEX6`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv6 获取方式                     | `DDNS_INDEX6=public`                                     |
-| `DDNS_TTL`             | 整数（单位：秒），依服务商而定                                                                     | 设置 DNS TTL                      | `DDNS_TTL=600`                                           |
-| `DDNS_LINE`            | 依服务商而定，如：电信、移动                                                                        | DNS 解析线路                      | `DDNS_LINE=电信`                                         |
-| `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
-| `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
-| `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
-| `DDNS_CRON`            | Cron 表达式格式字符串（仅 Docker 环境有效）                                                          | Docker 容器内定时任务周期         | `DDNS_CRON="*/10 * * * *"`                               |
-| `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |
-| `DDNS_LOG_FILE`        | 文件路径                                                                                            | 设置日志输出文件（默认输出到终端）| `DDNS_LOG_FILE="/tmp/ddns.log"`                          |
-| `DDNS_LOG_FORMAT`      | Python logging 格式模板                                                                             | 设置日志格式                      | `DDNS_LOG_FORMAT="%(message)s"`                          |
-| `DDNS_LOG_DATEFMT`     | 日期时间格式字符串                                                                                  | 设置日志时间格式                  | `DDNS_LOG_DATEFMT="%m-%d %H:%M"`                         |
+| 环境变量                  | 参数格式                                                                                                                                               | 描述                                         | 示例                                                                                                                                              |
+|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `DDNS_CONFIG`             | 文件路径，支持逗号或分号分隔多个路径，支持远程HTTP(S) URL                                                                                              | 指定配置文件路径，支持多个配置文件和远程配置 | `DDNS_CONFIG="config.json"` 或 `DDNS_CONFIG="cloudflare.json,dnspod.json"` <br> `DDNS_CONFIG="https://ddns.newfuture.cc/tests/config/debug.json"` |
+| `DDNS_DNS`                | `51dns`、`alidns`、`aliesa`、`callback`、`cloudflare`、`debug`、`dnscom`、`dnspod_com`、`dnspod`、`edgeone`、`he`、`huaweidns`、`noip`、`tencentcloud` | [DNS 服务商](../providers/)                  | `DDNS_DNS=cloudflare`                                                                                                                             |
+| `DDNS_ID`                 | 依 DNS 服务商而定                                                                                                                                      | API 账号 或 ID                               | `DDNS_ID="user@example.com"`                                                                                                                      |
+| `DDNS_TOKEN`              | 依 DNS 服务商而定                                                                                                                                      | API 授权令牌或 Secret                        | `DDNS_TOKEN="abcdef123456"`                                                                                                                       |
+| `DDNS_ENDPOINT`           | URL（http 或 https 协议）                                                                                                                              | 自定义 API 地址                              | `DDNS_ENDPOINT=https://api.dns.cn`                                                                                                                |
+| `DDNS_IPV4`               | 域名，数组或逗号分隔字符串                                                                                                                             | IPv4 域名列表                                | `DDNS_IPV4='["t.com","4.t.com"]'`                                                                                                                 |
+| `DDNS_IPV6`               | 域名，数组或逗号分隔字符串                                                                                                                             | IPv6 域名列表                                | `DDNS_IPV6=t.com,6.t.com`                                                                                                                         |
+| `DDNS_INDEX4`             | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                                                                            | IPv4 获取方式                                | `DDNS_INDEX4="[0,'regex:192.168.*']"`                                                                                                             |
+| `DDNS_INDEX6`             | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                                                                            | IPv6 获取方式                                | `DDNS_INDEX6=public`                                                                                                                              |
+| `DDNS_TTL`                | 整数（单位：秒），依服务商而定                                                                                                                         | 设置 DNS TTL                                 | `DDNS_TTL=600`                                                                                                                                    |
+| `DDNS_LINE`               | 依服务商而定，如：电信、移动                                                                                                                           | DNS 解析线路                                 | `DDNS_LINE=电信`                                                                                                                                  |
+| `DDNS_PROXY`              | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                                                                                 | HTTP 代理设置                                | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                                                                                                       |
+| `DDNS_CACHE`              | true、false 或文件路径                                                                                                                                 | 启用缓存或指定缓存文件路径                   | `DDNS_CACHE="/tmp/cache"`                                                                                                                         |
+| `DDNS_CACHE_VERIFY_EVERY` | 非负整数                                                                                                                                               | 连续命中缓存多少次后强制向上游校验一次       | `DDNS_CACHE_VERIFY_EVERY="10"`                                                                                                                    |
+| `DDNS_SSL`                | true、false、auto 或文件路径                                                                                                                           | 设置 SSL 验证方式或指定证书路径              | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                                                                                                       |
+| `DDNS_CRON`               | Cron 表达式格式字符串（仅 Docker 环境有效）                                                                                                            | Docker 容器内定时任务周期                    | `DDNS_CRON="*/10 * * * *"`                                                                                                                        |
+| `DDNS_LOG_LEVEL`          | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                                                                                  | 设置日志等级                                 | `DDNS_LOG_LEVEL="DEBUG"`                                                                                                                          |
+| `DDNS_LOG_FILE`           | 文件路径                                                                                                                                               | 设置日志输出文件（默认输出到终端）           | `DDNS_LOG_FILE="/tmp/ddns.log"`                                                                                                                   |
+| `DDNS_LOG_FORMAT`         | Python logging 格式模板                                                                                                                                | 设置日志格式                                 | `DDNS_LOG_FORMAT="%(message)s"`                                                                                                                   |
+| `DDNS_LOG_DATEFMT`        | 日期时间格式字符串                                                                                                                                     | 设置日志时间格式                             | `DDNS_LOG_DATEFMT="%m-%d %H:%M"`                                                                                                                  |
 
 > **注意**: 数组确认字符串引号，可打印出来查看
 
@@ -224,6 +225,22 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   
   # 自定义缓存文件路径
   export DDNS_CACHE="/path/to/ddns.cache"
+  ```
+
+#### DDNS_CACHE_VERIFY_EVERY
+
+- **类型**: 整数
+- **必需**: 否
+- **默认值**: `0`
+- **说明**: 本地IP未变化时，连续命中缓存多少次后，第 `N+1` 次强制向上游校验
+- **示例**:
+
+  ```bash
+  # 关闭强制校验
+  export DDNS_CACHE_VERIFY_EVERY="0"
+
+  # 连续命中缓存 10 次后强制校验一次
+  export DDNS_CACHE_VERIFY_EVERY="10"
   ```
 
 ### SSL证书验证

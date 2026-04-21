@@ -52,9 +52,16 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "ssl": "auto",
             "cache": True,
+            "cache_verify_every": 8,
             "providers": [
                 {"provider": "debug", "token": "provider_token1", "ipv4": ["provider1.example.com"], "ttl": 300},
-                {"provider": "debug", "token": "provider_token2", "ipv4": ["provider2.example.com"], "ttl": 600},
+                {
+                    "provider": "debug",
+                    "token": "provider_token2",
+                    "ipv4": ["provider2.example.com"],
+                    "ttl": 600,
+                    "cache_verify_every": 2,
+                },
             ],
         }
         providers_file = self.create_test_file("providers.json", providers_config)
@@ -88,6 +95,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(str(all_configs[1].ssl), "auto")
             # Inherited from global
             self.assertEqual(all_configs[1].cache, True)
+            self.assertEqual(all_configs[1].cache_verify_every, 8)
 
             # Test second provider config
             self.assertEqual(all_configs[2].dns, "debug")
@@ -98,6 +106,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(str(all_configs[2].ssl), "auto")
             # Inherited from global
             self.assertEqual(all_configs[2].cache, True)
+            self.assertEqual(all_configs[2].cache_verify_every, 2)
 
         finally:
             # Restore original argv

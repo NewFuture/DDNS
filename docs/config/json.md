@@ -49,22 +49,23 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 配置参数表
 
-|  键名    |        类型        | 必需 |   默认值    |    参数说明          | 备注                                                                                                         |
-| :------: | :----------------: | :--: | :---------: | :---------------: | ------------------------------------------------------------------------------------------------------------ |
-|  dns     |       string       |  否  |     无      |    DNS服务商      | 可选值: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, edgeone, he, huaweidns, namesilo, noip, tencentcloud |
-|   id     |       string       |  是  |     无      |   API 访问 ID    | 请根据服务商说明配置(如 AccessKeyID)  |
-|  token   |       string       |  是  |     无      |  API 授权令牌     | 请根据服务商说明配置(如 AccessSecret)  |
-| endpoint |       string       |  否  |     无      |   API端点URL      | 用于自定义或私有部署的API地址，为空时使用默认端点                                                           |
-|  ipv4    |       array        |  否  |    `[]`     |   IPv4域名列表    |  |
-|  ipv6    |       array        |  否  |    `[]`     |   IPv6域名列表    | |
-| index4   | string\|int\|array |  否  | `["default"]` |   IPv4获取方式    | [详见下方说明](#index4-index6)|
-| index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | [详见下方说明](#index4-index6)|
-|  ttl     |       number       |  否  |   `null`    | DNS TTL时间     | 单位为秒，不设置则采用DNS默认策略|
-|  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定 |
-|  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，支持`DIRECT`(直连)、`SYSTEM`(系统代理)                                              |
-|   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
-|  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
-|  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
+|        键名        |        类型        | 必需 |    默认值     |         参数说明         | 备注                                                                                                                                         |
+|:------------------:|:------------------:|:----:|:-------------:|:------------------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
+|        dns         |       string       |  否  |      无       |        DNS服务商         | 可选值: 51dns, alidns, aliesa, callback, cloudflare, debug, dnscom, dnspod_com, dnspod, edgeone, he, huaweidns, namesilo, noip, tencentcloud |
+|         id         |       string       |  是  |      无       |       API 访问 ID        | 请根据服务商说明配置(如 AccessKeyID)                                                                                                         |
+|       token        |       string       |  是  |      无       |       API 授权令牌       | 请根据服务商说明配置(如 AccessSecret)                                                                                                        |
+|      endpoint      |       string       |  否  |      无       |        API端点URL        | 用于自定义或私有部署的API地址，为空时使用默认端点                                                                                            |
+|        ipv4        |       array        |  否  |     `[]`      |       IPv4域名列表       |                                                                                                                                              |
+|        ipv6        |       array        |  否  |     `[]`      |       IPv6域名列表       |                                                                                                                                              |
+|       index4       | string\|int\|array |  否  | `["default"]` |       IPv4获取方式       | [详见下方说明](#index4-index6)                                                                                                               |
+|       index6       | string\|int\|array |  否  | `["default"]` |       IPv6获取方式       | [详见下方说明](#index4-index6)                                                                                                               |
+|        ttl         |       number       |  否  |    `null`     |       DNS TTL时间        | 单位为秒，不设置则采用DNS默认策略                                                                                                            |
+|        line        |       string       |  否  |    `null`     |       DNS解析线路        | ISP线路选择，支持的值视DNS服务商而定                                                                                                         |
+|       proxy        |   string\|array    |  否  |      无       |         HTTP代理         | 多代理逐个尝试直到成功，支持`DIRECT`(直连)、`SYSTEM`(系统代理)                                                                               |
+|        ssl         |  string\|boolean   |  否  |   `"auto"`    |       SSL验证方式        | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                                                          |
+|       cache        |    string\|bool    |  否  |    `true`     |       是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                                                        |
+| cache_verify_every |      integer       |  否  |      `0`      | 缓存命中后按次数强制校验 | 连续命中缓存多少次后强制向上游校验一次，`0`表示关闭                                                                                          |
+|        log         |       object       |  否  |    `null`     |         日志配置         | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                                                   |
 
 ### dns
 
@@ -178,6 +179,15 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 * `false`：禁用缓存
 * `"/path/to/cache.file"`：指定自定义缓存文件路径
 
+### cache_verify_every
+
+`cache_verify_every`参数用于控制“连续命中缓存多少次后，强制向上游校验一次”：
+
+* `0`：关闭，保持当前缓存行为
+* `N > 0`：当本地IP未变化且缓存连续命中 `N` 次后，第 `N+1` 次会强制访问上游校验并修复漂移
+
+> 注意：该计数按 `provider + 域名 + 记录类型` 分别统计，并会持久化到同一个 cache 文件中。
+
 ### log
 
 `log`参数用于配置日志记录，是一个对象，支持以下字段：
@@ -207,6 +217,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "proxy": ["http://127.0.0.1:1080", "DIRECT"],
   "ssl": "auto",
   "cache": "/var/cache/ddns.cache",
+  "cache_verify_every": 10,
   "log": {
     "level": "DEBUG",
     "file": "/var/log/ddns.log",
@@ -224,6 +235,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "ssl": "auto",
   "cache": true,
+  "cache_verify_every": 20,
   "log": {"level": "INFO", "file": "/var/log/ddns.log"},
   "providers": [
     {
@@ -231,7 +243,8 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
       "id": "user1@example.com",
       "token": "cloudflare-token",
       "ipv4": ["test1.example.com"],
-      "ttl": 300
+      "ttl": 300,
+      "cache_verify_every": 5
     },
     {
       "provider": "dnspod",
@@ -246,7 +259,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 
 #### v4.1格式特性
 
-* **全局配置继承**: `providers` 外的所有配置项（如 `ssl`, `cache`, `log` 等）作为全局设置，会被所有provider继承
+* **全局配置继承**: `providers` 外的所有配置项（如 `ssl`, `cache`, `cache_verify_every`, `log` 等）作为全局设置，会被所有provider继承
 * **provider覆盖**: 每个provider内的配置可以覆盖相应的全局设置
 * **provider字段**: 必须字段，指定DNS服务商类型（等同于传统格式中的 `dns` 字段）
 * **完整兼容**: 支持所有传统格式中的配置参数

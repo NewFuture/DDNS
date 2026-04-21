@@ -18,6 +18,39 @@ from .provider import SimpleProvider, get_provider_class  # noqa: F401
 logger = getLogger()
 
 
+def _get_cache_verify_every(config):
+    # type: (Config) -> int
+    """Return the configured cache verification interval in cache-hit counts."""
+    value = getattr(config, "cache_verify_every", 0) or 0
+    return value if value > 0 else 0
+
+
+def _get_cache_verify_counter_key(config, domain, record_type):
+    # type: (Config, str, str) -> str
+    """Build the persisted counter key for a provider-specific DNS record."""
+    return "{}:{}:{}".format(config.dns, domain, record_type)
+
+
+def _get_cache_verify_count(cache, counter_key):
+    # type: (Cache | None, str) -> int
+    """Get the persisted cache-hit skip counter for a record."""
+    if isinstance(cache, Cache):
+        return cache.get_cache_verify_count(counter_key)
+    return 0
+
+
+def _set_cache_verify_count(cache, counter_key, count):
+    # type: (Cache | None, str, int) -> None
+    """Persist the cache-hit skip counter for a record."""
+    if isinstance(cache, Cache):
+        cache.set_cache_verify_count(counter_key, count)
+
+
+def _clear_cache_verify_count(cache, counter_key):
+    # type: (Cache | None, str) -> None
+    """Clear the cache-hit skip counter for a record."""
+    if isinstance(cache, Cache):
+        cache.del_cache_verify_count(counter_key)
 def get_ip(ip_type, rules):
     """
     get IP address
@@ -59,27 +92,59 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
         return False
 
     update_success = False
+    verify_every = _get_cache_verify_every(config)
 
     for domain in domains:
         domain = domain.lower()
         cache_key = "{}:{}".format(domain, record_type)
+        counter_key = _get_cache_verify_counter_key(config, domain, record_type)
+        force_verify = False
         if cache and cache.get(cache_key) == address:
-            logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
-            update_success = True
-        else:
-            try:
-                result = dns.set_record(
-                    domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
+            verify_count = _get_cache_verify_count(cache, counter_key)
+            if verify_every and verify_count >= verify_every:
+                force_verify = True
+                logger.info(
+                    "%s[%s] address unchanged after %d cached skips, verifying upstream: %s",
+                    domain,
+                    record_type,
+                    verify_count,
+                    address,
                 )
-                if result:
-                    logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-                    update_success = True
-                    if isinstance(cache, dict):
-                        cache[cache_key] = address
+            else:
+                if verify_every:
+                    verify_count += 1
+                    _set_cache_verify_count(cache, counter_key, verify_count)
+                    logger.info(
+                        "%s[%s] address not changed, using cache (%d/%d): %s",
+                        domain,
+                        record_type,
+                        verify_count,
+                        verify_every,
+                        address,
+                    )
                 else:
-                    logger.error("Failed to update %s record for %s", record_type, domain)
-            except Exception as e:
-                logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
+                    logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
+                update_success = True
+                continue
+
+        try:
+            result = dns.set_record(
+                domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
+            )
+            if result:
+                logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                update_success = True
+                if isinstance(cache, dict):
+                    cache[cache_key] = address
+                _clear_cache_verify_count(cache, counter_key)
+            else:
+                if force_verify:
+                    _set_cache_verify_count(cache, counter_key, verify_every)
+                logger.error("Failed to update %s record for %s", record_type, domain)
+        except Exception as e:
+            if force_verify:
+                _set_cache_verify_count(cache, counter_key, verify_every)
+            logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
     return update_success
 
 

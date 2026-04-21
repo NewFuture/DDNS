@@ -164,6 +164,7 @@ class TestMultiConfig(unittest.TestCase):
         """测试provider级别的proxy覆盖全局proxy"""
         config = {
             "proxy": "http://global.proxy:8080",  # 全局proxy
+            "cache_verify_every": 10,
             "providers": [
                 {
                     "provider": "cloudflare",
@@ -171,6 +172,7 @@ class TestMultiConfig(unittest.TestCase):
                     "token": "cf_token",
                     "ipv4": ["cf.example.com"],
                     "proxy": "http://127.0.0.1:1080",  # provider级别proxy覆盖全局
+                    "cache_verify_every": 3,
                 },
                 {
                     "provider": "alidns",
@@ -187,10 +189,12 @@ class TestMultiConfig(unittest.TestCase):
         # cloudflare使用provider级别的proxy
         cf_config = result[0]
         self.assertEqual(cf_config["proxy"], "http://127.0.0.1:1080")
+        self.assertEqual(cf_config["cache_verify_every"], 3)
 
         # alidns使用全局proxy
         ali_config = result[1]
         self.assertEqual(ali_config["proxy"], "http://global.proxy:8080")
+        self.assertEqual(ali_config["cache_verify_every"], 10)
 
     def test_multi_provider_proxy_array_format(self):
         """测试provider级别的数组格式proxy配置"""

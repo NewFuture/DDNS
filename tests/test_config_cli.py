@@ -187,6 +187,12 @@ class TestCliConfig(unittest.TestCase):
         config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
         self.assertEqual(config["config"], ["/path/to/config.json"])
 
+    def test_load_config_cache_verify_every(self):
+        """Test load_config parses cache_verify_every"""
+        sys.argv = ["ddns", "--cache-verify-every", "5"]
+        config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+        self.assertEqual(config["cache_verify_every"], 5)
+
     def test_load_config_index_rules(self):
         sys.argv = [
             "ddns",
@@ -458,6 +464,8 @@ class TestCliConfig(unittest.TestCase):
             "http://proxy.corp.com:8080",
             "--cache",
             "/var/cache/ddns",
+            "--cache-verify-every",
+            "7",
             "--ssl",
             "true",
             "--log-level",
@@ -481,6 +489,7 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(config["line"], "default")
         self.assertEqual(config["proxy"], ["http://proxy.corp.com:8080"])
         self.assertEqual(config["cache"], "/var/cache/ddns")
+        self.assertEqual(config["cache_verify_every"], 7)
         self.assertEqual(config["ssl"], True)
         self.assertEqual(config["log_level"], 20)
         self.assertEqual(config["log_file"], "/var/log/ddns.log")
