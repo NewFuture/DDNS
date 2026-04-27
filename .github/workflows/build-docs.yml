@@ -54,4 +54,4 @@ jobs:
     - name: Deploy to GitHub Pages
       if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
