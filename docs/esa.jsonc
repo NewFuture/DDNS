@@ -1,0 +1,10 @@
+{
+  "name": "ddns",
+  "entry": "esa.js",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "assets": {
+    "directory": ".vitepress/dist",
+    "notFoundStrategy": "404Page"
+  }
+}

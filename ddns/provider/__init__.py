@@ -4,6 +4,7 @@ from .alidns import AlidnsProvider
 from .aliesa import AliesaProvider
 from .callback import CallbackProvider
 from .cloudflare import CloudflareProvider
+from .cloudns import CloudnsProvider
 from .debug import DebugProvider
 from .dnscom import DnscomProvider
 from .dnspod import DnspodProvider
@@ -51,6 +52,8 @@ def get_provider_class(provider_name):
         "edgeone_noacc": EdgeOneDnsProvider,  # 非加速域名
         # cloudflare
         "cloudflare": CloudflareProvider,
+        # cloudns
+        "cloudns": CloudnsProvider,
         # aliyun alidns
         "alidns": AlidnsProvider,
         "aliyun": AlidnsProvider,  # 兼容aliyun

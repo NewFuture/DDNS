@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
         with:
           src: "."
@@ -40,10 +40,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: sudo apt-get update && sudo apt-get install -y python${{ matrix.version }}
         if: matrix.version == '2.7' || matrix.version == '3'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: matrix.version != '2.7' && matrix.version != '3'
         with:
           python-version: ${{ matrix.version }}
@@ -97,15 +97,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Install dependencies
         run: pip install build
       - run: python3 .github/patch.py version
       - name: Replace url in Readme
-        run: sed -i'' -E 's#([("'\''`])(/doc/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/doc/#\1https://ddns.newfuture.cc/doc/#g' README.md
+        run: sed -i'' -E 's#([("'\''`])(/docs/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/docs/#\1https://ddns.newfuture.cc/docs/#g' README.md
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
       
@@ -141,7 +141,7 @@ jobs:
       - run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
       - run: python3 -m ddns -c tests/config/he-proxies.json --debug
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pypi
           path: dist/
@@ -171,9 +171,9 @@ jobs:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
     timeout-minutes: ${{ matrix.arch == 'x86' && 20 || contains(matrix.os, 'windows') && 12 || 8 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: ${{ matrix.arch }}
@@ -196,20 +196,20 @@ jobs:
         run: python3 -m ddns -c tests/config/callback.json
 
       - name: Build Executable
-        uses: Nuitka/Nuitka-Action@v1.3
+        uses: Nuitka/Nuitka-Action@v1.4
         with:
-          nuitka-version: main
+          nuitka-version: 2.8.10
           script-name: run.py
           mode: onefile
           output-dir: dist
           lto: yes
           file-description: "DDNS客户端[测试版 Alpha]"
           windows-console-mode: ${{ runner.os == 'Windows' && 'attach' || '' }}
-          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'favicon.ico' || '' }}
-          linux-icon: ${{ runner.os == 'Linux' && 'doc/img/ddns.svg' || '' }}
+          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'docs/public/favicon.ico' || '' }}
+          linux-icon: ${{ runner.os == 'Linux' && 'docs/public/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
-          macos-app-icon: ${{ runner.os == 'macOS' && 'doc/img/ddns.png' || '' }}
+          macos-app-icon: ${{ runner.os == 'macOS' && 'docs/public/img/ddns.png' || '' }}
 
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
@@ -233,16 +233,16 @@ jobs:
 
       - name: Build Windows App (standalone)
         if: runner.os == 'Windows'
-        uses: Nuitka/Nuitka-Action@v1.3
+        uses: Nuitka/Nuitka-Action@v1.4
         with:
-          nuitka-version: main
+          nuitka-version: 2.8.10
           script-name: run.py
           mode: standalone
           output-dir: dist-app
           lto: yes
           file-description: "DDNS客户端[测试版 Alpha]"
           windows-console-mode: attach
-          windows-icon-from-ico: favicon.ico
+          windows-icon-from-ico: docs/public/favicon.ico
 
       - name: Package Windows app as ddns.zip
         if: runner.os == 'Windows'
@@ -259,7 +259,7 @@ jobs:
 
       # Upload build result
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ddns-${{ env.OS_NAME }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -284,10 +284,10 @@ jobs:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/${{ matrix.libc }}.Dockerfile
@@ -318,7 +318,7 @@ jobs:
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ddns-${{ matrix.libc }}-${{ matrix.host}}
           path: dist/*
@@ -347,16 +347,16 @@ jobs:
           'linux/ppc64le,linux/riscv64,linux/s390x' 
         }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: python3 .github/patch.py docker
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
-      - uses: docker/setup-qemu-action@v3 # 仅仅在需要时启用 QEMU 支持
+      - uses: docker/setup-qemu-action@v4 # 仅仅在需要时启用 QEMU 支持
         if: matrix.host == 'qemu'
         with:
           platforms: ${{ env.platforms }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
@@ -422,7 +422,7 @@ jobs:
       
       # 上传测试结果和镜像
       - name: Upload images
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-${{ matrix.host }}
           path: ddns-oci-*.tar
@@ -440,7 +440,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: pypi
           path: dist
@@ -461,26 +461,26 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docker-amd
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docker-arm
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docker-qemu
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: docker load and push
         run: |
           set -ex

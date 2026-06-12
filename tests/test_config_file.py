@@ -493,7 +493,7 @@ class TestConfigFile(unittest.TestCase):
         """测试加载带有 // 注释的JSON配置文件"""
         json_with_comments = """{
     // Configuration for DDNS
-    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json", // Schema validation
+    "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Schema validation
     "debug": false,  // false=disable, true=enable
     "dns": "dnspod_com",  // DNS provider
     "id": "1008666",
@@ -507,7 +507,7 @@ class TestConfigFile(unittest.TestCase):
         config = load_config(file_path)
 
         expected = {
-            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "debug": False,
             "dns": "dnspod_com",
             "id": "1008666",

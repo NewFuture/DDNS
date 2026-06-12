@@ -108,7 +108,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         single config"""
         # Create a traditional single config
         old_config = {
-            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "dns": "cloudflare",
             "id": "old@example.com",
             "token": "old_token",
@@ -163,7 +163,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
 
         # Create v4.0 schema config
         v40_config = {
-            "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "dns": "cloudflare",
             "id": "v40@example.com",
             "token": "v40_token",
