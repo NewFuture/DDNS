@@ -50,7 +50,7 @@
     "dns": "huaweidns",                 // 当前服务商
     "id": "your_access_key_id",         // 华为云 Access Key ID
     "token": "your_secret_access_key",  // 华为云 Secret Access Key
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 域名
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 域名

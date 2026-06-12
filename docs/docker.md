@@ -298,7 +298,7 @@ services:
             - DDNS_ID=12345
             - DDNS_TOKEN=mytokenkey
             - DDNS_IPV4=example.com,www.example.com
-            - DDNS_INDEX4=['public','url:https://api.ipify.org']
+            - DDNS_INDEX4=['public','url:http://api.ipify.org']
             - DDNS_LOG_LEVEL=WARNING
 ```
 
