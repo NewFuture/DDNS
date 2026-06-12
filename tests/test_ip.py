@@ -181,9 +181,9 @@ class TestIpModule(unittest.TestCase):
 
         # 模拟第一个API失败，第二个成功
         def mock_request_side_effect(method, url, **kwargs):
-            if "api.ipify.org" in url:
+            if url == ip.PUBLIC_IPV4_APIS[0]:
                 raise Exception("First API failed")
-            elif "4.ipw.cn" in url:
+            elif url == ip.PUBLIC_IPV4_APIS[1]:
                 mock_response = MagicMock()
                 mock_response.body = "1.2.3.4"
                 return mock_response
