@@ -49,7 +49,7 @@ If using a sub-account, assign the appropriate permissions to the sub-account fr
     "dns": "cloudns",                       // Current provider
     "id": "12345",                          // ClouDNS Auth-ID
     "token": "your_auth_password",          // ClouDNS Auth-Password
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.example.com"],           // IPv4 domains
     "ipv6": ["ddns.example.com", "ipv6.example.com"], // IPv6 domains

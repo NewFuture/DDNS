@@ -51,7 +51,7 @@ The simplest and quickest way to obtain keys
     "dns": "tencentcloud",              // Current provider
     "id": "Your_Secret_Id",     // TencentCloud SecretId
     "token": "Your_Secret_Key", // TencentCloud SecretKey
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains

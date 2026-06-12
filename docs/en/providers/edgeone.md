@@ -55,7 +55,7 @@ Permissions can be viewed and configured in [Access Management](https://console.
     "dns": "edgeone",                       // Current provider
     "id": "your_secret_id",                 // Tencent Cloud SecretId
     "token": "your_secret_key",             // Tencent Cloud SecretKey
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],          // IPv4 domains
     "ipv6": ["ipv6.ddns.newfuture.cc"],     // IPv6 domains

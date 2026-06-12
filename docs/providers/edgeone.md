@@ -55,7 +55,7 @@
     "dns": "edgeone",                       // 当前服务商
     "id": "your_secret_id",                 // 腾讯云 SecretId
     "token": "your_secret_key",             // 腾讯云 SecretKey
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4地址来源
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.newfuture.cc"],          // IPv4 域名
     "ipv6": ["ipv6.ddns.newfuture.cc"],     // IPv6 域名

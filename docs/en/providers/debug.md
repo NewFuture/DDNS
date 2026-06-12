@@ -33,7 +33,7 @@ Debug Provider does not require any authentication information, no need to confi
 {
     "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "debug",                     // Current provider
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
     "ipv6": ["ipv6.ddns.newfuture.cc"], // IPv6 domains

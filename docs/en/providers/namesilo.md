@@ -39,7 +39,7 @@ NameSilo uses API Key for authentication, which is the only authentication metho
     "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // Format validation
     "dns": "namesilo",                  // Current provider
     "token": "c40031261ee449dda629d2df14e9cb63", // NameSilo API Key
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domain
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domain

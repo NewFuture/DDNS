@@ -39,7 +39,7 @@ NameSilo 使用 API Key 进行身份验证，这是唯一的认证方式。
     "$schema": "https://ddns.newfuture.cc/schema/v4.1.json", // 格式验证
     "dns": "namesilo",                  // 当前服务商
     "token": "c40031261ee449dda629d2df14e9cb63", // NameSilo API Key
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4地址来源
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 域名
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 域名

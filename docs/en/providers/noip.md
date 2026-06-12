@@ -62,7 +62,7 @@ Use No-IP account username and password for authentication, which is the simples
     "dns": "noip",                      // Current provider
     "id": "myusername",                 // No-IP username or DDNS ID
     "token": "mypassword",              // No-IP password or DDNS KEY
-    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["all.ddnskey.com"],           // IPv4 domain
     "ipv6": ["all.ddnskey.com"],           // IPv6 domain
