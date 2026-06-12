@@ -50,7 +50,7 @@ You can view and configure permissions in [Identity and Access Management](https
     "dns": "huaweidns",                 // Current provider
     "id": "your_access_key_id",         // Huawei Cloud Access Key ID
     "token": "your_secret_access_key",  // Huawei Cloud Secret Access Key
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domain
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domain

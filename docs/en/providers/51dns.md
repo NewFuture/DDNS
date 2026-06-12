@@ -37,7 +37,7 @@ Official Website: <https://www.51dns.com/>
     "dns": "dnscom",                    // Current provider
     "id": "your_api_key",               // 51DNS API Key
     "token": "your_secret_key",         // 51DNS Secret Key
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains

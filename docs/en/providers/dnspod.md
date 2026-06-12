@@ -56,7 +56,7 @@ For users using Tencent Cloud AccessKey, please refer to [Tencent Cloud DNSPod C
     "dns": "dnspod",                    // Current provider
     "id": "123456",                     // DNSPod API Token ID
     "token": "Your-API-TOKEN",           // DNSPod API Token
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index4": ["url:https://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains

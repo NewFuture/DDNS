@@ -62,7 +62,7 @@ No-IP 是流行的动态 DNS 服务提供商，支持标准的 DDNS 动态更新
     "dns": "noip",                      // 当前服务商
     "id": "myusername",                 // No-IP 用户名或 DDNS ID
     "token": "mypassword",              // No-IP 密码或 DDNS KEY
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源
+    "index4": ["url:https://api.ipify.org", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["all.ddnskey.com"],           // IPv4 域名
     "ipv6": ["all.ddnskey.com"], // IPv6 域名

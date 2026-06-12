@@ -157,7 +157,6 @@ class TestIpModule(unittest.TestCase):
     def test_public_ipv4_apis_list_exists(self):
         """测试IPv4 API列表存在并包含所需的API"""
         expected_apis = [
-            "https://api.ipify.cn",
             "https://api.ipify.org",
             "https://4.ipw.cn/",
             "https://ipinfo.io/ip",
@@ -182,9 +181,9 @@ class TestIpModule(unittest.TestCase):
 
         # 模拟第一个API失败，第二个成功
         def mock_request_side_effect(method, url, **kwargs):
-            if "api.ipify.cn" in url:
+            if "api.ipify.org" in url:
                 raise Exception("First API failed")
-            elif "api.ipify.org" in url:
+            elif "4.ipw.cn" in url:
                 mock_response = MagicMock()
                 mock_response.body = "1.2.3.4"
                 return mock_response

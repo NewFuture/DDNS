@@ -18,7 +18,6 @@ IPV6_REG = r"((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){
 
 # 公网IPv4 API列表，按优先级排序
 PUBLIC_IPV4_APIS = [
-    "https://api.ipify.cn",
     "https://api.ipify.org",
     "https://4.ipw.cn/",
     "https://ipinfo.io/ip",
