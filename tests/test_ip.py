@@ -158,6 +158,7 @@ class TestIpModule(unittest.TestCase):
         """测试IPv4 API列表存在并包含所需的API"""
         expected_apis = [
             "https://api.ipify.org",
+            "https://ipv4.ddnsip.cn",
             "https://ipinfo.io/ip",
             "https://api-ipv4.ip.sb/ip",
             "http://checkip.amazonaws.com",
@@ -168,6 +169,7 @@ class TestIpModule(unittest.TestCase):
         """测试IPv6 API列表存在并包含所需的API"""
         expected_apis = [
             "https://api6.ipify.org/",
+            "https://ipv6.ddnsip.cn",
             "https://api-ipv6.ip.sb/ip",
             "http://ipv6.icanhazip.com",
         ]
