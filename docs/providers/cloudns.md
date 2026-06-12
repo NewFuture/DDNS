@@ -49,7 +49,7 @@ ClouDNS 使用 **Auth-ID** 和 **Auth-Password** 进行 API 认证。
     "dns": "cloudns",                       // 当前服务商
     "id": "12345",                          // ClouDNS Auth-ID
     "token": "your_auth_password",          // ClouDNS Auth-Password
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4地址来源
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4地址来源
     "index6": "public",                     // IPv6地址来源
     "ipv4": ["ddns.example.com"],           // IPv4 域名
     "ipv6": ["ddns.example.com", "ipv6.example.com"], // IPv6 域名

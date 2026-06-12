@@ -55,7 +55,7 @@ You can view and configure permissions in the [RAM Console](https://ram.console.
     "dns": "aliesa",                    // Current provider
     "id": "your_access_key_id",              // AccessKey ID
     "token": "your_access_key_secret",              // AccessKey Secret
-    "index4": ["url:http://api.ipify.cn", "public"], // IPv4 address source
+    "index4": ["url:http://api.ipify.org", "public"], // IPv4 address source
     "index6": "public",                     // IPv6 address source
     "ipv4": ["ddns.newfuture.cc"],           // IPv4 domains
     "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"], // IPv6 domains
