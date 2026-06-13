@@ -52,6 +52,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 - Aliesa: https://ddns.newfuture.cc/providers/aliesa ([.md](https://ddns.newfuture.cc/providers/aliesa.md))
 - Callback: https://ddns.newfuture.cc/providers/callback ([.md](https://ddns.newfuture.cc/providers/callback.md))
 - Debug Mode: https://ddns.newfuture.cc/providers/debug ([.md](https://ddns.newfuture.cc/providers/debug.md))
+- West.cn: https://ddns.newfuture.cc/providers/west ([.md](https://ddns.newfuture.cc/providers/west.md))
 
 ### Developer Documentation
 - Configuration Design: https://ddns.newfuture.cc/dev/config ([.md](https://ddns.newfuture.cc/dev/config.md))

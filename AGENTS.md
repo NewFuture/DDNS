@@ -91,6 +91,7 @@ ddns/:	Main application code
 		namesilo.py:	NameSilo
 		noip.py:	No-IP
 		tencentcloud.py:	Tencent Cloud DNS
+		west.py:	West.cn DNS
 
 	scheduler/:	Task scheduling implementations
 		__init__.py
@@ -151,8 +152,7 @@ docs/:	Documentation (VitePress-based)
 		namesilo.md:	NameSilo guide
 		noip.md:	No-IP guide
 		tencentcloud.md:	Tencent Cloud DNS guide
-
-	en/:	English documentation
+		west.md:	West.cn DNS guide
 		config/:	Configuration documentation (English)
 			cli.md:	CLI usage guide
 			env.md:	Environment variables guide
@@ -179,6 +179,7 @@ docs/:	Documentation (VitePress-based)
 			namesilo.md:	NameSilo guide
 			noip.md:	No-IP guide
 			tencentcloud.md:	Tencent Cloud DNS guide
+			west.md:	West.cn DNS guide
 		docker.md:	Docker documentation
 		install.md:	Installation guide
 
@@ -580,6 +581,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.4  
-**Last Updated**: 2026-01-28  
+**Version**: 1.0.5  
+**Last Updated**: 2026-06-13  
 **Maintained by**: DDNS Project Contributors
