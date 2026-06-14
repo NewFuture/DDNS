@@ -8,7 +8,6 @@
 
 - 官方网站：<https://www.aliyun.com/product/esa>
 - 服务商控制台：<https://esa.console.aliyun.com/>
-- 注册试用：<https://tianchi.aliyun.com/specials/promotion/freetier/esa?taskCode=25254&recordId=21a3141c2fca892c81ed9490eb6fd677>
 
 ### 💡 路由器/光猫用户
 
