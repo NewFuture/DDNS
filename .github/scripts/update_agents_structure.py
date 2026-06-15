@@ -8,6 +8,7 @@ import sys
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ISSUE_BODY_FILE = os.path.join(REPO_ROOT, ".github", "issue_body.md")
+ENGLISH_MIRROR_DIRS = ("docs/en/config", "docs/en/dev", "docs/en/providers")
 
 
 def scan_files(directory, extensions):
@@ -31,7 +32,7 @@ def scan_files(directory, extensions):
 
 
 def parse_agents_md():
-    # type: () -> set
+    # type: () -> tuple
     """Extract file paths from AGENTS.md directory structure (Tab-indented)."""
     agents_file = os.path.join(REPO_ROOT, "AGENTS.md")
     if not os.path.exists(agents_file):
@@ -43,9 +44,10 @@ def parse_agents_md():
 
     match = re.search(r"### Directory Structure.*?```text\s*\n(.*?)```\s*", content, re.DOTALL)
     if not match:
-        return set()
+        return set(), set()
 
     files = set()
+    directories = set()
     stack = []  # type: list
     for line in match.group(1).split("\n"):
         if not line.strip():
@@ -58,19 +60,36 @@ def parse_agents_md():
         stack = stack[:depth]
         if name.endswith("/"):
             stack.append(name.rstrip("/"))
+            path = "/".join(stack)
+            if path.startswith(("ddns/", "docs/", "schema/")):
+                directories.add(path)
         else:
             path = "/".join(stack + [name])
             if path.startswith(("ddns/", "docs/", "schema/")) and not path.endswith(
                 (".png", ".svg", ".jpg", ".gif", ".ico")
             ):
                 files.add(path)
-    return files
+    return files, directories
+
+
+def is_documented_english_mirror(path, actual, documented_dirs):
+    # type: (str, set, set) -> bool
+    """Check whether an English doc is covered by a documented mirror directory."""
+    for directory in ENGLISH_MIRROR_DIRS:
+        if directory not in documented_dirs:
+            continue
+        prefix = directory + "/"
+        if path.startswith(prefix):
+            zh_path = "docs/" + path[len("docs/en/") :]
+            return zh_path in actual
+    return False
 
 
 def main():
     # type: () -> None
     actual = scan_files("ddns", (".py")) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
-    documented = parse_agents_md()
+    documented, documented_dirs = parse_agents_md()
+    actual = {f for f in actual if not is_documented_english_mirror(f, actual, documented_dirs)}
 
     added, deleted = sorted(actual - documented), sorted(documented - actual)
 
