@@ -64,40 +64,8 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 - Configuration Design: https://ddns.newfuture.cc/dev/config ([.md](https://ddns.newfuture.cc/dev/config.md))
 - Provider Development Guide: https://ddns.newfuture.cc/dev/provider ([.md](https://ddns.newfuture.cc/dev/provider.md))
 
-### English Documentation
-- Homepage: https://ddns.newfuture.cc/en/ ([.md](https://ddns.newfuture.cc/en/index.md))
-- Installation: https://ddns.newfuture.cc/en/install ([.md](https://ddns.newfuture.cc/en/install.md))
-- Docker Guide: https://ddns.newfuture.cc/en/docker ([.md](https://ddns.newfuture.cc/en/docker.md))
-- CLI Arguments: https://ddns.newfuture.cc/en/config/cli ([.md](https://ddns.newfuture.cc/en/config/cli.md))
-- Environment Variables: https://ddns.newfuture.cc/en/config/env ([.md](https://ddns.newfuture.cc/en/config/env.md))
-- JSON Configuration: https://ddns.newfuture.cc/en/config/json ([.md](https://ddns.newfuture.cc/en/config/json.md))
-- Provider Overview: https://ddns.newfuture.cc/en/providers/ ([.md](https://ddns.newfuture.cc/en/providers/README.md))
-- 51DNS: https://ddns.newfuture.cc/en/providers/51dns ([.md](https://ddns.newfuture.cc/en/providers/51dns.md))
-- AliDNS (Alibaba): https://ddns.newfuture.cc/en/providers/alidns ([.md](https://ddns.newfuture.cc/en/providers/alidns.md))
-- Aliesa: https://ddns.newfuture.cc/en/providers/aliesa ([.md](https://ddns.newfuture.cc/en/providers/aliesa.md))
-- Callback: https://ddns.newfuture.cc/en/providers/callback ([.md](https://ddns.newfuture.cc/en/providers/callback.md))
-- Cloudflare: https://ddns.newfuture.cc/en/providers/cloudflare ([.md](https://ddns.newfuture.cc/en/providers/cloudflare.md))
-- ClouDNS: https://ddns.newfuture.cc/en/providers/cloudns ([.md](https://ddns.newfuture.cc/en/providers/cloudns.md))
-- Debug Mode: https://ddns.newfuture.cc/en/providers/debug ([.md](https://ddns.newfuture.cc/en/providers/debug.md))
-- DNS.COM: https://ddns.newfuture.cc/en/providers/dnscom ([.md](https://ddns.newfuture.cc/en/providers/dnscom.md))
-- DNSPod: https://ddns.newfuture.cc/en/providers/dnspod ([.md](https://ddns.newfuture.cc/en/providers/dnspod.md))
-- DNSPod International: https://ddns.newfuture.cc/en/providers/dnspod_com ([.md](https://ddns.newfuture.cc/en/providers/dnspod_com.md))
-- Tencent EdgeOne: https://ddns.newfuture.cc/en/providers/edgeone ([.md](https://ddns.newfuture.cc/en/providers/edgeone.md))
-- Tencent EdgeOne DNS: https://ddns.newfuture.cc/en/providers/edgeone_dns ([.md](https://ddns.newfuture.cc/en/providers/edgeone_dns.md))
-- HE.net: https://ddns.newfuture.cc/en/providers/he ([.md](https://ddns.newfuture.cc/en/providers/he.md))
-- Huawei Cloud: https://ddns.newfuture.cc/en/providers/huaweidns ([.md](https://ddns.newfuture.cc/en/providers/huaweidns.md))
-- NameSilo: https://ddns.newfuture.cc/en/providers/namesilo ([.md](https://ddns.newfuture.cc/en/providers/namesilo.md))
-- No-IP: https://ddns.newfuture.cc/en/providers/noip ([.md](https://ddns.newfuture.cc/en/providers/noip.md))
-- Tencent Cloud: https://ddns.newfuture.cc/en/providers/tencentcloud ([.md](https://ddns.newfuture.cc/en/providers/tencentcloud.md))
-- West.cn: https://ddns.newfuture.cc/en/providers/west ([.md](https://ddns.newfuture.cc/en/providers/west.md))
-- Configuration Design: https://ddns.newfuture.cc/en/dev/config ([.md](https://ddns.newfuture.cc/en/dev/config.md))
-- Provider Development Guide: https://ddns.newfuture.cc/en/dev/provider ([.md](https://ddns.newfuture.cc/en/dev/provider.md))
-
 ### Configuration Schemas
 - v4.1 Schema: https://ddns.newfuture.cc/schema/v4.1.json
-- v4.0 Schema: https://ddns.newfuture.cc/schema/v4.0.json
-- v2.8 Schema: https://ddns.newfuture.cc/schema/v2.8.json
-- v2 Schema: https://ddns.newfuture.cc/schema/v2.json
 
 ## Usage Examples
 
