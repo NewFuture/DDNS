@@ -27,6 +27,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 **Note:** All documentation is available in both HTML and Markdown formats. 
 - HTML: For web browsers (e.g., `/install.html`)
 - Markdown: For AI/LLM consumption (e.g., `/install.md`)
+- English docs mirror the Chinese paths with the `/en/` prefix (e.g., `/en/install.md`, `/en/config/json.md`, `/en/providers/cloudflare.md`).
 
 ### Core Documentation
 - Homepage: https://ddns.newfuture.cc/ ([.md](https://ddns.newfuture.cc/index.md))
