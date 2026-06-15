@@ -34,7 +34,7 @@ def scan_files(directory, extensions):
 
 def parse_agents_md():
     # type: () -> tuple
-    """Extract file paths from AGENTS.md directory structure (Tab-indented)."""
+    """Extract documented file paths and directories from AGENTS.md (Tab-indented)."""
     agents_file = os.path.join(REPO_ROOT, "AGENTS.md")
     if not os.path.exists(agents_file):
         print("Error: AGENTS.md not found")
