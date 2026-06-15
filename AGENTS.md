@@ -281,283 +281,148 @@ Platform-specific implementations:
 
 ## Getting Started
 
-### Installation
+### Agent Quick Start
 
-**From Source** (Python 2.7+/3.6+)
+Classify the task first, then read only the nearest code, tests, docs, and schema for that lane.
+
+- **Provider**: `ddns/provider/`, `tests/test_provider_*.py`, `docs/providers/`, `docs/en/providers/`
+- **Config/schema**: `ddns/config/`, `schema/`, `tests/test_config_*.py`, `docs/config/`, `docs/en/config/`
+- **IP/HTTP**: `ddns/ip.py`, `ddns/util/http.py`, `tests/test_ip.py`, `tests/test_util_http*.py`
+- **Scheduler**: `ddns/scheduler/`, `tests/test_scheduler_*.py`
+- **Docs/packaging**: `README*.md`, `docs/`, `pyproject.toml`, `setup.cfg`, `docker/`, `.github/workflows/`
+
+Use `rg` / `rg --files` for discovery, make narrow edits, validate the touched behavior, and report any command that could not run.
+
+### Useful Commands
+
 ```bash
-git clone https://github.com/NewFuture/DDNS.git
-cd DDNS
 python -m ddns --help
-```
-
-**PyPI**
-```bash
+python run.py --help
 pip install ddns
 ddns --help
-```
-
-**Docker**
-```bash
-docker pull newfuture/ddns:latest
 docker run --rm newfuture/ddns:latest --help
-```
-
-**Binary** (no Python required)
-```bash
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
-ddns --help
-```
-
-### Quick Start
-
-```bash
-# Run with config file
 python -m ddns -c config.json
-
-# Run with command-line args
 python -m ddns --dns=cloudflare --id=EMAIL --token=TOKEN --ipv4=domain.com
-
-# Enable debug mode
 python -m ddns --debug
-```
-
-### Platform Task Setup
-
-**Linux/macOS/Raspberry Pi**: Set up scheduled task
-```bash
-ddns task --install 5  # Update every 5 minutes
+python -m ddns --dns=debug --ipv4=test.com --debug
+ddns task --install 5
 ddns task --enable
-# Uses systemd/cron on Linux, launchd on macOS
 ```
 
-**Windows**: Download binary from [releases](https://github.com/NewFuture/DDNS/releases/latest), then `ddns task --install 5`
+Linux/macOS scheduled tasks use systemd, cron, or launchd; Windows uses the release binary and `ddns task --install 5`.
 
 ---
 
 ## Development Guide
 
-### Code Standards
+### Hard Rules
 
-**CRITICAL**: Follow `.github/instructions/python.instructions.md`
+Follow `.github/instructions/python.instructions.md` for Python files.
 
-- Use **only Python standard library** (ZERO external runtime dependencies)
-- Maintain **Python 2.7 and 3.x compatibility** (no f-strings, no async/await)
-- Use type comments: `# type: (...) -> ReturnType`
-- Format: `ruff check --fix --unsafe-fixes . && ruff format .`
+- Use only standard-library runtime dependencies.
+- Preserve Python 2.7 and 3.x compatibility: no f-strings, annotations, async/await, or Python 3-only syntax.
+- Use type comments, for example `# type: (...) -> ReturnType`.
+- Keep CLI flags, provider names, config keys, schemas, and cache behavior backward compatible unless explicitly asked otherwise.
+- Do not reformat unrelated files or modernize stable code for style alone.
 
-### Exploring the Codebase
+### Change Flow
 
-```bash
-# Entry point
-cat ddns/__main__.py
+1. Read the closest existing implementation and matching tests.
+2. Mirror established patterns instead of inventing new abstractions.
+3. Change code, tests, schema, and docs together when behavior is user-facing.
+4. Run focused validation first; run the full suite for shared modules.
+5. Summarize changes, validation, and residual risk.
 
-# Providers
-ls ddns/provider/
-cat ddns/provider/_base.py
+### Provider Changes
 
-# Find code
-find ddns/provider -name "*.py" -not -name "_*"
-grep -r "def set_record" ddns/provider/
-```
-
-### Creating a DNS Provider
-
-1. Create `ddns/provider/myprovider.py` inheriting from `BaseProvider` or `SimpleProvider`
-2. Implement required methods (see `docs/dev/provider.md`)
-3. Register in `ddns/provider/__init__.py`
-4. Add tests in `tests/test_provider_myprovider.py`
-5. Create documentation: `docs/providers/myprovider.md` and `docs/en/providers/myprovider.md`
-
-**Template**:
-```python
-from ._base import BaseProvider
-
-class MyProvider(BaseProvider):
-    API = 'https://api.provider.com'
-    
-    def _query_zone_id(self, domain):
-        # type: (str) -> str | None
-        pass
-    
-    def _query_record(self, zone_id, subdomain, main_domain, record_type, line, extra):
-        # type: (str, str, str, str, str | None, dict | None) -> dict | None
-        pass
-    
-    def _create_record(self, zone_id, subdomain, main_domain, value, record_type, ttl, line, extra):
-        # type: (str, str, str, str, str, int | None, str | None, dict | None) -> bool
-        pass
-    
-    def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
-        # type: (str, dict, str, str, int | None, str | None, dict | None) -> bool
-        pass
-```
+- Use `BaseProvider` for query/create/update APIs and `SimpleProvider` for update-only APIs.
+- Register new providers in `ddns/provider/__init__.py`.
+- Add mocked tests in `tests/test_provider_<provider>.py`; never require real credentials or live provider APIs.
+- Update both `docs/providers/<provider>.md` and `docs/en/providers/<provider>.md`.
+- Update schema, README lists, or docs navigation when a new provider or option needs discovery.
+- See `docs/dev/provider.md` and `docs/en/dev/provider.md` for full provider method signatures.
 
 ### Documentation
 
-**Bilingual**: Always update both Chinese (`docs/*.md`) and English (`docs/en/*.md`) versions
-
-**Structure**: Keep same headings, code examples identical, translate only text
-
-**Links**: Link to Chinese versions in Chinese docs, English in English docs
-
-### Commit Conventions
-
-**Format**: `<type>(<scope>): <description>`
-
-**Types**: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`, `ci`
-
-**Examples**:
-```bash
-feat(provider.cloudflare): add IPv6 support
-fix(util.http): handle proxy authentication errors
-docs(providers): update provider documentation
-```
-
-### Development Workflow
-
-1. **Setup**: `pip install ruff pytest`
-2. **Branch**: `copilot/feature-name` or `copilot/issue-description`
-3. **Code**: Make minimal changes, follow standards
-4. **Test**: `python3 -m unittest discover tests -v`
-5. **Lint**: `ruff check --fix --unsafe-fixes . && ruff format .`
-6. **Commit**: Follow conventional commits
-7. **PR**: Update both language docs, Python 2.7 compatible, no external deps
+Keep Chinese and English docs aligned. Preserve code blocks, option names, JSON keys, CLI flags, and provider IDs exactly across translations. Link Chinese docs to Chinese pages and English docs to `docs/en/` pages.
 
 ---
 
 ## Testing & Validation
 
-### Running Tests
+Run the smallest useful test first, then broaden when shared behavior changed.
 
-**unittest** (recommended - no dependencies)
 ```bash
-python -m unittest discover tests -v
 python -m unittest tests.test_provider_cloudflare -v
+python -m unittest tests.test_config_config -v
+python -m unittest tests.test_ip -v
+python -m unittest discover tests -v
+python -m pytest tests/ -v  # optional, when pytest is installed
+ruff check --fix --unsafe-fixes .
+ruff format .
 ```
 
-**pytest** (optional)
-```bash
-pip install pytest
-pytest tests/ -v
-```
+Use these focused targets as a guide:
 
-### Writing Tests
+- Provider: `python -m unittest tests.test_provider_<provider> -v`
+- Config/schema: `python -m unittest discover tests -p "test_config*.py" -v`
+- IP/HTTP: `python -m unittest tests.test_ip tests.test_util_http tests.test_util_http_retry tests.test_util_http_proxy_list -v`
+- Scheduler: `python -m unittest tests.test_scheduler_<name> -v`
+- Broad shared change: `python -m unittest discover tests -v`
 
-```python
-from base_test import BaseProviderTestCase, patch, MagicMock
-from ddns.provider.myprovider import MyProvider
-
-class TestMyProvider(BaseProviderTestCase):
-    def setUp(self):
-        super(TestMyProvider, self).setUp()
-        self.provider = MyProvider(self.id, self.token)
-    
-    @patch.object(MyProvider, "_http")
-    def test_query_zone_id_success(self, mock_http):
-        mock_http.return_value = {"zone_id": "zone123"}
-        result = self.provider._query_zone_id("example.com")
-        self.assertEqual(result, "zone123")
-```
-
-### Validation Commands
+For touched files or examples:
 
 ```bash
-# Syntax
-python3 -m py_compile ddns/provider/mynewprovider.py
-ruff check .
-
-# Tests
-python3 -m unittest discover tests -v
-
-# Config
-python3 -c "import json; json.load(open('config.json'))"
-
-# Provider
-python3 -m ddns --dns=debug --ipv4=test.com --debug
+python -m py_compile ddns/provider/myprovider.py
+python -c "import json; json.load(open('config.json'))"
 ```
 
-### Pre-Commit Checklist
-
-- [ ] Code syntax validated
-- [ ] Tests pass
-- [ ] Linting: `ruff check .`
-- [ ] Python 2.7 compatible
-- [ ] Documentation updated (both languages)
-- [ ] No external dependencies
+Provider tests should import from `base_test`; other tests should import from `tests/__init__.py`. Mock HTTP calls and assert request details, response parsing, and error handling.
 
 ---
 
 ## Troubleshooting
 
-### Common Errors
+1. Reproduce with the smallest command, fixture, or unit test.
+2. Locate the layer: config parsing, IP detection, provider mapping, HTTP transport, cache, or scheduler.
+3. Read the nearest passing test and nearest similar implementation.
+4. Fix root cause, add a regression test when behavior changed, and re-run focused validation.
 
-**Import Error**: Check file exists, provider registered in `__init__.py`, PYTHONPATH set
+Common checks:
 
-**Syntax Error**: Check Python 2.7 compatibility (no f-strings, async/await, use type comments)
-
-**Test Failure**: Verify mock setup returns correct values, check `mock_http.call_args`
-
-**Linting Error**: Run `ruff check --fix --unsafe-fixes . && ruff format .`
-
-### Debug Mode
+- Import error: file exists, provider registered, test path setup uses `tests/__init__.py` or `tests/base_test.py`.
+- Syntax error: remove Python 3-only syntax and keep Python 2.7 compatibility.
+- Auth/signature issue: verify credential shape and signing with mocked tests; never print real tokens.
+- Record not updated: inspect cache, record type, line, TTL, domain split, and provider response parsing.
+- Proxy/network issue: compare with `ddns/util/http.py`; use `--proxy=DIRECT` or `--ssl=false` only as diagnostics.
+- Schema mismatch: update `schema/v4.1.json` and matching config tests together.
+- Test failure: inspect mock return values and `mock_http.call_args`.
+- Linting issue: run `ruff check --fix --unsafe-fixes .` and `ruff format .`.
 
 ```bash
 python -m ddns --debug --dns=myprovider --ipv4=test.com
 python -m ddns --debug --log_file=debug.log
+python -m ddns --dns=debug --ipv4=test.com --debug
+rm -f /tmp/ddns.cache
 ```
 
-**Common Issues**:
-- **Auth failed**: Verify credentials with `--debug`, test API manually
-- **Record not updated**: Remove cache (`rm -f /tmp/ddns.cache`), check IP detection
-- **Network/proxy**: Try `--proxy=DIRECT` or `--ssl=false`
-- **Python 2.7 compat**: Use `.format()` not f-strings, type comments not annotations
-
-### Emergency Rollback
-
-```bash
-git revert HEAD                    # Revert last commit
-git checkout -- file.py            # Undo uncommitted changes
-git checkout HEAD -- deleted_file  # Restore deleted file
-```
+Use cache removal only when debugging stale local state. Avoid destructive git recovery unless the user explicitly requests it.
 
 ---
 
 ## Best Practices
 
-### Code Quality
-
-- **Minimal changes**: Change only what's necessary
-- **Test thoroughly**: Before and after
-- **Maintain compatibility**: Don't break Python 2.7 or existing users
-- **Document changes**: Update docs with code
-- **Follow conventions**: Don't introduce new patterns
-
-### Refactoring Rules
-
-**Don't**:
-- Change working code for style preferences
-- Break Python 2.7 compatibility
-- Remove error handling or "unnecessary" imports
-- Change APIs without version bump
-- Mass rename variables/functions
-
-**Do**:
-- Fix actual bugs
-- Add features without breaking existing ones
-- Optimize with proven benefits
-
-**Before refactoring**: Is this broken or just different style? Will this break users? Is there test coverage?
-
-### Large Changes
-
-Request confirmation before:
-- Renaming files/directories
-- Changing file structure
-- Refactoring multiple modules
-- Changing configuration formats
-- Mass search-and-replace
-
-Explain what, why, impacts, and alternatives.
+- Prefer small, reviewable changes that follow existing patterns.
+- Fix root causes and add tests for regressions.
+- Preserve user changes in the working tree; never reset or reformat unrelated files.
+- Treat configs, logs, environment variables, API tokens, and provider credentials as sensitive.
+- Prefer mocked or dry-run validation; ask before using real credentials, provider APIs, or scheduler installation on a host.
+- Use structured parsers for JSON, URLs, and HTTP data.
+- Refactor only when it directly supports the task or removes clear local duplication.
+- Ask before renaming files/providers/config keys, moving directories, mass search-and-replace, multi-module refactors, changing cache/schema compatibility, or running commands against real external services.
+- For large changes, explain goal, impact, validation plan, and safer alternatives first.
+- When asked to commit or draft PR text, use conventional commits such as `fix(util.http): handle proxy errors`.
 
 ---
 
