@@ -88,7 +88,7 @@ def is_documented_english_mirror(path, actual_files, documented_dirs):
 
 def main():
     # type: () -> None
-    actual_files = scan_files("ddns", (".py")) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
+    actual_files = scan_files("ddns", (".py",)) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
     documented, documented_dirs = parse_agents_md()
     files_to_check = {f for f in actual_files if not is_documented_english_mirror(f, actual_files, documented_dirs)}
 
