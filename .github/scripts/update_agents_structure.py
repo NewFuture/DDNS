@@ -74,13 +74,13 @@ def parse_agents_md():
 
 def is_documented_english_mirror(path, actual, documented_dirs):
     # type: (str, set, set) -> bool
-    """Check whether an English doc is covered by a documented mirror directory."""
+    """Check whether an English doc mirrors a documented Chinese source file."""
     for directory in ENGLISH_MIRROR_DIRS:
         if directory not in documented_dirs:
             continue
         prefix = directory + "/"
         if path.startswith(prefix):
-            zh_path = "docs/" + path[len("docs/en/") :]
+            zh_path = path.replace("docs/en/", "docs/", 1)
             return zh_path in actual
     return False
 
