@@ -153,14 +153,16 @@ docs/:	Documentation (VitePress-based)
 		noip.md:	No-IP guide
 		tencentcloud.md:	Tencent Cloud DNS guide
 		west.md:	West.cn DNS guide
-		config/:	Configuration documentation (English)
+
+	en/:	English documentation
+		config/:	Configuration documentation
 			cli.md:	CLI usage guide
 			env.md:	Environment variables guide
 			json.md:	JSON configuration guide
-		dev/:	Developer guides (English)
+		dev/:	Developer guides
 			provider.md:	Provider development guide
 			config.md:	Configuration system design
-		providers/:	Provider-specific documentation (English)
+		providers/:	Provider-specific documentation
 			README.md:	Provider list and overview
 			51dns.md:	51DNS provider guide
 			alidns.md:	Alibaba Cloud DNS guide
@@ -446,6 +448,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.5  
-**Last Updated**: 2026-06-13  
+**Version**: 1.0.6
+**Last Updated**: 2026-06-15
 **Maintained by**: DDNS Project Contributors
