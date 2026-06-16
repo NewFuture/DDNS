@@ -153,33 +153,11 @@ docs/:	Documentation (VitePress-based)
 		noip.md:	No-IP guide
 		tencentcloud.md:	Tencent Cloud DNS guide
 		west.md:	West.cn DNS guide
-		config/:	Configuration documentation (English)
-			cli.md:	CLI usage guide
-			env.md:	Environment variables guide
-			json.md:	JSON configuration guide
-		dev/:	Developer guides (English)
-			provider.md:	Provider development guide
-			config.md:	Configuration system design
-		providers/:	Provider-specific documentation (English)
-			README.md:	Provider list and overview
-			51dns.md:	51DNS provider guide
-			alidns.md:	Alibaba Cloud DNS guide
-			aliesa.md:	Alibaba Cloud ESA guide
-			callback.md:	Custom webhook callbacks guide
-			cloudflare.md:	Cloudflare DNS guide
-			cloudns.md:	ClouDNS guide
-			debug.md:	Debug provider guide
-			dnscom.md:	DNS.COM provider guide
-			dnspod.md:	DNSPod (China) guide
-			dnspod_com.md:	DNSPod International guide
-			edgeone.md:	Tencent EdgeOne guide
-			edgeone_dns.md:	Tencent EdgeOne DNS guide
-			he.md:	Hurricane Electric guide
-			huaweidns.md:	Huawei Cloud DNS guide
-			namesilo.md:	NameSilo guide
-			noip.md:	No-IP guide
-			tencentcloud.md:	Tencent Cloud DNS guide
-			west.md:	West.cn DNS guide
+
+	en/:	English documentation
+		config/:	English configuration guides (mirrors config/)
+		dev/:	English developer guides (mirrors dev/)
+		providers/:	English provider guides (mirrors providers/)
 		docker.md:	Docker documentation
 		install.md:	Installation guide
 
@@ -446,6 +424,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.5  
-**Last Updated**: 2026-06-13  
+**Version**: 1.0.6
+**Last Updated**: 2026-06-15
 **Maintained by**: DDNS Project Contributors
