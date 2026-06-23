@@ -20,7 +20,7 @@ jobs:
       install-sh-changed: ${{ steps.filter.outputs.install-sh }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - name: Check if install.sh or workflow changed
