@@ -1,0 +1,146 @@
+name: Test OpenWRT Install
+run-name: "OpenWRT Test: ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} by ${{ github.actor }}"
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'docs/public/install.sh'
+      - 'ddns/scheduler/**'
+      - 'tests/scripts/test-openwrt-install.sh'
+      - '.github/workflows/test-openwrt-install.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'docs/public/install.sh'
+      - 'ddns/scheduler/**'
+      - 'tests/scripts/test-openwrt-install.sh'
+      - '.github/workflows/test-openwrt-install.yml'
+  workflow_dispatch:
+
+jobs:
+  test-openwrt:
+    name: OpenWRT Install & Task Test (${{ matrix.container }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
+          - openwrt/rootfs:x86_64
+          - openwrt/rootfs:aarch64_generic
+          - openwrt/rootfs:armsr-armv7
+
+    container: ${{ matrix.container }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display system information
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo ""
+          echo "=== libc version ==="
+          ldd --version 2>&1 || echo "ldd not available"
+          echo ""
+          echo "=== Available tools ==="
+          which wget || echo "wget not available"
+          which curl || echo "curl not available"
+          which crontab || echo "crontab not available"
+
+      - name: Run OpenWRT installation and task test
+        run: |
+          cd tests/scripts
+          sh test-openwrt-install.sh ../../docs/public/install.sh
+
+      - name: Display final task status
+        if: always()
+        run: |
+          echo "=== Final Task Status ==="
+          ddns task --status 2>&1 || echo "ddns not available or task status failed"
+          echo ""
+          echo "=== Final Crontab ==="
+          crontab -l 2>&1 || echo "No crontab or crontab failed"
+
+  test-openwrt-with-install-dir:
+    name: OpenWRT Custom Install Dir Test
+    runs-on: ubuntu-latest
+    container: openwrt/rootfs:x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test installation to custom directory
+        run: |
+          echo "=== Testing installation to /opt/ddns ==="
+          sh docs/public/install.sh --install-dir /opt/ddns
+
+      - name: Verify custom installation
+        run: |
+          if [ -f /opt/ddns/ddns ]; then
+            echo "✅ DDNS installed to custom directory"
+            /opt/ddns/ddns --version
+          else
+            echo "❌ DDNS not found in custom directory"
+            exit 1
+          fi
+
+      - name: Test task installation with custom path
+        run: |
+          export PATH="/opt/ddns:$PATH"
+          ddns task --install 10
+          ddns task --status
+          
+          # Verify crontab entry
+          if crontab -l | grep -q "ddns"; then
+            echo "✅ Crontab entry created"
+            crontab -l | grep ddns
+          else
+            echo "❌ Crontab entry not found"
+            exit 1
+          fi
+          
+          # Cleanup
+          ddns task --uninstall
+
+      - name: Cleanup custom installation
+        run: sh docs/public/install.sh --uninstall --install-dir /opt/ddns
+
+  test-openwrt-reinstall:
+    name: OpenWRT Reinstall Test
+    runs-on: ubuntu-latest
+    container: openwrt/rootfs:x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: First installation
+        run: |
+          echo "=== First Installation ==="
+          sh docs/public/install.sh
+          ddns --version
+
+      - name: Test reinstall without force (should skip)
+        run: |
+          echo "=== Reinstall without force ==="
+          sh docs/public/install.sh || true
+
+      - name: Test reinstall with force
+        run: |
+          echo "=== Reinstall with force ==="
+          sh docs/public/install.sh --force
+          ddns --version
+
+      - name: Test version-specific install (should overwrite)
+        run: |
+          echo "=== Version-specific install ==="
+          sh docs/public/install.sh latest
+          ddns --version
+
+      - name: Cleanup
+        run: sh docs/public/install.sh --uninstall

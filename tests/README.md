@@ -48,10 +48,17 @@ pytest tests/test_provider_he.py -v
 
 ```
 tests/
-├── __init__.py         # 测试包初始化 / Makes tests a package
-├── base_test.py        # 共享测试工具和基类 / Shared test utilities and base classes
-├── test_provider_*.py  # 各个提供商的测试文件 / Tests for each provider  
-└── README.md           # 本测试指南 / This testing guide
+├── __init__.py                  # 测试包初始化 / Makes tests a package
+├── base_test.py                 # 共享测试工具和基类 / Shared test utilities and base classes
+├── test_provider_*.py           # 各个提供商的测试文件 / Tests for each provider  
+├── scripts/                     # 测试脚本 / Test scripts
+│   ├── test-openwrt-install.sh  # OpenWRT 安装和定时任务测试 / OpenWRT install & task test
+│   ├── test-task-cron.sh        # Cron 定时任务测试 / Cron task management test
+│   ├── test-task-systemd.sh     # Systemd 定时任务测试 / Systemd task management test
+│   ├── test-task-macos.sh       # macOS 定时任务测试 / macOS task management test
+│   ├── test-task-windows.bat    # Windows 定时任务测试 / Windows task management test
+│   └── test-in-docker.sh        # Docker 容器测试 / Docker container test
+└── README.md                    # 本测试指南 / This testing guide
 ```
 
 ## 测试配置 / Test Configuration
@@ -108,3 +115,48 @@ Tests are designed to work with both Python 2.7 and Python 3.x:
 **注意**: 项目已通过修改 `tests/__init__.py` 解决了模块导入路径问题，现在所有运行方式都能正常工作。
 
 **Note**: The project has resolved module import path issues by modifying `tests/__init__.py`, and now all running methods work correctly.
+
+## 集成测试 / Integration Tests
+
+### OpenWRT 安装和定时任务测试 / OpenWRT Install & Task Test
+
+测试 DDNS 在 OpenWRT 系统上的完整安装流程和定时任务管理：
+
+Test complete DDNS installation and scheduled task management on OpenWRT:
+
+```bash
+# 在 Docker 容器中运行 OpenWRT 测试 / Run OpenWRT test in Docker container
+docker run --rm -v "$(pwd):/workspace" openwrt/rootfs:x86_64 \
+    sh -c "cd /workspace/tests/scripts && sh test-openwrt-install.sh ../../docs/public/install.sh"
+
+# 或在本地 OpenWRT 系统上运行 / Or run on local OpenWRT system
+cd tests/scripts
+sh test-openwrt-install.sh ../../docs/public/install.sh
+```
+
+该测试验证以下内容 / This test verifies:
+- ✅ 一键安装脚本在 OpenWRT 上正常工作 / One-click install script works on OpenWRT
+- ✅ 安装路径正确 (`/usr/local/bin/ddns`) / Correct installation path
+- ✅ 二进制文件可执行且功能正常 / Binary is executable and functional
+- ✅ 定时任务可以安装和管理 / Scheduled tasks can be installed and managed
+- ✅ Cron 集成正常工作 / Cron integration works correctly
+- ✅ 任务启用/禁用功能正常 / Task enable/disable functions properly
+
+### 其他平台测试脚本 / Other Platform Test Scripts
+
+```bash
+# Linux (systemd)
+tests/scripts/test-task-systemd.sh
+
+# Linux/Unix (cron)
+tests/scripts/test-task-cron.sh /usr/local/bin/ddns
+
+# macOS (launchd)
+tests/scripts/test-task-macos.sh
+
+# Windows (Task Scheduler)
+tests/scripts/test-task-windows.bat
+
+# Docker 容器测试 / Docker container test
+tests/scripts/test-in-docker.sh linux/amd64 musl dist/ddns
+```
