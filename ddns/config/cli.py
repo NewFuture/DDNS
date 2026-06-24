@@ -168,6 +168,13 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
         "--no-cache", dest="cache", action="store_const", const=False, help="disable cache [关闭缓存等效 --cache=false]"
     )
     advanced.add_argument(
+        "--cache-verify-every",
+        type=int,
+        dest="cache_verify_every",
+        metavar="COUNT",
+        help="force upstream verification after COUNT cached skips [连续命中缓存 COUNT 次后强制向上游校验]",
+    )
+    advanced.add_argument(
         "--ssl",
         type=str_bool,
         nargs="?",

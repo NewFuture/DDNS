@@ -73,6 +73,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.dns, "cloudflare")
         self.assertEqual(config.ttl, 300)
         self.assertFalse(config.cache)
+        self.assertEqual(config.cache_verify_every, 0)
         self.assertTrue(config.ssl)
         self.assertEqual(config.log_level, 10)
 
@@ -125,6 +126,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.ttl, 600)
         config = Config(cli_config={"ttl": b"150"})
         self.assertEqual(config.ttl, 150)
+        config = Config(cli_config={"cache_verify_every": "5"})
+        self.assertEqual(config.cache_verify_every, 5)
 
         # Proxy special values - simplified (no conversion in config)
         config = Config(cli_config={"proxy": ["http://proxy1.com", "DIRECT", "http://proxy2.com"]})
@@ -205,6 +208,8 @@ class TestConfig(unittest.TestCase):
         config3 = Config(cli_config={"dns": "alidns", "id": "test"})
         self.assertEqual(config1.md5(), config2.md5())
         self.assertNotEqual(config1.md5(), config3.md5())
+        config4 = Config(cli_config={"dns": "cloudflare", "id": "test", "cache_verify_every": 1})
+        self.assertNotEqual(config1.md5(), config4.md5())
         md5_hash = config1.md5()
         self.assertEqual(len(md5_hash), 32)
         self.assertTrue(all(c in "0123456789abcdef" for c in md5_hash))

@@ -88,6 +88,7 @@ class Config(object):
             "line",
             "proxy",
             "cache",
+            "cache_verify_every",
             "ssl",
             "log_level",
             "log_format",
@@ -115,6 +116,10 @@ class Config(object):
         self.proxy = self._get("proxy", [])  # type: list[str] | None
         # cache and SSL settings
         self.cache = str_bool(self._get("cache", True))
+        cache_verify_every = self._get("cache_verify_every", 0)  # type: int | str | None
+        if isinstance(cache_verify_every, (str, bytes)):
+            cache_verify_every = int(cache_verify_every)
+        self.cache_verify_every = cache_verify_every if cache_verify_every and cache_verify_every > 0 else 0  # type: int
         self.ssl = str_bool(self._get("ssl", "auto"))
 
         log_level = self._get("log_level", "INFO")
@@ -208,6 +213,7 @@ class Config(object):
             "ttl": self.ttl,
             # System settings
             "cache": self.cache,
+            "cache_verify_every": self.cache_verify_every,
             "proxy": self.proxy,
             "ssl": self.ssl,
             # Logging settings

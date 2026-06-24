@@ -170,6 +170,18 @@
               "/path/to/cache/ddns.cache"
             ]
           },
+          "cache_verify_every": {
+            "type": "integer",
+            "title": "Cache Verify Every",
+            "description": "缓存命中连续跳过多少次后强制向上游校验一次，0 表示关闭",
+            "default": 0,
+            "minimum": 0,
+            "examples": [
+              0,
+              5,
+              20
+            ]
+          },
           "log": {
             "type": "object",
             "title": "Log Config",
@@ -485,6 +497,19 @@
         true,
         false,
         "/path/to/cache/ddns.cache"
+      ]
+    },
+    "cache_verify_every": {
+      "$id": "/properties/cache_verify_every",
+      "type": "integer",
+      "title": "Cache Verify Every",
+      "description": "缓存命中连续跳过多少次后强制向上游校验一次，0 表示关闭",
+      "default": 0,
+      "minimum": 0,
+      "examples": [
+        0,
+        5,
+        20
       ]
     },
     "ssl": {

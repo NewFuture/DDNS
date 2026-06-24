@@ -237,6 +237,32 @@ class TestCache(unittest.TestCase):
         self.assertNotIn("__private_key", cache2)
         self.assertEqual(cache2["normal_key"], "normal_value")
 
+    def test_meta_fields_are_persisted_but_hidden(self):
+        """Test persisted metadata is saved without affecting public cache entries"""
+        cache = Cache(self.cache_file)
+        cache["normal_key"] = "normal_value"
+        cache.set_meta_value("test_meta", {"count": 2})
+
+        cache.sync()
+
+        cache2 = Cache(self.cache_file)
+        self.assertEqual(len(cache2), 1)
+        self.assertEqual(cache2.get(None), {"normal_key": "normal_value"})
+        self.assertEqual(cache2.get_meta_value("test_meta"), {"count": 2})
+
+    def test_cache_verify_count_helpers(self):
+        """Test persisted cache verification counters"""
+        cache = Cache(self.cache_file)
+        cache.set_cache_verify_count("example.com:A", 2)
+        cache.sync()
+
+        cache2 = Cache(self.cache_file)
+        self.assertEqual(cache2.get_cache_verify_count("example.com:A"), 2)
+        self.assertEqual(len(cache2), 0)
+
+        cache2.del_cache_verify_count("example.com:A")
+        self.assertEqual(cache2.get_cache_verify_count("example.com:A"), 0)
+
     def test_data_method(self):
         """Test data method for getting cache contents"""
         cache = Cache(self.cache_file)

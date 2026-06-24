@@ -69,6 +69,7 @@ Configuration Parameters Table
 | proxy | string\|array | No | None | HTTP Proxy | Try multiple proxies sequentially until success, supports `DIRECT`(direct), `SYSTEM`(system proxy) |
 | ssl | string\|boolean | No | `"auto"` | SSL Verification Method | `true` (force verification), `false` (disable verification), `"auto"` (auto downgrade) or custom CA certificate file path |
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
+| cache_verify_every | integer | No | `0` | Force verification by cache-hit count | Force one upstream verification after N consecutive cache hits, `0` disables it |
 | log | object | No | `null` | Log Configuration | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters |
 
 ### dns
@@ -183,6 +184,15 @@ The `cache` parameter is used to configure DNS record caching method. The follow
 * `false`: Disable caching
 * `"/path/to/cache.file"`: Specify custom cache file path
 
+### cache_verify_every
+
+The `cache_verify_every` parameter controls how many consecutive cache hits are allowed before DDNS forces one upstream verification:
+
+* `0`: Disabled, keeps the current cache behavior
+* `N > 0`: When the local IP stays the same and the cache is hit `N` times in a row, the `N+1` run will force an upstream verification and repair drift if needed
+
+> Note: The counter is tracked per `provider + domain + record_type` and is persisted in the same cache file.
+
 ### log
 
 The `log` parameter is used to configure logging. It's an object that supports the following fields:
@@ -212,6 +222,7 @@ The `log` parameter is used to configure logging. It's an object that supports t
   "proxy": ["http://127.0.0.1:1080", "DIRECT"],
   "ssl": "auto",
   "cache": "/var/cache/ddns.cache",
+  "cache_verify_every": 10,
   "log": {
     "level": "DEBUG",
     "file": "/var/log/ddns.log",
@@ -229,6 +240,7 @@ Starting from v4.1.0, you can define multiple DNS providers in a single configur
   "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
   "ssl": "auto",
   "cache": true,
+  "cache_verify_every": 20,
   "log": {"level": "INFO", "file": "/var/log/ddns.log"},
   "providers": [
     {
@@ -236,7 +248,8 @@ Starting from v4.1.0, you can define multiple DNS providers in a single configur
       "id": "user1@example.com",
       "token": "cloudflare-token",
       "ipv4": ["test1.example.com"],
-      "ttl": 300
+      "ttl": 300,
+      "cache_verify_every": 5
     },
     {
       "provider": "dnspod",
@@ -251,7 +264,7 @@ Starting from v4.1.0, you can define multiple DNS providers in a single configur
 
 #### v4.1 Format Features
 
-* **Global Configuration Inheritance**: All configuration items outside `providers` (such as `ssl`, `cache`, `log`, etc.) serve as global settings and are inherited by all providers
+* **Global Configuration Inheritance**: All configuration items outside `providers` (such as `ssl`, `cache`, `cache_verify_every`, `log`, etc.) serve as global settings and are inherited by all providers
 * **Provider Override**: Configuration within each provider can override corresponding global settings
 * **provider Field**: Required field that specifies the DNS provider type (equivalent to the `dns` field in traditional format)
 * **Full Compatibility**: Supports all configuration parameters from traditional format
