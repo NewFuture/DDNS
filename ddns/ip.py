@@ -18,9 +18,8 @@ IPV6_REG = r"((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){
 
 # 公网IPv4 API列表，按优先级排序
 PUBLIC_IPV4_APIS = [
-    "https://api.ipify.cn",
     "https://api.ipify.org",
-    "https://4.ipw.cn/",
+    "https://ipv4.ddnsip.cn",
     "https://ipinfo.io/ip",
     "https://api-ipv4.ip.sb/ip",
     "http://checkip.amazonaws.com",
@@ -29,7 +28,7 @@ PUBLIC_IPV4_APIS = [
 # 公网IPv6 API列表，按优先级排序
 PUBLIC_IPV6_APIS = [
     "https://api6.ipify.org/",
-    "https://6.ipw.cn/",
+    "https://ipv6.ddnsip.cn",
     "https://api-ipv6.ip.sb/ip",
     "http://ipv6.icanhazip.com",
 ]

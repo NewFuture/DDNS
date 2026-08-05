@@ -243,7 +243,7 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   export DDNS_INDEX4="1"  # Second network interface
   
   # Custom URL
-  export DDNS_INDEX4="url:https://api.ipify.org"
+  export DDNS_INDEX4="url:http://api.ipify.org"
   
   # Regex pattern (no splitting)
   export DDNS_INDEX4="regex:192\\.168\\..*"

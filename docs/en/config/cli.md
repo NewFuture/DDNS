@@ -147,7 +147,7 @@ ddns --dns cloudflare --index4 public
 ddns --dns cloudflare --index4 public --index4 "regex:192\\.168\\..*"
 
 # Use custom URL for IP detection
-ddns --dns cloudflare --index4 "url:https://api.ipify.org"
+ddns --dns cloudflare --index4 "url:http://api.ipify.org"
 
 # Use command output for IP
 ddns --dns cloudflare --index4 "cmd:hostname -I | awk '{print $1}'"
