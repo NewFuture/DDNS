@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 安装Python依赖
 ARG NUITKA_VERSION
 RUN python3 -m pip install --no-cache-dir --prefer-binary \
-    "https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" \
+    "Nuitka[onefile] @ https://github.com/Nuitka/Nuitka/archive/${NUITKA_VERSION}.zip" \
     --disable-pip-version-check \
     --break-system-packages \
     && rm -rf /var/cache/* /tmp/* /var/log/* /root/.cache
