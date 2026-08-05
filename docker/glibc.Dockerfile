@@ -36,12 +36,12 @@ COPY ddns ddns
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
-# 构建二进制文件，glibc arm 下编译会报错。
+# ARMv7 需要低内存模式以避免多线程 Zstandard 压缩耗尽地址空间。
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --linux-icon=ddns.svg \
     $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes ) \
-    $( [ "$(uname -m)" != "armv7l" ] || echo --onefile-no-compression )
+    $( [ "$(uname -m)" != "armv7l" ] || echo --low-memory )
 RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
