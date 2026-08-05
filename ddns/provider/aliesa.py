@@ -6,6 +6,7 @@ AliESA API
 """
 
 from time import strftime
+import ipaddress
 
 from ._base import TYPE_JSON, join_domain
 from .alidns import AliBaseProvider
@@ -49,7 +50,8 @@ class AliesaProvider(AliBaseProvider):
             action="ListRecords",
             SiteId=int(zone_id),
             RecordName=full_domain,
-            Type=self._get_type(record_type),
+            # AliESA 只有 A/AAAA 记录类型表示 有不确定数量的IPv4 和 不确定数量的IPv6
+            Type='A/AAAA',
             RecordMatchType="exact",  # 精确匹配
             PageSize=100,
         )
@@ -91,6 +93,60 @@ class AliesaProvider(AliBaseProvider):
 
         self.logger.error("Failed to create record: %s", data)
         return False
+    
+    def extract_unique_ip_addresses(self,input_string):
+        """
+        从逗号分隔的字符串中提取第一个有效的 IPv4 地址和第一个有效的 IPv6 地址。
+
+        :param input_string: 包含潜在 IP 地址的字符串
+        :return: 一个元组 (first_ipv4, first_ipv6)，如果未找到则对应位置为空字符串
+        """
+        # 默认为空字符串方便拼接
+        first_ipv4 = ""
+        first_ipv6 = ""
+        
+        # 1. 按逗号分割字符串，并去除每个部分前后的空白字符
+        candidates = [part.strip() for part in input_string.split(',')]
+        
+        # 2. 遍历候选列表
+        for candidate in candidates:
+            # 跳过空字符串
+            if not candidate:
+                continue
+                
+            # 3. 尝试将候选者解析为 IP 地址
+            try:
+                ip_obj = ipaddress.ip_address(candidate)
+                
+                # 4. 判断 IP 地址类型，并记录第一个出现的地址
+                if isinstance(ip_obj, ipaddress.IPv4Address) and first_ipv4 == "":
+                    first_ipv4 = str(ip_obj)
+                elif isinstance(ip_obj, ipaddress.IPv6Address) and first_ipv6 == "":
+                    first_ipv6 = str(ip_obj)
+                    
+                # 5. 如果两个地址都找到了，可以提前退出循环以提高效率
+                if first_ipv4  and first_ipv6 :
+                    break
+                    
+            except ValueError:
+                # 如果解析失败，说明不是有效的 IP 地址，继续检查下一个
+                continue
+        
+        # 6. 返回结果元组
+        return first_ipv4, first_ipv6
+    
+    def record_final(self, old_record , new_record):
+        # type: (str, str) -> str
+        """
+        获取最终结果 只保留一个ipv4和一个ipv6
+        """
+        ipv4old, ipv6old = self.extract_unique_ip_addresses(old_record)
+        ipv4new, ipv6new = self.extract_unique_ip_addresses(new_record)
+        ipv4final,ipv6final = self.extract_unique_ip_addresses(ipv4new+","+ipv6new+","+ipv4old+","+ipv6old)
+        
+        final =  ipv4final+","+ipv6final
+        # // 去除可能的开头的逗号
+        return final.lstrip(',')
 
     def _update_record(self, zone_id, old_record, value, record_type, ttl, line, extra):
         # type: (str, dict, str, str, int | str | None, str | None, dict) -> bool
@@ -98,9 +154,14 @@ class AliesaProvider(AliBaseProvider):
         更新DNS记录
         https://help.aliyun.com/zh/edge-security-acceleration/esa/api-esa-2024-09-10-updaterecord
         """
+        # EAS只有A/AAAA记录并且可能包含多个ip,如果当前域名只配置ipV4或ipV6类型, 则只更新对应部分,然后另一种记录不变
+        # ESA可以配置多个Ip作为回源ip, 所以要提取第一个ipv4地址和ipv6地址(DDNS场景下不可能有多个ip)
+        # 获取最终结果 只保留一个ipv4和一个ipv6
+        final_value = self.record_final(old_record.get("Data", {}).get("Value"), value)
+        
         # 检查是否需要更新
         if (
-            old_record.get("Data", {}).get("Value") == value
+            old_record.get("Data", {}).get("Value") == final_value
             and old_record.get("RecordType") == self._get_type(record_type)
             and (not ttl or old_record.get("Ttl") == ttl)
         ):
@@ -113,7 +174,7 @@ class AliesaProvider(AliBaseProvider):
             method="POST",
             action="UpdateRecord",
             RecordId=old_record.get("RecordId"),
-            Data={"Value": value},
+            Data={"Value": final_value},
             Ttl=ttl,
             **extra
         )  # fmt: skip
