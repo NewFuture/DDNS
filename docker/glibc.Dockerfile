@@ -36,11 +36,12 @@ COPY ddns ddns
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
-# 构建二进制文件，glibc arm下编译会报错，
+# 构建二进制文件，glibc arm 下编译会报错。
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --linux-icon=ddns.svg \
-    $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes )
+    $( [ "$(uname -m)" = "aarch64" ] || echo --lto=yes ) \
+    $( [ "$(uname -m)" != "armv7l" ] || echo --onefile-no-compression )
 RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
