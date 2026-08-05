@@ -18,29 +18,42 @@ from .provider import SimpleProvider, get_provider_class  # noqa: F401
 logger = getLogger()
 
 
+def _get_ip_from_rule(ip_type, rule):
+    """
+    Resolve an IP address from a single rule.
+    """
+    rule_text = str(rule)
+    if rule_text.isdigit():
+        return getattr(ip, "local_v" + ip_type)(rule)
+    if rule_text.startswith("cmd:"):
+        return str(check_output(rule_text[4:]).strip().decode("utf-8"))
+    if rule_text.startswith("shell:"):
+        return str(check_output(rule_text[6:], shell=True).strip().decode("utf-8"))
+    if rule_text.startswith("url:"):
+        return getattr(ip, "public_v" + ip_type)(rule_text[4:])
+    if rule_text.startswith("regex:"):
+        return getattr(ip, "regex_v" + ip_type)(rule_text[6:])
+    return getattr(ip, rule_text + "_v" + ip_type)()
+
+
 def get_ip(ip_type, rules):
     """
     get IP address
     """
     if rules is False:  # disabled
         return False
-    for i in rules:
+    for rule in rules:
         try:
-            logger.debug("get_ip:(%s, %s)", ip_type, i)
-            if str(i).isdigit():  # 数字 local eth
-                return getattr(ip, "local_v" + ip_type)(i)
-            elif i.startswith("cmd:"):  # cmd
-                return str(check_output(i[4:]).strip().decode("utf-8"))
-            elif i.startswith("shell:"):  # shell
-                return str(check_output(i[6:], shell=True).strip().decode("utf-8"))
-            elif i.startswith("url:"):  # 自定义 url
-                return getattr(ip, "public_v" + ip_type)(i[4:])
-            elif i.startswith("regex:"):  # 正则 regex
-                return getattr(ip, "regex_v" + ip_type)(i[6:])
-            else:
-                return getattr(ip, i + "_v" + ip_type)()
+            logger.debug("get_ip:(%s, %s)", ip_type, rule)
+            result = _get_ip_from_rule(ip_type, rule)
         except Exception as e:
             logger.error("Failed to get %s address: %s", ip_type, e)
+            continue
+
+        if result:
+            return result
+
+        logger.debug("Rule %s did not return a usable IPv%s address", rule, ip_type)
     return None
 
 
