@@ -46,9 +46,12 @@ RUN if patchelf --version 2>/dev/null | grep -q ' 0[.]18[.]0$'; then \
         && make install \
         && rm -rf /tmp/patchelf.tar.gz "/tmp/patchelf-${PATCHELF_VERSION}"; \
     fi
+# zstandard 0.23.0 cannot allocate its compression buffer on 32-bit ARM.
+RUN [ "$(uname -m)" != "armv7l" ] || python3 -m pip install --no-cache-dir "zstandard==0.22.0"
 RUN python3 -O -m nuitka run.py \
     --remove-output \
     --lto=yes \
+    $( [ "$(uname -m)" != "armv7l" ] || echo --low-memory ) \
     $(cat nuitka_exclude_so.txt)
 RUN mkdir /output && cp dist/ddns /output/
 COPY docker/entrypoint.sh /output/

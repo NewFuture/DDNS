@@ -36,6 +36,8 @@ COPY ddns ddns
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
+# zstandard 0.23.0 cannot allocate its compression buffer on 32-bit ARM.
+RUN [ "$(uname -m)" != "armv7l" ] || python3 -m pip install --no-cache-dir "zstandard==0.22.0"
 # ARMv7 需要低内存模式以避免多线程 Zstandard 压缩耗尽地址空间。
 RUN python3 -O -m nuitka run.py \
     --remove-output \

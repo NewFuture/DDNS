@@ -25,9 +25,12 @@ COPY ddns ddns
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
+# zstandard 0.23.0 cannot allocate its compression buffer on 32-bit ARM.
+RUN [ "$(uname -m)" != "armv7l" ] || python3 -m pip install --no-cache-dir "zstandard==0.22.0"
 RUN python3 -O -m nuitka run.py \
     --remove-output \
-    --lto=yes
+    --lto=yes \
+    $( [ "$(uname -m)" != "armv7l" ] || echo --low-memory )
 RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
 
