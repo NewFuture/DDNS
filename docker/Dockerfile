@@ -3,7 +3,7 @@
 ARG HOST_VERSION=3.20
 # prebuilt image to speed up to speed up: ghcr.io/newfuture/nuitka-buider:master
 ARG BUILDER=base-builder
-ARG PATCHELF_VERSION=0.17.2
+ARG PATCHELF_VERSION=0.19.1
 ARG PYTHON_VERSION=3.8
 ARG NUITKA_VERSION=main  # 新增此行，定义构建参数并提供默认值
 
