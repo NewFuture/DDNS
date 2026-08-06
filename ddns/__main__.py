@@ -109,7 +109,7 @@ def run(config):
     dns = provider_class(
         config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, ssl=config.ssl
     )
-    cache = Cache.new(config.cache, config.md5(), logger)
+    cache = Cache.new(config.cache, config.md5(), logger, config.cache_max_age)
     return (
         update_ip(dns, cache, config.index4, config.ipv4, "A", config) is not False
         and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config) is not False

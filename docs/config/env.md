@@ -26,6 +26,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_LINE`            | 依服务商而定，如：电信、移动                                                                        | DNS 解析线路                      | `DDNS_LINE=电信`                                         |
 | `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
 | `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
+| `DDNS_CACHE_MAX_AGE`   | 非负整数（秒）                                                                                       | 缓存文件最大有效期，默认 259200，0 表示每次运行清空已有缓存 | `DDNS_CACHE_MAX_AGE=86400` |
 | `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
 | `DDNS_CRON`            | Cron 表达式格式字符串（仅 Docker 环境有效）                                                          | Docker 容器内定时任务周期         | `DDNS_CRON="*/10 * * * *"`                               |
 | `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |
@@ -224,7 +225,10 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   
   # 自定义缓存文件路径
   export DDNS_CACHE="/path/to/ddns.cache"
+
   ```
+
+`DDNS_CACHE_MAX_AGE` 控制整个缓存文件的有效期（秒），在下一次运行时按文件 mtime 判断，边界值也算过期，未来 mtime 也算过期。它不是 DNS TTL；缓存仍是扁平 JSON，任何内容写入都会刷新整个文件并影响所有记录，不进行迁移，共享缓存限制不变。
 
 ### SSL证书验证
 

@@ -5,6 +5,8 @@ Configuration class merged from CLI, JSON, and environment variables.
 """
 
 from hashlib import md5
+from numbers import Integral
+
 from .cli import str_bool, log_level as get_log_level
 
 __all__ = ["Config", "split_array_string"]
@@ -88,6 +90,7 @@ class Config(object):
             "line",
             "proxy",
             "cache",
+            "cache_max_age",
             "ssl",
             "log_level",
             "log_format",
@@ -115,6 +118,7 @@ class Config(object):
         self.proxy = self._get("proxy", [])  # type: list[str] | None
         # cache and SSL settings
         self.cache = str_bool(self._get("cache", True))
+        self.cache_max_age = self._get_cache_max_age()
         self.ssl = str_bool(self._get("ssl", "auto"))
 
         log_level = self._get("log_level", "INFO")
@@ -145,6 +149,22 @@ class Config(object):
         if key in SIMPLE_ARRAY_PARAMS:
             return split_array_string(value)
         return value
+
+    def _get_cache_max_age(self):
+        # type: () -> int
+        value = self._get("cache_max_age", 259200)
+        if isinstance(value, bool):
+            raise ValueError("cache_max_age must be a non-negative integer")
+        if isinstance(value, (str, bytes)):
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                raise ValueError("cache_max_age must be a non-negative integer")
+        elif not isinstance(value, Integral):
+            raise ValueError("cache_max_age must be a non-negative integer")
+        if value < 0:
+            raise ValueError("cache_max_age must be a non-negative integer")
+        return int(value)
 
     def _process_extra_from_source(self, source_config, extra, process_nested_extra=True):
         # type: (dict, dict, bool) -> None
@@ -208,6 +228,7 @@ class Config(object):
             "ttl": self.ttl,
             # System settings
             "cache": self.cache,
+            "cache_max_age": self.cache_max_age,
             "proxy": self.proxy,
             "ssl": self.ssl,
             # Logging settings

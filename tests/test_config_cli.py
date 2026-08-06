@@ -79,6 +79,13 @@ class TestCliConfig(unittest.TestCase):
         self.assertEqual(config["token"], "secret123")
         self.assertTrue(config["debug"])
 
+    def test_load_config_cache_max_age_aliases(self):
+        """Test both cache max age CLI spellings."""
+        for option in ["--cache-max-age", "--cache_max_age"]:
+            sys.argv = ["ddns", option, "86400"]
+            config = load_config("Test DDNS", "Test doc", "1.0.0", "2025-07-04")
+            self.assertEqual(config["cache_max_age"], 86400)
+
     def test_load_config_with_arrays(self):
         """Test load_config with array arguments"""
         sys.argv = ["ddns", "--ipv4", "example.com", "test.com", "--proxy", "http://proxy1.com", "http://proxy2.com"]

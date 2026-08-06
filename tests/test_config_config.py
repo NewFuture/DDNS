@@ -58,6 +58,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.ssl, "auto")
         self.assertEqual(config.log_level, 20)
         self.assertEqual(config.log_datefmt, "%Y-%m-%dT%H:%M:%S")
+        self.assertEqual(config.cache_max_age, 259200)
 
         # CLI configuration
         cli_config = {
@@ -75,6 +76,18 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config.cache)
         self.assertTrue(config.ssl)
         self.assertEqual(config.log_level, 10)
+
+    def test_cache_max_age_validation_and_precedence(self):
+        """Test cache max age conversion, inheritance, and validation."""
+        config = Config(env_config={"cache_max_age": "60"})
+        self.assertEqual(config.cache_max_age, 60)
+        config = Config(json_config={"cache_max_age": 120}, env_config={"cache_max_age": 60})
+        self.assertEqual(config.cache_max_age, 120)
+        config = Config(cli_config={"cache_max_age": "0"})
+        self.assertEqual(config.cache_max_age, 0)
+        for value in [True, False, -1, "invalid", 1.5]:
+            with self.assertRaises(ValueError):
+                Config(cli_config={"cache_max_age": value})
 
         # JSON configuration
         json_config = {

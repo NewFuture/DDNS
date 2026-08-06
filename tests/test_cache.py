@@ -667,6 +667,46 @@ class TestCache(unittest.TestCase):
         # Clean up
         cache.close()
 
+    @patch("ddns.cache.time")
+    def test_cache_new_custom_max_age_and_boundary(self, mock_time):
+        """Test custom age, exact expiry boundary, and future mtimes."""
+        import json
+        import logging
+
+        with open(self.cache_file, "w") as data:
+            json.dump({"record": "1.2.3.4"}, data)
+        logger = logging.getLogger("test_logger")
+        mock_time.return_value = 1000
+
+        with patch("ddns.cache.stat") as mock_stat:
+            mock_stat.return_value.st_mtime = 900
+            cache = Cache.new(self.cache_file, "hash", logger, 100)
+        self.assertEqual(len(cache), 0)
+        cache.close()
+
+        with open(self.cache_file, "w") as data:
+            json.dump({"record": "1.2.3.4"}, data)
+        with patch("ddns.cache.stat") as mock_stat:
+            mock_stat.return_value.st_mtime = 1001
+            cache = Cache.new(self.cache_file, "hash", logger, 100)
+        self.assertEqual(len(cache), 0)
+        cache.close()
+
+    @patch("ddns.cache.time")
+    def test_cache_new_zero_age_clears_existing_cache(self, mock_time):
+        """Test zero max age clears all existing public entries."""
+        import json
+        import logging
+
+        with open(self.cache_file, "w") as data:
+            json.dump({"a": 1, "b": 2}, data)
+        mock_time.return_value = 1000
+        with patch("ddns.cache.stat") as mock_stat:
+            mock_stat.return_value.st_mtime = 1000
+            cache = Cache.new(self.cache_file, "hash", logging.getLogger("test_logger"), 0)
+        self.assertEqual(len(cache), 0)
+        cache.close()
+
 
 if __name__ == "__main__":
     unittest.main()

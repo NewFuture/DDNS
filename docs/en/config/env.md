@@ -26,6 +26,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_LINE`              | ISP line such as: 电信, 联通, 移动, or provider-specific values                                     | DNS resolution line                       | `DDNS_LINE=电信`                                            |
 | `DDNS_PROXY`             | `http://host:port` or `DIRECT`, multiple values separated by semicolons                             | HTTP proxy settings                       | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                 |
 | `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
+| `DDNS_CACHE_MAX_AGE`     | Non-negative integer (seconds)                                                                       | Whole cache file max age; default 259200, `0` clears an existing cache every invocation | `DDNS_CACHE_MAX_AGE=86400` |
 | `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
 | `DDNS_CRON`              | Cron expression format string (Docker only)                                                          | Cron schedule for Docker container        | `DDNS_CRON="*/10 * * * *"`                                  |
 | `DDNS_LOG_LEVEL`         | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                                     | Logging level                             | `DDNS_LOG_LEVEL="DEBUG"`                                    |
@@ -377,10 +378,12 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   
   # Custom cache file path
   export DDNS_CACHE="/var/cache/ddns/cache.json"
-  
+
   # Use temporary directory
   export DDNS_CACHE="/tmp/ddns.cache"
   ```
+
+`DDNS_CACHE_MAX_AGE` controls whole-file expiry in seconds. Expiry is checked on the next invocation; the exact boundary is stale and a future mtime is stale. It is not DNS TTL. The cache remains flat JSON with one mtime, so any content write refreshes every entry; no migration is performed and shared-cache limitations are unchanged.
 
 ### Docker Cron Schedule Configuration
 

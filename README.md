@@ -188,6 +188,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 |  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                                                                                    |
 | debug  |        bool        |    No    |   `false`   |    是否开启调试    | 调试模式，仅命令行参数`--debug`有效                                                                                                                                    |
 | cache  |    string\|bool    |    No    |   `true`    |    是否缓存记录    | 正常情况打开避免频繁更新，默认位置为临时目录下 `ddns.cache`，也可以指定一个具体路径                                                                                                      |
+| cache_max_age | integer | No | `259200` | 缓存文件最大有效期（秒） | `0` 表示每次运行清空已有缓存；这是本地文件有效期，不是 DNS TTL |
 |  log   |       object       |    No    |   `null`    |  日志配置（可选）  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                                                                                               |
 
 #### index4 和 index6 参数说明
