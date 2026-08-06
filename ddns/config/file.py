@@ -161,6 +161,7 @@ def save_config(config_path, config):
         "line": config.get("line"),
         "proxy": config.get("proxy", []),
         "cache": config.get("cache", True),
+        "cache_max_age": config.get("cache_max_age", 259200),
         "ssl": config.get("ssl", "auto"),
         "log": {
             "file": config.get("log_file"),

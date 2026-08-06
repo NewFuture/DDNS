@@ -81,6 +81,7 @@ ddns --ipv4=example.com,www.example.com
 | `--line`        | 字符串      | 解析线路(部分provider支持)，如 ISP线路                                                                                                                         | `--line 电信` <br> `--line telecom`                        |
 | `--proxy`       | 字符串列表    | HTTP 代理设置，支持：`http://host:port`、`DIRECT`(直连)、`SYSTEM`(系统代理)                                                      | `--proxy SYSTEM DIRECT` 或 `--proxy http://127.0.0.1:1080 --proxy DIRECT`    |
 | `--cache`       | 标志/字符串   | 是否启用缓存或自定义缓存路径                                                                                                                           | `--cache` <br> `--cache=/path/to/cache`        |
+| `--cache-max-age`, `--cache_max_age` | 非负整数（秒） | 缓存文件最大有效期；默认 `259200` 秒，`0` 表示每次运行清空已有缓存 | `--cache-max-age 86400` |
 | `--no-cache`    | 标志       | 禁用缓存（等效于 `--cache=false`）                                                                                                                | `--no-cache`                                             |
 | `--ssl`         | 字符串      | SSL 证书验证方式，支持：true, false, auto, 文件路径                                                                                                    | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`             |
 | `--no-ssl`      | 标志       | 禁用 SSL 验证（等效于 `--ssl=false`）                                                                                                             | `--no-ssl`                                               |
@@ -260,6 +261,10 @@ HTTP代理设置，支持多代理轮换。代理类型包括：
   - `--cache` (启用默认缓存)
   - `--cache=false` (禁用缓存)
   - `--cache=/path/to/ddns.cache` (自定义缓存路径)
+
+### `--cache-max-age SECONDS`
+
+设置整个缓存文件的有效期，默认 259200 秒（72 小时）。在下一次运行时，若当前时间减去文件修改时间大于或等于该值，或文件修改时间在未来，则清空文件中的所有公开缓存项；`0` 会在每次运行清空已有缓存。该设置不是 DNS TTL。缓存采用单一文件 mtime：任何缓存内容写入都会刷新整个文件，因此所有记录共享这个有效期。缓存文件仍使用原有扁平 JSON 格式，不会迁移；共享缓存文件的既有限制不变。
 
 ### `--ssl {true|false|auto|PATH}`
 

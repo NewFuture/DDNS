@@ -94,6 +94,15 @@ class TestConfigEnv(unittest.TestCase):
         self.assertEqual(config.get("proxy"), "http://ddns.proxy.com:9090")
         del os.environ["DDNS_PROXY"]
 
+    def test_ddns_cache_max_age(self):
+        """Test DDNS_CACHE_MAX_AGE is loaded by generic environment handling."""
+        os.environ["DDNS_CACHE_MAX_AGE"] = "86400"
+
+        config = load_config()
+
+        self.assertEqual(config.get("cache_max_age"), "86400")
+        del os.environ["DDNS_CACHE_MAX_AGE"]
+
     def test_ddns_variables_override_standard_vars(self):
         """Test that DDNS variables take precedence over standard environment variables"""
         self._clear_standard_env()

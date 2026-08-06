@@ -170,6 +170,13 @@
               "/path/to/cache/ddns.cache"
             ]
           },
+          "cache_max_age": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Cache Max Age",
+            "description": "缓存文件最大有效期（秒）；0表示每次启动都清空已有缓存",
+            "default": 259200
+          },
           "log": {
             "type": "object",
             "title": "Log Config",
@@ -485,6 +492,18 @@
         true,
         false,
         "/path/to/cache/ddns.cache"
+      ]
+    },
+    "cache_max_age": {
+      "$id": "/properties/cache_max_age",
+      "type": "integer",
+      "minimum": 0,
+      "title": "Cache Max Age",
+      "description": "Maximum cache file age in seconds; 0 clears an existing cache on every invocation",
+      "default": 259200,
+      "examples": [
+        259200,
+        0
       ]
     },
     "ssl": {

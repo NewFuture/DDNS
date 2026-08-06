@@ -78,6 +78,7 @@ ddns --ipv4=example.com,www.example.com
 | `--line`        |    String   | DNS resolution line (e.g. ISP line)                                                                                                                                       | `--line 电信` <br> `--line telecom`                        |
 | `--proxy`       | String List | HTTP proxy settings, supports: `http://host:port`, `DIRECT`(direct), `SYSTEM`(system proxy)                                | `--proxy SYSTEM DIRECT` or `--proxy http://127.0.0.1:1080 --proxy DIRECT`    |
 | `--cache`       | Flag/String | Enable cache or specify custom cache path                                                                                                                                 | `--cache` <br> `--cache=/path/to/cache`                  |
+| `--cache-max-age`, `--cache_max_age` | Non-negative integer (seconds) | Maximum cache file age; default `259200` seconds, `0` clears an existing cache on every invocation | `--cache-max-age 86400` |
 | `--no-cache`    |     Flag    | Disable cache (equivalent to `--cache=false`)                                                                                                                             | `--no-cache`                                             |
 | `--ssl`         |    String   | SSL certificate verification: true, false, auto, or file path                                                                                                             | `--ssl false` <br> `--ssl=/path/to/ca-certs.crt`         |
 | `--no-ssl`      |     Flag    | Disable SSL verification (equivalent to `--ssl=false`)                                                                                                                    | `--no-ssl`                                               |
@@ -85,6 +86,8 @@ ddns --ipv4=example.com,www.example.com
 | `--log_level`   |    String   | Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL                                                                                                                      | `--log_level=ERROR`                                      |
 | `--log_format`  |    String   | Log format string (compatible with Python `logging` module)                                                                                                               | `--log_format="%(asctime)s:%(message)s"`                 |
 | `--log_datefmt` |    String   | Date/time format string for logs                                                                                                                                          | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
+
+`--cache-max-age` controls whole-file cache expiry, in seconds. The default is 259200 (72 hours). On the next invocation, a cache is stale when `now - mtime >= cache_max_age` or its mtime is in the future; `0` clears an existing cache every time. This is distinct from DNS TTL. The flat JSON file has one mtime, so any cache write refreshes the age for every entry. The format is unchanged and no migration is performed; existing shared-cache limitations remain.
 
 #### Task Subcommand Parameters
 

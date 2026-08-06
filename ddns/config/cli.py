@@ -6,7 +6,7 @@ Configuration loader for DDNS command-line interface.
 
 import platform
 import sys
-from argparse import SUPPRESS, Action, ArgumentParser, RawTextHelpFormatter
+from argparse import SUPPRESS, Action, ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
 from logging import DEBUG, basicConfig, getLevelName
 from os import path as os_path
 
@@ -33,6 +33,18 @@ def str_bool(v):
         return False
     else:
         return v  # type: ignore[return-value]
+
+
+def non_negative_int(value):
+    # type: (str) -> int
+    """Parse a non-negative integer CLI option."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise ArgumentTypeError("must be a non-negative integer")
+    if parsed < 0:
+        raise ArgumentTypeError("must be a non-negative integer")
+    return parsed
 
 
 def log_level(value):
@@ -163,6 +175,13 @@ def _add_ddns_args(arg):  # type: (ArgumentParser) -> None
     advanced.add_argument("--proxy", nargs="*", action=ExtendAction, help="HTTP proxy [设置http代理，可配多个代理连接]")
     advanced.add_argument(
         "--cache", type=str_bool, nargs="?", const=True, help="set cache [启用缓存开关，或传入保存路径]"
+    )
+    advanced.add_argument(
+        "--cache-max-age",
+        "--cache_max_age",
+        dest="cache_max_age",
+        type=non_negative_int,
+        help="cache file max age in seconds [缓存文件最大有效期，单位秒]",
     )
     advanced.add_argument(
         "--no-cache", dest="cache", action="store_const", const=False, help="disable cache [关闭缓存等效 --cache=false]"

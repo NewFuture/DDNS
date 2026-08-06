@@ -69,6 +69,7 @@ Configuration Parameters Table
 | proxy | string\|array | No | None | HTTP Proxy | Try multiple proxies sequentially until success, supports `DIRECT`(direct), `SYSTEM`(system proxy) |
 | ssl | string\|boolean | No | `"auto"` | SSL Verification Method | `true` (force verification), `false` (disable verification), `"auto"` (auto downgrade) or custom CA certificate file path |
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
+| cache_max_age | integer | No | `259200` | Cache File Max Age (seconds) | `0` clears an existing cache on the next invocation; distinct from DNS TTL |
 | log | object | No | `null` | Log Configuration | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters |
 
 ### dns
@@ -182,6 +183,10 @@ The `cache` parameter is used to configure DNS record caching method. The follow
 * `true`: Enable caching, default location is `ddns.{hash}.cache` in the temporary directory
 * `false`: Disable caching
 * `"/path/to/cache.file"`: Specify custom cache file path
+
+### cache_max_age
+
+The whole cache file is evaluated by its mtime, in seconds, with a default of 259200 (72 hours). On the next invocation, `now - mtime >= cache_max_age` or a future mtime is stale; `0` clears an existing cache every time. The cache remains the original flat JSON without per-record timestamps or migration. Because the file has one mtime, any cache content write refreshes the age for every entry; shared-cache limitations are unchanged.
 
 ### log
 

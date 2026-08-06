@@ -192,6 +192,21 @@ class TestMultiConfig(unittest.TestCase):
         ali_config = result[1]
         self.assertEqual(ali_config["proxy"], "http://global.proxy:8080")
 
+    def test_multi_provider_cache_max_age_inheritance_and_override(self):
+        """Test global cache_max_age inheritance and provider override, including zero."""
+        config = {
+            "cache_max_age": 86400,
+            "providers": [
+                {"provider": "debug", "token": "global", "ipv4": ["global.example.com"]},
+                {"provider": "debug", "token": "override", "ipv4": ["override.example.com"], "cache_max_age": 0},
+            ],
+        }
+
+        result = _process_multi_providers(config)
+
+        self.assertEqual(result[0]["cache_max_age"], 86400)
+        self.assertEqual(result[1]["cache_max_age"], 0)
+
     def test_multi_provider_proxy_array_format(self):
         """测试provider级别的数组格式proxy配置"""
         config = {

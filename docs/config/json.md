@@ -64,6 +64,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，支持`DIRECT`(直连)、`SYSTEM`(系统代理)                                              |
 |   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
+| cache_max_age | integer | 否 | `259200` | 缓存文件最大有效期（秒） | `0` 表示下一次运行清空已有缓存；与 DNS TTL 无关 |
 |  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
 
 ### dns
@@ -177,6 +178,10 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 * `true`：启用缓存，默认位置为临时目录下的`ddns.{hash}.cache`
 * `false`：禁用缓存
 * `"/path/to/cache.file"`：指定自定义缓存文件路径
+
+### cache_max_age
+
+缓存文件按整体 mtime 判断有效期，单位为秒，默认 259200（72 小时）。下一次运行时，`now - mtime >= cache_max_age` 或 mtime 在未来即视为过期；设置为 `0` 会在每次运行清空已有缓存。缓存仍为原有扁平 JSON，不保存每条记录时间戳，也不迁移。由于整个文件只有一个 mtime，任何缓存内容写入都会刷新所有记录的有效期；共享缓存文件的限制不变。
 
 ### log
 

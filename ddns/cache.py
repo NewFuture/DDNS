@@ -155,8 +155,8 @@ class Cache(dict):
         self.close()
 
     @staticmethod
-    def new(config_cache, hash, logger):
-        # type: (str|bool, str, Logger) -> Cache|None
+    def new(config_cache, hash, logger, cache_max_age=259200):
+        # type: (str|bool, str, Logger, int) -> Cache|None
         """
         new cache from a file path.
         :param path: Path to the cache file.
@@ -173,11 +173,14 @@ class Cache(dict):
 
         if cache is None:
             logger.debug("Cache is disabled!")
-        elif cache.time + 72 * 3600 < time():  # 72小时有效期
-            logger.info("Cache file is outdated.")
-            cache.clear()
-        elif len(cache) == 0:
-            logger.debug("Cache is empty.")
         else:
-            logger.debug("Cache loaded with %d entries.", len(cache))
+            now = time()
+            expired = cache.time > now or now - cache.time >= cache_max_age
+            if expired:
+                logger.info("Cache file is outdated.")
+                cache.clear()
+            elif len(cache) == 0:
+                logger.debug("Cache is empty.")
+            else:
+                logger.debug("Cache loaded with %d entries.", len(cache))
         return cache

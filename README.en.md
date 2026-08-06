@@ -185,6 +185,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 |  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL Certificate Verification | `true` (force verify), `false` (disable verify), `"auto"` (auto downgrade) or custom CA certificate file path                                                                         |
 | debug  |        bool        |    No    |   `false`   |    Enable Debug    | Debug mode, only effective with command line parameter `--debug`                                                                                                                       |
 | cache  |    string\|bool    |    No    |   `true`    |    Cache Records   | Keep enabled normally to avoid frequent updates, default location is `ddns.cache` in temp directory, can also specify a specific path                                                |
+| cache_max_age | integer | No | `259200` | Cache file max age (seconds) | `0` clears an existing cache on every invocation; this is local file expiry, not DNS TTL |
 |  log   |       object       |    No    |   `null`    |  Log Config (Optional) | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters                                                                                                     |
 
 #### index4 and index6 Parameter Description
