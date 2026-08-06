@@ -140,6 +140,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: 'Docker', link: '/docker' },
       { text: '安装', link: '/install' },
+      { text: 'OpenWRT', link: '/openwrt' },
       { 
         text: '配置方式',
         items: [
@@ -360,6 +361,7 @@ export default defineConfig({
           { text: 'Home', link: '/en/' },
           { text: 'Docker', link: '/en/docker' },
           { text: 'Install', link: '/en/install' },
+          { text: 'OpenWRT', link: '/en/openwrt' },
           { 
             text: 'Configuration',
             items: [
