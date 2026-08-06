@@ -157,6 +157,21 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertEqual(loaded["dns"], "debug")
         self.assertEqual(loaded["token"], "test")
 
+    def test_cache_max_age_schema_definitions(self):
+        """Test root and provider cache_max_age schema definitions."""
+        schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "v4.1.json")
+        with open(schema_path, "r") as schema_file:
+            schema = json.load(schema_file)
+
+        definitions = [
+            schema["properties"]["cache_max_age"],
+            schema["properties"]["providers"]["items"]["properties"]["cache_max_age"],
+        ]
+        for definition in definitions:
+            self.assertEqual(definition["type"], "integer")
+            self.assertEqual(definition["minimum"], 0)
+            self.assertEqual(definition["default"], 259200)
+
     def test_v40_to_v41_compatibility(self):
         """Test v4.0 config is compatible with v4.1 processing"""
         from ddns.config.file import load_config

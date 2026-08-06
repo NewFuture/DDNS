@@ -129,6 +129,13 @@ class TestBaseScheduler(unittest.TestCase):
         self.assertIn("--ttl", command)
         self.assertIn("600", command)
 
+    def test_build_ddns_command_with_cache_max_age(self):
+        """Test _build_ddns_command emits the cache max age option."""
+        command = self.scheduler._build_ddns_command({"cache_max_age": 86400})
+
+        self.assertIn("--cache_max_age", command)
+        self.assertIn("86400", command)
+
     def test_build_ddns_command_excludes_none_values(self):
         """Test _build_ddns_command behavior with None values"""
         ddns_args = {"dns": "debug", "ipv4": ["test.com"], "ttl": None, "line": None}

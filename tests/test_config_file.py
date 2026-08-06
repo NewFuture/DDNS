@@ -317,6 +317,7 @@ class TestConfigFile(unittest.TestCase):
         # Check that schema and other defaults are added
         self.assertIn("$schema", loaded_config)
         self.assertIn("cache", loaded_config)
+        self.assertEqual(loaded_config["cache_max_age"], 259200)
 
     def test_save_config_complex_data(self):
         """Test saving configuration with complex data types"""
