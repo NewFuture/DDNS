@@ -26,7 +26,7 @@ class TestMain(unittest.TestCase):
                 "cache_max_age": 86400,
                 "index4": False,
                 "index6": False,
-            }
+            },
         )
 
         self.assertTrue(__main__.run(config))

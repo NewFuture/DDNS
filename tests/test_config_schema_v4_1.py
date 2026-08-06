@@ -160,7 +160,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
     def test_cache_max_age_schema_definitions(self):
         """Test root and provider cache_max_age schema definitions."""
         schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "v4.1.json")
-        with open(schema_path, "r") as schema_file:
+        with open(schema_path, "rb") as schema_file:
             schema = json.load(schema_file)
 
         definitions = [
