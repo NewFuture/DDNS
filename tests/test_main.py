@@ -20,13 +20,7 @@ class TestMain(unittest.TestCase):
         provider = MagicMock()
         mock_provider_class.return_value = lambda *args, **kwargs: provider
         config = Config(
-            cli_config={
-                "dns": "debug",
-                "cache": True,
-                "cache_max_age": 86400,
-                "index4": False,
-                "index6": False,
-            },
+            cli_config={"dns": "debug", "cache": True, "cache_max_age": 86400, "index4": False, "index6": False}
         )
 
         self.assertTrue(__main__.run(config))
