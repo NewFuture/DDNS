@@ -30,7 +30,7 @@ class _RetryStatusHandler(BaseHTTPRequestHandler):
     request_count = 0
 
     def do_GET(self):
-        type(self).request_count += 1
+        _RetryStatusHandler.request_count += 1
         self.send_response(502)
         self.send_header("Content-Length", "0")
         self.end_headers()
