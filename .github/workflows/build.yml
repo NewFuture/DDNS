@@ -418,6 +418,9 @@ jobs:
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c https://ddns.newfuture.cc/tests/config/debug.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/he-proxies.json
+            if [ "$platform" = "linux/amd64" ]; then
+              sh tests/scripts/test-docker-zombies.sh "${{ env.DOCKER_IMG }}:$tag" "$platform"
+            fi
           done
       
       # 上传测试结果和镜像
