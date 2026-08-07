@@ -7,18 +7,36 @@ Test HTTP RetryHandler retry functionality
 from __future__ import unicode_literals
 import socket
 import ssl
+from threading import Thread
 from __init__ import unittest, patch, MagicMock
 import logging
 
 # Python 2/3 compatibility
 try:
+    from http.server import BaseHTTPRequestHandler, HTTPServer
     from io import StringIO
     from urllib.error import URLError
 except ImportError:
+    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
     from StringIO import StringIO  # type: ignore[no-redef]
     from urllib2 import URLError  # type: ignore[no-redef]
 
 from ddns.util.http import RetryHandler, request
+
+
+class _RetryStatusHandler(BaseHTTPRequestHandler):
+    """返回可重试状态码的本地HTTP处理器"""
+
+    request_count = 0
+
+    def do_GET(self):
+        _RetryStatusHandler.request_count += 1
+        self.send_response(502)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
 
 
 class TestRetryHandler(unittest.TestCase):
@@ -350,11 +368,12 @@ class TestRequestFunction(unittest.TestCase):
         self.assertIn("RetryHandler", handler_types)
 
 
-class TestHttpRetryRealNetwork(unittest.TestCase):
-    """测试HTTP重试功能 - 真实网络请求"""
+class TestHttpRetryLogging(unittest.TestCase):
+    """测试HTTP重试日志，不依赖外部网络"""
 
-    def test_http_502_retry_auto(self):
-        """测试HTTP 502状态码的重试机制 - 使用真实请求检查日志"""
+    @patch("ddns.util.http.time.sleep")
+    def test_http_502_retry_auto(self, mock_sleep):
+        """测试HTTP 502状态码的重试机制和日志"""
         # 创建日志捕获器
         log_capture = StringIO()
         handler = logging.StreamHandler(log_capture)
@@ -370,21 +389,30 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
             root_logger.setLevel(logging.WARNING)
             root_logger.handlers = [handler]
 
-            # 确保logger会传播到我们的handler
-            root_logger.propagate = True
+            _RetryStatusHandler.request_count = 0
+            server = HTTPServer(("127.0.0.1", 0), _RetryStatusHandler)
+            server_thread = Thread(target=server.serve_forever)
+            server_thread.daemon = True
+            server_thread.start()
 
-            # 使用httpbin.org的502错误端点测试重试
-
-            response = request("GET", "http://postman-echo.com/status/502", retries=1)
+            try:
+                response = request(
+                    "GET", "http://127.0.0.1:{}/".format(server.server_port), proxies=["DIRECT"], retries=1
+                )
+            finally:
+                server.shutdown()
+                server.server_close()
+                server_thread.join()
 
             # 验证最终返回502错误
             self.assertEqual(response.status, 502)
+            self.assertEqual(_RetryStatusHandler.request_count, 2)
+            mock_sleep.assert_called_once_with(2)
 
             # 检查日志输出
             log_output = log_capture.getvalue()
 
             # 验证日志中包含重试信息（匹配实际的日志格式）
-            # 在Python 2中，日志捕获可能有所不同，使用更宽松的检查
             self.assertIn(" retrying in 2 seconds", log_output)  # 日志中应该包含重试信息
             retry_count = log_output.count(" error, retrying in ")
             self.assertEqual(retry_count, 1, "应该有一次重试日志")
@@ -393,68 +421,25 @@ class TestHttpRetryRealNetwork(unittest.TestCase):
             root_logger.setLevel(original_level)
             root_logger.handlers = original_handlers
 
-    def test_ssl_certificate_error_no_retry_real_case(self):
-        """测试SSL证书错误不触发重试 - 使用真实证书错误案例"""
-        # 创建日志捕获器
-        log_capture = StringIO()
-        handler = logging.StreamHandler(log_capture)
-        handler.setLevel(logging.DEBUG)  # 使用DEBUG级别捕获更多信息
+    @patch("ddns.util.http.time.sleep")
+    def test_ssl_certificate_error_no_retry(self, mock_sleep):
+        """测试直接和封装后的SSL证书错误都不触发重试"""
+        errors = [ssl.SSLError("CERTIFICATE_VERIFY_FAILED"), URLError(ssl.SSLError("CERTIFICATE_VERIFY_FAILED"))]
 
-        # 获取根logger并设置 - 这样可以捕获所有子logger的日志
-        root_logger = logging.getLogger()
-        original_level = root_logger.level
-        original_handlers = root_logger.handlers[:]
+        for error in errors:
+            retry_handler = RetryHandler(retries=1)
+            mock_parent = MagicMock()
+            mock_parent.open.side_effect = error
+            retry_handler.parent = mock_parent
+            mock_req = MagicMock()
+            mock_req.timeout = 60
 
-        try:
-            # 设置日志级别和处理器
-            root_logger.setLevel(logging.DEBUG)
-            root_logger.handlers = [handler]
+            with self.assertRaises(type(error)):
+                retry_handler._open(mock_req)
 
-            # 使用expired.badssl.com测试过期证书错误
-            try:
-                # 使用过期证书的网站，强制验证证书，重试一次即可
-                request("GET", "https://expired.badssl.com/", retries=1, verify=True)
-                raise AssertionError("Expected SSL certificate error, but request succeeded unexpectedly.")
-            except ssl.SSLError as e:
-                # 这是我们期望的SSL错误
-                # 检查日志输出
-                log_output = log_capture.getvalue()
+            self.assertEqual(mock_parent.open.call_count, 1)
 
-                # 验证日志中没有重试信息
-                self.assertNotIn("retrying", log_output.lower())
-                self.assertNotIn("retry", log_output.lower())
-
-                # 验证确实是SSL证书错误
-                self.assertIn("CERTIFICATE_VERIFY_FAILED", str(e))
-
-            except (OSError, URLError) as e:
-                # 检查是否是SSL相关错误
-                error_msg = str(e).lower()
-                ssl_keywords = ["ssl", "certificate", "verify", "handshake", "tls"]
-                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-
-                if any(keyword in error_msg for keyword in ssl_keywords):
-                    # 这是SSL错误，检查日志输出
-                    log_output = log_capture.getvalue()
-
-                    # 验证日志中没有重试信息
-                    self.assertNotIn("retrying", log_output.lower())
-                    self.assertNotIn("retry", log_output.lower())
-
-                    # 验证确实是SSL证书错误
-                    self.assertIn("certificate", error_msg)
-
-                elif any(keyword in error_msg for keyword in network_keywords):
-                    # 网络问题时跳过测试
-                    self.skipTest("Network unavailable for SSL certificate test: {}".format(str(e)))
-                else:
-                    # 其他异常重新抛出
-                    raise
-
-        finally:
-            # 恢复原始日志设置
-            root_logger.setLevel(original_level)
-            root_logger.handlers = original_handlers
+        mock_sleep.assert_not_called()
 
 
 if __name__ == "__main__":
