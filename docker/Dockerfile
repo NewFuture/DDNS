@@ -54,6 +54,7 @@ RUN mkdir /output && cp dist/ddns /output/
 COPY docker/entrypoint.sh /output/
 
 FROM alpine:${HOST_VERSION}
+RUN apk add --no-cache tini
 COPY --from=builder /output/* /bin/
 WORKDIR /ddns
-ENTRYPOINT [ "/bin/entrypoint.sh" ]
+ENTRYPOINT [ "/sbin/tini", "-g", "--", "/bin/entrypoint.sh" ]

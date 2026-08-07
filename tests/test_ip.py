@@ -258,11 +258,79 @@ class TestIpModule(unittest.TestCase):
         self.assertEqual(result, "1.2.3.4")
         self.assertEqual(mock_request.call_count, len(ip.PUBLIC_IPV4_APIS) + 1)
 
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_regex_v4_uses_ip_address(self, mock_try_run):
+        """测试Unix IPv4正则通过参数列表执行ip命令"""
+        mock_try_run.return_value = "2: eth0\n    inet 192.0.2.10/24 scope global eth0\n"
+
+        result = ip.regex_v4(r"192\.0\.2\..*")
+
+        self.assertEqual(result, "192.0.2.10")
+        mock_try_run.assert_called_once_with(["ip", "address"])
+
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_regex_v6_uses_ip_address(self, mock_try_run):
+        """测试Unix IPv6正则通过参数列表执行ip命令"""
+        mock_try_run.return_value = "2: eth0\n    inet6 2409:8a00::1/64 scope global\n"
+
+        result = ip.regex_v6(r"2409:.*")
+
+        self.assertEqual(result, "2409:8a00::1")
+        mock_try_run.assert_called_once_with(["ip", "address"])
+
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_regex_falls_back_to_ifconfig_when_ip_fails(self, mock_try_run):
+        """测试ip命令失败时直接执行ifconfig"""
+        mock_try_run.side_effect = [None, "inet addr:198.51.100.7 Mask:255.255.255.0\n"]
+
+        result = ip.regex_v4(r"198\.51\.100\..*")
+
+        self.assertEqual(result, "198.51.100.7")
+        self.assertEqual(mock_try_run.call_args_list[0][0][0], ["ip", "address"])
+        self.assertEqual(mock_try_run.call_args_list[1][0][0], ["ifconfig"])
+
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_regex_does_not_fallback_after_successful_ip_command(self, mock_try_run):
+        """测试ip命令成功但不匹配时不执行ifconfig"""
+        mock_try_run.return_value = "2: eth0\n    inet 192.0.2.10/24 scope global eth0\n"
+
+        result = ip.regex_v4(r"172\.16\..*")
+
+        self.assertIsNone(result)
+        mock_try_run.assert_called_once_with(["ip", "address"])
+
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_regex_returns_none_when_network_commands_fail(self, mock_try_run):
+        """测试ip和ifconfig均失败时返回空结果"""
+        mock_try_run.side_effect = [None, None]
+
+        result = ip.regex_v4(r".*")
+
+        self.assertIsNone(result)
+        self.assertEqual(mock_try_run.call_count, 2)
+
+    @patch("ddns.ip.os_name", "nt")
+    @patch("ddns.ip.try_run")
+    def test_regex_v4_uses_ipconfig_on_windows(self, mock_try_run):
+        """测试Windows IPv4正则直接执行ipconfig"""
+        mock_try_run.return_value = "IPv4 Address. . . . . . . . . . . : 203.0.113.9\r\n"
+
+        result = ip.regex_v4(r"203\.0\.113\..*")
+
+        self.assertEqual(result, "203.0.113.9")
+        mock_try_run.assert_called_once_with(["ipconfig"])
+
     @patch("ddns.ip.public_v4")
-    @patch("ddns.ip.popen")
-    def test_get_ip_regex_rule_fallback(self, mock_popen, mock_public_v4):
+    @patch("ddns.ip.os_name", "posix")
+    @patch("ddns.ip.try_run")
+    def test_get_ip_regex_rule_fallback(self, mock_try_run, mock_public_v4):
         """测试regex规则返回空结果时继续回退"""
-        mock_popen.return_value.readlines.return_value = ["inet 192.168.1.10/24", "inet 10.0.0.2/24"]
+        mock_try_run.return_value = "inet 192.168.1.10/24\ninet 10.0.0.2/24\n"
         mock_public_v4.return_value = "1.2.3.4"
 
         result = get_ip("4", ["regex:172\\.16\\..*", "public"])

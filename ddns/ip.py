@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 from re import compile
-from os import name as os_name, popen
+from os import name as os_name
 from socket import socket, getaddrinfo, gethostname, AF_INET, AF_INET6, SOCK_DGRAM
 from logging import debug, error
 
 from .util.http import request
+from .util.try_run import try_run
 
 # 模块级别的SSL验证配置，默认使用auto模式
 ssl_verify = "auto"
@@ -113,16 +114,23 @@ def public_v6(url=None, reg=IPV6_REG):  # 公网IPV6地址
         return _try_multiple_apis(PUBLIC_IPV6_APIS, reg, "IPv6")
 
 
+def _read_network_config():
+    # type: () -> str | None
+    if os_name == "nt":
+        return try_run(["ipconfig"])
+
+    output = try_run(["ip", "address"])
+    if output is None:
+        output = try_run(["ifconfig"])
+    return output
+
+
 def _ip_regex_match(parrent_regex, match_regex):
     ip_pattern = compile(parrent_regex)
     matcher = compile(match_regex)
 
-    if os_name == "nt":  # windows:
-        cmd = "ipconfig"
-    else:
-        cmd = "ip address || ifconfig 2>/dev/null"
-
-    for s in popen(cmd).readlines():
+    output = _read_network_config()
+    for s in (output or "").splitlines(True):
         addr = ip_pattern.search(s)
         if addr and matcher.match(addr.group(1)):
             return addr.group(1)
