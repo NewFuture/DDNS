@@ -22,13 +22,11 @@ WORKDIR /app
 FROM ${BUILDER} AS builder
 COPY run.py .github/patch.py .
 COPY ddns ddns
-ARG TARGETARCH
 ARG GITHUB_REF_NAME
 ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 RUN python3 patch.py
 RUN python3 -O -m nuitka run.py \
     --remove-output \
-    $( [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ] || echo --onefile-no-compression ) \
     --lto=yes
 RUN cp dist/ddns /bin/ddns && cp dist/ddns /ddns
 
