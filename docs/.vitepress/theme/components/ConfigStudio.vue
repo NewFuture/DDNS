@@ -961,10 +961,29 @@ function normalizeAddressSource(value: string): string {
   return prefix ? `${prefix}${source.slice(prefix.length).trim()}` : source
 }
 
+function addressSourceSeparator(value: string): ',' | ';' | '' {
+  let firstSpecialSource = value.length
+  ADDRESS_SOURCE_PREFIXES.forEach((prefix) => {
+    let index = value.indexOf(prefix)
+    while (index >= 0) {
+      const preceding = value.slice(0, index).trimEnd()
+      if (!preceding || /[,;]$/.test(preceding)) {
+        firstSpecialSource = Math.min(firstSpecialSource, index)
+        break
+      }
+      index = value.indexOf(prefix, index + prefix.length)
+    }
+  })
+  const delimiterScope = value.slice(0, firstSpecialSource)
+  if (delimiterScope.includes(',')) return ','
+  if (delimiterScope.includes(';')) return ';'
+  return ''
+}
+
 function splitIndexList(value: string): string[] {
   const result: string[] = []
   splitLineList(value).forEach((line) => {
-    const separator = line.includes(',') ? ',' : line.includes(';') ? ';' : ''
+    const separator = addressSourceSeparator(line)
     if (!separator) {
       result.push(normalizeAddressSource(line))
       return
@@ -2315,10 +2334,10 @@ const selectedSectionIssues = computed<Record<SectionKey, IssueSummary>>(() => {
     runtime: emptyIssueSummary(),
   }
   const selectedIndex = providers.value.findIndex((provider) => provider.uid === selectedUid.value)
-  const selectedPrefix = `$.providers[${selectedIndex}]`
 
   previewDiagnostics.value.forEach((diagnostic) => {
-    if (diagnostic.path.startsWith('$.providers[') && !diagnostic.path.startsWith(selectedPrefix)) return
+    const providerMatch = diagnostic.path.match(/^\$\.providers\[(\d+)\]/)
+    if (providerMatch && Number(providerMatch[1]) !== selectedIndex) return
     const summary = summaries[sectionForPath(diagnostic.path)]
     if (diagnostic.severity === 'error') summary.errors += 1
     else summary.warnings += 1
@@ -2578,6 +2597,7 @@ function restoreRemovedProvider() {
 
 function duplicateProvider() {
   const source = selectedProvider.value
+  const hasSensitiveEndpoint = hasHttpUrlCredentials(source.endpoint)
   const duplicate: ProviderState = {
     ...source,
     uid: nextProviderUid++,
@@ -2586,6 +2606,9 @@ function duplicateProvider() {
     idNull: false,
     token: '',
     tokenPresent: false,
+    endpoint: hasSensitiveEndpoint ? '' : source.endpoint,
+    endpointPresent: hasSensitiveEndpoint ? false : source.endpointPresent,
+    endpointNull: hasSensitiveEndpoint ? false : source.endpointNull,
     revealToken: false,
   }
   const index = providers.value.findIndex((provider) => provider.uid === source.uid)

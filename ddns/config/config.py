@@ -16,6 +16,21 @@ SIMPLE_ARRAY_PARAMS = ["ipv4", "ipv6", "proxy", "index4", "index6"]
 SPECIAL_ARRAY_PREFIXES = ("url:", "regex:", "cmd:", "shell:")
 
 
+def _special_source_start(value):
+    # type: (str) -> int
+    """Return the first special source that begins a list item."""
+    first = len(value)
+    for prefix in SPECIAL_ARRAY_PREFIXES:
+        start = value.find(prefix)
+        while start >= 0:
+            preceding = value[:start].rstrip()
+            if not preceding or preceding.endswith((",", ";")):
+                first = min(first, start)
+                break
+            start = value.find(prefix, start + len(prefix))
+    return first
+
+
 def is_false(value):
     """
     判断值是否为 False
@@ -44,8 +59,9 @@ def split_array_string(value, preserve_special=True):
 
     trimmed = value.strip()
 
-    # 选择分隔符（逗号优先）
-    sep = "," if "," in trimmed else (";" if ";" in trimmed else None)
+    # 特殊地址源的内容可能包含另一种列表分隔符
+    delimiter_scope = trimmed[: _special_source_start(trimmed)] if preserve_special else trimmed
+    sep = "," if "," in delimiter_scope else (";" if ";" in delimiter_scope else None)
     if not sep:
         return [trimmed]
 

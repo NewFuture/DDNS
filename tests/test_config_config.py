@@ -40,6 +40,10 @@ class TestSplitArrayString(unittest.TestCase):
             split_array_string("url:https://example.com/ip?values=1,2;mode=primary"),
             ["url:https://example.com/ip?values=1,2;mode=primary"],
         )
+        self.assertEqual(
+            split_array_string("public;url:https://example.com/ip?values=1,2"),
+            ["public", "url:https://example.com/ip?values=1,2"],
+        )
         self.assertEqual(split_array_string("cmd:curl -s ip.sb,public"), ["cmd:curl -s ip.sb,public"])
         self.assertEqual(
             split_array_string("shell:ip -6 addr | grep global,public"), ["shell:ip -6 addr | grep global,public"]
