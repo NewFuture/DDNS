@@ -363,9 +363,11 @@ export default defineConfig({
           { text: 'Home', link: '/en/' },
           { text: 'Docker', link: '/en/docker' },
           { text: 'Install', link: '/en/install' },
+          { text: 'Config Studio', link: '/en/config/studio' },
           { 
             text: 'Configuration',
             items: [
+              { text: 'Build & Validate', link: '/en/config/studio' },
               { text: 'CLI', link: '/en/config/cli' },
               { text: 'Environment', link: '/en/config/env' },
               { text: 'JSON Config', link: '/en/config/json' }
@@ -393,6 +395,7 @@ export default defineConfig({
             {
               text: 'Configuration',
               items: [
+                { text: 'Build & Validate', link: '/en/config/studio' },
                 { text: 'CLI Parameters', link: '/en/config/cli' },
                 { text: 'Environment Variables', link: '/en/config/env' },
                 { text: 'JSON Configuration', link: '/en/config/json' }
