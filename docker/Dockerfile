@@ -57,4 +57,4 @@ FROM alpine:${HOST_VERSION}
 RUN apk add --no-cache tini
 COPY --from=builder /output/* /bin/
 WORKDIR /ddns
-ENTRYPOINT [ "/sbin/tini", "--", "/bin/entrypoint.sh" ]
+ENTRYPOINT [ "/sbin/tini", "-g", "--", "/bin/entrypoint.sh" ]

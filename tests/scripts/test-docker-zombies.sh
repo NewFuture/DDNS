@@ -4,6 +4,14 @@
 
 set -eu
 
+if [ "${DDNS_SIGNAL_TEST_IP:-}" = "1" ]; then
+    trap ': > /signal/terminated; exit 0' TERM INT
+    : > /signal/started
+    while :; do
+        sleep 1
+    done
+fi
+
 TEST_ROOT=/tmp/ddns-zombie-test
 TEST_BIN="$TEST_ROOT/bin"
 PARENT_LOG="$TEST_ROOT/ip-parents"
@@ -73,6 +81,45 @@ check_container() {
     echo "Regex IP detection completed $actual_runs runs without shell intermediates or zombies"
 }
 
+test_startup_signal_forwarding() {
+    docker run --detach \
+        --name "$signal_container" \
+        --platform "$platform" \
+        --env "PATH=/tmp:$base_path" \
+        --env DDNS_DNS=debug \
+        --env DDNS_IPV6=zombie-test.example \
+        --env 'DDNS_INDEX6=regex:2001:db8:.*' \
+        --env DDNS_CACHE=false \
+        --env DDNS_SIGNAL_TEST_IP=1 \
+        --volume "$script_path:/tmp/ip:ro" \
+        --volume "$signal_dir:/signal" \
+        "$image" >/dev/null
+
+    attempt=0
+    until [ -f "$signal_dir/started" ]; do
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 30 ]; then
+            echo "Timed out waiting for the initial DDNS update" >&2
+            docker logs "$signal_container" >&2
+            exit 1
+        fi
+        sleep 1
+    done
+
+    docker stop --time 5 "$signal_container" >/dev/null
+    if [ ! -f "$signal_dir/terminated" ]; then
+        echo "Tini did not forward SIGTERM to the initial DDNS process group" >&2
+        exit 1
+    fi
+
+    exit_code=$(docker inspect --format '{{.State.ExitCode}}' "$signal_container")
+    if [ "$exit_code" -eq 137 ]; then
+        echo "Initial DDNS shutdown required SIGKILL" >&2
+        exit 1
+    fi
+    echo "Tini forwarded SIGTERM during the initial DDNS update"
+}
+
 case "${1:-}" in
     --setup)
         setup_container
@@ -93,14 +140,21 @@ image=${1:?Usage: test-docker-zombies.sh IMAGE [PLATFORM]}
 platform=${2:-linux/amd64}
 runs=${DDNS_ZOMBIE_TEST_RUNS:-8}
 script_dir=$(cd "$(dirname "$0")" && pwd)
+script_path="$script_dir/$(basename "$0")"
 container="ddns-zombie-test-$$"
+signal_container="${container}-signal"
+signal_dir="${TMPDIR:-/tmp}/${signal_container}"
+base_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+mkdir -p "$signal_dir"
 
 cleanup() {
     docker rm -f "$container" >/dev/null 2>&1 || true
+    docker rm -f "$signal_container" >/dev/null 2>&1 || true
+    rm -rf "$signal_dir"
 }
 trap cleanup 0 1 2 15
 
-expected_entrypoint='["/sbin/tini","--","/bin/entrypoint.sh"]'
+expected_entrypoint='["/sbin/tini","-g","--","/bin/entrypoint.sh"]'
 actual_entrypoint=$(docker image inspect --format '{{json .Config.Entrypoint}}' "$image")
 if [ "$actual_entrypoint" != "$expected_entrypoint" ]; then
     echo "Unexpected image entrypoint: $actual_entrypoint" >&2
@@ -113,7 +167,7 @@ docker run --detach \
     --entrypoint /sbin/tini \
     --volume "$script_dir:/tests:ro" \
     "$image" \
-    -- /bin/sh -c "/bin/sh /tests/test-docker-zombies.sh --setup; exec crond -f" >/dev/null
+    -g -- /bin/sh -c "/bin/sh /tests/test-docker-zombies.sh --setup; exec crond -f" >/dev/null
 
 attempt=0
 until docker exec "$container" /bin/sh /tests/test-docker-zombies.sh --ready 2>/dev/null; do
@@ -126,7 +180,7 @@ until docker exec "$container" /bin/sh /tests/test-docker-zombies.sh --ready 2>/
     sleep 1
 done
 
-test_path="$TEST_BIN:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+test_path="$TEST_BIN:$base_path"
 run=0
 while [ "$run" -lt "$runs" ]; do
     output=$(docker exec --env "PATH=$test_path" "$container" \
@@ -153,3 +207,5 @@ if [ "$exit_code" -eq 137 ]; then
     exit 1
 fi
 echo "Tini forwarded shutdown with container exit code $exit_code"
+
+test_startup_signal_forwarding
