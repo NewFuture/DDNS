@@ -229,7 +229,7 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 - **Required**: No
 - **Default**: `["default"]` (uses system's default external IP)
 - **Description**: IPv4 address detection methods. Supports comma `,` or semicolon `;` separated string format
-- **Special Note**: When value contains `regex:`, `cmd:`, or `shell:` prefix, separator splitting is not supported; the entire string is treated as a single configuration item
+- **Special Note**: When a value contains a `url:`, `regex:`, `cmd:`, or `shell:` prefix, separator splitting is disabled and the entire string is treated as one configuration item
 - **Examples**:
 
   ```bash

@@ -13,6 +13,7 @@ __all__ = ["Config", "split_array_string"]
 
 # 简单数组，支持',', ';' 分隔的参数列表
 SIMPLE_ARRAY_PARAMS = ["ipv4", "ipv6", "proxy", "index4", "index6"]
+SPECIAL_ARRAY_PREFIXES = ("url:", "regex:", "cmd:", "shell:")
 
 
 def is_false(value):
@@ -26,16 +27,20 @@ def is_false(value):
     return value is False
 
 
-def split_array_string(value):
-    # type: (str|list) -> list
+def split_array_string(value, preserve_special=True):
+    # type: (str|list, bool) -> list
     """
     解析数组字符串
-    逐个分解，遇到特殊前缀时停止分割
+    逐个分解，可在遇到特殊前缀时停止分割
     """
     if isinstance(value, list):
         return value
-    if not value or not hasattr(value, "strip"):
-        return [value] if value else []
+    if not value:
+        if isinstance(value, Integral) and not isinstance(value, bool):
+            return [value]
+        return []
+    if not hasattr(value, "strip"):
+        return [value]
 
     trimmed = value.strip()
 
@@ -52,8 +57,8 @@ def split_array_string(value):
         if not part:
             continue
 
-        # 检查是否包含特殊前缀，如果有则合并剩余部分
-        if any(prefix in part for prefix in ["regex:", "cmd:", "shell:"]):
+        # 地址获取命令和URL可能包含列表分隔符
+        if preserve_special and part.startswith(SPECIAL_ARRAY_PREFIXES):
             parts.append(sep.join(split_parts[i:]).strip())
             break
         parts.append(part)
@@ -147,7 +152,7 @@ class Config(object):
             return False
         # 处理数组参数
         if key in SIMPLE_ARRAY_PARAMS:
-            return split_array_string(value)
+            return split_array_string(value, key in ("index4", "index6"))
         return value
 
     def _get_cache_max_age(self):

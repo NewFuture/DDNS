@@ -18,7 +18,7 @@ class TestSplitArrayString(unittest.TestCase):
         self.assertEqual(split_array_string(""), [])
         self.assertEqual(split_array_string(None), [])  # type: ignore[assignment]
         self.assertEqual(split_array_string(False), [])  # type: ignore[assignment]
-        self.assertEqual(split_array_string(0), [])  # type: ignore[assignment]
+        self.assertEqual(split_array_string(0), [0])  # type: ignore[assignment]
 
         # Non-string, non-list input
         self.assertEqual(split_array_string(123), [123])  # type: ignore[assignment]
@@ -36,11 +36,16 @@ class TestSplitArrayString(unittest.TestCase):
 
         # Special prefixes (no split)
         self.assertEqual(split_array_string("regex:192\\.168\\..*,public"), ["regex:192\\.168\\..*,public"])
+        self.assertEqual(
+            split_array_string("url:https://example.com/ip?values=1,2;mode=primary"),
+            ["url:https://example.com/ip?values=1,2;mode=primary"],
+        )
         self.assertEqual(split_array_string("cmd:curl -s ip.sb,public"), ["cmd:curl -s ip.sb,public"])
         self.assertEqual(
             split_array_string("shell:ip -6 addr | grep global,public"), ["shell:ip -6 addr | grep global,public"]
         )
         self.assertEqual(split_array_string("public,regex:192\\.168\\..*"), ["public", "regex:192\\.168\\..*"])
+        self.assertEqual(split_array_string("url:8080;DIRECT", preserve_special=False), ["url:8080", "DIRECT"])
 
 
 class TestConfig(unittest.TestCase):
@@ -76,6 +81,10 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config.cache)
         self.assertTrue(config.ssl)
         self.assertEqual(config.log_level, 10)
+
+        # Proxy hostnames that resemble address-source prefixes still split normally.
+        config = Config(json_config={"proxy": "url:8080;DIRECT"})
+        self.assertEqual(config.proxy, ["url:8080", "DIRECT"])
 
     def test_cache_max_age_validation_and_precedence(self):
         """Test cache max age conversion, inheritance, and validation."""
