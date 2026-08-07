@@ -396,7 +396,9 @@ class TestHttpRetryLogging(unittest.TestCase):
             server_thread.start()
 
             try:
-                response = request("GET", "http://127.0.0.1:{}/".format(server.server_port), retries=1)
+                response = request(
+                    "GET", "http://127.0.0.1:{}/".format(server.server_port), proxies=["DIRECT"], retries=1
+                )
             finally:
                 server.shutdown()
                 server.server_close()
