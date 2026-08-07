@@ -827,8 +827,18 @@ const hasCredentialProviders = computed(() => credentialProviderIndexes.value.le
 const hasSensitiveEndpoints = computed(() =>
   providers.value.some((provider) => hasHttpUrlCredentials(provider.endpoint)),
 )
+const hasSensitiveAddressSources = computed(() =>
+  providers.value.some((provider) =>
+    [provider.index4Text, provider.index6Text].some((value) =>
+      splitIndexList(value).some(hasAddressSourceCredentials),
+    ),
+  ),
+)
 const hasSensitiveValues = computed(
-  () => hasCredentialProviders.value || hasSensitiveEndpoints.value,
+  () =>
+    hasCredentialProviders.value ||
+    hasSensitiveEndpoints.value ||
+    hasSensitiveAddressSources.value,
 )
 const testProviderCount = computed(
   () => providers.value.filter((provider) => providerMap.get(provider.provider)?.testOnly).length,
@@ -1003,11 +1013,26 @@ function splitIndexList(value: string): string[] {
   return result
 }
 
-function parseIndexValue(value: string): JsonValue {
+function hasAddressSourceCredentials(value: string): boolean {
+  const source = normalizeAddressSource(value)
+  const prefix = addressSourcePrefix(source)
+  return prefix === 'url:' && hasHttpUrlCredentials(source.slice(prefix.length))
+}
+
+function stripSensitiveAddressSources(value: string): string {
+  const sources = splitIndexList(value)
+  if (!sources.some(hasAddressSourceCredentials)) return value
+  return sources.filter((source) => !hasAddressSourceCredentials(source)).join('\n')
+}
+
+function parseIndexValue(value: string, includeSensitiveValues = true): JsonValue | undefined {
   const trimmed = value.trim()
   if (['false', 'none'].includes(trimmed.toLowerCase())) return false
   if (trimmed.toLowerCase() === 'true') return true
-  const parts = splitIndexList(trimmed)
+  const parts = splitIndexList(trimmed).filter(
+    (part) => includeSensitiveValues || !hasAddressSourceCredentials(part),
+  )
+  if (!parts.length) return undefined
   return parts.map((part) => (/^\d+$/.test(part) ? Number(part) : part))
 }
 
@@ -1141,8 +1166,10 @@ function buildProvider(
   const ipv6 = splitSimpleList(provider.ipv6Text)
   if (ipv4.length || provider.ipv4Present) output.ipv4 = ipv4
   if (ipv6.length || provider.ipv6Present) output.ipv6 = ipv6
-  if (provider.index4Text.trim()) output.index4 = parseIndexValue(provider.index4Text)
-  if (provider.index6Text.trim()) output.index6 = parseIndexValue(provider.index6Text)
+  const index4 = parseIndexValue(provider.index4Text, includeSensitiveValues)
+  const index6 = parseIndexValue(provider.index6Text, includeSensitiveValues)
+  if (index4 !== undefined) output.index4 = index4
+  if (index6 !== undefined) output.index6 = index6
   if (provider.ttlNull) output.ttl = null
   else if (provider.ttl.trim() && Number.isFinite(Number(provider.ttl))) {
     output.ttl = Number(provider.ttl)
@@ -2609,6 +2636,8 @@ function duplicateProvider() {
     endpoint: hasSensitiveEndpoint ? '' : source.endpoint,
     endpointPresent: hasSensitiveEndpoint ? false : source.endpointPresent,
     endpointNull: hasSensitiveEndpoint ? false : source.endpointNull,
+    index4Text: stripSensitiveAddressSources(source.index4Text),
+    index6Text: stripSensitiveAddressSources(source.index6Text),
     revealToken: false,
   }
   const index = providers.value.findIndex((provider) => provider.uid === source.uid)
