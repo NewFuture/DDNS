@@ -134,7 +134,7 @@ Copyright (c) NewFuture (MIT License)
     config_paths = _get_config_paths(config_paths)
 
     # 提取代理和SSL设置用于HTTP请求
-    proxy_settings = split_array_string(cli_config.get("proxy", env_config.get("proxy", [])))  # type: list[str]
+    proxy_settings = split_array_string(cli_config.get("proxy", env_config.get("proxy", [])), preserve_special=False)  # type: list[str]
     ssl_settings = cli_config.get("ssl", env_config.get("ssl", "auto"))
 
     # 加载所有配置文件

@@ -140,9 +140,11 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: 'Docker', link: '/docker' },
       { text: '安装', link: '/install' },
+      { text: '配置工具', link: '/config/studio' },
       { 
         text: '配置方式',
         items: [
+          { text: '生成与校验', link: '/config/studio' },
           { text: '命令行参数', link: '/config/cli' },
           { text: '环境变量', link: '/config/env' },
           { text: 'JSON配置', link: '/config/json' }
@@ -173,6 +175,7 @@ export default defineConfig({
         {
           text: '配置方式',
           items: [
+            { text: '配置生成与校验', link: '/config/studio' },
             { text: '命令行参数', link: '/config/cli' },
             { text: '环境变量', link: '/config/env' },
             { text: 'JSON配置文件', link: '/config/json' }
@@ -360,9 +363,11 @@ export default defineConfig({
           { text: 'Home', link: '/en/' },
           { text: 'Docker', link: '/en/docker' },
           { text: 'Install', link: '/en/install' },
+          { text: 'Config Studio', link: '/en/config/studio' },
           { 
             text: 'Configuration',
             items: [
+              { text: 'Build & Validate', link: '/en/config/studio' },
               { text: 'CLI', link: '/en/config/cli' },
               { text: 'Environment', link: '/en/config/env' },
               { text: 'JSON Config', link: '/en/config/json' }
@@ -390,6 +395,7 @@ export default defineConfig({
             {
               text: 'Configuration',
               items: [
+                { text: 'Build & Validate', link: '/en/config/studio' },
                 { text: 'CLI Parameters', link: '/en/config/cli' },
                 { text: 'Environment Variables', link: '/en/config/env' },
                 { text: 'JSON Configuration', link: '/en/config/json' }

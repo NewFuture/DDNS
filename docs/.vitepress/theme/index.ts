@@ -1,5 +1,7 @@
 import DefaultTheme from 'vitepress/theme'
 import type { Theme } from 'vitepress'
+import ConfigStudio from './components/ConfigStudio.vue'
+import './config-studio.css'
 
 const EN_BASE = '/en/'
 const DOC_PREFIX = '/doc/'
@@ -8,7 +10,8 @@ const HTML_EXT = '.html'
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ siteData }) {
+  enhanceApp({ app, siteData }) {
+    app.component('ConfigStudio', ConfigStudio)
     if (typeof window === 'undefined') return
 
     const { pathname, search, hash } = window.location
