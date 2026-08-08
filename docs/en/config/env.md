@@ -229,7 +229,7 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
 - **Required**: No
 - **Default**: `["default"]` (uses system's default external IP)
 - **Description**: IPv4 address detection methods. Supports comma `,` or semicolon `;` separated string format
-- **Special Note**: When a value contains a `url:`, `regex:`, `cmd:`, or `shell:` prefix, separator splitting is disabled and the entire string is treated as one configuration item
+- **Special Note**: Ordinary items are split on commas or semicolons as usual. Once an item starts with `url:`, `regex:`, `cmd:`, or `shell:`, the remaining text from that prefix is preserved as one complete item and is not split further
 - **Examples**:
 
   ```bash
@@ -238,6 +238,9 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   
   # Multiple methods with fallback
   export DDNS_INDEX4='["public", "default"]'
+
+  # Ordinary fallback followed by a special source containing a comma
+  export DDNS_INDEX4="public;url:https://example.com/ip?values=1,2"
   
   # Network interface index
   export DDNS_INDEX4="0"  # First network interface
