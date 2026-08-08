@@ -1333,56 +1333,6 @@
   min-height: min(706px, calc(100vh - 129px));
 }
 
-.credential-export-control {
-  display: grid;
-  min-height: 68px;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 11px 16px;
-  border-bottom: 1px solid #263848;
-  background: #10271f;
-  color: #dce9f4;
-  cursor: pointer;
-}
-
-.credential-export-control.is-sensitive {
-  background: #342513;
-}
-
-.credential-export-control input {
-  width: 17px;
-  height: 17px;
-  margin: 0;
-  accent-color: var(--studio-accent);
-}
-
-.credential-export-control > span {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-}
-
-.credential-export-control strong {
-  color: #e8f4ed;
-  font-size: 0.75rem;
-  font-weight: 720;
-}
-
-.credential-export-control.is-sensitive strong {
-  color: #ffe0a8;
-}
-
-.credential-export-control small {
-  color: #94b4a5;
-  font-size: 0.68rem;
-  line-height: 1.5;
-}
-
-.credential-export-control.is-sensitive small {
-  color: #d7b77e;
-}
-
 .inspector-toolbar {
   display: flex;
   min-height: 54px;

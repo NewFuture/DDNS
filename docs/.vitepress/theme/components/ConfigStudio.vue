@@ -160,7 +160,7 @@ const copy = {
     title: '配置生成与校验',
     import: '导入 JSON',
     reset: '新建配置',
-    localOnly: '仅在浏览器中处理 · 默认不导出凭据 · 不会请求服务商 API',
+    localOnly: '凭据仅在浏览器中处理 · 填写后完整写入配置 · 不会请求服务商 API',
     providerSingular: '个服务商',
     providerCount: '个服务商',
     recordSingular: '条 DNS 记录',
@@ -201,7 +201,8 @@ const copy = {
     authCallback: 'Webhook',
     providerHelp: '查看服务商文档',
     credentialTitle: '认证信息',
-    credentialHint: '凭据只保留在当前页面，默认不会写入导出的配置；部署时可通过环境变量提供。',
+    credentialHint:
+      '不在此填写时，可通过环境变量或命令行参数提供；一旦填写，认证信息会完整写入预览和导出的 config.json，请妥善保管。',
     noCredential: '此服务商不需要认证信息。',
     optional: '可选',
     advanced: '可选设置',
@@ -254,9 +255,6 @@ const copy = {
     extraProvider: '当前服务商扩展字段（JSON 对象）',
     inspectorPreview: '配置预览',
     inspectorValidate: '粘贴并校验',
-    includeCredentials: '导出时包含凭据',
-    credentialsExcluded: '凭据不会出现在预览、剪贴板或下载文件中。',
-    credentialsIncluded: '已填写的凭据将写入预览、剪贴板和 config.json，请妥善保管。',
     validatorLabel: '待校验的 JSON 或 JSONC 配置',
     copy: '复制',
     download: '下载 config.json',
@@ -299,7 +297,8 @@ const copy = {
     title: 'Configuration builder & validator',
     import: 'Import JSON',
     reset: 'New config',
-    localOnly: 'Processed in this browser · credentials excluded by default · no provider API requests',
+    localOnly:
+      'Credentials processed in this browser · entered values exported in full · no provider API requests',
     providerSingular: 'provider',
     providerCount: 'providers',
     recordSingular: 'DNS record',
@@ -340,7 +339,8 @@ const copy = {
     authCallback: 'Webhook',
     providerHelp: 'Open provider documentation',
     credentialTitle: 'Credentials',
-    credentialHint: 'Credentials stay on this page. They are excluded from exports by default and can be supplied through environment variables at runtime.',
+    credentialHint:
+      'If you do not enter credentials here, supply them through environment variables or command-line arguments. Any credentials entered here are written in full to the preview and exported config.json; store it securely.',
     noCredential: 'This provider does not require credentials.',
     optional: 'Optional',
     advanced: 'Optional settings',
@@ -393,9 +393,6 @@ const copy = {
     extraProvider: 'Provider-specific custom fields (JSON object)',
     inspectorPreview: 'Generated config',
     inspectorValidate: 'Paste & validate',
-    includeCredentials: 'Include credentials in exports',
-    credentialsExcluded: 'Credentials are excluded from the preview, clipboard, and downloaded file.',
-    credentialsIncluded: 'Any credentials you enter will be included in the preview, clipboard, and config.json. Store them securely.',
     validatorLabel: 'JSON or JSONC configuration to check',
     copy: 'Copy',
     download: 'Download config.json',
@@ -732,7 +729,6 @@ const providers = ref<ProviderState[]>([makeProvider()])
 const selectedUid = ref(providers.value[0].uid)
 const activeSection = ref<SectionKey>('provider')
 const inspectorTab = ref<InspectorTab>('preview')
-const includeCredentials = ref(false)
 const providerAdvancedOpen = ref(false)
 const sourceAdvancedOpen = ref(false)
 const networkAdvancedOpen = ref(false)
@@ -823,23 +819,6 @@ const credentialProviderIndexes = computed(() => {
     return indexes
   }, [])
 })
-const hasCredentialProviders = computed(() => credentialProviderIndexes.value.length > 0)
-const hasSensitiveEndpoints = computed(() =>
-  providers.value.some((provider) => hasHttpUrlCredentials(provider.endpoint)),
-)
-const hasSensitiveAddressSources = computed(() =>
-  providers.value.some((provider) =>
-    [provider.index4Text, provider.index6Text].some((value) =>
-      splitIndexList(value).some(hasAddressSourceCredentials),
-    ),
-  ),
-)
-const hasSensitiveValues = computed(
-  () =>
-    hasCredentialProviders.value ||
-    hasSensitiveEndpoints.value ||
-    hasSensitiveAddressSources.value,
-)
 const testProviderCount = computed(
   () => providers.value.filter((provider) => providerMap.get(provider.provider)?.testOnly).length,
 )
@@ -1025,13 +1004,11 @@ function stripSensitiveAddressSources(value: string): string {
   return sources.filter((source) => !hasAddressSourceCredentials(source)).join('\n')
 }
 
-function parseIndexValue(value: string, includeSensitiveValues = true): JsonValue | undefined {
+function parseIndexValue(value: string): JsonValue | undefined {
   const trimmed = value.trim()
   if (['false', 'none'].includes(trimmed.toLowerCase())) return false
   if (trimmed.toLowerCase() === 'true') return true
-  const parts = splitIndexList(trimmed).filter(
-    (part) => includeSensitiveValues || !hasAddressSourceCredentials(part),
-  )
+  const parts = splitIndexList(trimmed)
   if (!parts.length) return undefined
   return parts.map((part) => (/^\d+$/.test(part) ? Number(part) : part))
 }
@@ -1119,10 +1096,7 @@ function sslValue(mode: SslMode, path: string): JsonValue | undefined {
   return path.trim()
 }
 
-function buildProvider(
-  provider: ProviderState,
-  includeSensitiveValues = true,
-): JsonObject {
+function buildProvider(provider: ProviderState): JsonObject {
   const output: JsonObject = { provider: provider.provider }
   const meta = providerMap.get(provider.provider)
 
@@ -1131,33 +1105,20 @@ function buildProvider(
   } else if (provider.idPresent && !provider.id.trim()) {
     output.id = ''
   } else if (
-    includeSensitiveValues &&
     meta?.auth !== 'none' &&
     meta?.auth !== 'token' &&
-    meta?.auth !== 'callback' &&
     provider.id.trim()
   ) {
     output.id = provider.id.trim()
   }
-  if (meta?.auth === 'callback') {
-    if (includeSensitiveValues && provider.id.trim()) output.id = provider.id.trim()
-    if (includeSensitiveValues && (provider.token || provider.tokenPresent)) {
-      output.token = provider.token
-    } else if (provider.tokenPresent && !provider.token) {
-      output.token = ''
-    }
-  } else if (meta?.auth !== 'none') {
-    if (includeSensitiveValues && (provider.token || provider.tokenPresent)) {
-      output.token = provider.token
-    } else if (provider.tokenPresent && !provider.token) {
-      output.token = ''
-    }
+  if (meta?.auth !== 'none' && (provider.token || provider.tokenPresent)) {
+    output.token = provider.token
   }
   const endpoint = provider.endpoint.trim()
   if (provider.endpointNull) {
     output.endpoint = null
   } else if (endpoint) {
-    if (includeSensitiveValues || !hasHttpUrlCredentials(endpoint)) output.endpoint = endpoint
+    output.endpoint = endpoint
   } else if (provider.endpointPresent) {
     output.endpoint = ''
   }
@@ -1166,8 +1127,8 @@ function buildProvider(
   const ipv6 = splitSimpleList(provider.ipv6Text)
   if (ipv4.length || provider.ipv4Present) output.ipv4 = ipv4
   if (ipv6.length || provider.ipv6Present) output.ipv6 = ipv6
-  const index4 = parseIndexValue(provider.index4Text, includeSensitiveValues)
-  const index6 = parseIndexValue(provider.index6Text, includeSensitiveValues)
+  const index4 = parseIndexValue(provider.index4Text)
+  const index6 = parseIndexValue(provider.index6Text)
   if (index4 !== undefined) output.index4 = index4
   if (index6 !== undefined) output.index6 = index6
   if (provider.ttlNull) output.ttl = null
@@ -1195,11 +1156,11 @@ function buildProvider(
   return output
 }
 
-function buildConfiguration(includeSensitiveValues: boolean): JsonObject {
+function buildConfiguration(): JsonObject {
   const globalExtra = parseObjectText(globalState.extraText) || {}
   const output: JsonObject = {
     $schema: SCHEMA_URL,
-    providers: providers.value.map((provider) => buildProvider(provider, includeSensitiveValues)),
+    providers: providers.value.map((provider) => buildProvider(provider)),
   }
 
   const globalSsl = sslValue(globalState.sslMode, globalState.sslPath)
@@ -1230,7 +1191,7 @@ function buildConfiguration(includeSensitiveValues: boolean): JsonObject {
   return output
 }
 
-const exportConfig = computed<JsonObject>(() => buildConfiguration(includeCredentials.value))
+const exportConfig = computed<JsonObject>(() => buildConfiguration())
 
 function escapeHtml(value: string): string {
   return value
@@ -1842,10 +1803,10 @@ function validateProviderRuntime(
             : 'Callback URL is not included in the exported configuration. Provide it through DDNS_ID at runtime.',
           idBlocksEnvironment
             ? '删除 id 字段以使用环境变量，或填写 Callback URL。'
-            : '确认部署环境已设置 DDNS_ID，或开启“导出时包含凭据”。',
+            : '确认部署环境已设置 DDNS_ID，或在此填写 Callback URL；填写后会完整导出。',
           idBlocksEnvironment
             ? 'Remove the id field to use DDNS_ID, or enter a Callback URL.'
-            : 'Confirm that DDNS_ID is set in the deployment environment, or enable “Include credentials in exports.”',
+            : 'Confirm that DDNS_ID is set in the deployment environment, or enter a Callback URL here; entered values are exported in full.',
         ),
       )
     } else if (!idIsUrl) {
@@ -2165,15 +2126,12 @@ const previewDiagnostics = computed(() => {
   let runtimeCredentialIndex: number | undefined
   let runtimeCredentialField = 'provider'
   if (credentialProviderIndexes.value.length > 1) {
-    if (!includeCredentials.value) {
-      runtimeCredentialIndex = credentialProviderIndexes.value[1]
-    } else {
-      runtimeCredentialIndex = credentialProviderIndexes.value.find((index) => {
-        return Boolean(missingEmbeddedCredential(providers.value[index]!))
-      })
-      if (runtimeCredentialIndex !== undefined) {
-        runtimeCredentialField = missingEmbeddedCredential(providers.value[runtimeCredentialIndex]!) || 'provider'
-      }
+    runtimeCredentialIndex = credentialProviderIndexes.value.find((index) => {
+      return Boolean(missingEmbeddedCredential(providers.value[index]!))
+    })
+    if (runtimeCredentialIndex !== undefined) {
+      runtimeCredentialField =
+        missingEmbeddedCredential(providers.value[runtimeCredentialIndex]!) || 'provider'
     }
   }
   if (runtimeCredentialIndex !== undefined) {
@@ -2181,18 +2139,10 @@ const previewDiagnostics = computed(() => {
       makeDiagnostic(
         `$.providers[${runtimeCredentialIndex}].${runtimeCredentialField}`,
         'warning',
-        includeCredentials.value
-          ? '部分服务商的凭据不完整。'
-          : '多个需认证的服务商将读取同一组运行时凭据。',
-        includeCredentials.value
-          ? 'Some providers have incomplete credentials.'
-          : 'Multiple authenticated providers will read the same runtime credentials.',
-        includeCredentials.value
-          ? '请逐项检查并补全各服务商的凭据。'
-          : '确认这些服务商有意共用同一账户；否则开启“导出时包含凭据”并分别填写。',
-        includeCredentials.value
-          ? 'Review and complete the credentials for each provider.'
-          : 'Confirm these providers intentionally share one account. Otherwise, enable “Include credentials in exports” and enter credentials for each provider.',
+        '部分服务商的认证信息未填写完整。',
+        'Some providers have incomplete credentials.',
+        '可以改用环境变量或命令行参数；如需使用不同账户，请逐项填写，填写后会完整导出。',
+        'You can use environment variables or command-line arguments instead. For separate accounts, enter each provider’s credentials; entered values are exported in full.',
       ),
     )
   }
@@ -2673,7 +2623,6 @@ function resetBuilder() {
   selectedUid.value = provider.uid
   activeSection.value = 'provider'
   inspectorTab.value = 'preview'
-  includeCredentials.value = false
   providerAdvancedOpen.value = false
   sourceAdvancedOpen.value = false
   networkAdvancedOpen.value = false
@@ -2880,8 +2829,6 @@ function applyToBuilder() {
   if (!importedProviders.length) return
   providers.value = importedProviders
   selectedUid.value = providers.value[0].uid
-  includeCredentials.value = false
-
   const cache = cacheFromValue(value.cache, 'inherit')
   const ssl = sslFromValue(value.ssl, 'inherit')
   const logFile = logFieldState(value, 'file')
@@ -4020,17 +3967,6 @@ function applyToBuilder() {
           aria-labelledby="studio-tab-preview"
           tabindex="0"
         >
-          <label
-            v-if="hasSensitiveValues"
-            class="credential-export-control"
-            :class="{ 'is-sensitive': includeCredentials }"
-          >
-            <input v-model="includeCredentials" type="checkbox" />
-            <span>
-              <strong>{{ c.includeCredentials }}</strong>
-              <small>{{ includeCredentials ? c.credentialsIncluded : c.credentialsExcluded }}</small>
-            </span>
-          </label>
           <div class="inspector-toolbar">
             <span
               :class="{

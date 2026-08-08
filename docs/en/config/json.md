@@ -11,7 +11,7 @@ header_pages:
 This document provides detailed information about the JSON configuration file format and parameters for the DDNS tool. JSON configuration files have priority between command line arguments and environment variables.
 
 ::: tip Visual configuration
-Use the [configuration builder and validator](/en/config/studio) to create multi-provider configurations, locate errors, and download `config.json`. Credentials are processed only in your browser and are never uploaded.
+Use the [configuration builder and validator](/en/config/studio) to create multi-provider configurations, locate errors, and download `config.json`. Credentials are processed only in your browser and are never uploaded. Any credentials entered in the builder are written in full to the exported configuration; use environment variables or command-line arguments to keep them out of the file.
 :::
 
 ## Basic Usage
