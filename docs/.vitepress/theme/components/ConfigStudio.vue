@@ -1146,12 +1146,12 @@ function buildProvider(
     } else if (provider.tokenPresent && !provider.token) {
       output.token = ''
     }
-  } else if (
-    includeSensitiveValues &&
-    meta?.auth !== 'none' &&
-    (provider.token || provider.tokenPresent)
-  ) {
-    output.token = provider.token
+  } else if (meta?.auth !== 'none') {
+    if (includeSensitiveValues && (provider.token || provider.tokenPresent)) {
+      output.token = provider.token
+    } else if (provider.tokenPresent && !provider.token) {
+      output.token = ''
+    }
   }
   const endpoint = provider.endpoint.trim()
   if (provider.endpointNull) {
