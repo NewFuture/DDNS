@@ -128,6 +128,7 @@ docs/:	Documentation (VitePress-based)
 		cli.md:	CLI usage guide
 		env.md:	Environment variables guide
 		json.md:	JSON configuration guide
+		studio.md:	Configuration generation and validation workspace
 
 	dev/:	Developer guides (Chinese)
 		provider.md:	Provider development guide
@@ -424,6 +425,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.6
-**Last Updated**: 2026-06-15
+**Version**: 1.0.7
+**Last Updated**: 2026-08-09
 **Maintained by**: DDNS Project Contributors
