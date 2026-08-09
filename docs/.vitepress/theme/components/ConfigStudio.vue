@@ -116,12 +116,25 @@ interface RemovedProvider {
 
 interface StoredDraft {
   version: number
-  config: JsonObject
+  editorSnapshot: string
+  baselineSnapshot: string
+  validationInput: string
+  baselineValidationInput: string
+  validatorTouched: boolean
+  view: {
+    selectedProviderIndex: number
+    activeSection: SectionKey
+    inspectorTab: InspectorTab
+    providerAdvancedOpen: boolean
+    sourceAdvancedOpen: boolean
+    networkAdvancedOpen: boolean
+    runtimeAdvancedOpen: boolean
+  }
 }
 
 const SCHEMA_URL = 'https://ddns.newfuture.cc/schema/v4.1.json'
 const DRAFT_STORAGE_KEY = 'ddns-config-studio-draft-v1'
-const DRAFT_VERSION = 1
+const DRAFT_VERSION = 2
 const DRAFT_SAVE_DELAY = 400
 const SCHEMA_VALUES = [
   SCHEMA_URL,
@@ -174,15 +187,11 @@ const copy = {
     reset: '新建配置',
     localOnly: '仅在当前浏览器处理 · 不请求服务商 API',
     noUnsavedChanges: '没有尚未导出的更改',
-    unsavedChanges: '有尚未导出的更改 · 安全字段会暂存于当前标签页',
+    unsavedChanges: '有尚未导出的更改 · 当前标签页会自动保存完整草稿',
     unsavedWithoutDraft: '有尚未导出的更改 · 此浏览器无法保存临时草稿',
-    validatorUnsaved: '有尚未导出的更改 · 粘贴校验区不会保存到临时草稿',
-    draftAvailable: '发现当前标签页的临时草稿',
-    draftDescription: '可恢复安全字段；凭据、代理、端点、命令型 IP 来源、自定义路径和扩展字段不会存入浏览器存储。',
-    restoreDraft: '恢复草稿',
-    discardDraft: '放弃草稿',
-    draftRestored: '已恢复安全草稿；请重新填写凭据和敏感高级字段',
-    draftDiscarded: '已放弃临时草稿',
+    validatorUnsaved: '有尚未导出的更改 · 粘贴校验内容已保存于当前标签页',
+    draftRestored: '已完整恢复上次状态',
+    legacyDraftRestored: '已恢复旧版草稿；旧版未保存凭据和部分高级字段，请重新确认',
     draftUnreadable: '临时草稿无法读取，已尝试将其丢弃',
     confirmLeave: '配置仍有尚未导出的更改。确定离开此页面？',
     confirmProviderChange: '切换服务商将清除当前服务商的凭据、自定义端点和扩展字段。继续切换？',
@@ -317,17 +326,12 @@ const copy = {
     reset: 'New config',
     localOnly: 'Processed only in this browser · no provider API requests',
     noUnsavedChanges: 'No changes waiting to be exported',
-    unsavedChanges: 'Changes not yet exported · safe fields are held temporarily in this tab',
+    unsavedChanges: 'Changes not yet exported · a complete draft is saved in this tab',
     unsavedWithoutDraft: 'Changes not yet exported · temporary drafts are unavailable',
-    validatorUnsaved:
-      'Changes not yet exported · validator contents are not saved to the temporary draft',
-    draftAvailable: 'Temporary draft found in this tab',
-    draftDescription:
-      'Restore safe fields only. Credentials, proxies, endpoints, command-based IP sources, custom paths, and custom fields are never stored in browser storage.',
-    restoreDraft: 'Restore draft',
-    discardDraft: 'Discard draft',
-    draftRestored: 'Safe draft restored; re-enter credentials and sensitive advanced fields',
-    draftDiscarded: 'Temporary draft discarded',
+    validatorUnsaved: 'Changes not yet exported · pasted validation content is saved in this tab',
+    draftRestored: 'Previous state restored in full',
+    legacyDraftRestored:
+      'Legacy draft restored. Older drafts did not retain credentials or some advanced fields; review them before use.',
     draftUnreadable: 'The temporary draft could not be read and was discarded where possible',
     confirmLeave: 'This configuration has changes that have not been exported. Leave this page?',
     confirmProviderChange:
@@ -780,17 +784,13 @@ const toastMessage = ref('')
 const toastTone = ref<'success' | 'error'>('success')
 const toastVisible = ref(false)
 const lastRemovedProvider = ref<RemovedProvider | null>(null)
-const recoverableDraft = ref<StoredDraft | null>(null)
 const baselineSnapshot = ref('')
-const baselineDraftSnapshot = ref('')
 const baselineValidationInput = ref('')
 const baselineReady = ref(false)
-const draftPersistenceEnabled = ref(false)
 const draftStorageError = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 let providerSearchTimer: ReturnType<typeof setTimeout> | undefined
 let draftSaveTimer: ReturnType<typeof setTimeout> | undefined
-let storedDraftIsRecoverable = false
 let routeMotionRequest = 0
 let routePulseAnimation: Animation | undefined
 let routeContentAnimation: Animation | undefined
@@ -1324,87 +1324,165 @@ const hasUnsavedChanges = computed(
 )
 const saveStateLabel = computed(() => {
   if (!hasUnsavedChanges.value) return c.value.noUnsavedChanges
+  if (draftStorageError.value) return c.value.unsavedWithoutDraft
   if (hasUnappliedValidationChanges.value) return c.value.validatorUnsaved
-  return draftStorageError.value ? c.value.unsavedWithoutDraft : c.value.unsavedChanges
+  return c.value.unsavedChanges
 })
 
-type SafeAddressSource = string | number | false
-
-function safeAddressSource(value: unknown): SafeAddressSource | undefined {
-  if (value === false) return false
-  if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return value
-  if (typeof value !== 'string') return undefined
-  const source = normalizeAddressSource(value)
-  if (/^\d+$/.test(source) || ADDRESS_SOURCE_NAMES.has(source)) return source
-  return addressSourcePrefix(source) === 'regex:' ? source : undefined
+function draftString(source: Record<string, unknown>, key: string, fallback = ''): string {
+  const value = source[key]
+  return typeof value === 'string' ? value : fallback
 }
 
-function safeAddressSources(value: unknown): JsonValue | undefined {
-  if (!Array.isArray(value)) return safeAddressSource(value)
-  return value
-    .map((source) => safeAddressSource(source))
-    .filter((source): source is SafeAddressSource => source !== undefined)
+function draftBoolean(source: Record<string, unknown>, key: string, fallback = false): boolean {
+  const value = source[key]
+  return typeof value === 'boolean' ? value : fallback
 }
 
-function copySafeRuntimeFields(source: Record<string, unknown>, output: JsonObject) {
-  if (source.ssl === 'auto' || typeof source.ssl === 'boolean') output.ssl = source.ssl
-  if (typeof source.cache === 'boolean') output.cache = source.cache
-  if (
-    typeof source.cache_max_age === 'number' &&
-    Number.isInteger(source.cache_max_age) &&
-    source.cache_max_age >= 0
-  ) {
-    output.cache_max_age = source.cache_max_age
-  }
-  if (typeof source.log_level === 'number' || typeof source.log_level === 'string') {
-    output.log_level = source.log_level
-  } else if (isPlainObject(source.log)) {
-    const level = source.log.level
-    if (typeof level === 'number' || typeof level === 'string') output.log = { level }
+function draftLogLevel(source: Record<string, unknown>, fallback: LogLevel): LogLevel {
+  const value = source.logLevel
+  return typeof value === 'string' || typeof value === 'number' ? value : fallback
+}
+
+function isCacheMode(value: unknown): value is CacheMode {
+  return value === 'inherit' || value === 'true' || value === 'false' || value === 'path'
+}
+
+function isSslMode(value: unknown): value is SslMode {
+  return (
+    value === 'inherit' ||
+    value === 'auto' ||
+    value === 'true' ||
+    value === 'false' ||
+    value === 'custom'
+  )
+}
+
+function isSectionKey(value: unknown): value is SectionKey {
+  return value === 'provider' || value === 'records' || value === 'network' || value === 'runtime'
+}
+
+function isInspectorTab(value: unknown): value is InspectorTab {
+  return value === 'preview' || value === 'validate'
+}
+
+function providerStateFromDraft(value: unknown): ProviderState | null {
+  if (!isPlainObject(value) || typeof value.provider !== 'string') return null
+  const fallback = makeProvider(value.provider)
+  return {
+    ...fallback,
+    id: draftString(value, 'id'),
+    idPresent: draftBoolean(value, 'idPresent'),
+    idNull: draftBoolean(value, 'idNull'),
+    token: draftString(value, 'token'),
+    tokenPresent: draftBoolean(value, 'tokenPresent'),
+    endpoint: draftString(value, 'endpoint'),
+    endpointPresent: draftBoolean(value, 'endpointPresent'),
+    endpointNull: draftBoolean(value, 'endpointNull'),
+    ipv4Text: draftString(value, 'ipv4Text', fallback.ipv4Text),
+    ipv4Present: draftBoolean(value, 'ipv4Present', fallback.ipv4Present),
+    ipv6Text: draftString(value, 'ipv6Text'),
+    ipv6Present: draftBoolean(value, 'ipv6Present'),
+    index4Text: draftString(value, 'index4Text', fallback.index4Text),
+    index6Text: draftString(value, 'index6Text', fallback.index6Text),
+    ttl: draftString(value, 'ttl'),
+    ttlNull: draftBoolean(value, 'ttlNull'),
+    line: draftString(value, 'line'),
+    linePresent: draftBoolean(value, 'linePresent'),
+    lineNull: draftBoolean(value, 'lineNull'),
+    proxyText: draftString(value, 'proxyText'),
+    proxyPresent: draftBoolean(value, 'proxyPresent'),
+    proxyNull: draftBoolean(value, 'proxyNull'),
+    sslMode: isSslMode(value.sslMode) ? value.sslMode : fallback.sslMode,
+    sslPath: draftString(value, 'sslPath'),
+    cacheMode: isCacheMode(value.cacheMode) ? value.cacheMode : fallback.cacheMode,
+    cachePath: draftString(value, 'cachePath'),
+    cacheMaxAge: draftString(value, 'cacheMaxAge'),
+    logLevel: draftLogLevel(value, fallback.logLevel),
+    extraText: draftString(value, 'extraText'),
+    revealToken: false,
   }
 }
 
-function safeDraftProvider(source: Record<string, unknown>): JsonObject | null {
-  if (typeof source.provider !== 'string' || !providerMap.has(source.provider)) return null
-  const output: JsonObject = { provider: source.provider }
-
-  ;(['ipv4', 'ipv6'] as const).forEach((key) => {
-    const value = source[key]
-    if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
-      output[key] = value
-    }
-  })
-  ;(['index4', 'index6'] as const).forEach((key) => {
-    const value = safeAddressSources(source[key])
-    if (value !== undefined) output[key] = value
-  })
-  if (source.ttl === null || (typeof source.ttl === 'number' && Number.isFinite(source.ttl))) {
-    output.ttl = source.ttl
+function globalStateFromDraft(value: unknown): GlobalState | null {
+  if (!isPlainObject(value)) return null
+  const fallback = makeGlobalState()
+  return {
+    proxyText: draftString(value, 'proxyText'),
+    proxyPresent: draftBoolean(value, 'proxyPresent'),
+    proxyNull: draftBoolean(value, 'proxyNull'),
+    sslMode: isSslMode(value.sslMode) ? value.sslMode : fallback.sslMode,
+    sslPath: draftString(value, 'sslPath'),
+    cacheMode: isCacheMode(value.cacheMode) ? value.cacheMode : fallback.cacheMode,
+    cachePath: draftString(value, 'cachePath'),
+    cacheMaxAge: draftString(value, 'cacheMaxAge', fallback.cacheMaxAge),
+    logLevel: draftLogLevel(value, fallback.logLevel),
+    logFile: draftString(value, 'logFile'),
+    logFilePresent: draftBoolean(value, 'logFilePresent'),
+    logFileNull: draftBoolean(value, 'logFileNull'),
+    logFormat: draftString(value, 'logFormat'),
+    logFormatPresent: draftBoolean(value, 'logFormatPresent'),
+    logFormatNull: draftBoolean(value, 'logFormatNull'),
+    logDatefmt: draftString(value, 'logDatefmt'),
+    logDatefmtPresent: draftBoolean(value, 'logDatefmtPresent'),
+    logDatefmtNull: draftBoolean(value, 'logDatefmtNull'),
+    extraText: draftString(value, 'extraText'),
   }
-  if (source.line === null || typeof source.line === 'string') output.line = source.line
-  copySafeRuntimeFields(source, output)
-  return output
 }
 
-function safeDraftConfiguration(source: JsonObject): JsonObject {
-  const output: JsonObject = {
-    $schema: SCHEMA_URL,
-    providers: [],
+function restoreEditorSnapshot(snapshot: string): boolean {
+  let value: unknown
+  try {
+    value = JSON.parse(snapshot)
+  } catch {
+    return false
   }
-  const safeProviders = output.providers as JsonValue[]
-  const sourceProviders = Array.isArray(source.providers) ? source.providers : []
-  sourceProviders.forEach((provider) => {
-    if (!isPlainObject(provider)) return
-    const safeProvider = safeDraftProvider(provider)
-    if (safeProvider) safeProviders.push(safeProvider)
-  })
-  copySafeRuntimeFields(source, output)
-  return output
+  if (!isPlainObject(value) || !Array.isArray(value.providers)) return false
+  const restoredGlobal = globalStateFromDraft(value.global)
+  if (!restoredGlobal) return false
+  const restoredProviders: ProviderState[] = []
+  for (const provider of value.providers) {
+    const restored = providerStateFromDraft(provider)
+    if (!restored) return false
+    restoredProviders.push(restored)
+  }
+  if (!restoredProviders.length) return false
+  providers.value = restoredProviders
+  Object.assign(globalState, restoredGlobal)
+  return true
+}
+
+function currentDraftView(): StoredDraft['view'] {
+  return {
+    selectedProviderIndex: Math.max(0, selectedProviderIndex.value),
+    activeSection: activeSection.value,
+    inspectorTab: inspectorTab.value,
+    providerAdvancedOpen: providerAdvancedOpen.value,
+    sourceAdvancedOpen: sourceAdvancedOpen.value,
+    networkAdvancedOpen: networkAdvancedOpen.value,
+    runtimeAdvancedOpen: runtimeAdvancedOpen.value,
+  }
+}
+
+function restoreDraftView(value: unknown) {
+  const view = isPlainObject(value) ? value : {}
+  const requestedIndex =
+    typeof view.selectedProviderIndex === 'number' &&
+    Number.isInteger(view.selectedProviderIndex)
+      ? view.selectedProviderIndex
+      : 0
+  const index = Math.min(Math.max(requestedIndex, 0), providers.value.length - 1)
+  selectedUid.value = providers.value[index]!.uid
+  activeSection.value = isSectionKey(view.activeSection) ? view.activeSection : 'provider'
+  inspectorTab.value = isInspectorTab(view.inspectorTab) ? view.inspectorTab : 'preview'
+  providerAdvancedOpen.value = draftBoolean(view, 'providerAdvancedOpen')
+  sourceAdvancedOpen.value = draftBoolean(view, 'sourceAdvancedOpen')
+  networkAdvancedOpen.value = draftBoolean(view, 'networkAdvancedOpen')
+  runtimeAdvancedOpen.value = draftBoolean(view, 'runtimeAdvancedOpen')
 }
 
 function initializeBaseline() {
   baselineSnapshot.value = editorSnapshot.value
-  baselineDraftSnapshot.value = JSON.stringify(safeDraftConfiguration(exportConfig.value))
   baselineReady.value = true
 }
 
@@ -1414,7 +1492,6 @@ function markValidationHandled() {
 }
 
 function clearStoredDraft() {
-  storedDraftIsRecoverable = false
   if (typeof window === 'undefined') return
   try {
     window.sessionStorage.removeItem(DRAFT_STORAGE_KEY)
@@ -1426,32 +1503,25 @@ function clearStoredDraft() {
 
 function commitBaseline() {
   initializeBaseline()
-  recoverableDraft.value = null
-  draftPersistenceEnabled.value = true
   clearStoredDraft()
+  scheduleDraftPersistence()
 }
 
-function persistSafeDraft() {
+function persistDraft() {
   draftSaveTimer = undefined
-  if (
-    typeof window === 'undefined' ||
-    !draftPersistenceEnabled.value ||
-    !hasUnsavedChanges.value
-  ) {
-    return
-  }
-
-  const config = safeDraftConfiguration(exportConfig.value)
-  if (JSON.stringify(config) === baselineDraftSnapshot.value) {
-    if (!storedDraftIsRecoverable) clearStoredDraft()
-    return
-  }
+  if (typeof window === 'undefined' || !hasUnsavedChanges.value) return
 
   try {
-    const draft: StoredDraft = { version: DRAFT_VERSION, config }
+    const draft: StoredDraft = {
+      version: DRAFT_VERSION,
+      editorSnapshot: editorSnapshot.value,
+      baselineSnapshot: baselineSnapshot.value,
+      validationInput: validationInput.value,
+      baselineValidationInput: baselineValidationInput.value,
+      validatorTouched: validatorTouched.value,
+      view: currentDraftView(),
+    }
     window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
-    storedDraftIsRecoverable = false
-    recoverableDraft.value = null
     draftStorageError.value = false
   } catch {
     draftStorageError.value = true
@@ -1459,61 +1529,94 @@ function persistSafeDraft() {
 }
 
 function scheduleDraftPersistence() {
-  if (!baselineReady.value || !draftPersistenceEnabled.value) return
+  if (!baselineReady.value) return
   if (draftSaveTimer) clearTimeout(draftSaveTimer)
   if (!hasUnsavedChanges.value) {
     draftSaveTimer = undefined
-    if (!storedDraftIsRecoverable) clearStoredDraft()
+    clearStoredDraft()
     return
   }
-  draftSaveTimer = setTimeout(persistSafeDraft, DRAFT_SAVE_DELAY)
+  draftSaveTimer = setTimeout(persistDraft, DRAFT_SAVE_DELAY)
+}
+
+function restoreLegacyDraft(value: Record<string, unknown>): boolean {
+  if (!isPlainObject(value.config) || !Array.isArray(value.config.providers)) return false
+  const config = value.config as JsonObject
+  if (!(config.providers as JsonValue[]).some((provider) => isPlainObject(provider))) return false
+  if (!loadConfigurationIntoBuilder(config, false, c.value.legacyDraftRestored)) return false
+  validationInput.value = typeof value.validationInput === 'string' ? value.validationInput : ''
+  validatorTouched.value = validationInput.value !== baselineValidationInput.value
+  if (validationInput.value.trim()) inspectorTab.value = 'validate'
+  return true
+}
+
+function restoreCurrentDraft(value: Record<string, unknown>): boolean {
+  if (
+    typeof value.editorSnapshot !== 'string' ||
+    typeof value.baselineSnapshot !== 'string' ||
+    typeof value.validationInput !== 'string' ||
+    typeof value.baselineValidationInput !== 'string'
+  ) {
+    return false
+  }
+  if (!restoreEditorSnapshot(value.editorSnapshot)) return false
+  baselineSnapshot.value = value.baselineSnapshot
+  validationInput.value = value.validationInput
+  baselineValidationInput.value = value.baselineValidationInput
+  validatorTouched.value =
+    typeof value.validatorTouched === 'boolean'
+      ? value.validatorTouched
+      : validationInput.value !== baselineValidationInput.value
+  restoreDraftView(value.view)
+  showToast(c.value.draftRestored)
+  return true
 }
 
 function readStoredDraft() {
   if (typeof window === 'undefined') return
-  storedDraftIsRecoverable = false
   let raw: string | null
   try {
     raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY)
   } catch {
     draftStorageError.value = true
-    draftPersistenceEnabled.value = true
     return
   }
-  if (!raw) {
-    draftPersistenceEnabled.value = true
-    return
-  }
+  if (!raw) return
 
   try {
     const value: unknown = JSON.parse(raw)
-    if (
-      !isPlainObject(value) ||
-      value.version !== DRAFT_VERSION ||
-      !isPlainObject(value.config) ||
-      !Array.isArray(value.config.providers)
-    ) {
+    const restored =
+      isPlainObject(value) &&
+      (value.version === 1
+        ? restoreLegacyDraft(value)
+        : value.version === DRAFT_VERSION
+          ? restoreCurrentDraft(value)
+          : false)
+    if (!restored) {
       throw new Error('Unsupported Config Studio draft')
     }
-    const config = safeDraftConfiguration(value.config as JsonObject)
-    if (!(config.providers as JsonValue[]).length) {
-      throw new Error('Config Studio draft contains no supported providers')
-    }
-    const draft: StoredDraft = {
-      version: DRAFT_VERSION,
-      config,
-    }
-    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
-    storedDraftIsRecoverable = true
-    recoverableDraft.value = draft
+    draftStorageError.value = false
+    scheduleDraftPersistence()
   } catch {
     clearStoredDraft()
-    draftPersistenceEnabled.value = true
     showToast(c.value.draftUnreadable, 'error')
   }
 }
 
-watch(editorSnapshot, scheduleDraftPersistence)
+watch(
+  [
+    editorSnapshot,
+    validationInput,
+    selectedUid,
+    activeSection,
+    inspectorTab,
+    providerAdvancedOpen,
+    sourceAdvancedOpen,
+    networkAdvancedOpen,
+    runtimeAdvancedOpen,
+  ],
+  scheduleDraftPersistence,
+)
 
 function localized(zh: string, en: string): string {
   return isEnglish.value ? en : zh
@@ -2945,7 +3048,7 @@ function handleMobileReviewResize() {
 function handleBeforeUnload(event: BeforeUnloadEvent) {
   if (!hasUnsavedChanges.value) return
   if (draftSaveTimer) clearTimeout(draftSaveTimer)
-  persistSafeDraft()
+  persistDraft()
   event.preventDefault()
   event.returnValue = ''
 }
@@ -3043,7 +3146,7 @@ onBeforeUnmount(() => {
   if (providerSearchTimer) clearTimeout(providerSearchTimer)
   if (draftSaveTimer) {
     clearTimeout(draftSaveTimer)
-    persistSafeDraft()
+    persistDraft()
   }
   window.removeEventListener('resize', handleMobileReviewResize)
   window.removeEventListener('beforeunload', handleBeforeUnload)
@@ -3447,25 +3550,6 @@ function applyToBuilder() {
   loadConfigurationIntoBuilder(parsedValue, true, c.value.applied)
 }
 
-function restoreStoredDraft() {
-  const draft = recoverableDraft.value
-  if (!draft) return
-  recoverableDraft.value = null
-  draftPersistenceEnabled.value = true
-  clearStoredDraft()
-  if (!loadConfigurationIntoBuilder(draft.config, false, c.value.draftRestored)) {
-    showToast(c.value.draftUnreadable, 'error')
-  }
-}
-
-function discardStoredDraft() {
-  recoverableDraft.value = null
-  draftPersistenceEnabled.value = true
-  clearStoredDraft()
-  scheduleDraftPersistence()
-  showToast(c.value.draftDiscarded)
-}
-
 async function useRuntimeCredential(field: 'id' | 'token') {
   const provider = selectedProvider.value
   provider[field] = ''
@@ -3524,30 +3608,6 @@ async function useRuntimeCredential(field: 'id' | 'token') {
         </button>
       </div>
     </header>
-
-    <section
-      v-if="recoverableDraft"
-      class="studio-draft-banner"
-      aria-labelledby="studio-draft-title"
-      aria-live="polite"
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M12 3 5 6v5c0 4.7 2.8 8.1 7 10 4.2-1.9 7-5.3 7-10V6l-7-3Z" />
-        <path d="M9 12h6M12 9v6" />
-      </svg>
-      <div class="studio-draft-copy">
-        <strong id="studio-draft-title">{{ c.draftAvailable }}</strong>
-        <span>{{ c.draftDescription }}</span>
-      </div>
-      <div class="studio-draft-actions">
-        <button class="studio-button studio-button-secondary" type="button" @click="restoreStoredDraft">
-          {{ c.restoreDraft }}
-        </button>
-        <button class="studio-button studio-button-quiet" type="button" @click="discardStoredDraft">
-          {{ c.discardDraft }}
-        </button>
-      </div>
-    </section>
 
     <div class="studio-shell">
       <aside class="provider-rail" :aria-label="c.providers">
