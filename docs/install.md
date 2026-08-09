@@ -12,7 +12,6 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sudo sh
 
 # 或使用 wget
 wget -qO- https://ddns.newfuture.cc/install.sh | sh
-
 ```
 
 > **说明：** 默认安装到 `/usr/local/bin`，如果该目录需要管理员权限，脚本会自动提示使用 sudo，或者可以预先使用 sudo 运行。
@@ -33,7 +32,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh -s -- v4.0.2
 ## 命令行选项
 
 | 选项 | 说明 |
-|------|------|
+| --- | --- |
 | `latest` | 安装最新稳定版（默认） |
 | `beta` | 安装最新测试版 |
 | `v4.0.2` | 安装指定版本 |

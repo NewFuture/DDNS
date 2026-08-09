@@ -4,6 +4,21 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const TERMINAL_CODE_LANGUAGES = new Set([
+  'bash',
+  'bat',
+  'batch',
+  'cmd',
+  'console',
+  'fish',
+  'powershell',
+  'ps1',
+  'sh',
+  'shell',
+  'shellscript',
+  'terminal',
+  'zsh'
+])
 
 // Setup documentation structure before VitePress processes files
 function setupDocs() {
@@ -13,13 +28,24 @@ function setupDocs() {
   console.log('Setting up documentation structure...\n')
   
   // Process README files
-  const processReadme = (sourcePath, targetPath, pathPrefix) => {
+  const processReadme = (sourcePath, targetPath, sourcePrefix, sitePrefix) => {
     if (!fs.existsSync(sourcePath)) return false
     
     const content = fs.readFileSync(sourcePath, 'utf8')
+    const escapedPrefix = sourcePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const rawFileLink = new RegExp(
+      `href="${escapedPrefix}([^"#]+?)\\.md(#[^"]*)?"`,
+      'g'
+    )
     const modifiedContent = content
-      .replace(new RegExp(`\\(${pathPrefix}`, 'g'), '(/')
-      .replace(/src="docs\//g, 'src="/')
+      .replace(new RegExp(`\\(${escapedPrefix}`, 'g'), `(${sitePrefix}`)
+      .replace(
+        rawFileLink,
+        (_match, relativePath, hash = '') =>
+          `href="${sitePrefix}${relativePath}${hash}"`
+      )
+      .replace(new RegExp(`href="${escapedPrefix}`, 'g'), `href="${sitePrefix}`)
+      .replace(/src="docs\/public\//g, 'src="/')
     
     const targetDir = path.dirname(targetPath)
     if (!fs.existsSync(targetDir)) {
@@ -34,7 +60,8 @@ function setupDocs() {
   if (processReadme(
     path.join(rootDir, 'README.md'),
     path.join(docsDir, 'index.md'),
-    'docs/'
+    'docs/',
+    '/'
   )) {
     console.log('✓ Copied README.md to docs/index.md')
   }
@@ -43,7 +70,8 @@ function setupDocs() {
   if (processReadme(
     path.join(rootDir, 'README.en.md'),
     path.join(docsDir, 'en', 'index.md'),
-    'docs/en/'
+    'docs/en/',
+    '/en/'
   )) {
     console.log('✓ Copied README.en.md to docs/en/index.md')
   }
@@ -137,34 +165,66 @@ export default defineConfig({
     
     // 导航栏
     nav: [
-      { text: '首页', link: '/' },
-      { text: 'Docker', link: '/docker' },
-      { text: '安装', link: '/install' },
-      { text: '配置工具', link: '/config/studio' },
-      { 
-        text: '配置方式',
+      {
+        text: '开始使用',
+        items: [
+          { text: '选择安装方式', link: '/install' },
+          { text: 'Docker 部署', link: '/docker' }
+        ]
+      },
+      {
+        text: '配置',
         items: [
           { text: '生成与校验', link: '/config/studio' },
+          { text: 'JSON 配置', link: '/config/json' },
           { text: '命令行参数', link: '/config/cli' },
-          { text: '环境变量', link: '/config/env' },
-          { text: 'JSON配置', link: '/config/json' }
+          { text: '环境变量', link: '/config/env' }
         ]
       },
       {
-        text: 'DNS服务商',
+        text: 'DNS 服务商',
         items: [
-          { text: '概述', link: '/providers/' },
-          { text: '阿里DNS', link: '/providers/alidns' },
-          { text: 'DNSPod', link: '/providers/dnspod' },
-          { text: 'Cloudflare', link: '/providers/cloudflare' }
+          { text: '所有服务商', link: '/providers/' },
+          {
+            text: '国内与云平台',
+            items: [
+              { text: '阿里云 DNS', link: '/providers/alidns' },
+              { text: '阿里云 ESA', link: '/providers/aliesa' },
+              { text: '51DNS', link: '/providers/51dns' },
+              { text: 'DNSPod', link: '/providers/dnspod' },
+              { text: '腾讯云 DNS', link: '/providers/tencentcloud' },
+              { text: 'EdgeOne 加速', link: '/providers/edgeone' },
+              { text: 'EdgeOne DNS', link: '/providers/edgeone_dns' },
+              { text: '华为云 DNS', link: '/providers/huaweidns' },
+              { text: '西部数码', link: '/providers/west' }
+            ]
+          },
+          {
+            text: '国际服务商',
+            items: [
+              { text: 'Cloudflare', link: '/providers/cloudflare' },
+              { text: 'ClouDNS', link: '/providers/cloudns' },
+              { text: 'DNSPod Global', link: '/providers/dnspod_com' },
+              { text: 'HE.net', link: '/providers/he' },
+              { text: 'NameSilo', link: '/providers/namesilo' },
+              { text: 'No-IP', link: '/providers/noip' }
+            ]
+          },
+          {
+            text: '集成与调试',
+            items: [
+              { text: 'Callback API', link: '/providers/callback' },
+              { text: 'Debug', link: '/providers/debug' }
+            ]
+          }
         ]
       },
       {
-        text: '开发文档',
+        text: '开发',
         items: [
-          { text: '配置文档', link: '/dev/config' },
-          { text: 'Provider开发', link: '/dev/provider' },
-          { text: 'ESA Pages部署', link: '/esa-deploy' }
+          { text: '配置系统设计', link: '/dev/config' },
+          { text: 'Provider 开发', link: '/dev/provider' },
+          { text: 'ESA Pages 部署', link: '/esa-deploy' }
         ]
       }
     ],
@@ -184,21 +244,42 @@ export default defineConfig({
       ],
       '/providers/': [
         {
-          text: 'DNS 服务商',
+          text: '服务商概览',
           items: [
-            { text: '所有服务商', link: '/providers/' },
+            { text: '所有服务商', link: '/providers/' }
+          ]
+        },
+        {
+          text: '国内与云平台',
+          collapsed: true,
+          items: [
             { text: '阿里DNS', link: '/providers/alidns' },
             { text: '阿里云ESA', link: '/providers/aliesa' },
             { text: '51DNS', link: '/providers/51dns' },
-            { text: 'Cloudflare', link: '/providers/cloudflare' },
             { text: 'DNSPod', link: '/providers/dnspod' },
-            { text: 'DNSPod国际版', link: '/providers/dnspod_com' },
             { text: '腾讯云DNS', link: '/providers/tencentcloud' },
             { text: '腾讯云EdgeOne', link: '/providers/edgeone' },
+            { text: '腾讯云EdgeOne DNS', link: '/providers/edgeone_dns' },
             { text: '华为云DNS', link: '/providers/huaweidns' },
+            { text: '西部数码', link: '/providers/west' }
+          ]
+        },
+        {
+          text: '国际服务商',
+          collapsed: true,
+          items: [
+            { text: 'Cloudflare', link: '/providers/cloudflare' },
+            { text: 'ClouDNS', link: '/providers/cloudns' },
+            { text: 'DNSPod国际版', link: '/providers/dnspod_com' },
             { text: 'HE.net', link: '/providers/he' },
             { text: 'NameSilo', link: '/providers/namesilo' },
-            { text: 'No-IP', link: '/providers/noip' },
+            { text: 'No-IP', link: '/providers/noip' }
+          ]
+        },
+        {
+          text: '集成与验证',
+          collapsed: true,
+          items: [
             { text: '回调API', link: '/providers/callback' },
             { text: '调试模式', link: '/providers/debug' }
           ]
@@ -318,6 +399,24 @@ export default defineConfig({
       dark: 'github-dark'
     },
     config: (md) => {
+      // Command snippets are copied or executed as a unit, so line numbers add noise.
+      md.core.ruler.after('inline', 'disable-terminal-line-numbers', (state) => {
+        for (const token of state.tokens) {
+          if (token.type !== 'fence') continue
+          const language = token.info
+            .trim()
+            .match(/^([^\s:{]+)/)?.[1]
+            ?.toLowerCase()
+          if (
+            language &&
+            TERMINAL_CODE_LANGUAGES.has(language) &&
+            !/:no-line-numbers\b/.test(token.info)
+          ) {
+            token.info = `${token.info.trimEnd()} :no-line-numbers`
+          }
+        }
+      })
+
       // Transform link hrefs that point to code files to GitHub blob URLs
       md.core.ruler.after('inline', 'transform-code-links', (state) => {
         const tokens = state.tokens;
@@ -360,33 +459,65 @@ export default defineConfig({
       link: '/en/',
       themeConfig: {
         nav: [
-          { text: 'Home', link: '/en/' },
-          { text: 'Docker', link: '/en/docker' },
-          { text: 'Install', link: '/en/install' },
-          { text: 'Config Studio', link: '/en/config/studio' },
-          { 
-            text: 'Configuration',
+          {
+            text: 'Get Started',
+            items: [
+              { text: 'Choose an Installation', link: '/en/install' },
+              { text: 'Deploy with Docker', link: '/en/docker' }
+            ]
+          },
+          {
+            text: 'Configure',
             items: [
               { text: 'Build & Validate', link: '/en/config/studio' },
+              { text: 'JSON Configuration', link: '/en/config/json' },
               { text: 'CLI', link: '/en/config/cli' },
-              { text: 'Environment', link: '/en/config/env' },
-              { text: 'JSON Config', link: '/en/config/json' }
+              { text: 'Environment', link: '/en/config/env' }
             ]
           },
           {
             text: 'DNS Providers',
             items: [
               { text: 'Overview', link: '/en/providers/' },
-              { text: 'AliDNS', link: '/en/providers/alidns' },
-              { text: 'DNSPod', link: '/en/providers/dnspod' },
-              { text: 'Cloudflare', link: '/en/providers/cloudflare' }
+              {
+                text: 'China & Cloud',
+                items: [
+                  { text: 'AliDNS', link: '/en/providers/alidns' },
+                  { text: 'Alibaba Cloud ESA', link: '/en/providers/aliesa' },
+                  { text: '51DNS', link: '/en/providers/51dns' },
+                  { text: 'DNSPod China', link: '/en/providers/dnspod' },
+                  { text: 'Tencent Cloud DNS', link: '/en/providers/tencentcloud' },
+                  { text: 'EdgeOne Acceleration', link: '/en/providers/edgeone' },
+                  { text: 'EdgeOne DNS', link: '/en/providers/edgeone_dns' },
+                  { text: 'Huawei Cloud DNS', link: '/en/providers/huaweidns' },
+                  { text: 'West.cn', link: '/en/providers/west' }
+                ]
+              },
+              {
+                text: 'International',
+                items: [
+                  { text: 'Cloudflare', link: '/en/providers/cloudflare' },
+                  { text: 'ClouDNS', link: '/en/providers/cloudns' },
+                  { text: 'DNSPod Global', link: '/en/providers/dnspod_com' },
+                  { text: 'HE.net', link: '/en/providers/he' },
+                  { text: 'NameSilo', link: '/en/providers/namesilo' },
+                  { text: 'No-IP', link: '/en/providers/noip' }
+                ]
+              },
+              {
+                text: 'Integrations & Testing',
+                items: [
+                  { text: 'Callback API', link: '/en/providers/callback' },
+                  { text: 'Debug Provider', link: '/en/providers/debug' }
+                ]
+              }
             ]
           },
           {
             text: 'Development',
             items: [
-              { text: 'Config Docs', link: '/en/dev/config' },
-              { text: 'Provider Guide', link: '/en/dev/provider' }
+              { text: 'Configuration Internals', link: '/en/dev/config' },
+              { text: 'Provider Development', link: '/en/dev/provider' }
             ]
           }
         ],
@@ -404,21 +535,42 @@ export default defineConfig({
           ],
           '/en/providers/': [
             {
-              text: 'DNS Providers',
+              text: 'Provider Overview',
               items: [
-                { text: 'All Providers', link: '/en/providers/' },
+                { text: 'All Providers', link: '/en/providers/' }
+              ]
+            },
+            {
+              text: 'China & Cloud Platforms',
+              collapsed: true,
+              items: [
                 { text: 'AliDNS', link: '/en/providers/alidns' },
                 { text: 'Ali ESA', link: '/en/providers/aliesa' },
                 { text: '51DNS', link: '/en/providers/51dns' },
-                { text: 'Cloudflare', link: '/en/providers/cloudflare' },
                 { text: 'DNSPod', link: '/en/providers/dnspod' },
-                { text: 'DNSPod Global', link: '/en/providers/dnspod_com' },
                 { text: 'Tencent Cloud DNS', link: '/en/providers/tencentcloud' },
                 { text: 'Tencent Cloud EdgeOne', link: '/en/providers/edgeone' },
+                { text: 'Tencent Cloud EdgeOne DNS', link: '/en/providers/edgeone_dns' },
                 { text: 'Huawei Cloud DNS', link: '/en/providers/huaweidns' },
+                { text: 'West.cn', link: '/en/providers/west' }
+              ]
+            },
+            {
+              text: 'International Providers',
+              collapsed: true,
+              items: [
+                { text: 'Cloudflare', link: '/en/providers/cloudflare' },
+                { text: 'ClouDNS', link: '/en/providers/cloudns' },
+                { text: 'DNSPod Global', link: '/en/providers/dnspod_com' },
                 { text: 'HE.net', link: '/en/providers/he' },
                 { text: 'NameSilo', link: '/en/providers/namesilo' },
-                { text: 'No-IP', link: '/en/providers/noip' },
+                { text: 'No-IP', link: '/en/providers/noip' }
+              ]
+            },
+            {
+              text: 'Integrations & Testing',
+              collapsed: true,
+              items: [
                 { text: 'Callback API', link: '/en/providers/callback' },
                 { text: 'Debug Mode', link: '/en/providers/debug' }
               ]

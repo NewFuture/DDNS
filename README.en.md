@@ -1,360 +1,128 @@
-# [<img src="docs/public/img/ddns.svg" width="32px" height="32px"/>](https://ddns.newfuture.cc) [DDNS](https://github.com/NewFuture/DDNS)
+# [<img src="docs/public/img/ddns.svg" width="40" height="40" alt="DDNS logo"/>](https://ddns.newfuture.cc) DDNS
 
-> Automatically update DNS records to the current IP address, supporting IPv4 and IPv6, local (private) IP and public IP.
-> Proxy mode supported, with automatic DNS record creation.
+> Keep DNS records synchronized with the current IPv4 or IPv6 address. A cross-platform dynamic DNS client with no third-party runtime dependencies.
 
-[![Github Release](https://img.shields.io/github/v/release/NewFuture/DDNS?&logo=github&style=flatten
-)](https://github.com/NewFuture/DDNS/releases/latest)
-[![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=ddns&logo=pypi&style=flatten)](https://pypi.org/project/ddns/)
-[![Docker Image Version](https://img.shields.io/docker/v/newfuture/ddns?label=newfuture/ddns&logo=docker&&sort=semver&style=flatten)](https://hub.docker.com/r/newfuture/ddns)
-[![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
+<div class="ddns-home-proof" role="list" aria-label="Core compatibility">
+  <p role="listitem"><strong>IPv4 + IPv6</strong><br><span>Private, public, and custom address sources</span></p>
+  <p role="listitem"><strong>15+ DNS providers</strong><br><span>Regional, global, and custom integrations</span></p>
+  <p role="listitem"><strong>4 ways to run</strong><br><span>Docker, binary, pip, or source</span></p>
+  <p role="listitem"><strong>Standard library only</strong><br><span>No third-party runtime packages</span></p>
+</div>
+
+<div class="ddns-home-actions">
+  <p class="is-primary"><a href="#choose-an-installation-method"><strong>Choose an installation method</strong><span>Compare Docker, binary, pip, and source</span></a></p>
+  <p><a href="docs/en/config/studio.md"><strong>Open Config Studio</strong><span>Build and validate config.json in the browser</span></a></p>
+</div>
+
+<details class="ddns-home-status">
+<summary>View build, version, and release status</summary>
+
+[![GitHub](https://img.shields.io/github/license/NewFuture/DDNS?logo=github&style=flat)](https://github.com/NewFuture/DDNS)
+[![Build](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
 [![Publish](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml)
+[![Release](https://img.shields.io/github/v/release/NewFuture/DDNS?logo=github&style=flat)](https://github.com/NewFuture/DDNS/releases/latest)
+[![PyPI](https://img.shields.io/pypi/v/ddns.svg?logo=pypi&style=flat)](https://pypi.org/project/ddns/)
+[![Python Version](https://img.shields.io/pypi/pyversions/ddns.svg?logo=python&style=flat)](https://pypi.org/project/ddns/)
+[![Docker](https://img.shields.io/docker/v/newfuture/ddns?logo=docker&sort=semver&style=flat)](https://hub.docker.com/r/newfuture/ddns)
+[![Docker image size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=flat)](https://hub.docker.com/r/newfuture/ddns)
 
----
+</details>
 
-## Features
+## Complete the first update in three steps
 
-- **Compatibility and Cross-Platform:**
-  - [Docker (@NN708)](https://hub.docker.com/r/newfuture/ddns) [![Docker Image Size](https://img.shields.io/docker/image-size/newfuture/ddns/latest?logo=docker&style=social)](https://hub.docker.com/r/newfuture/ddns)[![Docker Platforms](https://img.shields.io/badge/arch-amd64%20%7C%20arm64%20%7C%20arm%2Fv7%20%7C%20arm%2Fv6%20%7C%20ppc64le%20%7C%20s390x%20%7C%20386%20%7C%20riscv64-blue?style=social)](https://hub.docker.com/r/newfuture/ddns)
-  - [Binary files](https://github.com/NewFuture/DDNS/releases/latest) ![cross platform](https://img.shields.io/badge/system-windows_%7C%20linux_%7C%20mac-success.svg?style=social)
-  
-- **Configuration Methods:**
-  - [Command Line Arguments](docs/en/config/cli.md)
-  - [JSON Configuration File](docs/en/config/json.md) (supports single-file multi-provider, multiple config files, and remote URL)
-  - [Environment Variables](docs/en/config/env.md)
-  - [Provider Configuration Guide](docs/en/providers/)
+<div class="ddns-home-steps" role="list" aria-label="First update workflow">
+  <p role="listitem"><strong><span>1</span> Install</strong><br>Choose the runtime that fits the current device.</p>
+  <p role="listitem"><strong><span>2</span> Configure</strong><br>Select a provider, credentials, and domains.</p>
+  <p role="listitem"><strong><span>3</span> Run</strong><br>Verify the result, then schedule ongoing updates.</p>
+</div>
 
-- **Domain Support:**
-  - Multiple domain support
-  - Multi-level domain resolution
-  - Automatic DNS record creation
-  - Multiple configuration files and multi-provider concurrent execution
-- **IP Types:**
-  - Private IPv4 / IPv6
-  - Public IPv4 / IPv6 (supports custom API)
-  - Custom commands (shell)
-  - Regex selection support (@rufengsuixing)
-- **Network Proxy:**
-  - HTTP proxy support
-  - Automatic multi-proxy switching
-- **DNS Provider Support:**
-  - [DNSPOD China](https://www.dnspod.cn/) ([Configuration Guide](docs/en/providers/dnspod.md))
-  - [Alibaba Cloud DNS](http://www.alidns.com/) ([Configuration Guide](docs/en/providers/alidns.md)) ⚡
-  - [Alibaba Cloud ESA](https://esa.console.aliyun.com/) ([Configuration Guide](docs/en/providers/aliesa.md)) ⚡
-  - [DNS.COM](https://www.dns.com/) ([Configuration Guide](docs/en/providers/dnscom.md)) (@loftor-git)
-  - [DNSPOD International](https://www.dnspod.com/) ([Configuration Guide](docs/en/providers/dnspod_com.md))
-  - [CloudFlare](https://www.cloudflare.com/) ([Configuration Guide](docs/en/providers/cloudflare.md)) (@tongyifan)
-  - [HE.net](https://dns.he.net/) ([Configuration Guide](docs/en/providers/he.md)) (@NN708) (Does not support auto-record creation)
-  - [Huawei Cloud](https://huaweicloud.com/) ([Configuration Guide](docs/en/providers/huaweidns.md)) (@cybmp3) ⚡
-  - [NameSilo](https://www.namesilo.com/) ([Configuration Guide](docs/en/providers/namesilo.md))
-  - [Tencent Cloud DNS](https://cloud.tencent.com/) ([Configuration Guide](docs/en/providers/tencentcloud.md)) ⚡
-  - [Tencent Cloud EdgeOne](https://cloud.tencent.com/product/teo) ([Configuration Guide](docs/en/providers/edgeone.md)) ⚡
-  - [No-IP](https://www.noip.com/) ([Configuration Guide](docs/en/providers/noip.md))
-  - Custom Callback API ([Configuration Guide](docs/en/providers/callback.md))
-  
-  > ⚡ Providers marked with lightning use advanced HMAC-SHA256 signature authentication for enterprise-level security
-- **Other Features:**
-  - Configurable scheduled tasks
-  - TTL configuration support
-  - DNS line (ISP) configuration support (for domestic providers)
-  - Local file caching (reduces API requests)
-  - Custom callback API trigger on IP change (mutually exclusive with DDNS functionality)
-
-## Usage
-
-### ① Installation
-
-Choose one of the following methods: `Docker`, `binary` version, `pip` version, or `source code` execution.
-
-Docker version is recommended for best compatibility, small size, and optimized performance.
-
-- #### Docker (Recommended)
-
-  For detailed instructions and advanced usage, see [Docker Usage Documentation](docs/en/docker.md)
-
-  <details>
-  <summary markdown="span">Supports command line, configuration file, and environment variable parameters</summary>
-
-  - Command line CLI
-
-      ```sh
-      docker run newfuture/ddns -h
-      ```
-
-  - Using configuration file (Docker working directory `/ddns/`, default config location `/ddns/config.json`):
-
-      ```sh
-      docker run -d -v /host/config/:/ddns/ --network host newfuture/ddns
-      ```
-
-  - Using environment variables:
-
-      ```sh
-      docker run -d \
-        -e DDNS_DNS=dnspod \
-        -e DDNS_ID=12345 \
-        -e DDNS_TOKEN=mytokenkey \
-        -e DDNS_IPV4=ddns.newfuture.cc \
-        --network host \
-        newfuture/ddns
-      ```
-
-  </details>
-
-- #### Binary Version (Single file, no Python required)
-
-  Go to [releases to download the corresponding version](https://github.com/NewFuture/DDNS/releases/latest)
-
-  Or use the one‑click installation script to automatically download and install the binary for your platform:
-
-  ```bash
-  curl -#fSL https://ddns.newfuture.cc/install.sh | sh
-  ```
-  Note: Installing to system directories (e.g., /usr/local/bin) may require root or sudo; if permissions are insufficient, run as `sudo sh`.
-
-  For detailed instructions, see [Installation Documentation](docs/en/install.md)
-
-- #### pip Installation (Requires pip or easy_install)
-
-  1. Install ddns: `pip install ddns` or `easy_install ddns`
-  2. Run: `ddns -h` or `python -m ddns`
-
-- #### Source Code Execution (No dependencies, requires Python environment)
-
-  1. Clone or [download this repository](https://github.com/NewFuture/DDNS/archive/master.zip) and extract
-  2. Run `python -m ddns`
-
-### ② Quick Configuration
-
-1. Apply for API `token`, fill in the corresponding `id` and `token` fields:
-
-   - **DNSPOD (China)**: [Create token](https://support.dnspod.cn/Kb/showarticle/tsid/227/) | [Detailed Configuration](docs/en/providers/dnspod.md)
-   - **Alibaba Cloud DNS**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/alidns.md)
-   - **Alibaba Cloud ESA**: [Apply for accesskey](https://help.aliyun.com/document_detail/87745.htm) | [Detailed Configuration](docs/en/providers/aliesa.md)
-   - **DNS.COM**: [API Key/Secret](https://www.dns.com/member/apiSet) | [Detailed Configuration](docs/en/providers/dnscom.md)
-   - **DNSPOD (International)**: [Get token](https://www.dnspod.com/docs/info.html#get-the-user-token) | [Detailed Configuration](docs/en/providers/dnspod_com.md)
-   - **CloudFlare**: [API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (Besides `email + API KEY`, you can also use `Token`, **requires list Zone permission**) | [Detailed Configuration](docs/en/providers/cloudflare.md)
-   - **HE.net**: [DDNS Documentation](https://dns.he.net/docs.html) (Only fill the set password in the `token` field, `id` field can be left empty) | [Detailed Configuration](docs/en/providers/he.md)
-   - **Huawei Cloud DNS**: [APIKEY Application](https://console.huaweicloud.com/iam/) (Click Access Keys on the left, then click Create Access Key) | [Detailed Configuration](docs/en/providers/huaweidns.md)
-   - **NameSilo**: [API Key](https://www.namesilo.com/account/api-manager) (Get API Key from API Manager) | [Detailed Configuration](docs/en/providers/namesilo.md)
-   - **Tencent Cloud DNS**: [Detailed Configuration](docs/en/providers/tencentcloud.md)
-   - **No-IP**: [Username and Password](https://www.noip.com/) (Use No-IP account username and password) | [Detailed Configuration](docs/en/providers/noip.md)
-   - **Custom Callback**: For parameter configuration, please refer to the custom callback configuration instructions below
-
-2. Modify the configuration file, `ipv4` and `ipv6` fields for domains to be updated, refer to configuration instructions for details
-
-## Detailed Configuration
-
-All fields can be configured through three methods, with priority: **Command Line Parameters > JSON Configuration File > Environment Variables**
-
-1. [Command Line Parameters](docs/en/config/cli.md) `ddns --key=value` (use `ddns -h` for details), highest priority
-2. [JSON Configuration File](docs/en/config/json.md) (null values are considered valid and will override environment variable settings; if no corresponding key exists, environment variables will be used)
-3. [Environment Variables](docs/en/config/env.md) with DDNS_ prefix plus key in uppercase or lowercase, dots converted to underscores (`${ddns_id}` or `${DDNS_ID}`, `${DDNS_LOG_LEVEL}`)
-
-> 📖 **Environment Variables Documentation**: See [Environment Variables Configuration](docs/en/config/env.md) for detailed usage and examples of all environment variables
-
-<details open>
-<summary markdown="span">config.json Configuration File</summary>
-
-- A template configuration file will be automatically generated on first run
-- Use `-c` to specify a configuration file (defaults to config.json in the current directory)
-- Recommended to use editors that support JsonSchema like VSCode for editing configuration files
-- See [JSON Configuration File Documentation](docs/en/config/json.md) for complete configuration options and examples
+After installation, verify the complete execution path with the Debug provider, which never changes real DNS records:
 
 ```bash
-ddns -c path/to/config.json
-# Or run with Python
-python -m ddns -c /path/to/config.json
-# Remote configuration file
-ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+ddns --dns=debug --ipv4=home.example.com --debug
 ```
 
-#### Configuration Parameters Table
+Once the output looks correct, select a real provider in [Config Studio](docs/en/config/studio.md) and export the configuration.
 
-|  key   |        type        | required |   default   |    description     | tips                                                                                                                                                                                     |
-| :----: | :----------------: | :------: | :---------: | :----------------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   id   |       string       |    √     |     N/A     |    API Access ID   | Cloudflare uses email (leave empty when using Token)<br>HE.net can be left empty<br>Huawei Cloud uses Access Key ID (AK)                                                              |
-| token  |       string       |    √     |     N/A     |   API Auth Token   | Some platforms call it secret key, **remove when sharing feedback**                                                                                                                     |
-|  dns   |       string       |    No    | `"dnspod"`  |     DNS Provider   | Alibaba DNS: `alidns`, Alibaba ESA: `aliesa`, Cloudflare: `cloudflare`, DNS.COM: `dnscom`, DNSPOD China: `dnspod`, DNSPOD International: `dnspod_com`, HE.net: `he`, Huawei Cloud: `huaweidns`, NameSilo: `namesilo`, Tencent Cloud: `tencentcloud`, Tencent EdgeOne: `edgeone`, No-IP: `noip`, Custom Callback: `callback`. Some providers have [detailed configuration docs](docs/en/providers/) |
-|  ipv4  |       array        |    No    |    `[]`     |   IPv4 Domain List | When `[]`, IPv4 address will not be retrieved and updated                                                                                                                               |
-|  ipv6  |       array        |    No    |    `[]`     |   IPv6 Domain List | When `[]`, IPv6 address will not be retrieved and updated                                                                                                                               |
-| index4 | string\|int\|array |    No    | `"default"` |   IPv4 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
-| index6 | string\|int\|array |    No    | `"default"` |   IPv6 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
-|  ttl   |       number       |    No    |   `null`    | DNS Resolution TTL | Uses DNS default policy when not set                                                                                                                                                    |
-| proxy  |   string\|array    |    No    |     N/A     | HTTP Proxy Format: `http://host:port` | Multiple proxies tried sequentially until success, `DIRECT` for direct connection                                                                                                      |
-|  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL Certificate Verification | `true` (force verify), `false` (disable verify), `"auto"` (auto downgrade) or custom CA certificate file path                                                                         |
-| debug  |        bool        |    No    |   `false`   |    Enable Debug    | Debug mode, only effective with command line parameter `--debug`                                                                                                                       |
-| cache  |    string\|bool    |    No    |   `true`    |    Cache Records   | Keep enabled normally to avoid frequent updates, default location is `ddns.cache` in temp directory, can also specify a specific path                                                |
-| cache_max_age | integer | No | `259200` | Cache file max age (seconds) | `0` clears an existing cache on every invocation; this is local file expiry, not DNS TTL |
-|  log   |       object       |    No    |   `null`    |  Log Config (Optional) | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters                                                                                                     |
+## Choose an installation method
 
-#### index4 and index6 Parameter Description
+- **[Docker (recommended)](docs/en/docker.md)**: Best for NAS devices, servers, and container platforms. Multi-architecture images run an update task every five minutes by default.
+- **[Standalone binary](https://github.com/NewFuture/DDNS/releases/latest)**: Best when Python should not be installed. A single file runs on Windows, Linux, or macOS.
+- **[pip](https://pypi.org/project/ddns/)**: Best for an existing Python environment. Install with `pip install ddns`.
+- **[Source](https://github.com/NewFuture/DDNS/archive/master.zip)**: Best when the code needs to be reviewed or customized. Extract it and run `python -m ddns`.
 
-- Numbers (`0`, `1`, `2`, `3`, etc.): The i-th network interface IP
-- String `"default"` (or no this field): System default IP for external access
-- String `"public"`: Use public IP (query via public API, simplified URL mode)
-- String `"url:xxx"`: Open URL `xxx` (e.g., `"url:http://ip.sb"`), extract IP address from returned data
-- String `"regex:xxx"` Regular expression (e.g., `"regex:192.*"`): Extract the first IP address matching from `ifconfig`/`ipconfig`, **note JSON escaping** (`\` should be written as `\\`)
-  - `"192.*"` matches all IPs starting with 192 (note: `regex:` cannot be omitted)
-  - To match `10.00.xxxx`, write as `"regex:10\\.00\\..*"` (`"\\"` JSON escapes to `\`)
-- String `"cmd:xxxx"`: Execute command `xxxx` and use stdout output as target IP
-- String `"shell:xxx"`: Use system shell to run `xxx`, and use stdout result as target IP
-- `false`: Force disable IPv4 or IPv6 DNS resolution updates
-- List: Execute index rules in the list sequentially, using the first successful result as target IP
-  - For example, `["public", "regex:172\\..*"]` will first query public API, then look for local IPs starting with 172 if no IP is obtained
-
-#### Custom Callback Configuration
-
-- `id` field: Fill in callback URL starting with HTTP or HTTPS, HTTPS recommended, supports variable replacement
-- `token` field: POST request parameters (JSON object or JSON string), use GET request if this field is empty or missing. When JSON parameter values contain constants from the table below, they will be automatically replaced with actual content
-
-For detailed configuration guide, see: [Callback Provider Configuration](docs/en/providers/callback.md)
-
-| Constant Name    | Constant Content             | Description |
-| ---------------- | ---------------------------- | ----------- |
-| `__DOMAIN__`     | DDNS Domain                  |             |
-| `__IP__`         | Obtained corresponding type IP address |             |
-| `__RECORDTYPE__` | DDNS Record Type             |             |
-| `__TTL__`        | DDNS TTL                     |             |
-| `__TIMESTAMP__`  | Request timestamp            | With decimal |
-
-#### Configuration Example
-
-```json
-{
-  "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
-  "id": "12345",
-  "token": "mytokenkey",
-  "dns": "dnspod or dnspod_com or alidns or aliesa or dnscom or cloudflare or he or huaweidns or namesilo or tencentcloud or noip or callback",
-  "ipv4": ["ddns.newfuture.cc", "ipv4.ddns.newfuture.cc"],
-  "ipv6": ["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"],
-  "index4": 0,
-  "index6": "public",
-  "ttl": 600,
-  "proxy": ["http://127.0.0.1:1080", "DIRECT"],
-  "log": {
-    "level": "DEBUG",
-    "file": "dns.log",
-    "datefmt": "%Y-%m-%dT%H:%M:%S"
-  }
-}
-```
-
-</details>
-
-### Configuration Priority and Field Override Relationship
-
-If the same configuration item is set in multiple places, the following priority rules apply:
-
-- **Command Line Parameters**: Highest priority, overrides all other settings
-- **JSON Configuration File**: Between command line and environment variables, overrides environment variable settings
-- **Environment Variables**: Lowest priority, used when not set by other methods
-
-**Advanced Usage:**
-
-- JSON configuration file can contain only partial fields, missing fields will use environment variables
-- Environment variables support both uppercase and lowercase formats
-- Support for nested configuration through dot notation converted to underscores
-
-### Scheduled Tasks
-
-<details>
-<summary markdown="span">Use built-in task command to set up scheduled tasks (checks IP every 5 minutes by default for automatic updates)</summary>
-
-DDNS provides a built-in `task` subcommand for managing scheduled tasks with cross-platform automated deployment:
-
-#### Basic Usage
+Linux and macOS users can also install the matching binary with one command:
 
 ```bash
-# Install scheduled task (default 5-minute interval)
-ddns task --install --dns dnspod --id your_id --token your_token --ipv4 your.domain.com
-
-# Check task status
-ddns task --status
-
-# Uninstall scheduled task
-ddns task --uninstall
+curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
-#### Supported Systems
+## Why it works for long-running deployments
 
-- **Windows**: Uses Task Scheduler
-- **Linux**: Automatically selects systemd or crontab
-- **macOS**: Uses launchd
+### DNS update capabilities
 
-#### Advanced Management
+- Manage multiple domains, providers, and configuration files together.
+- Resolve IPv4 or IPv6 from interfaces, default routes, public APIs, URLs, regular expressions, or custom commands.
+- Find DNS records automatically and create missing records with most providers (except HE.net and No-IP); configure TTL and routing lines where supported.
+- Reduce unchanged DNS API requests with a local cache.
+
+### Deployment and operations
+
+- Uses only the Python standard library and supports Python 2.7 and Python 3.x.
+- Supports HTTP proxies, multi-proxy fallback, SSL verification policies, and custom certificate authorities.
+- Includes cross-platform scheduling through systemd/cron on Linux, launchd on macOS, and Task Scheduler on Windows.
+- Supports configurable log levels, files, formats, and timestamps.
+
+## Configuration and credentials
+
+[Config Studio](docs/en/config/studio.md) processes input in the browser and does not call DNS provider APIs. Validate the structure with the Debug provider before switching to a real provider.
+
+Most runtime configuration fields can be supplied through these methods, in priority order:
+
+1. **[Command-line arguments](docs/en/config/cli.md)**: `ddns --key=value`
+2. **[JSON configuration](docs/en/config/json.md)**: Best for multiple domains, providers, or remote configurations
+3. **[Environment variables](docs/en/config/env.md)**: Best for Docker and automated deployment
+
+A small set of controls is command-line only; see the [CLI reference](docs/en/config/cli.md).
+
+Credential names vary by provider, including API Token, Access Key, and Secret. Follow the matching [provider guide](docs/en/providers/) for least-privilege access, and remove real credentials from logs, issues, and examples.
+
+## DNS providers
+
+- **Regional and cloud platforms**: [AliDNS](docs/en/providers/alidns.md), [Alibaba Cloud ESA](docs/en/providers/aliesa.md), [DNSPod China](docs/en/providers/dnspod.md), [Tencent Cloud DNS](docs/en/providers/tencentcloud.md), [Tencent Cloud EdgeOne](docs/en/providers/edgeone.md), [EdgeOne DNS](docs/en/providers/edgeone_dns.md), [Huawei Cloud DNS](docs/en/providers/huaweidns.md), [DNS.COM / 51DNS](docs/en/providers/dnscom.md), [West.cn](docs/en/providers/west.md)
+- **Global providers**: [Cloudflare](docs/en/providers/cloudflare.md), [ClouDNS](docs/en/providers/cloudns.md), [DNSPod Global](docs/en/providers/dnspod_com.md), [HE.net](docs/en/providers/he.md), [NameSilo](docs/en/providers/namesilo.md), [No-IP](docs/en/providers/noip.md)
+- **Integration and validation**: [Callback API](docs/en/providers/callback.md), [Debug](docs/en/providers/debug.md)
+
+Cloud providers marked in their guides use HMAC-SHA256 request signing. See the [complete provider documentation](docs/en/providers/) for capabilities, credential formats, and limitations.
+
+## Running and automation
+
+Run with a configuration file:
 
 ```bash
-# Install with custom interval (minutes)
-ddns task --install 10 -c /etc/ddns/config.json
-
-# Enable/disable tasks
-ddns task --enable
-ddns task --disable
+ddns -c config.json
 ```
 
-> **New Feature Advantages**:
->
-> - ✅ Cross-platform automatic system detection
-> - ✅ Automatically overwrites existing tasks without manual uninstallation
-> - ✅ Supports all DDNS configuration parameters
-> - ✅ Unified command-line interface
+Install a system task that runs every five minutes:
 
-For detailed configuration guide, see: [CLI Parameters Documentation](docs/en/config/cli.md#task-management)
+```bash
+ddns task --install 5 -c /etc/ddns/config.json
+```
 
-#### Docker
+Inspect it with `ddns task --status`, then manage it with `--enable`, `--disable`, or `--uninstall`. See the [CLI documentation](docs/en/config/cli.md#task-management) for platform-specific behavior.
 
-Docker images, without additional parameters, have a scheduled task enabled by default that runs every 5 minutes
+If a router or modem only supports a legacy DDNS protocol, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** to bridge it to a modern DNS provider API.
 
-</details>
+## Getting help
 
-## 🌐 Router/Modem Users?
+1. Reproduce the problem with `--debug`, then rule out network, permission, and operating-system issues.
+2. Search [Issues](https://github.com/NewFuture/DDNS/issues) for the same error.
+3. If it remains unresolved, [open an issue](https://github.com/NewFuture/DDNS/issues/new) with the version, installation method, system environment, and logs or configuration after removing credentials.
 
-If your router or modem only supports traditional DDNS protocols but you want to use modern DNS providers, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** for protocol conversion.
+For development and extensions, see the [provider development guide](docs/en/dev/provider.md) and [configuration system design](docs/en/dev/config.md).
 
----
+## Project
 
-## FAQ
+<a href="https://github.com/NewFuture/DDNS/graphs/contributors"><img src="https://contrib.rocks/image?repo=NewFuture/DDNS" alt="Contributors to DDNS"/></a>
 
-<details>
-<summary markdown="span">Windows Server [SSL: CERTIFICATE_VERIFY_FAILED]</summary>
-
-> Windows Server default security policy will prohibit any untrusted SSL certificates. You can manually add the corresponding certificates [#56](https://github.com/NewFuture/DDNS/issues/56#issuecomment-487371078)
-
-Use the system's built-in IE browser to visit the corresponding API once:
-
-- alidns: <https://alidns.aliyuncs.com>
-- aliesa: <https://esa.cn-hangzhou.aliyuncs.com>
-- cloudflare: <https://api.cloudflare.com>
-- dns.com: <https://www.dns.com>
-- dnspod.cn: <https://dnsapi.cn>
-- dnspod international: <https://api.dnspod.com>
-- Huawei DNS: <https://dns.myhuaweicloud.com>
-
-</details>
-
-<details>
-<summary markdown="span">Troubleshooting and Feedback</summary>
-
-1. First confirm whether it's a system/network environment issue
-2. Search for similar issues in [issues](https://github.com/NewFuture/DDNS/issues)
-3. If neither of the above can solve the problem or you're sure it's a bug, [create a new issue here](https://github.com/NewFuture/DDNS/issues/new)
-   - [ ] Enable `--debug`
-   - [ ] Include these contents: **running version and method**, **system environment**, **error logs**, **configuration file with id/token removed**
-   - [ ] For source code execution, specify the Python environment used
-
-</details>
-
----
-
-## Contributors
-
-<a href="https://github.com/NewFuture/DDNS/graphs/contributors"><img src="https://contrib.rocks/image?repo=NewFuture/DDNS" /></a>
-
-## License
-
-[![MIT](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](https://github.com/NewFuture/DDNS/blob/master/LICENSE)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=NewFuture/DDNS&type=Date)](https://star-history.com/#NewFuture/DDNS&Date)
+DDNS is released under the [MIT License](https://github.com/NewFuture/DDNS/blob/master/LICENSE). Source, releases, and change history are available in the [GitHub repository](https://github.com/NewFuture/DDNS).

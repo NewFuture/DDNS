@@ -116,7 +116,6 @@ ddns --ipv4=example.com,www.example.com
 `-c`是`--config`的简写形式，用于指定配置文件路径。可以使用多个`-c`参数来加载多个配置文件。同时支持远程HTTP(S) URL。
 
 ```bash
-
 ddns -c config.json 
 
 # 多配置文件
@@ -127,10 +126,9 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
 # 带认证的远程配置
 ddns -c https://user:password@config.example.com/ddns.json
-
 # 混合本地和远程配置
 ddns -c local-config.json -c https://remote.example.com/config.json
-
+ddns -c local-config.json -c https://remote.example.com/config.json
 ```
 
 ## DNS服务配置参数

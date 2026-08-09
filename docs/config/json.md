@@ -1,7 +1,10 @@
 ---
 title: DDNS JSON配置文件参考
 description: 了解DDNS工具的JSON配置文件格式和参数，如何使用配置文件以及配置文件的优先级
+outline: [2, 2]
 ---
+
+# DDNS JSON 配置文件参考
 
 本文档详细说明DDNS工具的JSON配置文件格式和参数。JSON配置文件优先级介于命令行参数和环境变量之间。
 

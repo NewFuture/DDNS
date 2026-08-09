@@ -1,10 +1,6 @@
 ---
 title: DDNS JSON Configuration
-post_tile: JSON File Configuration
-header_pages:
-  - /
-  - /config/
-  - /docs/proivders/
+outline: [2, 2]
 ---
 # DDNS JSON Configuration File Reference
 

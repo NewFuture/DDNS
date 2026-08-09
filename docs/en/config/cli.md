@@ -475,22 +475,6 @@ ddns task --status --debug
 ddns task --status --scheduler systemd --debug
 ```
 
-# Configuration file + command line parameter override
-
-ddns task --install 10 -c config.json --debug --ttl 300
-
-```
-
-### Debugging Installation Issues
-
-```bash
-# Enable debug mode to see detailed installation process
-ddns task --install 5 --debug
-
-# View task status and configuration
-ddns task --status --debug
-```
-
 ## Configuration Priority
 
 DDNS uses the following priority order (highest to lowest):
