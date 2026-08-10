@@ -89,7 +89,7 @@ Credential names vary by provider, including API Token, Access Key, and Secret. 
 
 ## DNS providers
 
-- **Regional and cloud platforms**: [AliDNS](docs/en/providers/alidns.md), [Alibaba Cloud ESA](docs/en/providers/aliesa.md), [DNSPod China](docs/en/providers/dnspod.md), [Tencent Cloud DNS](docs/en/providers/tencentcloud.md), [Tencent Cloud EdgeOne](docs/en/providers/edgeone.md), [EdgeOne DNS](docs/en/providers/edgeone_dns.md), [Huawei Cloud DNS](docs/en/providers/huaweidns.md), [DNS.COM / 51DNS](docs/en/providers/dnscom.md), [West.cn](docs/en/providers/west.md)
+- **Regional and cloud platforms**: [AliDNS](docs/en/providers/alidns.md), [Alibaba Cloud ESA](docs/en/providers/aliesa.md), [DNSPod China](docs/en/providers/dnspod.md), [Tencent Cloud DNS](docs/en/providers/tencentcloud.md), [Tencent Cloud EdgeOne](docs/en/providers/edgeone.md), [EdgeOne DNS](docs/en/providers/edgeone_dns.md), [Huawei Cloud DNS](docs/en/providers/huaweidns.md), [DNS.COM / 51DNS](docs/en/providers/51dns.md), [West.cn](docs/en/providers/west.md)
 - **Global providers**: [Cloudflare](docs/en/providers/cloudflare.md), [ClouDNS](docs/en/providers/cloudns.md), [DNSPod Global](docs/en/providers/dnspod_com.md), [HE.net](docs/en/providers/he.md), [NameSilo](docs/en/providers/namesilo.md), [No-IP](docs/en/providers/noip.md)
 - **Integration and validation**: [Callback API](docs/en/providers/callback.md), [Debug](docs/en/providers/debug.md)
 

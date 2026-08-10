@@ -3109,6 +3109,9 @@ function installStudioRouteGuard() {
       const result = await previousBeforeRouteChange(to)
       if (result === false) return false
     }
+    const currentPath = window.location.pathname.replace(/\/+$/, '')
+    const targetPath = new URL(to, window.location.href).pathname.replace(/\/+$/, '')
+    if (targetPath === currentPath) return
     if (!hasUnsavedChanges.value) return
     if (!window.confirm(c.value.confirmLeave)) return false
     approvedPageLoadTarget = to

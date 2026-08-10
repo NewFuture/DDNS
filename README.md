@@ -89,7 +89,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 
 ## DNS 服务商
 
-- **国内与云平台**：[阿里 DNS](docs/providers/alidns.md)、[阿里云 ESA](docs/providers/aliesa.md)、[DNSPod](docs/providers/dnspod.md)、[腾讯云 DNS](docs/providers/tencentcloud.md)、[腾讯云 EdgeOne](docs/providers/edgeone.md)、[EdgeOne DNS](docs/providers/edgeone_dns.md)、[华为云 DNS](docs/providers/huaweidns.md)、[DNS.COM / 51DNS](docs/providers/dnscom.md)、[西部数码](docs/providers/west.md)
+- **国内与云平台**：[阿里 DNS](docs/providers/alidns.md)、[阿里云 ESA](docs/providers/aliesa.md)、[DNSPod](docs/providers/dnspod.md)、[腾讯云 DNS](docs/providers/tencentcloud.md)、[腾讯云 EdgeOne](docs/providers/edgeone.md)、[EdgeOne DNS](docs/providers/edgeone_dns.md)、[华为云 DNS](docs/providers/huaweidns.md)、[DNS.COM / 51DNS](docs/providers/51dns.md)、[西部数码](docs/providers/west.md)
 - **国际服务商**：[Cloudflare](docs/providers/cloudflare.md)、[ClouDNS](docs/providers/cloudns.md)、[DNSPod 国际版](docs/providers/dnspod_com.md)、[HE.net](docs/providers/he.md)、[NameSilo](docs/providers/namesilo.md)、[No-IP](docs/providers/noip.md)
 - **集成与验证**：[回调 API](docs/providers/callback.md)、[Debug](docs/providers/debug.md)
 

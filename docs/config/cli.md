@@ -128,7 +128,6 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 ddns -c https://user:password@config.example.com/ddns.json
 # 混合本地和远程配置
 ddns -c local-config.json -c https://remote.example.com/config.json
-ddns -c local-config.json -c https://remote.example.com/config.json
 ```
 
 ## DNS服务配置参数
