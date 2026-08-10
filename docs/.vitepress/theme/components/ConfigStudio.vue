@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useData, withBase } from 'vitepress'
+import { useData, useRouter, withBase } from 'vitepress'
+import { readHistoryPosition, type HistoryPosition } from '../history-position'
 
 type AuthMode = 'none' | 'token' | 'id-token' | 'flexible' | 'callback'
 type Severity = 'error' | 'warning'
@@ -60,6 +61,7 @@ interface ProviderState {
   lineNull: boolean
   proxyText: string
   proxyPresent: boolean
+  proxyNull: boolean
   sslMode: SslMode
   sslPath: string
   cacheMode: CacheMode
@@ -73,6 +75,7 @@ interface ProviderState {
 interface GlobalState {
   proxyText: string
   proxyPresent: boolean
+  proxyNull: boolean
   sslMode: SslMode
   sslPath: string
   cacheMode: CacheMode
@@ -111,7 +114,28 @@ interface RemovedProvider {
   provider: ProviderState
 }
 
+interface StoredDraft {
+  version: number
+  editorSnapshot: string
+  baselineSnapshot: string
+  validationInput: string
+  baselineValidationInput: string
+  validatorTouched: boolean
+  view: {
+    selectedProviderIndex: number
+    activeSection: SectionKey
+    inspectorTab: InspectorTab
+    providerAdvancedOpen: boolean
+    sourceAdvancedOpen: boolean
+    networkAdvancedOpen: boolean
+    runtimeAdvancedOpen: boolean
+  }
+}
+
 const SCHEMA_URL = 'https://ddns.newfuture.cc/schema/v4.1.json'
+const DRAFT_STORAGE_KEY = 'ddns-config-studio-draft-v1'
+const DRAFT_VERSION = 2
+const DRAFT_SAVE_DELAY = 400
 const SCHEMA_VALUES = [
   SCHEMA_URL,
   'http://ddns.newfuture.cc/schema/v4.1.json',
@@ -153,6 +177,7 @@ const ROOT_KNOWN_KEYS = new Set<string>([...COMMON_CONFIG_KEYS, 'providers'])
 const PROVIDER_KNOWN_KEYS = new Set<string>([...COMMON_CONFIG_KEYS, 'provider'])
 
 const { lang } = useData()
+const router = useRouter()
 const isEnglish = computed(() => lang.value.toLowerCase().startsWith('en'))
 
 const copy = {
@@ -160,21 +185,20 @@ const copy = {
     title: '配置生成与校验',
     import: '导入 JSON',
     reset: '新建配置',
-    localOnly: '凭据仅在浏览器中处理 · 填写后完整写入配置 · 不会请求服务商 API',
+    localOnly: '仅在当前浏览器处理 · 不请求服务商 API',
+    noUnsavedChanges: '没有尚未导出的更改',
+    unsavedChanges: '有尚未导出的更改 · 当前标签页会自动保存完整草稿',
+    unsavedWithoutDraft: '有尚未导出的更改 · 此浏览器无法保存临时草稿',
+    validatorUnsaved: '有尚未导出的更改 · 粘贴校验内容已保存于当前标签页',
+    draftRestored: '已完整恢复上次状态',
+    legacyDraftRestored: '已恢复旧版草稿；旧版未保存凭据和部分高级字段，请重新确认',
+    draftUnreadable: '临时草稿无法读取，已尝试将其丢弃',
+    confirmLeave: '配置仍有尚未导出的更改。确定离开此页面？',
+    confirmProviderChange: '切换服务商将清除当前服务商的凭据、自定义端点和扩展字段。继续切换？',
     providerSingular: '个服务商',
     providerCount: '个服务商',
     recordSingular: '条 DNS 记录',
     recordCount: '条 DNS 记录',
-    schemaState: 'Schema',
-    deploymentState: '部署检查',
-    schemaValid: 'Schema 有效',
-    errorToFixSingular: '项错误待修复',
-    errorToFixPlural: '项错误待修复',
-    checkToReviewSingular: '项需确认',
-    checkToReviewPlural: '项需确认',
-    deploymentBlocked: '需先修复配置',
-    deploymentConfigured: '没有待确认项',
-    testOnlyMode: '使用测试服务商',
     providers: '服务商',
     addProvider: '添加服务商',
     removeProvider: '移除服务商',
@@ -199,10 +223,13 @@ const copy = {
     authIdToken: 'ID + Token',
     authFlexible: '多种认证方式',
     authCallback: 'Webhook',
-    providerHelp: '查看服务商文档',
+    providerHelp: '服务商文档',
     credentialTitle: '认证信息',
     credentialHint:
       '不在此填写时，可通过环境变量或命令行参数提供；一旦填写，认证信息会完整写入预览和导出的 config.json，请妥善保管。',
+    runtimeCredentialActive: '此字段未写入配置，将由环境变量或命令行参数提供。',
+    credentialIncluded: '此字段会写入导出的 config.json。',
+    useRuntimeCredential: '改由运行时提供',
     noCredential: '此服务商不需要认证信息。',
     optional: '可选',
     advanced: '可选设置',
@@ -227,6 +254,7 @@ const copy = {
     providerProxy: '当前服务商代理',
     globalProxy: '全局代理',
     proxyHint: '每行填写一个代理；支持 http(s)://、host:port、DIRECT、SYSTEM 或 DEFAULT。',
+    proxyNullPreserved: '已保留导入的 null；编辑此字段后会替换该值。',
     sslSettings: 'SSL 验证与自定义 CA',
     ssl: 'SSL 验证',
     inheritGlobal: '继承全局设置',
@@ -279,40 +307,39 @@ const copy = {
     providerAdded: '已添加服务商',
     providerRemoved: '已移除服务商',
     providerRestored: '已恢复服务商',
-    providerDuplicated: '已复制服务商设置，凭据未复制',
+    providerDuplicated: '已复制服务商设置，凭据与扩展字段未复制',
     providerChanged: '已切换服务商，并清除原有凭据、端点和扩展字段',
     undo: '撤销',
     goToField: '定位字段',
     reviewConfig: '查看配置',
     closeReview: '关闭配置预览',
+    dismissNotification: '关闭通知',
     empty: '暂无内容',
     outputReady: '可导出',
     outputWarning: '可导出 · 部署前需确认',
     outputBlocked: '修复错误后再导出',
     generatedConfigLabel: '生成的 DDNS 配置',
-    ipv4DomainList: 'IPv4 域名列表',
-    ipv6DomainList: 'IPv6 域名列表',
   },
   en: {
     title: 'Configuration builder & validator',
     import: 'Import JSON',
     reset: 'New config',
-    localOnly:
-      'Credentials processed in this browser · entered values exported in full · no provider API requests',
+    localOnly: 'Processed only in this browser · no provider API requests',
+    noUnsavedChanges: 'No changes waiting to be exported',
+    unsavedChanges: 'Changes not yet exported · a complete draft is saved in this tab',
+    unsavedWithoutDraft: 'Changes not yet exported · temporary drafts are unavailable',
+    validatorUnsaved: 'Changes not yet exported · pasted validation content is saved in this tab',
+    draftRestored: 'Previous state restored in full',
+    legacyDraftRestored:
+      'Legacy draft restored. Older drafts did not retain credentials or some advanced fields; review them before use.',
+    draftUnreadable: 'The temporary draft could not be read and was discarded where possible',
+    confirmLeave: 'This configuration has changes that have not been exported. Leave this page?',
+    confirmProviderChange:
+      'Changing provider clears this provider’s credentials, custom endpoint, and custom fields. Continue?',
     providerSingular: 'provider',
     providerCount: 'providers',
     recordSingular: 'DNS record',
     recordCount: 'DNS records',
-    schemaState: 'Schema',
-    deploymentState: 'Deployment checks',
-    schemaValid: 'Schema valid',
-    errorToFixSingular: 'error to fix',
-    errorToFixPlural: 'errors to fix',
-    checkToReviewSingular: 'item to review',
-    checkToReviewPlural: 'items to review',
-    deploymentBlocked: 'Fix configuration errors first',
-    deploymentConfigured: 'Nothing to review',
-    testOnlyMode: 'Uses a test-only provider',
     providers: 'Providers',
     addProvider: 'Add provider',
     removeProvider: 'Remove provider',
@@ -337,10 +364,14 @@ const copy = {
     authIdToken: 'ID + Token',
     authFlexible: 'Multiple auth options',
     authCallback: 'Webhook',
-    providerHelp: 'Open provider documentation',
+    providerHelp: 'Provider docs',
     credentialTitle: 'Credentials',
     credentialHint:
       'If you do not enter credentials here, supply them through environment variables or command-line arguments. Any credentials entered here are written in full to the preview and exported config.json; store it securely.',
+    runtimeCredentialActive:
+      'This field is omitted from the config and will be supplied by an environment variable or command-line argument.',
+    credentialIncluded: 'This field is included in the exported config.json.',
+    useRuntimeCredential: 'Use runtime value',
     noCredential: 'This provider does not require credentials.',
     optional: 'Optional',
     advanced: 'Optional settings',
@@ -365,6 +396,7 @@ const copy = {
     providerProxy: 'Provider-specific proxy',
     globalProxy: 'Global proxy',
     proxyHint: 'Enter one proxy per line: http(s)://, host:port, DIRECT, SYSTEM, or DEFAULT.',
+    proxyNullPreserved: 'The imported null is preserved until you edit this field.',
     sslSettings: 'SSL verification & custom CA',
     ssl: 'SSL verification',
     inheritGlobal: 'Inherit global setting',
@@ -417,19 +449,18 @@ const copy = {
     providerAdded: 'Provider added',
     providerRemoved: 'Provider removed',
     providerRestored: 'Provider restored',
-    providerDuplicated: 'Provider settings duplicated without credentials',
+    providerDuplicated: 'Provider settings duplicated without credentials or custom fields',
     providerChanged: 'Changed provider and cleared the previous credentials, endpoint, and custom fields',
     undo: 'Undo',
     goToField: 'Go to field',
     reviewConfig: 'Review config',
     closeReview: 'Close config review',
+    dismissNotification: 'Dismiss notification',
     empty: 'No content',
     outputReady: 'Export available',
     outputWarning: 'Export available · review before deployment',
     outputBlocked: 'Fix errors before exporting',
     generatedConfigLabel: 'Generated DDNS configuration',
-    ipv4DomainList: 'IPv4 domain list',
-    ipv6DomainList: 'IPv6 domain list',
   },
 } as const
 
@@ -691,6 +722,7 @@ function makeProvider(provider = 'debug'): ProviderState {
     lineNull: false,
     proxyText: '',
     proxyPresent: false,
+    proxyNull: false,
     sslMode: 'inherit',
     sslPath: '',
     cacheMode: 'inherit',
@@ -706,6 +738,7 @@ function makeGlobalState(): GlobalState {
   return {
     proxyText: '',
     proxyPresent: false,
+    proxyNull: false,
     sslMode: 'auto',
     sslPath: '',
     cacheMode: 'true',
@@ -736,6 +769,7 @@ const runtimeAdvancedOpen = ref(false)
 const mobileReviewOpen = ref(false)
 const providerPickerOpen = ref(false)
 const providerQuery = ref('')
+const providerSearchAnnouncement = ref('')
 const validationInput = ref('')
 const validatorTouched = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -744,11 +778,32 @@ const providerSearchInput = ref<HTMLInputElement | null>(null)
 const mobileReviewButton = ref<HTMLButtonElement | null>(null)
 const mobileReviewCloseButton = ref<HTMLButtonElement | null>(null)
 const mobileReviewPanel = ref<HTMLElement | null>(null)
+const configurationEditor = ref<HTMLElement | null>(null)
+const editorRoutePulse = ref<HTMLElement | null>(null)
 const toastMessage = ref('')
 const toastTone = ref<'success' | 'error'>('success')
 const toastVisible = ref(false)
 const lastRemovedProvider = ref<RemovedProvider | null>(null)
+const baselineSnapshot = ref('')
+const baselineValidationInput = ref('')
+const baselineReady = ref(false)
+const draftStorageError = ref(false)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
+let providerSearchTimer: ReturnType<typeof setTimeout> | undefined
+let draftSaveTimer: ReturnType<typeof setTimeout> | undefined
+let routeMotionRequest = 0
+let routePulseAnimation: Animation | undefined
+let routeContentAnimation: Animation | undefined
+let previousBeforeRouteChange = router.onBeforeRouteChange
+let studioRouteGuard: typeof router.onBeforeRouteChange
+let previousBeforePageLoad = router.onBeforePageLoad
+let studioPageLoadGuard: typeof router.onBeforePageLoad
+let previousAfterRouteChange = router.onAfterRouteChange
+let studioAfterRouteChange: typeof router.onAfterRouteChange
+let studioHistoryPosition: HistoryPosition | null = null
+let restoringStudioHistory = false
+let approvedPageLoadTarget: string | null = null
+const mobileReviewInertElements: HTMLElement[] = []
 
 const globalState = reactive<GlobalState>(makeGlobalState())
 
@@ -805,13 +860,9 @@ const filteredProviderGroups = computed(() => {
   ].filter((group) => group.providers.length)
 })
 const hasProviderSearchResults = computed(() => filteredProviderGroups.value.length > 0)
-const selectedIpv4 = computed(() => splitSimpleList(selectedProvider.value.ipv4Text))
-const selectedIpv6 = computed(() => splitSimpleList(selectedProvider.value.ipv6Text))
-const recordCount = computed(() => {
-  return providers.value.reduce((total, provider) => {
-    return total + splitSimpleList(provider.ipv4Text).length + splitSimpleList(provider.ipv6Text).length
-  }, 0)
-})
+const providerSearchResultCount = computed(() =>
+  filteredProviderGroups.value.reduce((total, group) => total + group.providers.length, 0),
+)
 const credentialProviderIndexes = computed(() => {
   return providers.value.reduce<number[]>((indexes, provider, index) => {
     const auth = providerMap.get(provider.provider)?.auth
@@ -819,10 +870,6 @@ const credentialProviderIndexes = computed(() => {
     return indexes
   }, [])
 })
-const testProviderCount = computed(
-  () => providers.value.filter((provider) => providerMap.get(provider.provider)?.testOnly).length,
-)
-const hasTestOnlyProviders = computed(() => testProviderCount.value > 0)
 const providerDocsLink = computed(() => {
   const prefix = isEnglish.value ? '/en/providers/' : '/providers/'
   return withBase(`${prefix}${selectedMeta.value.docs}`)
@@ -891,11 +938,22 @@ function showToast(
   toastTone.value = tone
   toastVisible.value = true
   if (toastTimer) clearTimeout(toastTimer)
+  if (keepUndo) {
+    toastTimer = undefined
+    return
+  }
   toastTimer = setTimeout(() => {
     toastVisible.value = false
     lastRemovedProvider.value = null
     toastTimer = undefined
   }, duration)
+}
+
+function dismissToast() {
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = undefined
+  toastVisible.value = false
+  lastRemovedProvider.value = null
 }
 
 function splitSimpleList(value: string): string[] {
@@ -907,6 +965,12 @@ function splitSimpleList(value: string): string[] {
 
 function providerCountUnit(count: number): string {
   return isEnglish.value && count === 1 ? c.value.providerSingular : c.value.providerCount
+}
+
+function providerSearchResultLabel(count: number): string {
+  return isEnglish.value
+    ? `${count} matching ${providerCountUnit(count)}.`
+    : `找到 ${count} ${providerCountUnit(count)}。`
 }
 
 function recordCountUnit(count: number): string {
@@ -921,13 +985,18 @@ function warningCountUnit(count: number): string {
   return isEnglish.value && count !== 1 ? c.value.warnings : c.value.warning
 }
 
-function errorToFixUnit(count: number): string {
-  return isEnglish.value && count === 1 ? c.value.errorToFixSingular : c.value.errorToFixPlural
-}
-
-function checkToReviewUnit(count: number): string {
-  return isEnglish.value && count === 1 ? c.value.checkToReviewSingular : c.value.checkToReviewPlural
-}
+watch([normalizedProviderQuery, providerSearchResultCount, isEnglish], ([query, count]) => {
+  if (providerSearchTimer) clearTimeout(providerSearchTimer)
+  if (!query) {
+    providerSearchAnnouncement.value = ''
+    providerSearchTimer = undefined
+    return
+  }
+  providerSearchTimer = setTimeout(() => {
+    providerSearchAnnouncement.value = providerSearchResultLabel(count)
+    providerSearchTimer = undefined
+  }, 250)
+})
 
 function providerRecordCount(provider: ProviderState): number {
   return splitSimpleList(provider.ipv4Text).length + splitSimpleList(provider.ipv6Text).length
@@ -1140,7 +1209,8 @@ function buildProvider(provider: ProviderState): JsonObject {
   else if (provider.linePresent) output.line = ''
 
   const proxies = parseProxyValue(provider.proxyText)
-  if (proxies.length || provider.proxyPresent) output.proxy = proxies
+  if (provider.proxyNull) output.proxy = null
+  else if (proxies.length || provider.proxyPresent) output.proxy = proxies
   const providerSsl = sslValue(provider.sslMode, provider.sslPath)
   if (providerSsl !== undefined) output.ssl = providerSsl
   const providerCache = cacheValue(provider.cacheMode, provider.cachePath)
@@ -1171,7 +1241,8 @@ function buildConfiguration(): JsonObject {
     output.cache_max_age = Number(globalState.cacheMaxAge)
   }
   const proxies = parseProxyValue(globalState.proxyText)
-  if (proxies.length || globalState.proxyPresent) output.proxy = proxies
+  if (globalState.proxyNull) output.proxy = null
+  else if (proxies.length || globalState.proxyPresent) output.proxy = proxies
 
   const log: JsonObject = {}
   if (typeof globalState.logLevel === 'number') output.log_level = globalState.logLevel
@@ -1233,6 +1304,318 @@ function highlightJsonLine(line: string): string {
 const generatedJson = computed(() => JSON.stringify(exportConfig.value, null, 2))
 const generatedLines = computed(() =>
   generatedJson.value.split('\n').map((line) => highlightJsonLine(line) || '&nbsp;'),
+)
+const editorSnapshot = computed(() =>
+  JSON.stringify(
+    {
+      global: globalState,
+      providers: providers.value,
+    },
+    (key, value) => (key === 'uid' || key === 'revealToken' ? undefined : value),
+  ),
+)
+const hasUnappliedValidationChanges = computed(
+  () => validatorTouched.value && validationInput.value !== baselineValidationInput.value,
+)
+const hasUnsavedChanges = computed(
+  () =>
+    baselineReady.value &&
+    (editorSnapshot.value !== baselineSnapshot.value || hasUnappliedValidationChanges.value),
+)
+const saveStateLabel = computed(() => {
+  if (!hasUnsavedChanges.value) return c.value.noUnsavedChanges
+  if (draftStorageError.value) return c.value.unsavedWithoutDraft
+  if (hasUnappliedValidationChanges.value) return c.value.validatorUnsaved
+  return c.value.unsavedChanges
+})
+
+function draftString(source: Record<string, unknown>, key: string, fallback = ''): string {
+  const value = source[key]
+  return typeof value === 'string' ? value : fallback
+}
+
+function draftBoolean(source: Record<string, unknown>, key: string, fallback = false): boolean {
+  const value = source[key]
+  return typeof value === 'boolean' ? value : fallback
+}
+
+function draftLogLevel(source: Record<string, unknown>, fallback: LogLevel): LogLevel {
+  const value = source.logLevel
+  return typeof value === 'string' || typeof value === 'number' ? value : fallback
+}
+
+function isCacheMode(value: unknown): value is CacheMode {
+  return value === 'inherit' || value === 'true' || value === 'false' || value === 'path'
+}
+
+function isSslMode(value: unknown): value is SslMode {
+  return (
+    value === 'inherit' ||
+    value === 'auto' ||
+    value === 'true' ||
+    value === 'false' ||
+    value === 'custom'
+  )
+}
+
+function isSectionKey(value: unknown): value is SectionKey {
+  return value === 'provider' || value === 'records' || value === 'network' || value === 'runtime'
+}
+
+function isInspectorTab(value: unknown): value is InspectorTab {
+  return value === 'preview' || value === 'validate'
+}
+
+function providerStateFromDraft(value: unknown): ProviderState | null {
+  if (!isPlainObject(value) || typeof value.provider !== 'string') return null
+  const fallback = makeProvider(value.provider)
+  return {
+    ...fallback,
+    id: draftString(value, 'id'),
+    idPresent: draftBoolean(value, 'idPresent'),
+    idNull: draftBoolean(value, 'idNull'),
+    token: draftString(value, 'token'),
+    tokenPresent: draftBoolean(value, 'tokenPresent'),
+    endpoint: draftString(value, 'endpoint'),
+    endpointPresent: draftBoolean(value, 'endpointPresent'),
+    endpointNull: draftBoolean(value, 'endpointNull'),
+    ipv4Text: draftString(value, 'ipv4Text', fallback.ipv4Text),
+    ipv4Present: draftBoolean(value, 'ipv4Present', fallback.ipv4Present),
+    ipv6Text: draftString(value, 'ipv6Text'),
+    ipv6Present: draftBoolean(value, 'ipv6Present'),
+    index4Text: draftString(value, 'index4Text', fallback.index4Text),
+    index6Text: draftString(value, 'index6Text', fallback.index6Text),
+    ttl: draftString(value, 'ttl'),
+    ttlNull: draftBoolean(value, 'ttlNull'),
+    line: draftString(value, 'line'),
+    linePresent: draftBoolean(value, 'linePresent'),
+    lineNull: draftBoolean(value, 'lineNull'),
+    proxyText: draftString(value, 'proxyText'),
+    proxyPresent: draftBoolean(value, 'proxyPresent'),
+    proxyNull: draftBoolean(value, 'proxyNull'),
+    sslMode: isSslMode(value.sslMode) ? value.sslMode : fallback.sslMode,
+    sslPath: draftString(value, 'sslPath'),
+    cacheMode: isCacheMode(value.cacheMode) ? value.cacheMode : fallback.cacheMode,
+    cachePath: draftString(value, 'cachePath'),
+    cacheMaxAge: draftString(value, 'cacheMaxAge'),
+    logLevel: draftLogLevel(value, fallback.logLevel),
+    extraText: draftString(value, 'extraText'),
+    revealToken: false,
+  }
+}
+
+function globalStateFromDraft(value: unknown): GlobalState | null {
+  if (!isPlainObject(value)) return null
+  const fallback = makeGlobalState()
+  return {
+    proxyText: draftString(value, 'proxyText'),
+    proxyPresent: draftBoolean(value, 'proxyPresent'),
+    proxyNull: draftBoolean(value, 'proxyNull'),
+    sslMode: isSslMode(value.sslMode) ? value.sslMode : fallback.sslMode,
+    sslPath: draftString(value, 'sslPath'),
+    cacheMode: isCacheMode(value.cacheMode) ? value.cacheMode : fallback.cacheMode,
+    cachePath: draftString(value, 'cachePath'),
+    cacheMaxAge: draftString(value, 'cacheMaxAge', fallback.cacheMaxAge),
+    logLevel: draftLogLevel(value, fallback.logLevel),
+    logFile: draftString(value, 'logFile'),
+    logFilePresent: draftBoolean(value, 'logFilePresent'),
+    logFileNull: draftBoolean(value, 'logFileNull'),
+    logFormat: draftString(value, 'logFormat'),
+    logFormatPresent: draftBoolean(value, 'logFormatPresent'),
+    logFormatNull: draftBoolean(value, 'logFormatNull'),
+    logDatefmt: draftString(value, 'logDatefmt'),
+    logDatefmtPresent: draftBoolean(value, 'logDatefmtPresent'),
+    logDatefmtNull: draftBoolean(value, 'logDatefmtNull'),
+    extraText: draftString(value, 'extraText'),
+  }
+}
+
+function restoreEditorSnapshot(snapshot: string): boolean {
+  let value: unknown
+  try {
+    value = JSON.parse(snapshot)
+  } catch {
+    return false
+  }
+  if (!isPlainObject(value) || !Array.isArray(value.providers)) return false
+  const restoredGlobal = globalStateFromDraft(value.global)
+  if (!restoredGlobal) return false
+  const restoredProviders: ProviderState[] = []
+  for (const provider of value.providers) {
+    const restored = providerStateFromDraft(provider)
+    if (!restored) return false
+    restoredProviders.push(restored)
+  }
+  if (!restoredProviders.length) return false
+  providers.value = restoredProviders
+  Object.assign(globalState, restoredGlobal)
+  return true
+}
+
+function currentDraftView(): StoredDraft['view'] {
+  return {
+    selectedProviderIndex: Math.max(0, selectedProviderIndex.value),
+    activeSection: activeSection.value,
+    inspectorTab: inspectorTab.value,
+    providerAdvancedOpen: providerAdvancedOpen.value,
+    sourceAdvancedOpen: sourceAdvancedOpen.value,
+    networkAdvancedOpen: networkAdvancedOpen.value,
+    runtimeAdvancedOpen: runtimeAdvancedOpen.value,
+  }
+}
+
+function restoreDraftView(value: unknown) {
+  const view = isPlainObject(value) ? value : {}
+  const requestedIndex =
+    typeof view.selectedProviderIndex === 'number' &&
+    Number.isInteger(view.selectedProviderIndex)
+      ? view.selectedProviderIndex
+      : 0
+  const index = Math.min(Math.max(requestedIndex, 0), providers.value.length - 1)
+  selectedUid.value = providers.value[index]!.uid
+  activeSection.value = isSectionKey(view.activeSection) ? view.activeSection : 'provider'
+  inspectorTab.value = isInspectorTab(view.inspectorTab) ? view.inspectorTab : 'preview'
+  providerAdvancedOpen.value = draftBoolean(view, 'providerAdvancedOpen')
+  sourceAdvancedOpen.value = draftBoolean(view, 'sourceAdvancedOpen')
+  networkAdvancedOpen.value = draftBoolean(view, 'networkAdvancedOpen')
+  runtimeAdvancedOpen.value = draftBoolean(view, 'runtimeAdvancedOpen')
+}
+
+function initializeBaseline() {
+  baselineSnapshot.value = editorSnapshot.value
+  baselineReady.value = true
+}
+
+function markValidationHandled() {
+  baselineValidationInput.value = validationInput.value
+  validatorTouched.value = false
+}
+
+function clearStoredDraft() {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.removeItem(DRAFT_STORAGE_KEY)
+    draftStorageError.value = false
+  } catch {
+    draftStorageError.value = true
+  }
+}
+
+function commitBaseline() {
+  initializeBaseline()
+  clearStoredDraft()
+  scheduleDraftPersistence()
+}
+
+function persistDraft() {
+  draftSaveTimer = undefined
+  if (typeof window === 'undefined' || !hasUnsavedChanges.value) return
+
+  try {
+    const draft: StoredDraft = {
+      version: DRAFT_VERSION,
+      editorSnapshot: editorSnapshot.value,
+      baselineSnapshot: baselineSnapshot.value,
+      validationInput: validationInput.value,
+      baselineValidationInput: baselineValidationInput.value,
+      validatorTouched: validatorTouched.value,
+      view: currentDraftView(),
+    }
+    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+    draftStorageError.value = false
+  } catch {
+    draftStorageError.value = true
+  }
+}
+
+function scheduleDraftPersistence() {
+  if (!baselineReady.value) return
+  if (draftSaveTimer) clearTimeout(draftSaveTimer)
+  if (!hasUnsavedChanges.value) {
+    draftSaveTimer = undefined
+    clearStoredDraft()
+    return
+  }
+  draftSaveTimer = setTimeout(persistDraft, DRAFT_SAVE_DELAY)
+}
+
+function restoreLegacyDraft(value: Record<string, unknown>): boolean {
+  if (!isPlainObject(value.config) || !Array.isArray(value.config.providers)) return false
+  const config = value.config as JsonObject
+  if (!(config.providers as JsonValue[]).some((provider) => isPlainObject(provider))) return false
+  if (!loadConfigurationIntoBuilder(config, false, c.value.legacyDraftRestored)) return false
+  validationInput.value = typeof value.validationInput === 'string' ? value.validationInput : ''
+  validatorTouched.value = validationInput.value !== baselineValidationInput.value
+  if (validationInput.value.trim()) inspectorTab.value = 'validate'
+  return true
+}
+
+function restoreCurrentDraft(value: Record<string, unknown>): boolean {
+  if (
+    typeof value.editorSnapshot !== 'string' ||
+    typeof value.baselineSnapshot !== 'string' ||
+    typeof value.validationInput !== 'string' ||
+    typeof value.baselineValidationInput !== 'string'
+  ) {
+    return false
+  }
+  if (!restoreEditorSnapshot(value.editorSnapshot)) return false
+  baselineSnapshot.value = value.baselineSnapshot
+  validationInput.value = value.validationInput
+  baselineValidationInput.value = value.baselineValidationInput
+  validatorTouched.value =
+    typeof value.validatorTouched === 'boolean'
+      ? value.validatorTouched
+      : validationInput.value !== baselineValidationInput.value
+  restoreDraftView(value.view)
+  showToast(c.value.draftRestored)
+  return true
+}
+
+function readStoredDraft() {
+  if (typeof window === 'undefined') return
+  let raw: string | null
+  try {
+    raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY)
+  } catch {
+    draftStorageError.value = true
+    return
+  }
+  if (!raw) return
+
+  try {
+    const value: unknown = JSON.parse(raw)
+    const restored =
+      isPlainObject(value) &&
+      (value.version === 1
+        ? restoreLegacyDraft(value)
+        : value.version === DRAFT_VERSION
+          ? restoreCurrentDraft(value)
+          : false)
+    if (!restored) {
+      throw new Error('Unsupported Config Studio draft')
+    }
+    draftStorageError.value = false
+    scheduleDraftPersistence()
+  } catch {
+    clearStoredDraft()
+    showToast(c.value.draftUnreadable, 'error')
+  }
+}
+
+watch(
+  [
+    editorSnapshot,
+    validationInput,
+    selectedUid,
+    activeSection,
+    inspectorTab,
+    providerAdvancedOpen,
+    sourceAdvancedOpen,
+    networkAdvancedOpen,
+    runtimeAdvancedOpen,
+  ],
+  scheduleDraftPersistence,
 )
 
 function localized(zh: string, en: string): string {
@@ -1712,14 +2095,16 @@ function validateProviderRuntime(
           idBlocksEnvironment ? 'error' : 'warning',
           idBlocksEnvironment
             ? 'ID 为空字符串，因此运行时不会读取 DDNS_ID。'
-            : '导出的配置中不包含 ID；部署时需通过 DDNS_ID 提供。',
+            : '当前配置尚未填写 ID。',
           idBlocksEnvironment
             ? 'ID is an empty string, so DDNS_ID will not be used at runtime.'
-            : 'ID is not included in the exported configuration. Provide it through DDNS_ID at runtime.',
-          idBlocksEnvironment ? '删除 id 字段以使用环境变量，或填写 ID。' : '填写 ID，或确认部署环境已设置 DDNS_ID。',
+            : 'No ID has been entered for this provider.',
+          idBlocksEnvironment
+            ? '删除 id 字段以使用环境变量，或填写 ID。'
+            : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_ID 提供。',
           idBlocksEnvironment
             ? 'Remove the id field to use DDNS_ID, or enter an ID.'
-            : 'Enter an ID, or confirm that DDNS_ID is set in the deployment environment.',
+            : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_ID at runtime.',
         ),
       )
     }
@@ -1730,16 +2115,16 @@ function validateProviderRuntime(
           tokenBlocksEnvironment ? 'error' : 'warning',
           tokenBlocksEnvironment
             ? 'Token 为空字符串，因此运行时不会读取 DDNS_TOKEN。'
-            : '导出的配置中不包含 Token；部署时需通过 DDNS_TOKEN 提供。',
+            : '当前配置尚未填写 Token。',
           tokenBlocksEnvironment
             ? 'Token is an empty string, so DDNS_TOKEN will not be used at runtime.'
-            : 'Token is not included in the exported configuration. Provide it through DDNS_TOKEN at runtime.',
+            : 'No token has been entered for this provider.',
           tokenBlocksEnvironment
             ? '删除 token 字段以使用环境变量，或填写 Token。'
-            : '填写 Token，或确认部署环境已设置 DDNS_TOKEN。',
+            : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_TOKEN 提供。',
           tokenBlocksEnvironment
             ? 'Remove the token field to use DDNS_TOKEN, or enter a token.'
-            : 'Enter a token, or confirm that DDNS_TOKEN is set in the deployment environment.',
+            : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_TOKEN at runtime.',
         ),
       )
     }
@@ -1750,16 +2135,16 @@ function validateProviderRuntime(
         tokenBlocksEnvironment ? 'error' : 'warning',
         tokenBlocksEnvironment
           ? 'Token 为空字符串，因此运行时不会读取 DDNS_TOKEN。'
-          : '导出的配置中不包含 Token；部署时需通过 DDNS_TOKEN 提供。',
+          : '当前配置尚未填写 Token。',
         tokenBlocksEnvironment
           ? 'Token is an empty string, so DDNS_TOKEN will not be used at runtime.'
-          : 'Token is not included in the exported configuration. Provide it through DDNS_TOKEN at runtime.',
+          : 'No token has been entered for this provider.',
         tokenBlocksEnvironment
           ? '删除 token 字段以使用环境变量，或填写 Token。'
-          : '填写 Token，或确认部署环境已设置 DDNS_TOKEN。',
+          : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_TOKEN 提供。',
         tokenBlocksEnvironment
           ? 'Remove the token field to use DDNS_TOKEN, or enter a token.'
-          : 'Enter a token, or confirm that DDNS_TOKEN is set in the deployment environment.',
+          : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_TOKEN at runtime.',
       ),
     )
   }
@@ -1797,10 +2182,10 @@ function validateProviderRuntime(
           idBlocksEnvironment ? 'error' : 'warning',
           idBlocksEnvironment
             ? 'Callback URL 为空字符串，因此运行时不会读取 DDNS_ID。'
-            : '导出的配置中不包含 Callback URL；部署时需通过 DDNS_ID 提供。',
+            : '当前配置尚未填写 Callback URL。',
           idBlocksEnvironment
             ? 'Callback URL is an empty string, so DDNS_ID will not be used at runtime.'
-            : 'Callback URL is not included in the exported configuration. Provide it through DDNS_ID at runtime.',
+            : 'No callback URL has been entered for this provider.',
           idBlocksEnvironment
             ? '删除 id 字段以使用环境变量，或填写 Callback URL。'
             : '确认部署环境已设置 DDNS_ID，或在此填写 Callback URL；填写后会完整导出。',
@@ -1869,7 +2254,7 @@ function validateProviderRuntime(
   if (recordTotal === 0) {
     diagnostics.push(
       makeDiagnostic(
-        path,
+        childPath(path, 'ipv4'),
         'warning',
         '没有配置要更新的 IPv4 或 IPv6 域名。',
         'No IPv4 or IPv6 domains are configured.',
@@ -2151,30 +2536,6 @@ const previewDiagnostics = computed(() => {
 const previewErrors = computed(() => previewDiagnostics.value.filter((item) => item.severity === 'error'))
 const previewWarnings = computed(() => previewDiagnostics.value.filter((item) => item.severity === 'warning'))
 const canExport = computed(() => previewErrors.value.length === 0)
-const schemaStatusLabel = computed(() => {
-  if (previewErrors.value.length) {
-    return `${previewErrors.value.length} ${errorToFixUnit(previewErrors.value.length)}`
-  }
-  return c.value.schemaValid
-})
-const deploymentStatusLabel = computed(() => {
-  if (previewErrors.value.length) return c.value.deploymentBlocked
-  const remainingWarnings = Math.max(0, previewWarnings.value.length - testProviderCount.value)
-  if (hasTestOnlyProviders.value) {
-    if (remainingWarnings) {
-      return `${c.value.testOnlyMode} · ${remainingWarnings} ${checkToReviewUnit(remainingWarnings)}`
-    }
-    return c.value.testOnlyMode
-  }
-  if (previewWarnings.value.length) {
-    return `${previewWarnings.value.length} ${checkToReviewUnit(previewWarnings.value.length)}`
-  }
-  return c.value.deploymentConfigured
-})
-const assuranceStateKey = computed(
-  () =>
-    `${previewErrors.value.length}-${previewWarnings.value.length}-${testProviderCount.value}-${providers.value.length}`,
-)
 const exportStatusLabel = computed(() => {
   if (previewErrors.value.length) return c.value.outputBlocked
   if (previewWarnings.value.length) return c.value.outputWarning
@@ -2263,11 +2624,12 @@ function openAdvancedForPath(path: string) {
 
 async function focusDiagnostic(diagnostic: Diagnostic) {
   const providerMatch = diagnostic.path.match(/^\$\.providers\[(\d+)\]/)
+  let providerUid = selectedUid.value
   if (providerMatch) {
     const provider = providers.value[Number(providerMatch[1])]
-    if (provider) selectedUid.value = provider.uid
+    if (provider) providerUid = provider.uid
   }
-  activeSection.value = sectionForPath(diagnostic.path)
+  selectEditorContext(providerUid, sectionForPath(diagnostic.path))
   openAdvancedForPath(diagnostic.path)
   if (mobileReviewOpen.value) mobileReviewOpen.value = false
   await nextTick()
@@ -2332,9 +2694,7 @@ function providerIssueClass(uid: number): Record<string, boolean> {
 
 function providerIssueLabel(uid: number): string {
   const summary = providerIssueMap.value.get(uid) || emptyIssueSummary()
-  if (summary.errors) return `${summary.errors} ${errorCountUnit(summary.errors)}`
-  if (summary.warnings) return `${summary.warnings} ${warningCountUnit(summary.warnings)}`
-  return ''
+  return issueSummaryLabel(summary)
 }
 
 function sectionIssueTotal(section: SectionKey): number {
@@ -2344,6 +2704,150 @@ function sectionIssueTotal(section: SectionKey): number {
 
 function sectionIssueTone(section: SectionKey): string {
   return selectedSectionIssues.value[section].errors ? 'is-error' : 'is-warning'
+}
+
+function issueSummaryLabel(summary: IssueSummary): string {
+  const parts: string[] = []
+  if (summary.errors) parts.push(`${summary.errors} ${errorCountUnit(summary.errors)}`)
+  if (summary.warnings) parts.push(`${summary.warnings} ${warningCountUnit(summary.warnings)}`)
+  return parts.join(isEnglish.value ? ', ' : '，')
+}
+
+function sectionIssueLabel(section: SectionKey): string {
+  return issueSummaryLabel(selectedSectionIssues.value[section])
+}
+
+function sectionPosition(section: SectionKey): number {
+  return sections.value.findIndex((item) => item.key === section)
+}
+
+function stopEditorRouteMotion() {
+  routePulseAnimation?.cancel()
+  routeContentAnimation?.cancel()
+  routePulseAnimation = undefined
+  routeContentAnimation = undefined
+  if (editorRoutePulse.value) editorRoutePulse.value.style.willChange = ''
+  const target = configurationEditor.value?.querySelector<HTMLElement>('.editor-section.is-motion-target')
+  if (target) target.style.willChange = ''
+}
+
+async function animateEditorRoute(direction: -1 | 1) {
+  const request = ++routeMotionRequest
+  await nextTick()
+  if (
+    request !== routeMotionRequest ||
+    typeof window === 'undefined' ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return
+  }
+
+  const editor = configurationEditor.value
+  const pulse = editorRoutePulse.value
+  const target = editor?.querySelector<HTMLElement>('.editor-section.is-motion-target')
+  if (!editor || !pulse || !target || typeof target.animate !== 'function') return
+
+  stopEditorRouteMotion()
+  const editorRect = editor.getBoundingClientRect()
+  const targetRect = target.getBoundingClientRect()
+  if (!targetRect.width || !targetRect.height) return
+
+  pulse.style.left = `${targetRect.left - editorRect.left}px`
+  pulse.style.top = `${targetRect.top - editorRect.top}px`
+  pulse.style.width = `${targetRect.width}px`
+  pulse.style.willChange = 'clip-path, opacity'
+  target.style.willChange = 'transform, filter, opacity, clip-path'
+
+  const pulseStart = direction > 0 ? 'inset(0 100% 0 0)' : 'inset(0 0 0 100%)'
+  const pulseEnd = direction > 0 ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)'
+  const contentStart = direction > 0 ? 'inset(5px 0 0)' : 'inset(0 0 5px)'
+
+  const pulseAnimation = pulse.animate(
+    [
+      {
+        clipPath: pulseStart,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        opacity: 0,
+      },
+      {
+        clipPath: 'inset(0)',
+        easing: 'cubic-bezier(0.4, 0, 1, 1)',
+        opacity: 0.92,
+        offset: 0.54,
+      },
+      { clipPath: pulseEnd, opacity: 0 },
+    ],
+    {
+      duration: 320,
+      easing: 'linear',
+    },
+  )
+  const contentAnimation = target.animate(
+    [
+      {
+        clipPath: contentStart,
+        filter: 'blur(1.1px)',
+        opacity: 0.84,
+        transform: `translateY(${direction * 5}px)`,
+      },
+      {
+        clipPath: 'inset(0)',
+        filter: 'blur(0)',
+        opacity: 1,
+        transform: 'translateY(0)',
+      },
+    ],
+    {
+      duration: 240,
+      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    },
+  )
+
+  routePulseAnimation = pulseAnimation
+  routeContentAnimation = contentAnimation
+  pulseAnimation.onfinish = pulseAnimation.oncancel = () => {
+    if (routePulseAnimation !== pulseAnimation) return
+    pulse.style.willChange = ''
+    routePulseAnimation = undefined
+  }
+  contentAnimation.onfinish = contentAnimation.oncancel = () => {
+    if (routeContentAnimation !== contentAnimation) return
+    target.style.willChange = ''
+    routeContentAnimation = undefined
+  }
+}
+
+function selectSection(section: SectionKey) {
+  if (section === activeSection.value) return
+  const direction = sectionPosition(section) >= sectionPosition(activeSection.value) ? 1 : -1
+  activeSection.value = section
+  void animateEditorRoute(direction)
+}
+
+function selectProvider(uid: number) {
+  if (uid === selectedUid.value) return
+  const previousIndex = providers.value.findIndex((provider) => provider.uid === selectedUid.value)
+  const nextIndex = providers.value.findIndex((provider) => provider.uid === uid)
+  selectedUid.value = uid
+  void animateEditorRoute(nextIndex >= previousIndex ? 1 : -1)
+}
+
+function selectEditorContext(uid: number, section: SectionKey) {
+  const previousProviderIndex = providers.value.findIndex(
+    (provider) => provider.uid === selectedUid.value,
+  )
+  const nextProviderIndex = providers.value.findIndex((provider) => provider.uid === uid)
+  const sectionChanged = section !== activeSection.value
+  const direction = sectionChanged
+    ? sectionPosition(section) >= sectionPosition(activeSection.value)
+      ? 1
+      : -1
+    : nextProviderIndex >= previousProviderIndex
+      ? 1
+      : -1
+  selectedUid.value = uid
+  activeSection.value = section
+  void animateEditorRoute(direction)
 }
 
 function parseConfiguration(source: string): ParsedConfiguration {
@@ -2462,7 +2966,6 @@ function handleInspectorTabKeydown(event: KeyboardEvent) {
 }
 
 async function openMobileReview() {
-  inspectorTab.value = 'preview'
   mobileReviewOpen.value = true
   await nextTick()
   mobileReviewCloseButton.value?.focus()
@@ -2502,23 +3005,167 @@ function handleMobileReviewKeydown(event: KeyboardEvent) {
   }
 }
 
+function setMobileReviewIsolation(isOpen: boolean) {
+  if (typeof document === 'undefined') return
+  if (!isOpen) {
+    mobileReviewInertElements.splice(0).forEach((element) => {
+      element.inert = false
+    })
+    return
+  }
+
+  const panel = mobileReviewPanel.value
+  if (!panel) return
+  let current: HTMLElement | null = panel
+  while (current.parentElement) {
+    const parent = current.parentElement
+    Array.from(parent.children).forEach((child) => {
+      if (
+        !(child instanceof HTMLElement) ||
+        child === current ||
+        child.classList.contains('mobile-review-backdrop') ||
+        child.classList.contains('studio-toast') ||
+        child.inert
+      ) {
+        return
+      }
+      child.inert = true
+      mobileReviewInertElements.push(child)
+    })
+    current = parent
+    if (parent === document.body) break
+  }
+}
+
 watch(mobileReviewOpen, (isOpen) => {
   if (typeof document === 'undefined') return
   document.body.classList.toggle('config-studio-review-open', isOpen)
+  setMobileReviewIsolation(isOpen)
 })
 
 function handleMobileReviewResize() {
   if (window.innerWidth > 840 && mobileReviewOpen.value) closeMobileReview(false)
 }
 
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!hasUnsavedChanges.value) return
+  if (draftSaveTimer) clearTimeout(draftSaveTimer)
+  persistDraft()
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+function isSameHistoryPosition(
+  first: HistoryPosition | null,
+  second: HistoryPosition | null,
+): boolean {
+  return !!first && !!second && first.session === second.session && first.index === second.index
+}
+
+async function guardStudioPageLoad(to: string) {
+  if (restoringStudioHistory) {
+    restoringStudioHistory = false
+    return isSameHistoryPosition(readHistoryPosition(window.history.state), studioHistoryPosition)
+      ? false
+      : undefined
+  }
+
+  if (previousBeforePageLoad) {
+    const result = await previousBeforePageLoad(to)
+    if (result === false) {
+      approvedPageLoadTarget = null
+      return false
+    }
+  }
+
+  if (!hasUnsavedChanges.value) return
+  if (approvedPageLoadTarget === to) {
+    approvedPageLoadTarget = null
+    return
+  }
+  approvedPageLoadTarget = null
+
+  const targetPosition = readHistoryPosition(window.history.state)
+  if (
+    !studioHistoryPosition ||
+    !targetPosition ||
+    targetPosition.session !== studioHistoryPosition.session
+  ) {
+    return
+  }
+  if (window.confirm(c.value.confirmLeave)) return
+
+  const delta = studioHistoryPosition.index - targetPosition.index
+  if (delta === 0) return false
+  restoringStudioHistory = true
+  window.history.go(delta)
+  return false
+}
+
+function installStudioRouteGuard() {
+  previousBeforeRouteChange = router.onBeforeRouteChange
+  studioRouteGuard = async (to) => {
+    if (previousBeforeRouteChange) {
+      const result = await previousBeforeRouteChange(to)
+      if (result === false) return false
+    }
+    const currentPath = window.location.pathname.replace(/\/+$/, '')
+    const targetPath = new URL(to, window.location.href).pathname.replace(/\/+$/, '')
+    if (targetPath === currentPath) return
+    if (!hasUnsavedChanges.value) return
+    if (!window.confirm(c.value.confirmLeave)) return false
+    approvedPageLoadTarget = to
+    return true
+  }
+  router.onBeforeRouteChange = studioRouteGuard
+
+  previousBeforePageLoad = router.onBeforePageLoad
+  studioPageLoadGuard = guardStudioPageLoad
+  router.onBeforePageLoad = studioPageLoadGuard
+
+  previousAfterRouteChange = router.onAfterRouteChange
+  studioAfterRouteChange = async (to) => {
+    await previousAfterRouteChange?.(to)
+    approvedPageLoadTarget = null
+    if (!restoringStudioHistory) {
+      studioHistoryPosition = readHistoryPosition(window.history.state)
+    }
+  }
+  router.onAfterRouteChange = studioAfterRouteChange
+}
+
 onMounted(() => {
+  initializeBaseline()
+  markValidationHandled()
+  readStoredDraft()
+  studioHistoryPosition = readHistoryPosition(window.history.state)
+  installStudioRouteGuard()
   window.addEventListener('resize', handleMobileReviewResize)
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onBeforeUnmount(() => {
+  routeMotionRequest += 1
+  stopEditorRouteMotion()
   if (toastTimer) clearTimeout(toastTimer)
+  if (providerSearchTimer) clearTimeout(providerSearchTimer)
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+    persistDraft()
+  }
   window.removeEventListener('resize', handleMobileReviewResize)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  if (router.onBeforeRouteChange === studioRouteGuard) {
+    router.onBeforeRouteChange = previousBeforeRouteChange
+  }
+  if (router.onBeforePageLoad === studioPageLoadGuard) {
+    router.onBeforePageLoad = previousBeforePageLoad
+  }
+  if (router.onAfterRouteChange === studioAfterRouteChange) {
+    router.onAfterRouteChange = previousAfterRouteChange
+  }
   if (typeof document !== 'undefined') {
+    setMobileReviewIsolation(false)
     document.body.classList.remove('config-studio-review-open')
   }
 })
@@ -2527,8 +3174,7 @@ function addProvider() {
   const provider = makeProvider('dnspod')
   provider.ipv4Text = ''
   providers.value.push(provider)
-  selectedUid.value = provider.uid
-  activeSection.value = 'provider'
+  selectEditorContext(provider.uid, 'provider')
   showToast(c.value.providerAdded)
 }
 
@@ -2544,7 +3190,7 @@ function removeProvider(uid: number) {
   providers.value = providers.value.filter((provider) => provider.uid !== uid)
   const focusProvider = providers.value[Math.min(index, providers.value.length - 1)]
   if (selectedUid.value === uid) {
-    selectedUid.value = focusProvider.uid
+    selectProvider(focusProvider.uid)
   }
   showToast(c.value.providerRemoved, 'success', 6000, true)
   nextTick(() => {
@@ -2560,7 +3206,7 @@ function restoreRemovedProvider() {
   if (!lastRemovedProvider.value) return
   const { index, provider } = lastRemovedProvider.value
   providers.value.splice(Math.min(index, providers.value.length), 0, provider)
-  selectedUid.value = provider.uid
+  selectProvider(provider.uid)
   lastRemovedProvider.value = null
   showToast(c.value.providerRestored)
   nextTick(() => {
@@ -2588,17 +3234,36 @@ function duplicateProvider() {
     endpointNull: hasSensitiveEndpoint ? false : source.endpointNull,
     index4Text: stripSensitiveAddressSources(source.index4Text),
     index6Text: stripSensitiveAddressSources(source.index6Text),
+    extraText: '',
     revealToken: false,
   }
   const index = providers.value.findIndex((provider) => provider.uid === source.uid)
   providers.value.splice(index + 1, 0, duplicate)
-  selectedUid.value = duplicate.uid
+  selectProvider(duplicate.uid)
   showToast(c.value.providerDuplicated)
 }
 
 async function chooseProvider(provider: string) {
   if (provider === selectedProvider.value.provider) {
     await closeProviderPicker()
+    return
+  }
+  const current = selectedProvider.value
+  const willDiscardProviderData =
+    current.idPresent ||
+    current.idNull ||
+    !!current.id ||
+    current.tokenPresent ||
+    !!current.token ||
+    current.endpointPresent ||
+    current.endpointNull ||
+    !!current.endpoint ||
+    !!current.extraText.trim()
+  if (
+    willDiscardProviderData &&
+    typeof window !== 'undefined' &&
+    !window.confirm(c.value.confirmProviderChange)
+  ) {
     return
   }
   selectedProvider.value.provider = provider
@@ -2612,6 +3277,7 @@ async function chooseProvider(provider: string) {
   selectedProvider.value.endpointNull = false
   selectedProvider.value.extraText = ''
   selectedProvider.value.revealToken = false
+  void animateEditorRoute(1)
   showToast(c.value.providerChanged)
   await closeProviderPicker()
 }
@@ -2633,7 +3299,11 @@ function resetBuilder() {
   validationInput.value = ''
   validatorTouched.value = false
   Object.assign(globalState, makeGlobalState())
-  showToast(c.value.resetDone)
+  nextTick(() => {
+    markValidationHandled()
+    commitBaseline()
+    showToast(c.value.resetDone)
+  })
 }
 
 async function copyConfiguration() {
@@ -2651,6 +3321,7 @@ async function copyConfiguration() {
       input.remove()
       if (!copied) throw new Error('Copy command failed')
     }
+    commitBaseline()
     showToast(c.value.copied)
   } catch {
     showToast(c.value.copyFailed, 'error')
@@ -2666,6 +3337,7 @@ function downloadConfiguration() {
   anchor.download = 'config.json'
   anchor.click()
   URL.revokeObjectURL(url)
+  commitBaseline()
   showToast(c.value.downloaded)
 }
 
@@ -2783,6 +3455,7 @@ function providerStateFromObject(value: Record<string, unknown>): ProviderState 
     lineNull: value.line === null,
     proxyText: inputToText(value.proxy),
     proxyPresent: 'proxy' in value,
+    proxyNull: value.proxy === null,
     sslMode: ssl.mode,
     sslPath: ssl.path,
     cacheMode: cache.mode,
@@ -2794,10 +3467,11 @@ function providerStateFromObject(value: Record<string, unknown>): ProviderState 
   }
 }
 
-function applyToBuilder() {
-  const parsedValue = parsedValidation.value.value
-  if (!validationCanApply.value || !isPlainObject(parsedValue)) return
-  const value = parsedValue
+function loadConfigurationIntoBuilder(
+  value: Record<string, unknown>,
+  markClean: boolean,
+  message: string,
+): boolean {
   const importedProviders: ProviderState[] = []
   let importedGlobalExtra: JsonObject = {}
 
@@ -2826,7 +3500,7 @@ function applyToBuilder() {
     importedProviders.push(providerStateFromObject(providerObject))
   }
 
-  if (!importedProviders.length) return
+  if (!importedProviders.length) return false
   providers.value = importedProviders
   selectedUid.value = providers.value[0].uid
   const cache = cacheFromValue(value.cache, 'inherit')
@@ -2837,6 +3511,7 @@ function applyToBuilder() {
   Object.assign(globalState, {
     proxyText: inputToText(value.proxy),
     proxyPresent: 'proxy' in value,
+    proxyNull: value.proxy === null,
     sslMode: ssl.mode,
     sslPath: ssl.path,
     cacheMode: cache.mode,
@@ -2862,15 +3537,59 @@ function applyToBuilder() {
   sourceAdvancedOpen.value = hasSourceSettings.value
   networkAdvancedOpen.value = hasNetworkAdvancedSettings.value
   runtimeAdvancedOpen.value = hasRuntimeAdvancedSettings.value
-  nextTick(() => showToast(c.value.applied))
+  nextTick(() => {
+    if (markClean) {
+      markValidationHandled()
+      commitBaseline()
+    } else {
+      scheduleDraftPersistence()
+    }
+    showToast(message)
+  })
+  return true
+}
+
+function applyToBuilder() {
+  const parsedValue = parsedValidation.value.value
+  if (!validationCanApply.value || !isPlainObject(parsedValue)) return
+  loadConfigurationIntoBuilder(parsedValue, true, c.value.applied)
+}
+
+async function useRuntimeCredential(field: 'id' | 'token') {
+  const provider = selectedProvider.value
+  provider[field] = ''
+  if (field === 'id') {
+    provider.idPresent = false
+    provider.idNull = false
+  } else {
+    provider.tokenPresent = false
+    provider.revealToken = false
+  }
+  await nextTick()
+  document.getElementById(providerFieldId(field))?.focus()
 }
 </script>
 
 <template>
-  <div class="config-studio">
+  <div class="config-studio" autocapitalize="none" autocorrect="off" spellcheck="false">
     <header class="studio-intro">
       <div class="studio-intro-copy">
         <h1>{{ c.title }}</h1>
+        <div class="studio-intro-meta">
+          <p
+            class="studio-save-state"
+            :class="{
+              'is-dirty': hasUnsavedChanges,
+              'is-error': hasUnsavedChanges && draftStorageError,
+            }"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="studio-save-state-dot" aria-hidden="true"></span>
+            {{ saveStateLabel }}
+          </p>
+          <p class="studio-privacy-note">{{ c.localOnly }}</p>
+        </div>
       </div>
       <div class="studio-actions">
         <input
@@ -2888,53 +3607,12 @@ function applyToBuilder() {
         </button>
         <button class="studio-button studio-button-quiet" type="button" @click="resetBuilder">
           <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" />
+            <path d="M6 3h8l4 4v14H6V3Zm8 0v5h5M12 11v6m-3-3h6" />
           </svg>
           {{ c.reset }}
         </button>
       </div>
     </header>
-
-    <div class="studio-assurance" aria-live="polite">
-      <span
-        :key="`schema-${assuranceStateKey}`"
-        class="studio-status"
-        :class="{ 'is-error': previewErrors.length }"
-      >
-        <span class="studio-status-dot" aria-hidden="true"></span>
-        <span class="studio-status-copy">
-          <small>{{ c.schemaState }}</small>
-          <strong>{{ schemaStatusLabel }}</strong>
-        </span>
-      </span>
-      <span
-        :key="`deployment-${assuranceStateKey}`"
-        class="studio-status"
-        :class="{
-          'is-error': previewErrors.length,
-          'is-warning': !previewErrors.length && (previewWarnings.length || hasTestOnlyProviders),
-        }"
-      >
-        <span class="studio-status-dot" aria-hidden="true"></span>
-        <span class="studio-status-copy">
-          <small>{{ c.deploymentState }}</small>
-          <strong>{{ deploymentStatusLabel }}</strong>
-        </span>
-      </span>
-      <span class="studio-assurance-stat">
-        <strong>{{ providers.length }}</strong> {{ providerCountUnit(providers.length) }}
-      </span>
-      <span class="studio-assurance-stat">
-        <strong>{{ recordCount }}</strong> {{ recordCountUnit(recordCount) }}
-      </span>
-      <span class="studio-local-note">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 3 5 6v5c0 4.7 2.8 8.1 7 10 4.2-1.9 7-5.3 7-10V6l-7-3Z" />
-          <path d="m9.5 12 1.7 1.7 3.7-4" />
-        </svg>
-        {{ c.localOnly }}
-      </span>
-    </div>
 
     <div class="studio-shell">
       <aside class="provider-rail" :aria-label="c.providers">
@@ -2950,14 +3628,20 @@ function applyToBuilder() {
             v-for="(provider, index) in providers"
             :key="provider.uid"
             class="provider-list-row"
-            :class="[providerIssueClass(provider.uid), { 'is-selected': provider.uid === selectedUid }]"
+            :class="[
+              providerIssueClass(provider.uid),
+              {
+                'is-selected': provider.uid === selectedUid,
+                'is-only': providers.length === 1,
+              },
+            ]"
           >
             <button
               class="provider-select-button"
               type="button"
               :data-provider-uid="provider.uid"
               :aria-pressed="provider.uid === selectedUid"
-              @click="selectedUid = provider.uid"
+              @click="selectProvider(provider.uid)"
             >
               <span class="provider-monogram" aria-hidden="true">
                 {{ (providerMap.get(provider.provider)?.name || provider.provider).slice(0, 2) }}
@@ -2966,8 +3650,10 @@ function applyToBuilder() {
                 <strong>{{ providerMap.get(provider.provider)?.name || provider.provider }}</strong>
                 <small>
                   {{ providerRecordCount(provider) }} {{ recordCountUnit(providerRecordCount(provider)) }}
-                  <template v-if="providerIssueLabel(provider.uid)"> · {{ providerIssueLabel(provider.uid) }}</template>
                 </small>
+                <span v-if="providerIssueLabel(provider.uid)" class="visually-hidden">
+                  {{ providerIssueLabel(provider.uid) }}
+                </span>
               </span>
             </button>
             <button
@@ -2983,11 +3669,6 @@ function applyToBuilder() {
           </div>
         </div>
 
-        <button class="rail-add-button" type="button" @click="addProvider">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-          {{ c.addProvider }}
-        </button>
-
         <div class="section-nav-wrap">
           <nav class="section-nav" :aria-label="c.configurationSections">
             <button
@@ -2996,7 +3677,7 @@ function applyToBuilder() {
               type="button"
               :aria-current="activeSection === section.key ? 'step' : undefined"
               :class="{ 'is-active': activeSection === section.key }"
-              @click="activeSection = section.key"
+              @click="selectSection(section.key)"
             >
               <span class="section-marker" aria-hidden="true"></span>
               <span class="section-label">{{ section.label }}</span>
@@ -3005,7 +3686,8 @@ function applyToBuilder() {
                 class="section-issue"
                 :class="sectionIssueTone(section.key)"
               >
-                {{ sectionIssueTotal(section.key) }}
+                <span class="visually-hidden">{{ sectionIssueLabel(section.key) }}</span>
+                <span aria-hidden="true">{{ sectionIssueTotal(section.key) }}</span>
               </small>
             </button>
             <button
@@ -3031,29 +3713,28 @@ function applyToBuilder() {
         </div>
       </aside>
 
-      <main class="configuration-editor">
-        <div class="editor-heading">
-          <div>
-            <span class="editor-provider-name">{{ selectedMeta.name }}</span>
-            <p>{{ isEnglish ? selectedMeta.descriptionEn : selectedMeta.descriptionZh }}</p>
-          </div>
-          <div class="editor-heading-actions">
-            <a class="text-action" :href="providerDocsLink" target="_blank" rel="noopener noreferrer">
-              {{ c.providerHelp }}
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
-            </a>
-            <button class="icon-button" type="button" :aria-label="c.duplicateProvider" :title="c.duplicateProvider" @click="duplicateProvider">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <rect x="8" y="8" width="11" height="11" rx="2" />
-                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <section v-show="activeSection === 'provider'" class="editor-section">
-          <div class="section-heading">
+      <main ref="configurationEditor" class="configuration-editor">
+        <span ref="editorRoutePulse" class="editor-route-pulse" aria-hidden="true"></span>
+        <section
+          v-show="activeSection === 'provider'"
+          class="editor-section"
+          :class="{ 'is-motion-target': activeSection === 'provider' }"
+          data-section="provider"
+        >
+          <div class="section-heading with-actions">
             <h2>{{ c.providerSettings }}</h2>
+            <div class="section-heading-actions">
+              <a class="text-action" :href="providerDocsLink" target="_blank" rel="noopener noreferrer">
+                {{ c.providerHelp }}
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+              </a>
+              <button class="icon-button" type="button" :aria-label="c.duplicateProvider" :title="c.duplicateProvider" @click="duplicateProvider">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <rect x="8" y="8" width="11" height="11" rx="2" />
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0 2 2v8a2 2 0 0 0 2 2h2" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="field field-wide provider-picker-field">
@@ -3088,14 +3769,15 @@ function applyToBuilder() {
                 </svg>
               </button>
 
-              <div
-                v-if="providerPickerOpen"
-                :id="providerPickerPanelId"
-                class="provider-picker-panel"
-                role="region"
-                :aria-label="c.chooseProvider"
-                @keydown="handleProviderPickerKeydown"
-              >
+              <Transition name="studio-picker">
+                <div
+                  v-if="providerPickerOpen"
+                  :id="providerPickerPanelId"
+                  class="provider-picker-panel"
+                  role="region"
+                  :aria-label="c.chooseProvider"
+                  @keydown="handleProviderPickerKeydown"
+                >
                 <label class="provider-picker-search">
                   <span class="visually-hidden">{{ c.providerSearch }}</span>
                   <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -3107,9 +3789,20 @@ function applyToBuilder() {
                     v-model="providerQuery"
                     type="search"
                     autocomplete="off"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
                     :placeholder="c.providerSearchPlaceholder"
                   />
                 </label>
+                <p
+                  class="visually-hidden"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {{ providerSearchAnnouncement }}
+                </p>
 
                 <div v-if="hasProviderSearchResults" class="provider-picker-groups">
                   <section v-for="group in filteredProviderGroups" :key="group.key">
@@ -3148,8 +3841,9 @@ function applyToBuilder() {
                     </ul>
                   </section>
                 </div>
-                <p v-else class="provider-picker-empty">{{ c.noProviderResults }}</p>
-              </div>
+                  <p v-else class="provider-picker-empty">{{ c.noProviderResults }}</p>
+                </div>
+              </Transition>
             </div>
             <small
               v-if="fieldDiagnostic(providerFieldPath('provider'))"
@@ -3171,16 +3865,18 @@ function applyToBuilder() {
           </div>
 
           <div v-if="selectedMeta.auth !== 'none'" class="field-grid">
-            <label v-if="selectedMeta.auth !== 'token'" class="field">
-              <span>
+            <div v-if="selectedMeta.auth !== 'token'" class="field">
+              <label :for="providerFieldId('id')">
                 {{ isEnglish ? selectedMeta.idLabelEn : selectedMeta.idLabelZh }}
                 <em v-if="selectedMeta.auth === 'flexible' || selectedMeta.auth === 'callback'">{{ c.optional }}</em>
-              </span>
+              </label>
               <input
                 :id="providerFieldId('id')"
                 v-model="selectedProvider.id"
                 type="text"
                 autocomplete="off"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 :placeholder="selectedMeta.auth === 'callback' ? 'https://api.example.com/update?domain=__DOMAIN__' : ''"
                 :aria-invalid="fieldInvalid(providerFieldPath('id'))"
@@ -3190,6 +3886,22 @@ function applyToBuilder() {
                   selectedProvider.idNull = false
                 "
               />
+              <div class="credential-source">
+                <small>
+                  {{
+                    selectedProvider.idPresent || selectedProvider.idNull
+                      ? c.credentialIncluded
+                      : c.runtimeCredentialActive
+                  }}
+                </small>
+                <button
+                  v-if="selectedProvider.idPresent || selectedProvider.idNull"
+                  type="button"
+                  @click="useRuntimeCredential('id')"
+                >
+                  {{ c.useRuntimeCredential }}
+                </button>
+              </div>
               <small
                 v-if="fieldDiagnostic(providerFieldPath('id'))"
                 :id="fieldFeedbackId(providerFieldPath('id'))"
@@ -3201,19 +3913,21 @@ function applyToBuilder() {
                   {{ fieldDiagnostic(providerFieldPath('id'))?.recovery }}
                 </span>
               </small>
-            </label>
+            </div>
 
-            <label class="field" :class="{ 'field-wide': selectedMeta.auth === 'token' }">
-              <span>
+            <div class="field" :class="{ 'field-wide': selectedMeta.auth === 'token' }">
+              <label :for="providerFieldId('token')">
                 {{ isEnglish ? selectedMeta.tokenLabelEn : selectedMeta.tokenLabelZh }}
                 <em v-if="selectedMeta.auth === 'callback'">{{ c.optional }}</em>
-              </span>
+              </label>
               <span class="secret-input">
                 <input
                   :id="providerFieldId('token')"
                   v-model="selectedProvider.token"
                   :type="selectedProvider.revealToken ? 'text' : 'password'"
                   autocomplete="new-password"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   :aria-invalid="fieldInvalid(providerFieldPath('token'))"
                   :aria-describedby="fieldDescription(providerFieldPath('token'))"
@@ -3234,6 +3948,18 @@ function applyToBuilder() {
                   </svg>
                 </button>
               </span>
+              <div class="credential-source">
+                <small>
+                  {{ selectedProvider.tokenPresent ? c.credentialIncluded : c.runtimeCredentialActive }}
+                </small>
+                <button
+                  v-if="selectedProvider.tokenPresent"
+                  type="button"
+                  @click="useRuntimeCredential('token')"
+                >
+                  {{ c.useRuntimeCredential }}
+                </button>
+              </div>
               <small
                 v-if="fieldDiagnostic(providerFieldPath('token'))"
                 :id="fieldFeedbackId(providerFieldPath('token'))"
@@ -3245,7 +3971,7 @@ function applyToBuilder() {
                   {{ fieldDiagnostic(providerFieldPath('token'))?.recovery }}
                 </span>
               </small>
-            </label>
+            </div>
           </div>
 
           <button
@@ -3262,18 +3988,21 @@ function applyToBuilder() {
             <span v-if="hasEndpointSettings" class="advanced-state">{{ c.configured }}</span>
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4" /></svg>
           </button>
-          <div
-            v-show="providerAdvancedOpen"
-            :id="`studio-provider-advanced-${selectedProvider.uid}`"
-            class="advanced-content"
-          >
-            <label class="field field-wide">
+          <Transition name="studio-disclosure">
+            <div
+              v-show="providerAdvancedOpen"
+              :id="`studio-provider-advanced-${selectedProvider.uid}`"
+              class="advanced-content"
+            >
+              <label class="field field-wide">
               <span>{{ c.endpoint }} <em>{{ c.optional }}</em></span>
               <input
                 :id="providerFieldId('endpoint')"
                 v-model="selectedProvider.endpoint"
                 type="url"
                 autocomplete="off"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 :placeholder="c.endpointPlaceholder"
                 :aria-invalid="fieldInvalid(providerFieldPath('endpoint'))"
@@ -3294,11 +4023,17 @@ function applyToBuilder() {
                   {{ fieldDiagnostic(providerFieldPath('endpoint'))?.recovery }}
                 </span>
               </small>
-            </label>
-          </div>
+              </label>
+            </div>
+          </Transition>
         </section>
 
-        <section v-show="activeSection === 'records'" class="editor-section">
+        <section
+          v-show="activeSection === 'records'"
+          class="editor-section"
+          :class="{ 'is-motion-target': activeSection === 'records' }"
+          data-section="records"
+        >
           <div class="section-heading">
             <h2>{{ c.recordsTitle }}</h2>
             <p>{{ c.recordsHint }}</p>
@@ -3313,6 +4048,8 @@ function applyToBuilder() {
                   :id="providerFieldId('ipv4')"
                   v-model="selectedProvider.ipv4Text"
                   rows="3"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="home.example.com, nas.example.com"
                   :aria-invalid="fieldInvalid(providerFieldPath('ipv4'))"
@@ -3331,9 +4068,6 @@ function applyToBuilder() {
                   </span>
                 </small>
               </label>
-              <div v-if="selectedIpv4.length" class="value-chips" :aria-label="c.ipv4DomainList">
-                <span v-for="domain in selectedIpv4" :key="domain">{{ domain }}</span>
-              </div>
             </div>
           </div>
 
@@ -3346,6 +4080,8 @@ function applyToBuilder() {
                   :id="providerFieldId('ipv6')"
                   v-model="selectedProvider.ipv6Text"
                   rows="3"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="ipv6.example.com"
                   :aria-invalid="fieldInvalid(providerFieldPath('ipv6'))"
@@ -3364,9 +4100,6 @@ function applyToBuilder() {
                   </span>
                 </small>
               </label>
-              <div v-if="selectedIpv6.length" class="value-chips" :aria-label="c.ipv6DomainList">
-                <span v-for="domain in selectedIpv6" :key="domain">{{ domain }}</span>
-              </div>
             </div>
           </div>
 
@@ -3385,18 +4118,21 @@ function applyToBuilder() {
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4" /></svg>
           </button>
 
-          <div
-            v-show="sourceAdvancedOpen"
-            :id="`studio-source-advanced-${selectedProvider.uid}`"
-            class="advanced-content"
-          >
-            <div class="field-grid">
+          <Transition name="studio-disclosure">
+            <div
+              v-show="sourceAdvancedOpen"
+              :id="`studio-source-advanced-${selectedProvider.uid}`"
+              class="advanced-content"
+            >
+              <div class="field-grid">
               <label class="field">
                 <span>IPv4 · {{ c.addressSources }}</span>
                 <textarea
                   :id="providerFieldId('index4')"
                   v-model="selectedProvider.index4Text"
                   rows="3"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="public&#10;default"
                   :aria-invalid="fieldInvalid(providerFieldPath('index4'))"
@@ -3421,6 +4157,8 @@ function applyToBuilder() {
                   :id="providerFieldId('index6')"
                   v-model="selectedProvider.index6Text"
                   rows="3"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="public&#10;default"
                   :aria-invalid="fieldInvalid(providerFieldPath('index6'))"
@@ -3446,6 +4184,9 @@ function applyToBuilder() {
                   v-model="selectedProvider.ttl"
                   type="text"
                   inputmode="decimal"
+                  autocapitalize="none"
+                  autocorrect="off"
+                  spellcheck="false"
                   :placeholder="c.inheritProvider"
                   :aria-invalid="fieldInvalid(providerFieldPath('ttl'))"
                   :aria-describedby="fieldDescription(providerFieldPath('ttl'))"
@@ -3467,6 +4208,9 @@ function applyToBuilder() {
                   v-model="selectedProvider.line"
                   type="text"
                   autocomplete="off"
+                  autocapitalize="none"
+                  autocorrect="off"
+                  spellcheck="false"
                   :placeholder="c.inheritProvider"
                   :aria-invalid="fieldInvalid(providerFieldPath('line'))"
                   :aria-describedby="fieldDescription(providerFieldPath('line'))"
@@ -3486,9 +4230,15 @@ function applyToBuilder() {
               </label>
             </div>
           </div>
+          </Transition>
         </section>
 
-        <section v-show="activeSection === 'network'" class="editor-section">
+        <section
+          v-show="activeSection === 'network'"
+          class="editor-section"
+          :class="{ 'is-motion-target': activeSection === 'network' }"
+          data-section="network"
+        >
           <div class="section-heading">
             <h2>{{ c.networkTitle }}</h2>
             <p>{{ c.proxyHint }}</p>
@@ -3501,12 +4251,20 @@ function applyToBuilder() {
                 :id="providerFieldId('proxy')"
                 v-model="selectedProvider.proxyText"
                 rows="4"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 placeholder="http://127.0.0.1:1080&#10;DIRECT"
                 :aria-invalid="fieldInvalid(providerFieldPath('proxy'))"
                 :aria-describedby="fieldDescription(providerFieldPath('proxy'))"
-                @input="selectedProvider.proxyPresent = true"
+                @input="
+                  selectedProvider.proxyPresent = true;
+                  selectedProvider.proxyNull = false
+                "
               ></textarea>
+              <small v-if="selectedProvider.proxyNull" class="proxy-null-note">
+                {{ c.proxyNullPreserved }}
+              </small>
               <small
                 v-if="fieldDiagnostic(providerFieldPath('proxy'))"
                 :id="fieldFeedbackId(providerFieldPath('proxy'))"
@@ -3525,12 +4283,20 @@ function applyToBuilder() {
                 :id="globalFieldId('proxy')"
                 v-model="globalState.proxyText"
                 rows="4"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 placeholder="SYSTEM&#10;DIRECT"
                 :aria-invalid="fieldInvalid(globalFieldPath('proxy'))"
                 :aria-describedby="fieldDescription(globalFieldPath('proxy'))"
-                @input="globalState.proxyPresent = true"
+                @input="
+                  globalState.proxyPresent = true;
+                  globalState.proxyNull = false
+                "
               ></textarea>
+              <small v-if="globalState.proxyNull" class="proxy-null-note">
+                {{ c.proxyNullPreserved }}
+              </small>
               <small
                 v-if="fieldDiagnostic(globalFieldPath('proxy'))"
                 :id="fieldFeedbackId(globalFieldPath('proxy'))"
@@ -3559,12 +4325,13 @@ function applyToBuilder() {
             <span v-if="hasNetworkAdvancedSettings" class="advanced-state">{{ c.configured }}</span>
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4" /></svg>
           </button>
-          <div
-            v-show="networkAdvancedOpen"
-            :id="`studio-network-advanced-${selectedProvider.uid}`"
-            class="advanced-content"
-          >
-            <div class="settings-band">
+          <Transition name="studio-disclosure">
+            <div
+              v-show="networkAdvancedOpen"
+              :id="`studio-network-advanced-${selectedProvider.uid}`"
+              class="advanced-content"
+            >
+              <div class="settings-band">
               <div>
                 <h3>{{ c.ssl }}</h3>
                 <p>{{ c.providerOverridesHint }}</p>
@@ -3618,18 +4385,38 @@ function applyToBuilder() {
                 </label>
                 <label v-if="globalState.sslMode === 'custom'" class="field">
                   <span>{{ c.caPath }}</span>
-                  <input v-model="globalState.sslPath" type="text" spellcheck="false" placeholder="/etc/ssl/private-ca.crt" />
+                  <input
+                    v-model="globalState.sslPath"
+                    type="text"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="/etc/ssl/private-ca.crt"
+                  />
                 </label>
                 <label v-if="selectedProvider.sslMode === 'custom'" class="field">
                   <span>{{ selectedMeta.name }} · {{ c.caPath }}</span>
-                  <input v-model="selectedProvider.sslPath" type="text" spellcheck="false" placeholder="/etc/ssl/private-ca.crt" />
+                  <input
+                    v-model="selectedProvider.sslPath"
+                    type="text"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="/etc/ssl/private-ca.crt"
+                  />
                 </label>
               </div>
             </div>
           </div>
+          </Transition>
         </section>
 
-        <section v-show="activeSection === 'runtime'" class="editor-section">
+        <section
+          v-show="activeSection === 'runtime'"
+          class="editor-section"
+          :class="{ 'is-motion-target': activeSection === 'runtime' }"
+          data-section="runtime"
+        >
           <div class="section-heading">
             <h2>{{ c.runtimeTitle }}</h2>
             <p>{{ c.runtimeHint }}</p>
@@ -3666,6 +4453,9 @@ function applyToBuilder() {
                 type="text"
                 inputmode="numeric"
                 pattern="[0-9]*"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
                 :aria-invalid="fieldInvalid(globalFieldPath('cache_max_age'))"
                 :aria-describedby="fieldDescription(globalFieldPath('cache_max_age'))"
               />
@@ -3680,7 +4470,14 @@ function applyToBuilder() {
             </label>
             <label v-if="globalState.cacheMode === 'path'" class="field field-wide">
               <span>{{ c.cacheFile }}</span>
-              <input v-model="globalState.cachePath" type="text" spellcheck="false" placeholder="/var/cache/ddns.cache" />
+              <input
+                v-model="globalState.cachePath"
+                type="text"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
+                placeholder="/var/cache/ddns.cache"
+              />
             </label>
           </div>
 
@@ -3719,6 +4516,8 @@ function applyToBuilder() {
               <input
                 v-model="globalState.logFile"
                 type="text"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 placeholder="/var/log/ddns.log"
                 @input="
@@ -3732,6 +4531,8 @@ function applyToBuilder() {
               <input
                 v-model="globalState.logFormat"
                 type="text"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 placeholder="%(asctime)s %(levelname)s %(message)s"
                 @input="
@@ -3745,6 +4546,8 @@ function applyToBuilder() {
               <input
                 v-model="globalState.logDatefmt"
                 type="text"
+                autocapitalize="none"
+                autocorrect="off"
                 spellcheck="false"
                 placeholder="%Y-%m-%dT%H:%M:%S"
                 @input="
@@ -3769,12 +4572,13 @@ function applyToBuilder() {
             <span v-if="hasRuntimeAdvancedSettings" class="advanced-state">{{ c.configured }}</span>
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4" /></svg>
           </button>
-          <div
-            v-show="runtimeAdvancedOpen"
-            :id="`studio-runtime-advanced-${selectedProvider.uid}`"
-            class="advanced-content"
-          >
-            <div class="settings-band">
+          <Transition name="studio-disclosure">
+            <div
+              v-show="runtimeAdvancedOpen"
+              :id="`studio-runtime-advanced-${selectedProvider.uid}`"
+              class="advanced-content"
+            >
+              <div class="settings-band">
               <div>
                 <h3>{{ c.providerOverrides }}</h3>
                 <p>{{ c.providerOverridesHint }}</p>
@@ -3810,6 +4614,9 @@ function applyToBuilder() {
                     type="text"
                     inputmode="numeric"
                     pattern="[0-9]*"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
                     :placeholder="c.inheritGlobal"
                     :aria-invalid="fieldInvalid(providerFieldPath('cache_max_age'))"
                     :aria-describedby="fieldDescription(providerFieldPath('cache_max_age'))"
@@ -3825,7 +4632,14 @@ function applyToBuilder() {
                 </label>
                 <label v-if="selectedProvider.cacheMode === 'path'" class="field">
                   <span>{{ c.cacheFile }}</span>
-                  <input v-model="selectedProvider.cachePath" type="text" spellcheck="false" placeholder="/var/cache/provider.cache" />
+                  <input
+                    v-model="selectedProvider.cachePath"
+                    type="text"
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="/var/cache/provider.cache"
+                  />
                 </label>
                 <label class="field">
                   <span>{{ c.logLevel }}</span>
@@ -3856,13 +4670,15 @@ function applyToBuilder() {
               </div>
             </div>
 
-            <div class="field-grid extra-grid">
+              <div class="field-grid extra-grid">
               <label class="field">
                 <span>{{ c.extraGlobal }}</span>
                 <textarea
                   :id="globalFieldId('extra')"
                   v-model="globalState.extraText"
                   rows="7"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="{&#10;  &quot;region&quot;: &quot;global&quot;&#10;}"
                   :aria-invalid="fieldInvalid(globalFieldPath('extra'))"
@@ -3883,6 +4699,8 @@ function applyToBuilder() {
                   :id="providerFieldId('extra')"
                   v-model="selectedProvider.extraText"
                   rows="7"
+                  autocapitalize="none"
+                  autocorrect="off"
                   spellcheck="false"
                   placeholder="{&#10;  &quot;proxied&quot;: true&#10;}"
                   :aria-invalid="fieldInvalid(providerFieldPath('extra'))"
@@ -3899,16 +4717,16 @@ function applyToBuilder() {
               </label>
             </div>
           </div>
+          </Transition>
         </section>
       </main>
 
-      <button
+      <div
         v-show="mobileReviewOpen"
         class="mobile-review-backdrop"
-        type="button"
-        :aria-label="c.closeReview"
+        aria-hidden="true"
         @click="closeMobileReview()"
-      ></button>
+      ></div>
 
       <aside
         ref="mobileReviewPanel"
@@ -3916,7 +4734,7 @@ function applyToBuilder() {
         :class="{ 'is-mobile-open': mobileReviewOpen }"
         :role="mobileReviewOpen ? 'dialog' : undefined"
         :aria-modal="mobileReviewOpen ? 'true' : undefined"
-        :aria-label="mobileReviewOpen ? c.reviewConfig : undefined"
+        :aria-label="c.reviewConfig"
         @keydown="handleMobileReviewKeydown"
       >
         <div class="mobile-inspector-heading">
@@ -4051,6 +4869,8 @@ function applyToBuilder() {
             id="studio-validator-input"
             v-model="validationInput"
             class="validator-input"
+            autocapitalize="none"
+            autocorrect="off"
             spellcheck="false"
             :aria-invalid="validationErrors.length ? 'true' : undefined"
             aria-describedby="studio-validator-hint studio-validator-status"
@@ -4095,12 +4915,29 @@ function applyToBuilder() {
     <div
       class="studio-toast"
       :class="[`is-${toastTone}`, { 'is-visible': toastVisible }]"
-      role="status"
-      aria-live="polite"
+      :aria-hidden="toastVisible ? undefined : 'true'"
     >
-      <span aria-hidden="true">{{ toastTone === 'success' ? '✓' : '!' }}</span>
-      {{ toastMessage }}
-      <button v-if="lastRemovedProvider" type="button" @click="restoreRemovedProvider">{{ c.undo }}</button>
+      <span class="studio-toast-icon" aria-hidden="true">{{ toastTone === 'success' ? '✓' : '!' }}</span>
+      <span class="studio-toast-copy" role="status" aria-live="polite" aria-atomic="true">
+        {{ toastMessage }}
+      </span>
+      <button
+        v-if="lastRemovedProvider && !mobileReviewOpen"
+        class="studio-toast-action"
+        type="button"
+        @click="restoreRemovedProvider"
+      >
+        {{ c.undo }}
+      </button>
+      <button
+        v-if="lastRemovedProvider && !mobileReviewOpen"
+        class="studio-toast-dismiss"
+        type="button"
+        :aria-label="c.dismissNotification"
+        @click="dismissToast"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
     </div>
   </div>
 </template>

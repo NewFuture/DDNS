@@ -80,6 +80,8 @@ GET https://api.example.com/update?domain=ddns.newfuture.cc&ip=192.168.1.100&typ
     "index4": ["url:http://api.ipify.org", "public"],
     "ipv4": "ddns.newfuture.cc",
 }
+```
+
 ```http
 POST https://api.example.com
 Content-Type: application/json

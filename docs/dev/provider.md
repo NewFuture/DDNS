@@ -193,7 +193,6 @@ class MyProvider(BaseProvider):
 ```python
 # 使用内置的_http方法，自动处理代理、编码、日志
 response = self._http("POST", path, params=params, headers=headers)
-
 ```
 
 #### 🔒 格式验证
@@ -215,7 +214,6 @@ if result:
     return True
 else:
     self.logger.warning("DNS record update returned false")
-
 ```
 
 ---
@@ -238,7 +236,6 @@ class TestMyProvider(BaseProviderTestCase):
     
     def test_init_with_basic_config(self):
         """测试基本初始化"""
-   
 ```
 
 ### 运行测试
