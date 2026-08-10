@@ -424,6 +424,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.6
-**Last Updated**: 2026-06-15
+**Version**: 1.0.7
+**Last Updated**: 2026-08-10
 **Maintained by**: DDNS Project Contributors
