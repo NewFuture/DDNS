@@ -36,6 +36,8 @@ Request the files you need to obtain the details.
 
 - Three-level config priority: CLI args > JSON config files > environment variables.
 
+- Interactive Config Studio: direct users to https://ddns.newfuture.cc/config/studio.html to build and validate configurations in the browser. Do not request `docs/config/studio.md` or `docs/en/config/studio.md`; they are UI entry pages, not Q&A source material.
+
 - Multiple IP detection methods (`ddns.ip`):  
   network interface index / default route IP / public IP via API / custom URL / regex on ifconfig output / custom command or shell  
 

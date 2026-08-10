@@ -15,8 +15,15 @@ ENGLISH_MIRROR_DIRS = ("docs/en/config", "docs/en/dev", "docs/en/providers")
 def scan_files(directory, extensions):
     # type: (str, tuple) -> set
     """Scan directory for files with given extensions."""
-    # Files to exclude from directory structure tracking
-    exclude_files = {"docs/esa-deploy.md", "docs/esa.js", "docs/llms.txt", "docs/package.json"}
+    # Files to exclude from the agent and Q&A directory index
+    exclude_files = {
+        "docs/config/studio.md",
+        "docs/en/config/studio.md",
+        "docs/esa-deploy.md",
+        "docs/esa.js",
+        "docs/llms.txt",
+        "docs/package.json",
+    }
 
     result = set()
     base = os.path.join(REPO_ROOT, directory)

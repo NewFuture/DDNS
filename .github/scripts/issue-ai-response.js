@@ -10,6 +10,10 @@
 module.exports = async ({ github, context, core, fs, path }) => {
   const apiUrl = process.env.OPENAI_URL;
   const apiKey = process.env.OPENAI_KEY;
+  const excludedQAFiles = new Set([
+    path.resolve(process.cwd(), 'docs/config/studio.md'),
+    path.resolve(process.cwd(), 'docs/en/config/studio.md')
+  ]);
 
   if (!apiUrl || !apiKey) {
     core.setFailed('OPENAI_URL and OPENAI_KEY must be set');
@@ -68,6 +72,9 @@ module.exports = async ({ github, context, core, fs, path }) => {
       const fullPath = path.resolve(repoRoot, filePath);
       if (path.relative(repoRoot, fullPath).startsWith('..')) {
         return '[Access denied: ' + filePath + ']';
+      }
+      if (excludedQAFiles.has(fullPath)) {
+        return '[Excluded from Q&A source context: ' + filePath + ']';
       }
       if (!fs.existsSync(fullPath)) {
         return '[File not found: ' + filePath + ']';
