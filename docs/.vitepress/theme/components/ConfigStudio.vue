@@ -2095,14 +2095,16 @@ function validateProviderRuntime(
           idBlocksEnvironment ? 'error' : 'warning',
           idBlocksEnvironment
             ? 'ID 为空字符串，因此运行时不会读取 DDNS_ID。'
-            : '导出的配置中不包含 ID；部署时需通过 DDNS_ID 提供。',
+            : '当前配置尚未填写 ID。',
           idBlocksEnvironment
             ? 'ID is an empty string, so DDNS_ID will not be used at runtime.'
-            : 'ID is not included in the exported configuration. Provide it through DDNS_ID at runtime.',
-          idBlocksEnvironment ? '删除 id 字段以使用环境变量，或填写 ID。' : '填写 ID，或确认部署环境已设置 DDNS_ID。',
+            : 'No ID has been entered for this provider.',
+          idBlocksEnvironment
+            ? '删除 id 字段以使用环境变量，或填写 ID。'
+            : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_ID 提供。',
           idBlocksEnvironment
             ? 'Remove the id field to use DDNS_ID, or enter an ID.'
-            : 'Enter an ID, or confirm that DDNS_ID is set in the deployment environment.',
+            : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_ID at runtime.',
         ),
       )
     }
@@ -2113,16 +2115,16 @@ function validateProviderRuntime(
           tokenBlocksEnvironment ? 'error' : 'warning',
           tokenBlocksEnvironment
             ? 'Token 为空字符串，因此运行时不会读取 DDNS_TOKEN。'
-            : '导出的配置中不包含 Token；部署时需通过 DDNS_TOKEN 提供。',
+            : '当前配置尚未填写 Token。',
           tokenBlocksEnvironment
             ? 'Token is an empty string, so DDNS_TOKEN will not be used at runtime.'
-            : 'Token is not included in the exported configuration. Provide it through DDNS_TOKEN at runtime.',
+            : 'No token has been entered for this provider.',
           tokenBlocksEnvironment
             ? '删除 token 字段以使用环境变量，或填写 Token。'
-            : '填写 Token，或确认部署环境已设置 DDNS_TOKEN。',
+            : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_TOKEN 提供。',
           tokenBlocksEnvironment
             ? 'Remove the token field to use DDNS_TOKEN, or enter a token.'
-            : 'Enter a token, or confirm that DDNS_TOKEN is set in the deployment environment.',
+            : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_TOKEN at runtime.',
         ),
       )
     }
@@ -2133,16 +2135,16 @@ function validateProviderRuntime(
         tokenBlocksEnvironment ? 'error' : 'warning',
         tokenBlocksEnvironment
           ? 'Token 为空字符串，因此运行时不会读取 DDNS_TOKEN。'
-          : '导出的配置中不包含 Token；部署时需通过 DDNS_TOKEN 提供。',
+          : '当前配置尚未填写 Token。',
         tokenBlocksEnvironment
           ? 'Token is an empty string, so DDNS_TOKEN will not be used at runtime.'
-          : 'Token is not included in the exported configuration. Provide it through DDNS_TOKEN at runtime.',
+          : 'No token has been entered for this provider.',
         tokenBlocksEnvironment
           ? '删除 token 字段以使用环境变量，或填写 Token。'
-          : '填写 Token，或确认部署环境已设置 DDNS_TOKEN。',
+          : '填写后会完整写入预览和导出的 config.json；也可在部署时通过 DDNS_TOKEN 提供。',
         tokenBlocksEnvironment
           ? 'Remove the token field to use DDNS_TOKEN, or enter a token.'
-          : 'Enter a token, or confirm that DDNS_TOKEN is set in the deployment environment.',
+          : 'Entered values are written in full to the preview and exported config.json. You can also provide DDNS_TOKEN at runtime.',
       ),
     )
   }
@@ -2180,10 +2182,10 @@ function validateProviderRuntime(
           idBlocksEnvironment ? 'error' : 'warning',
           idBlocksEnvironment
             ? 'Callback URL 为空字符串，因此运行时不会读取 DDNS_ID。'
-            : '导出的配置中不包含 Callback URL；部署时需通过 DDNS_ID 提供。',
+            : '当前配置尚未填写 Callback URL。',
           idBlocksEnvironment
             ? 'Callback URL is an empty string, so DDNS_ID will not be used at runtime.'
-            : 'Callback URL is not included in the exported configuration. Provide it through DDNS_ID at runtime.',
+            : 'No callback URL has been entered for this provider.',
           idBlocksEnvironment
             ? '删除 id 字段以使用环境变量，或填写 Callback URL。'
             : '确认部署环境已设置 DDNS_ID，或在此填写 Callback URL；填写后会完整导出。',
