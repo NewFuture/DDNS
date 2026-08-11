@@ -68,5 +68,20 @@ def get_scheduler(scheduler=None):
         raise ValueError("Invalid scheduler: {}. ".format(scheduler))
 
 
+def get_schedulers():
+    # type: () -> list[BaseScheduler]
+    """Return every scheduler backend that can own a DDNS task on this platform."""
+    system = platform.system().lower()
+    if system == "windows":
+        names = ("schtasks",)
+    elif system == "darwin":
+        names = ("launchd", "cron")
+    elif system == "linux":
+        names = ("systemd", "cron")
+    else:
+        names = ("cron",)
+    return [get_scheduler(name) for name in names]
+
+
 # Export public API
-__all__ = ["get_scheduler", "BaseScheduler"]
+__all__ = ["get_scheduler", "get_schedulers", "BaseScheduler"]

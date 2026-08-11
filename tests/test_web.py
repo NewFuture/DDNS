@@ -104,10 +104,11 @@ class TestDashboardService(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.temp_dir, ignore_errors=True)
         self.config_path = os.path.join(self.temp_dir, "config.json")
-        self.scheduler_patcher = patch("ddns.web.service.get_scheduler")
-        self.mock_get_scheduler = self.scheduler_patcher.start()
+        self.scheduler_patcher = patch("ddns.web.service.get_schedulers")
+        self.mock_get_schedulers = self.scheduler_patcher.start()
         self.addCleanup(self.scheduler_patcher.stop)
-        self.mock_scheduler = self.mock_get_scheduler.return_value
+        self.mock_scheduler = MagicMock()
+        self.mock_get_schedulers.return_value = [self.mock_scheduler]
         self.mock_scheduler.get_status.return_value = {"scheduler": "test", "installed": False, "enabled": False}
         self.env_patcher = patch("ddns.web.service.load_env_config", return_value={})
         self.mock_load_env_config = self.env_patcher.start()
@@ -787,6 +788,35 @@ class TestDashboardService(unittest.TestCase):
         self.assertTrue(status["enabled"])
         self.assertEqual(status["interval"], 8)
 
+    def test_scheduler_detects_and_disables_all_enabled_backends(self):
+        """Guard against explicitly selected backends that differ from auto detection."""
+        systemd = MagicMock()
+        cron = MagicMock()
+        systemd.get_status.side_effect = [
+            {"scheduler": "systemd", "installed": True, "enabled": True},
+            {"scheduler": "systemd", "installed": True, "enabled": True},
+            {"scheduler": "systemd", "installed": True, "enabled": False},
+            {"scheduler": "systemd", "installed": True, "enabled": False},
+        ]
+        cron.get_status.side_effect = [
+            {"scheduler": "cron", "installed": True, "enabled": True},
+            {"scheduler": "cron", "installed": True, "enabled": True},
+            {"scheduler": "cron", "installed": True, "enabled": False},
+            {"scheduler": "cron", "installed": True, "enabled": False},
+        ]
+        systemd.disable.return_value = True
+        cron.disable.return_value = True
+        self.mock_get_schedulers.return_value = [systemd, cron]
+
+        conflict = self.service.dashboard()["scheduler"]
+        status = self.service.configure_scheduler("takeover", interval=8)
+
+        self.assertTrue(conflict["conflict"])
+        self.assertEqual(conflict["external_scheduler"], "systemd, cron")
+        systemd.disable.assert_called_once_with()
+        cron.disable.assert_called_once_with()
+        self.assertTrue(status["enabled"])
+
 
 class TestWebScheduler(unittest.TestCase):
     """Test the dashboard-owned scheduler thread."""
@@ -881,14 +911,12 @@ class TestDashboardServer(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.temp_dir, ignore_errors=True)
         config_path = os.path.join(self.temp_dir, "config.json")
-        self.scheduler_patcher = patch("ddns.web.service.get_scheduler")
-        self.mock_get_scheduler = self.scheduler_patcher.start()
+        self.scheduler_patcher = patch("ddns.web.service.get_schedulers")
+        self.mock_get_schedulers = self.scheduler_patcher.start()
         self.addCleanup(self.scheduler_patcher.stop)
-        self.mock_get_scheduler.return_value.get_status.return_value = {
-            "scheduler": "test",
-            "installed": False,
-            "enabled": False,
-        }
+        self.mock_scheduler = MagicMock()
+        self.mock_get_schedulers.return_value = [self.mock_scheduler]
+        self.mock_scheduler.get_status.return_value = {"scheduler": "test", "installed": False, "enabled": False}
         self.env_patcher = patch("ddns.web.service.load_env_config", return_value={})
         self.mock_load_env_config = self.env_patcher.start()
         self.addCleanup(self.env_patcher.stop)

@@ -25,9 +25,9 @@ from ..util.fileio import read_file
 from .scheduler import WebScheduler
 
 try:
-    from ..scheduler import get_scheduler
+    from ..scheduler import get_schedulers
 except ImportError:
-    get_scheduler = None
+    get_schedulers = None
 
 try:
     string_types = (basestring,)  # type: ignore[name-defined]
@@ -825,14 +825,40 @@ class DashboardService(object):
         """Stop periodic synchronization before the web process exits."""
         self._web_scheduler.stop()
 
+    def _external_scheduler_states(self):
+        # type: () -> list[tuple[object, dict]]
+        if get_schedulers is None:
+            return []
+        states = []
+        for scheduler in get_schedulers():
+            try:
+                states.append((scheduler, scheduler.get_status()))
+            except (IOError, OSError, RuntimeError, ValueError, NotImplementedError) as error:
+                states.append(
+                    (
+                        scheduler,
+                        {"installed": False, "scheduler": scheduler.__class__.__name__, "error": text_type(error)},
+                    )
+                )
+        return states
+
     def _external_scheduler_status(self):
         # type: () -> dict
-        if get_scheduler is None:
+        states = [status for _, status in self._external_scheduler_states()]
+        if not states:
             return {"installed": False, "scheduler": "unavailable"}
-        try:
-            return get_scheduler("auto").get_status()
-        except (IOError, OSError, RuntimeError, ValueError, NotImplementedError) as error:
-            return {"installed": False, "scheduler": "unavailable", "error": text_type(error)}
+        enabled = [status for status in states if status.get("installed") and status.get("enabled")]
+        installed = [status for status in states if status.get("installed")]
+        selected = copy.deepcopy((enabled or installed or states)[0])
+        selected["scheduler"] = ", ".join(
+            status.get("scheduler") or "system" for status in (enabled or installed or states)
+        )
+        selected["installed"] = bool(installed)
+        selected["enabled"] = bool(enabled)
+        errors = [status["error"] for status in states if status.get("error")]
+        if errors:
+            selected["error"] = "; ".join(errors)
+        return selected
 
     def _scheduled_sync_guard(self):
         # type: () -> tuple[bool, str | None]
@@ -1183,15 +1209,21 @@ class DashboardService(object):
             current = self._web_scheduler.status()
             enabled = bool(current.get("enabled"))
             if action == "takeover":
-                if get_scheduler is not None:
-                    external_scheduler = get_scheduler("auto")
-                    external = external_scheduler.get_status()
+                for external_scheduler, external in self._external_scheduler_states():
                     if external.get("installed") and external.get("enabled"):
                         if not external_scheduler.disable():
-                            raise DashboardOperationError("Cannot disable the existing system scheduled task.")
+                            raise DashboardOperationError(
+                                "Cannot disable the existing {} scheduled task.".format(
+                                    external.get("scheduler") or "system"
+                                )
+                            )
                         external = external_scheduler.get_status()
                         if external.get("enabled"):
-                            raise DashboardOperationError("The existing system scheduled task is still enabled.")
+                            raise DashboardOperationError(
+                                "The existing {} scheduled task is still enabled.".format(
+                                    external.get("scheduler") or "system"
+                                )
+                            )
                 enabled = True
             elif action == "enable":
                 external = self._external_scheduler_status()

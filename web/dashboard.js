@@ -670,7 +670,9 @@
     if (filter.hidden && state.activityFilter !== "all") {
       state.activityFilter = "all";
       filter.querySelectorAll("button").forEach(function (button) {
-        button.classList.toggle("active", button.getAttribute("data-activity-filter") === "all");
+        var active = button.getAttribute("data-activity-filter") === "all";
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
     }
     var filtered = activities.filter(function (activity) {
@@ -1884,7 +1886,9 @@
       button.addEventListener("click", function () {
         state.activityFilter = button.getAttribute("data-activity-filter");
         document.querySelectorAll("[data-activity-filter]").forEach(function (other) {
-          other.classList.toggle("active", other === button);
+          var active = other === button;
+          other.classList.toggle("active", active);
+          other.setAttribute("aria-pressed", String(active));
         });
         renderActivities();
       });
