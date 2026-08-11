@@ -182,6 +182,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertEqual(definition["type"], "integer")
         self.assertEqual(definition["minimum"], 1)
         self.assertEqual(definition["maximum"], 1440)
+        self.assertNotIn("default", definition)
         provider_schema = schema["properties"]["providers"]["items"]
         self.assertNotIn("interval", provider_schema["properties"])
         self.assertEqual(provider_schema["not"], {"required": ["interval"]})

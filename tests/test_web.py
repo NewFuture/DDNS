@@ -23,7 +23,7 @@ except ImportError:  # Python 2
     from urllib2 import HTTPError, Request, urlopen
 
 from ddns.provider import get_provider_class
-from ddns.web.server import _resource_bytes, _write_stdout, create_server, serve
+from ddns.web.server import DashboardRequestHandler, _resource_bytes, _write_stdout, create_server, serve
 from ddns.web.scheduler import WebScheduler
 from ddns.web.service import (
     CONFIG_MODEL,
@@ -76,6 +76,16 @@ class TestDashboardAssets(unittest.TestCase):
         """Read live frontend sources directly during repository development."""
         self.assertIn(b"<html", _resource_bytes("index.html"))
         mock_get_data.assert_not_called()
+
+    @patch("ddns.web.server.SOURCE_ASSET_ROOT", "source")
+    @patch("ddns.web.server.PACKAGED_ASSET_ROOT", "packaged")
+    @patch("ddns.web.server._resource_file_bytes")
+    def test_resource_loader_prefers_packaged_assets(self, mock_file_bytes):
+        """Do not let an unrelated sibling Web directory shadow installed assets."""
+        mock_file_bytes.side_effect = lambda root, _name: root.encode("ascii")
+
+        self.assertEqual(_resource_bytes("index.html"), b"packaged")
+        mock_file_bytes.assert_called_once_with("packaged", "index.html")
 
     @patch("ddns.web.server.pkgutil.get_data", return_value=b"packaged asset")
     @patch("ddns.web.server._resource_file_bytes", return_value=None)
@@ -912,6 +922,19 @@ class TestDashboardServer(unittest.TestCase):
             return response.getcode(), response.headers, content
         except HTTPError as error:
             return error.code, error.headers, error.read().decode("utf-8")
+
+    def test_head_never_writes_response_body(self):
+        """Suppress bodies centrally for HEAD errors and helper responses."""
+        handler = DashboardRequestHandler.__new__(DashboardRequestHandler)
+        handler.command = "HEAD"
+        handler.wfile = MagicMock()
+        handler.send_response = MagicMock()
+        handler.send_header = MagicMock()
+        handler.end_headers = MagicMock()
+
+        handler._send_json(403, {"error": {"code": "invalid_token"}})
+
+        handler.wfile.write.assert_not_called()
 
     def test_serves_embedded_page_and_assets(self):
         """Serve the standalone dashboard without a documentation runtime."""

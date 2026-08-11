@@ -21,8 +21,7 @@
       "title": "Web synchronization interval",
       "description": "Web控制台内置同步间隔（分钟）；配置后普通启动会自动进入Web模式",
       "minimum": 1,
-      "maximum": 1440,
-      "default": 5
+      "maximum": 1440
     },
     "providers": {
       "$id": "/properties/providers",

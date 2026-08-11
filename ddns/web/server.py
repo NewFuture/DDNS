@@ -108,7 +108,7 @@ def _resource_file_bytes(root, asset_name):
 
 def _resource_bytes(asset_name):
     # type: (str) -> bytes
-    for asset_root in (SOURCE_ASSET_ROOT, PACKAGED_ASSET_ROOT):
+    for asset_root in (PACKAGED_ASSET_ROOT, SOURCE_ASSET_ROOT):
         content = _resource_file_bytes(asset_root, asset_name)
         if content is not None:
             return content
@@ -180,7 +180,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", cache_control)
         self._security_headers()
         self.end_headers()
-        if not head_only:
+        if not head_only and self.command != "HEAD":
             self.wfile.write(content)
 
     def _send_json(self, status, payload, head_only=False):
