@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import copy
 import io
 import json
+import logging
 import os
 import shutil
 import sys
@@ -304,7 +305,7 @@ class TestDashboardService(unittest.TestCase):
     def test_legacy_config_without_provider_is_recoverable(self):
         """Report a legacy file that needs DDNS_DNS instead of discarding it."""
         with io.open(self.config_path, "w", encoding="utf-8") as config_file:
-            json.dump({"token": "keep-me", "ipv4": ["legacy.example.com"]}, config_file)
+            config_file.write(json.dumps({"token": "keep-me", "ipv4": ["legacy.example.com"]}, ensure_ascii=False))
 
         state = self.service.config_state()
 
@@ -497,7 +498,7 @@ class TestDashboardService(unittest.TestCase):
         target_path = os.path.join(self.temp_dir, "target.json")
         link_path = os.path.join(self.temp_dir, "linked.json")
         with io.open(target_path, "w", encoding="utf-8") as config_file:
-            json.dump(_valid_config(line="first"), config_file)
+            config_file.write(json.dumps(_valid_config(line="first"), ensure_ascii=False))
         try:
             os.symlink(target_path, link_path)
         except (IOError, OSError) as error:
@@ -552,13 +553,15 @@ class TestDashboardService(unittest.TestCase):
         config["providers"].append(second_provider)
         self.service.save(config)
         with io.open(cache_path, "w", encoding="utf-8") as cache_file:
-            json.dump(
-                {
-                    "first.example.com:A": "203.0.113.10",
-                    "second.example.com:A": "203.0.113.20",
-                    "unrelated.example.com:A": "203.0.113.30",
-                },
-                cache_file,
+            cache_file.write(
+                json.dumps(
+                    {
+                        "first.example.com:A": "203.0.113.10",
+                        "second.example.com:A": "203.0.113.20",
+                        "unrelated.example.com:A": "203.0.113.30",
+                    },
+                    ensure_ascii=False,
+                )
             )
 
         dashboard = self.service.dashboard()
@@ -605,7 +608,7 @@ class TestDashboardService(unittest.TestCase):
     def test_unicode_provider_error_remains_recoverable(self):
         """Treat a non-ASCII unknown provider as a normal validation error."""
         with io.open(self.config_path, "w", encoding="utf-8") as config_file:
-            json.dump({"providers": [{"provider": "未知"}]}, config_file, ensure_ascii=False)
+            config_file.write(json.dumps({"providers": [{"provider": "未知"}]}, ensure_ascii=False))
 
         state = self.service.config_state()
 
@@ -624,6 +627,33 @@ class TestDashboardService(unittest.TestCase):
         self.assertEqual(runtime_config.dns, "debug")
         self.assertEqual(runtime_config.index4, ["public"])
         self.assertEqual(dashboard["activities"][0]["message"], "所有配置同步完成")
+
+    @patch("ddns.__main__.run")
+    def test_sync_applies_and_restores_runtime_logging(self, mock_run):
+        """Honor persisted log output settings without replacing Web handlers."""
+        log_path = os.path.join(self.temp_dir, "runtime.log")
+        config = _valid_config()
+        config["cache"] = False
+        config["log"] = {"level": "WARNING", "file": log_path, "format": "SYNC:%(message)s", "datefmt": "%H:%M"}
+        self.service.save(config)
+        root_logger = logging.getLogger()
+        previous_level = root_logger.level
+        previous_handlers = list(root_logger.handlers)
+        previous_formatters = [handler.formatter for handler in previous_handlers]
+
+        def emit_runtime_log(_config):
+            """Emit one message through the root logger used by providers."""
+            logging.getLogger("runtime-test").warning("runtime-message")
+            return True
+
+        mock_run.side_effect = emit_runtime_log
+        self.service.sync()
+
+        with io.open(log_path, "r", encoding="utf-8") as log_file:
+            self.assertIn("SYNC:runtime-message", log_file.read())
+        self.assertEqual(root_logger.level, previous_level)
+        self.assertEqual(root_logger.handlers, previous_handlers)
+        self.assertEqual([handler.formatter for handler in previous_handlers], previous_formatters)
 
     @patch("ddns.__main__.run", return_value=True)
     def test_sync_rejects_configuration_without_domains(self, mock_run):

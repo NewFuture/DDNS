@@ -402,6 +402,51 @@ def _validate_interval(value):
     return parsed
 
 
+def _runtime_log_format(config):
+    # type: (Config) -> str
+    if config.log_format:
+        return config.log_format
+    if config.log_level < logging.INFO:
+        return "%(asctime)s %(levelname)s [%(name)s.%(funcName)s](%(filename)s:%(lineno)d): %(message)s"
+    if config.log_level > logging.INFO:
+        return "%(asctime)s %(levelname)s: %(message)s"
+    return "%(asctime)s %(levelname)s [%(name)s]: %(message)s"
+
+
+def _activate_runtime_logging(config):
+    # type: (Config) -> tuple
+    root_logger = logging.getLogger()
+    existing_handlers = list(root_logger.handlers)
+    previous_formatters = [(handler, handler.formatter) for handler in existing_handlers]
+    formatter = logging.Formatter(_runtime_log_format(config), datefmt=config.log_datefmt)
+    file_handler = None
+    if config.log_file:
+        log_directory = os.path.dirname(config.log_file)
+        if log_directory and not os.path.exists(log_directory):
+            os.makedirs(log_directory)
+        file_handler = logging.FileHandler(config.log_file)
+        file_handler.setFormatter(formatter)
+
+    previous_level = root_logger.level
+    root_logger.setLevel(config.log_level)
+    for handler in existing_handlers:
+        handler.setFormatter(formatter)
+    if file_handler is not None:
+        root_logger.addHandler(file_handler)
+    return root_logger, previous_level, previous_formatters, file_handler
+
+
+def _restore_runtime_logging(state):
+    # type: (tuple) -> None
+    root_logger, previous_level, previous_formatters, file_handler = state
+    if file_handler is not None:
+        root_logger.removeHandler(file_handler)
+        file_handler.close()
+    for handler, formatter in previous_formatters:
+        handler.setFormatter(formatter)
+    root_logger.setLevel(previous_level)
+
+
 def _validate_cache(value, label):
     # type: (object, str) -> bool | str
     if isinstance(value, bool):
@@ -1090,17 +1135,22 @@ class DashboardService(object):
 
             failures = []
             successful_indexes = set()
-            for provider_index, config in indexed_configs:
-                try:
-                    if config.log_level is not None:
-                        logging.getLogger().setLevel(config.log_level)
-                    if not run(config):
+            try:
+                logging_state = _activate_runtime_logging(indexed_configs[0][1])
+            except (IOError, OSError, ValueError) as error:
+                raise DashboardOperationError("Cannot configure synchronization logging: {}.".format(error))
+            try:
+                for provider_index, config in indexed_configs:
+                    try:
+                        if not run(config):
+                            failures.append((provider_index, config.dns))
+                        else:
+                            successful_indexes.add(provider_index)
+                    except Exception:
+                        self.logger.exception("Dashboard synchronization failed for %s", config.dns)
                         failures.append((provider_index, config.dns))
-                    else:
-                        successful_indexes.add(provider_index)
-                except Exception:
-                    self.logger.exception("Dashboard synchronization failed for %s", config.dns)
-                    failures.append((provider_index, config.dns))
+            finally:
+                _restore_runtime_logging(logging_state)
 
             if failures:
                 self._last_sync_status = "failed"

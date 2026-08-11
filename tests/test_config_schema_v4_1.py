@@ -182,7 +182,9 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertEqual(definition["type"], "integer")
         self.assertEqual(definition["minimum"], 1)
         self.assertEqual(definition["maximum"], 1440)
-        self.assertNotIn("interval", schema["properties"]["providers"]["items"]["properties"])
+        provider_schema = schema["properties"]["providers"]["items"]
+        self.assertNotIn("interval", provider_schema["properties"])
+        self.assertEqual(provider_schema["not"], {"required": ["interval"]})
 
     def test_v40_to_v41_compatibility(self):
         """Test v4.0 config is compatible with v4.1 processing"""

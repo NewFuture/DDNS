@@ -1184,15 +1184,32 @@
   }
 
   function loadDashboard() {
-    return api("/api/dashboard").then(function (dashboard) {
-      state.dashboard = dashboard;
-      renderDashboard();
-      if (state.config) {
-        renderProfileSelect();
-        renderProfile();
-      }
-      return dashboard;
-    });
+    return api("/api/dashboard")
+      .then(function (dashboard) {
+        state.dashboard = dashboard;
+        renderDashboard();
+        if (state.config) {
+          renderProfileSelect();
+          renderProfile();
+        }
+        return dashboard;
+      })
+      .catch(function (error) {
+        if (error.code !== "invalid_config") {
+          throw error;
+        }
+        state.dashboard = {
+          state: "error",
+          message: error.message,
+          addresses: [],
+          providers: [],
+          records: [],
+          activities: [],
+          scheduler: {},
+        };
+        renderDashboard();
+        return state.dashboard;
+      });
   }
 
   function refreshDashboard() {
@@ -1259,7 +1276,10 @@
       .then(function () {
         initializeConfigSections();
         initializeConfigShell();
-        if (isFirstRun() && !state.setupOpened) {
+        if (state.repairRequired) {
+          setView("config", false, false);
+          window.history.replaceState(null, "", fragmentForView("config", token));
+        } else if (isFirstRun() && !state.setupOpened) {
           state.setupOpened = true;
           setView("config", false, false);
           window.history.replaceState(null, "", fragmentForView("config", token));

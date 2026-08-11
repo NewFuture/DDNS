@@ -254,6 +254,11 @@
         "required": [
           "provider"
         ],
+        "not": {
+          "required": [
+            "interval"
+          ]
+        },
         "additionalProperties": true
       }
     },

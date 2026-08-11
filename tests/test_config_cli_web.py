@@ -35,7 +35,7 @@ class TestWebSubcommand(unittest.TestCase):
         if interval is not None:
             document["interval"] = interval
         with io.open(config_path, "w", encoding="utf-8") as config_file:
-            json.dump(document, config_file)
+            config_file.write(json.dumps(document, ensure_ascii=False))
         return config_path
 
     def test_web_subcommand_defaults(self):
@@ -132,7 +132,7 @@ class TestWebSubcommand(unittest.TestCase):
         first = self._config_file(interval=7)
         second = os.path.join(self.temp_dir, "second.json")
         with io.open(second, "w", encoding="utf-8") as config_file:
-            json.dump({"dns": "debug"}, config_file)
+            config_file.write(json.dumps({"dns": "debug"}, ensure_ascii=False))
         sys.argv = ["ddns", "-c", first, "-c", second, "--interval", "11"]
 
         with patch("ddns.config.cli._handle_web_command") as handler:
@@ -147,7 +147,7 @@ class TestWebSubcommand(unittest.TestCase):
         first = self._config_file(interval=7)
         second = os.path.join(self.temp_dir, "second.json")
         with io.open(second, "w", encoding="utf-8") as config_file:
-            json.dump({"dns": "debug"}, config_file)
+            config_file.write(json.dumps({"dns": "debug"}, ensure_ascii=False))
         sys.argv = ["ddns", "-c", first, second]
 
         with patch("ddns.config.cli._handle_web_command") as handler:
