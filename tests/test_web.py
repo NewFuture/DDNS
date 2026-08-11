@@ -925,14 +925,11 @@ class TestDashboardServer(unittest.TestCase):
 
     def test_head_never_writes_response_body(self):
         """Suppress bodies centrally for HEAD errors and helper responses."""
-        handler = DashboardRequestHandler.__new__(DashboardRequestHandler)
+        handler = MagicMock()
         handler.command = "HEAD"
-        handler.wfile = MagicMock()
-        handler.send_response = MagicMock()
-        handler.send_header = MagicMock()
-        handler.end_headers = MagicMock()
+        send_bytes = getattr(DashboardRequestHandler._send_bytes, "im_func", DashboardRequestHandler._send_bytes)
 
-        handler._send_json(403, {"error": {"code": "invalid_token"}})
+        send_bytes(handler, 403, b"error", "application/json")
 
         handler.wfile.write.assert_not_called()
 
