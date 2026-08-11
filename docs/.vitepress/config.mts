@@ -4,6 +4,10 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(__dirname, '../..')
+const configFieldModel = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'ddns/config/field-model.json'), 'utf8')
+)
 const TERMINAL_CODE_LANGUAGES = new Set([
   'bash',
   'bat',
@@ -22,7 +26,6 @@ const TERMINAL_CODE_LANGUAGES = new Set([
 
 // Setup documentation structure before VitePress processes files
 function setupDocs() {
-  const rootDir = path.resolve(__dirname, '../..')
   const docsDir = path.resolve(__dirname, '..')
   
   console.log('Setting up documentation structure...\n')
@@ -629,6 +632,9 @@ export default defineConfig({
 
   // Vite configuration for handling symbolic links
   vite: {
+    define: {
+      __DDNS_FIELD_MODEL__: JSON.stringify(configFieldModel)
+    },
     resolve: {
       preserveSymlinks: true
     }

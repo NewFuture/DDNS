@@ -76,6 +76,15 @@ class TestConfigFile(unittest.TestCase):
 
         # Verify JSON parsing was used (no specific output message for JSON success)
 
+    def test_load_raw_config_preserves_root_interval_and_providers(self):
+        """Read Web startup metadata before provider expansion."""
+        document = {"interval": 7, "providers": [{"provider": "debug", "ipv4": ["test.example.com"]}]}
+        file_path = self.create_test_file("raw.json", document)
+
+        config = load_config(file_path, raw=True)
+
+        self.assertEqual(config, document)
+
     def test_load_config_ast_parsing(self):
         """Test loading valid AST (Python dict) configuration"""
         ast_content = '{"dns": "dnspod", "id": "test123", "token": "abc456", "ttl": 600}'

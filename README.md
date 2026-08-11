@@ -33,7 +33,7 @@
 <div class="ddns-home-steps" role="list" aria-label="首次更新流程">
   <p role="listitem"><strong><span>1</span> 安装</strong><br>选择适合当前设备的运行方式。</p>
   <p role="listitem"><strong><span>2</span> 配置</strong><br>选择服务商，填写凭据与待更新域名。</p>
-  <p role="listitem"><strong><span>3</span> 运行</strong><br>验证结果，再交给定时任务持续更新。</p>
+  <p role="listitem"><strong><span>3</span> 运行</strong><br>验证结果，再由常驻 Web 或系统任务持续更新。</p>
 </div>
 
 安装后可以先使用不会修改真实 DNS 记录的 Debug 服务商验证运行链路：
@@ -70,7 +70,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 
 - 仅使用 Python 标准库，兼容 Python 2.7 与 Python 3.x。
 - 支持 HTTP 代理、多代理回退、SSL 验证策略与自定义 CA。
-- 内置跨平台定时任务：Linux 使用 systemd/cron，macOS 使用 launchd，Windows 使用任务计划程序。
+- Web 控制台内置常驻调度；无 Web 场景仍可使用 systemd/cron、launchd 或 Windows 任务计划程序。
 - 支持日志级别、日志文件、格式与时间格式配置。
 
 ## 配置与凭据
@@ -103,13 +103,21 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ddns -c config.json
 ```
 
-安装每 5 分钟执行一次的系统定时任务：
+长期运行本机控制台，并由同一进程每 5 分钟自动同步：
+
+```bash
+ddns -c config.json --interval 5 --open
+```
+
+提供 `--interval` 会自动进入 Web 模式，无需额外写 `web`；也可在本地 JSON 顶层配置 `"interval": 5`，此时 `ddns -c config.json` 会自动启动 Web。命令行值优先于配置，原有 `ddns web` 命令继续兼容。页面保存的新间隔会写回配置；暂停和恢复只影响当前进程。检测到已启用的系统任务时，Web 会阻止重复调度。生产环境应使用 systemd、launchd、Windows 服务或 Docker 负责 Web 进程保活。
+
+不需要 Web 控制台时，可以安装每 5 分钟执行一次的系统定时任务：
 
 ```bash
 ddns task --install 5 -c /etc/ddns/config.json
 ```
 
-任务可通过 `ddns task --status` 查看，并使用 `--enable`、`--disable` 或 `--uninstall` 管理。参数与平台差异请查看[命令行文档](docs/config/cli.md#task-management-定时任务管理)。
+任务可通过 `ddns task --status` 查看，并使用 `--enable`、`--disable` 或 `--uninstall` 管理。不要让系统任务与 Web 内置调度同时运行。参数与平台差异请查看[命令行文档](docs/config/cli.md#task-management-定时任务管理)。
 
 路由器或光猫仅支持传统 DDNS 协议时，可以使用 **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** 转换到现代 DNS 服务商 API。
 

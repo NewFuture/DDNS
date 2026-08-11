@@ -172,6 +172,18 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
             self.assertEqual(definition["minimum"], 0)
             self.assertEqual(definition["default"], 259200)
 
+    def test_interval_schema_definition(self):
+        """Define the root Web interval without allowing provider overrides."""
+        schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "v4.1.json")
+        with open(schema_path, "rb") as schema_file:
+            schema = json.load(schema_file)
+
+        definition = schema["properties"]["interval"]
+        self.assertEqual(definition["type"], "integer")
+        self.assertEqual(definition["minimum"], 1)
+        self.assertEqual(definition["maximum"], 1440)
+        self.assertNotIn("interval", schema["properties"]["providers"]["items"]["properties"])
+
     def test_v40_to_v41_compatibility(self):
         """Test v4.0 config is compatible with v4.1 processing"""
         from ddns.config.file import load_config

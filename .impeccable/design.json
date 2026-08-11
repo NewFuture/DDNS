@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-10T05:47:58.0443808Z",
+  "title": "Design System: DDNS Signal Workbench",
+  "extensions": {
+    "colorMeta": {
+      "route-cobalt": {
+        "role": "primary",
+        "displayName": "Route Cobalt",
+        "tonalRamp": ["#061b2b", "#083b60", "#075c9f", "#0a73c5", "#39a0ff", "#8cc9f7", "#c7e5fa", "#eef8ff"]
+      },
+      "cool-canvas": {
+        "role": "neutral",
+        "displayName": "Cool Canvas",
+        "tonalRamp": ["#172026", "#34434c", "#5b6e79", "#9babb4", "#cdd7dd", "#e6ecef", "#f2f5f7", "#fcfdfd"]
+      },
+      "graphite-ink": {
+        "role": "neutral",
+        "displayName": "Graphite Ink",
+        "tonalRamp": ["#081118", "#10212c", "#314753", "#5b6e79", "#9babb4", "#cdd7dd", "#e9eef2", "#fcfdfd"]
+      },
+      "healthy-green": {
+        "role": "success",
+        "displayName": "Healthy Green",
+        "tonalRamp": ["#052017", "#06462f", "#087a56", "#13a978", "#4fd0a0", "#91e2c5", "#c7f0df", "#effaf6"]
+      },
+      "caution-amber": {
+        "role": "warning",
+        "displayName": "Caution Amber",
+        "tonalRamp": ["#271702", "#5b3505", "#9a5a0a", "#c9811e", "#f0b35b", "#f6d292", "#fae8c7", "#fff8eb"]
+      },
+      "failure-red": {
+        "role": "danger",
+        "displayName": "Failure Red",
+        "tonalRamp": ["#2d0911", "#651426", "#b22f46", "#d9556b", "#eb8797", "#f3b7c0", "#f9dde2", "#fff5f7"]
+      },
+      "instrument-navy": {
+        "role": "neutral",
+        "displayName": "Instrument Navy",
+        "tonalRamp": ["#040b10", "#08151e", "#0d1d28", "#203542", "#416174", "#7f98a6", "#bdcbd2", "#eff6f8"]
+      },
+      "instrument-blue": {
+        "role": "primary",
+        "displayName": "Instrument Blue",
+        "tonalRamp": ["#071c31", "#0b3f6b", "#0d6db5", "#39a0ff", "#78bcff", "#acd7ff", "#d6ebff", "#f1f8ff"]
+      },
+      "instrument-green": {
+        "role": "success",
+        "displayName": "Instrument Green",
+        "tonalRamp": ["#09251d", "#11513d", "#258566", "#4fd0a0", "#80dfbb", "#acebd3", "#d3f5e6", "#f1fcf7"]
+      },
+      "instrument-amber": {
+        "role": "warning",
+        "displayName": "Instrument Amber",
+        "tonalRamp": ["#2b1b07", "#5e3c12", "#a66f28", "#f0b35b", "#f5c983", "#f8dda9", "#fbeccf", "#fff9ed"]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Operational Headline",
+        "purpose": "Current runtime conclusions inside the signal deck."
+      },
+      "metric": {
+        "displayName": "Signal Metric",
+        "purpose": "Address, provider, and record counts along the signal path."
+      },
+      "setup": {
+        "displayName": "Setup Heading",
+        "purpose": "First-run orientation and major setup guidance."
+      },
+      "title": {
+        "displayName": "Workbench Title",
+        "purpose": "Page and major configuration headings."
+      },
+      "body": {
+        "displayName": "Interface Body",
+        "purpose": "Form values, explanations, and general interface copy."
+      },
+      "control": {
+        "displayName": "Control Text",
+        "purpose": "Buttons, command navigation, and compact status values."
+      },
+      "metadata": {
+        "displayName": "Operational Metadata",
+        "purpose": "Secondary row values and short status details."
+      },
+      "label": {
+        "displayName": "Measurement Label",
+        "purpose": "Field names, status captions, and machine metadata."
+      },
+      "mono": {
+        "displayName": "Machine Value",
+        "purpose": "Addresses, paths, and configuration values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "brand-low",
+        "value": "0 4px 10px rgba(12, 31, 42, 0.08)",
+        "purpose": "A faint edge beneath the DDNS mark."
+      },
+      {
+        "name": "action",
+        "value": "0 6px 14px rgba(7, 92, 159, 0.18)",
+        "purpose": "Primary save actions."
+      },
+      {
+        "name": "action-hover",
+        "value": "0 8px 18px rgba(7, 92, 159, 0.24)",
+        "purpose": "Hovered primary actions."
+      },
+      {
+        "name": "instrument-lift",
+        "value": "0 16px 34px rgba(15, 36, 48, 0.16)",
+        "purpose": "Separates the signal deck from the cool canvas."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(10, 115, 197, 0.11)",
+        "purpose": "Visible field focus without layout movement."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "150ms ease",
+        "purpose": "Buttons, fields, and state color changes."
+      },
+      {
+        "name": "navigation",
+        "value": "160ms ease",
+        "purpose": "Command navigation and disclosure movement."
+      },
+      {
+        "name": "route-pulse",
+        "value": "1.05s cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "The single synchronization pulse along the signal path."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "workbench",
+        "value": "1040px"
+      },
+      {
+        "name": "ledger",
+        "value": "800px"
+      },
+      {
+        "name": "mobile",
+        "value": "720px"
+      },
+      {
+        "name": "compact",
+        "value": "480px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Explicit save and confirm actions.",
+      "html": "<button class=\"ds-btn-primary\">保存更改</button>",
+      "css": ".ds-btn-primary { min-height: 38px; padding: 0 14px; border: 1px solid #0a73c5; border-radius: 6px; background: #0a73c5; color: #fff; font: 680 13px/1 \"Segoe UI\", sans-serif; box-shadow: 0 6px 14px rgba(7,92,159,.18); cursor: pointer; transition: background-color 150ms ease, box-shadow 150ms ease; } .ds-btn-primary:hover { background: #075c9f; box-shadow: 0 8px 18px rgba(7,92,159,.24); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(10,115,197,.28); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Reversible or lower-priority local actions.",
+      "html": "<button class=\"ds-btn-secondary\">恢复备份</button>",
+      "css": ".ds-btn-secondary { min-height: 38px; padding: 0 14px; border: 1px solid #cdd7dd; border-radius: 6px; background: #fcfdfd; color: #10212c; font: 680 13px/1 \"Segoe UI\", sans-serif; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; } .ds-btn-secondary:hover { border-color: #9babb4; background: #f2f5f7; } .ds-btn-secondary:focus-visible { outline: 3px solid rgba(10,115,197,.28); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Compact configuration entry with a visible local focus state.",
+      "html": "<label class=\"ds-field\"><span>HTTP 代理</span><input placeholder=\"继承默认代理\"></label>",
+      "css": ".ds-field { display: grid; gap: 7px; color: #314753; font: 650 11px/1.4 \"Segoe UI\", sans-serif; } .ds-field input { min-height: 40px; padding: 0 11px; border: 1px solid #cdd7dd; border-radius: 5px; background: #fcfdfd; color: #10212c; font: 400 14px/1.5 \"Segoe UI\", sans-serif; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-field input:hover { border-color: #9babb4; } .ds-field input:focus { border-color: #0a73c5; outline: 0; box-shadow: 0 0 0 3px rgba(10,115,197,.11); }"
+    },
+    {
+      "name": "Command Navigation",
+      "kind": "nav",
+      "description": "Two-command navigation for runtime and configuration.",
+      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-active\">运行</button><button>配置</button></nav>",
+      "css": ".ds-nav { display: flex; align-items: stretch; gap: 24px; min-height: 62px; } .ds-nav button { position: relative; min-width: 52px; border: 0; background: transparent; color: #5b6e79; font: 650 13px/1 \"Segoe UI\", sans-serif; cursor: pointer; } .ds-nav button:hover { color: #10212c; } .ds-nav button:focus-visible { outline: 3px solid rgba(10,115,197,.28); outline-offset: 2px; } .ds-nav .ds-nav-active { color: #10212c; } .ds-nav .ds-nav-active::after { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: #0a73c5; content: \"\"; }"
+    },
+    {
+      "name": "Status Signal",
+      "kind": "chip",
+      "description": "A compact semantic lamp and label for runtime health.",
+      "html": "<span class=\"ds-status\"><i></i>运行正常</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 7px; color: #087a56; font: 650 12px/1.4 \"Segoe UI\", sans-serif; } .ds-status i { width: 8px; height: 8px; border-radius: 50%; background: #087a56; box-shadow: 0 0 0 3px rgba(8,122,86,.11); }"
+    },
+    {
+      "name": "Signal Path Deck",
+      "kind": "custom",
+      "refersTo": "signal-deck",
+      "description": "The signature runtime conclusion and address-to-provider-to-record route.",
+      "html": "<section class=\"ds-signal\"><header><span class=\"ds-lamp\"></span><div><h2>解析状态稳定</h2><p>最近同步于 11:45，本机缓存可用。</p></div><button>立即同步</button></header><div class=\"ds-route\"><span><small>本机地址</small><strong>2</strong></span><i></i><span><small>DNS 服务商</small><strong>1</strong></span><i></i><span><small>解析记录</small><strong>3</strong></span></div></section>",
+      "css": ".ds-signal { overflow: hidden; border: 1px solid #203542; border-radius: 12px; background: #08151e; color: #eff6f8; box-shadow: 0 16px 34px rgba(15,36,48,.16); font-family: \"Segoe UI\", sans-serif; } .ds-signal header { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 18px; padding: 24px 30px; border-bottom: 1px solid #29404d; } .ds-lamp { width: 10px; height: 10px; border-radius: 50%; background: #4fd0a0; box-shadow: 0 0 0 4px rgba(79,208,160,.12); } .ds-signal h2 { margin: 0; font-size: 25px; line-height: 1.2; } .ds-signal p { margin: 5px 0 0; color: #9fb0b9; font-size: 13px; } .ds-signal button { min-height: 40px; padding: 0 16px; border: 1px solid #416174; border-radius: 6px; background: #f2f7f9; color: #0b2838; cursor: pointer; } .ds-signal button:hover { background: #fff; } .ds-signal button:focus-visible { outline: 3px solid rgba(57,160,255,.4); outline-offset: 2px; } .ds-route { display: grid; grid-template-columns: 1fr 80px 1fr 80px 1fr; align-items: center; gap: 14px; padding: 30px 34px; } .ds-route span { display: grid; gap: 8px; } .ds-route small { color: #9fb0b9; font-size: 11px; } .ds-route strong { font-size: 27px; } .ds-route i { height: 1px; background: #29404d; }"
+    },
+    {
+      "name": "Ruled Settings Group",
+      "kind": "card",
+      "refersTo": "settings-panel",
+      "description": "A continuous paper surface divided into operational rows.",
+      "html": "<section class=\"ds-settings\"><header>当前地址 <span>2 个可用</span></header><div><strong>IPv4</strong><code>203.0.113.42</code><em>可用</em></div><div><strong>IPv6</strong><code>2001:db8::42</code><em>可用</em></div></section>",
+      "css": ".ds-settings { overflow: hidden; border: 1px solid #cdd7dd; border-radius: 10px; background: #fcfdfd; color: #10212c; box-shadow: 0 8px 20px rgba(24,48,61,.07); font-family: \"Segoe UI\", sans-serif; } .ds-settings header { padding: 16px 18px; border-bottom: 1px solid #cdd7dd; font-size: 14px; font-weight: 710; } .ds-settings header span { margin-left: 6px; color: #5b6e79; font-size: 11px; font-weight: 400; } .ds-settings div { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; padding: 16px 18px; border-bottom: 1px solid #cdd7dd; } .ds-settings div:last-child { border-bottom: 0; } .ds-settings code { color: #314753; } .ds-settings em { color: #087a56; font-style: normal; font-weight: 650; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Signal Path Workbench / 信号路径工作台",
+    "overview": "Signal Path Workbench treats DDNS as a live route to inspect rather than a generic administration portal. Cool powder-coated surfaces form the workbench; one dark instrument deck carries the operational conclusion and traces local address through DNS provider to records. The interface is quiet enough for daily use but precise enough to diagnose a failure at a glance.\n\nThe system feels engineered, local, and trustworthy. It uses restrained density, ruled calibration forms, explicit state language, and a single cobalt action path. Configuration remains part of the same workbench, while complex design tooling stays outside the built-in console.",
+    "keyCharacteristics": [
+      "Operational state leads; configuration detail follows.",
+      "One dark signal deck anchors an otherwise light, cool-gray workspace.",
+      "Cobalt indicates routes and explicit actions; semantic colors report state only.",
+      "Rules, alignment, and compact labels create structure without a sidebar or card wall.",
+      "First-run replaces unavailable runtime content with the real configuration editor."
+    ],
+    "rules": [
+      {
+        "name": "The Signal Economy Rule",
+        "body": "Cobalt is reserved for the active route and explicit actions; green, amber, and red report state and never become decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measurement Label Rule",
+        "body": "Machine values may use monospace, but headings and action labels remain in the system sans-serif so the console reads as a product, not a terminal.",
+        "section": "typography"
+      },
+      {
+        "name": "The State Before Settings Rule",
+        "body": "When configuration exists, the first viewport answers whether DDNS is healthy; when it does not, the real configuration editor becomes the first viewport and unavailable runtime navigation is disabled.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Pulse Rule",
+        "body": "The address-to-provider-to-record route is the only continuously expressive motion, and it runs only while synchronization is active.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Ruled Surface Rule",
+        "body": "Prefer one continuous surface divided by lines over collections of unrelated rounded cards.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do keep the current operational state and next safe action visible before configuration detail.",
+      "Do use real local runtime data, explicit empty states, and reversible configuration language.",
+      "Do preserve the 2-12px radius ladder and ruled internal alignment across new controls.",
+      "Do make network-changing actions explicit and show their resulting local state.",
+      "Do collapse grids and the signal route deliberately at the 1040px, 800px, 720px, and 480px breakpoints."
+    ],
+    "donts": [
+      "Don't introduce a sidebar, dashboard card wall, decorative gradients, or ornamental grid backgrounds.",
+      "Don't use semantic green, amber, or red as general brand color.",
+      "Don't duplicate the documentation Config Studio inside the embedded console.",
+      "Don't expand inherited defaults into the saved configuration merely to fill the form.",
+      "Don't fabricate monitoring history, provider health, or synchronization evidence."
+    ]
+  }
+}

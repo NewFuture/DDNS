@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>DDNS 控制台</title>
+    <link rel="icon" href="/assets/ddns.svg">
+    <link rel="stylesheet" href="/assets/dashboard.css">
+    <script src="/assets/dashboard.js" defer></script>
+  </head>
+  <body>
+    <!--
+      THESIS: Make DNS reconciliation visible as a signal path; refuse the generic summary-card dashboard.
+      OWN-WORLD: Cool powder-coated panels, an ink-black trace deck, cobalt routes, green/amber signals, and ruled forms.
+      STORY: Daily users verify the path and act; an unconfigured device turns the same path into first setup.
+      FIRST VIEWPORT: One live route links local address, provider, and DNS records with the sync action on the deck.
+      FORM: Grounded direction 4, visible-transit staging, seed 3a34b6d2; configuration remains continuous below.
+    -->
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-sync" viewBox="0 0 24 24">
+        <path d="M20 7v5h-5"/>
+        <path d="M4 17v-5h5"/>
+        <path d="M6.1 9A7 7 0 0 1 18.4 7L20 12M4 12l1.6 5A7 7 0 0 0 17.9 15"/>
+      </symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24">
+        <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/>
+      </symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-4-4"/>
+      </symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24">
+        <path d="m9 18 6-6-6-6"/>
+      </symbol>
+      <symbol id="icon-globe" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M3 12h18M12 3c3 3 4.5 6 4.5 9S15 18 12 21c-3-3-4.5-6-4.5-9S9 6 12 3Z"/>
+      </symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24">
+        <path d="M12 3 5 6v5c0 4.6 2.9 8.2 7 10 4.1-1.8 7-5.4 7-10V6l-7-3Z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3 2"/>
+      </symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14"/>
+      </symbol>
+      <symbol id="icon-external" viewBox="0 0 24 24">
+        <path d="M14 5h5v5M19 5l-8 8"/>
+        <path d="M18 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>
+      </symbol>
+    </svg>
+
+    <div class="portal" id="app">
+      <header class="app-header">
+        <div class="app-header-inner">
+          <button class="brand" type="button" data-view="overview" aria-label="回到运行状态">
+            <span class="brand-symbol"><img src="/assets/ddns.svg" alt=""></span>
+            <span><strong>DDNS</strong><small>本机控制台</small></span>
+          </button>
+
+          <nav class="command-nav" aria-label="页面区域">
+            <button class="active" id="nav-overview" type="button" data-view="overview" aria-controls="overview">运行</button>
+            <button id="nav-config" type="button" data-view="config" aria-controls="config">配置</button>
+          </nav>
+
+          <div class="header-actions">
+            <span class="header-health" id="header-health"><i></i><span>正在连接</span></span>
+            <button class="theme-button" id="theme-button" type="button" aria-label="切换深色模式">
+              <svg class="theme-icon-moon" aria-hidden="true"><use href="#icon-moon"></use></svg>
+              <svg class="theme-icon-sun" aria-hidden="true"><use href="#icon-sun"></use></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="stage">
+        <div class="content">
+          <section class="overview-view" id="overview" aria-labelledby="overview-title">
+            <header class="page-header">
+              <div>
+                <h1 id="overview-title">运行状态</h1>
+                <p>查看当前地址与解析结果，必要时立即同步。</p>
+              </div>
+            </header>
+
+            <section class="status-hero" id="status-hero" aria-labelledby="status-title">
+              <div class="hero-primary">
+                <span class="status-app-icon"><img src="/assets/ddns.svg" alt=""></span>
+                <div class="status-copy">
+                  <h2 id="status-title" aria-live="polite">正在读取本机状态</h2>
+                  <p id="status-summary">连接本机配置、缓存与调度器。</p>
+                </div>
+                <button class="button signal-action sync-button" id="sync-button" type="button">
+                  <svg aria-hidden="true"><use href="#icon-sync"></use></svg>
+                  <span>立即同步</span>
+                </button>
+              </div>
+
+              <div class="status-topology" aria-label="当前 DDNS 数据路径">
+                <span class="route-node">
+                  <small id="topology-address-label">本机地址</small>
+                  <strong id="topology-addresses">—</strong>
+                </span>
+                <i class="route-connector" aria-hidden="true"></i>
+                <span class="route-node">
+                  <small id="topology-provider-label">DNS 服务商</small>
+                  <strong id="topology-providers">—</strong>
+                </span>
+                <i class="route-connector" aria-hidden="true"></i>
+                <span class="route-node">
+                  <small id="topology-record-label">解析记录</small>
+                  <strong id="topology-records">—</strong>
+                </span>
+              </div>
+
+              <div class="observability-rail">
+                <div class="latest-signal">
+                  <span>最近一次 <time id="latest-time">—</time></span>
+                  <strong id="latest-title">等待状态数据</strong>
+                  <small id="latest-detail">首次加载通常只需片刻</small>
+                </div>
+                <button class="recovery-signal" id="scheduler-button" type="button">
+                  <svg aria-hidden="true"><use href="#icon-clock"></use></svg>
+                  <span>
+                    <small id="scheduler-action">自动同步</small>
+                    <strong id="scheduler-title">读取 Web 内置调度状态</strong>
+                  </span>
+                  <svg class="signal-arrow" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                </button>
+              </div>
+            </section>
+
+            <div class="dashboard-grid" id="runtime-overview">
+              <section class="settings-section" aria-labelledby="address-title">
+                <div class="section-heading">
+                  <div><h2 id="address-title">当前地址</h2><span id="address-count">0 个可用</span></div>
+                </div>
+                <div class="settings-group" id="address-list">
+                  <div class="native-empty"><strong>正在读取地址</strong><span>同步后将在这里显示实际地址</span></div>
+                </div>
+              </section>
+
+              <section class="settings-section" aria-labelledby="runtime-title">
+                <div class="section-heading">
+                  <div><h2 id="runtime-title">运行环境</h2><span id="runtime-count">本机</span></div>
+                </div>
+                <div class="settings-group" id="runtime-list">
+                  <div class="native-empty"><strong>正在读取配置</strong><span>服务商与缓存策略将在这里显示</span></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="ledger-grid" id="runtime-ledger">
+              <section class="settings-section records-section" aria-labelledby="records-title">
+                <div class="section-heading records-heading">
+                  <div><h2 id="records-title">解析记录</h2><span id="record-count">0 条</span></div>
+                  <label class="search-field" id="record-search-field" hidden>
+                    <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+                    <span class="sr-only">搜索解析记录</span>
+                    <input id="record-search" type="search" placeholder="搜索域名或地址" autocomplete="off">
+                  </label>
+                </div>
+                <div class="settings-group" id="record-list">
+                  <div class="native-empty"><strong>暂无解析记录</strong><span>完成一次同步后会显示本机缓存结果</span></div>
+                </div>
+              </section>
+
+              <section class="settings-section activity-section" aria-labelledby="activity-title">
+                <div class="section-heading activity-heading">
+                  <div><h2 id="activity-title">运行记录</h2><span id="activity-count">0 项</span></div>
+                  <div class="filter-tabs" id="activity-filter" role="group" aria-label="筛选运行记录" hidden>
+                    <button class="active" type="button" data-activity-filter="all">全部</button>
+                    <button type="button" data-activity-filter="attention">需关注</button>
+                  </div>
+                </div>
+                <div class="settings-group activity-ledger">
+                  <ol class="event-stream" id="activity-list">
+                    <li class="native-empty"><div><strong>暂无活动</strong><small>同步结果会记录在这里</small></div></li>
+                  </ol>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="config-view" id="config" aria-labelledby="config-summary-title">
+            <details class="config-shell" id="config-shell" open>
+              <summary class="config-summary">
+                <span class="config-summary-mark" aria-hidden="true">DNS</span>
+                <span class="config-summary-copy">
+                  <h2 id="config-summary-title">正在读取配置</h2>
+                  <p id="config-summary-detail">服务商、解析记录与自动同步状态将在这里汇总。</p>
+                </span>
+                <span class="config-summary-meta">
+                  <span class="config-summary-status" id="config-summary-status"><i></i><span>读取中</span></span>
+                  <span class="config-summary-action">
+                    <span class="when-closed">管理配置</span>
+                    <span class="when-open">收起配置</span>
+                    <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                  </span>
+                </span>
+              </summary>
+
+              <div class="config-body">
+                <section class="setup-brief" id="setup-brief" aria-labelledby="setup-title" hidden>
+              <div class="setup-copy">
+                <h2 id="setup-title">配置这台设备</h2>
+                <p>选择 DNS 服务商并添加域名；保存后回到运行状态执行首次同步。</p>
+              </div>
+              <ol class="setup-sequence" aria-label="首次配置步骤">
+                <li><span>1</span><strong>服务商</strong><small>选择服务并填写凭据</small></li>
+                <li><span>2</span><strong>域名</strong><small>添加 A 或 AAAA 记录</small></li>
+                <li><span>3</span><strong>保存后同步</strong><small>先写入本机，再主动验证链路</small></li>
+              </ol>
+              <div class="setup-target">
+                <span>写入位置</span>
+                <code id="setup-path">config.json</code>
+                <small>点击保存前不会写入磁盘</small>
+              </div>
+            </section>
+
+            <header class="page-header config-heading">
+              <div>
+                <h2 id="config-title">配置管理</h2>
+                <p id="config-description">维护本机正在使用的配置；未填写的字段继续继承环境变量或默认值。</p>
+              </div>
+              <div class="page-actions">
+                <span class="save-state" id="save-state"><i></i><span>已与磁盘同步</span></span>
+                <button class="button secondary" id="restore-button" type="button">恢复备份</button>
+                <button class="button primary" id="save-button" type="button">保存更改</button>
+              </div>
+            </header>
+
+            <div class="config-editor">
+              <div class="editor-title">
+                <div class="profile-picker">
+                  <span class="provider-logo" id="profile-badge">DNS</span>
+                  <span>
+                    <small id="config-path-label">当前配置</small>
+                    <select id="profile-select" aria-label="选择服务商配置"></select>
+                  </span>
+                </div>
+                <div class="editor-tools">
+                  <a class="button ghost studio-link" href="https://ddns.newfuture.cc/config/studio" target="_blank" rel="noopener">
+                    设计复杂配置
+                    <svg aria-hidden="true"><use href="#icon-external"></use></svg>
+                  </a>
+                  <button class="button ghost" id="add-profile-button" type="button">
+                    <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+                    添加服务商
+                  </button>
+                  <button class="button ghost danger" id="delete-profile-button" type="button">
+                    删除
+                  </button>
+                </div>
+              </div>
+
+              <div class="config-notice" id="config-notice" hidden role="status"></div>
+
+              <details class="config-pane" id="provider-pane" open>
+                <summary class="section-title">
+                  <div>
+                    <h3>服务商与凭据</h3>
+                    <p id="provider-description">凭据只保存在指定的本机配置文件中。</p>
+                  </div>
+                  <svg class="pane-chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                </summary>
+                <div class="pane-content">
+                  <div class="form-grid">
+                    <label class="field">
+                      <span>服务商</span>
+                      <select id="provider-name"></select>
+                    </label>
+                    <label class="field">
+                      <span>线路</span>
+                      <input id="record-line" type="text" placeholder="继承默认线路">
+                    </label>
+                    <label class="field" id="provider-id-field">
+                      <span id="provider-id-label">账号或 ID</span>
+                      <input id="provider-id" type="text" autocomplete="username" placeholder="留空继续继承">
+                    </label>
+                    <label class="field" id="provider-token-field">
+                      <span id="provider-token-label">Token 或密钥</span>
+                      <input id="provider-token" type="password" autocomplete="new-password" placeholder="留空继续继承">
+                    </label>
+                  </div>
+                </div>
+              </details>
+
+              <details class="config-pane" id="domains-pane" open>
+                <summary class="section-title">
+                  <div>
+                    <h3>域名与地址</h3>
+                    <p>分别维护 A 与 AAAA 记录；没有对应域名时可保持为空。</p>
+                  </div>
+                  <svg class="pane-chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                </summary>
+                <div class="pane-content domain-columns">
+                  <div class="domain-section">
+                    <div class="domain-heading">
+                      <span class="protocol">A</span>
+                      <div><strong>IPv4 记录</strong><small>解析到当前 IPv4 地址</small></div>
+                    </div>
+                    <div class="domain-list" id="ipv4-domain-list"></div>
+                    <div class="add-domain">
+                      <input id="ipv4-domain-input" type="text" placeholder="home.example.com" aria-label="添加 IPv4 域名">
+                      <button type="button" data-add-domain="ipv4">添加</button>
+                    </div>
+                  </div>
+                  <div class="domain-section">
+                    <div class="domain-heading">
+                      <span class="protocol ipv6">AAAA</span>
+                      <div><strong>IPv6 记录</strong><small>解析到当前 IPv6 地址</small></div>
+                    </div>
+                    <div class="domain-list" id="ipv6-domain-list"></div>
+                    <div class="add-domain">
+                      <input id="ipv6-domain-input" type="text" placeholder="v6.example.com" aria-label="添加 IPv6 域名">
+                      <button type="button" data-add-domain="ipv6">添加</button>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <details class="config-pane" id="network-pane" open>
+                <summary class="section-title">
+                  <div>
+                    <h3>网络策略</h3>
+                    <p>控制地址获取、请求路径和缓存，不填写时保留现有继承行为。</p>
+                  </div>
+                  <svg class="pane-chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                </summary>
+                <div class="pane-content">
+                  <div class="form-grid">
+                    <label class="field">
+                      <span>IPv4 来源 <small>每行一条规则</small></span>
+                      <textarea class="source-field" id="index4" rows="2" placeholder="public&#10;default"></textarea>
+                    </label>
+                    <label class="field">
+                      <span>IPv6 来源 <small>每行一条规则</small></span>
+                      <textarea class="source-field" id="index6" rows="2" placeholder="public&#10;default"></textarea>
+                    </label>
+                    <label class="field">
+                      <span>TTL <small>秒</small></span>
+                      <input id="ttl" type="number" min="0" step="1" placeholder="服务商默认值">
+                    </label>
+                    <label class="field">
+                      <span>HTTP 代理</span>
+                      <input id="proxy" type="text" placeholder="DIRECT">
+                    </label>
+                  </div>
+                  <div class="setting-pair">
+                    <div class="setting">
+                      <div><strong>HTTPS 证书验证</strong><p>保持请求链路可信，仅在受控诊断环境关闭。</p></div>
+                      <label class="switch">
+                        <input id="ssl-enabled" type="checkbox">
+                        <span class="switch-track" aria-hidden="true"></span>
+                        <span class="switch-label" id="ssl-label">开启</span>
+                      </label>
+                    </div>
+                    <div class="setting">
+                      <div><strong>本地缓存</strong><p>地址没有变化时跳过不必要的服务商请求。</p></div>
+                      <label class="switch">
+                        <input id="cache-enabled" type="checkbox">
+                        <span class="switch-track" aria-hidden="true"></span>
+                        <span class="switch-label" id="cache-label">开启</span>
+                      </label>
+                    </div>
+                  </div>
+                  <details class="advanced-group">
+                    <summary>
+                      <span><strong>日志输出</strong><small>调整级别与本机文件路径</small></span>
+                      <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                    </summary>
+                    <div class="advanced-content">
+                      <div class="form-grid">
+                        <label class="field">
+                          <span>日志级别</span>
+                          <select id="log-level">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                          </select>
+                        </label>
+                        <label class="field">
+                          <span>日志文件</span>
+                          <input id="log-file" type="text" placeholder="留空输出到终端">
+                        </label>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </details>
+
+              <details class="config-pane" id="automation-pane" open>
+                <summary class="section-title">
+                  <div>
+                    <h3>自动化与高级配置</h3>
+                    <p>管理本机周期同步；扩展字段仍可通过完整 JSON 维护。</p>
+                  </div>
+                  <svg class="pane-chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                </summary>
+                <div class="pane-content">
+                  <div class="automation-card">
+                    <span class="automation-icon"><svg aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+                    <div>
+                      <strong id="automation-title">读取 Web 内置调度</strong>
+                      <p id="automation-detail">状态将在控制台连接后显示。</p>
+                    </div>
+                    <label class="field compact-field">
+                      <span>间隔（分钟）</span>
+                      <input id="scheduler-interval" type="number" min="1" max="1440" value="5">
+                    </label>
+                    <button class="button secondary" id="automation-button" type="button">配置</button>
+                  </div>
+                  <details class="advanced-group json-group" id="json-details">
+                    <summary>
+                      <span><strong>完整 JSON</strong><small>维护扩展字段、兼容选项或修复无效配置</small></span>
+                      <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
+                    </summary>
+                    <div class="advanced-content">
+                      <p class="advanced-hint">应用只更新当前草稿；点击“保存更改”后才会写入磁盘。</p>
+                      <label class="field wide">
+                        <span>配置内容</span>
+                        <textarea class="json-editor" id="json-editor" spellcheck="false" aria-label="完整 JSON 配置"></textarea>
+                      </label>
+                      <div class="inline-actions">
+                        <button class="button secondary" id="format-json-button" type="button">格式化</button>
+                        <button class="button secondary" id="apply-json-button" type="button">应用到草稿</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </details>
+
+              <footer class="editor-footer">
+                <span id="editor-state">修改先保留在当前页面，保存后才写入磁盘。</span>
+                <div>
+                  <button class="button ghost" id="discard-button" type="button" disabled>放弃更改</button>
+                  <button class="button primary" id="footer-save-button" type="button">保存更改</button>
+                </div>
+              </footer>
+            </div>
+              </div>
+            </details>
+          </section>
+        </div>
+      </main>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+        <span id="toast-message"></span>
+      </div>
+    </div>
+  </body>
+</html>

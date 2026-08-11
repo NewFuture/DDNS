@@ -11,6 +11,8 @@ from ..util.comment import remove_comment
 from ..util.http import request
 from ..util.fileio import read_file, write_file
 
+DEFAULT_CONFIG_PATHS = ("config.json", "~/.ddns/config.json", "~/.ddns.json", "/etc/ddns/config.json", "/etc/ddns.json")
+
 
 def _process_multi_providers(config):
     # type: (dict) -> list[dict]
@@ -69,8 +71,8 @@ def _flatten_single_config(config, exclude_keys=None, preserve_keys=None):
     return flat_config
 
 
-def load_config(config_path, proxy=None, ssl="auto"):
-    # type: (str, list[str] | None, bool | str) -> dict|list[dict]
+def load_config(config_path, proxy=None, ssl="auto", raw=False):
+    # type: (str, list[str] | None, bool | str, bool) -> dict|list[dict]
     """
     加载配置文件并返回配置字典或配置字典数组。
     支持本地文件和远程HTTP(S) URL。
@@ -81,6 +83,7 @@ def load_config(config_path, proxy=None, ssl="auto"):
         config_path (str): 配置文件路径或HTTP(S) URL
         proxy (list[str] | None): 代理列表，仅用于HTTP或HTTPS请求
         ssl (bool | str): SSL验证配置，仅用于HTTPS请求
+        raw (bool): 返回解析后的原始结构，不展开多服务商配置
 
     Returns:
         dict|list[dict]: 配置字典或配置字典数组
@@ -124,6 +127,9 @@ def load_config(config_path, proxy=None, ssl="auto"):
     except Exception as e:
         stderr.write("Failed to load config file `%s`: %s\n" % (config_path, e))
         raise
+
+    if raw:
+        return config
 
     # 处理配置格式：v4.1 providers格式或单个对象
     if "providers" in config and isinstance(config["providers"], list):

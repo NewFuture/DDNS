@@ -62,8 +62,14 @@ pytest = [
 # Setuptools configuration
 [tool.setuptools]
 platforms = ["any"]
-packages = ["ddns", "ddns.config", "ddns.provider", "ddns.scheduler", "ddns.util"]
-package-dir= {"ddns" = "ddns"}
+packages = ["ddns", "ddns.config", "ddns.provider", "ddns.scheduler", "ddns.util", "ddns.web", "ddns.web.static"]
+# Materialize the standalone frontend directly under the installed ddns.web package.
+package-dir = {"ddns" = "ddns", "ddns.web.static" = "web"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+"ddns.config" = ["field-model.json"]
+"ddns.web.static" = ["*.html", "*.css", "*.js", "*.svg"]
 
 #[tool.setuptools.packages.find]
 #where = ["."]

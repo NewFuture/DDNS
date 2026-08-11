@@ -12,6 +12,54 @@ type SslMode = 'inherit' | 'auto' | 'true' | 'false' | 'custom'
 type LogLevel = string | number
 type JsonValue = string | number | boolean | null | JsonObject | JsonValue[]
 
+interface ConfigFieldModel {
+  schema: {
+    url: string
+    values: string[]
+  }
+  defaults: {
+    provider: string
+    index: string[]
+    ssl: string | boolean
+    proxy: string[]
+    cache: boolean
+    cacheMaxAge: number
+    interval: number
+    logLevel: string
+  }
+  limits: {
+    providers: number
+  }
+  rules: {
+    domainPattern: string
+    proxyPattern: string
+    logLevels: string[]
+    addressSourceNames: string[]
+    addressSourcePrefixes: string[]
+    falseAliases: string[]
+    booleanTrueAliases: string[]
+    booleanFalseAliases: string[]
+    legacyProviderKeys: string[]
+    flatLogKeys: string[]
+    reservedExtraKeys: string[]
+    commonConfigKeys: string[]
+  }
+  providers: Array<{
+    id: string
+    name: string
+    docs: string
+    auth: AuthMode
+    featured: boolean
+    testOnly: boolean
+    description: { zh: string; en: string }
+    idLabel: { zh: string; en: string }
+    tokenLabel: { zh: string; en: string }
+  }>
+}
+
+declare const __DDNS_FIELD_MODEL__: ConfigFieldModel
+const configModel = __DDNS_FIELD_MODEL__
+
 interface JsonObject {
   [key: string]: JsonValue
 }
@@ -81,6 +129,7 @@ interface GlobalState {
   cacheMode: CacheMode
   cachePath: string
   cacheMaxAge: string
+  interval: string
   logLevel: LogLevel
   logFile: string
   logFilePresent: boolean
@@ -132,47 +181,22 @@ interface StoredDraft {
   }
 }
 
-const SCHEMA_URL = 'https://ddns.newfuture.cc/schema/v4.1.json'
+const SCHEMA_URL = configModel.schema.url
 const DRAFT_STORAGE_KEY = 'ddns-config-studio-draft-v1'
 const DRAFT_VERSION = 2
 const DRAFT_SAVE_DELAY = 400
-const SCHEMA_VALUES = [
-  SCHEMA_URL,
-  'http://ddns.newfuture.cc/schema/v4.1.json',
-  './schema/v4.1.json',
-]
-const DOMAIN_PATTERN = /^(?:\*\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,18}$/
-const PROXY_PATTERN = /^(https?:\/\/[a-zA-Z0-9\-_:.]+|[a-zA-Z0-9\-_:.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)$/
-const LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-const ADDRESS_SOURCE_NAMES = new Set(['default', 'local', 'public'])
-const ADDRESS_SOURCE_PREFIXES = ['url:', 'regex:', 'cmd:', 'shell:'] as const
-const DEFAULT_INDEX_TEXT = 'public\ndefault'
-const LEGACY_PROVIDER_KEYS = ['dns', 'id', 'token', 'ipv4', 'ipv6', 'endpoint']
-const FLAT_LOG_KEYS = ['log_level', 'log_file', 'log_format', 'log_datefmt']
-const RESERVED_EXTRA_KEYS = new Set(['domain', 'value', 'record_type', 'ttl', 'line'])
-const COMMON_CONFIG_KEYS = [
-  '$schema',
-  'dns',
-  'id',
-  'token',
-  'endpoint',
-  'ipv4',
-  'ipv6',
-  'index4',
-  'index6',
-  'ttl',
-  'line',
-  'proxy',
-  'cache',
-  'cache_max_age',
-  'ssl',
-  'log',
-  ...FLAT_LOG_KEYS,
-  'extra',
-  'debug',
-  'config',
-  'command',
-] as const
+const SCHEMA_VALUES = configModel.schema.values
+const DOMAIN_PATTERN = new RegExp(configModel.rules.domainPattern)
+const PROXY_PATTERN = new RegExp(configModel.rules.proxyPattern)
+const LOG_LEVELS = configModel.rules.logLevels
+const ADDRESS_SOURCE_NAMES = new Set(configModel.rules.addressSourceNames)
+const ADDRESS_SOURCE_PREFIXES = configModel.rules.addressSourcePrefixes
+const FALSE_ALIASES = configModel.rules.falseAliases
+const DEFAULT_INDEX_TEXT = configModel.defaults.index.join('\n')
+const LEGACY_PROVIDER_KEYS = configModel.rules.legacyProviderKeys
+const FLAT_LOG_KEYS = configModel.rules.flatLogKeys
+const RESERVED_EXTRA_KEYS = new Set(configModel.rules.reservedExtraKeys)
+const COMMON_CONFIG_KEYS = [...configModel.rules.commonConfigKeys, ...FLAT_LOG_KEYS]
 const ROOT_KNOWN_KEYS = new Set<string>([...COMMON_CONFIG_KEYS, 'providers'])
 const PROVIDER_KNOWN_KEYS = new Set<string>([...COMMON_CONFIG_KEYS, 'provider'])
 
@@ -265,6 +289,7 @@ const copy = {
     caPath: 'CA 证书路径',
     runtimeTitle: '配置缓存、日志与扩展字段',
     runtimeHint: '先设置全局缓存与日志；如有需要，再为当前服务商覆盖对应设置。',
+    interval: '自动同步间隔（分钟）',
     cache: '缓存策略',
     cacheOn: '启用默认缓存',
     cacheOff: '禁用缓存',
@@ -407,6 +432,7 @@ const copy = {
     caPath: 'CA certificate path',
     runtimeTitle: 'Configure cache, logs & custom fields',
     runtimeHint: 'Set global cache and logging behavior, then add provider-specific overrides if needed.',
+    interval: 'Automatic sync interval (minutes)',
     cache: 'Cache policy',
     cacheOn: 'Enable default cache',
     cacheOff: 'Disable cache',
@@ -466,230 +492,26 @@ const copy = {
 
 const c = computed(() => (isEnglish.value ? copy.en : copy.zh))
 
-const providerCatalog: ProviderMeta[] = [
-  {
-    value: '51dns',
-    name: '51DNS',
-    docs: '51dns',
-    auth: 'id-token',
-    descriptionZh: '使用 DNS.COM / 51DNS API Key 与 Secret',
-    descriptionEn: 'Uses a DNS.COM / 51DNS API key and secret',
-    idLabelZh: 'API Key',
-    idLabelEn: 'API key',
-    tokenLabelZh: 'API Secret',
-    tokenLabelEn: 'API secret',
-  },
-  {
-    value: 'alidns',
-    name: 'AliDNS',
-    docs: 'alidns',
-    auth: 'id-token',
-    descriptionZh: '使用阿里云 AccessKey 认证',
-    descriptionEn: 'Uses Alibaba Cloud AccessKey credentials',
-    idLabelZh: 'AccessKey ID',
-    idLabelEn: 'AccessKey ID',
-    tokenLabelZh: 'AccessKey Secret',
-    tokenLabelEn: 'AccessKey secret',
-  },
-  {
-    value: 'aliesa',
-    name: 'Ali ESA',
-    docs: 'aliesa',
-    auth: 'id-token',
-    descriptionZh: '使用阿里云 ESA AccessKey 认证',
-    descriptionEn: 'Uses Alibaba Cloud ESA AccessKey credentials',
-    idLabelZh: 'AccessKey ID',
-    idLabelEn: 'AccessKey ID',
-    tokenLabelZh: 'AccessKey Secret',
-    tokenLabelEn: 'AccessKey secret',
-  },
-  {
-    value: 'callback',
-    name: 'Callback',
-    docs: 'callback',
-    auth: 'callback',
-    descriptionZh: '将 DNS 更新转发到自定义 HTTP API 或 Webhook',
-    descriptionEn: 'Forwards DNS updates to a custom HTTP API or webhook',
-    idLabelZh: '完整回调 URL',
-    idLabelEn: 'Full callback URL',
-    tokenLabelZh: 'POST 请求体（留空则使用 GET）',
-    tokenLabelEn: 'POST body (leave blank for GET)',
-  },
-  {
-    value: 'cloudflare',
-    name: 'Cloudflare',
-    docs: 'cloudflare',
-    auth: 'flexible',
-    descriptionZh: '建议使用 API Token；Global API Key 还需填写账户邮箱',
-    descriptionEn: 'Use an API Token when possible. A Global API Key also requires your account email.',
-    idLabelZh: '账户邮箱',
-    idLabelEn: 'Account email',
-    tokenLabelZh: 'API Token / Global API Key',
-    tokenLabelEn: 'API Token / Global API Key',
-  },
-  {
-    value: 'cloudns',
-    name: 'ClouDNS',
-    docs: 'cloudns',
-    auth: 'id-token',
-    descriptionZh: '使用 ClouDNS Auth ID 与密码',
-    descriptionEn: 'Uses a ClouDNS auth ID and password',
-    idLabelZh: 'Auth ID',
-    idLabelEn: 'Auth ID',
-    tokenLabelZh: 'Auth Password',
-    tokenLabelEn: 'Auth password',
-  },
-  {
-    value: 'debug',
-    name: 'Debug',
-    docs: 'debug',
-    auth: 'none',
-    testOnly: true,
-    descriptionZh: '只打印更新结果，不修改实际 DNS 记录',
-    descriptionEn: 'Prints update results without changing live DNS records',
-    idLabelZh: 'ID',
-    idLabelEn: 'ID',
-    tokenLabelZh: 'Token',
-    tokenLabelEn: 'Token',
-  },
-  {
-    value: 'dnscom',
-    name: 'DNS.COM',
-    docs: '51dns',
-    auth: 'id-token',
-    descriptionZh: 'DNS.COM / 51DNS API 的兼容别名',
-    descriptionEn: 'Alias for the DNS.COM / 51DNS API',
-    idLabelZh: 'API Key',
-    idLabelEn: 'API key',
-    tokenLabelZh: 'API Secret',
-    tokenLabelEn: 'API secret',
-  },
-  {
-    value: 'dnspod_com',
-    name: 'DNSPod Global',
-    docs: 'dnspod_com',
-    auth: 'id-token',
-    descriptionZh: '使用 DNSPod 国际版 API 凭据',
-    descriptionEn: 'Uses DNSPod Global API credentials',
-    idLabelZh: 'API ID',
-    idLabelEn: 'API ID',
-    tokenLabelZh: 'API Token',
-    tokenLabelEn: 'API token',
-  },
-  {
-    value: 'dnspod',
-    name: 'DNSPod',
-    docs: 'dnspod',
-    auth: 'id-token',
-    descriptionZh: '使用 DNSPod 中国版 Login Token',
-    descriptionEn: 'Uses a DNSPod China login token',
-    idLabelZh: 'Token ID',
-    idLabelEn: 'Token ID',
-    tokenLabelZh: 'Token',
-    tokenLabelEn: 'Token',
-  },
-  {
-    value: 'edgeone',
-    name: 'EdgeOne',
-    docs: 'edgeone',
-    auth: 'id-token',
-    descriptionZh: '管理腾讯云 EdgeOne 加速域名',
-    descriptionEn: 'Manages Tencent Cloud EdgeOne accelerated domains',
-    idLabelZh: 'Secret ID',
-    idLabelEn: 'Secret ID',
-    tokenLabelZh: 'Secret Key',
-    tokenLabelEn: 'Secret key',
-  },
-  {
-    value: 'edgeone_dns',
-    name: 'EdgeOne DNS',
-    docs: 'edgeone_dns',
-    auth: 'id-token',
-    descriptionZh: '管理腾讯云 EdgeOne 非加速 DNS 记录',
-    descriptionEn: 'Manages Tencent Cloud EdgeOne non-accelerated DNS records',
-    idLabelZh: 'Secret ID',
-    idLabelEn: 'Secret ID',
-    tokenLabelZh: 'Secret Key',
-    tokenLabelEn: 'Secret key',
-  },
-  {
-    value: 'he',
-    name: 'HE.net',
-    docs: 'he',
-    auth: 'token',
-    descriptionZh: '使用 HE.net DDNS 密码',
-    descriptionEn: 'Uses a Hurricane Electric DDNS password',
-    idLabelZh: 'ID',
-    idLabelEn: 'ID',
-    tokenLabelZh: 'DDNS Password',
-    tokenLabelEn: 'DDNS password',
-  },
-  {
-    value: 'huaweidns',
-    name: 'Huawei Cloud DNS',
-    docs: 'huaweidns',
-    auth: 'id-token',
-    descriptionZh: '使用华为云 IAM 访问密钥',
-    descriptionEn: 'Uses Huawei Cloud IAM access keys',
-    idLabelZh: 'Access Key ID',
-    idLabelEn: 'Access Key ID',
-    tokenLabelZh: 'Secret Access Key',
-    tokenLabelEn: 'Secret access key',
-  },
-  {
-    value: 'namesilo',
-    name: 'NameSilo',
-    docs: 'namesilo',
-    auth: 'token',
-    descriptionZh: '仅需 NameSilo API Key',
-    descriptionEn: 'Requires only a NameSilo API key',
-    idLabelZh: 'ID',
-    idLabelEn: 'ID',
-    tokenLabelZh: 'API Key',
-    tokenLabelEn: 'API key',
-  },
-  {
-    value: 'noip',
-    name: 'No-IP',
-    docs: 'noip',
-    auth: 'id-token',
-    descriptionZh: '使用 No-IP 用户名与密码',
-    descriptionEn: 'Uses a No-IP username and password',
-    idLabelZh: '用户名',
-    idLabelEn: 'Username',
-    tokenLabelZh: 'Password',
-    tokenLabelEn: 'Password',
-  },
-  {
-    value: 'tencentcloud',
-    name: 'Tencent Cloud DNS',
-    docs: 'tencentcloud',
-    auth: 'id-token',
-    descriptionZh: '使用腾讯云 SecretId 与 SecretKey',
-    descriptionEn: 'Uses Tencent Cloud SecretId and SecretKey',
-    idLabelZh: 'Secret ID',
-    idLabelEn: 'Secret ID',
-    tokenLabelZh: 'Secret Key',
-    tokenLabelEn: 'Secret key',
-  },
-  {
-    value: 'west',
-    name: 'West.cn',
-    docs: 'west',
-    auth: 'flexible',
-    descriptionZh: '支持西部数码账户认证或域名独立密码',
-    descriptionEn: 'Supports West.cn account credentials or a per-domain key',
-    idLabelZh: '用户名',
-    idLabelEn: 'Username',
-    tokenLabelZh: 'API Key / Domain Key',
-    tokenLabelEn: 'API key / domain key',
-  },
-]
+const providerCatalog: ProviderMeta[] = configModel.providers.map((provider) => ({
+  value: provider.id,
+  name: provider.name,
+  docs: provider.docs,
+  auth: provider.auth,
+  testOnly: provider.testOnly,
+  descriptionZh: provider.description.zh,
+  descriptionEn: provider.description.en,
+  idLabelZh: provider.idLabel.zh,
+  idLabelEn: provider.idLabel.en,
+  tokenLabelZh: provider.tokenLabel.zh,
+  tokenLabelEn: provider.tokenLabel.en,
+}))
 
 const providerMap = new Map<string, ProviderMeta>(
   providerCatalog.map((provider) => [provider.value, provider] as [string, ProviderMeta]),
 )
-const commonProviderValues = new Set(['cloudflare', 'dnspod', 'alidns', 'tencentcloud'])
+const commonProviderValues = new Set(
+  configModel.providers.filter((provider) => provider.featured).map((provider) => provider.id),
+)
 const commonProviderCatalog = providerCatalog.filter((provider) => commonProviderValues.has(provider.value))
 const testingProviderCatalog = providerCatalog.filter((provider) => provider.testOnly)
 const otherProviderCatalog = providerCatalog.filter(
@@ -697,7 +519,7 @@ const otherProviderCatalog = providerCatalog.filter(
 )
 let nextProviderUid = 1
 
-function makeProvider(provider = 'debug'): ProviderState {
+function makeProvider(provider = configModel.defaults.provider): ProviderState {
   return {
     uid: nextProviderUid++,
     provider,
@@ -739,12 +561,13 @@ function makeGlobalState(): GlobalState {
     proxyText: '',
     proxyPresent: false,
     proxyNull: false,
-    sslMode: 'auto',
+    sslMode: String(configModel.defaults.ssl) as SslMode,
     sslPath: '',
-    cacheMode: 'true',
+    cacheMode: (configModel.defaults.cache ? 'true' : 'false') as CacheMode,
     cachePath: '',
-    cacheMaxAge: '259200',
-    logLevel: 'INFO',
+    cacheMaxAge: String(configModel.defaults.cacheMaxAge),
+    interval: '',
+    logLevel: configModel.defaults.logLevel,
     logFile: '',
     logFilePresent: false,
     logFileNull: false,
@@ -1009,7 +832,7 @@ function splitLineList(value: string): string[] {
     .filter(Boolean)
 }
 
-function addressSourcePrefix(value: string): (typeof ADDRESS_SOURCE_PREFIXES)[number] | undefined {
+function addressSourcePrefix(value: string): string | undefined {
   return ADDRESS_SOURCE_PREFIXES.find((prefix) => value.startsWith(prefix))
 }
 
@@ -1075,7 +898,7 @@ function stripSensitiveAddressSources(value: string): string {
 
 function parseIndexValue(value: string): JsonValue | undefined {
   const trimmed = value.trim()
-  if (['false', 'none'].includes(trimmed.toLowerCase())) return false
+  if (FALSE_ALIASES.includes(trimmed.toLowerCase())) return false
   if (trimmed.toLowerCase() === 'true') return true
   const parts = splitIndexList(trimmed)
   if (!parts.length) return undefined
@@ -1239,6 +1062,9 @@ function buildConfiguration(): JsonObject {
   if (globalCache !== undefined) output.cache = globalCache
   if (globalState.cacheMaxAge.trim() && Number.isInteger(Number(globalState.cacheMaxAge))) {
     output.cache_max_age = Number(globalState.cacheMaxAge)
+  }
+  if (globalState.interval.trim() && Number.isInteger(Number(globalState.interval))) {
+    output.interval = Number(globalState.interval)
   }
   const proxies = parseProxyValue(globalState.proxyText)
   if (globalState.proxyNull) output.proxy = null
@@ -1416,6 +1242,7 @@ function globalStateFromDraft(value: unknown): GlobalState | null {
     cacheMode: isCacheMode(value.cacheMode) ? value.cacheMode : fallback.cacheMode,
     cachePath: draftString(value, 'cachePath'),
     cacheMaxAge: draftString(value, 'cacheMaxAge', fallback.cacheMaxAge),
+    interval: draftString(value, 'interval'),
     logLevel: draftLogLevel(value, fallback.logLevel),
     logFile: draftString(value, 'logFile'),
     logFilePresent: draftBoolean(value, 'logFilePresent'),
@@ -1746,7 +1573,7 @@ function validateIndexValue(value: unknown, path: string, diagnostics: Diagnosti
     return
   }
   if (typeof value === 'string') {
-    if (['false', 'none'].includes(value.trim().toLowerCase())) return
+    if (FALSE_ALIASES.includes(value.trim().toLowerCase())) return
     const sources = splitIndexList(value)
     if (!sources.length) {
       diagnostics.push(
@@ -2305,6 +2132,22 @@ function validateConfig(value: unknown): Diagnostic[] {
       ),
     )
   }
+  if (
+    'interval' in value &&
+    (typeof value.interval !== 'number' ||
+      !Number.isInteger(value.interval) ||
+      value.interval < 1 ||
+      value.interval > 1440)
+  ) {
+    diagnostics.push(
+      makeDiagnostic(
+        '$.interval',
+        'error',
+        '自动同步间隔必须是 1 到 1440 的整数分钟。',
+        'Automatic sync interval must be an integer from 1 to 1440 minutes.',
+      ),
+    )
+  }
 
   const hasProviders = 'providers' in value
   const conflictingKeys = LEGACY_PROVIDER_KEYS.filter((key) => key in value)
@@ -2356,6 +2199,18 @@ function validateConfig(value: unknown): Diagnostic[] {
               'Use provider, not dns, for entries in the providers array.',
               '将 dns 改为 provider。',
               'Replace dns with provider.',
+            ),
+          )
+        }
+        if ('interval' in provider) {
+          diagnostics.push(
+            makeDiagnostic(
+              childPath(path, 'interval'),
+              'error',
+              '自动同步间隔只能配置在顶层。',
+              'Automatic sync interval can only be configured at the root.',
+              '将 interval 移到 providers 数组外。',
+              'Move interval outside the providers array.',
             ),
           )
         }
@@ -2478,6 +2333,20 @@ function validateRuntimeEditorState(
 function validateFormState(): Diagnostic[] {
   const diagnostics: Diagnostic[] = []
   validateRuntimeEditorState(globalState, '$', diagnostics)
+  const interval = globalState.interval.trim()
+  if (
+    interval &&
+    (!Number.isInteger(Number(interval)) || Number(interval) < 1 || Number(interval) > 1440)
+  ) {
+    diagnostics.push(
+      makeDiagnostic(
+        '$.interval',
+        'error',
+        '自动同步间隔必须是 1 到 1440 的整数分钟。',
+        'Automatic sync interval must be an integer from 1 to 1440 minutes.',
+      ),
+    )
+  }
 
   providers.value.forEach((provider, index) => {
     const path = `$.providers[${index}]`
@@ -3517,6 +3386,7 @@ function loadConfigurationIntoBuilder(
     cacheMode: cache.mode,
     cachePath: cache.path,
     cacheMaxAge: typeof value.cache_max_age === 'number' ? String(value.cache_max_age) : '',
+    interval: typeof value.interval === 'number' ? String(value.interval) : '',
     logLevel: logLevelFromObject(value),
     logFile: logFile.value,
     logFilePresent: logFile.present,
@@ -4423,6 +4293,29 @@ async function useRuntimeCredential(field: 'id' | 'token') {
           </div>
 
           <div class="field-grid">
+            <label class="field">
+              <span>{{ c.interval }}</span>
+              <input
+                v-model="globalState.interval"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="5"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
+                :aria-invalid="fieldInvalid('$.interval')"
+                :aria-describedby="fieldDescription('$.interval')"
+              />
+              <small
+                v-if="fieldDiagnostic('$.interval')"
+                :id="fieldFeedbackId('$.interval')"
+                class="field-feedback"
+                :class="`is-${fieldDiagnostic('$.interval')?.severity}`"
+              >
+                {{ fieldDiagnostic('$.interval')?.message }}
+              </small>
+            </label>
             <label class="field">
               <span>{{ c.cache }}</span>
               <select

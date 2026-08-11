@@ -36,6 +36,7 @@ FROM ${BUILDER} AS builder
 ARG PATCHELF_VERSION
 COPY run.py  .
 COPY ddns ddns
+COPY web web
 COPY --from=base /nuitka_exclude_so.txt nuitka_exclude_so.txt
 RUN if patchelf --version 2>/dev/null | grep -q ' 0[.]18[.]0$'; then \
         wget -O /tmp/patchelf.tar.gz "https://github.com/NixOS/patchelf/releases/download/${PATCHELF_VERSION}/patchelf-${PATCHELF_VERSION}.tar.gz" \

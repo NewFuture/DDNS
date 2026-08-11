@@ -112,6 +112,7 @@ class Config(object):
             "proxy",
             "cache",
             "cache_max_age",
+            "interval",
             "ssl",
             "log_level",
             "log_format",

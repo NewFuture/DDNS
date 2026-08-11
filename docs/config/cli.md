@@ -315,9 +315,29 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
   - `--log_datefmt="%Y-%m-%d %H:%M:%S"`
   - `--log_datefmt="%m-%d %H:%M:%S"`
 
+## Web 控制台与内置调度
+
+提供 `--interval` 会自动启动仅监听本机回环地址的常驻控制台，无需额外写 `web`。Web 进程同时负责周期同步，不需要 cron、systemd timer、launchd job 或 Windows 任务计划程序重复执行 DDNS。原有 `ddns web` 写法继续兼容。
+
+```bash
+ddns -c /etc/ddns/config.json --interval 5 --open
+```
+
+| 参数 | 描述 |
+|------|------|
+| `-c, --config FILE` | 选择一份可由控制台维护的本地配置文件 |
+| `--host` | 本机监听地址：`127.0.0.1`、`localhost` 或 `::1` |
+| `--port` | 控制台端口，默认 `9876` |
+| `--interval MINs` | 当前 Web 进程的内置同步间隔，范围 1–1440 分钟，默认 5 |
+| `--open` | 启动后打开浏览器 |
+
+`--interval` 是显式的 Web 模式标识；本地 JSON 顶层的 `interval` 也会让 `ddns -c FILE` 自动进入 Web 模式。优先级为命令行 `--interval` > JSON `interval` > 默认 5 分钟。控制台中保存的新间隔会写回 JSON 并立即应用；暂停和恢复只影响当前进程，不会创建额外状态文件。生产环境应使用 systemd service、launchd、Windows 服务或 Docker 重启策略保活 Web 进程，而不是再创建周期任务。
+
+如果检测到已启用的 `ddns task` 系统任务，Web 内置调度会停止执行并显示冲突。可以在控制台中显式接管，或先运行 `ddns task --disable`。两种调度方式不能同时运行。
+
 ## Task Management (定时任务管理)
 
-DDNS 支持通过 `task` 子命令管理定时任务，可自动根据系统选择合适的调度器安装定时更新任务。
+DDNS 支持通过 `task` 子命令管理无 Web 场景的系统定时任务，可自动根据系统选择合适的调度器安装定时更新任务。
 
 ### 重要特性
 

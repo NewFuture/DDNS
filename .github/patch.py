@@ -150,11 +150,11 @@ def remove_scheduler_for_docker():
     # 注释掉scheduler导入
     content = re.sub(r"^(from \.\.scheduler import get_scheduler)$", r"# \1", content, flags=re.MULTILINE)
 
-    # 注释掉函数调用
-    content = re.sub(r"^(\s*)(_add_task_subcommand_if_needed\(parser\))$", r"\1# \2", content, flags=re.MULTILINE)
+    # 只移除 task 子命令，保留不依赖 scheduler 的其它子命令
+    content = re.sub(r"^(\s*)(_add_task_subcommand\(subparsers\))$", r"\1# \2", content, flags=re.MULTILINE)
 
     # 注释掉整个函数块，保持行号
-    target_functions = ["_add_task_subcommand_if_needed", "_handle_task_command", "_print_status"]
+    target_functions = ["_add_task_subcommand", "_handle_task_command", "_print_status"]
     for func_name in target_functions:
         # 匹配函数定义到下一个函数或文件结尾
         pattern = rf"([ \t]*def {func_name}\s*\(.*?\):(?:.*?\n)*?)(?=^[ \t]*def |\Z)"
