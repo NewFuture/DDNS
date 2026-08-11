@@ -72,7 +72,12 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
 | cache_max_age | integer | 否 | `259200` | 缓存文件最大有效期（秒） | `0` 表示下一次运行清空已有缓存；与 DNS TTL 无关 |
+| interval | integer | 否 | 无 | Web 自动同步间隔（分钟） | 顶层配置，范围 1–1440；配置后普通启动会自动进入 Web 模式 |
 |  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
+
+### interval
+
+在配置文件顶层设置 `interval` 后，`ddns -c config.json` 会启动常驻 Web 控制台，并按该分钟数自动同步。命令行 `--interval` 优先于配置值；省略两者时，普通 `ddns -c config.json` 仍只同步一次。`interval` 只能配置在顶层，范围为 1–1440。
 
 ### dns
 

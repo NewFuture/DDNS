@@ -1,0 +1,473 @@
+{
+  "schema": {
+    "url": "https://ddns.newfuture.cc/schema/v4.1.json",
+    "values": [
+      "https://ddns.newfuture.cc/schema/v4.1.json",
+      "http://ddns.newfuture.cc/schema/v4.1.json",
+      "./schema/v4.1.json"
+    ]
+  },
+  "defaults": {
+    "provider": "debug",
+    "index": [
+      "public",
+      "default"
+    ],
+    "ssl": "auto",
+    "proxy": [],
+    "cache": true,
+    "cacheMaxAge": 259200,
+    "interval": 5,
+    "logLevel": "INFO"
+  },
+  "limits": {
+    "providers": 128
+  },
+  "rules": {
+    "domainPattern": "^(?:\\*\\.)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,18}$",
+    "proxyPattern": "^(https?://[a-zA-Z0-9\\-_:\\.]+|[a-zA-Z0-9\\-_:\\.]+:[0-9]+|DIRECT|SYSTEM|DEFAULT)$",
+    "logLevels": [
+      "DEBUG",
+      "INFO",
+      "WARNING",
+      "ERROR",
+      "CRITICAL"
+    ],
+    "addressSourceNames": [
+      "default",
+      "local",
+      "public"
+    ],
+    "addressSourcePrefixes": [
+      "url:",
+      "regex:",
+      "cmd:",
+      "shell:"
+    ],
+    "falseAliases": [
+      "false",
+      "none"
+    ],
+    "booleanTrueAliases": [
+      "yes",
+      "true",
+      "t",
+      "y",
+      "1"
+    ],
+    "booleanFalseAliases": [
+      "no",
+      "false",
+      "f",
+      "n",
+      "0"
+    ],
+    "legacyProviderKeys": [
+      "dns",
+      "provider",
+      "id",
+      "token",
+      "ipv4",
+      "ipv6",
+      "endpoint"
+    ],
+    "flatLogKeys": [
+      "log_level",
+      "log_file",
+      "log_format",
+      "log_datefmt"
+    ],
+    "reservedExtraKeys": [
+      "domain",
+      "value",
+      "record_type",
+      "ttl",
+      "line"
+    ],
+    "commonConfigKeys": [
+      "$schema",
+      "dns",
+      "id",
+      "token",
+      "endpoint",
+      "ipv4",
+      "ipv6",
+      "index4",
+      "index6",
+      "ttl",
+      "line",
+      "proxy",
+      "cache",
+      "cache_max_age",
+      "interval",
+      "ssl",
+      "log",
+      "extra",
+      "debug",
+      "config",
+      "command"
+    ]
+  },
+  "providers": [
+    {
+      "id": "51dns",
+      "name": "51DNS",
+      "docs": "51dns",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 DNS.COM / 51DNS API Key 与 Secret",
+        "en": "Uses a DNS.COM / 51DNS API key and secret"
+      },
+      "idLabel": {
+        "zh": "API Key",
+        "en": "API key"
+      },
+      "tokenLabel": {
+        "zh": "API Secret",
+        "en": "API secret"
+      }
+    },
+    {
+      "id": "alidns",
+      "name": "AliDNS",
+      "docs": "alidns",
+      "auth": "id-token",
+      "featured": true,
+      "testOnly": false,
+      "description": {
+        "zh": "使用阿里云 AccessKey 认证",
+        "en": "Uses Alibaba Cloud AccessKey credentials"
+      },
+      "idLabel": {
+        "zh": "AccessKey ID",
+        "en": "AccessKey ID"
+      },
+      "tokenLabel": {
+        "zh": "AccessKey Secret",
+        "en": "AccessKey secret"
+      }
+    },
+    {
+      "id": "aliesa",
+      "name": "Ali ESA",
+      "docs": "aliesa",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用阿里云 ESA AccessKey 认证",
+        "en": "Uses Alibaba Cloud ESA AccessKey credentials"
+      },
+      "idLabel": {
+        "zh": "AccessKey ID",
+        "en": "AccessKey ID"
+      },
+      "tokenLabel": {
+        "zh": "AccessKey Secret",
+        "en": "AccessKey secret"
+      }
+    },
+    {
+      "id": "callback",
+      "name": "Callback",
+      "docs": "callback",
+      "auth": "callback",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "将 DNS 更新转发到自定义 HTTP API 或 Webhook",
+        "en": "Forwards DNS updates to a custom HTTP API or webhook"
+      },
+      "idLabel": {
+        "zh": "完整回调 URL",
+        "en": "Full callback URL"
+      },
+      "tokenLabel": {
+        "zh": "POST 请求体（留空则使用 GET）",
+        "en": "POST body (leave blank for GET)"
+      }
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "docs": "cloudflare",
+      "auth": "flexible",
+      "featured": true,
+      "testOnly": false,
+      "description": {
+        "zh": "建议使用 API Token；Global API Key 还需填写账户邮箱",
+        "en": "Use an API Token when possible. A Global API Key also requires your account email."
+      },
+      "idLabel": {
+        "zh": "账户邮箱",
+        "en": "Account email"
+      },
+      "tokenLabel": {
+        "zh": "API Token / Global API Key",
+        "en": "API Token / Global API Key"
+      }
+    },
+    {
+      "id": "cloudns",
+      "name": "ClouDNS",
+      "docs": "cloudns",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 ClouDNS Auth ID 与密码",
+        "en": "Uses a ClouDNS auth ID and password"
+      },
+      "idLabel": {
+        "zh": "Auth ID",
+        "en": "Auth ID"
+      },
+      "tokenLabel": {
+        "zh": "Auth Password",
+        "en": "Auth password"
+      }
+    },
+    {
+      "id": "debug",
+      "name": "Debug",
+      "docs": "debug",
+      "auth": "none",
+      "featured": false,
+      "testOnly": true,
+      "description": {
+        "zh": "只打印更新结果，不修改实际 DNS 记录",
+        "en": "Prints update results without changing live DNS records"
+      },
+      "idLabel": {
+        "zh": "ID",
+        "en": "ID"
+      },
+      "tokenLabel": {
+        "zh": "Token",
+        "en": "Token"
+      }
+    },
+    {
+      "id": "dnscom",
+      "name": "DNS.COM",
+      "docs": "51dns",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "DNS.COM / 51DNS API 的兼容别名",
+        "en": "Alias for the DNS.COM / 51DNS API"
+      },
+      "idLabel": {
+        "zh": "API Key",
+        "en": "API key"
+      },
+      "tokenLabel": {
+        "zh": "API Secret",
+        "en": "API secret"
+      }
+    },
+    {
+      "id": "dnspod_com",
+      "name": "DNSPod Global",
+      "docs": "dnspod_com",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 DNSPod 国际版 API 凭据",
+        "en": "Uses DNSPod Global API credentials"
+      },
+      "idLabel": {
+        "zh": "API ID",
+        "en": "API ID"
+      },
+      "tokenLabel": {
+        "zh": "API Token",
+        "en": "API token"
+      }
+    },
+    {
+      "id": "dnspod",
+      "name": "DNSPod",
+      "docs": "dnspod",
+      "auth": "id-token",
+      "featured": true,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 DNSPod 中国版 Login Token",
+        "en": "Uses a DNSPod China login token"
+      },
+      "idLabel": {
+        "zh": "Token ID",
+        "en": "Token ID"
+      },
+      "tokenLabel": {
+        "zh": "Token",
+        "en": "Token"
+      }
+    },
+    {
+      "id": "edgeone",
+      "name": "EdgeOne",
+      "docs": "edgeone",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "管理腾讯云 EdgeOne 加速域名",
+        "en": "Manages Tencent Cloud EdgeOne accelerated domains"
+      },
+      "idLabel": {
+        "zh": "Secret ID",
+        "en": "Secret ID"
+      },
+      "tokenLabel": {
+        "zh": "Secret Key",
+        "en": "Secret key"
+      }
+    },
+    {
+      "id": "edgeone_dns",
+      "name": "EdgeOne DNS",
+      "docs": "edgeone_dns",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "管理腾讯云 EdgeOne 非加速 DNS 记录",
+        "en": "Manages Tencent Cloud EdgeOne non-accelerated DNS records"
+      },
+      "idLabel": {
+        "zh": "Secret ID",
+        "en": "Secret ID"
+      },
+      "tokenLabel": {
+        "zh": "Secret Key",
+        "en": "Secret key"
+      }
+    },
+    {
+      "id": "he",
+      "name": "HE.net",
+      "docs": "he",
+      "auth": "token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 HE.net DDNS 密码",
+        "en": "Uses a Hurricane Electric DDNS password"
+      },
+      "idLabel": {
+        "zh": "ID",
+        "en": "ID"
+      },
+      "tokenLabel": {
+        "zh": "DDNS Password",
+        "en": "DDNS password"
+      }
+    },
+    {
+      "id": "huaweidns",
+      "name": "Huawei Cloud DNS",
+      "docs": "huaweidns",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用华为云 IAM 访问密钥",
+        "en": "Uses Huawei Cloud IAM access keys"
+      },
+      "idLabel": {
+        "zh": "Access Key ID",
+        "en": "Access Key ID"
+      },
+      "tokenLabel": {
+        "zh": "Secret Access Key",
+        "en": "Secret access key"
+      }
+    },
+    {
+      "id": "namesilo",
+      "name": "NameSilo",
+      "docs": "namesilo",
+      "auth": "token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "仅需 NameSilo API Key",
+        "en": "Requires only a NameSilo API key"
+      },
+      "idLabel": {
+        "zh": "ID",
+        "en": "ID"
+      },
+      "tokenLabel": {
+        "zh": "API Key",
+        "en": "API key"
+      }
+    },
+    {
+      "id": "noip",
+      "name": "No-IP",
+      "docs": "noip",
+      "auth": "id-token",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "使用 No-IP 用户名与密码",
+        "en": "Uses a No-IP username and password"
+      },
+      "idLabel": {
+        "zh": "用户名",
+        "en": "Username"
+      },
+      "tokenLabel": {
+        "zh": "Password",
+        "en": "Password"
+      }
+    },
+    {
+      "id": "tencentcloud",
+      "name": "Tencent Cloud DNS",
+      "docs": "tencentcloud",
+      "auth": "id-token",
+      "featured": true,
+      "testOnly": false,
+      "description": {
+        "zh": "使用腾讯云 SecretId 与 SecretKey",
+        "en": "Uses Tencent Cloud SecretId and SecretKey"
+      },
+      "idLabel": {
+        "zh": "Secret ID",
+        "en": "Secret ID"
+      },
+      "tokenLabel": {
+        "zh": "Secret Key",
+        "en": "Secret key"
+      }
+    },
+    {
+      "id": "west",
+      "name": "West.cn",
+      "docs": "west",
+      "auth": "flexible",
+      "featured": false,
+      "testOnly": false,
+      "description": {
+        "zh": "支持西部数码账户认证或域名独立密码",
+        "en": "Supports West.cn account credentials or a per-domain key"
+      },
+      "idLabel": {
+        "zh": "用户名",
+        "en": "Username"
+      },
+      "tokenLabel": {
+        "zh": "API Key / Domain Key",
+        "en": "API key / domain key"
+      }
+    }
+  ]
+}

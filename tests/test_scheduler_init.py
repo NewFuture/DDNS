@@ -8,9 +8,9 @@ import os
 import platform
 import subprocess
 
-from __init__ import unittest
+from __init__ import patch, unittest
 
-from ddns.scheduler import get_scheduler
+from ddns.scheduler import get_scheduler, get_schedulers
 
 
 class TestSchedulerInit(unittest.TestCase):
@@ -59,6 +59,20 @@ class TestSchedulerInit(unittest.TestCase):
         auto_scheduler = get_scheduler("auto")
         none_scheduler = get_scheduler(None)
         self.assertEqual(type(auto_scheduler), type(none_scheduler))
+
+    @patch("ddns.scheduler.platform.system", return_value="Linux")
+    def test_linux_exposes_systemd_and_cron_backends(self, _mock_system):
+        """Inspect both backends because users can explicitly install either."""
+        self.assertEqual(
+            [scheduler.__class__.__name__ for scheduler in get_schedulers()], ["SystemdScheduler", "CronScheduler"]
+        )
+
+    @patch("ddns.scheduler.platform.system", return_value="Darwin")
+    def test_macos_exposes_launchd_and_cron_backends(self, _mock_system):
+        """Inspect launchd and explicitly selected cron tasks."""
+        self.assertEqual(
+            [scheduler.__class__.__name__ for scheduler in get_schedulers()], ["LaunchdScheduler", "CronScheduler"]
+        )
 
 
 class TestSchedulerRealFunctionality(unittest.TestCase):

@@ -119,6 +119,7 @@ jobs:
           ddns --new-config /tmp/test-pip-config.json
           test -f /tmp/test-pip-config.json
           python3 -m ddns --version
+          (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
       
       - name: Test pip install from source distribution
         run: |
@@ -128,6 +129,7 @@ jobs:
           python3 -m pip install --force-reinstall "$tarball_file"
           ddns --version
           python3 -m ddns --help
+          (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
       
       - name: run unit tests
         run: python3 -m unittest -v

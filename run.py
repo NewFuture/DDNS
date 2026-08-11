@@ -15,6 +15,8 @@
 # nuitka-project: --python-flag=no_site,no_asserts,no_docstrings,no_annotations,isolated,static_hashes
 # nuitka-project: --nofollow-import-to=tkinter,unittest,pydoc,doctest,distutils,setuptools,lib2to3,test,idlelib,lzma,bz2,csv
 # nuitka-project: --noinclude-dlls=liblzma.*
+# nuitka-project: --include-package-data=ddns.config
+# nuitka-project: --include-data-dir=web=ddns/web/static
 
 from ddns.__main__ import main
 

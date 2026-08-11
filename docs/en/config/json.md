@@ -70,7 +70,12 @@ Configuration Parameters Table
 | ssl | string\|boolean | No | `"auto"` | SSL Verification Method | `true` (force verification), `false` (disable verification), `"auto"` (auto downgrade) or custom CA certificate file path |
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
 | cache_max_age | integer | No | `259200` | Cache File Max Age (seconds) | `0` clears an existing cache on the next invocation; distinct from DNS TTL |
+| interval | integer | No | None | Web automatic synchronization interval (minutes) | Root-only, from 1 to 1440; enables Web mode during normal startup |
 | log | object | No | `null` | Log Configuration | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters |
+
+### interval
+
+When a root-level `interval` is present, `ddns -c config.json` starts the long-running Web console and synchronizes at that minute interval. Command-line `--interval` overrides the configured value. When both are omitted, normal `ddns -c config.json` still performs one synchronization and exits. `interval` is root-only and must be from 1 to 1440.
 
 ### dns
 

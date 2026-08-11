@@ -11,6 +11,11 @@ from .cli import str_bool, log_level as get_log_level
 
 __all__ = ["Config", "split_array_string"]
 
+try:
+    string_types = (basestring,)  # type: ignore[name-defined]
+except NameError:
+    string_types = (str, bytes)
+
 # 简单数组，支持',', ';' 分隔的参数列表
 SIMPLE_ARRAY_PARAMS = ["ipv4", "ipv6", "proxy", "index4", "index6"]
 SPECIAL_ARRAY_PREFIXES = ("url:", "regex:", "cmd:", "shell:")
@@ -112,6 +117,7 @@ class Config(object):
             "proxy",
             "cache",
             "cache_max_age",
+            "interval",
             "ssl",
             "log_level",
             "log_format",
@@ -134,7 +140,7 @@ class Config(object):
         self.ipv4 = self._get("ipv4", [])  # type: list[str]
         self.ipv6 = self._get("ipv6", [])  # type: list[str]
         ttl = self._get("ttl", None)  # type: int | str | None
-        self.ttl = int(ttl) if isinstance(ttl, (str, bytes)) else ttl  # type: int | None
+        self.ttl = int(ttl) if isinstance(ttl, string_types) else ttl  # type: int | None
         self.line = self._get("line", None)  # type: str | None
         self.proxy = self._get("proxy", [])  # type: list[str] | None
         # cache and SSL settings
@@ -143,7 +149,7 @@ class Config(object):
         self.ssl = str_bool(self._get("ssl", "auto"))
 
         log_level = self._get("log_level", "INFO")
-        if isinstance(log_level, (str, bytes)):
+        if isinstance(log_level, string_types):
             log_level = get_log_level(log_level)
         self.log_level = log_level  # type: int  # type: ignore[assignment]
         self.log_format = self._get("log_format", None)  # type: str | None
@@ -176,7 +182,7 @@ class Config(object):
         value = self._get("cache_max_age", 259200)
         if isinstance(value, bool):
             raise ValueError("cache_max_age must be a non-negative integer")
-        if isinstance(value, (str, bytes)):
+        if isinstance(value, string_types):
             try:
                 value = int(value)
             except (TypeError, ValueError):

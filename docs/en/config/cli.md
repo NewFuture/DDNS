@@ -283,9 +283,29 @@ ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
 
 5. **Regular Expressions**: When using regular expressions, special characters need to be properly escaped. It's recommended to use quotes, for example: `--index4 "regex:192\\.168\\..*"`.
 
+## Web console and in-process scheduling
+
+Providing `--interval` automatically starts the long-running console on a loopback address, so the `web` word is optional. The Web process also owns periodic synchronization, so cron, systemd timers, launchd jobs, and Windows Task Scheduler must not invoke DDNS at the same time. The existing `ddns web` form remains compatible.
+
+```bash
+ddns -c /etc/ddns/config.json --interval 5 --open
+```
+
+| Option | Description |
+|--------|-------------|
+| `-c, --config FILE` | Select one local configuration file managed by the console |
+| `--host` | Loopback listener: `127.0.0.1`, `localhost`, or `::1` |
+| `--port` | Console port, default `9876` |
+| `--interval MINs` | Built-in interval for the current Web process, from 1 to 1440 minutes, default 5 |
+| `--open` | Open the browser after startup |
+
+`--interval` is the explicit Web mode signal; a top-level JSON `interval` also makes `ddns -c FILE` enter Web mode automatically. Precedence is command-line `--interval` > JSON `interval` > the 5-minute default. Saving a new interval in the console writes it to JSON and applies it immediately; pausing and resuming affect only the current process and create no extra state file. In production, use a systemd service, launchd, a Windows service, or a Docker restart policy to supervise the Web process instead of creating another periodic task.
+
+When an enabled `ddns task` system task is detected, Web scheduling stops and reports a conflict. Explicitly take over in the console or run `ddns task --disable` first. The two scheduling modes cannot run together.
+
 ## Task Management
 
-DDNS supports managing scheduled tasks through the `task` subcommand, which automatically detects the system and selects the appropriate scheduler to install scheduled update tasks.
+For headless deployments, DDNS supports system scheduled tasks through the `task` subcommand, which automatically detects the system and selects the appropriate scheduler.
 
 ### Key Features
 

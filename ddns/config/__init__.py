@@ -12,7 +12,7 @@ import os
 import sys
 import logging
 from .cli import load_config as load_cli_config
-from .file import load_config as load_file_config, save_config
+from .file import DEFAULT_CONFIG_PATHS, load_config as load_file_config, save_config
 from .env import load_config as load_env_config
 from .config import Config, split_array_string
 
@@ -24,13 +24,9 @@ def _get_config_paths(config_paths):
     """
     if not config_paths:
         # Find config file in default locations
-        for p in [
-            "config.json",
-            os.path.expanduser("~/.ddns/config.json"),
-            os.path.expanduser("~/.ddns.json"),
-            "/etc/ddns/config.json",
-            "/etc/ddns.json",
-        ]:
+        for p in DEFAULT_CONFIG_PATHS:
+            if p.startswith("~"):
+                p = os.path.expanduser(p)
             if os.path.exists(p):
                 return [p]
         return []

@@ -33,7 +33,7 @@
 <div class="ddns-home-steps" role="list" aria-label="First update workflow">
   <p role="listitem"><strong><span>1</span> Install</strong><br>Choose the runtime that fits the current device.</p>
   <p role="listitem"><strong><span>2</span> Configure</strong><br>Select a provider, credentials, and domains.</p>
-  <p role="listitem"><strong><span>3</span> Run</strong><br>Verify the result, then schedule ongoing updates.</p>
+  <p role="listitem"><strong><span>3</span> Run</strong><br>Verify the result, then keep Web mode or a system task running.</p>
 </div>
 
 After installation, verify the complete execution path with the Debug provider, which never changes real DNS records:
@@ -70,7 +70,7 @@ curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 
 - Uses only the Python standard library and supports Python 2.7 and Python 3.x.
 - Supports HTTP proxies, multi-proxy fallback, SSL verification policies, and custom certificate authorities.
-- Includes cross-platform scheduling through systemd/cron on Linux, launchd on macOS, and Task Scheduler on Windows.
+- Includes in-process scheduling in the Web console; headless deployments can still use systemd/cron, launchd, or Windows Task Scheduler.
 - Supports configurable log levels, files, formats, and timestamps.
 
 ## Configuration and credentials
@@ -103,13 +103,21 @@ Run with a configuration file:
 ddns -c config.json
 ```
 
-Install a system task that runs every five minutes:
+Keep the local console running and synchronize every five minutes in the same process:
+
+```bash
+ddns -c config.json --interval 5 --open
+```
+
+Providing `--interval` automatically selects Web mode, so the `web` word is optional. You can also set top-level `"interval": 5` in a local JSON file; then `ddns -c config.json` starts Web automatically. The command-line value overrides the configuration, and the existing `ddns web` command remains compatible. Saving a new interval in the page writes it back to the configuration; pausing and resuming affect only the current process. Web mode blocks duplicate scheduling when an enabled system task is detected. Use systemd, launchd, a Windows service, or Docker to supervise the Web process in production.
+
+For a headless deployment, install a system task that runs every five minutes:
 
 ```bash
 ddns task --install 5 -c /etc/ddns/config.json
 ```
 
-Inspect it with `ddns task --status`, then manage it with `--enable`, `--disable`, or `--uninstall`. See the [CLI documentation](docs/en/config/cli.md#task-management) for platform-specific behavior.
+Inspect it with `ddns task --status`, then manage it with `--enable`, `--disable`, or `--uninstall`. Do not run it alongside Web mode's internal scheduler. See the [CLI documentation](docs/en/config/cli.md#task-management) for platform-specific behavior.
 
 If a router or modem only supports a legacy DDNS protocol, use **[edge-ddns-proxy](https://github.com/NewFuture/edge-ddns-proxy)** to bridge it to a modern DNS provider API.
 

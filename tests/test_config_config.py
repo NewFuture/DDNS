@@ -126,6 +126,13 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.token, "json_token")
         self.assertEqual(config.line, "env_line")
 
+    def test_interval_is_runtime_metadata_not_provider_extra(self):
+        """Keep the Web interval away from provider API parameters."""
+        config = Config(json_config={"dns": "debug", "interval": 7, "custom": "value"})
+
+        self.assertNotIn("interval", config.extra)
+        self.assertEqual(config.extra["custom"], "value")
+
     def test_config_array_and_conversion_parameters(self):
         """Test array parameter processing and type conversions"""
         # Array parameters
