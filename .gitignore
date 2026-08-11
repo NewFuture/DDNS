@@ -13,8 +13,9 @@ package-lock.json
 .DS_Store
 
 # Impeccable session state
-.impeccable/hook.cache.json
-.impeccable/questions/
+.impeccable/
+DESIGN.md
+PRODUCT.md
 
 # VitePress intermediate files (generated during setup) - don't commit these
 docs/index.md
