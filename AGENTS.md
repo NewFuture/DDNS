@@ -108,6 +108,12 @@ ddns/:	Main application code
 		http.py:	HTTP client with proxy support
 		try_run.py:	Safe command execution
 
+	web/:	Embedded management dashboard
+		__init__.py:	Dashboard package exports
+		scheduler.py:	In-process dashboard synchronization scheduler
+		server.py:	Local-only embedded dashboard HTTP server
+		service.py:	Dashboard data and configuration services
+
 tests/:	Unit tests
 	__init__.py:	Test initialization (path setup)
 	base_test.py:	Shared test utilities and base classes
@@ -424,6 +430,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.7
-**Last Updated**: 2026-08-10
+**Version**: 1.0.8
+**Last Updated**: 2026-08-12
 **Maintained by**: DDNS Project Contributors
