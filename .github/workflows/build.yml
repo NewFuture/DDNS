@@ -69,15 +69,6 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
-      - run: ${{env.PY}} run.py -c tests/config/callback.json
-      - run: ${{env.PY}} -m ddns -c tests/config/multi-provider.json
-      - run: ${{env.PY}} -m ddns -c tests/config/debug.json -c tests/config/noip.json
-      - run: ${{env.PY}} -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
-      - run: ${{env.PY}} -m ddns -c tests/config/he-proxies.json --debug
-
-      - name: Test task management functionality
-        run: tests/scripts/test-task-systemd.sh "$(which ${{env.PY}}) -m ddns"
-
       - name: test patch
         if:  ${{ matrix.version != '2.7' }}
         run:  python3 .github/patch.py
@@ -92,6 +83,22 @@ jobs:
       - name: test run module
         if:  ${{ matrix.version != '2.7' }}
         run:  ${{env.PY}} -m "ddns" -h
+
+  e2e:
+    name: E2E (CLI, Web, systemd)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Run offline CLI and Web E2E tests
+        run: python -m unittest tests.e2e -v
+        env:
+          PYTHONIOENCODING: utf-8
+      - name: Run systemd task lifecycle
+        run: bash tests/scripts/test-task-systemd.sh "$(which python) -m ddns"
 
   pypi:
     runs-on: ubuntu-latest
@@ -171,7 +178,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       OS_NAME: ${{ contains(matrix.os,'ubuntu') && 'ubuntu' || contains(matrix.os, 'mac') && 'mac' || 'windows' }}
-    timeout-minutes: ${{ matrix.arch == 'x86' && 20 || contains(matrix.os, 'windows') && 12 || 8 }}
+    timeout-minutes: ${{ matrix.arch == 'x86' && 25 || contains(matrix.os, 'windows') && 16 || 12 }}
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python 3.12
@@ -194,9 +201,6 @@ jobs:
       - name: run unit tests
         run: python3 -m unittest -v
 
-      - name: test callback config
-        run: python3 -m ddns -c tests/config/callback.json
-
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.4
         with:
@@ -216,6 +220,11 @@ jobs:
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
       - run: ./dist/ddns || test -f config.json
+      - name: Run onefile binary E2E tests
+        run: python -m unittest tests.e2e -v
+        env:
+          DDNS_E2E_EXECUTABLE: ./dist/ddns${{ runner.os == 'Windows' && '.exe' || '' }}
+          PYTHONIOENCODING: utf-8
 
       - run: ./dist/ddns task --status
       - name: Test Windows schtasks task
@@ -227,11 +236,6 @@ jobs:
       - name: Test macOS launchd service
         if: runner.os == 'macOS'
         run: tests/scripts/test-task-macos.sh "./dist/ddns"
-
-      - run: ./dist/ddns -c tests/config/multi-provider.json
-      - run: ./dist/ddns -c tests/config/debug.json -c tests/config/noip.json
-      - run: ./dist/ddns -c tests/config/he-proxies.json --debug
-      - run: ./dist/ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 
       - name: Build Windows App (standalone)
         if: runner.os == 'Windows'
@@ -245,6 +249,18 @@ jobs:
           file-description: "DDNS客户端[测试版 Alpha]"
           windows-console-mode: attach
           windows-icon-from-ico: docs/public/favicon.ico
+
+      - name: Run Windows standalone E2E tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $appDir = Get-ChildItem -Path 'dist-app' -Directory -Filter '*.dist' | Select-Object -First 1
+          if (-not $appDir) { throw 'Standalone app folder (*.dist) not found' }
+          $executable = Join-Path $appDir.FullName 'ddns.exe'
+          if (-not (Test-Path $executable)) { throw 'Standalone ddns.exe not found' }
+          $env:DDNS_E2E_EXECUTABLE = $executable
+          $env:PYTHONIOENCODING = 'utf-8'
+          python -m unittest tests.e2e -v
 
       - name: Package Windows app as ddns.zip
         if: runner.os == 'Windows'
