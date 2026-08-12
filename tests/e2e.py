@@ -41,6 +41,34 @@ TEST_IPV6 = "2001:db8::44"
 PROXY_ENVIRONMENT_KEYS = {"ALL_PROXY", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 
 
+def _popen_group_options():
+    if os.name == "nt":
+        return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
+    return {"start_new_session": True}
+
+
+def _signal_process_group(process, signal_value):
+    try:
+        if os.name == "nt":
+            process.send_signal(signal_value)
+        else:
+            os.killpg(process.pid, signal_value)
+    except (AttributeError, OSError):
+        if process.poll() is None:
+            process.send_signal(signal_value)
+
+
+def _kill_process_group(process):
+    try:
+        if os.name == "nt":
+            process.kill()
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+    except OSError:
+        if process.poll() is None:
+            process.kill()
+
+
 class _ProcessResult(object):
     """Captured result from a completed DDNS process."""
 
@@ -168,7 +196,7 @@ class _BackgroundProcess(object):
             encoding="utf-8",
             errors="replace",
             bufsize=1,
-            creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0,
+            **_popen_group_options(),
         )
         self._lock = threading.Lock()
         self._stdout = []
@@ -213,22 +241,22 @@ class _BackgroundProcess(object):
     def stop(self, timeout=5):
         if self.process.poll() is None:
             if os.name == "nt":
-                try:
-                    self.process.send_signal(signal.CTRL_C_EVENT)
-                except (AttributeError, OSError):
-                    self.process.terminate()
+                _signal_process_group(self.process, signal.CTRL_C_EVENT)
             else:
-                self.process.send_signal(signal.SIGINT)
+                _signal_process_group(self.process, signal.SIGINT)
         deadline = time.time() + timeout
         while self.process.poll() is None and time.time() < deadline:
             time.sleep(0.05)
         if self.process.poll() is None:
-            self.process.terminate()
+            if os.name == "nt":
+                self.process.terminate()
+            else:
+                _signal_process_group(self.process, signal.SIGTERM)
             deadline = time.time() + 2
             while self.process.poll() is None and time.time() < deadline:
                 time.sleep(0.05)
         if self.process.poll() is None:
-            self.process.kill()
+            _kill_process_group(self.process)
         self.process.wait()
         for thread in self._threads:
             thread.join(2)
@@ -305,13 +333,14 @@ class OfflineE2ETestCase(unittest.TestCase):
             universal_newlines=True,
             encoding="utf-8",
             errors="replace",
+            **_popen_group_options(),
         )
         timed_out = threading.Event()
 
         def kill_on_timeout():
             if process.poll() is None:
                 timed_out.set()
-                process.kill()
+                _kill_process_group(process)
 
         timer = threading.Timer(timeout, kill_on_timeout)
         timer.daemon = True
