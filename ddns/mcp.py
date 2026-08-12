@@ -149,8 +149,8 @@ class McpServer(object):
             {"content": [{"type": "text", "text": text_type(error)}], "isError": True}, modern=modern
         )
 
-    def _call_tool(self, params, modern):
-        # type: (dict, bool) -> dict
+    def _call_tool(self, params, modern, request_id):
+        # type: (dict, bool, object) -> dict
         name = params.get("name")
         arguments = params.get("arguments", {})
         if not isinstance(name, string_types):
@@ -169,21 +169,21 @@ class McpServer(object):
             protocol_stdout = sys.stdout
             try:
                 sys.stdout = sys.stderr
-                status = service.sync(source="MCP")
+                status = service.sync(source="MCP", cancelled=lambda: self._is_cancelled(request_id))
             finally:
                 sys.stdout = protocol_stdout
             return self._tool_success(status, modern=modern)
         except DashboardError as error:
             return self._tool_error(error, modern=modern)
 
-    def _dispatch(self, method, params, modern):
-        # type: (str, dict, bool) -> dict | None
+    def _dispatch(self, method, params, modern, request_id):
+        # type: (str, dict, bool, object) -> dict | None
         if method == "server/discover":
             return self._discover() if modern else None
         if method == "tools/list":
             return self._list_tools(params, modern=modern)
         if method == "tools/call":
-            return self._call_tool(params, modern=modern)
+            return self._call_tool(params, modern=modern, request_id=request_id)
         if method == "ping" and not modern:
             return {}
         return None
@@ -216,7 +216,7 @@ class McpServer(object):
     def _dispatch_response(self, request_id, method, params, modern):
         # type: (object, str, dict, bool) -> dict
         try:
-            result = self._dispatch(method, params, modern=modern)
+            result = self._dispatch(method, params, modern=modern, request_id=request_id)
             if result is None:
                 return _error_response(request_id, -32601, "Method not found")
         except ValueError as error:
@@ -344,6 +344,11 @@ class McpServer(object):
             self._cancelled.discard(request_id)
             self._pending.discard(request_id)
             return True
+
+    def _is_cancelled(self, request_id):
+        # type: (object) -> bool
+        with self._cancel_lock:
+            return request_id in self._cancelled
 
     def _write_response(self, response, output_stream):
         # type: (dict, object) -> None

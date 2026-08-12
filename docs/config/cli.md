@@ -377,6 +377,8 @@ Windows JSON 路径中的反斜杠需要写成 `\\`，也可以将 `command` 替
 
 `update_dns_records` 会修改外部 DNS 状态，客户端应在调用前保留人工确认。工具不接受域名、IP、服务商或凭据参数，避免模型绕过本地配置写入任意记录。
 
+客户端取消更新时，服务会在 IP 获取规则、域名记录及 DNS 服务商之间停止后续处理；已经发送给服务商的 API 请求无法撤销，可能仍会完成。
+
 当前实现支持 MCP `2026-07-28` 的无握手协议，并兼容 GitHub Copilot CLI 使用的 `2025-11-25` `initialize` 生命周期；不兼容更早协议，也不提供 HTTP、resources、prompts 或 subscriptions。状态来自 DDNS 本地缓存；关闭缓存后，独立的后续状态请求无法还原上一进程的同步历史，但更新调用本身仍会返回本次结果。
 
 ## Task Management (定时任务管理)

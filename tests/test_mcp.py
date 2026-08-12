@@ -19,6 +19,31 @@ from ddns.mcp import (
 )
 from ddns.web.service import DashboardOperationError
 
+try:
+    text_type = unicode  # type: ignore[name-defined]
+except NameError:
+    text_type = str
+
+
+class TextCapture(object):
+    """Capture both byte and Unicode writes on Python 2 and 3."""
+
+    def __init__(self):
+        self._stream = io.StringIO()
+
+    def write(self, value):
+        """Normalize byte writes before forwarding them to the text stream."""
+        if not isinstance(value, text_type):
+            value = value.decode("utf-8")
+        return self._stream.write(value)
+
+    def flush(self):
+        """Match the file API used by print and logging."""
+
+    def getvalue(self):
+        """Return all captured text."""
+        return self._stream.getvalue()
+
 
 class TestMcpServer(unittest.TestCase):
     """Test modern MCP request validation and DDNS tool dispatch."""
@@ -102,21 +127,23 @@ class TestMcpServer(unittest.TestCase):
         response = server.handle_message(self._request("tools/call", {"name": "update_dns_records", "arguments": {}}))
 
         self.assertFalse(response["result"]["isError"])
-        service.sync.assert_called_once_with(source="MCP")
+        self.assertEqual(service.sync.call_args[1]["source"], "MCP")
+        self.assertTrue(callable(service.sync.call_args[1]["cancelled"]))
+        self.assertFalse(service.sync.call_args[1]["cancelled"]())
 
     def test_update_tool_redirects_provider_stdout_to_stderr(self):
         """Prevent provider print calls from corrupting the MCP protocol stream."""
         service = MagicMock()
 
-        def noisy_sync(source):
+        def noisy_sync(source, cancelled=None):
             """Simulate the existing debug provider's print-based output."""
             print("provider output")
             return self._dashboard()
 
         service.sync.side_effect = noisy_sync
         server = McpServer(service_factory=MagicMock(return_value=service))
-        protocol_stdout = io.StringIO()
-        protocol_stderr = io.StringIO()
+        protocol_stdout = TextCapture()
+        protocol_stderr = TextCapture()
 
         with patch("ddns.mcp.sys.stdout", protocol_stdout):
             with patch("ddns.mcp.sys.stderr", protocol_stderr):
@@ -323,11 +350,12 @@ class TestMcpServer(unittest.TestCase):
                 cancellation_seen.set()
             return recorded
 
-        def blocking_sync(source):
-            """Wait until the reader consumes the cancellation."""
+        def blocking_sync(source, cancelled=None):
+            """Wait until the reader consumes and exposes the cancellation."""
             started.set()
             self.assertTrue(cancellation_seen.wait(1))
-            return self._dashboard()
+            self.assertTrue(cancelled())
+            raise DashboardOperationError("Synchronization cancelled.")
 
         def input_lines():
             """Send cancellation only after synchronization has started."""
@@ -341,7 +369,8 @@ class TestMcpServer(unittest.TestCase):
 
         server.serve(input_stream=input_lines(), output_stream=output_stream)
 
-        service.sync.assert_called_once_with(source="MCP")
+        self.assertEqual(service.sync.call_args[1]["source"], "MCP")
+        self.assertTrue(callable(service.sync.call_args[1]["cancelled"]))
         self.assertEqual(output_stream.getvalue(), "")
 
 

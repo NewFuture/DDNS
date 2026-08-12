@@ -18,6 +18,16 @@ from .provider import SimpleProvider, get_provider_class  # noqa: F401
 logger = getLogger()
 
 
+class UpdateCancelled(Exception):
+    """Raised when a caller cancels an in-progress DDNS update."""
+
+
+def _raise_if_cancelled(cancelled):
+    # type: (object | None) -> None
+    if cancelled is not None and cancelled():
+        raise UpdateCancelled("DDNS update cancelled.")
+
+
 def _get_ip_from_rule(ip_type, rule):
     """
     Resolve an IP address from a single rule.
@@ -36,13 +46,14 @@ def _get_ip_from_rule(ip_type, rule):
     return getattr(ip, rule_text + "_v" + ip_type)()
 
 
-def get_ip(ip_type, rules):
+def get_ip(ip_type, rules, cancelled=None):
     """
     get IP address
     """
     if rules is False:  # disabled
         return False
     for rule in rules:
+        _raise_if_cancelled(cancelled)
         try:
             logger.debug("get_ip:(%s, %s)", ip_type, rule)
             result = _get_ip_from_rule(ip_type, rule)
@@ -50,6 +61,7 @@ def get_ip(ip_type, rules):
             logger.error("Failed to get %s address: %s", ip_type, e)
             continue
 
+        _raise_if_cancelled(cancelled)
         if result:
             return result
 
@@ -57,16 +69,17 @@ def get_ip(ip_type, rules):
     return None
 
 
-def update_ip(dns, cache, index_rule, domains, record_type, config):
-    # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config) -> bool | None
+def update_ip(dns, cache, index_rule, domains, record_type, config, cancelled=None):
+    # type: (SimpleProvider, Cache | None, list[str]|bool, list[str], str, Config, object | None) -> bool | None
     """
     更新IP并变更DNS记录
     """
+    _raise_if_cancelled(cancelled)
     if not domains:
         return None
 
     ip_type = "4" if record_type == "A" else "6"
-    address = get_ip(ip_type, index_rule)
+    address = get_ip(ip_type, index_rule, cancelled=cancelled)
     if not address:
         logger.error("Fail to get %s address!", ip_type)
         return False
@@ -74,6 +87,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
     update_success = False
 
     for domain in domains:
+        _raise_if_cancelled(cancelled)
         domain = domain.lower()
         cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
@@ -93,11 +107,12 @@ def update_ip(dns, cache, index_rule, domains, record_type, config):
                     logger.error("Failed to update %s record for %s", record_type, domain)
             except Exception as e:
                 logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
+    _raise_if_cancelled(cancelled)
     return update_success
 
 
-def run(config):
-    # type: (Config) -> bool
+def run(config, cancelled=None):
+    # type: (Config, object | None) -> bool
     """
     Run the DDNS update process
     """
@@ -111,8 +126,8 @@ def run(config):
     )
     cache = Cache.new(config.cache, config.md5(), logger, config.cache_max_age)
     return (
-        update_ip(dns, cache, config.index4, config.ipv4, "A", config) is not False
-        and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config) is not False
+        update_ip(dns, cache, config.index4, config.ipv4, "A", config, cancelled=cancelled) is not False
+        and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config, cancelled=cancelled) is not False
     )
 
 

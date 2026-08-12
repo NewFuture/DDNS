@@ -345,6 +345,8 @@ Escape Windows path backslashes as `\\` in JSON, or replace `command` with the a
 
 `update_dns_records` changes external DNS state, so clients should retain user confirmation before invoking it. The tool accepts no domain, address, provider, or credential arguments, preventing a model from bypassing the local configuration to write arbitrary records.
 
+When a client cancels an update, the server stops before subsequent IP rules, domain records, or providers. A provider API request that has already been sent cannot be rolled back and may still complete.
+
 This implementation supports the handshake-free MCP `2026-07-28` protocol and the `2025-11-25` `initialize` lifecycle used by GitHub Copilot CLI. It does not support earlier revisions or expose HTTP, resources, prompts, or subscriptions. Status comes from the local DDNS cache; when caching is disabled, a later independent status request cannot reconstruct sync history from a previous process, although the update call still returns its own result.
 
 ## Task Management
