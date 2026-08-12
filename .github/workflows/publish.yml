@@ -240,11 +240,19 @@ jobs:
       contents: write
     env:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 8
+    timeout-minutes: ${{ matrix.host == 'arm' && 15 || 8 }}
     steps:
       - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v4
+        if: matrix.host != 'arm'
+      - name: Set up memory-constrained Buildx
+        uses: docker/setup-buildx-action@v4
+        if: matrix.host == 'arm'
+        with:
+          buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 1
       - uses: docker/build-push-action@v7
         with:
           context: .
