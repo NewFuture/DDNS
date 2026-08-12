@@ -8,7 +8,6 @@ import json
 import os
 import shutil
 import signal
-import socket
 import subprocess
 import sys
 import tempfile
@@ -389,14 +388,6 @@ class OfflineE2ETestCase(unittest.TestCase):
             "Process failed with {}.\nstdout:\n{}\nstderr:\n{}".format(result.returncode, result.stdout, result.stderr),
         )
 
-    def _unused_port(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.bind(("127.0.0.1", 0))
-            return sock.getsockname()[1]
-        finally:
-            sock.close()
-
     def _http_request(self, port, path, method="GET", payload=None, headers=None):
         request_headers = dict(headers or {})
         body = None
@@ -620,16 +611,18 @@ class TestWebE2E(OfflineE2ETestCase):
 
     def test_dashboard_config_sync_and_scheduler_lifecycle(self):
         """Start the real dashboard, synchronize, and manage its scheduler."""
-        port = self._unused_port()
         config_path = os.path.join(self.temp_dir, "dashboard.json")
         process = self._start(
-            ["web", "--config", config_path, "--host", "127.0.0.1", "--port", str(port), "--interval", "30"]
+            ["web", "--config", config_path, "--host", "127.0.0.1", "--port", "0", "--interval", "30"]
         )
         output = process.wait_for_stdout("DDNS dashboard:", timeout=STARTUP_TIMEOUT)
         launch_url = next(
             line.split("DDNS dashboard:", 1)[1].strip() for line in output.splitlines() if "DDNS dashboard:" in line
         )
-        launch_path = urlparse(launch_url).path
+        parsed_launch_url = urlparse(launch_url)
+        port = parsed_launch_url.port
+        launch_path = parsed_launch_url.path
+        self.assertIsNotNone(port)
 
         status, _, index = self._http_request(port, "/")
         asset_status, _, script = self._http_request(port, "/assets/dashboard.js")

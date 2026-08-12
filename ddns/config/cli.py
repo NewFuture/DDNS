@@ -60,8 +60,8 @@ def port_number(value):
         parsed = int(value)
     except (TypeError, ValueError):
         raise ArgumentTypeError("must be a valid TCP port")
-    if parsed < 1 or parsed > 65535:
-        raise ArgumentTypeError("must be between 1 and 65535")
+    if parsed < 0 or parsed > 65535:
+        raise ArgumentTypeError("must be between 0 and 65535")
     return parsed
 
 

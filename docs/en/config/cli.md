@@ -295,7 +295,7 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 |--------|-------------|
 | `-c, --config FILE` | Select one local configuration file managed by the console |
 | `--host` | Loopback listener: `127.0.0.1`, `localhost`, or `::1` |
-| `--port` | Console port, default `9876` |
+| `--port` | Console port, default `9876`; use `0` to let the OS select an available port |
 | `--interval MINs` | Built-in interval for the current Web process, from 1 to 1440 minutes, default 5 |
 | `--open` | Open the browser after startup |
 

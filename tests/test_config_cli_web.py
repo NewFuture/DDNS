@@ -54,6 +54,19 @@ class TestWebSubcommand(unittest.TestCase):
         self.assertIsNone(captured[0]["interval"])
         self.assertFalse(captured[0]["open"])
 
+    def test_web_subcommand_accepts_ephemeral_port(self):
+        """Allow the operating system to select an unused listener port."""
+        sys.argv = ["ddns", "web", "--port", "0"]
+        captured = [None]
+
+        with patch("ddns.config.cli._handle_web_command") as handler:
+            handler.side_effect = lambda args: captured.__setitem__(0, args)
+            with self.assertRaises(SystemExit) as context:
+                load_config("Test DDNS", "Test doc", "1.0.0", "2026-01-01")
+
+        self.assertEqual(context.exception.code, 0)
+        self.assertEqual(captured[0]["port"], 0)
+
     def test_interval_shorthand_starts_web_dashboard(self):
         """Infer Web mode when a top-level interval is provided."""
         sys.argv = ["ddns", "--interval", "12"]
