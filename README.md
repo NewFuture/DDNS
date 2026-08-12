@@ -111,6 +111,14 @@ ddns -c config.json --interval 5 --open
 
 提供 `--interval` 会自动进入 Web 模式，无需额外写 `web`；也可在本地 JSON 顶层配置 `"interval": 5`，此时 `ddns -c config.json` 会自动启动 Web。命令行值优先于配置，原有 `ddns web` 命令继续兼容。页面保存的新间隔会写回配置；暂停和恢复只影响当前进程。检测到已启用的系统任务时，Web 会阻止重复调度。生产环境应使用 systemd、launchd、Windows 服务或 Docker 负责 Web 进程保活。
 
+让 GitHub Copilot 等本机 MCP 客户端查询缓存状态，或在人工确认后触发一次完整同步：
+
+```bash
+ddns mcp -c /etc/ddns/config.json
+```
+
+该 stdio 服务只使用 Python 标准库，不监听网络，也不会向模型暴露配置凭据；支持 MCP `2026-07-28`，并兼容 GitHub Copilot CLI 使用的 `2025-11-25`。具体客户端配置、工具与限制见 [MCP 命令文档](docs/config/cli.md#mcp-服务)。
+
 不需要 Web 控制台时，可以安装每 5 分钟执行一次的系统定时任务：
 
 ```bash

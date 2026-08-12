@@ -118,13 +118,14 @@ def run(config):
 
 def main():
     stdout = sys.stdout  # pythonw 模式无 stdout
+    mcp_mode = len(sys.argv) > 1 and sys.argv[1] == "mcp"
     if stdout and stdout.encoding and stdout.encoding.lower() != "utf-8" and hasattr(stdout, "buffer"):
         # 兼容windows 和部分ASCII编码的老旧系统
         sys.stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
     # Windows 下输出一个空行
-    if stdout and sys.platform.startswith("win"):
+    if stdout and sys.platform.startswith("win") and not mcp_mode:
         stdout.write("\r\n")
 
     logger.name = "ddns"

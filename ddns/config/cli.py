@@ -303,6 +303,14 @@ def _add_web_subcommand(subparsers):
     )
 
 
+def _add_mcp_subcommand(subparsers):
+    # type: (object) -> None
+    """Add the local stdio MCP server command."""
+    mcp = subparsers.add_parser("mcp", help="Run the local MCP server [运行本机 MCP 服务]")
+    mcp.set_defaults(func=_handle_mcp_command)
+    mcp.add_argument("-c", "--config", metavar="FILE", help="local config file [本机配置文件]")
+
+
 def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
     """
     Conditionally add subcommands to avoid Python 2 'too few arguments' error.
@@ -317,12 +325,13 @@ def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
     subparsers = parser.add_subparsers(dest="command", help="subcommands [子命令]")
     _add_task_subcommand(subparsers)
     _add_web_subcommand(subparsers)
+    _add_mcp_subcommand(subparsers)
 
 
 def _expand_web_interval_shorthand():
     # type: () -> None
     """Treat a top-level --interval option as an implicit web command."""
-    if len(sys.argv) <= 1 or sys.argv[1] in ("task", "web"):
+    if len(sys.argv) <= 1 or sys.argv[1] in ("task", "web", "mcp"):
         return
     if any(argument == "--interval" or argument.startswith("--interval=") for argument in sys.argv[1:]):
         config_paths = _cli_config_paths(sys.argv[1:])
@@ -414,6 +423,16 @@ def _validate_explicit_web_configs():
         _reject_multiple_web_configs()
 
 
+def _validate_explicit_mcp_configs():
+    # type: () -> None
+    if len(sys.argv) <= 1 or sys.argv[1] != "mcp":
+        return
+    config_paths = _cli_config_paths(sys.argv[2:])
+    if config_paths is not None and len(config_paths) != 1:
+        sys.stderr.write("ddns mcp: exactly one local configuration file is supported.\n")
+        sys.exit(2)
+
+
 def _validate_web_mode_arguments():
     # type: () -> None
     if len(sys.argv) <= 1 or sys.argv[1] != "web":
@@ -437,11 +456,31 @@ def _validate_web_mode_arguments():
         sys.exit(2)
 
 
+def _validate_mcp_mode_arguments():
+    # type: () -> None
+    if len(sys.argv) <= 1 or sys.argv[1] != "mcp":
+        return
+    value_options = ("-c", "--config")
+    long_value_prefixes = ("--config=",)
+    arguments = sys.argv[2:]
+    index = 0
+    while index < len(arguments):
+        argument = arguments[index]
+        if argument in value_options:
+            index += 2
+            continue
+        if argument in ("-h", "--help") or argument.startswith(long_value_prefixes):
+            index += 1
+            continue
+        sys.stderr.write("ddns mcp: unsupported option {}.\n".format(argument))
+        sys.exit(2)
+
+
 def _expand_web_config_shorthand():
     # type: () -> None
     arguments = sys.argv[1:]
     if (
-        (arguments and arguments[0] in ("task", "web"))
+        (arguments and arguments[0] in ("task", "web", "mcp"))
         or any(argument in ("-h", "--help", "-v", "--version", "--new-config") for argument in arguments)
         or any(argument.startswith("--new-config=") for argument in arguments)
     ):
@@ -477,7 +516,9 @@ def load_config(description, doc, version, date):
     _expand_web_interval_shorthand()
     _expand_web_config_shorthand()
     _validate_explicit_web_configs()
+    _validate_explicit_mcp_configs()
     _validate_web_mode_arguments()
+    _validate_mcp_mode_arguments()
     parser = ArgumentParser(description=description, epilog=doc, formatter_class=RawTextHelpFormatter)
     sysinfo = _get_system_info_str()
     pyinfo = _get_python_info_str()
@@ -605,10 +646,9 @@ def _handle_task_command(args):  # type: (dict) -> None
             sys.exit(1)
 
 
-def _handle_web_command(args):
-    # type: (dict) -> None
-    """Run the local-only embedded management dashboard."""
-    basicConfig(level=args.get("debug") and DEBUG or args.get("log_level", "INFO"))
+def _local_config_path(args, command):
+    # type: (dict, str) -> str | None
+    """Resolve one local config path shared by long-running local services."""
     config_path = args.get("config")
     if not config_path:
         config_path = load_env_config().get("config")
@@ -619,12 +659,20 @@ def _handle_web_command(args):
 
         config_paths = split_array_string(config_path, preserve_special=False)
         if len(config_paths) != 1:
-            sys.stderr.write("ddns web: exactly one local configuration file is supported.\n")
+            sys.stderr.write("ddns {}: exactly one local configuration file is supported.\n".format(command))
             sys.exit(2)
         config_path = config_paths[0]
         if "://" in config_path:
-            sys.stderr.write("ddns web: remote configuration files are not supported.\n")
+            sys.stderr.write("ddns {}: remote configuration files are not supported.\n".format(command))
             sys.exit(2)
+    return config_path
+
+
+def _handle_web_command(args):
+    # type: (dict) -> None
+    """Run the local-only embedded management dashboard."""
+    basicConfig(level=args.get("debug") and DEBUG or args.get("log_level", "INFO"))
+    config_path = _local_config_path(args, "web")
 
     interval = args.get("interval")
     interval_from_config = False
@@ -651,3 +699,14 @@ def _handle_web_command(args):
         logger=getLogger(),
         interval=interval,
     )
+
+
+def _handle_mcp_command(args):
+    # type: (dict) -> None
+    """Run the local stdio MCP server."""
+    basicConfig()
+    config_path = _local_config_path(args, "mcp")
+
+    from ..mcp import serve
+
+    serve(config_path=config_path)

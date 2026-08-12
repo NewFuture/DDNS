@@ -335,6 +335,50 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 
 如果检测到已启用的 `ddns task` 系统任务，Web 内置调度会停止执行并显示冲突。可以在控制台中显式接管，或先运行 `ddns task --disable`。两种调度方式不能同时运行。
 
+## MCP 服务
+
+`mcp` 子命令通过 stdio 启动一个仅使用 Python 标准库的本机 MCP 服务。它不会监听网络，也不会在协议参数或结果中返回服务商凭据。
+
+```bash
+ddns mcp -c /etc/ddns/config.json
+```
+
+配置路径优先级为 `-c/--config` > `DDNS_CONFIG` > 默认本地配置路径。MCP 模式只接受一份本地配置文件，不支持远程 URL 或多个 `-c`。stdout 专用于每行一条的 JSON-RPC 消息，运行日志只写入 stderr。
+
+### MCP 客户端配置
+
+在 GitHub Copilot CLI 中可以直接添加：
+
+```bash
+copilot mcp add ddns -- ddns mcp -c /etc/ddns/config.json
+```
+
+也可以在支持 MCP 的客户端配置中添加：
+
+```json
+{
+  "mcpServers": {
+    "ddns": {
+      "command": "ddns",
+      "args": ["mcp", "-c", "/etc/ddns/config.json"]
+    }
+  }
+}
+```
+
+Windows JSON 路径中的反斜杠需要写成 `\\`，也可以将 `command` 替换为 `ddns` 可执行文件的绝对路径。
+
+### 可用工具
+
+| 工具 | 参数 | 行为 |
+|------|------|------|
+| `get_ddns_status` | 无 | 读取本地配置、缓存地址、缓存记录、服务商摘要和最近同步时间，不实时查询 DNS 服务商 |
+| `update_dns_records` | 无 | 使用配置中的当前 IP 规则，对所有已配置记录执行一次完整同步，并返回同步后的状态 |
+
+`update_dns_records` 会修改外部 DNS 状态，客户端应在调用前保留人工确认。工具不接受域名、IP、服务商或凭据参数，避免模型绕过本地配置写入任意记录。
+
+当前实现支持 MCP `2026-07-28` 的无握手协议，并兼容 GitHub Copilot CLI 使用的 `2025-11-25` `initialize` 生命周期；不兼容更早协议，也不提供 HTTP、resources、prompts 或 subscriptions。状态来自 DDNS 本地缓存；关闭缓存后，独立的后续状态请求无法还原上一进程的同步历史，但更新调用本身仍会返回本次结果。
+
 ## Task Management (定时任务管理)
 
 DDNS 支持通过 `task` 子命令管理无 Web 场景的系统定时任务，可自动根据系统选择合适的调度器安装定时更新任务。
