@@ -574,6 +574,8 @@ class TestDashboardService(unittest.TestCase):
                     ensure_ascii=False,
                 )
             )
+        now = time.time()
+        os.utime(cache_path, (now, now))
 
         dashboard = self.service.dashboard()
 
