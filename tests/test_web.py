@@ -731,6 +731,30 @@ class TestDashboardService(unittest.TestCase):
         self.assertEqual(mock_run.call_count, 2)
         self.assertEqual([provider["status"] for provider in dashboard["providers"]], ["error", "synced"])
 
+    @patch("ddns.__main__.run")
+    def test_sync_stops_before_next_provider_when_cancelled(self, mock_run):
+        """Stop cooperative synchronization between configured providers."""
+        config = _valid_config()
+        second = copy.deepcopy(config["providers"][0])
+        second["ipv4"] = ["second.example.com"]
+        config["providers"].append(second)
+        self.service.save(config)
+        cancel_event = threading.Event()
+
+        def cancel_after_first(_config, cancelled=None):
+            """Cancel after the first provider returns."""
+            self.assertTrue(callable(cancelled))
+            cancel_event.set()
+            return True
+
+        mock_run.side_effect = cancel_after_first
+
+        with self.assertRaises(DashboardOperationError) as context:
+            self.service.sync(source="MCP", cancelled=cancel_event.is_set)
+
+        self.assertIn("cancelled", str(context.exception).lower())
+        mock_run.assert_called_once()
+
     def test_scheduler_action_uses_selected_interval(self):
         """Update the interval for the current web process."""
         result = self.service.configure_scheduler("configure", interval=12)

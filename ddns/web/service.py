@@ -1145,8 +1145,8 @@ class DashboardService(object):
                 "scheduler": self._scheduler_status(),
             }
 
-    def sync(self, source="同步"):
-        # type: (str) -> dict
+    def sync(self, source="同步", cancelled=None):
+        # type: (str, object | None) -> dict
         with self._lock:
             document = self.load_document()
             indexed_configs = [
@@ -1157,7 +1157,7 @@ class DashboardService(object):
             if not indexed_configs:
                 raise ConfigValidationError("Add at least one domain before running synchronization.")
 
-            from ..__main__ import run
+            from ..__main__ import UpdateCancelled, run
 
             failures = []
             successful_indexes = set()
@@ -1168,10 +1168,18 @@ class DashboardService(object):
             try:
                 for provider_index, config in indexed_configs:
                     try:
-                        if not run(config):
+                        if cancelled is not None and cancelled():
+                            raise UpdateCancelled("DDNS update cancelled.")
+                        result = run(config) if cancelled is None else run(config, cancelled=cancelled)
+                        if cancelled is not None and cancelled():
+                            raise UpdateCancelled("DDNS update cancelled.")
+                        if not result:
                             failures.append((provider_index, config.dns))
                         else:
                             successful_indexes.add(provider_index)
+                    except UpdateCancelled:
+                        self._record_activity("WARN", source, "同步已取消", config.dns)
+                        raise DashboardOperationError("Synchronization cancelled.")
                     except Exception:
                         self.logger.exception("Dashboard synchronization failed for %s", config.dns)
                         failures.append((provider_index, config.dns))

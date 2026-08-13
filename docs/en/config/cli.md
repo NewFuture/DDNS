@@ -303,6 +303,52 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 
 When an enabled `ddns task` system task is detected, Web scheduling stops and reports a conflict. Explicitly take over in the console or run `ddns task --disable` first. The two scheduling modes cannot run together.
 
+## MCP server
+
+The `mcp` subcommand starts a local stdio MCP server implemented with the Python standard library only. It opens no network listener and never returns provider credentials in protocol arguments or results.
+
+```bash
+ddns mcp -c /etc/ddns/config.json
+```
+
+Configuration path precedence is `-c/--config` > `DDNS_CONFIG` > the conventional local config paths. MCP mode accepts exactly one local file; remote URLs and multiple `-c` values are rejected. stdout is reserved for one JSON-RPC message per line, while runtime logs go to stderr.
+
+### MCP client configuration
+
+Add the server directly to GitHub Copilot CLI:
+
+```bash
+copilot mcp add ddns -- ddns mcp -c /etc/ddns/config.json
+```
+
+Alternatively, add the following to an MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "ddns": {
+      "command": "ddns",
+      "args": ["mcp", "-c", "/etc/ddns/config.json"]
+    }
+  }
+}
+```
+
+Escape Windows path backslashes as `\\` in JSON, or replace `command` with the absolute path to the `ddns` executable.
+
+### Available tools
+
+| Tool | Arguments | Behavior |
+|------|-----------|----------|
+| `get_ddns_status` | None | Read local configuration, cached addresses and records, provider summaries, and the latest sync time; it does not query providers live |
+| `update_dns_records` | None | Resolve current addresses using the configuration, synchronize every configured record once, and return the resulting status |
+
+`update_dns_records` changes external DNS state, so clients should retain user confirmation before invoking it. The tool accepts no domain, address, provider, or credential arguments, preventing a model from bypassing the local configuration to write arbitrary records.
+
+When a client cancels an update, the server stops before subsequent IP rules, domain records, or providers. A provider API request that has already been sent cannot be rolled back and may still complete.
+
+This implementation supports the handshake-free MCP `2026-07-28` protocol and the `2025-11-25` `initialize` lifecycle used by GitHub Copilot CLI. It does not support earlier revisions or expose HTTP, resources, prompts, or subscriptions. Status comes from the local DDNS cache; when caching is disabled, a later independent status request cannot reconstruct sync history from a previous process, although the update call still returns its own result.
+
 ## Task Management
 
 For headless deployments, DDNS supports system scheduled tasks through the `task` subcommand, which automatically detects the system and selects the appropriate scheduler.
