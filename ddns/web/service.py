@@ -68,6 +68,7 @@ PROVIDER_LABELS = {provider["id"]: provider["name"] for provider in CONFIG_MODEL
 DOMAIN_PATTERN = re.compile(CONFIG_RULES["domainPattern"])
 PROXY_PATTERN = re.compile(CONFIG_RULES["proxyPattern"])
 LOG_LEVELS = tuple(CONFIG_RULES["logLevels"])
+CACHE_MTIME_TOLERANCE_SECONDS = 2
 ADDRESS_SOURCE_NAMES = set(CONFIG_RULES["addressSourceNames"])
 ADDRESS_SOURCE_PREFIXES = tuple(CONFIG_RULES["addressSourcePrefixes"])
 FALSE_ALIASES = tuple(CONFIG_RULES["falseAliases"])
@@ -1015,8 +1016,9 @@ class DashboardService(object):
         try:
             cache_time = os.path.getmtime(cache_path)
             now = time.time()
-            if cache_time > now:
+            if cache_time - now > CACHE_MTIME_TOLERANCE_SECONDS:
                 return {}, None
+            cache_time = min(cache_time, now)
             if now - cache_time >= config.cache_max_age:
                 return {}, None
             cache = json.loads(read_file(cache_path))
