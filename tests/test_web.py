@@ -582,8 +582,8 @@ class TestDashboardService(unittest.TestCase):
         records = {(record["domain"], record["provider"]) for record in dashboard["records"]}
         self.assertEqual(records, {("first.example.com", "debug"), ("second.example.com", "callback")})
 
-    def test_dashboard_allows_small_cache_mtime_clock_skew(self):
-        """Do not hide a freshly written cache when file mtime is slightly ahead."""
+    def test_dashboard_ignores_future_cache_mtime(self):
+        """Ignore a cache file with a modification time in the future."""
         cache_path = os.path.join(self.temp_dir, "shared.cache")
         config = _valid_config()
         config["cache"] = cache_path
@@ -595,9 +595,7 @@ class TestDashboardService(unittest.TestCase):
         with patch("ddns.web.service.time.time", return_value=cache_time - 0.5):
             dashboard = self.service.dashboard()
 
-        self.assertEqual(
-            [(record["domain"], record["provider"]) for record in dashboard["records"]], [("home.example.com", "debug")]
-        )
+        self.assertEqual(dashboard["records"], [])
 
     def test_missing_file_projects_environment_only_configuration(self):
         """Expose an environment-only provider without persisting default fields."""
