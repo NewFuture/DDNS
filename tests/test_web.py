@@ -589,7 +589,7 @@ class TestDashboardService(unittest.TestCase):
         config["cache"] = cache_path
         self.service.save(config)
         with io.open(cache_path, "w", encoding="utf-8") as cache_file:
-            cache_file.write(json.dumps({"home.example.com:A": "203.0.113.10"}))
+            cache_file.write(json.dumps({"home.example.com:A": "203.0.113.10"}, ensure_ascii=False))
 
         cache_time = os.path.getmtime(cache_path)
         now = cache_time - 0.5
