@@ -240,10 +240,14 @@ jobs:
       contents: write
     env:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
 
+      - uses: docker/setup-qemu-action@v4
+        if: matrix.host == 'arm' && matrix.libc == 'musl'
+        with:
+          platforms: arm
       - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v7
         with:

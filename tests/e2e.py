@@ -322,11 +322,12 @@ class OfflineE2ETestCase(unittest.TestCase):
             return [sys.executable, RUN_SCRIPT] + arguments
         return [sys.executable, "-m", "ddns"] + arguments
 
-    def _run(self, arguments, entrypoint="module", env=None, timeout=PROCESS_TIMEOUT):
+    def _run(self, arguments, entrypoint="module", env=None, timeout=PROCESS_TIMEOUT, input_text=None):
         process = subprocess.Popen(
             self._command(arguments, entrypoint),
             cwd=self.temp_dir,
             env=env or self._environment(),
+            stdin=subprocess.PIPE if input_text is not None else None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
@@ -345,7 +346,7 @@ class OfflineE2ETestCase(unittest.TestCase):
         timer.daemon = True
         timer.start()
         try:
-            stdout, stderr = process.communicate()
+            stdout, stderr = process.communicate(input_text)
         finally:
             timer.cancel()
         if timed_out.is_set():
@@ -496,6 +497,75 @@ class TestCliE2E(OfflineE2ETestCase):
             requests[0]["query"], {"domain": ["cli-env.example.com"], "ip": [TEST_IPV4], "type": ["A"], "ttl": ["120"]}
         )
 
+    def test_generate_config_with_realistic_cli_options_and_reuse_it(self):
+        """Generate a user-style config with a spaced path, then execute it."""
+        config_path = os.path.join(self.temp_dir, "generated user config.json")
+        log_path = os.path.join(self.temp_dir, "generated user.log")
+        callback_path = "/callback/generated"
+        callback_url = (
+            self.fixture_url
+            + callback_path
+            + "?domain=__DOMAIN__&ip=__IP__&type=__RECORDTYPE__&ttl=__TTL__&line=__LINE__"
+        )
+        generate = self._run(
+            [
+                "--dns",
+                "callback",
+                "--id",
+                callback_url,
+                "--token",
+                "{}",
+                "--index4",
+                "url:" + self.fixture_url + "/ip/v4",
+                "--ipv4",
+                "Generated.Example.com",
+                "--ttl",
+                "900",
+                "--line",
+                "generated",
+                "--proxy",
+                "DIRECT",
+                "--no-cache",
+                "--no-ssl",
+                "--log-level",
+                "DEBUG",
+                "--log-file",
+                log_path,
+                "--new-config",
+                config_path,
+            ]
+        )
+
+        self.assert_process_success(generate)
+        self.assertTrue(os.path.isfile(config_path))
+        with io.open(config_path, "r", encoding="utf-8") as generated_file:
+            generated_config = json.load(generated_file)
+        self.assertEqual(generated_config["dns"], "callback")
+        self.assertEqual(generated_config["token"], "{}")
+        self.assertEqual(generated_config["ipv4"], ["Generated.Example.com"])
+        self.assertEqual(generated_config["index4"], ["url:" + self.fixture_url + "/ip/v4"])
+        self.assertEqual(generated_config["proxy"], ["DIRECT"])
+        self.assertFalse(generated_config["cache"])
+        self.assertFalse(generated_config["ssl"])
+
+        result = self._run(["-c", config_path])
+
+        self.assert_process_success(result)
+        requests = self.fixture_state.requests_for(callback_path)
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(
+            requests[0]["query"],
+            {
+                "domain": ["generated.example.com"],
+                "ip": [TEST_IPV4],
+                "type": ["A"],
+                "ttl": ["900"],
+                "line": ["generated"],
+            },
+        )
+        with io.open(log_path, "r", encoding="utf-8") as log_file:
+            self.assertIn("generated.example.com", log_file.read())
+
     def test_remote_multi_provider_configuration(self):
         """Load a remote v4.1 document and execute every expanded provider."""
         second_token = json.dumps(
@@ -604,6 +674,181 @@ class TestCliE2E(OfflineE2ETestCase):
         self.assertEqual(len(self.fixture_state.requests_for("/callback/fail")), 1)
         self.assertIn("Configuration 2 failed", result.stderr)
         self.assertIn("Some configurations failed", result.stderr)
+
+
+class TestMcpE2E(OfflineE2ETestCase):
+    """Exercise both supported MCP stdio lifecycles through a real process."""
+
+    MODERN_VERSION = "2026-07-28"
+    LEGACY_VERSION = "2025-11-25"
+
+    def _modern_request(self, request_id, method, params=None):
+        params = dict(params or {})
+        params["_meta"] = {
+            "io.modelcontextprotocol/protocolVersion": self.MODERN_VERSION,
+            "io.modelcontextprotocol/clientCapabilities": {"sampling": {}},
+            "io.modelcontextprotocol/clientInfo": {"name": "ddns-e2e-client", "version": "1.0"},
+        }
+        return {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}
+
+    @staticmethod
+    def _request_lines(requests):
+        return "".join(json.dumps(request, ensure_ascii=False, separators=(",", ":")) + "\n" for request in requests)
+
+    def _run_mcp(self, config_path, requests):
+        result = self._run(["mcp", "-c", config_path], input_text=self._request_lines(requests))
+        self.assert_process_success(result)
+        lines = result.stdout.splitlines()
+        self.assertEqual(
+            len(lines),
+            len([request for request in requests if "id" in request]),
+            "Unexpected MCP stdout.\nstdout:\n{}\nstderr:\n{}".format(result.stdout, result.stderr),
+        )
+        return result, [json.loads(line) for line in lines]
+
+    def test_modern_discovery_tools_update_and_cached_status(self):
+        """Discover tools, synchronize dual-stack records, and read cached status."""
+        cache_path = os.path.join(self.temp_dir, "mcp.cache")
+        token = json.dumps(
+            {
+                "api_key": "mcp-secret",
+                "domain": "__DOMAIN__",
+                "ip": "__IP__",
+                "record_type": "__RECORDTYPE__",
+                "ttl": "__TTL__",
+                "line": "__LINE__",
+            },
+            separators=(",", ":"),
+        )
+        config = {
+            "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
+            "proxy": ["DIRECT"],
+            "ssl": False,
+            "cache": cache_path,
+            "cache_max_age": 3600,
+            "providers": [
+                {
+                    "provider": "callback",
+                    "id": self.fixture_url + "/callback/mcp",
+                    "token": token,
+                    "ipv4": ["mcp-v4.example.com"],
+                    "index4": ["url:" + self.fixture_url + "/ip/v4"],
+                    "ipv6": ["mcp-v6.example.com"],
+                    "index6": ["url:" + self.fixture_url + "/ip/v6"],
+                    "ttl": 720,
+                    "line": "mcp",
+                },
+                {
+                    "provider": "debug",
+                    "ipv4": ["mcp-debug.example.com"],
+                    "index4": ["url:" + self.fixture_url + "/ip/v4"],
+                    "ipv6": [],
+                    "index6": False,
+                    "ttl": 300,
+                },
+            ],
+        }
+        config_path = self._write_config("mcp.json", config)
+        requests = [
+            self._modern_request(1, "server/discover"),
+            self._modern_request(2, "tools/list"),
+            self._modern_request(3, "tools/call", {"name": "update_dns_records", "arguments": {}}),
+            self._modern_request(4, "tools/call", {"name": "get_ddns_status", "arguments": {}}),
+        ]
+
+        result, responses = self._run_mcp(config_path, requests)
+
+        self.assertEqual([response["id"] for response in responses], [1, 2, 3, 4])
+        self.assertEqual(responses[0]["result"]["supportedVersions"], [self.MODERN_VERSION, self.LEGACY_VERSION])
+        tools = responses[1]["result"]["tools"]
+        self.assertEqual([tool["name"] for tool in tools], ["get_ddns_status", "update_dns_records"])
+        self.assertTrue(tools[0]["annotations"]["readOnlyHint"])
+        self.assertTrue(tools[1]["annotations"]["destructiveHint"])
+
+        update = responses[2]["result"]
+        self.assertFalse(update["isError"])
+        self.assertEqual(update["structuredContent"]["state"], "synced")
+        expected_records = [
+            ("mcp-debug.example.com", "A", TEST_IPV4, "debug"),
+            ("mcp-v4.example.com", "A", TEST_IPV4, "callback"),
+            ("mcp-v6.example.com", "AAAA", TEST_IPV6, "callback"),
+        ]
+        self.assertEqual(
+            [
+                (record["domain"], record["type"], record["value"], record["provider"])
+                for record in update["structuredContent"]["records"]
+            ],
+            expected_records,
+        )
+        status = responses[3]["result"]
+        self.assertFalse(status["isError"])
+        self.assertEqual(status["structuredContent"]["state"], "synced")
+        self.assertEqual(
+            [
+                (record["domain"], record["type"], record["value"], record["provider"])
+                for record in status["structuredContent"]["records"]
+            ],
+            expected_records,
+        )
+        self.assertNotIn("mcp-secret", result.stdout)
+        self.assertIn("[IPv4] {}".format(TEST_IPV4), result.stderr)
+
+        callback_requests = self.fixture_state.requests_for("/callback/mcp")
+        self.assertEqual(len(callback_requests), 2)
+        self.assertEqual(
+            sorted((json.loads(request["body"]) for request in callback_requests), key=lambda body: body["domain"]),
+            [
+                {
+                    "api_key": "mcp-secret",
+                    "domain": "mcp-v4.example.com",
+                    "ip": TEST_IPV4,
+                    "record_type": "A",
+                    "ttl": "720",
+                    "line": "mcp",
+                },
+                {
+                    "api_key": "mcp-secret",
+                    "domain": "mcp-v6.example.com",
+                    "ip": TEST_IPV6,
+                    "record_type": "AAAA",
+                    "ttl": "720",
+                    "line": "mcp",
+                },
+            ],
+        )
+
+    def test_legacy_copilot_initialize_ping_list_and_status(self):
+        """Run the lifecycle used by GitHub Copilot CLI over stdio."""
+        config_path = self._write_config(
+            "legacy-mcp.json", self._callback_config("/callback/legacy-mcp", ["legacy.example.com"], cache=False)
+        )
+        requests = [
+            {
+                "jsonrpc": "2.0",
+                "id": 0,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": self.LEGACY_VERSION,
+                    "capabilities": {"sampling": {}},
+                    "clientInfo": {"name": "github-copilot-developer", "version": "1.0.80"},
+                },
+            },
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 1, "method": "ping"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "get_ddns_status", "arguments": {}}},
+        ]
+
+        _, responses = self._run_mcp(config_path, requests)
+
+        self.assertEqual([response["id"] for response in responses], [0, 1, 2, 3])
+        self.assertEqual(responses[0]["result"]["protocolVersion"], self.LEGACY_VERSION)
+        self.assertEqual(responses[1]["result"], {})
+        self.assertEqual(
+            [tool["name"] for tool in responses[2]["result"]["tools"]], ["get_ddns_status", "update_dns_records"]
+        )
+        self.assertFalse(responses[3]["result"]["isError"])
+        self.assertNotIn("resultType", responses[3]["result"])
 
 
 class TestWebE2E(OfflineE2ETestCase):

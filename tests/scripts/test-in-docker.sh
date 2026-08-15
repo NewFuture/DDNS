@@ -1,16 +1,58 @@
-set -ex
+#!/bin/sh
+
+set -eu
+
+if [ "${E2E_DOCKER_WRAPPER:-}" = "1" ]; then
+    : "${E2E_DOCKER_BINARY:?E2E_DOCKER_BINARY is required}"
+    : "${E2E_DOCKER_IMAGE:?E2E_DOCKER_IMAGE is required}"
+    : "${E2E_DOCKER_PLATFORM:?E2E_DOCKER_PLATFORM is required}"
+
+    binary=$(realpath "$E2E_DOCKER_BINARY")
+    binary_dir=$(dirname "$binary")
+    workdir=$(pwd -P)
+    ddns_env=$(mktemp)
+    trap 'rm -f "$ddns_env"' 0
+    trap 'exit 130' 2
+    trap 'exit 143' 15
+    env | awk '/^DDNS_[A-Za-z0-9_]*=/ && !/^DDNS_E2E_/ { print }' > "$ddns_env"
+
+    set +e
+    docker run \
+        --rm \
+        --interactive \
+        --network host \
+        --volume "$binary_dir:$binary_dir:ro" \
+        --volume "$workdir:$workdir" \
+        --workdir "$workdir" \
+        --platform "$E2E_DOCKER_PLATFORM" \
+        --env HOME \
+        --env USERPROFILE \
+        --env TMPDIR \
+        --env TEMP \
+        --env TMP \
+        --env PYTHONIOENCODING \
+        --env PYTHONUNBUFFERED \
+        --env-file "$ddns_env" \
+        "$E2E_DOCKER_IMAGE" \
+        "$binary" \
+        "$@"
+    status=$?
+    set -e
+    exit "$status"
+fi
+
 platform=${1:-linux/amd64}
 libc=${2:-musl}
-filePath=${3:-dist/ddns}
-
-volume=$(dirname $(realpath "$filePath"))
-file=$(basename "$filePath")
-MAP_CONF="${GITHUB_WORKSPACE}/tests/config:/config"
+file_path=${3:-dist/ddns}
+binary=$(realpath "$file_path")
+volume=$(dirname "$binary")
+file=$(basename "$binary")
+test_scripts=$(dirname "$(realpath "$0")")
 
 if [ "$libc" = "glibc" ]; then
     container="ubuntu:19.04"
 else
-    case $platform in
+    case "$platform" in
         linux/amd64)
             container="openwrt/rootfs:x86_64"
             ;;
@@ -31,42 +73,38 @@ else
             platform="linux/arm_cortex-a15_neon-vfpv4"
             ;;
         linux/arm/v6)
-            # v6 不支持直接测试，需要qume仿真
-            echo "::warn::untested platform '$platform' ($libc)"
-            exit 0
+            container="arm32v6/alpine:3.12"
             ;;
         *)
-        container="alpine"
-        ;;
+            container="alpine:3.12"
+            ;;
     esac
 fi
 
-docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file -h
-docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file --version
-docker run --rm -v="$volume:/dist" --platform=$platform $container sh -c "/dist/$file || test -f config.json"
-docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/callback.json
-docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/debug.json
-docker run --rm -v="$volume:/dist" -v="$MAP_CONF" --platform=$platform $container /dist/$file -c /config/noip.json
+export DDNS_E2E_EXECUTABLE="$test_scripts/test-in-docker.sh"
+export E2E_DOCKER_BINARY="$binary"
+export E2E_DOCKER_IMAGE="$container"
+export E2E_DOCKER_PLATFORM="$platform"
+export E2E_DOCKER_WRAPPER=1
+export PYTHONIOENCODING=utf-8
 
-# Test task subcommand
-echo "Testing task subcommand..."
-docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --help
-docker run --rm -v="$volume:/dist" --platform=$platform $container /dist/$file task --status
+echo "=== Offline binary E2E: $platform ($libc) in $container ==="
+"$DDNS_E2E_EXECUTABLE" --help
+"$DDNS_E2E_EXECUTABLE" --version
+python3 -m unittest tests.e2e.TestCliE2E tests.e2e.TestMcpE2E -v
 
-# Test task functionality - auto-detect available scheduler
-echo "Testing task management with auto-detection..."
-TEST_SCRIPTS=$(dirname $(realpath "$0"))
+echo "=== Task command smoke test ==="
+"$DDNS_E2E_EXECUTABLE" task --help
+"$DDNS_E2E_EXECUTABLE" task --status
 
-# Determine if privileged mode is needed for systemd support
 if [ "$libc" = "glibc" ]; then
-    # Skip task test in glibc environment due to systemd requiring privileged container
-    echo "Skipping task test in glibc environment (systemd requires privileged container)."
+    echo "Skipping task lifecycle in glibc container because systemd requires a privileged container."
 else
-    echo "Running task test cron..."
-    docker run --rm -v="$volume:/dist" -v="$TEST_SCRIPTS:/scripts" \
-        --platform=$platform $container /scripts/test-task-cron.sh /dist/$file
+    echo "=== Cron task lifecycle ==="
+    docker run --rm \
+        --volume "$volume:/dist:ro" \
+        --volume "$test_scripts:/scripts:ro" \
+        --platform "$platform" \
+        "$container" \
+        /scripts/test-task-cron.sh "/dist/$file"
 fi
-
-
-# delete to avoid being reused
-docker image rm $container
