@@ -63,6 +63,7 @@ ddns/:	Main application code
 	__main__.py:	Entry point for module execution
 	cache.py:	Cache management
 	ip.py:	IP address detection logic
+	mcp.py:	Model Context Protocol helper utilities
 
 	config/:	Configuration management
 		__init__.py
@@ -430,6 +431,6 @@ For detailed information on specific topics, refer to:
 
 ---
 
-**Version**: 1.0.8
-**Last Updated**: 2026-08-12
+**Version**: 1.0.9
+**Last Updated**: 2026-08-14
 **Maintained by**: DDNS Project Contributors
