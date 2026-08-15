@@ -71,8 +71,8 @@ def _flatten_single_config(config, exclude_keys=None, preserve_keys=None):
     return flat_config
 
 
-def load_config(config_path, proxy=None, ssl="auto", raw=False):
-    # type: (str, list[str] | None, bool | str, bool) -> dict|list[dict]
+def load_config(config_path, proxy=None, ssl="auto", raw=False, timeout=None):
+    # type: (str, list[str] | None, bool | str, bool, float | None) -> dict|list[dict]
     """
     加载配置文件并返回配置字典或配置字典数组。
     支持本地文件和远程HTTP(S) URL。
@@ -84,6 +84,7 @@ def load_config(config_path, proxy=None, ssl="auto", raw=False):
         proxy (list[str] | None): 代理列表，仅用于HTTP或HTTPS请求
         ssl (bool | str): SSL验证配置，仅用于HTTPS请求
         raw (bool): 返回解析后的原始结构，不展开多服务商配置
+        timeout (float | None): 远程配置单次请求的超时秒数
 
     Returns:
         dict|list[dict]: 配置字典或配置字典数组
@@ -95,7 +96,10 @@ def load_config(config_path, proxy=None, ssl="auto", raw=False):
         # 检查是否为远程URL
         if "://" in config_path:
             # 使用HTTP请求获取远程配置
-            response = request("GET", config_path, proxies=proxy, verify=ssl, retries=3)
+            request_options = {"proxies": proxy, "verify": ssl, "retries": 3}
+            if timeout is not None:
+                request_options["timeout"] = timeout
+            response = request("GET", config_path, **request_options)
             if (response.status not in (200, None)) or not response.body:
                 stderr.write("Failed to load {}: HTTP {} {}\n".format(config_path, response.status, response.reason))
                 stderr.write("Response body: %s\n" % response.body)

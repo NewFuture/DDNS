@@ -269,6 +269,29 @@ class TestRequestFunction(unittest.TestCase):
         self.assertEqual(result.status, 200)
         mock_build_opener.assert_called_once()
 
+    @patch("ddns.util.http.build_opener")
+    def test_request_timeout_defaults_and_override(self, mock_build_opener):
+        """Use method defaults unless the caller supplies a timeout."""
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.info.return_value = {}
+        mock_response.read.return_value = b"test"
+        mock_response.msg = "OK"
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        request("GET", "http://example.com")
+        self.assertEqual(mock_opener.open.call_args[1]["timeout"], 60)
+
+        mock_opener.open.reset_mock()
+        request("POST", "http://example.com")
+        self.assertEqual(mock_opener.open.call_args[1]["timeout"], 120)
+
+        mock_opener.open.reset_mock()
+        request("GET", "http://example.com", timeout=5)
+        self.assertEqual(mock_opener.open.call_args[1]["timeout"], 5)
+
     @patch("time.sleep")
     def test_retry_handler_backoff_delays(self, mock_sleep):
         """测试 RetryHandler 的指数退避延迟"""

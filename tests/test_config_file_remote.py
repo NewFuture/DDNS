@@ -6,7 +6,7 @@ Unit tests for remote configuration loading in ddns.config.file module
 """
 
 from __future__ import unicode_literals
-from __init__ import unittest, patch
+from __init__ import TEST_HTTP_TIMEOUT, unittest, patch
 import tempfile
 import shutil
 import os
@@ -83,6 +83,20 @@ class TestRemoteConfigFile(unittest.TestCase):
 
         self.assertEqual(result, config_data)
         mock_http.assert_called_once_with("GET", config_url, proxies=None, verify=True, retries=3)
+
+    @patch("ddns.config.file.request")
+    def test_load_config_remote_with_timeout(self, mock_http):
+        """Forward an explicit timeout for remote configurations."""
+        config_data = {"dns": "debug"}
+        mock_http.return_value = HttpResponse(200, "OK", {}, json.dumps(config_data))
+        config_url = "https://secure.example.com/config.json"
+
+        result = load_config(config_url, timeout=TEST_HTTP_TIMEOUT)
+
+        self.assertEqual(result, config_data)
+        mock_http.assert_called_once_with(
+            "GET", config_url, proxies=None, verify="auto", retries=3, timeout=TEST_HTTP_TIMEOUT
+        )
 
     @patch("ddns.config.file.request")
     def test_load_config_remote_with_proxy(self, mock_http):
@@ -353,7 +367,7 @@ class TestRemoteConfigFile(unittest.TestCase):
         # This is a real integration test - it should succeed if the URL is accessible
         # If the URL is not accessible due to network issues, the test will be skipped
         try:
-            result = load_config(config_url)
+            result = load_config(config_url, timeout=TEST_HTTP_TIMEOUT)
 
             # Handle both single config (dict) and multi-provider config (list)
             if isinstance(result, list):

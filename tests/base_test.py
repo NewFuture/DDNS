@@ -4,7 +4,9 @@ Base test utilities and common imports for all provider tests
 @author: NewFuture
 """
 
-from __init__ import unittest, patch, MagicMock  # noqa: F401 # Ensure the package is initialized
+from functools import partial
+
+from __init__ import TEST_HTTP_TIMEOUT, unittest, patch, MagicMock  # noqa: F401 # Ensure package initialization
 
 
 class BaseProviderTestCase(unittest.TestCase):
@@ -25,6 +27,11 @@ class BaseProviderTestCase(unittest.TestCase):
         provider.logger = MagicMock()
         return provider.logger
 
+    def configure_test_http(self, provider, timeout=TEST_HTTP_TIMEOUT):
+        """Bound real HTTP calls in integration tests."""
+        provider._http = partial(provider._http, timeout=timeout, retries=0)
+        return provider
+
 
 # Export commonly used imports for convenience
-__all__ = ["BaseProviderTestCase", "unittest", "patch", "MagicMock"]
+__all__ = ["BaseProviderTestCase", "unittest", "patch", "MagicMock", "TEST_HTTP_TIMEOUT"]

@@ -6,7 +6,7 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import unittest, sys
+from __init__ import TEST_HTTP_TIMEOUT, patch, unittest, sys
 import json
 import socket
 import random
@@ -59,7 +59,7 @@ class TestUserAgent(unittest.TestCase):
 
         for endpoint in test_endpoints:
             try:
-                response = request("GET", endpoint, headers=headers, retries=1)
+                response = request("GET", endpoint, headers=headers, retries=0, timeout=TEST_HTTP_TIMEOUT)
                 if response.status == 200:
                     response_data = json.loads(response.body)
                     # 不同的测试站点响应格式可能略有不同
@@ -77,6 +77,8 @@ class TestUserAgent(unittest.TestCase):
                         self.assertIn(expected_ua, (None, ""))
                     return True  # 测试成功
 
+            except socket.timeout:
+                continue
             except OSError as e:
                 error_msg = str(e).lower()
                 # 不允许None错误时，网络问题继续尝试，其他错误重新抛出
@@ -88,6 +90,23 @@ class TestUserAgent(unittest.TestCase):
 
         # 所有端点都失败
         return False
+
+    @patch("ddns.util.http.request")
+    def test_user_agent_endpoint_timeout_falls_back(self, mock_request):
+        """Try the next endpoint when a request times out."""
+        response = HttpResponse(200, "OK", {}, json.dumps({"User-Agent": USER_AGENT}))
+        mock_request.side_effect = [socket.timeout("timed out"), response]
+
+        self.assertTrue(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
+        self.assertEqual(mock_request.call_count, 2)
+
+    @patch("ddns.util.http.request")
+    def test_user_agent_all_endpoint_timeouts_return_false(self, mock_request):
+        """Report unavailable endpoints after every request times out."""
+        mock_request.side_effect = socket.timeout("timed out")
+
+        self.assertFalse(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
+        self.assertEqual(mock_request.call_count, 3)
 
     def test_user_agent_constant(self):
         """测试USER_AGENT常量格式正确"""
@@ -279,7 +298,9 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response = request("GET", "http://postman-echo.com/get?test=ddns&format=json")
+            response = request(
+                "GET", "http://postman-echo.com/get?test=ddns&format=json", retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
 
@@ -312,7 +333,9 @@ class TestSendHttpRequest(unittest.TestCase):
                 "Content-Type": "application/json",
                 "User-Agent": "DDNS-Client/4.0",
             }
-            response = request("GET", "http://postman-echo.com/status/401", headers=headers)
+            response = request(
+                "GET", "http://postman-echo.com/status/401", headers=headers, retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 401)
             self.assertIsNotNone(response.body)
 
@@ -331,7 +354,9 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response = request("GET", "https://postman-echo.com/status/200", verify="auto")
+            response = request(
+                "GET", "https://postman-echo.com/status/200", verify="auto", retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 200, "SSL auto模式应该成功")
             self.assertIsNotNone(response.body)
 
@@ -350,12 +375,14 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response_400 = request("GET", "http://postman-echo.com/status/400")
+            response_400 = request("GET", "http://postman-echo.com/status/400", retries=0, timeout=TEST_HTTP_TIMEOUT)
             self.assertEqual(response_400.status, 400, "应该返回400 Bad Request状态码")
             self.assertIsNotNone(response_400.body, "400响应应该有响应体")
             self.assertIsNotNone(response_400.headers, "400响应应该有响应头")
             self.assertIsNotNone(response_400.reason, "400响应应该有状态原因")
 
+        except socket.timeout as e:
+            self.skipTest("Network unavailable for HTTP 400 status test: {}".format(str(e)))
         except Exception as e:
             # 网络问题时跳过测试
             error_msg = str(e).lower()
@@ -418,7 +445,7 @@ class TestSendHttpRequest(unittest.TestCase):
         for redirect_url in test_endpoints:
             try:
                 # HTTP重定向处理 - GET重定向
-                response = request("GET", redirect_url, verify=False, retries=3)
+                response = request("GET", redirect_url, verify=False, retries=0, timeout=TEST_HTTP_TIMEOUT)
 
                 # 重定向后应该成功
                 if response.status == 200:
@@ -434,6 +461,9 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点
@@ -472,7 +502,9 @@ class TestSendHttpRequest(unittest.TestCase):
         for redirect_url in test_endpoints:
             try:
                 post_data = "test=data&method=POST->GET"
-                response_post = request("POST", redirect_url, data=post_data, verify=False, retries=3)
+                response_post = request(
+                    "POST", redirect_url, data=post_data, verify=False, retries=0, timeout=TEST_HTTP_TIMEOUT
+                )
 
                 # 重定向后应该成功
                 if response_post.status == 200:
@@ -487,6 +519,9 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点
