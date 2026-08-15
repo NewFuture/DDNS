@@ -708,7 +708,6 @@ class TestMcpE2E(OfflineE2ETestCase):
 
     def test_modern_discovery_tools_update_and_cached_status(self):
         """Discover tools, synchronize dual-stack records, and read cached status."""
-        cache_path = os.path.join(self.temp_dir, "mcp.cache")
         token = json.dumps(
             {
                 "api_key": "mcp-secret",
@@ -724,7 +723,7 @@ class TestMcpE2E(OfflineE2ETestCase):
             "$schema": "https://ddns.newfuture.cc/schema/v4.1.json",
             "proxy": ["DIRECT"],
             "ssl": False,
-            "cache": cache_path,
+            "cache": True,
             "cache_max_age": 3600,
             "providers": [
                 {

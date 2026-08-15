@@ -9,6 +9,7 @@ if [ "${E2E_DOCKER_WRAPPER:-}" = "1" ]; then
 
     binary=$(realpath "$E2E_DOCKER_BINARY")
     binary_dir=$(dirname "$binary")
+    binary_name=$(basename "$binary")
     workdir=$(pwd -P)
     ddns_env=$(mktemp)
     trap 'rm -f "$ddns_env"' 0
@@ -21,7 +22,7 @@ if [ "${E2E_DOCKER_WRAPPER:-}" = "1" ]; then
         --rm \
         --interactive \
         --network host \
-        --volume "$binary_dir:$binary_dir:ro" \
+        --volume "$binary_dir:/dist:ro" \
         --volume "$workdir:$workdir" \
         --workdir "$workdir" \
         --platform "$E2E_DOCKER_PLATFORM" \
@@ -34,7 +35,7 @@ if [ "${E2E_DOCKER_WRAPPER:-}" = "1" ]; then
         --env PYTHONUNBUFFERED \
         --env-file "$ddns_env" \
         "$E2E_DOCKER_IMAGE" \
-        "$binary" \
+        "/dist/$binary_name" \
         "$@"
     status=$?
     set -e
