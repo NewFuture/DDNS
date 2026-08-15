@@ -6,7 +6,7 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import unittest, sys
+from __init__ import patch, unittest, sys
 import json
 import socket
 import random
@@ -77,6 +77,8 @@ class TestUserAgent(unittest.TestCase):
                         self.assertIn(expected_ua, (None, ""))
                     return True  # 测试成功
 
+            except socket.timeout:
+                continue
             except OSError as e:
                 error_msg = str(e).lower()
                 # 不允许None错误时，网络问题继续尝试，其他错误重新抛出
@@ -88,6 +90,23 @@ class TestUserAgent(unittest.TestCase):
 
         # 所有端点都失败
         return False
+
+    @patch("ddns.util.http.request")
+    def test_user_agent_endpoint_timeout_falls_back(self, mock_request):
+        """Try the next endpoint when a request times out."""
+        response = HttpResponse(200, "OK", {}, json.dumps({"User-Agent": USER_AGENT}))
+        mock_request.side_effect = [socket.timeout("timed out"), response]
+
+        self.assertTrue(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
+        self.assertEqual(mock_request.call_count, 2)
+
+    @patch("ddns.util.http.request")
+    def test_user_agent_all_endpoint_timeouts_return_false(self, mock_request):
+        """Report unavailable endpoints after every request times out."""
+        mock_request.side_effect = socket.timeout("timed out")
+
+        self.assertFalse(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
+        self.assertEqual(mock_request.call_count, 3)
 
     def test_user_agent_constant(self):
         """测试USER_AGENT常量格式正确"""
