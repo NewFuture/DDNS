@@ -65,8 +65,8 @@ def _proxy_handler(proxy):
     return ProxyHandler({"http": proxy, "https": proxy})
 
 
-def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1):
-    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str] | None, bool | str, BaseHandler | None, int) -> HttpResponse # noqa: E501
+def request(method, url, data=None, headers=None, proxies=None, verify=True, auth=None, retries=1, timeout=None):
+    # type: (str, str, str | bytes | None, dict[str, str] | None, list[str] | None, bool | str, BaseHandler | None, int, float | None) -> HttpResponse # noqa: E501
     """
     发送HTTP/HTTPS请求，支持自动重试和类似requests.request的参数接口
 
@@ -86,6 +86,7 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
                             - str: 自定义CA证书文件路径
         auth (BaseHandler | None): 自定义认证处理器
         retries (int): 最大重试次数，默认1次
+        timeout (float | None): 单次请求超时秒数；默认 GET 60 秒，其他请求 120 秒
 
     Returns:
         HttpResponse: 响应对象
@@ -114,12 +115,13 @@ def request(method, url, data=None, headers=None, proxies=None, verify=True, aut
 
     handlers = [NoHTTPErrorHandler(), AutoSSLHandler(verify), RetryHandler(retries)]
     handlers += [auth] if auth else []
+    request_timeout = timeout if timeout is not None else (60 if method.upper() == "GET" else 120)
 
     def run(proxy_handler):
         req = Request(url, data=data, headers=headers)
         req.get_method = lambda: method.upper()  # python 2 兼容
         h = handlers + ([proxy_handler] if proxy_handler else [])
-        return build_opener(*h).open(req, timeout=60 if method == "GET" else 120)  # 创建处理器链
+        return build_opener(*h).open(req, timeout=request_timeout)  # 创建处理器链
 
     if not proxies:
         response = run(None)  # 默认

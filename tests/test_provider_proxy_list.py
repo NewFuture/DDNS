@@ -115,6 +115,18 @@ class TestProviderProxyList(BaseProviderTestCase):
         self.assertEqual(call_args[1]["proxies"], [])
 
     @patch("ddns.provider._base.request")
+    def test_provider_http_forwards_timeout_and_retries(self, mock_request):
+        """Allow callers to bound individual provider HTTP requests."""
+        mock_request.return_value = HttpResponse(200, "OK", {}, '{"status": "success"}')
+        provider = TestSimpleProvider(self.id, self.token)
+
+        provider._http("GET", "/test", timeout=5, retries=0)
+
+        call_args = mock_request.call_args
+        self.assertEqual(call_args[1]["timeout"], 5)
+        self.assertEqual(call_args[1]["retries"], 0)
+
+    @patch("ddns.provider._base.request")
     def test_provider_http_request_failure_handling(self, mock_request):
         """测试Provider处理请求失败的情况"""
         # 模拟请求失败

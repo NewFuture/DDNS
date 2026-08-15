@@ -171,8 +171,8 @@ class SimpleProvider(object):
         if not self.endpoint:
             raise ValueError("API endpoint must be defined in {}".format(self.__class__.__name__))
 
-    def _http(self, method, url, params=None, body=None, queries=None, headers=None):  # noqa: C901
-        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None) -> Any
+    def _http(self, method, url, params=None, body=None, queries=None, headers=None, timeout=None, retries=2):  # noqa: C901
+        # type: (str, str, dict[str,Any]|str|None, dict[str,Any]|str|None, dict[str,Any]|None, dict|None, float|None, int) -> Any # noqa: E501
         """
         发送 HTTP/HTTPS 请求，自动根据 API/url 选择协议。
 
@@ -183,6 +183,8 @@ class SimpleProvider(object):
             body (dict[str, Any] | str | None): 请求体内容
             queries (dict[str, Any] | None): 查询参数，自动处理为 URL 查询字符串
             headers (dict): 头部，可选
+            timeout (float | None): 单次 HTTP 请求超时秒数
+            retries (int): HTTP 请求重试次数
 
         Returns:
             Any: 解析后的响应内容
@@ -233,7 +235,16 @@ class SimpleProvider(object):
             self.logger.debug("headers:\n%s", {k: self._mask_sensitive_data(v) for k, v in headers.items()})
 
         # 直接传递代理列表给request函数
-        response = request(method, url, body_data, headers=headers, proxies=self._proxy, verify=self._ssl, retries=2)
+        response = request(
+            method,
+            url,
+            body_data,
+            headers=headers,
+            proxies=self._proxy,
+            verify=self._ssl,
+            retries=retries,
+            timeout=timeout,
+        )
         # 处理响应
         status_code = response.status
         if not (200 <= status_code < 300):

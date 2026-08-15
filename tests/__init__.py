@@ -7,6 +7,8 @@ import sys
 import os
 import unittest
 
+TEST_HTTP_TIMEOUT = 5
+
 try:
     from unittest import mock  # type: ignore
     from unittest.mock import patch, MagicMock, call
@@ -14,7 +16,7 @@ except ImportError:  # Python 2
     from mock import patch, MagicMock, call  # type: ignore
     import mock  # type: ignore
 
-__all__ = ["patch", "MagicMock", "unittest", "call", "mock"]
+__all__ = ["patch", "MagicMock", "unittest", "call", "mock", "TEST_HTTP_TIMEOUT"]
 
 # 添加当前目录到 Python 路径，这样就可以直接导入 test_base
 current_dir = os.path.dirname(__file__)

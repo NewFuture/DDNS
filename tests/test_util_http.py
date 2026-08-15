@@ -6,7 +6,7 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import patch, unittest, sys
+from __init__ import TEST_HTTP_TIMEOUT, patch, unittest, sys
 import json
 import socket
 import random
@@ -59,7 +59,7 @@ class TestUserAgent(unittest.TestCase):
 
         for endpoint in test_endpoints:
             try:
-                response = request("GET", endpoint, headers=headers, retries=1)
+                response = request("GET", endpoint, headers=headers, retries=0, timeout=TEST_HTTP_TIMEOUT)
                 if response.status == 200:
                     response_data = json.loads(response.body)
                     # 不同的测试站点响应格式可能略有不同
@@ -298,7 +298,9 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response = request("GET", "http://postman-echo.com/get?test=ddns&format=json")
+            response = request(
+                "GET", "http://postman-echo.com/get?test=ddns&format=json", retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 200)
             self.assertIsNotNone(response.body)
 
@@ -331,7 +333,9 @@ class TestSendHttpRequest(unittest.TestCase):
                 "Content-Type": "application/json",
                 "User-Agent": "DDNS-Client/4.0",
             }
-            response = request("GET", "http://postman-echo.com/status/401", headers=headers)
+            response = request(
+                "GET", "http://postman-echo.com/status/401", headers=headers, retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 401)
             self.assertIsNotNone(response.body)
 
@@ -350,7 +354,9 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response = request("GET", "https://postman-echo.com/status/200", verify="auto")
+            response = request(
+                "GET", "https://postman-echo.com/status/200", verify="auto", retries=0, timeout=TEST_HTTP_TIMEOUT
+            )
             self.assertEqual(response.status, 200, "SSL auto模式应该成功")
             self.assertIsNotNone(response.body)
 
@@ -369,12 +375,14 @@ class TestSendHttpRequest(unittest.TestCase):
         from ddns.util.http import request
 
         try:
-            response_400 = request("GET", "http://postman-echo.com/status/400")
+            response_400 = request("GET", "http://postman-echo.com/status/400", retries=0, timeout=TEST_HTTP_TIMEOUT)
             self.assertEqual(response_400.status, 400, "应该返回400 Bad Request状态码")
             self.assertIsNotNone(response_400.body, "400响应应该有响应体")
             self.assertIsNotNone(response_400.headers, "400响应应该有响应头")
             self.assertIsNotNone(response_400.reason, "400响应应该有状态原因")
 
+        except socket.timeout as e:
+            self.skipTest("Network unavailable for HTTP 400 status test: {}".format(str(e)))
         except Exception as e:
             # 网络问题时跳过测试
             error_msg = str(e).lower()
@@ -437,7 +445,7 @@ class TestSendHttpRequest(unittest.TestCase):
         for redirect_url in test_endpoints:
             try:
                 # HTTP重定向处理 - GET重定向
-                response = request("GET", redirect_url, verify=False, retries=3)
+                response = request("GET", redirect_url, verify=False, retries=0, timeout=TEST_HTTP_TIMEOUT)
 
                 # 重定向后应该成功
                 if response.status == 200:
@@ -453,6 +461,9 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点
@@ -491,7 +502,9 @@ class TestSendHttpRequest(unittest.TestCase):
         for redirect_url in test_endpoints:
             try:
                 post_data = "test=data&method=POST->GET"
-                response_post = request("POST", redirect_url, data=post_data, verify=False, retries=3)
+                response_post = request(
+                    "POST", redirect_url, data=post_data, verify=False, retries=0, timeout=TEST_HTTP_TIMEOUT
+                )
 
                 # 重定向后应该成功
                 if response_post.status == 200:
@@ -506,6 +519,9 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点

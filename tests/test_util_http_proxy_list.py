@@ -4,7 +4,9 @@
 Test ddns.util.http module proxy list functionality
 """
 
-from __init__ import unittest, patch, MagicMock
+import socket
+
+from __init__ import TEST_HTTP_TIMEOUT, unittest, patch, MagicMock
 from ddns.util.http import request, quote
 
 
@@ -135,7 +137,7 @@ class TestRequestProxyList(unittest.TestCase):
                 proxy_list = ["http://invalid-proxy:9999", None]
 
                 # 这应该在第一个代理失败后回退到直连
-                response = request("GET", url, proxies=proxy_list, retries=3)
+                response = request("GET", url, proxies=proxy_list, retries=0, timeout=TEST_HTTP_TIMEOUT)
 
                 # 如果成功，应该是通过直连完成的
                 if response.status == 200:
@@ -146,6 +148,9 @@ class TestRequestProxyList(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点
@@ -186,7 +191,7 @@ class TestRequestProxyList(unittest.TestCase):
                 auth_url = "https://{0}:{1}@{2}/basic-auth/{3}/{4}".format(
                     username_encoded, password_encoded, host, username_encoded, password_encoded
                 )
-                response_auth = request("GET", auth_url, verify=False, retries=2)
+                response_auth = request("GET", auth_url, verify=False, retries=0, timeout=TEST_HTTP_TIMEOUT)
 
                 if response_auth.status == 200:
                     self.assertIn('"auth', response_auth.body)
@@ -200,6 +205,9 @@ class TestRequestProxyList(unittest.TestCase):
                     # 其他状态码也尝试下一个端点
                     continue
 
+            except socket.timeout as e:
+                last_exception = e
+                continue
             except Exception as e:
                 last_exception = e
                 # 网络问题时继续尝试下一个端点

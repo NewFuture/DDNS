@@ -351,6 +351,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         for endpoint_id in test_endpoints:
             try:
                 provider = CallbackProvider(endpoint_id, "", ssl="auto")
+                self.configure_test_http(provider)
                 mock_logger = self._setup_provider_with_mock_logger(provider)
 
                 self._random_delay()  # Add random delay before real request
@@ -400,6 +401,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         for endpoint_id in test_endpoints:
             try:
                 provider = CallbackProvider(endpoint_id, token)
+                self.configure_test_http(provider)
                 # Setup provider with mock logger
                 mock_logger = self._setup_provider_with_mock_logger(provider)
 
@@ -444,6 +446,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         # Use an invalid URL to test error handling
         id = "http://postman-echo.com/status/400"  # This returns HTTP 400
         provider = CallbackProvider(id, "")
+        self.configure_test_http(provider)
 
         self._random_delay()  # Add random delay before real request
         result = provider.set_record("test.example.com", "203.0.113.5")

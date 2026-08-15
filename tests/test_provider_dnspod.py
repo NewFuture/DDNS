@@ -540,6 +540,7 @@ class TestDnspodProviderRealRequest(BaseProviderTestCase):
         """Test authentication failure with real API request"""
         # 使用无效的认证信息创建 provider
         invalid_provider = DnspodProvider("invalid_id", "invalid_token")
+        self.configure_test_http(invalid_provider)
 
         # 尝试查询域名信息，应该抛出认证失败异常
         with self.assertRaises(RuntimeError) as cm:

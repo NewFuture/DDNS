@@ -477,6 +477,7 @@ class TestEdgeOneProviderRealRequest(BaseProviderTestCase):
         """Test authentication failure with real API request"""
         # 使用无效的认证信息创建 provider
         invalid_provider = EdgeOneProvider("invalid_id", "invalid_token")
+        self.configure_test_http(invalid_provider)
 
         # Mock logger to capture error logs
         invalid_provider.logger = MagicMock()
