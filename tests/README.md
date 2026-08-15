@@ -66,9 +66,9 @@ Nuitka 的 Windows、Linux、macOS onefile 构建会通过 `DDNS_E2E_EXECUTABLE`
 
 Nuitka onefile builds for Windows, Linux, and macOS run the same complete suite through `DDNS_E2E_EXECUTABLE`. The executable packaged in the Windows standalone ZIP is tested separately as well.
 
-交叉编译的 Linux glibc/musl 二进制也通过 Docker wrapper 运行同一套离线 CLI 与 MCP 场景，覆盖 386、amd64、ARMv6、ARMv7 和 ARM64；容器通过 host network 访问回环 mock，不使用测试配置中的公网服务。
+交叉编译的 Linux glibc/musl 二进制也通过 Docker wrapper 运行同一套离线 CLI 与 MCP 场景，覆盖 386、amd64、ARMv7 和 ARM64；容器通过 host network 访问回环 mock，不使用测试配置中的公网服务。ARMv6 产物仍会构建，但由于 qemu-user 无法稳定运行 Nuitka onefile，仅执行构建校验。
 
-Cross-compiled Linux glibc/musl binaries run the same offline CLI and MCP scenarios through a Docker wrapper across 386, amd64, ARMv6, ARMv7, and ARM64. The containers reach the loopback mock over host networking instead of using public services from the sample configurations.
+Cross-compiled Linux glibc/musl binaries run the same offline CLI and MCP scenarios through a Docker wrapper across 386, amd64, ARMv7, and ARM64. The containers reach the loopback mock over host networking instead of using public services from the sample configurations. ARMv6 remains build-verified because qemu-user cannot run the Nuitka onefile binary reliably.
 
 Linux systemd 生命周期测试会真实安装、停用、启用并卸载 `ddns.service` 和 `ddns.timer`。它要求运行中的 systemd、免交互 `sudo`，以及测试开始前不存在 DDNS 系统任务；无论成功或失败，脚本都会清理本次创建的任务。
 

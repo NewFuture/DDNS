@@ -323,19 +323,8 @@ jobs:
           set -ex
           for f in output/*/ddns; do
             platform=$(basename $(dirname "$f") | tr '_' '/')
-            if [ "$platform" = "linux/arm/v6" ]; then
-              continue
-            fi
             tests/scripts/test-in-docker.sh $platform ${{matrix.libc}} "$f"
           done
-
-      - uses: docker/setup-qemu-action@v4
-        if: matrix.host == 'arm' && matrix.libc == 'musl'
-        with:
-          platforms: arm
-      - name: Test ARMv6 binary
-        if: matrix.host == 'arm' && matrix.libc == 'musl'
-        run: tests/scripts/test-in-docker.sh linux/arm/v6 musl output/linux_arm_v6/ddns
 
       # 输出目录结构扁平化
       - name: Flatten output directory structure
