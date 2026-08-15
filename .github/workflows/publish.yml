@@ -240,7 +240,7 @@ jobs:
       contents: write
     env:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 

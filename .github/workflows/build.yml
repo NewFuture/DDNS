@@ -300,7 +300,7 @@ jobs:
       # glibc: 基于 debian linux/386,linux/amd64,linux/arm/v7,linux/arm64/v8
       # musl: 基于 alpine  linux/386,linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
