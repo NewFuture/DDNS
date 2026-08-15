@@ -46,25 +46,29 @@ pytest tests/test_provider_he.py -v
 
 ## 端到端测试 / End-to-End Tests
 
-E2E 测试通过真实子进程覆盖 CLI 与本机 Web 控制台，但使用回环 HTTP 服务模拟公网 IP、远程配置和 Callback Provider。因此不需要真实 DNS 凭据，也不会访问公网。
+E2E 测试通过真实子进程覆盖 CLI、本机 Web 控制台与 MCP stdio 服务，但使用回环 HTTP 服务模拟公网 IP、远程配置和 Callback Provider。因此不需要真实 DNS 凭据，也不会访问公网。
 
-The E2E suite exercises the CLI and local Web dashboard through real child processes. A loopback HTTP server simulates public IP discovery, remote configuration, and the Callback Provider, so the suite needs no DNS credentials or Internet access.
+The E2E suite exercises the CLI, local Web dashboard, and MCP stdio server through real child processes. A loopback HTTP server simulates public IP discovery, remote configuration, and the Callback Provider, so the suite needs no DNS credentials or Internet access.
 
 ```bash
-# 独立运行离线 CLI 与 Web E2E / Run the offline CLI and Web E2E suite
+# 独立运行离线 CLI、Web 与 MCP E2E / Run the offline CLI, Web, and MCP E2E suite
 python3 -m unittest tests.e2e -v
 
 # 对已构建的二进制运行同一套 E2E / Run the same suite against a built binary
 DDNS_E2E_EXECUTABLE=./dist/ddns python3 -m unittest tests.e2e -v
 ```
 
-`tests/e2e.py` 不匹配常规 `test_*.py` discovery 规则，由 CI 中独立的 Python 3.12 E2E Job 运行。覆盖范围包括双栈更新、配置优先级、多 Provider、缓存、失败退出码、Web 鉴权、配置 API、同步 API 和 Web 调度器。
+`tests/e2e.py` 不匹配常规 `test_*.py` discovery 规则，由 CI 中独立的 Python 3.12 E2E Job 运行。覆盖范围包括双栈更新、配置生成与优先级、多 Provider、缓存、失败退出码、Web 鉴权与调度器，以及 MCP 现代协议和 Copilot 兼容生命周期。
 
-`tests/e2e.py` intentionally does not match the regular `test_*.py` discovery pattern. A dedicated Python 3.12 CI job runs it and covers dual-stack updates, configuration precedence, multiple providers, caching, failure exit codes, Web authentication, configuration and synchronization APIs, and the Web scheduler.
+`tests/e2e.py` intentionally does not match the regular `test_*.py` discovery pattern. A dedicated Python 3.12 CI job runs it and covers dual-stack updates, configuration generation and precedence, multiple providers, caching, failure exit codes, Web authentication and scheduling, plus both the modern MCP protocol and the Copilot-compatible lifecycle.
 
 Nuitka 的 Windows、Linux、macOS onefile 构建会通过 `DDNS_E2E_EXECUTABLE` 运行全部相同场景；Windows standalone ZIP 中的可执行文件也会单独运行一次完整 E2E。
 
 Nuitka onefile builds for Windows, Linux, and macOS run the same complete suite through `DDNS_E2E_EXECUTABLE`. The executable packaged in the Windows standalone ZIP is tested separately as well.
+
+交叉编译的 Linux glibc/musl 二进制也通过 Docker wrapper 运行同一套离线 CLI 与 MCP 场景，覆盖 386、amd64、ARMv7 和 ARM64；容器通过 host network 访问回环 mock，不使用测试配置中的公网服务。ARMv6 产物仍会构建，但由于 qemu-user 无法稳定运行 Nuitka onefile，仅执行构建校验。
+
+Cross-compiled Linux glibc/musl binaries run the same offline CLI and MCP scenarios through a Docker wrapper across 386, amd64, ARMv7, and ARM64. The containers reach the loopback mock over host networking instead of using public services from the sample configurations. ARMv6 remains build-verified because qemu-user cannot run the Nuitka onefile binary reliably.
 
 Linux systemd 生命周期测试会真实安装、停用、启用并卸载 `ddns.service` 和 `ddns.timer`。它要求运行中的 systemd、免交互 `sudo`，以及测试开始前不存在 DDNS 系统任务；无论成功或失败，脚本都会清理本次创建的任务。
 
