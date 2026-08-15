@@ -109,3 +109,6 @@ else
         "$container" \
         /scripts/test-task-cron.sh "/dist/$file"
 fi
+
+# A shared image tag can resolve to a different architecture for the next binary.
+docker image rm "$container"
