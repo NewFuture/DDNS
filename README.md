@@ -57,6 +57,17 @@ Linux 与 macOS 也可以使用一键安装脚本获取匹配当前平台的二�
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
+### 实验性 Rust 客户端
+
+仓库内的 [`rust/`](https://github.com/NewFuture/DDNS/tree/master/rust) 提供并行开发的 `ddns-rs` MVP，当前支持单次运行、IPv4/IPv6、全部 IP 获取规则，以及 Cloudflare、AliDNS、DNSPod 和 Debug。它可复用现有 CLI、环境变量和配置文件，但尚未替换稳定的 Python `ddns`，也未接入正式安装与发布。
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs -c config.json
+```
+
+架构、验证命令、支持矩阵和迁移路线见 [Rust 开发文档](docs/dev/rust.md)。
+
 ## 为什么适合长期运行
 
 ### DNS 更新能力

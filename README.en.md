@@ -57,6 +57,17 @@ Linux and macOS users can also install the matching binary with one command:
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
+### Experimental Rust client
+
+The [`rust/`](https://github.com/NewFuture/DDNS/tree/master/rust) directory contains the parallel `ddns-rs` MVP. It currently supports one-shot execution, IPv4/IPv6, every address rule, and the Cloudflare, AliDNS, DNSPod, and Debug providers. It reuses the existing CLI, environment, and configuration formats, but does not replace the stable Python `ddns` command or participate in stable installation and release flows yet.
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs -c config.json
+```
+
+See the [Rust development guide](docs/en/dev/rust.md) for architecture, validation, support status, and the parity roadmap.
+
 ## Why it works for long-running deployments
 
 ### DNS update capabilities

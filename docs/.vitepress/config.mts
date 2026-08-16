@@ -227,6 +227,7 @@ export default defineConfig({
         items: [
           { text: '配置系统设计', link: '/dev/config' },
           { text: 'Provider 开发', link: '/dev/provider' },
+          { text: 'Rust 客户端', link: '/dev/rust' },
           { text: 'ESA Pages 部署', link: '/esa-deploy' }
         ]
       }
@@ -293,7 +294,8 @@ export default defineConfig({
           text: '开发文档',
           items: [
             { text: '配置文档', link: '/dev/config' },
-            { text: 'Provider开发指南', link: '/dev/provider' }
+            { text: 'Provider开发指南', link: '/dev/provider' },
+            { text: 'Rust 客户端', link: '/dev/rust' }
           ]
         },
         {
@@ -520,7 +522,8 @@ export default defineConfig({
             text: 'Development',
             items: [
               { text: 'Configuration Internals', link: '/en/dev/config' },
-              { text: 'Provider Development', link: '/en/dev/provider' }
+              { text: 'Provider Development', link: '/en/dev/provider' },
+              { text: 'Rust Client', link: '/en/dev/rust' }
             ]
           }
         ],
@@ -584,7 +587,8 @@ export default defineConfig({
               text: 'Development',
               items: [
                 { text: 'Config Documentation', link: '/en/dev/config' },
-                { text: 'Provider Development', link: '/en/dev/provider' }
+                { text: 'Provider Development', link: '/en/dev/provider' },
+                { text: 'Rust Client', link: '/en/dev/rust' }
               ]
             }
           ]
