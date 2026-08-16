@@ -48,7 +48,12 @@ impl DnspodProvider {
             .pointer("/status/code")
             .and_then(value_to_string)
             .unwrap_or_else(|| "unknown".to_owned());
-        if status_code == "1" || (action == "Record.List" && status_code == "10") {
+        let zone_candidate_miss =
+            action == "Domain.Info" && matches!(status_code.as_str(), "6" | "7" | "8");
+        if status_code == "1"
+            || (action == "Record.List" && status_code == "10")
+            || zone_candidate_miss
+        {
             return Ok(response);
         }
         let message = response

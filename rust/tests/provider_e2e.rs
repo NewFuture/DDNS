@@ -153,7 +153,14 @@ fn alidns_create_and_unchanged_update_flows() {
         logger(token),
     )
     .unwrap();
-    provider.set_record(&request("192.0.2.20")).unwrap();
+    let mut create_request = request("192.0.2.20");
+    create_request
+        .extra
+        .insert("Priority".to_owned(), json!(10));
+    create_request
+        .extra
+        .insert("Remark".to_owned(), json!("managed"));
+    provider.set_record(&create_request).unwrap();
     let requests = create_client.requests();
     assert_eq!(requests.len(), 3);
     assert_eq!(requests[0].headers["x-acs-action"], "GetMainDomainName");
@@ -167,6 +174,16 @@ fn alidns_create_and_unchanged_update_flows() {
             .as_deref()
             .unwrap()
             .contains("Value=192.0.2.20")
+    );
+    assert!(!requests[1].body.as_deref().unwrap().contains("Priority="));
+    assert!(!requests[1].body.as_deref().unwrap().contains("Remark="));
+    assert!(requests[2].body.as_deref().unwrap().contains("Priority=10"));
+    assert!(
+        requests[2]
+            .body
+            .as_deref()
+            .unwrap()
+            .contains("Remark=managed")
     );
 
     let unchanged_client = FakeHttpClient::with_json([
@@ -242,4 +259,41 @@ fn dnspod_create_and_update_flows() {
     let error = provider.set_record(&request("192.0.2.32")).unwrap_err();
     assert!(error.to_string().contains("DNSPod API error 0"));
     assert_eq!(failed_lookup.requests().len(), 2);
+
+    let multi_label_zone = FakeHttpClient::with_json([
+        json!({"status": {"code": "7", "message": "No permission"}}),
+        json!({"status": {"code": "1"}, "domain": {"id": "zone-uk"}}),
+        json!({"status": {"code": "10", "message": "Empty result"}}),
+        json!({"status": {"code": "1"}, "record": {"id": "record-uk"}}),
+    ]);
+    let client: Arc<dyn HttpClient> = multi_label_zone.clone();
+    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut multi_label_request = request("192.0.2.33");
+    multi_label_request.domain = "host.example.co.uk".to_owned();
+    provider.set_record(&multi_label_request).unwrap();
+    let requests = multi_label_zone.requests();
+    assert_eq!(requests.len(), 4);
+    assert!(
+        requests[0]
+            .body
+            .as_deref()
+            .unwrap()
+            .contains("domain=co.uk")
+    );
+    assert!(
+        requests[1]
+            .body
+            .as_deref()
+            .unwrap()
+            .contains("domain=example.co.uk")
+    );
+
+    let authentication_failure = FakeHttpClient::with_json([json!({
+        "status": {"code": "-1", "message": "Authentication failed"}
+    })]);
+    let client: Arc<dyn HttpClient> = authentication_failure.clone();
+    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let error = provider.set_record(&request("192.0.2.34")).unwrap_err();
+    assert!(error.to_string().contains("DNSPod API error -1"));
+    assert_eq!(authentication_failure.requests().len(), 1);
 }
