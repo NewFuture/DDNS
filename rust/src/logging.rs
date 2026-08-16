@@ -2,40 +2,87 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::{cmp::Ordering, fmt};
 
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::error::{Error, Result};
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Level {
+    NotSet,
     Debug,
     Info,
     Warning,
     Error,
     Critical,
+    Custom(i32),
 }
 
 impl Level {
     pub fn parse(value: &str) -> Result<Self> {
         match value.to_ascii_uppercase().as_str() {
+            "NOTSET" => Ok(Self::NotSet),
             "DEBUG" => Ok(Self::Debug),
             "INFO" => Ok(Self::Info),
             "WARNING" | "WARN" => Ok(Self::Warning),
             "ERROR" => Ok(Self::Error),
-            "CRITICAL" => Ok(Self::Critical),
-            _ => Err(Error::Config(format!("invalid log level: {value}"))),
+            "CRITICAL" | "FATAL" => Ok(Self::Critical),
+            _ => value
+                .parse::<i32>()
+                .map(Self::from_value)
+                .map_err(|_| Error::Config(format!("invalid log level: {value}"))),
         }
     }
 
-    const fn as_str(self) -> &'static str {
+    const fn from_value(value: i32) -> Self {
+        match value {
+            0 => Self::NotSet,
+            10 => Self::Debug,
+            20 => Self::Info,
+            30 => Self::Warning,
+            40 => Self::Error,
+            50 => Self::Critical,
+            value => Self::Custom(value),
+        }
+    }
+
+    const fn value(self) -> i32 {
         match self {
-            Self::Debug => "DEBUG",
-            Self::Info => "INFO",
-            Self::Warning => "WARNING",
-            Self::Error => "ERROR",
-            Self::Critical => "CRITICAL",
+            Self::NotSet => 0,
+            Self::Debug => 10,
+            Self::Info => 20,
+            Self::Warning => 30,
+            Self::Error => 40,
+            Self::Critical => 50,
+            Self::Custom(value) => value,
+        }
+    }
+}
+
+impl Ord for Level {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.value().cmp(&other.value())
+    }
+}
+
+impl PartialOrd for Level {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl fmt::Display for Level {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NotSet => formatter.write_str("NOTSET"),
+            Self::Debug => formatter.write_str("DEBUG"),
+            Self::Info => formatter.write_str("INFO"),
+            Self::Warning => formatter.write_str("WARNING"),
+            Self::Error => formatter.write_str("ERROR"),
+            Self::Critical => formatter.write_str("CRITICAL"),
+            Self::Custom(value) => value.fmt(formatter),
         }
     }
 }
@@ -142,11 +189,7 @@ impl Logger {
         let timestamp = OffsetDateTime::now_utc()
             .format(&Rfc3339)
             .unwrap_or_else(|_| "unknown-time".to_owned());
-        let line = format!(
-            "{timestamp} {} [{target}]: {}\n",
-            level.as_str(),
-            self.mask(message)
-        );
+        let line = format!("{timestamp} {} [{target}]: {}\n", level, self.mask(message));
         let Ok(mut destination) = self.destination.lock() else {
             let _ = io::stderr().write_all(line.as_bytes());
             return;
@@ -167,6 +210,16 @@ impl Logger {
 #[cfg(test)]
 mod tests {
     use super::{Level, Logger};
+
+    #[test]
+    fn parses_python_compatible_log_levels() {
+        assert_eq!(Level::parse("NOTSET").unwrap(), Level::NotSet);
+        assert_eq!(Level::parse("FATAL").unwrap(), Level::Critical);
+        assert_eq!(Level::parse("10").unwrap(), Level::Debug);
+        assert_eq!(Level::parse("25").unwrap(), Level::Custom(25));
+        assert!(Level::Info < Level::Custom(25));
+        assert!(Level::Warning > Level::Custom(25));
+    }
 
     #[test]
     fn masks_raw_and_percent_encoded_secrets() {

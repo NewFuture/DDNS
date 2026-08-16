@@ -28,7 +28,7 @@ Options:
       --no-cache               Disable cache
       --ssl [BOOL|auto|CA]     TLS verification policy
       --no-ssl                 Disable TLS certificate verification
-      --log-level <LEVEL>      DEBUG, INFO, WARNING, ERROR, CRITICAL
+      --log-level <LEVEL>      NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL/FATAL, or integer
       --log-file <FILE>        Write logs to a file
       --log-format <FORMAT>    Accepted for Python CLI compatibility
       --log-datefmt <FORMAT>   Accepted for Python CLI compatibility
@@ -39,6 +39,7 @@ Options:
   -h, --help                   Print help
 
 MVP providers: debug, cloudflare, alidns, dnspod
+Regex note: regex: rules use Rust regex syntax; Python look-around/backreferences are unsupported.
 ";
 
 #[derive(Clone, Debug, Default)]

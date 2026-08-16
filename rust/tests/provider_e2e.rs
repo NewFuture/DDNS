@@ -196,7 +196,7 @@ fn dnspod_create_and_update_flows() {
     let token = "dnspod-secret";
     let create_client = FakeHttpClient::with_json([
         json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
-        json!({"status": {"code": "1"}, "records": []}),
+        json!({"status": {"code": "10", "message": "Empty result"}}),
         json!({"status": {"code": "1"}, "record": {"id": "record-1"}}),
     ]);
     let client: Arc<dyn HttpClient> = create_client.clone();
@@ -232,4 +232,14 @@ fn dnspod_create_and_update_flows() {
             .contains("record_line=default")
     );
     assert!(requests[2].body.as_deref().unwrap().contains("ttl=300"));
+
+    let failed_lookup = FakeHttpClient::with_json([
+        json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
+        json!({"status": {"code": "0", "message": "Authentication failed"}}),
+    ]);
+    let client: Arc<dyn HttpClient> = failed_lookup.clone();
+    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let error = provider.set_record(&request("192.0.2.32")).unwrap_err();
+    assert!(error.to_string().contains("DNSPod API error 0"));
+    assert_eq!(failed_lookup.requests().len(), 2);
 }

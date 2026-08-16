@@ -590,6 +590,8 @@ mod tests {
 
     use serde_json::json;
 
+    use crate::logging::Level;
+
     use super::{AddressRules, Config, TlsMode, parse_tls, split_array_string};
 
     #[test]
@@ -635,5 +637,21 @@ mod tests {
             parse_tls(Some(&serde_json::Value::String(String::new()))).unwrap(),
             TlsMode::Insecure
         );
+    }
+
+    #[test]
+    fn accepts_named_aliases_and_numeric_log_thresholds() {
+        for (value, expected) in [
+            (json!("NOTSET"), Level::NotSet),
+            (json!("FATAL"), Level::Critical),
+            (json!(25), Level::Custom(25)),
+        ] {
+            let cli = BTreeMap::from([
+                ("dns".to_owned(), json!("debug")),
+                ("log_level".to_owned(), value),
+            ]);
+            let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new()).unwrap();
+            assert_eq!(config.log.level, expected);
+        }
     }
 }
