@@ -123,6 +123,7 @@ dependencies = [
 name = "ddns-rs"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "getrandom 0.4.3",
  "hmac",
  "if-addrs",

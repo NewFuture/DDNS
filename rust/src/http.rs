@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 use ureq::tls::{Certificate, PemItem, RootCerts, TlsConfig, parse_pem};
 use ureq::{Agent, Proxy, ProxyProtocol};
 
@@ -103,11 +105,20 @@ impl UreqClient {
         let agent = build_agent(request, proxy, insecure).map_err(|error| {
             ureq::Error::Other(Box::new(std::io::Error::other(error.to_string())))
         })?;
+        let (url, basic_auth) = embedded_basic_auth(&request.url);
         let mut builder = ureq::http::Request::builder()
             .method(request.method.as_str())
-            .uri(&request.url);
+            .uri(url);
         for (name, value) in &request.headers {
             builder = builder.header(name, value);
+        }
+        if let Some(authorization) = basic_auth
+            && !request
+                .headers
+                .keys()
+                .any(|name| name.eq_ignore_ascii_case("authorization"))
+        {
+            builder = builder.header("authorization", authorization);
         }
         if !request
             .headers
@@ -446,6 +457,47 @@ pub fn redact_url(url: &str) -> String {
     )
 }
 
+fn embedded_basic_auth(url: &str) -> (String, Option<String>) {
+    let Some((scheme, remainder)) = url.split_once("://") else {
+        return (url.to_owned(), None);
+    };
+    let authority_end = remainder.find(['/', '?', '#']).unwrap_or(remainder.len());
+    let authority = &remainder[..authority_end];
+    let Some((userinfo, host)) = authority.rsplit_once('@') else {
+        return (url.to_owned(), None);
+    };
+    let Some((username, password)) = userinfo.split_once(':') else {
+        return (url.to_owned(), None);
+    };
+    let mut credentials = percent_decode_bytes(username);
+    credentials.push(b':');
+    credentials.extend(percent_decode_bytes(password));
+    (
+        format!("{scheme}://{host}{}", &remainder[authority_end..]),
+        Some(format!("Basic {}", BASE64.encode(credentials))),
+    )
+}
+
+fn percent_decode_bytes(value: &str) -> Vec<u8> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%'
+            && index + 2 < bytes.len()
+            && let (Some(high), Some(low)) =
+                (hex_value(bytes[index + 1]), hex_value(bytes[index + 2]))
+        {
+            decoded.push((high << 4) | low);
+            index += 3;
+            continue;
+        }
+        decoded.push(bytes[index]);
+        index += 1;
+    }
+    decoded
+}
+
 pub fn form_encode(parameters: &BTreeMap<String, String>) -> String {
     parameters
         .iter()
@@ -473,6 +525,15 @@ const fn hex_digit(value: u8) -> char {
     }
 }
 
+const fn hex_value(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -486,9 +547,9 @@ mod tests {
     use crate::logging::{Level, Logger};
 
     use super::{
-        HttpClient, HttpRequest, Method, UreqClient, form_encode, is_certificate_error,
-        is_retryable_for_method, is_retryable_status, percent_encode, proxy_setting, redact_url,
-        safe_transport_error,
+        HttpClient, HttpRequest, Method, UreqClient, embedded_basic_auth, form_encode,
+        is_certificate_error, is_retryable_for_method, is_retryable_status, percent_encode,
+        proxy_setting, redact_url, safe_transport_error,
     };
 
     #[test]
@@ -501,6 +562,13 @@ mod tests {
         assert_eq!(
             redact_url("https://user:password@example.com/config?api_key=secret&flag#private"),
             "https://***@example.com/config?api_key=***&***#***"
+        );
+        assert_eq!(
+            embedded_basic_auth("https://us%65r:p%40ss@example.com/config?key=value"),
+            (
+                "https://example.com/config?key=value".to_owned(),
+                Some("Basic dXNlcjpwQHNz".to_owned())
+            )
         );
     }
 
@@ -534,6 +602,40 @@ mod tests {
         request.retries = 1;
         let response = client.execute(&request).unwrap();
         assert_eq!(response.status, 200);
+        assert_eq!(response.body, "ok");
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn sends_embedded_url_credentials_as_basic_auth() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            let mut buffer = [0_u8; 4096];
+            let count = stream.read(&mut buffer).unwrap();
+            let request = String::from_utf8_lossy(&buffer[..count]);
+            assert!(request.starts_with("GET /secure HTTP/1.1\r\n"));
+            assert!(
+                request
+                    .to_ascii_lowercase()
+                    .contains("\r\nauthorization: basic dxnlcjpwqhnz\r\n")
+            );
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
+                .unwrap();
+        });
+        let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
+        let client = UreqClient::with_sleeper(logger, |_| {});
+        let request = HttpRequest::get(
+            format!("http://us%65r:p%40ss@{address}/secure"),
+            TlsMode::Verify,
+            vec!["DIRECT".to_owned()],
+        );
+        let response = client.execute(&request).unwrap();
         assert_eq!(response.body, "ok");
         server.join().unwrap();
     }

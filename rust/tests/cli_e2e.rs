@@ -85,6 +85,7 @@ fn generates_and_reuses_configuration() {
     assert_eq!(document["endpoint"], "http://127.0.0.1:9");
     assert_eq!(document["extra"]["proxied"], true);
     assert_eq!(document["extra"]["comment"], "generated config");
+    assert_eq!(document["ttl"], 600);
     assert_eq!(
         document["ipv4"],
         serde_json::json!(["generated.example.com"])

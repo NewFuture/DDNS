@@ -11,7 +11,7 @@ on:
       - "docs/dev/rust.md"
       - "docs/en/dev/rust.md"
   pull_request:
-    branches: ["master", "main"]
+    branches: ["master", "main", "abc"]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"

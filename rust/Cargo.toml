@@ -8,6 +8,7 @@ repository = "https://github.com/NewFuture/DDNS"
 publish = false
 
 [dependencies]
+base64 = { version = "0.23.1", default-features = false, features = ["std"] }
 getrandom = "0.4.3"
 hmac = "0.13.0"
 if-addrs = "0.15.0"
