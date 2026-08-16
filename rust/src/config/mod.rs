@@ -290,7 +290,7 @@ pub fn write_template(path: &Path, cli: &BTreeMap<String, Value>) -> Result<()> 
     );
     document.insert(
         "ttl".to_owned(),
-        cli.get("ttl").cloned().unwrap_or(Value::Null),
+        cli.get("ttl").cloned().unwrap_or_else(|| json!(600)),
     );
     document.insert(
         "line".to_owned(),
