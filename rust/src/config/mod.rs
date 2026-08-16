@@ -261,6 +261,10 @@ pub fn write_template(path: &Path, cli: &BTreeMap<String, Value>) -> Result<()> 
             .unwrap_or_else(|| Value::String("YOUR TOKEN or KEY for DNS Provider".to_owned())),
     );
     document.insert(
+        "endpoint".to_owned(),
+        cli.get("endpoint").cloned().unwrap_or(Value::Null),
+    );
+    document.insert(
         "ipv4".to_owned(),
         cli.get("ipv4")
             .cloned()
@@ -308,6 +312,16 @@ pub fn write_template(path: &Path, cli: &BTreeMap<String, Value>) -> Result<()> 
             .cloned()
             .unwrap_or_else(|| Value::String("auto".to_owned())),
     );
+    let extra = cli
+        .iter()
+        .filter_map(|(key, value)| {
+            key.strip_prefix("extra_")
+                .map(|key| (key.to_owned(), value.clone()))
+        })
+        .collect::<Map<String, Value>>();
+    if !extra.is_empty() {
+        document.insert("extra".to_owned(), Value::Object(extra));
+    }
     document.insert(
         "log".to_owned(),
         json!({
