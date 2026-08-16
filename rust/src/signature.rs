@@ -1,0 +1,110 @@
+use std::collections::BTreeMap;
+
+use hmac::{Hmac, KeyInit, Mac};
+use sha2::{Digest, Sha256};
+
+use crate::error::{Error, Result};
+
+type HmacSha256 = Hmac<Sha256>;
+
+pub fn sha256_hex(data: impl AsRef<[u8]>) -> String {
+    hex_lower(&Sha256::digest(data.as_ref()))
+}
+
+pub fn hmac_sha256_hex(key: impl AsRef<[u8]>, message: impl AsRef<[u8]>) -> Result<String> {
+    let mut mac = HmacSha256::new_from_slice(key.as_ref())
+        .map_err(|error| Error::Provider(format!("invalid HMAC key: {error}")))?;
+    mac.update(message.as_ref());
+    Ok(hex_lower(&mac.finalize().into_bytes()))
+}
+
+pub fn acs3_authorization(
+    access_key_id: &str,
+    secret: &str,
+    method: &str,
+    path: &str,
+    query: &str,
+    headers: &BTreeMap<String, String>,
+    body_hash: &str,
+) -> Result<String> {
+    let normalized = headers
+        .iter()
+        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
+        .collect::<BTreeMap<_, _>>();
+    let canonical_headers = normalized
+        .iter()
+        .map(|(name, value)| format!("{name}:{value}\n"))
+        .collect::<String>();
+    let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
+    let canonical_request = [
+        method.to_ascii_uppercase(),
+        path.to_owned(),
+        query.to_owned(),
+        canonical_headers,
+        signed_headers.clone(),
+        body_hash.to_owned(),
+    ]
+    .join("\n");
+    let string_to_sign = format!("ACS3-HMAC-SHA256\n{}", sha256_hex(canonical_request));
+    let signature = hmac_sha256_hex(secret, string_to_sign)?;
+    Ok(format!(
+        "ACS3-HMAC-SHA256 Credential={access_key_id},SignedHeaders={signed_headers},Signature={signature}"
+    ))
+}
+
+fn hex_lower(bytes: &[u8]) -> String {
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        output.push(hex_digit(byte >> 4));
+        output.push(hex_digit(byte & 0x0f));
+    }
+    output
+}
+
+const fn hex_digit(value: u8) -> char {
+    match value {
+        0..=9 => (b'0' + value) as char,
+        _ => (b'a' + value - 10) as char,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::{acs3_authorization, sha256_hex};
+
+    #[test]
+    fn hashes_known_vector() {
+        assert_eq!(
+            sha256_hex("abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
+    fn signs_deterministically() {
+        let headers = BTreeMap::from([
+            ("host".to_owned(), "alidns.aliyuncs.com".to_owned()),
+            (
+                "x-acs-content-sha256".to_owned(),
+                sha256_hex("DomainName=example.com"),
+            ),
+            ("x-acs-date".to_owned(), "2024-01-01T00:00:00Z".to_owned()),
+        ]);
+        let signature = acs3_authorization(
+            "test-id",
+            "test-secret",
+            "POST",
+            "/",
+            "",
+            &headers,
+            &sha256_hex("DomainName=example.com"),
+        )
+        .unwrap();
+        assert_eq!(
+            signature,
+            "ACS3-HMAC-SHA256 Credential=test-id,SignedHeaders=host;x-acs-content-sha256;x-acs-date,Signature=1b2814647ddf27f425cb6319c8973d72d998188eb84357279a0d2af3a1b77c23"
+        );
+    }
+}
