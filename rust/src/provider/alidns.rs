@@ -64,12 +64,13 @@ impl AlidnsProvider {
             self.context
                 .send_json(Method::Post, "/", &BTreeMap::new(), Some(body), headers)?;
         if let Some(code) = response.get("Code").and_then(Value::as_str) {
+            let message = response
+                .get("Message")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown error");
             return Err(Error::Provider(format!(
                 "AliDNS API error {code}: {}",
-                response
-                    .get("Message")
-                    .and_then(Value::as_str)
-                    .unwrap_or("unknown error")
+                self.context.logger.mask(message)
             )));
         }
         Ok(response)

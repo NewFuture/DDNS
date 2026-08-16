@@ -115,12 +115,7 @@ impl Logger {
         Ok(Self {
             level,
             destination: Arc::new(Mutex::new(destination)),
-            secrets: Arc::new(
-                secrets
-                    .into_iter()
-                    .filter(|secret| !secret.is_empty())
-                    .collect(),
-            ),
+            secrets: Arc::new(normalize_secrets(secrets)),
         })
     }
 
@@ -128,12 +123,7 @@ impl Logger {
         Self {
             level: self.level,
             destination: Arc::clone(&self.destination),
-            secrets: Arc::new(
-                secrets
-                    .into_iter()
-                    .filter(|secret| !secret.is_empty())
-                    .collect(),
-            ),
+            secrets: Arc::new(normalize_secrets(secrets)),
         }
     }
 
@@ -207,6 +197,16 @@ impl Logger {
     }
 }
 
+fn normalize_secrets(secrets: Vec<String>) -> Vec<String> {
+    let mut secrets = secrets
+        .into_iter()
+        .filter(|secret| !secret.is_empty())
+        .collect::<Vec<_>>();
+    secrets.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
+    secrets.dedup();
+    secrets
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Level, Logger};
@@ -227,14 +227,38 @@ mod tests {
             std::env::temp_dir().join(format!("ddns-rs-log-test-{}.log", std::process::id()));
         let _ = std::fs::remove_file(&path);
         {
-            let logger =
-                Logger::new(Level::Debug, Some(&path), vec!["secret/token".to_owned()]).unwrap();
-            logger.error("test", "raw=secret/token encoded=secret%2Ftoken");
+            let logger = Logger::new(
+                Level::Debug,
+                Some(&path),
+                vec!["account-id".to_owned(), "secret/token".to_owned()],
+            )
+            .unwrap();
+            logger.error(
+                "test",
+                "id=account-id raw=secret/token encoded=secret%2Ftoken",
+            );
         }
         let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.contains("account-id"));
         assert!(!content.contains("secret/token"));
         assert!(!content.contains("secret%2Ftoken"));
         assert!(content.contains("se***en"));
         let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn masks_overlapping_credentials_longest_first() {
+        let logger = Logger::new(
+            Level::Debug,
+            None,
+            vec![
+                "account-id".to_owned(),
+                "account-id-secret/token".to_owned(),
+            ],
+        )
+        .unwrap();
+        let masked = logger.mask("account-id-secret/token account-id");
+        assert!(!masked.contains("secret/token"));
+        assert!(!masked.contains("account-id"));
     }
 }

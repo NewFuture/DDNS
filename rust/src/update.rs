@@ -92,7 +92,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         let logger = Logger::new(
             config.log.level,
             config.log.file.as_deref(),
-            vec![config.token.clone()],
+            vec![config.id.clone(), config.token.clone()],
         )?;
         if config.log.format.is_some() || config.log.date_format.is_some() {
             logger.warning(

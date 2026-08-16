@@ -187,8 +187,27 @@ where
             .entry("cache".to_owned())
             .or_insert(Value::Bool(false));
     }
+    normalize_singleton_lists(&mut options.values);
 
     Ok(Command::Run(options))
+}
+
+fn normalize_singleton_lists(values: &mut BTreeMap<String, Value>) {
+    for key in ["index4", "index6", "ipv4", "ipv6", "proxy"] {
+        let Some(Value::Array(items)) = values.get_mut(key) else {
+            continue;
+        };
+        let [Value::String(item)] = items.as_slice() else {
+            continue;
+        };
+        if matches!(item.trim().to_ascii_lowercase().as_str(), "false" | "none") {
+            items.clear();
+            continue;
+        }
+        let normalized =
+            crate::config::split_array_string(item, matches!(key, "index4" | "index6"));
+        *items = normalized.into_iter().map(Value::String).collect();
+    }
 }
 
 fn split_option(raw: &str) -> (&str, Option<&str>) {
@@ -327,5 +346,59 @@ mod tests {
         assert_eq!(options.values["ipv4"], serde_json::json!([]));
         assert_eq!(options.values["ipv6"], serde_json::json!([]));
         assert_eq!(options.values["index4"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn splits_singleton_cli_lists_like_python_config() {
+        let Command::Run(options) = parse([
+            "ddns-rs",
+            "--ipv4=a.example.com,b.example.com",
+            "--index4=public,default",
+            "--proxy=DIRECT;SYSTEM",
+        ])
+        .unwrap() else {
+            panic!("expected run command");
+        };
+        assert_eq!(
+            options.values["ipv4"],
+            serde_json::json!(["a.example.com", "b.example.com"])
+        );
+        assert_eq!(
+            options.values["index4"],
+            serde_json::json!(["public", "default"])
+        );
+        assert_eq!(
+            options.values["proxy"],
+            serde_json::json!(["DIRECT", "SYSTEM"])
+        );
+    }
+
+    #[test]
+    fn preserves_repeated_cli_list_items_without_resplitting() {
+        let Command::Run(options) = parse([
+            "ddns-rs",
+            "--ipv4=a.example.com,b.example.com",
+            "--ipv4=c.example.com,d.example.com",
+        ])
+        .unwrap() else {
+            panic!("expected run command");
+        };
+        assert_eq!(
+            options.values["ipv4"],
+            serde_json::json!(["a.example.com,b.example.com", "c.example.com,d.example.com"])
+        );
+    }
+
+    #[test]
+    fn singleton_false_and_none_disable_cli_lists() {
+        let Command::Run(options) = parse([
+            "ddns-rs", "--ipv4", "none", "--index4", "false", "--proxy", "none",
+        ])
+        .unwrap() else {
+            panic!("expected run command");
+        };
+        assert_eq!(options.values["ipv4"], serde_json::json!([]));
+        assert_eq!(options.values["index4"], serde_json::json!([]));
+        assert_eq!(options.values["proxy"], serde_json::json!([]));
     }
 }

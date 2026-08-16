@@ -577,7 +577,7 @@ pub fn parse_tls(value: Option<&Value>) -> Result<TlsMode> {
         Some(Value::String(value)) => match value.to_ascii_lowercase().as_str() {
             "auto" => Ok(TlsMode::Auto),
             "yes" | "true" | "t" | "y" | "1" => Ok(TlsMode::Verify),
-            "" | "no" | "false" | "f" | "n" | "0" => Ok(TlsMode::Insecure),
+            "" | "no" | "false" | "f" | "n" | "0" | "none" => Ok(TlsMode::Insecure),
             _ => Ok(TlsMode::CustomCa(PathBuf::from(value))),
         },
         _ => Err(Error::Config(
@@ -653,6 +653,10 @@ mod tests {
         assert_eq!(config.provider, "cloudflare");
         assert_eq!(
             parse_tls(Some(&serde_json::Value::String(String::new()))).unwrap(),
+            TlsMode::Insecure
+        );
+        assert_eq!(
+            parse_tls(Some(&serde_json::Value::String("none".to_owned()))).unwrap(),
             TlsMode::Insecure
         );
     }

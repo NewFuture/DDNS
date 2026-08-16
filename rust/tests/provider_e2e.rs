@@ -206,6 +206,24 @@ fn alidns_create_and_unchanged_update_flows() {
     .unwrap();
     provider.set_record(&request("192.0.2.20")).unwrap();
     assert_eq!(unchanged_client.requests().len(), 2);
+
+    let echoed_secret = FakeHttpClient::with_json([
+        json!({"DomainName": "example.com", "RR": "www"}),
+        json!({"Code": "InvalidAccessKey", "Message": format!("bad credential {token}")}),
+    ]);
+    let client: Arc<dyn HttpClient> = echoed_secret;
+    let mut provider = build(
+        &config("alidns", "access-key", token),
+        client,
+        logger(token),
+    )
+    .unwrap();
+    let error = provider
+        .set_record(&request("192.0.2.21"))
+        .unwrap_err()
+        .to_string();
+    assert!(!error.contains(token));
+    assert!(error.contains("al***et"));
 }
 
 #[test]

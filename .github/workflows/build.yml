@@ -6,8 +6,22 @@ name: Build
 on:
   push:
     branches: ["master", "main"]
+    paths-ignore:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+      - ".github/workflows/rust-python-checks.yml"
+      - ".github/instructions/rust.instructions.md"
+      - "docs/dev/rust.md"
+      - "docs/en/dev/rust.md"
   pull_request:
     branches: ["master", "main", "abc"]
+    paths-ignore:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+      - ".github/workflows/rust-python-checks.yml"
+      - ".github/instructions/rust.instructions.md"
+      - "docs/dev/rust.md"
+      - "docs/en/dev/rust.md"
 
 permissions:
   contents: read
