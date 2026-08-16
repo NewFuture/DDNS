@@ -7,7 +7,7 @@
 | 能力 | 状态 |
 | --- | --- |
 | Cloudflare、AliDNS、DNSPod、Debug | 已支持 |
-| IPv4/IPv6 与全部现有 IP 规则 | 已支持 |
+| IPv4/IPv6 与全部现有 IP 规则类型 | 已支持；`regex:` 使用 Rust 语法 |
 | CLI、`DDNS_*`、本地/远程/多配置、v4.1 `providers` | 已支持 |
 | JSON 注释与受限 Python 数据字面量 | 已支持 |
 | 缓存、代理回退、重试、TLS 与自定义 CA | 已支持 |
@@ -51,6 +51,7 @@ CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建并冒烟测�
 
 - `ssl=auto` 会在确认属于证书校验错误时警告并重试一次不校验证书的连接；生产环境优先使用 `ssl=true`。
 - 远程配置中的 `cmd:` 与 `shell:` 会执行本机命令，只能加载可信 URL。
+- `regex:` 使用 Rust `regex` 语法，不支持 Python 环视和反向引用；不兼容模式会返回明确错误。
 - Python 字面量解析器只接受字典、列表/元组、字符串、数字、`True`、`False` 和 `None`，不会执行表达式。
 - 日志会遮蔽 token 及其百分号编码形式；缓存不保存凭据。
 

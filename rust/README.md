@@ -10,7 +10,7 @@ Python `ddns` command.
 - IPv4 and IPv6
 - Existing CLI options, `DDNS_*` environment variables, and Schema v4.1 files
 - Local, remote, multiple, JSONC, and restricted Python-literal configurations
-- `default`, `public`, numeric, `url:`, `regex:`, `cmd:`, and `shell:` address rules
+- `default`, `public`, numeric, `url:`, `regex:`, `cmd:`, and `shell:` address rule types
 - Cache, proxy fallback, retries, custom CA files, and existing TLS policies
 - One update run per process on Linux, macOS, and Windows
 
@@ -37,6 +37,10 @@ ddns-rs --dns cloudflare --token TOKEN --index4 public --ipv4 home.example.com
 fallback and is less secure than `ssl=true`. Remote configurations that contain
 `cmd:` or `shell:` rules execute local commands; only load trusted configuration
 URLs.
+
+`regex:` rules use the Rust [`regex`](https://docs.rs/regex/) syntax. Python
+look-around and backreferences are not supported; invalid patterns fail with an
+explicit compatibility message.
 
 ## Validate
 

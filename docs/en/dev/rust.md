@@ -9,7 +9,7 @@ replace the existing command, installers, or release assets.
 | Capability | Status |
 | --- | --- |
 | Cloudflare, AliDNS, DNSPod, and Debug | Supported |
-| IPv4/IPv6 and every existing address rule | Supported |
+| IPv4/IPv6 and every existing address rule type | Supported; `regex:` uses Rust syntax |
 | CLI, `DDNS_*`, local/remote/multiple configs, v4.1 `providers` | Supported |
 | JSON comments and restricted Python data literals | Supported |
 | Cache, proxy fallback, retries, TLS, and custom CA files | Supported |
@@ -58,6 +58,8 @@ macOS x64/arm64.
   classified certificate-validation error. Prefer `ssl=true` in production.
 - `cmd:` and `shell:` in remote configurations execute local commands. Load only
   trusted configuration URLs.
+- `regex:` uses Rust `regex` syntax and does not support Python look-around or
+  backreferences. Incompatible patterns return an explicit error.
 - The Python-literal parser accepts only dictionaries, lists/tuples, strings,
   numbers, `True`, `False`, and `None`; it cannot execute expressions.
 - Logs redact tokens and their percent-encoded forms. Cache files contain no credentials.

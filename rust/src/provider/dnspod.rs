@@ -44,19 +44,21 @@ impl DnspodProvider {
             Some(form_encode(&parameters)),
             headers,
         )?;
-        if response.pointer("/status/code").and_then(Value::as_str) != Some("1") {
-            self.context.logger.warning(
-                "dnspod",
-                format!(
-                    "DNSPod API error: {}",
-                    response
-                        .pointer("/status/message")
-                        .and_then(Value::as_str)
-                        .unwrap_or("unknown error")
-                ),
-            );
+        let status_code = response
+            .pointer("/status/code")
+            .and_then(value_to_string)
+            .unwrap_or_else(|| "unknown".to_owned());
+        if status_code == "1" || (action == "Record.List" && status_code == "10") {
+            return Ok(response);
         }
-        Ok(response)
+        let message = response
+            .pointer("/status/message")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown error");
+        Err(Error::Provider(format!(
+            "DNSPod API error {status_code}: {}",
+            self.context.logger.mask(message)
+        )))
     }
 
     fn parameters_with_extra(

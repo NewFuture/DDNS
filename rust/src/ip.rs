@@ -202,8 +202,11 @@ fn regex_address(family: AddressFamily, pattern: &str) -> Result<IpAddr> {
 }
 
 fn regex_address_in_text(family: AddressFamily, pattern: &str, output: &str) -> Result<IpAddr> {
-    let matcher =
-        Regex::new(pattern).map_err(|error| Error::Ip(format!("invalid regex: {error}")))?;
+    let matcher = Regex::new(pattern).map_err(|error| {
+        Error::Ip(format!(
+            "invalid Rust regex pattern: {error}; regex: rules do not support Python look-around or backreferences"
+        ))
+    })?;
     for address in addresses_in_text(family, output) {
         if matcher.is_match(&address.to_string()) {
             return Ok(address);
@@ -490,5 +493,16 @@ mod tests {
                 .to_string(),
             "192.0.2.55"
         );
+    }
+
+    #[test]
+    fn reports_python_only_regex_features_clearly() {
+        for pattern in [r"192\.168\.(?!0\.).*", r"(\d)\1"] {
+            let error =
+                regex_address_in_text(AddressFamily::V4, pattern, "inet 192.168.1.2").unwrap_err();
+            let message = error.to_string();
+            assert!(message.contains("invalid Rust regex pattern"));
+            assert!(message.contains("look-around or backreferences"));
+        }
     }
 }
