@@ -11,7 +11,7 @@ use crate::error::{Error, Result};
 use crate::logging::Logger;
 use crate::signature::sha256_hex;
 
-const CACHE_VERSION: u32 = 1;
+const CACHE_VERSION: u32 = 2;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct CacheEntry {
@@ -27,6 +27,7 @@ struct CacheFile {
 
 pub struct Cache {
     path: Option<PathBuf>,
+    namespace: String,
     records: BTreeMap<String, CacheEntry>,
     changed: bool,
     logger: Logger,
@@ -39,16 +40,17 @@ impl Cache {
         max_age: u64,
         logger: Logger,
     ) -> Result<Self> {
+        let namespace = sha256_hex(serde_json::to_vec(identity)?);
         let path = match setting {
             CacheSetting::Disabled => None,
             CacheSetting::Default => {
-                let serialized = serde_json::to_vec(identity)?;
-                Some(std::env::temp_dir().join(format!("ddns-rs.{}.cache", sha256_hex(serialized))))
+                Some(std::env::temp_dir().join(format!("ddns-rs.{namespace}.cache")))
             }
             CacheSetting::Path(path) => Some(path.clone()),
         };
         let mut cache = Self {
             path,
+            namespace,
             records: BTreeMap::new(),
             changed: false,
             logger,
@@ -60,6 +62,7 @@ impl Cache {
     pub fn disabled(logger: Logger) -> Self {
         Self {
             path: None,
+            namespace: String::new(),
             records: BTreeMap::new(),
             changed: false,
             logger,
@@ -68,12 +71,12 @@ impl Cache {
 
     pub fn get(&self, provider: &str, domain: &str, record_type: &str) -> Option<&str> {
         self.records
-            .get(&cache_key(provider, domain, record_type))
+            .get(&cache_key(&self.namespace, provider, domain, record_type))
             .map(|entry| entry.address.as_str())
     }
 
     pub fn set(&mut self, provider: &str, domain: &str, record_type: &str, address: &str) {
-        let key = cache_key(provider, domain, record_type);
+        let key = cache_key(&self.namespace, provider, domain, record_type);
         if self
             .records
             .get(&key)
@@ -178,9 +181,10 @@ impl Cache {
     }
 }
 
-fn cache_key(provider: &str, domain: &str, record_type: &str) -> String {
+fn cache_key(namespace: &str, provider: &str, domain: &str, record_type: &str) -> String {
     format!(
-        "{}:{}:{}",
+        "{}:{}:{}:{}",
+        namespace,
         provider.to_ascii_lowercase(),
         domain.to_ascii_lowercase(),
         record_type.to_ascii_uppercase()
@@ -236,6 +240,48 @@ mod tests {
         )
         .unwrap();
         assert_eq!(cache.get("debug", "example.com", "A"), Some("192.0.2.1"));
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn namespaces_shared_custom_cache_by_configuration_identity() {
+        let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
+        let path = std::env::temp_dir().join(format!(
+            "ddns-rs-shared-cache-test-{}-{}.json",
+            std::process::id(),
+            super::unix_time()
+        ));
+        let setting = CacheSetting::Path(path.clone());
+
+        let mut first = Cache::open(
+            &setting,
+            &serde_json::json!({"account": "first", "line": "default"}),
+            3600,
+            logger.clone(),
+        )
+        .unwrap();
+        first.set("dnspod", "example.com", "A", "192.0.2.10");
+        first.sync().unwrap();
+
+        let mut second = Cache::open(
+            &setting,
+            &serde_json::json!({"account": "second", "line": "telecom"}),
+            3600,
+            logger.clone(),
+        )
+        .unwrap();
+        assert_eq!(second.get("dnspod", "example.com", "A"), None);
+        second.set("dnspod", "example.com", "A", "192.0.2.10");
+        second.sync().unwrap();
+
+        let first = Cache::open(
+            &setting,
+            &serde_json::json!({"account": "first", "line": "default"}),
+            3600,
+            logger,
+        )
+        .unwrap();
+        assert_eq!(first.get("dnspod", "example.com", "A"), Some("192.0.2.10"));
         let _ = std::fs::remove_file(path);
     }
 }
