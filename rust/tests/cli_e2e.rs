@@ -60,6 +60,11 @@ fn generates_and_reuses_configuration() {
         .args([
             "--dns",
             "debug",
+            "--endpoint",
+            "http://127.0.0.1:9",
+            "--extra.proxied",
+            "--extra.comment",
+            "generated config",
             "--index4",
             "shell:echo 192.0.2.66",
             "--ipv4",
@@ -77,6 +82,9 @@ fn generates_and_reuses_configuration() {
     let document: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
     assert_eq!(document["dns"], "debug");
+    assert_eq!(document["endpoint"], "http://127.0.0.1:9");
+    assert_eq!(document["extra"]["proxied"], true);
+    assert_eq!(document["extra"]["comment"], "generated config");
     assert_eq!(
         document["ipv4"],
         serde_json::json!(["generated.example.com"])
