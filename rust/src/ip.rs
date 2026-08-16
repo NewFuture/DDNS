@@ -208,7 +208,11 @@ fn regex_address_in_text(family: AddressFamily, pattern: &str, output: &str) -> 
         ))
     })?;
     for address in addresses_in_text(family, output) {
-        if matcher.is_match(&address.to_string()) {
+        let address_text = address.to_string();
+        if matcher
+            .find(&address_text)
+            .is_some_and(|matched| matched.start() == 0)
+        {
             return Ok(address);
         }
     }
@@ -504,5 +508,18 @@ mod tests {
             assert!(message.contains("invalid Rust regex pattern"));
             assert!(message.contains("look-around or backreferences"));
         }
+    }
+
+    #[test]
+    fn regex_rules_match_only_from_address_start() {
+        assert!(
+            regex_address_in_text(AddressFamily::V4, r"192\.168", "inet 10.192.168.1/24").is_err()
+        );
+        assert_eq!(
+            regex_address_in_text(AddressFamily::V4, r"10\.192", "inet 10.192.168.1/24")
+                .unwrap()
+                .to_string(),
+            "10.192.168.1"
+        );
     }
 }

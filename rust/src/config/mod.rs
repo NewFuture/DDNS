@@ -89,6 +89,8 @@ pub fn load(
     fetch: &dyn Fn(&str) -> Result<String>,
 ) -> Result<Vec<Config>> {
     let paths = config_paths(cli, environment)?;
+    let allow_debug_provider =
+        paths.is_empty() && cli.values.get("debug").and_then(Value::as_bool) == Some(true);
     let mut documents = Vec::new();
     if paths.is_empty() {
         documents.push(BTreeMap::new());
@@ -110,7 +112,7 @@ pub fn load(
         .iter()
         .enumerate()
         .map(|(index, document)| {
-            Config::from_sources(&cli.values, document, environment)
+            Config::from_sources(&cli.values, document, environment, allow_debug_provider)
                 .map_err(|error| Error::Config(format!("configuration {}: {error}", index + 1)))
         })
         .collect()
@@ -131,13 +133,14 @@ impl Config {
         cli: &BTreeMap<String, Value>,
         document: &BTreeMap<String, Value>,
         environment: &BTreeMap<String, Value>,
+        allow_debug_provider: bool,
     ) -> Result<Self> {
         let merged = merge::merge(environment, document, cli);
         let debug = parse_bool(merged.get("debug"), false)?;
         let mut provider = optional_string(merged.get("dns"))?
             .unwrap_or_default()
             .to_ascii_lowercase();
-        if provider.is_empty() && debug {
+        if provider.is_empty() && allow_debug_provider {
             provider = "debug".to_owned();
         }
         if provider.is_empty() {
@@ -156,7 +159,8 @@ impl Config {
 
         let id = optional_string(merged.get("id"))?.unwrap_or_default();
         let token = optional_string(merged.get("token"))?.unwrap_or_default();
-        let endpoint = optional_string(merged.get("endpoint"))?;
+        let endpoint =
+            optional_string(merged.get("endpoint"))?.filter(|endpoint| !endpoint.is_empty());
         if let Some(endpoint) = &endpoint
             && !endpoint.starts_with("http://")
             && !endpoint.starts_with("https://")
@@ -624,7 +628,7 @@ mod tests {
         ]);
         let document = BTreeMap::from([("ttl".to_owned(), json!(200))]);
         let cli = BTreeMap::from([("ttl".to_owned(), json!(300))]);
-        let config = Config::from_sources(&cli, &document, &environment).unwrap();
+        let config = Config::from_sources(&cli, &document, &environment, false).unwrap();
         assert_eq!(config.ttl, Some(300));
         assert_eq!(
             config.index4,
@@ -638,14 +642,14 @@ mod tests {
             ("dns".to_owned(), json!("debug")),
             ("index4".to_owned(), json!(false)),
         ]);
-        let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new()).unwrap();
+        let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
         assert_eq!(config.index4, AddressRules::Disabled);
     }
 
     #[test]
     fn normalizes_provider_names_and_empty_tls_environment_value() {
         let cli = BTreeMap::from([("dns".to_owned(), json!("CloudFlare"))]);
-        let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new()).unwrap();
+        let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
         assert_eq!(config.provider, "cloudflare");
         assert_eq!(
             parse_tls(Some(&serde_json::Value::String(String::new()))).unwrap(),
@@ -664,8 +668,38 @@ mod tests {
                 ("dns".to_owned(), json!("debug")),
                 ("log_level".to_owned(), value),
             ]);
-            let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new()).unwrap();
+            let config =
+                Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
             assert_eq!(config.log.level, expected);
         }
+    }
+
+    #[test]
+    fn limits_debug_provider_fallback_and_ignores_empty_endpoint() {
+        let cli_debug = BTreeMap::from([("debug".to_owned(), json!(true))]);
+        let config =
+            Config::from_sources(&cli_debug, &BTreeMap::new(), &BTreeMap::new(), true).unwrap();
+        assert_eq!(config.provider, "debug");
+        assert!(
+            Config::from_sources(&cli_debug, &BTreeMap::new(), &BTreeMap::new(), false).is_err()
+        );
+
+        let environment_debug = BTreeMap::from([("debug".to_owned(), json!("true"))]);
+        assert!(
+            Config::from_sources(
+                &BTreeMap::new(),
+                &BTreeMap::new(),
+                &environment_debug,
+                false
+            )
+            .is_err()
+        );
+
+        let cli = BTreeMap::from([
+            ("dns".to_owned(), json!("debug")),
+            ("endpoint".to_owned(), json!("")),
+        ]);
+        let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
+        assert_eq!(config.endpoint, None);
     }
 }

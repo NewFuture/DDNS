@@ -154,21 +154,21 @@ impl CrudProvider for AlidnsProvider {
         main_domain: &str,
         request: &RecordRequest,
     ) -> Result<Option<Value>> {
-        let parameters = Self::parameters_with_extra(
-            request,
-            [
-                ("SubDomain", Some(join_domain(subdomain, main_domain))),
-                ("DomainName", Some(main_domain.to_owned())),
-                ("Type", Some(request.record_type.clone())),
-                ("Line", request.line.clone()),
-                ("PageSize", Some("500".to_owned())),
-                ("Lang", request.extra.get("Lang").and_then(value_to_string)),
-                (
-                    "Status",
-                    request.extra.get("Status").and_then(value_to_string),
-                ),
-            ],
-        );
+        let parameters = [
+            ("SubDomain", Some(join_domain(subdomain, main_domain))),
+            ("DomainName", Some(main_domain.to_owned())),
+            ("Type", Some(request.record_type.clone())),
+            ("Line", request.line.clone()),
+            ("PageSize", Some("500".to_owned())),
+            ("Lang", request.extra.get("Lang").and_then(value_to_string)),
+            (
+                "Status",
+                request.extra.get("Status").and_then(value_to_string),
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value)))
+        .collect();
         let response = self.api("DescribeSubDomainRecords", parameters)?;
         let record = response
             .pointer("/DomainRecords/Record")

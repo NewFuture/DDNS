@@ -124,3 +124,34 @@ fn empty_cli_config_list_overrides_environment_config_path() {
     assert_eq!(configs.len(), 1);
     assert_eq!(configs[0].provider, "debug");
 }
+
+#[test]
+fn debug_provider_fallback_requires_cli_debug_without_loaded_file() {
+    let environment_debug = BTreeMap::from([("debug".to_owned(), json!("true"))]);
+    let no_cli_debug = CliOptions {
+        values: BTreeMap::new(),
+        config_paths: Some(Vec::new()),
+        new_config: None,
+    };
+    assert!(load(&no_cli_debug, &environment_debug, &|_| unreachable!()).is_err());
+
+    let cli_debug = CliOptions {
+        values: BTreeMap::from([("debug".to_owned(), json!(true))]),
+        config_paths: Some(Vec::new()),
+        new_config: None,
+    };
+    let configs = load(&cli_debug, &BTreeMap::new(), &|_| unreachable!()).unwrap();
+    assert_eq!(configs[0].provider, "debug");
+
+    let cli_debug_with_file = CliOptions {
+        values: BTreeMap::from([("debug".to_owned(), json!(true))]),
+        config_paths: Some(vec!["https://config.example/no-provider.json".to_owned()]),
+        new_config: None,
+    };
+    assert!(
+        load(&cli_debug_with_file, &BTreeMap::new(), &|_| Ok(
+            "{}".to_owned()
+        ))
+        .is_err()
+    );
+}
