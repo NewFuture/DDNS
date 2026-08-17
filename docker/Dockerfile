@@ -34,6 +34,8 @@ RUN find /lib /usr/lib /usr/local/lib -name '*.so*' | sed 's|.*/||' | awk '{prin
 
 FROM ${BUILDER} AS builder
 ARG PATCHELF_VERSION
+ARG TARGETARCH
+ARG TARGETVARIANT
 COPY run.py  .
 COPY ddns ddns
 COPY web web
@@ -47,10 +49,23 @@ RUN if patchelf --version 2>/dev/null | grep -q ' 0[.]18[.]0$'; then \
         && make install \
         && rm -rf /tmp/patchelf.tar.gz "/tmp/patchelf-${PATCHELF_VERSION}"; \
     fi
-RUN python3 -O -m nuitka run.py \
-    --remove-output \
-    --lto=yes \
-    $(cat nuitka_exclude_so.txt)
+RUN --mount=type=cache,target=/root/.cache/ccache,sharing=shared \
+    --mount=type=cache,target=/root/.cache/nuitka-module,sharing=shared \
+    cache_subdir="${TARGETARCH}${TARGETVARIANT:+-${TARGETVARIANT}}" \
+    && export CCACHE_DIR="/root/.cache/ccache/${cache_subdir}" \
+    && export NUITKA_CACHE_DIR_MODULE_CACHE="/root/.cache/nuitka-module/${cache_subdir}" \
+    && mkdir -p "${CCACHE_DIR}" "${NUITKA_CACHE_DIR_MODULE_CACHE}" \
+    && ccache --set-config=compiler_check=content \
+    && ccache --set-config=compression=true \
+    && ccache --set-config=compression_level=6 \
+    && ccache --set-config=max_size=1G \
+    && echo "Nuitka module cache files before build: $(find "${NUITKA_CACHE_DIR_MODULE_CACHE}" -type f | wc -l)" \
+    && python3 -O -m nuitka run.py \
+        --remove-output \
+        --lto=yes \
+        $(cat nuitka_exclude_so.txt) \
+    && echo "Nuitka module cache files after build: $(find "${NUITKA_CACHE_DIR_MODULE_CACHE}" -type f | wc -l)" \
+    && ccache --show-stats
 RUN mkdir /output && cp dist/ddns /output/
 COPY docker/entrypoint.sh /output/
 

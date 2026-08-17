@@ -8,6 +8,7 @@ on:
     branches: ["master", "main"]
   pull_request:
     branches: ["master", "main", "abc"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -204,6 +205,7 @@ jobs:
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@v1.4
         with:
+          caching-key: ${{ matrix.arch }}
           nuitka-version: 2.8.10
           script-name: run.py
           mode: onefile
@@ -241,6 +243,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: Nuitka/Nuitka-Action@v1.4
         with:
+          caching-key: ${{ matrix.arch }}
           nuitka-version: 2.8.10
           script-name: run.py
           mode: standalone
@@ -343,9 +346,39 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 14 || 3 }}
           
+  prepare-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      builder_ref: ${{ steps.builder.outputs.builder_ref }}
+      builder_hash: ${{ steps.builder.outputs.builder_hash }}
+    steps:
+      - name: Resolve Nuitka builder image
+        id: builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          builder_tag=ghcr.io/newfuture/nuitka-builder:master
+          builder_info="$(docker buildx imagetools inspect "$builder_tag")"
+          digest="$(printf '%s\n' "$builder_info" | awk '$1 == "Digest:" { print $2; exit }')"
+          media_type="$(printf '%s\n' "$builder_info" | awk '$1 == "MediaType:" { print $2; exit }')"
+          builder_hash="${digest#sha256:}"
+
+          case "$media_type" in
+            application/vnd.docker.distribution.manifest.list.v2+json|application/vnd.oci.image.index.v1+json) ;;
+            *) echo "Expected a multi-platform image index, got: $media_type" >&2; exit 1 ;;
+          esac
+          test "${#builder_hash}" -eq 64
+          case "$builder_hash" in
+            *[!0-9a-f]*) echo "Invalid builder digest: $digest" >&2; exit 1 ;;
+          esac
+
+          echo "builder_ref=${builder_tag}@${digest}" >> "$GITHUB_OUTPUT"
+          echo "builder_hash=${builder_hash}" >> "$GITHUB_OUTPUT"
+
   docker:
-    needs: [ python ]
-    timeout-minutes: ${{ matrix.host == 'qemu' && 60 || 30 }} 
+    needs: [ python, prepare-docker ]
+    timeout-minutes: ${{ matrix.host == 'qemu' && 90 || 30 }}
     strategy:
       matrix:
         host: ['amd','arm','qemu']
@@ -359,6 +392,11 @@ jobs:
 
     runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
     env:
+      CACHE_WRITE: ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'))
+        }}
       platforms: ${{
         matrix.host == 'amd' && 'linux/386,linux/amd64' ||
           matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8'||
@@ -374,6 +412,67 @@ jobs:
         with:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v4
+        id: buildx
+
+      - name: Restore ccache
+        if: env.CACHE_WRITE == 'true'
+        id: ccache
+        uses: actions/cache@v5
+        with:
+          path: .build-cache/ccache
+          key: ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
+          restore-keys: |
+            ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-
+
+      - name: Restore ccache (read-only)
+        if: env.CACHE_WRITE != 'true'
+        id: ccache_readonly
+        uses: actions/cache/restore@v5
+        with:
+          path: .build-cache/ccache
+          key: ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
+          restore-keys: |
+            ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-
+
+      - name: Restore Nuitka module cache
+        if: env.CACHE_WRITE == 'true'
+        id: nuitka_module
+        uses: actions/cache@v5
+        with:
+          path: .build-cache/nuitka-module
+          key: ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
+          restore-keys: |
+            ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-
+
+      - name: Restore Nuitka module cache (read-only)
+        if: env.CACHE_WRITE != 'true'
+        id: nuitka_module_readonly
+        uses: actions/cache/restore@v5
+        with:
+          path: .build-cache/nuitka-module
+          key: ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
+          restore-keys: |
+            ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-
+
+      - name: Prepare compiler cache directories
+        run: mkdir -p .build-cache/ccache .build-cache/nuitka-module
+
+      - name: Restore Docker compiler cache mounts
+        uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-map: |
+            {
+              ".build-cache/ccache": "/root/.cache/ccache",
+              ".build-cache/nuitka-module": "/root/.cache/nuitka-module"
+            }
+          skip-extraction: ${{
+            (steps.ccache.outputs.cache-hit == 'true' ||
+              steps.ccache_readonly.outputs.cache-hit == 'true') &&
+            (steps.nuitka_module.outputs.cache-hit == 'true' ||
+              steps.nuitka_module_readonly.outputs.cache-hit == 'true')
+            }}
+
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -383,7 +482,7 @@ jobs:
           tags: ddns:test
           outputs: type=oci,dest=./multi-platform-image.tar
           build-args: |
-            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+            BUILDER=${{ needs.prepare-docker.outputs.builder_ref }}
             GITHUB_REF_NAME=${{ github.ref_name }}
 
       # 准备测试环境
