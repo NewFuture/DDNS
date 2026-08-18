@@ -415,7 +415,7 @@ jobs:
       - name: Restore ccache
         if: env.CACHE_WRITE == 'true'
         id: ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build-cache/ccache
           key: ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
@@ -425,7 +425,7 @@ jobs:
       - name: Restore ccache (read-only)
         if: env.CACHE_WRITE != 'true'
         id: ccache_readonly
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build-cache/ccache
           key: ddns-ccache-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
@@ -435,7 +435,7 @@ jobs:
       - name: Restore Nuitka module cache
         if: env.CACHE_WRITE == 'true'
         id: nuitka_module
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build-cache/nuitka-module
           key: ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
@@ -445,7 +445,7 @@ jobs:
       - name: Restore Nuitka module cache (read-only)
         if: env.CACHE_WRITE != 'true'
         id: nuitka_module_readonly
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build-cache/nuitka-module
           key: ddns-nuitka-module-mc7-v2-${{ matrix.host }}-${{ needs.prepare-docker.outputs.builder_hash }}-${{ github.sha }}
