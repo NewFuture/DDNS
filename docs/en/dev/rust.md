@@ -60,6 +60,8 @@ macOS x64/arm64.
   trusted configuration URLs.
 - `regex:` uses Rust `regex` syntax and does not support Python look-around or
   backreferences. Incompatible patterns return an explicit error.
+- A reused custom `cache` path writes Rust data to the sibling `<path>.ddns-rs`
+  file and never overwrites the Python cache.
 - The Python-literal parser accepts only dictionaries, lists/tuples, strings,
   numbers, `True`, `False`, and `None`; it cannot execute expressions.
 - Logs redact tokens and their percent-encoded forms. Cache files contain no credentials.

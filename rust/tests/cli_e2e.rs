@@ -248,3 +248,42 @@ fn empty_cli_config_list_suppresses_environment_config() {
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("[IPv4] 192.0.2.144"));
 }
+
+#[test]
+fn log_file_failure_does_not_skip_later_configurations() {
+    let directory =
+        std::env::temp_dir().join(format!("ddns-rs-log-failure-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let config_path = directory.join("multi.json");
+    let document = serde_json::json!({
+        "cache": false,
+        "providers": [
+            {
+                "provider": "debug",
+                "index4": ["shell:echo 192.0.2.151"],
+                "ipv4": ["first.example.com"],
+                "log": {"file": directory}
+            },
+            {
+                "provider": "debug",
+                "index4": ["shell:echo 192.0.2.152"],
+                "ipv4": ["second.example.com"]
+            }
+        ]
+    });
+    std::fs::write(&config_path, serde_json::to_vec(&document).unwrap()).unwrap();
+
+    let output = Command::new(binary())
+        .args(["-c", config_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout)
+            .matches("[IPv4]")
+            .count(),
+        2
+    );
+    assert!(String::from_utf8_lossy(&output.stderr).contains("log setup"));
+    let _ = std::fs::remove_dir_all(directory);
+}

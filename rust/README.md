@@ -42,6 +42,10 @@ URLs.
 look-around and backreferences are not supported; invalid patterns fail with an
 explicit compatibility message.
 
+When a reused configuration specifies a custom `cache` path, `ddns-rs` writes its
+versioned format to the sibling `<path>.ddns-rs` file. The Python cache at the
+configured path is never modified.
+
 ## Validate
 
 ```bash
