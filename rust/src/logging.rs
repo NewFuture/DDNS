@@ -100,21 +100,29 @@ pub struct Logger {
 }
 
 impl Logger {
+    pub fn stderr(level: Level, secrets: Vec<String>) -> Self {
+        Self {
+            level,
+            destination: Arc::new(Mutex::new(Destination::Stderr)),
+            secrets: Arc::new(normalize_secrets(secrets)),
+        }
+    }
+
     pub fn new(level: Level, file: Option<&Path>, secrets: Vec<String>) -> Result<Self> {
-        let destination = if let Some(path) = file {
-            if let Some(parent) = path
-                .parent()
-                .filter(|parent| !parent.as_os_str().is_empty())
-            {
-                std::fs::create_dir_all(parent)?;
-            }
-            Destination::File(OpenOptions::new().create(true).append(true).open(path)?)
-        } else {
-            Destination::Stderr
+        let Some(path) = file else {
+            return Ok(Self::stderr(level, secrets));
         };
+        if let Some(parent) = path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(parent)?;
+        }
         Ok(Self {
             level,
-            destination: Arc::new(Mutex::new(destination)),
+            destination: Arc::new(Mutex::new(Destination::File(
+                OpenOptions::new().create(true).append(true).open(path)?,
+            ))),
             secrets: Arc::new(normalize_secrets(secrets)),
         })
     }

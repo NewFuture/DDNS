@@ -46,7 +46,7 @@ impl Cache {
             CacheSetting::Default => {
                 Some(std::env::temp_dir().join(format!("ddns-rs.{namespace}.cache")))
             }
-            CacheSetting::Path(path) => Some(path.clone()),
+            CacheSetting::Path(path) => Some(rust_cache_path(path)),
         };
         let mut cache = Self {
             path,
@@ -205,6 +205,14 @@ fn temporary_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
+fn rust_cache_path(path: &Path) -> PathBuf {
+    let mut name = path
+        .file_name()
+        .map_or_else(|| "cache".into(), |name| name.to_os_string());
+    name.push(".ddns-rs");
+    path.with_file_name(name)
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -212,7 +220,7 @@ mod tests {
     use crate::config::CacheSetting;
     use crate::logging::{Level, Logger};
 
-    use super::Cache;
+    use super::{Cache, rust_cache_path};
 
     #[test]
     fn stores_only_successful_record_values() {
@@ -240,7 +248,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(cache.get("debug", "example.com", "A"), Some("192.0.2.1"));
-        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(rust_cache_path(&path));
     }
 
     #[test]
@@ -282,6 +290,33 @@ mod tests {
         )
         .unwrap();
         assert_eq!(first.get("dnspod", "example.com", "A"), Some("192.0.2.10"));
-        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(rust_cache_path(&path));
+    }
+
+    #[test]
+    fn preserves_python_cache_at_shared_custom_path() {
+        let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
+        let path = std::env::temp_dir().join(format!(
+            "ddns-python-cache-test-{}-{}.json.ddns-rs",
+            std::process::id(),
+            super::unix_time()
+        ));
+        let python_content = r#"{"example.com:A":"192.0.2.1"}"#;
+        std::fs::write(&path, python_content).unwrap();
+
+        let mut cache = Cache::open(
+            &CacheSetting::Path(path.clone()),
+            &serde_json::json!({"client": "rust"}),
+            3600,
+            logger,
+        )
+        .unwrap();
+        cache.set("debug", "example.com", "A", "192.0.2.2");
+        cache.sync().unwrap();
+
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), python_content);
+        assert!(rust_cache_path(&path).is_file());
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(rust_cache_path(&path));
     }
 }

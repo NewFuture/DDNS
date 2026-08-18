@@ -89,11 +89,21 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
     let mut failures = Vec::new();
 
     for (index, config) in configs.iter().enumerate() {
-        let logger = Logger::new(
+        let secrets = vec![config.id.clone(), config.token.clone()];
+        let logger = match Logger::new(
             config.log.level,
             config.log.file.as_deref(),
-            vec![config.id.clone(), config.token.clone()],
-        )?;
+            secrets.clone(),
+        ) {
+            Ok(logger) => logger,
+            Err(error) => {
+                let logger = Logger::stderr(config.log.level, secrets);
+                let message = masked_error(&logger, &error);
+                logger.error("config", format!("failed to configure log file: {message}"));
+                failures.push(format!("configuration {} log setup: {message}", index + 1));
+                logger
+            }
+        };
         if config.log.format.is_some() || config.log.date_format.is_some() {
             logger.warning(
                 "config",
@@ -127,8 +137,9 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         let mut provider = match provider::build(config, Arc::clone(&client), logger.clone()) {
             Ok(provider) => provider,
             Err(error) => {
-                logger.error("ddns", error.to_string());
-                failures.push(format!("configuration {}: {error}", index + 1));
+                let message = masked_error(&logger, &error);
+                logger.error("ddns", &message);
+                failures.push(format!("configuration {}: {message}", index + 1));
                 continue;
             }
         };
@@ -140,8 +151,9 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         ) {
             Ok(cache) => cache,
             Err(error) => {
-                logger.error("cache", error.to_string());
-                failures.push(format!("configuration {} cache: {error}", index + 1));
+                let message = masked_error(&logger, &error);
+                logger.error("cache", &message);
+                failures.push(format!("configuration {} cache: {message}", index + 1));
                 Cache::disabled(logger.clone())
             }
         };
@@ -157,9 +169,10 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
                 Ok(Some(address)) => address,
                 Ok(None) => continue,
                 Err(error) => {
-                    logger.error("ip", error.to_string());
+                    let message = masked_error(&logger, &error);
+                    logger.error("ip", &message);
                     failures.push(format!(
-                        "configuration {} {} discovery: {error}",
+                        "configuration {} {} discovery: {message}",
                         index + 1,
                         family.record_type()
                     ));
@@ -184,8 +197,9 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         }
 
         if let Err(error) = cache.sync() {
-            logger.error("cache", error.to_string());
-            failures.push(format!("configuration {} cache sync: {error}", index + 1));
+            let message = masked_error(&logger, &error);
+            logger.error("cache", &message);
+            failures.push(format!("configuration {} cache sync: {message}", index + 1));
         }
     }
 
@@ -251,19 +265,24 @@ fn update_domains(
                 cache.set(provider_name, &domain, family.record_type(), &address);
             }
             Err(error) => {
+                let message = masked_error(logger, &error);
                 logger.error(
                     "ddns",
                     format!(
-                        "failed to update {}[{}]: {error}",
+                        "failed to update {}[{}]: {message}",
                         domain,
                         family.record_type()
                     ),
                 );
-                failures.push(format!("{}[{}]: {error}", domain, family.record_type()));
+                failures.push(format!("{}[{}]: {message}", domain, family.record_type()));
             }
         }
     }
     failures
+}
+
+fn masked_error(logger: &Logger, error: &impl std::fmt::Display) -> String {
+    logger.mask(&error.to_string())
 }
 
 fn bootstrap_level(
@@ -316,7 +335,7 @@ mod tests {
         fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
             self.calls.push(request.domain.clone());
             if request.domain.starts_with("fail") {
-                Err(Error::Provider("expected failure".to_owned()))
+                Err(Error::Provider("expected secret-token failure".to_owned()))
             } else {
                 Ok(())
             }
@@ -325,7 +344,12 @@ mod tests {
 
     #[test]
     fn continues_after_domain_failure_and_reports_it() {
-        let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
+        let logger = Logger::new(
+            Level::Critical,
+            None::<&Path>,
+            vec!["secret-token".to_owned()],
+        )
+        .unwrap();
         let mut cache = Cache::disabled(logger.clone());
         let mut provider = PartialProvider { calls: Vec::new() };
         let failures = update_domains(
@@ -342,5 +366,6 @@ mod tests {
         assert_eq!(provider.calls, vec!["fail.example.com", "ok.example.com"]);
         assert_eq!(failures.len(), 1);
         assert!(failures[0].contains("fail.example.com"));
+        assert!(!failures[0].contains("secret-token"));
     }
 }
