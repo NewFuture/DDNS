@@ -4,9 +4,9 @@
 Test ddns.util.http module proxy list functionality
 """
 
-import socket
+import random
 
-from __init__ import TEST_HTTP_TIMEOUT, unittest, patch, MagicMock
+from __init__ import TEST_HTTP_TIMEOUT, MagicMock, is_network_error, patch, unittest
 from ddns.util.http import request, quote
 
 
@@ -126,8 +126,9 @@ class TestRequestProxyList(unittest.TestCase):
 
     def test_real_network_proxy_fallback(self):
         """测试真实网络环境下的代理失败回退（如果网络可用）"""
-        # 尝试多个测试端点以提高可靠性，优先使用httpbin
+        # 尝试多个测试端点以提高可靠性
         test_endpoints = ["http://httpbin.org/get", "http://httpbingo.org/get"]
+        random.shuffle(test_endpoints)
 
         last_exception = None
 
@@ -148,19 +149,11 @@ class TestRequestProxyList(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
-            except socket.timeout as e:
-                last_exception = e
-                continue
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
@@ -180,8 +173,9 @@ class TestRequestProxyList(unittest.TestCase):
         self.assertEqual(username_encoded, "user%40test.com")
         self.assertEqual(password_encoded, "passwo.rd")
 
-        # 尝试多个测试端点以提高可靠性，优先使用httpbingo
+        # 尝试多个测试端点以提高可靠性
         test_hosts = ["httpbingo.org", "httpbin.org"]
+        random.shuffle(test_hosts)
 
         last_exception = None
 
@@ -205,27 +199,11 @@ class TestRequestProxyList(unittest.TestCase):
                     # 其他状态码也尝试下一个端点
                     continue
 
-            except socket.timeout as e:
-                last_exception = e
-                continue
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = [
-                    "timeout",
-                    "connection",
-                    "resolution",
-                    "unreachable",
-                    "network",
-                    "ssl",
-                    "certificate",
-                ]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e, include_ssl=True):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""

@@ -6,12 +6,17 @@ Test ddns.util.http module
 """
 
 from __future__ import unicode_literals
-from __init__ import TEST_HTTP_TIMEOUT, patch, unittest, sys
+from __init__ import TEST_HTTP_TIMEOUT, is_network_error, patch, unittest, sys
 import json
 import socket
 import random
 
 from ddns.util.http import HttpResponse, _decode_response_body, quote, USER_AGENT
+
+try:
+    from urllib.error import URLError
+except ImportError:
+    from urllib2 import URLError  # type: ignore[no-redef]
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:  # python 2
@@ -77,36 +82,44 @@ class TestUserAgent(unittest.TestCase):
                         self.assertIn(expected_ua, (None, ""))
                     return True  # 测试成功
 
-            except socket.timeout:
-                continue
-            except OSError as e:
-                error_msg = str(e).lower()
-                # 不允许None错误时，网络问题继续尝试，其他错误重新抛出
-                network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-                if not any(keyword in error_msg for keyword in network_keywords):
-                    # 如果不是网络问题，重新抛出异常
-                    raise
-                continue
+            except Exception as e:
+                if is_network_error(e):
+                    continue
+                raise
 
         # 所有端点都失败
         return False
 
+    @patch.object(random, "shuffle")
     @patch("ddns.util.http.request")
-    def test_user_agent_endpoint_timeout_falls_back(self, mock_request):
-        """Try the next endpoint when a request times out."""
+    def test_user_agent_wrapped_timeout_falls_back(self, mock_request, mock_shuffle):
+        """Try the next endpoint when URLError wraps a socket timeout."""
         response = HttpResponse(200, "OK", {}, json.dumps({"User-Agent": USER_AGENT}))
-        mock_request.side_effect = [socket.timeout("timed out"), response]
+        mock_request.side_effect = [URLError(socket.timeout("timed out")), response]
 
         self.assertTrue(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
         self.assertEqual(mock_request.call_count, 2)
+        mock_shuffle.assert_called_once()
 
+    @patch.object(random, "shuffle")
     @patch("ddns.util.http.request")
-    def test_user_agent_all_endpoint_timeouts_return_false(self, mock_request):
-        """Report unavailable endpoints after every request times out."""
-        mock_request.side_effect = socket.timeout("timed out")
+    def test_user_agent_all_wrapped_timeouts_return_false(self, mock_request, mock_shuffle):
+        """Report unavailable endpoints after every wrapped timeout."""
+        mock_request.side_effect = URLError(socket.timeout("timed out"))
 
         self.assertFalse(self._test_user_agent_with_endpoints(expected_ua=USER_AGENT))
         self.assertEqual(mock_request.call_count, 3)
+        mock_shuffle.assert_called_once()
+
+    @patch.object(random, "shuffle")
+    @patch("ddns.util.http.request")
+    def test_user_agent_non_network_error_is_raised(self, mock_request, mock_shuffle):
+        """Do not hide genuine non-network failures."""
+        mock_request.side_effect = ValueError("invalid response")
+
+        with self.assertRaises(ValueError):
+            self._test_user_agent_with_endpoints(expected_ua=USER_AGENT)
+        mock_shuffle.assert_called_once()
 
     def test_user_agent_constant(self):
         """测试USER_AGENT常量格式正确"""
@@ -313,15 +326,10 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIsInstance(data, dict)
             self.assertTrue(len(data) > 0)
 
-        except (socket.timeout, ConnectionError) as e:
-            self.skipTest("Network unavailable: {}".format(str(e)))
         except Exception as e:
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-            if any(keyword in error_msg for keyword in network_keywords):
+            if is_network_error(e):
                 self.skipTest("Network unavailable for GET request test: {}".format(str(e)))
-            else:
-                raise
+            raise
 
     def test_http_401_status_code_with_headers(self):
         """测试HTTP 401认证失败状态码处理"""
@@ -339,15 +347,10 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertEqual(response.status, 401)
             self.assertIsNotNone(response.body)
 
-        except (socket.timeout, ConnectionError) as e:
-            self.skipTest("Network unavailable: {}".format(str(e)))
         except Exception as e:
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-            if any(keyword in error_msg for keyword in network_keywords):
+            if is_network_error(e):
                 self.skipTest("Network unavailable for 401 status test: {}".format(str(e)))
-            else:
-                raise
+            raise
 
     def test_ssl_auto_mode(self):
         """测试SSL auto模式"""
@@ -360,15 +363,10 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertEqual(response.status, 200, "SSL auto模式应该成功")
             self.assertIsNotNone(response.body)
 
-        except (socket.timeout, ConnectionError) as e:
-            self.skipTest("Network unavailable: {}".format(str(e)))
         except Exception as e:
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network", "ssl", "certificate"]
-            if any(keyword in error_msg for keyword in network_keywords):
+            if is_network_error(e, include_ssl=True):
                 self.skipTest("Network or SSL unavailable for SSL auto test: {}".format(str(e)))
-            else:
-                raise
+            raise
 
     def test_http_400_status_code(self):
         """测试HTTP 400 Bad Request状态码"""
@@ -381,17 +379,10 @@ class TestSendHttpRequest(unittest.TestCase):
             self.assertIsNotNone(response_400.headers, "400响应应该有响应头")
             self.assertIsNotNone(response_400.reason, "400响应应该有状态原因")
 
-        except socket.timeout as e:
-            self.skipTest("Network unavailable for HTTP 400 status test: {}".format(str(e)))
         except Exception as e:
-            # 网络问题时跳过测试
-            error_msg = str(e).lower()
-            network_keywords = ["timeout", "connection", "resolution", "unreachable", "network"]
-            if any(keyword in error_msg for keyword in network_keywords):
+            if is_network_error(e):
                 self.skipTest("Network unavailable for HTTP 400 status test: {}".format(str(e)))
-            else:
-                # 其他异常重新抛出
-                raise
+            raise
 
     def test_basic_auth_with_url_embedding(self):
         """测试URL嵌入式基本认证格式"""
@@ -439,6 +430,7 @@ class TestSendHttpRequest(unittest.TestCase):
             "http://httpbin.org/redirect-to?url=http://httpbin.org/get",
             "http://httpbingo.org/redirect-to?url=http://httpbingo.org/get",
         ]
+        random.shuffle(test_endpoints)
 
         last_exception = None
 
@@ -461,27 +453,11 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
-            except socket.timeout as e:
-                last_exception = e
-                continue
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = [
-                    "timeout",
-                    "connection",
-                    "resolution",
-                    "unreachable",
-                    "network",
-                    "ssl",
-                    "certificate",
-                ]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e, include_ssl=True):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
@@ -496,6 +472,7 @@ class TestSendHttpRequest(unittest.TestCase):
             "http://httpbingo.org/redirect-to?url=/get",
             "http://httpbin.org/redirect-to?url=http://httpbin.org/get",
         ]
+        random.shuffle(test_endpoints)
 
         last_exception = None
 
@@ -519,27 +496,11 @@ class TestSendHttpRequest(unittest.TestCase):
                     # 5xx错误，尝试下一个端点
                     continue
 
-            except socket.timeout as e:
-                last_exception = e
-                continue
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = [
-                    "timeout",
-                    "connection",
-                    "resolution",
-                    "unreachable",
-                    "network",
-                    "ssl",
-                    "certificate",
-                ]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e, include_ssl=True):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""

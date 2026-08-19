@@ -11,7 +11,7 @@ import logging
 import random
 import platform
 from time import sleep
-from base_test import BaseProviderTestCase, unittest, patch
+from base_test import BaseProviderTestCase, is_network_error, patch, unittest
 from ddns.provider.callback import CallbackProvider
 
 
@@ -343,6 +343,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
             "http://httpbin.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__",
             "http://httpbingo.org/get?domain=__DOMAIN__&ip=__IP__&record_type=__RECORDTYPE__",
         ]
+        random.shuffle(test_endpoints)
 
         domain = "test.example.com"
         ip = "111.111.111.111"
@@ -367,22 +368,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = [
-                    "timeout",
-                    "connection",
-                    "resolution",
-                    "unreachable",
-                    "network",
-                    "ssl",
-                    "certificate",
-                ]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e, include_ssl=True):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
@@ -392,6 +380,7 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
         """Test real callback using POST method with JSON data and verify logger calls"""
         # 尝试多个测试端点以提高可靠性
         test_endpoints = ["http://httpbingo.org/post", "http://httpbin.org/post"]
+        random.shuffle(test_endpoints)
 
         token = '{"domain": "__DOMAIN__", "ip": "__IP__", "record_type": "__RECORDTYPE__", "ttl": "__TTL__"}'
         domain = "test.example.com"
@@ -420,22 +409,9 @@ class TestCallbackProviderRealIntegration(BaseProviderTestCase):
 
             except Exception as e:
                 last_exception = e
-                # 网络问题时继续尝试下一个端点
-                error_msg = str(e).lower()
-                network_keywords = [
-                    "timeout",
-                    "connection",
-                    "resolution",
-                    "unreachable",
-                    "network",
-                    "ssl",
-                    "certificate",
-                ]
-                if any(keyword in error_msg for keyword in network_keywords):
-                    continue  # 尝试下一个端点
-                else:
-                    # 其他异常重新抛出
-                    raise
+                if is_network_error(e, include_ssl=True):
+                    continue
+                raise
 
         # 如果所有端点都失败，跳过测试
         error_info = " - Last error: {}".format(str(last_exception)) if last_exception else ""
