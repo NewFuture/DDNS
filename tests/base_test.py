@@ -6,7 +6,13 @@ Base test utilities and common imports for all provider tests
 
 from functools import partial
 
-from __init__ import TEST_HTTP_TIMEOUT, unittest, patch, MagicMock  # noqa: F401 # Ensure package initialization
+from __init__ import (  # noqa: F401 # Ensure package initialization
+    TEST_HTTP_TIMEOUT,
+    MagicMock,
+    is_network_error,
+    patch,
+    unittest,
+)
 
 
 class BaseProviderTestCase(unittest.TestCase):
@@ -34,4 +40,4 @@ class BaseProviderTestCase(unittest.TestCase):
 
 
 # Export commonly used imports for convenience
-__all__ = ["BaseProviderTestCase", "unittest", "patch", "MagicMock", "TEST_HTTP_TIMEOUT"]
+__all__ = ["BaseProviderTestCase", "unittest", "patch", "MagicMock", "TEST_HTTP_TIMEOUT", "is_network_error"]
