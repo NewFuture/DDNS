@@ -7,9 +7,11 @@ Test ddns.util.http module
 
 from __future__ import unicode_literals
 from __init__ import TEST_HTTP_TIMEOUT, is_network_error, patch, unittest, sys
+import errno
 import json
-import socket
 import random
+import socket
+import ssl
 
 from ddns.util.http import HttpResponse, _decode_response_body, quote, USER_AGENT
 
@@ -43,6 +45,35 @@ def byte_string(s):
     if isinstance(s, text_type):
         return s.encode("utf-8")
     return s
+
+
+class TestNetworkError(unittest.TestCase):
+    """Test deterministic network error classification."""
+
+    def test_recognizes_network_errors(self):
+        """Recognize direct, wrapped, errno, and string transport failures."""
+        errors = (
+            socket.gaierror(-2, "Name or service not known"),
+            URLError(socket.gaierror(-2, "Name or service not known")),
+            OSError(errno.ECONNREFUSED, "Connection refused"),
+            URLError("connection refused"),
+        )
+
+        for error in errors:
+            self.assertTrue(is_network_error(error), "Expected network error: {!r}".format(error))
+
+    def test_ssl_error_requires_opt_in(self):
+        """Only classify SSL failures when the caller opts in."""
+        error = ssl.SSLError("certificate verify failed")
+
+        self.assertFalse(is_network_error(error))
+        self.assertTrue(is_network_error(error, include_ssl=True))
+
+    def test_rejects_unrelated_exception(self):
+        """Do not classify application failures by message alone."""
+        error = AssertionError("response connection field is invalid")
+
+        self.assertFalse(is_network_error(error))
 
 
 class TestUserAgent(unittest.TestCase):
@@ -115,9 +146,9 @@ class TestUserAgent(unittest.TestCase):
     @patch("ddns.util.http.request")
     def test_user_agent_non_network_error_is_raised(self, mock_request, mock_shuffle):
         """Do not hide genuine non-network failures."""
-        mock_request.side_effect = ValueError("invalid response")
+        mock_request.side_effect = AssertionError("response connection field is invalid")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             self._test_user_agent_with_endpoints(expected_ua=USER_AGENT)
         mock_shuffle.assert_called_once()
 

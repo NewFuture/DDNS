@@ -17,6 +17,13 @@ try:
 except NameError:  # Python 2
     _TIMEOUT_ERRORS = (socket.timeout,)
 
+try:
+    _STRING_TYPES = (basestring,)  # noqa: F821
+except NameError:  # Python 3
+    _STRING_TYPES = (str,)
+
+_NETWORK_MESSAGE_ERRORS = (IOError, OSError, socket.error)
+_SSL_ERRORS = (ssl.SSLError, getattr(ssl, "CertificateError", ssl.SSLError))
 _NETWORK_ERRNOS = {
     value
     for value in (
@@ -42,8 +49,11 @@ def is_network_error(error, include_ssl=False):
         return True
 
     reason = getattr(error, "reason", None)
-    if reason is not None and reason is not error and is_network_error(reason, include_ssl):
-        return True
+    if reason is not None and reason is not error:
+        if isinstance(reason, _STRING_TYPES):
+            error = reason
+        elif is_network_error(reason, include_ssl):
+            return True
 
     if isinstance(error, (socket.gaierror, socket.herror)):
         return True
@@ -51,8 +61,11 @@ def is_network_error(error, include_ssl=False):
     if getattr(error, "errno", None) in _NETWORK_ERRNOS:
         return True
 
-    if include_ssl and isinstance(error, ssl.SSLError):
+    if include_ssl and isinstance(error, _SSL_ERRORS):
         return True
+
+    if not isinstance(error, _NETWORK_MESSAGE_ERRORS + _STRING_TYPES):
+        return False
 
     error_msg = str(error).lower()
     network_keywords = ["timeout", "timed out", "connection", "resolution", "unreachable", "network"]
