@@ -1,0 +1,51 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/copilot-setup-steps.yml'
+      - 'docs/package.json'
+      - 'docs/package-lock.json'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - '.github/workflows/copilot-setup-steps.yml'
+      - 'docs/package.json'
+      - 'docs/package-lock.json'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install repository tooling
+        run: python -m pip install --disable-pip-version-check ruff==0.16.2
+
+      - name: Install documentation dependencies
+        run: npm --prefix docs ci
+
+      - name: Report tool versions
+        run: |
+          python --version
+          ruff --version
+          node --version
+          npm --version

@@ -7,7 +7,7 @@ on:
     branches: ["master", "main"]
     paths:
       - 'docker/*'
-      - '.github/workflows/build-nuitka-dicker.yml'
+      - '.github/workflows/build-nuitka-docker.yml'
   workflow_dispatch:
     inputs:
       python:

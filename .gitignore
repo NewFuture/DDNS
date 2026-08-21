@@ -10,6 +10,7 @@ node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
 package-lock.json
+!docs/package-lock.json
 .DS_Store
 
 # Impeccable session state
