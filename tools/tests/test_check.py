@@ -301,6 +301,13 @@ locales: {
         self.assertIn("docs/llms.txt supported provider IDs missing: example", errors)
         self.assertIn("docs/llms.txt supported provider IDs unknown: stale", errors)
 
+        root = self._provider_repo()
+        llms_path = root / "docs/llms.txt"
+        content = llms_path.read_text(encoding="utf-8")
+        content = content.replace("Canonical provider IDs: `example`.", "<!-- Canonical provider IDs: `example`. -->")
+        llms_path.write_text(content, encoding="utf-8")
+        self.assertIn("docs/llms.txt supported provider IDs missing: example", check.provider_parity_errors(root))
+
     def test_missing_temporary_surface_raises_check_error(self) -> None:
         root = Path(tempfile.mkdtemp())
         with self.assertRaisesRegex(check.CheckError, "required file is missing.*field-model.json"):
@@ -325,7 +332,11 @@ locales: {
         for relative in ("docs/providers/he.md", "docs/en/providers/he.md"):
             self._write(root, relative, "# HE\n")
         for relative in ("docs/providers/README.md", "docs/en/providers/README.md"):
-            self._write(root, relative, "| Provider |\n| --- |\n\n- **he** is mentioned outside the table.\n")
+            self._write(
+                root,
+                relative,
+                "| Provider |\n| --- |\n\n<!--\n| `he` |\n-->\n- **he** is mentioned outside the table.\n",
+            )
         (root / "docs/.vitepress/config.mts").write_text(self._vitepress_config("he"), encoding="utf-8")
         (root / "docs/llms.txt").write_text(self._llms_provider_index("he"), encoding="utf-8")
         self.assertIn("docs/providers/README.md missing provider IDs: he", check.provider_parity_errors(root))

@@ -422,6 +422,11 @@ def _overview_provider_ids(content: str) -> set[str]:
     return provider_ids
 
 
+def _strip_html_comments(content: str) -> str:
+    """Remove hidden Markdown content before validating rendered inventories."""
+    return re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+
+
 def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
     """Return provider IDs missing from bilingual overview pages."""
     errors = []
@@ -429,7 +434,7 @@ def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
         if not overview.is_file():
             errors.append("missing provider overview: {}".format(_relative_path(overview, repo)))
             continue
-        content = overview.read_text(encoding="utf-8")
+        content = _strip_html_comments(overview.read_text(encoding="utf-8"))
         table_ids = _overview_provider_ids(content)
         missing = sorted(ids - table_ids)
         invalid = sorted(table_ids - ids)
@@ -460,7 +465,8 @@ def _provider_llms_errors(repo: Path, ids: set[str], docs: set[str]) -> list[str
     if inventory is None:
         errors.append("docs/llms.txt missing Supported DNS Providers section")
     else:
-        inventory_counts = Counter(re.findall(r"`([a-z0-9_-]+)`", inventory.group(1), re.IGNORECASE))
+        inventory_content = _strip_html_comments(inventory.group(1))
+        inventory_counts = Counter(re.findall(r"`([a-z0-9_-]+)`", inventory_content, re.IGNORECASE))
         inventory_ids = set(inventory_counts)
         duplicate_ids = sorted(provider_id for provider_id, count in inventory_counts.items() if count > 1)
         missing_ids = sorted(ids - inventory_ids)
@@ -477,7 +483,7 @@ def _provider_llms_errors(repo: Path, ids: set[str], docs: set[str]) -> list[str
         errors.append("docs/llms.txt missing DNS Provider Guides section")
         provider_guides = ""
     else:
-        provider_guides = re.sub(r"<!--.*?-->", "", section.group(1), flags=re.DOTALL)
+        provider_guides = _strip_html_comments(section.group(1))
     link_counts = Counter(re.findall(r"/providers/([a-z0-9_]+)\.md", provider_guides))
     links = set(link_counts)
     duplicate_links = sorted(link for link, count in link_counts.items() if count > 1)
