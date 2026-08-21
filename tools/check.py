@@ -167,15 +167,18 @@ def changed_paths(repo: Path) -> list[str]:
     return sorted({normalize_path(path) for output in outputs for path in output.splitlines() if path.strip()})
 
 
-def _load_json(path: Path) -> object:
-    if not path.is_file():
-        raise CheckError("required file is missing: {}".format(path.relative_to(REPO_ROOT)))
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
 def _relative_path(path: Path, repo: Path) -> str:
     """Return a stable repository-relative path for diagnostics."""
-    return path.relative_to(repo).as_posix()
+    try:
+        return path.relative_to(repo).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def _load_json(path: Path) -> object:
+    if not path.is_file():
+        raise CheckError("required file is missing: {}".format(_relative_path(path, REPO_ROOT)))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _frontmatter_fields(content: str) -> dict[str, str] | None:
@@ -208,7 +211,7 @@ def _literal_mapping_keys(path: Path) -> set[str]:
                         for key in child.value.keys
                         if isinstance(key, ast.Constant) and isinstance(key.value, str)
                     }
-    raise CheckError("could not find get_provider_class mapping in {}".format(path.relative_to(REPO_ROOT)))
+    raise CheckError("could not find get_provider_class mapping in {}".format(_relative_path(path, REPO_ROOT)))
 
 
 def _cli_provider_choices(path: Path) -> set[str]:
@@ -225,7 +228,7 @@ def _cli_provider_choices(path: Path) -> set[str]:
                 choices = ast.literal_eval(keyword.value)
                 if isinstance(choices, list) and all(isinstance(choice, str) for choice in choices):
                     return set(choices)
-    raise CheckError("could not find --dns choices in {}".format(path.relative_to(REPO_ROOT)))
+    raise CheckError("could not find --dns choices in {}".format(_relative_path(path, REPO_ROOT)))
 
 
 def _typescript_config_block(config: str, key: str, occurrence: int) -> str:

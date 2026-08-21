@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -62,6 +63,48 @@ class LaneSelectionTests(unittest.TestCase):
             environ, {"DDNS_CHECK_BASE_REF": "origin/stack-base", "GITHUB_BASE_REF": "master"}, clear=False
         ):
             self.assertEqual(check._base_ref_candidates()[:3], ("origin/stack-base", "master", "origin/master"))
+
+
+class ChangedPathsTests(unittest.TestCase):
+    def _git(self, root: Path, *arguments: str) -> None:
+        subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True, text=True)
+
+    def test_changed_paths_collects_every_git_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._git(root, "init", "-b", "master")
+            self._git(root, "config", "user.email", "tests@example.invalid")
+            self._git(root, "config", "user.name", "DDNS Tests")
+            self._write(root / "base.txt", "base\n")
+            self._write(root / "unstaged.txt", "base\n")
+            self._git(root, "add", ".")
+            self._git(root, "commit", "-m", "baseline")
+            self._git(root, "switch", "-c", "feature")
+
+            self._write(root / "committed.txt", "committed\n")
+            self._git(root, "add", "committed.txt")
+            self._git(root, "commit", "-m", "feature")
+            self._write(root / "staged.txt", "staged\n")
+            self._git(root, "add", "staged.txt")
+            self._write(root / "unstaged.txt", "changed\n")
+            self._write(root / "untracked.txt", "untracked\n")
+
+            with patch.dict(environ, {"DDNS_CHECK_BASE_REF": "master", "GITHUB_BASE_REF": ""}, clear=False):
+                self.assertEqual(
+                    check.changed_paths(root), ["committed.txt", "staged.txt", "unstaged.txt", "untracked.txt"]
+                )
+
+    def test_changed_paths_fails_without_base(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._git(root, "init", "-b", "feature")
+            with patch.object(check, "_base_ref_candidates", return_value=("missing-ref",)):
+                with self.assertRaisesRegex(check.CheckError, "could not find a merge-base reference"):
+                    check.changed_paths(root)
+
+    @staticmethod
+    def _write(path: Path, content: str) -> None:
+        path.write_text(content, encoding="utf-8")
 
 
 class ContractTests(unittest.TestCase):
@@ -146,6 +189,11 @@ locales: {
         root = self._provider_repo()
         (root / "ddns/config/field-model.json").write_text(json.dumps({"providers": []}), encoding="utf-8")
         self.assertIn("ddns/config/field-model.json providers must not be empty", check.provider_parity_errors(root))
+
+    def test_missing_temporary_surface_raises_check_error(self) -> None:
+        root = Path(tempfile.mkdtemp())
+        with self.assertRaisesRegex(check.CheckError, "required file is missing.*field-model.json"):
+            check.provider_parity_errors(root)
 
     def test_provider_overview_uses_identifier_boundaries(self) -> None:
         root = self._provider_repo()
@@ -273,6 +321,17 @@ class StructureWorkflowTests(unittest.TestCase):
             self.assertIn("## Contract Errors", body)
             self.assertIn("missing required instructions: docs/AGENTS.md", body)
             self.assertIn("## Missing Files", body)
+
+    def test_contract_only_report_omits_structure_actions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            issue_body = Path(directory) / "issue_body.md"
+            with patch.object(update_agents_structure, "ISSUE_BODY_FILE", str(issue_body)):
+                update_agents_structure.write_issue_body([], [], ["invalid portable contract"], False)
+
+            body = issue_body.read_text(encoding="utf-8")
+            self.assertIn("1. Fix each contract error above", body)
+            self.assertNotIn("Update directory structure", body)
+            self.assertNotIn("Update version/date", body)
 
 
 if __name__ == "__main__":
