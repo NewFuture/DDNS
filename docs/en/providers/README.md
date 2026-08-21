@@ -12,7 +12,7 @@ This directory contains detailed configuration guides for various DNS providers.
 | `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](../../providers/cloudflare.md) | [cloudflare English Doc](cloudflare.md) | Global CDN and DNS service |
 | `cloudns` | [ClouDNS](https://www.cloudns.net/) | [cloudns 中文文档](../../providers/cloudns.md) | [cloudns English Doc](cloudns.md) | Global DNS hosting service |
 | `debug` | Debug Provider | [debug 中文文档](../../providers/debug.md) | [debug English Doc](debug.md) | IP address printing for debugging |
-| `dnscom` | [DNS.COM](https://www.dns.com/) | [51dns 中文文档](../../providers/51dns.md) | [51DNS English Doc](51dns.md) | ⚠️ Pending verification |
+| `dnscom` / `51dns` | [DNS.COM](https://www.dns.com/) | [51dns 中文文档](../../providers/51dns.md) | [51DNS English Doc](51dns.md) | ⚠️ Pending verification |
 | `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](../../providers/dnspod_com.md) | [dnspod_com English Doc](dnspod_com.md) | ⚠️ Pending verification |
 | `dnspod` | [DNSPod China](https://www.dnspod.cn/) | [dnspod 中文文档](../../providers/dnspod.md) | [dnspod English Doc](dnspod.md) | Largest DNS provider in China |
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](../../providers/he.md) | [he English Doc](he.md) | ⚠️ Pending verification, no auto-record creation |

@@ -159,9 +159,9 @@ def changed_paths(repo: Path) -> list[str]:
 
     merge_base = _git_output(repo, ("merge-base", "HEAD", base_ref))
     outputs = (
-        _git_output(repo, ("diff", "--name-only", merge_base, "HEAD")),
-        _git_output(repo, ("diff", "--name-only")),
-        _git_output(repo, ("diff", "--cached", "--name-only")),
+        _git_output(repo, ("diff", "--no-renames", "--name-only", merge_base, "HEAD")),
+        _git_output(repo, ("diff", "--no-renames", "--name-only")),
+        _git_output(repo, ("diff", "--cached", "--no-renames", "--name-only")),
         _git_output(repo, ("ls-files", "--others", "--exclude-standard")),
     )
     return sorted({normalize_path(path) for output in outputs for path in output.splitlines() if path.strip()})
@@ -357,6 +357,18 @@ def _provider_navigation_errors(repo: Path, docs: set[str]) -> list[str]:
     return errors
 
 
+def _overview_provider_ids(content: str) -> set[str]:
+    """Return provider IDs declared in the first column of Markdown table rows."""
+    provider_ids = set()
+    for line in content.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = line.split("|", 2)
+        if len(cells) == 3:
+            provider_ids.update(re.findall(r"`([a-z0-9_]+)`", cells[1], re.IGNORECASE))
+    return provider_ids
+
+
 def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
     """Return provider IDs missing from bilingual overview pages."""
     errors = []
@@ -365,11 +377,8 @@ def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
             errors.append("missing provider overview: {}".format(_relative_path(overview, repo)))
             continue
         content = overview.read_text(encoding="utf-8")
-        missing = sorted(
-            provider_id
-            for provider_id in ids
-            if not re.search(r"(?<![a-z0-9_-]){}(?![a-z0-9_-])".format(re.escape(provider_id)), content, re.IGNORECASE)
-        )
+        table_ids = _overview_provider_ids(content)
+        missing = sorted(ids - table_ids)
         if missing:
             errors.append("{} missing provider IDs: {}".format(_relative_path(overview, repo), ", ".join(missing)))
     return errors
@@ -504,7 +513,10 @@ def _python_format_arguments(repo: Path = REPO_ROOT) -> tuple[str, ...]:
 
 def _commands_for_lanes(lanes: Iterable[str], repo: Path = REPO_ROOT) -> list[Command]:
     commands = {
-        "Core": (Command("Core unit tests", (sys.executable, "-m", "unittest", "discover", "tests", "-v")),),
+        "Core": (
+            Command("Core unit tests", (sys.executable, "-m", "unittest", "discover", "tests", "-v")),
+            Command("Offline E2E tests", (sys.executable, "-m", "unittest", "tests.e2e", "-v")),
+        ),
         "Config": (
             Command(
                 "Configuration unit tests",

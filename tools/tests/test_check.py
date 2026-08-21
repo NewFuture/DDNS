@@ -76,12 +76,14 @@ class ChangedPathsTests(unittest.TestCase):
             self._git(root, "config", "user.email", "tests@example.invalid")
             self._git(root, "config", "user.name", "DDNS Tests")
             self._write(root / "base.txt", "base\n")
+            self._write(root / "renamed-source.txt", "rename\n")
             self._write(root / "unstaged.txt", "base\n")
             self._git(root, "add", ".")
             self._git(root, "commit", "-m", "baseline")
             self._git(root, "switch", "-c", "feature")
 
             self._write(root / "committed.txt", "committed\n")
+            self._git(root, "mv", "renamed-source.txt", "renamed-destination.txt")
             self._git(root, "add", "committed.txt")
             self._git(root, "commit", "-m", "feature")
             self._write(root / "staged.txt", "staged\n")
@@ -91,7 +93,15 @@ class ChangedPathsTests(unittest.TestCase):
 
             with patch.dict(environ, {"DDNS_CHECK_BASE_REF": "master", "GITHUB_BASE_REF": ""}, clear=False):
                 self.assertEqual(
-                    check.changed_paths(root), ["committed.txt", "staged.txt", "unstaged.txt", "untracked.txt"]
+                    check.changed_paths(root),
+                    [
+                        "committed.txt",
+                        "renamed-destination.txt",
+                        "renamed-source.txt",
+                        "staged.txt",
+                        "unstaged.txt",
+                        "untracked.txt",
+                    ],
                 )
 
     def test_changed_paths_fails_without_base(self) -> None:
@@ -147,8 +157,8 @@ locales: {
         self._write(root, "ddns/config/cli.py", "def cli(arg):\n    arg.add_argument('--dns', choices=['example'])\n")
         self._write(root, "docs/providers/example.md", "# Example\n")
         self._write(root, "docs/en/providers/example.md", "# Example\n")
-        self._write(root, "docs/providers/README.md", "`example`\n")
-        self._write(root, "docs/en/providers/README.md", "`example`\n")
+        self._write(root, "docs/providers/README.md", "| Provider |\n| --- |\n| `example` |\n")
+        self._write(root, "docs/en/providers/README.md", "| Provider |\n| --- |\n| `example` |\n")
         self._write(root, "docs/.vitepress/config.mts", self._vitepress_config("example"))
         self._write(
             root,
@@ -195,7 +205,7 @@ locales: {
         with self.assertRaisesRegex(check.CheckError, "required file is missing.*field-model.json"):
             check.provider_parity_errors(root)
 
-    def test_provider_overview_uses_identifier_boundaries(self) -> None:
+    def test_provider_overview_requires_table_row(self) -> None:
         root = self._provider_repo()
         (root / "ddns/config/field-model.json").write_text(
             json.dumps({"providers": [{"id": "he", "docs": "he"}]}), encoding="utf-8"
@@ -214,7 +224,7 @@ locales: {
         for relative in ("docs/providers/he.md", "docs/en/providers/he.md"):
             self._write(root, relative, "# HE\n")
         for relative in ("docs/providers/README.md", "docs/en/providers/README.md"):
-            self._write(root, relative, "The provider list does not name the short identifier.\n")
+            self._write(root, relative, "| Provider |\n| --- |\n\n- **he** is mentioned outside the table.\n")
         (root / "docs/.vitepress/config.mts").write_text(self._vitepress_config("he"), encoding="utf-8")
         (root / "docs/llms.txt").write_text(
             "https://ddns.newfuture.cc/providers/he ([.md](https://ddns.newfuture.cc/providers/he.md))\n",
@@ -280,6 +290,10 @@ locales: {
     def test_docs_lane_installs_before_building(self) -> None:
         labels = [command.label for command in check._commands_for_lanes(("Docs",))]
         self.assertEqual(labels, ["Install documentation dependencies", "Build documentation"])
+
+    def test_core_lane_runs_offline_e2e(self) -> None:
+        labels = [command.label for command in check._commands_for_lanes(("Core",))]
+        self.assertEqual(labels, ["Core unit tests", "Offline E2E tests"])
 
     @patch("check.subprocess.run")
     @patch("check.shutil.which", return_value="C:/tools/npm.cmd")
