@@ -294,6 +294,12 @@ locales: {
         (root / "docs/llms.txt").write_text(self._llms_provider_index("he"), encoding="utf-8")
         self.assertIn("docs/providers/README.md missing provider IDs: he", check.provider_parity_errors(root))
 
+    def test_provider_overview_rejects_unknown_table_row(self) -> None:
+        root = self._provider_repo()
+        overview = root / "docs/providers/README.md"
+        overview.write_text(overview.read_text(encoding="utf-8") + "| `stale` |\n", encoding="utf-8")
+        self.assertIn("docs/providers/README.md lists unknown provider IDs: stale", check.provider_parity_errors(root))
+
     def test_portable_profiles_must_reference_skills(self) -> None:
         root = Path(tempfile.mkdtemp())
         self._write(root, "AGENTS.md", "# Rules\n")

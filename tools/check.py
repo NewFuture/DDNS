@@ -432,8 +432,13 @@ def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
         content = overview.read_text(encoding="utf-8")
         table_ids = _overview_provider_ids(content)
         missing = sorted(ids - table_ids)
+        invalid = sorted(table_ids - ids)
         if missing:
             errors.append("{} missing provider IDs: {}".format(_relative_path(overview, repo), ", ".join(missing)))
+        if invalid:
+            errors.append(
+                "{} lists unknown provider IDs: {}".format(_relative_path(overview, repo), ", ".join(invalid))
+            )
     return errors
 
 
