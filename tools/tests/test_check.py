@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 import tempfile
@@ -12,6 +13,13 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check  # noqa: E402
+
+STRUCTURE_SCRIPT = Path(__file__).resolve().parents[2] / ".github" / "scripts" / "update_agents_structure.py"
+STRUCTURE_SPEC = importlib.util.spec_from_file_location("update_agents_structure", STRUCTURE_SCRIPT)
+if STRUCTURE_SPEC is None or STRUCTURE_SPEC.loader is None:
+    raise RuntimeError("Unable to load update_agents_structure.py")
+update_agents_structure = importlib.util.module_from_spec(STRUCTURE_SPEC)
+STRUCTURE_SPEC.loader.exec_module(update_agents_structure)
 
 
 class LaneSelectionTests(unittest.TestCase):
@@ -35,6 +43,10 @@ class LaneSelectionTests(unittest.TestCase):
 
     def test_schema_changes_also_validate_docs(self) -> None:
         self.assertEqual(check.lanes_for_path("schema/v4.1.json"), ("Config", "Docs"))
+
+    def test_generated_docs_inputs_select_docs(self) -> None:
+        self.assertEqual(check.lanes_for_path("ddns/config/field-model.json"), ("Config", "Provider", "Docs"))
+        self.assertEqual(check.lanes_for_path("tests/config/debug.json"), ("Config", "Docs"))
 
     def test_explicit_base_precedes_github_and_default_refs(self) -> None:
         with patch.dict(
@@ -205,6 +217,22 @@ class ContractTests(unittest.TestCase):
         self.assertIn(
             "preview-pypi finished with 'skipped'; expected success", check.merge_gate_failures(results, "push")
         )
+
+
+class StructureWorkflowTests(unittest.TestCase):
+    @patch.object(check, "portable_contract_errors", return_value=["missing required instructions: docs/AGENTS.md"])
+    @patch.object(update_agents_structure, "structure_drift", return_value=([], ["docs/AGENTS.md"]))
+    def test_reporting_writes_issue_before_failing_contract(self, _mock_drift, _mock_contracts) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            issue_body = Path(directory) / "issue_body.md"
+            with patch.object(update_agents_structure, "ISSUE_BODY_FILE", str(issue_body)):
+                result = update_agents_structure.main([])
+
+            self.assertEqual(result, 1)
+            body = issue_body.read_text(encoding="utf-8")
+            self.assertIn("## Contract Errors", body)
+            self.assertIn("missing required instructions: docs/AGENTS.md", body)
+            self.assertIn("## Missing Files", body)
 
 
 if __name__ == "__main__":

@@ -67,7 +67,11 @@ def lanes_for_path(path: str) -> tuple[str, ...]:
         lanes.append("Scheduler")
     if path in ("ddns/mcp.py", "tests/test_mcp.py", "tests/test_config_cli_mcp.py"):
         lanes.append("MCP")
-    if path.startswith(("docs/", "schema/")) or path in ("README.md", "README.en.md"):
+    if path.startswith(("docs/", "schema/", "tests/config/")) or path in (
+        "README.md",
+        "README.en.md",
+        "ddns/config/field-model.json",
+    ):
         lanes.append("Docs")
     if path.startswith(("docker/", ".github/workflows/", ".github/patch.py")) or path in (
         "pyproject.toml",
