@@ -736,7 +736,8 @@ def run_changed(repo: Path) -> None:
     for lane in lanes:
         print("  - {} ({})".format(lane, "; ".join(reasons[lane])))
     _run_contracts(repo, providers="Provider" in lanes, portable="Agent/Workflow" in lanes)
-    for command in _commands_for_lanes(lanes, repo):
+    commands = _all_commands(repo) if lanes == CANONICAL_LANES else _commands_for_lanes(lanes, repo)
+    for command in commands:
         _run_command(command, repo)
 
 

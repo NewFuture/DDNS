@@ -401,6 +401,15 @@ locales: {
         self.assertEqual(labels.count("Offline E2E tests"), 1)
         self.assertEqual(labels.count("Tooling contract tests"), 1)
 
+    @patch("check._run_command")
+    @patch("check._run_contracts")
+    @patch("check.changed_paths", return_value=["unknown-root-file.txt"])
+    def test_unknown_changed_path_uses_nonduplicative_full_commands(
+        self, _mock_paths, _mock_contracts, mock_run
+    ) -> None:
+        check.run_changed(check.REPO_ROOT)
+        self.assertEqual([call.args[0] for call in mock_run.call_args_list], list(check._all_commands()))
+
     def test_format_check_only_targets_python_files(self) -> None:
         arguments = check._python_format_arguments()
         self.assertTrue(all(not argument.endswith(".md") for argument in arguments[3:]))
