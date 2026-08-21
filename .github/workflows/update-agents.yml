@@ -4,6 +4,19 @@
 name: Update AGENTS.md
 
 on:
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'AGENTS.md'
+      - '.agents/**'
+      - '.github/agents/**'
+      - '.github/instructions/**'
+      - '.github/scripts/update_agents_structure.py'
+      - '.github/workflows/**'
+      - 'tools/**'
+      - 'ddns/**'
+      - 'schema/**'
+      - 'docs/**'
   schedule:
     # Run daily at 00:00 UTC
     - cron: '0 0 * * *'
@@ -12,15 +25,15 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 # Prevent concurrent runs
 concurrency:
-  group: update-agents-md
+  group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.ref }}"
   cancel-in-progress: true
 
 jobs:
-  check-agents:
+  contracts:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     
@@ -28,18 +41,45 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.x'
+          python-version: '3.12'
+
+      - name: Run tooling contract tests
+        run: python3 -m unittest discover tools/tests -p "test_*.py" -v
       
-      - name: Run comparison script
+      - name: Run portable agent structure contract
+        run: python3 .github/scripts/update_agents_structure.py --check
+
+      - name: Run provider parity contract
+        run: python3 tools/check.py --providers
+
+  report-structure-drift:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Run portable agent structure contract
         run: python3 .github/scripts/update_agents_structure.py
-      
+
       - name: Check for existing issue
-        if: hashFiles('.github/issue_body.md') != ''
+        if: always() && hashFiles('.github/issue_body.md') != ''
         id: existing
         run: |
           existing_issue=$(gh issue list --label "agents-structure-update" --state open --limit 1 --json number --jq '.[0].number // empty')
@@ -53,7 +93,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Create issue
-        if: hashFiles('.github/issue_body.md') != '' && steps.existing.outputs.exists == 'false'
+        if: always() && hashFiles('.github/issue_body.md') != '' && steps.existing.outputs.exists == 'false'
         run: |
           gh issue create \
             --title "docs(agents): AGENTS.md directory structure needs update" \
@@ -61,3 +101,11 @@ jobs:
             --label "documentation,automated,agents-structure-update"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tooling contract tests
+        if: always()
+        run: python3 -m unittest discover tools/tests -p "test_*.py" -v
+
+      - name: Run provider parity contract
+        if: always()
+        run: python3 tools/check.py --providers

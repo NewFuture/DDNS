@@ -12,7 +12,7 @@
 | `cloudflare` | [Cloudflare](https://www.cloudflare.com/) | [cloudflare 中文文档](cloudflare.md) | [cloudflare English Doc](../en/providers/cloudflare.md) | 全球CDN和DNS服务 |
 | `cloudns` | [ClouDNS](https://www.cloudns.net/) | [cloudns 中文文档](cloudns.md) | [cloudns English Doc](../en/providers/cloudns.md) | 全球DNS托管服务 |
 | `debug` | 调试Provider | [debug 中文文档](debug.md) | [debug English Doc](../en/providers/debug.md) | 仅打印IP地址，用于调试|
-| `dnscom`(51dns) | [51DNS](https://www.51dns.com/) | [51dns 中文文档](51dns.md) | [51dns English Doc](../en/providers/51dns.md) | ⚠️ 等待验证  |
+| `dnscom` / `51dns` | [51DNS](https://www.51dns.com/) | [51dns 中文文档](51dns.md) | [51dns English Doc](../en/providers/51dns.md) | ⚠️ 等待验证  |
 | `dnspod_com` | [DNSPod Global](https://www.dnspod.com/) | [dnspod_com 中文文档](dnspod_com.md) | [dnspod_com English Doc](../en/providers/dnspod_com.md) | ⚠️ 等待验证  |
 | `dnspod` | [DNSPod 中国版](https://www.dnspod.cn/) | [dnspod 中文文档](dnspod.md) | [dnspod English Doc](../en/providers/dnspod.md) | 国内最大DNS服务商|
 | `he` | [HE.net](https://dns.he.net/) | [he 中文文档](he.md) | [he English Doc](../en/providers/he.md) | ⚠️ 等待验证，不支持自动创建记录 |
@@ -24,7 +24,7 @@
 | `edgeone_dns` | [腾讯云EdgeOne DNS](https://cloud.tencent.com/product/teo) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](../en/providers/edgeone_dns.md) | 腾讯云EdgeOne DNS记录管理 |
 | `west` | [西部数码](https://www.west.cn/) | [west 中文文档](west.md) | [west English Doc](../en/providers/west.md) | 西部数码/三五互联 DNS服务 |
 
-> 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
+> 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new_dns_provider.yml)
 
 ### 支持自动创建记录
 
