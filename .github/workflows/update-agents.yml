@@ -47,6 +47,9 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.12'
+
+      - name: Run tooling contract tests
+        run: python3 -m unittest discover tools/tests -p "test_*.py" -v
       
       - name: Run portable agent structure contract
         run: python3 .github/scripts/update_agents_structure.py --check
@@ -75,11 +78,8 @@ jobs:
       - name: Run portable agent structure contract
         run: python3 .github/scripts/update_agents_structure.py
 
-      - name: Run provider parity contract
-        run: python3 tools/check.py --providers
-
       - name: Check for existing issue
-        if: hashFiles('.github/issue_body.md') != ''
+        if: always() && hashFiles('.github/issue_body.md') != ''
         id: existing
         run: |
           existing_issue=$(gh issue list --label "agents-structure-update" --state open --limit 1 --json number --jq '.[0].number // empty')
@@ -93,7 +93,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Create issue
-        if: hashFiles('.github/issue_body.md') != '' && steps.existing.outputs.exists == 'false'
+        if: always() && hashFiles('.github/issue_body.md') != '' && steps.existing.outputs.exists == 'false'
         run: |
           gh issue create \
             --title "docs(agents): AGENTS.md directory structure needs update" \
@@ -101,3 +101,11 @@ jobs:
             --label "documentation,automated,agents-structure-update"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tooling contract tests
+        if: always()
+        run: python3 -m unittest discover tools/tests -p "test_*.py" -v
+
+      - name: Run provider parity contract
+        if: always()
+        run: python3 tools/check.py --providers
