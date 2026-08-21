@@ -54,8 +54,11 @@ def lanes_for_path(path: str) -> tuple[str, ...]:
     if path.startswith(("ddns/config/", "schema/", "tests/test_config", "tests/config/")):
         lanes.append("Config")
     if path.startswith(("ddns/provider/", "tests/test_provider", "docs/providers/", "docs/en/providers/")) or path in (
+        "ddns/config/cli.py",
         "ddns/config/field-model.json",
+        "docs/.vitepress/config.mts",
         "docs/llms.txt",
+        "schema/v4.1.json",
     ):
         lanes.append("Provider")
     if path.startswith(("ddns/web/", "tests/test_web", "web/")) or path in (
@@ -81,8 +84,12 @@ def lanes_for_path(path: str) -> tuple[str, ...]:
         "docs/esa.js",
     ):
         lanes.append("Build/Release")
-    if path == "AGENTS.md" or path.startswith(
-        (".agents/", ".github/agents/", ".github/instructions/", ".github/scripts/", ".github/workflows/", "tools/")
+    if (
+        path == "AGENTS.md"
+        or path.endswith("/AGENTS.md")
+        or path.startswith(
+            (".agents/", ".github/agents/", ".github/instructions/", ".github/scripts/", ".github/workflows/", "tools/")
+        )
     ):
         lanes.append("Agent/Workflow")
 
@@ -221,9 +228,45 @@ def _cli_provider_choices(path: Path) -> set[str]:
     raise CheckError("could not find --dns choices in {}".format(path.relative_to(REPO_ROOT)))
 
 
-def _navigation_provider_docs(config: str, locale: str) -> set[str]:
+def _typescript_config_block(config: str, key: str, occurrence: int) -> str:
+    """Return one balanced array or object assigned to a TypeScript config key."""
+    matches = list(re.finditer(r"(?m)^\s*{}\s*:\s*([\[\{{])".format(re.escape(key)), config))
+    if len(matches) <= occurrence:
+        return ""
+
+    match = matches[occurrence]
+    opening = match.group(1)
+    closing = "]" if opening == "[" else "}"
+    start = match.start(1)
+    depth = 0
+    quote = None
+    escaped = False
+    for index in range(start, len(config)):
+        character = config[index]
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == quote:
+                quote = None
+            continue
+        if character in ("'", '"', "`"):
+            quote = character
+        elif character == opening:
+            depth += 1
+        elif character == closing:
+            depth -= 1
+            if depth == 0:
+                return config[start : index + 1]
+    return ""
+
+
+def _provider_docs_in_config_section(config: str, locale: str, section: str) -> set[str]:
+    occurrence = 1 if locale == "en" else 0
+    block = _typescript_config_block(config, section, occurrence)
     prefix = "/en/providers/" if locale == "en" else "/providers/"
-    return set(re.findall(r"link:\s*['\"]{}([^/'\"]+)['\"]".format(re.escape(prefix)), config))
+    return set(re.findall(r"link:\s*['\"]{}([^/'\"]+)['\"]".format(re.escape(prefix)), block))
 
 
 def _provider_metadata(repo: Path) -> tuple[set[str], set[str], list[str]]:
@@ -304,9 +347,10 @@ def _provider_navigation_errors(repo: Path, docs: set[str]) -> list[str]:
     config = nav.read_text(encoding="utf-8")
     errors = []
     for locale in ("zh", "en"):
-        missing_nav = sorted(docs - _navigation_provider_docs(config, locale))
-        if missing_nav:
-            errors.append("{} provider navigation missing: {}".format(locale, ", ".join(missing_nav)))
+        for section, label in (("nav", "navigation"), ("sidebar", "sidebar")):
+            missing = sorted(docs - _provider_docs_in_config_section(config, locale, section))
+            if missing:
+                errors.append("{} provider {} missing: {}".format(locale, label, ", ".join(missing)))
     return errors
 
 

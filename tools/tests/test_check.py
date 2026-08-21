@@ -37,16 +37,25 @@ class LaneSelectionTests(unittest.TestCase):
         self.assertEqual(check.normalize_path(".agents/skills/example/SKILL.md"), ".agents/skills/example/SKILL.md")
         self.assertEqual(check.lanes_for_path(".agents/skills/example/SKILL.md"), ("Agent/Workflow",))
 
+    def test_nearest_agent_instructions_select_agent_lane(self) -> None:
+        self.assertEqual(check.lanes_for_path("docs/AGENTS.md"), ("Docs", "Agent/Workflow"))
+        self.assertEqual(check.lanes_for_path("ddns/provider/AGENTS.md"), ("Provider", "Agent/Workflow"))
+
     def test_executable_docs_are_build_changes(self) -> None:
         self.assertEqual(check.lanes_for_path("docs/public/install.sh"), ("Docs", "Build/Release"))
         self.assertEqual(check.lanes_for_path("docs/esa.js"), ("Docs", "Build/Release"))
 
     def test_schema_changes_also_validate_docs(self) -> None:
-        self.assertEqual(check.lanes_for_path("schema/v4.1.json"), ("Config", "Docs"))
+        self.assertEqual(check.lanes_for_path("schema/v4.1.json"), ("Config", "Provider", "Docs"))
 
     def test_generated_docs_inputs_select_docs(self) -> None:
         self.assertEqual(check.lanes_for_path("ddns/config/field-model.json"), ("Config", "Provider", "Docs"))
         self.assertEqual(check.lanes_for_path("tests/config/debug.json"), ("Config", "Docs"))
+
+    def test_provider_contract_inputs_select_provider(self) -> None:
+        self.assertEqual(check.lanes_for_path("ddns/config/cli.py"), ("Config", "Provider"))
+        self.assertEqual(check.lanes_for_path("schema/v4.1.json"), ("Config", "Provider", "Docs"))
+        self.assertEqual(check.lanes_for_path("docs/.vitepress/config.mts"), ("Provider", "Docs"))
 
     def test_explicit_base_precedes_github_and_default_refs(self) -> None:
         with patch.dict(
@@ -60,6 +69,21 @@ class ContractTests(unittest.TestCase):
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+
+    def _vitepress_config(self, doc: str) -> str:
+        return """themeConfig: {
+  nav: [{ link: '/providers/%s' }],
+  sidebar: { '/providers/': [{ link: '/providers/%s' }] }
+},
+locales: {
+  en: {
+    themeConfig: {
+      nav: [{ link: '/en/providers/%s' }],
+      sidebar: { '/en/providers/': [{ link: '/en/providers/%s' }] }
+    }
+  }
+}
+""" % (doc, doc, doc, doc)
 
     def _provider_repo(self) -> Path:
         root = Path(tempfile.mkdtemp())
@@ -82,7 +106,7 @@ class ContractTests(unittest.TestCase):
         self._write(root, "docs/en/providers/example.md", "# Example\n")
         self._write(root, "docs/providers/README.md", "`example`\n")
         self._write(root, "docs/en/providers/README.md", "`example`\n")
-        self._write(root, "docs/.vitepress/config.mts", "link: '/providers/example'\nlink: '/en/providers/example'\n")
+        self._write(root, "docs/.vitepress/config.mts", self._vitepress_config("example"))
         self._write(
             root,
             "docs/llms.txt",
@@ -99,6 +123,24 @@ class ContractTests(unittest.TestCase):
         schema["properties"]["dns"]["enum"] = []
         (root / "schema/v4.1.json").write_text(json.dumps(schema), encoding="utf-8")
         self.assertIn("schema dns enum differs from field-model IDs", check.provider_parity_errors(root))
+
+    def test_provider_navigation_requires_nav_and_sidebar(self) -> None:
+        root = self._provider_repo()
+        config_path = root / "docs/.vitepress/config.mts"
+        config = config_path.read_text(encoding="utf-8")
+        config_path.write_text(config.replace("nav: [{ link: '/providers/example' }]", "nav: []", 1), encoding="utf-8")
+        self.assertIn("zh provider navigation missing: example", check.provider_parity_errors(root))
+
+        root = self._provider_repo()
+        config_path = root / "docs/.vitepress/config.mts"
+        config = config_path.read_text(encoding="utf-8")
+        config_path.write_text(
+            config.replace(
+                "sidebar: { '/providers/': [{ link: '/providers/example' }] }", "sidebar: { '/providers/': [] }", 1
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn("zh provider sidebar missing: example", check.provider_parity_errors(root))
 
     def test_provider_parity_rejects_empty_metadata(self) -> None:
         root = self._provider_repo()
@@ -125,9 +167,7 @@ class ContractTests(unittest.TestCase):
             self._write(root, relative, "# HE\n")
         for relative in ("docs/providers/README.md", "docs/en/providers/README.md"):
             self._write(root, relative, "The provider list does not name the short identifier.\n")
-        (root / "docs/.vitepress/config.mts").write_text(
-            "link: '/providers/he'\nlink: '/en/providers/he'\n", encoding="utf-8"
-        )
+        (root / "docs/.vitepress/config.mts").write_text(self._vitepress_config("he"), encoding="utf-8")
         (root / "docs/llms.txt").write_text(
             "https://ddns.newfuture.cc/providers/he ([.md](https://ddns.newfuture.cc/providers/he.md))\n",
             encoding="utf-8",
