@@ -325,6 +325,10 @@ locales: {
     def test_current_portable_contracts_pass(self) -> None:
         self.assertEqual(check.portable_contract_errors(check.REPO_ROOT), [])
 
+    def test_agent_contract_workflow_watches_all_workflows(self) -> None:
+        workflow = (check.REPO_ROOT / ".github/workflows/update-agents.yml").read_text(encoding="utf-8")
+        self.assertIn("- '.github/workflows/**'", workflow)
+
     def test_portable_skill_must_not_preapprove_tools(self) -> None:
         root = Path(tempfile.mkdtemp())
         for relative in check.REQUIRED_AGENT_PATHS:

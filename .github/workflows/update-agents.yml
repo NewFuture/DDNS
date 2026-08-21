@@ -12,7 +12,7 @@ on:
       - '.github/agents/**'
       - '.github/instructions/**'
       - '.github/scripts/update_agents_structure.py'
-      - '.github/workflows/update-agents.yml'
+      - '.github/workflows/**'
       - 'tools/**'
       - 'ddns/**'
       - 'schema/**'
