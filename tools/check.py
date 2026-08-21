@@ -599,6 +599,7 @@ def _python_format_arguments(repo: Path = REPO_ROOT) -> tuple[str, ...]:
         path
         for path in (normalize_path(value) for value in candidates.splitlines())
         if path.endswith(".py")
+        and (repo / path).is_file()
         and (
             path in (".github/patch.py", "run.py") or path.startswith((".github/scripts/", "ddns/", "tests/", "tools/"))
         )

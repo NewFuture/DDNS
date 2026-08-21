@@ -121,14 +121,17 @@ class ChangedPathsTests(unittest.TestCase):
             self._git(root, "init", "-b", "master")
             self._write(root / ".gitignore", ".venv/\n")
             self._write(root / "tools/check.py", "tracked = True\n")
+            self._write(root / "tools/deleted.py", "deleted = True\n")
             self._write(root / "tools/untracked.py", "untracked = True\n")
             self._write(root / "tools/.venv/lib/site.py", "ignored = True\n")
             self._write(root / "docs/example.py", "out_of_scope = True\n")
-            self._git(root, "add", ".gitignore", "tools/check.py", "docs/example.py")
+            self._git(root, "add", ".gitignore", "tools/check.py", "tools/deleted.py", "docs/example.py")
+            (root / "tools/deleted.py").unlink()
 
             arguments = set(check._python_format_arguments(root)[3:])
             self.assertIn("tools/check.py", arguments)
             self.assertIn("tools/untracked.py", arguments)
+            self.assertNotIn("tools/deleted.py", arguments)
             self.assertNotIn("tools/.venv/lib/site.py", arguments)
             self.assertNotIn("docs/example.py", arguments)
 
