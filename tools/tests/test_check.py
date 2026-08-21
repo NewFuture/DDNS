@@ -195,10 +195,39 @@ locales: {
         )
         self.assertIn("zh provider sidebar missing: example", check.provider_parity_errors(root))
 
+    def test_provider_navigation_ignores_commented_links(self) -> None:
+        root = self._provider_repo()
+        config_path = root / "docs/.vitepress/config.mts"
+        config = config_path.read_text(encoding="utf-8")
+        config = config.replace(
+            "nav: [{ link: '/providers/example' }]", "nav: [\n// { link: '/providers/example' }\n]", 1
+        )
+        config = config.replace(
+            "sidebar: { '/providers/': [{ link: '/providers/example' }] }",
+            "sidebar: { '/providers/': [/* { link: '/providers/example' } */] }",
+            1,
+        )
+        config_path.write_text(config, encoding="utf-8")
+        errors = check.provider_parity_errors(root)
+        self.assertIn("zh provider navigation missing: example", errors)
+        self.assertIn("zh provider sidebar missing: example", errors)
+
     def test_provider_parity_rejects_empty_metadata(self) -> None:
         root = self._provider_repo()
         (root / "ddns/config/field-model.json").write_text(json.dumps({"providers": []}), encoding="utf-8")
         self.assertIn("ddns/config/field-model.json providers must not be empty", check.provider_parity_errors(root))
+
+    def test_runtime_provider_class_requires_canonical_id(self) -> None:
+        root = self._provider_repo()
+        (root / "ddns/provider/__init__.py").write_text(
+            "def get_provider_class(name):\n"
+            "    mapping = {'example': object, 'runtime-only': RuntimeOnlyProvider}\n"
+            "    return mapping.get(name)\n",
+            encoding="utf-8",
+        )
+        self.assertIn(
+            "runtime provider classes lack canonical IDs: RuntimeOnlyProvider", check.provider_parity_errors(root)
+        )
 
     def test_missing_temporary_surface_raises_check_error(self) -> None:
         root = Path(tempfile.mkdtemp())

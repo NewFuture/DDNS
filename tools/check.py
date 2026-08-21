@@ -195,8 +195,8 @@ def _frontmatter_fields(content: str) -> dict[str, str] | None:
     return fields
 
 
-def _literal_mapping_keys(path: Path) -> set[str]:
-    """Read provider mapping keys without importing Python 2-compatible runtime code."""
+def _literal_provider_mapping(path: Path) -> dict[str, str]:
+    """Read provider IDs and class names without importing Python 2-compatible runtime code."""
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == "get_provider_class":
@@ -206,11 +206,14 @@ def _literal_mapping_keys(path: Path) -> set[str]:
                 ):
                     if not isinstance(child.value, ast.Dict):
                         continue
-                    return {
-                        key.value
-                        for key in child.value.keys
-                        if isinstance(key, ast.Constant) and isinstance(key.value, str)
-                    }
+                    mapping = {}
+                    for key, value in zip(child.value.keys, child.value.values):
+                        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                            raise CheckError("provider registry IDs must be string literals")
+                        if not isinstance(value, ast.Name):
+                            raise CheckError("provider registry values must be class names")
+                        mapping[key.value] = value.id
+                    return mapping
     raise CheckError("could not find get_provider_class mapping in {}".format(_relative_path(path, REPO_ROOT)))
 
 
@@ -265,6 +268,47 @@ def _typescript_config_block(config: str, key: str, occurrence: int) -> str:
     return ""
 
 
+def _strip_typescript_comments(content: str) -> str:
+    """Remove line and block comments while preserving quoted strings and line breaks."""
+    output = []
+    index = 0
+    quote = None
+    escaped = False
+    while index < len(content):
+        character = content[index]
+        if quote is not None:
+            output.append(character)
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == quote:
+                quote = None
+            index += 1
+            continue
+        if character in ("'", '"', "`"):
+            quote = character
+            output.append(character)
+            index += 1
+            continue
+        if content.startswith("//", index):
+            newline = content.find("\n", index + 2)
+            if newline == -1:
+                break
+            output.append("\n")
+            index = newline + 1
+            continue
+        if content.startswith("/*", index):
+            end = content.find("*/", index + 2)
+            end = len(content) if end == -1 else end + 2
+            output.extend("\n" if value == "\n" else " " for value in content[index:end])
+            index = end
+            continue
+        output.append(character)
+        index += 1
+    return "".join(output)
+
+
 def _provider_docs_in_config_section(config: str, locale: str, section: str) -> set[str]:
     occurrence = 1 if locale == "en" else 0
     block = _typescript_config_block(config, section, occurrence)
@@ -301,10 +345,14 @@ def _provider_metadata(repo: Path) -> tuple[set[str], set[str], list[str]]:
 def _provider_runtime_errors(repo: Path, ids: set[str]) -> list[str]:
     """Compare field-model IDs with runtime and command-line provider surfaces."""
     errors = []
-    registry = _literal_mapping_keys(repo / "ddns" / "provider" / "__init__.py")
-    missing_registry = sorted(ids - registry)
+    registry = _literal_provider_mapping(repo / "ddns" / "provider" / "__init__.py")
+    missing_registry = sorted(ids - set(registry))
     if missing_registry:
         errors.append("runtime registry missing canonical IDs: {}".format(", ".join(missing_registry)))
+    canonical_classes = {registry[provider_id] for provider_id in ids if provider_id in registry}
+    unrepresented_classes = sorted(set(registry.values()) - canonical_classes)
+    if unrepresented_classes:
+        errors.append("runtime provider classes lack canonical IDs: {}".format(", ".join(unrepresented_classes)))
 
     cli_choices = _cli_provider_choices(repo / "ddns" / "config" / "cli.py")
     if cli_choices != ids:
@@ -347,7 +395,7 @@ def _provider_navigation_errors(repo: Path, docs: set[str]) -> list[str]:
     nav = repo / "docs" / ".vitepress" / "config.mts"
     if not nav.is_file():
         return ["missing VitePress provider navigation"]
-    config = nav.read_text(encoding="utf-8")
+    config = _strip_typescript_comments(nav.read_text(encoding="utf-8"))
     errors = []
     for locale in ("zh", "en"):
         for section, label in (("nav", "navigation"), ("sidebar", "sidebar")):
