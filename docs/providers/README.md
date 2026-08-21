@@ -24,7 +24,7 @@
 | `edgeone_dns` | [腾讯云EdgeOne DNS](https://cloud.tencent.com/product/teo) | [edgeone_dns 中文文档](edgeone_dns.md) | [edgeone_dns English Doc](../en/providers/edgeone_dns.md) | 腾讯云EdgeOne DNS记录管理 |
 | `west` | [西部数码](https://www.west.cn/) | [west 中文文档](west.md) | [west English Doc](../en/providers/west.md) | 西部数码/三五互联 DNS服务 |
 
-> 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new-dns-provider.md)
+> 添加新的Provider, [创建Issue,并按照模板填好链接](https://github.com/NewFuture/DDNS/issues/new?template=new_dns_provider.yml)
 
 ### 支持自动创建记录
 

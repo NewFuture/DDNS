@@ -16,7 +16,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 ## Key Features
 
 - Automatic IP detection (IPv4/IPv6)
-- Multiple DNS provider support (20+ providers)
+- Multiple DNS provider support (18 providers)
 - Multiple configuration methods (CLI, Environment Variables, JSON)
 - Docker support with multi-architecture images
 - Python 2.7+ and 3.x compatible
@@ -54,7 +54,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 - Aliesa: https://ddns.newfuture.cc/providers/aliesa ([.md](https://ddns.newfuture.cc/providers/aliesa.md))
 - Callback: https://ddns.newfuture.cc/providers/callback ([.md](https://ddns.newfuture.cc/providers/callback.md))
 - Debug Mode: https://ddns.newfuture.cc/providers/debug ([.md](https://ddns.newfuture.cc/providers/debug.md))
-- DNS.COM: https://ddns.newfuture.cc/providers/dnscom ([.md](https://ddns.newfuture.cc/providers/dnscom.md))
+- DNS.COM / 51DNS: https://ddns.newfuture.cc/providers/51dns ([.md](https://ddns.newfuture.cc/providers/51dns.md))
 - DNSPod International: https://ddns.newfuture.cc/providers/dnspod_com ([.md](https://ddns.newfuture.cc/providers/dnspod_com.md))
 - Tencent EdgeOne: https://ddns.newfuture.cc/providers/edgeone ([.md](https://ddns.newfuture.cc/providers/edgeone.md))
 - Tencent EdgeOne DNS: https://ddns.newfuture.cc/providers/edgeone_dns ([.md](https://ddns.newfuture.cc/providers/edgeone_dns.md))
@@ -83,7 +83,7 @@ ddns --dns dnspod --id your_id --token your_token
 
 ## Supported DNS Providers
 
-DNSPod, Cloudflare, ClouDNS, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, GoDaddy, Namecheap, CloudXNS, HE.net, DynDNS, NoIP, 51Dns, Aliesa, Callback, and more.
+DNSPod, Cloudflare, ClouDNS, AliDNS (Alibaba Cloud), Tencent Cloud, Huawei Cloud, HE.net, NameSilo, No-IP, 51DNS, Ali ESA, Callback, Debug, EdgeOne, and West.cn.
 
 ## Technical Details
 

@@ -147,7 +147,9 @@ jobs:
       - run: python3 -m ddns -c tests/config/callback.json
       - run: python3 -m ddns -c tests/config/multi-provider.json
       - run: python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
-      - run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
+      - name: Verify deployed debug configuration
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
       - run: python3 -m ddns -c tests/config/he-proxies.json --debug
 
       - uses: actions/upload-artifact@v7
@@ -531,7 +533,12 @@ jobs:
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/callback.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/multi-provider.json
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
-            docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c https://ddns.newfuture.cc/tests/config/debug.json
+            case "${{ github.event_name }}" in
+              push|schedule|workflow_dispatch)
+                docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c https://ddns.newfuture.cc/tests/config/debug.json
+                ;;
+              *) echo "Skipping deployed-site configuration check for an untrusted event" ;;
+            esac
             docker run --platform $platform --rm -v "$(pwd):/ddns/" ${{ env.DOCKER_IMG }}:$tag -c /ddns/tests/config/he-proxies.json
             if [ "$platform" = "linux/amd64" ]; then
               sh tests/scripts/test-docker-zombies.sh "${{ env.DOCKER_IMG }}:$tag" "$platform"
@@ -618,3 +625,31 @@ jobs:
           --annotation "index,manifest:org.opencontainers.image.url=https://ddns.newfuture.cc" \
           --annotation "index,manifest:org.opencontainers.image.description=DDNS docker ${{ github.ref_name }} CI build (unstable version),集成测试(非稳定版)" \
           --annotation "index,manifest:org.opencontainers.image.authors=NewFuture,NN708"
+
+  merge-gate:
+    name: Merge gate (advisory)
+    if: always()
+    needs: [lint, python, e2e, pypi, nuitka, linux-binary, prepare-docker, docker, preview-pypi, preview-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Enforce required job policy
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          sys.path.insert(0, "tools")
+          import check
+
+          failures = check.merge_gate_failures(json.loads(os.environ["NEEDS_JSON"]), os.environ["EVENT_NAME"])
+          if failures:
+              for failure in failures:
+                  print("ERROR: {}".format(failure))
+              raise SystemExit(1)
+          print("Required job policy satisfied.")
+          PY

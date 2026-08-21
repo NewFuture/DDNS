@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Compare AGENTS.md directory structure with actual files."""
 
+import argparse
 import os
 import re
 import sys
@@ -95,24 +96,51 @@ def is_documented_english_mirror(path, actual_files, documented_dirs):
     return False
 
 
-def main():
-    # type: () -> None
+def structure_drift():
+    # type: () -> tuple
+    """Return AGENTS.md entries that are missing or undocumented."""
     actual_files = scan_files("ddns", (".py",)) | scan_files("docs", (".md",)) | scan_files("schema", (".json",))
     documented, documented_dirs = parse_agents_md()
     files_to_check = {f for f in actual_files if not is_documented_english_mirror(f, actual_files, documented_dirs)}
+    return sorted(files_to_check - documented), sorted(documented - files_to_check)
 
-    added, deleted = sorted(files_to_check - documented), sorted(documented - files_to_check)
+
+def main(argv=None):
+    # type: (object) -> int
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="fail without writing an issue body when structure drifts")
+    arguments = parser.parse_args(argv)
+
+    tools_dir = os.path.join(REPO_ROOT, "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import check
+    except ImportError as error:
+        print("Error: unable to load tools/check.py: {}".format(error))
+        sys.exit(1)
+
+    contract_errors = check.portable_contract_errors(check.REPO_ROOT)
+    if contract_errors:
+        for error in contract_errors:
+            print("Error: {}".format(error))
+        return 1
+
+    added, deleted = structure_drift()
 
     # Check if any changes are in docs/ directory
     docs_changes = any(f.startswith("docs/") for f in added + deleted)
 
-    # Remove old issue body file if exists
-    if os.path.exists(ISSUE_BODY_FILE):
-        os.remove(ISSUE_BODY_FILE)
-
     if not added and not deleted:
         print("No changes detected")
-        sys.exit(0)
+        return 0
+    if arguments.check:
+        print("AGENTS.md structure drift: %d new, %d missing" % (len(added), len(deleted)))
+        return 1
+
+    # Remove old issue body file only for scheduled or manually reported drift.
+    if os.path.exists(ISSUE_BODY_FILE):
+        os.remove(ISSUE_BODY_FILE)
 
     # Build and write issue body
     lines = ["AGENTS.md directory structure is out of sync.\n"]
@@ -133,7 +161,8 @@ def main():
         f.write("\n".join(lines))
 
     print("Changes detected: %d new, %d missing" % (len(added), len(deleted)))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

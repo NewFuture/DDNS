@@ -4,6 +4,19 @@
 name: Update AGENTS.md
 
 on:
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'AGENTS.md'
+      - '.agents/**'
+      - '.github/agents/**'
+      - '.github/instructions/**'
+      - '.github/scripts/update_agents_structure.py'
+      - '.github/workflows/update-agents.yml'
+      - 'tools/**'
+      - 'ddns/**'
+      - 'schema/**'
+      - 'docs/**'
   schedule:
     # Run daily at 00:00 UTC
     - cron: '0 0 * * *'
@@ -12,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 # Prevent concurrent runs
 concurrency:
@@ -20,7 +32,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-agents:
+  contracts:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     
@@ -28,16 +41,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.x'
+          python-version: '3.12'
       
-      - name: Run comparison script
+      - name: Run portable agent structure contract
+        run: python3 .github/scripts/update_agents_structure.py --check
+
+      - name: Run provider parity contract
+        run: python3 tools/check.py --providers
+
+  report-structure-drift:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Run portable agent structure contract
         run: python3 .github/scripts/update_agents_structure.py
-      
+
+      - name: Run provider parity contract
+        run: python3 tools/check.py --providers
+
       - name: Check for existing issue
         if: hashFiles('.github/issue_body.md') != ''
         id: existing
