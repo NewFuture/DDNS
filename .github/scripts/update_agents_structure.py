@@ -17,6 +17,8 @@ def scan_files(directory, extensions):
     """Scan directory for files with given extensions."""
     # Files to exclude from the agent and Q&A directory index
     exclude_files = {
+        "docs/index.md",
+        "docs/en/index.md",
         "docs/config/studio.md",
         "docs/en/config/studio.md",
         "docs/esa-deploy.md",
@@ -30,7 +32,7 @@ def scan_files(directory, extensions):
     if not os.path.isdir(base):
         return result
     for root, dirs, files in os.walk(base):
-        dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
+        dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("__pycache__", "node_modules")]
         for f in files:
             if not f.startswith(".") and f.endswith(extensions):
                 rel_path = os.path.relpath(os.path.join(root, f), REPO_ROOT).replace(os.sep, "/")

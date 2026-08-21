@@ -1,16 +1,14 @@
-# AGENTS.md - AI Agent Guide for DDNS Project
+# DDNS Agent Development Guide
 
-> **Comprehensive guide for AI agents working on the DDNS (Dynamic DNS) project**
+> Portable project instructions for coding agents. The closest `AGENTS.md` takes precedence.
 
 ## Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Project Architecture](#project-architecture)
-3. [Getting Started](#getting-started)
-4. [Development Guide](#development-guide)
-5. [Testing & Validation](#testing--validation)
-6. [Troubleshooting](#troubleshooting)
-7. [Best Practices](#best-practices)
+3. [Agent Development Model](#agent-development-model)
+4. [Testing & Validation](#testing--validation)
+5. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -35,6 +33,14 @@ DDNS is a Python-based Dynamic DNS client that automatically updates DNS records
 - **Containerization**: Docker (multi-architecture support)
 - **Packaging**: PyPI, Nuitka (for binaries)
 
+### Portable Agent Definitions
+
+- `AGENTS.md` files contain project and directory rules.
+- `.agents/skills/*/SKILL.md` contains reusable, client-neutral workflows.
+- `.github/agents/*.agent.md` is a thin GitHub Copilot adapter for tool boundaries and role selection.
+- Do not duplicate a Skill in client-specific directories.
+- The default coding agent owns general project work; use a domain agent only when its narrower context is useful.
+
 ### Project Status
 
 - **License**: MIT
@@ -56,7 +62,11 @@ Here is the folder and file structure for the DDNS project.
 .github/:	GitHub configuration
 	workflows/:	CI/CD workflows (build, publish, test)
 	instructions/:	Agent instructions (python.instructions.md)
+	agents/:	Thin GitHub Copilot agent profiles
 	copilot-instructions.md:	GitHub Copilot instructions
+
+.agents/:	Portable agent workflows
+	skills/:	Agent Skills specification directories
 
 ddns/:	Main application code
 	__init__.py:	Package initialization and version info
@@ -129,6 +139,7 @@ tests/:	Unit tests
 	test_util_*.py:	Utility tests
 
 docs/:	Documentation (VitePress-based)
+	AGENTS.md:	Documentation-specific agent rules
 	.vitepress/:	VitePress configuration and theme
 	
 	config/:	Configuration documentation (Chinese)
@@ -189,8 +200,8 @@ schema/:	JSON schemas
 	v4.0.json:	Previous schema v4.0
 	v4.1.json:	Latest schema v4.1
 
+tools/:	Python 3.12+ repository maintenance tools
 run.py:	Direct run script
-install.sh:	One-click install script
 pyproject.toml:	Python project configuration
 setup.cfg:	Setup configuration
 .gitignore:	Git ignore rules
@@ -264,7 +275,7 @@ Platform-specific implementations:
 
 ---
 
-## Getting Started
+## Agent Development Model
 
 ### Agent Quick Start
 
@@ -274,9 +285,12 @@ Classify the task first, then read only the nearest code, tests, docs, and schem
 - **Config/schema**: `ddns/config/`, `schema/`, `tests/test_config_*.py`, `docs/config/`, `docs/en/config/`
 - **IP/HTTP**: `ddns/ip.py`, `ddns/util/http.py`, `tests/test_ip.py`, `tests/test_util_http*.py`
 - **Scheduler**: `ddns/scheduler/`, `tests/test_scheduler_*.py`
-- **Docs/packaging**: `README*.md`, `docs/`, `pyproject.toml`, `setup.cfg`, `docker/`, `.github/workflows/`
+- **Web/MCP**: `ddns/web/`, `web/`, `ddns/mcp.py`, `tests/test_web.py`, `tests/test_mcp.py`
+- **Docs**: `README*.md`, `docs/`, `docs/AGENTS.md`
+- **Build/release**: `pyproject.toml`, `run.py`, `.github/patch.py`, `docker/`, `.github/workflows/`
+- **Agent control plane**: `AGENTS.md`, `.agents/skills/`, `.github/agents/`, `.github/instructions/`
 
-Use `rg` / `rg --files` for discovery, make narrow edits, validate the touched behavior, and report any command that could not run.
+Use `rg` / `rg --files` for discovery, make narrow edits, validate the touched behavior, and report any command that could not run. A task is complete only when code, tests, schemas, docs, and generated metadata affected by the behavior are consistent.
 
 ### Useful Commands
 
@@ -299,11 +313,11 @@ Linux/macOS scheduled tasks use systemd, cron, or launchd; Windows uses the rele
 
 ---
 
-## Development Guide
+## Development Rules
 
 ### Hard Rules
 
-Follow `.github/instructions/python.instructions.md` for Python files.
+Follow `.github/instructions/python.instructions.md` for shipped Python and tests. Follow `tools/AGENTS.md` for maintenance tooling.
 
 - Use only standard-library runtime dependencies.
 - Preserve Python 2.7 and 3.x compatibility: no f-strings, annotations, async/await, or Python 3-only syntax.
@@ -313,24 +327,49 @@ Follow `.github/instructions/python.instructions.md` for Python files.
 
 ### Change Flow
 
-1. Read the closest existing implementation and matching tests.
-2. Mirror established patterns instead of inventing new abstractions.
-3. Change code, tests, schema, and docs together when behavior is user-facing.
-4. Run focused validation first; run the full suite for shared modules.
-5. Summarize changes, validation, and residual risk.
+1. Start from an approved issue, feature, or maintenance goal.
+2. Read the closest implementation, tests, docs, schema, and `AGENTS.md`.
+3. State the implementation plan, compatibility impact, and acceptance checks.
+4. Mirror established patterns instead of inventing new abstractions.
+5. Change code, tests, schemas, bilingual docs, and metadata together.
+6. Run focused validation first, then the full affected suite.
+7. Self-review the diff for unrelated edits, secrets, compatibility, and missing artifacts.
+8. Continue through CI and review feedback until merge-ready or escalate with evidence.
+
+### Definition of Done by Lane
+
+| Lane | Required artifacts | Required evidence |
+|---|---|---|
+| Core IP/HTTP/cache | implementation, regression tests, offline fixtures, behavior docs | focused unit tests, offline E2E, Python matrix |
+| Config/schema/CLI | parser behavior, field model, latest schema, Chinese/English docs | config tests, schema checks, docs build |
+| Provider | implementation, registry/aliases, field model, tests, schema, bilingual docs, navigation | provider/base tests, provider consistency check, docs build |
+| Web | service/API, static assets, auth/scheduler behavior, package resources | Web tests, Web E2E, wheel/sdist install |
+| Scheduler/install | OS implementation, CLI, lifecycle scripts, install docs | platform and install matrices |
+| MCP | protocol behavior, schemas/annotations, lifecycle, redaction, docs | MCP tests, modern/legacy E2E, package/binary tests |
+| Docs/site | Chinese/English parity, links, navigation, examples, `llms.txt` | documentation contracts and VitePress build |
+| Build/release | transformations, artifacts, matrices, release notes | package/binary/container checks and protected rehearsal |
+| Agent/workflow | instructions, permissions, validation logic | agent contracts and human review |
 
 ### Provider Changes
 
 - Use `BaseProvider` for query/create/update APIs and `SimpleProvider` for update-only APIs.
 - Register new providers in `ddns/provider/__init__.py`.
+- Update canonical metadata in `ddns/config/field-model.json`.
 - Add mocked tests in `tests/test_provider_<provider>.py`; never require real credentials or live provider APIs.
 - Update both `docs/providers/<provider>.md` and `docs/en/providers/<provider>.md`.
-- Update schema, README lists, or docs navigation when a new provider or option needs discovery.
+- Update both latest schema enums, CLI choices, provider indexes, navigation, and `docs/llms.txt`.
 - See `docs/dev/provider.md` and `docs/en/dev/provider.md` for full provider method signatures.
+- Follow `ddns/provider/AGENTS.md` and `.agents/skills/provider-development/SKILL.md`.
 
 ### Documentation
 
 Keep Chinese and English docs aligned. Preserve code blocks, option names, JSON keys, CLI flags, and provider IDs exactly across translations. Link Chinese docs to Chinese pages and English docs to `docs/en/` pages.
+
+Follow `docs/AGENTS.md` and `.agents/skills/documentation-maintenance/SKILL.md`. Treat `docs/public/install.sh` and `docs/esa.js` as executable, high-risk files rather than ordinary prose.
+
+### Build and Release
+
+Read the current workflows and Dockerfiles instead of relying on remembered versions or matrices. Do not publish, access release credentials, weaken required checks, disable caches, or remove platform coverage. Follow `.agents/skills/build-release-maintenance/SKILL.md`.
 
 ---
 
@@ -360,7 +399,7 @@ For touched files or examples:
 
 ```bash
 python -m py_compile ddns/provider/myprovider.py
-python -c "import json; json.load(open('config.json'))"
+python -m json.tool config.json
 ```
 
 Provider tests should import from `base_test`; other tests should import from `tests/__init__.py`. Mock HTTP calls and assert request details, response parsing, and error handling.
@@ -396,7 +435,7 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 
 ---
 
-## Best Practices
+## Safety and Escalation
 
 - Prefer small, reviewable changes that follow existing patterns.
 - Fix root causes and add tests for regressions.
@@ -405,32 +444,12 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 - Prefer mocked or dry-run validation; ask before using real credentials, provider APIs, or scheduler installation on a host.
 - Use structured parsers for JSON, URLs, and HTTP data.
 - Refactor only when it directly supports the task or removes clear local duplication.
-- Ask before renaming files/providers/config keys, moving directories, mass search-and-replace, multi-module refactors, changing cache/schema compatibility, or running commands against real external services.
-- For large changes, explain goal, impact, validation plan, and safer alternatives first.
+- Require human direction for file/provider/config-key renames, compatibility breaks, security policy, workflow permissions, credentials, and publication.
+- For large changes, explain goal, alternatives, impact, validation plan, and rollback before implementation.
 - When asked to commit or draft PR text, use conventional commits such as `fix(util.http): handle proxy errors`.
 
 ---
 
-## Summary
-
-This guide provides comprehensive instructions for AI agents working on the DDNS project. Key points:
-
-1. **Architecture**: Modular Python project with provider system, configuration management, and task scheduling
-2. **Development**: Follow Python standards, maintain Python 2.7 compatibility, use ruff for linting
-3. **Testing**: Use unittest (primary) or pytest (optional), write comprehensive tests
-4. **Building**: Support for Python source, PyPI, Docker, and binary executables
-5. **Documentation**: Maintain both Chinese and English versions
-6. **Safety**: Avoid unnecessary changes, ask before large edits, respect existing code
-
-For detailed information on specific topics, refer to:
-- **Python Standards**: `.github/instructions/python.instructions.md`
-- **Repository Instructions**: `.github/copilot-instructions.md`
-- **Provider Development**: `docs/dev/provider.md`
-- **Testing Guide**: `tests/README.md`
-- **Configuration**: `docs/config/*.md`
-
----
-
-**Version**: 1.0.9
-**Last Updated**: 2026-08-14
+**Version**: 1.1.0
+**Last Updated**: 2026-08-21
 **Maintained by**: DDNS Project Contributors
