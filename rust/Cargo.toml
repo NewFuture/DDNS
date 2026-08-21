@@ -1,0 +1,30 @@
+[package]
+name = "ddns-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Parallel Rust implementation of the NewFuture DDNS client"
+license = "MIT"
+repository = "https://github.com/NewFuture/DDNS"
+publish = false
+
+[dependencies]
+base64 = { version = "0.23.1", default-features = false, features = ["std"] }
+getrandom = "0.4.3"
+hmac = "0.13.0"
+if-addrs = "0.15.0"
+regex = { version = "1.12.2", default-features = false, features = ["perf", "std"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.11.0"
+time = { version = "0.3.55", features = ["formatting"] }
+ureq = { version = "3.4.0", default-features = false, features = ["platform-verifier", "rustls", "win-system-proxy"] }
+
+[profile.release]
+lto = "thin"
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

@@ -1,0 +1,90 @@
+name: Rust
+
+on:
+  push:
+    branches: ["master", "main"]
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+      - ".github/workflows/rust-python-checks.yml"
+      - ".github/instructions/rust.instructions.md"
+      - "docs/dev/rust.md"
+      - "docs/en/dev/rust.md"
+  pull_request:
+    branches: ["master", "main", "abc"]
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+      - ".github/workflows/rust-python-checks.yml"
+      - ".github/instructions/rust.instructions.md"
+      - "docs/dev/rust.md"
+      - "docs/en/dev/rust.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - run: cargo fmt --manifest-path rust/Cargo.toml --check
+      - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --manifest-path rust/Cargo.toml --locked
+
+  binary:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: ddns-rs-linux-x64
+          - os: ubuntu-24.04-arm
+            artifact: ddns-rs-linux-arm64
+          - os: windows-latest
+            artifact: ddns-rs-windows-x64
+          - os: macos-15-intel
+            artifact: ddns-rs-macos-x64
+          - os: macos-latest
+            artifact: ddns-rs-macos-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - run: cargo build --manifest-path rust/Cargo.toml --release --locked
+      - name: Smoke test binary
+        if: runner.os != 'Windows'
+        run: |
+          rust/target/release/ddns-rs --version
+          rust/target/release/ddns-rs --help
+          rust/target/release/ddns-rs --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+      - name: Smoke test Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binary = "rust\target\release\ddns-rs.exe"
+          & $binary --version
+          & $binary --help
+          & $binary --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: rust/target/release/ddns-rs${{ runner.os == 'Windows' && '.exe' || '' }}
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
