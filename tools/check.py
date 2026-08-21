@@ -442,19 +442,44 @@ def _provider_overview_errors(repo: Path, ids: set[str]) -> list[str]:
     return errors
 
 
-def _provider_llms_errors(repo: Path, docs: set[str]) -> list[str]:
+def _provider_llms_errors(repo: Path, ids: set[str], docs: set[str]) -> list[str]:
     """Return stale or missing provider links in the LLM index."""
     llms = repo / "docs" / "llms.txt"
     if not llms.is_file():
         return ["missing docs/llms.txt"]
     content = llms.read_text(encoding="utf-8")
+    errors = []
+
+    count_match = re.search(r"Multiple DNS provider support \((\d+) providers\)", content)
+    if count_match is None:
+        errors.append("docs/llms.txt missing provider count")
+    elif int(count_match.group(1)) != len(ids):
+        errors.append("docs/llms.txt provider count is {}; expected {}".format(count_match.group(1), len(ids)))
+
+    inventory = re.search(r"(?ms)^## Supported DNS Providers\s*\n(.*?)(?=^## |\Z)", content)
+    if inventory is None:
+        errors.append("docs/llms.txt missing Supported DNS Providers section")
+    else:
+        inventory_counts = Counter(re.findall(r"`([a-z0-9_-]+)`", inventory.group(1), re.IGNORECASE))
+        inventory_ids = set(inventory_counts)
+        duplicate_ids = sorted(provider_id for provider_id, count in inventory_counts.items() if count > 1)
+        missing_ids = sorted(ids - inventory_ids)
+        invalid_ids = sorted(inventory_ids - ids)
+        if duplicate_ids:
+            errors.append("docs/llms.txt duplicate supported provider IDs: {}".format(", ".join(duplicate_ids)))
+        if missing_ids:
+            errors.append("docs/llms.txt supported provider IDs missing: {}".format(", ".join(missing_ids)))
+        if invalid_ids:
+            errors.append("docs/llms.txt supported provider IDs unknown: {}".format(", ".join(invalid_ids)))
+
     section = re.search(r"(?ms)^### DNS Provider Guides\s*\n(.*?)(?=^### |\Z)", content)
     if section is None:
-        return ["docs/llms.txt missing DNS Provider Guides section"]
-    content = re.sub(r"<!--.*?-->", "", section.group(1), flags=re.DOTALL)
-    link_counts = Counter(re.findall(r"/providers/([a-z0-9_]+)\.md", content))
+        errors.append("docs/llms.txt missing DNS Provider Guides section")
+        provider_guides = ""
+    else:
+        provider_guides = re.sub(r"<!--.*?-->", "", section.group(1), flags=re.DOTALL)
+    link_counts = Counter(re.findall(r"/providers/([a-z0-9_]+)\.md", provider_guides))
     links = set(link_counts)
-    errors = []
     duplicate_links = sorted(link for link, count in link_counts.items() if count > 1)
     invalid_links = sorted(links - docs)
     missing_links = sorted(docs - links)
@@ -473,7 +498,7 @@ def _provider_documentation_errors(repo: Path, ids: set[str], docs: set[str]) ->
         _provider_doc_file_errors(repo, docs)
         + _provider_navigation_errors(repo, docs)
         + _provider_overview_errors(repo, ids)
-        + _provider_llms_errors(repo, docs)
+        + _provider_llms_errors(repo, ids, docs)
     )
 
 
@@ -568,13 +593,16 @@ def merge_gate_failures(results: dict[str, object], event_name: str) -> list[str
 
 
 def _python_format_arguments(repo: Path = REPO_ROOT) -> tuple[str, ...]:
-    """Return tracked Python sources without Markdown code blocks."""
-    paths = []
-    for directory in ("ddns", "tests", "tools"):
-        paths.extend(path.relative_to(repo).as_posix() for path in (repo / directory).rglob("*.py"))
-    for relative in (".github/patch.py", ".github/scripts/update_agents_structure.py", "run.py"):
-        if (repo / relative).is_file():
-            paths.append(relative)
+    """Return tracked and non-ignored untracked repository Python sources."""
+    candidates = _git_output(repo, ("ls-files", "--cached", "--others", "--exclude-standard"))
+    paths = [
+        path
+        for path in (normalize_path(value) for value in candidates.splitlines())
+        if path.endswith(".py")
+        and (
+            path in (".github/patch.py", "run.py") or path.startswith((".github/scripts/", "ddns/", "tests/", "tools/"))
+        )
+    ]
     return ("ruff", "format", "--check", *sorted(set(paths)))
 
 

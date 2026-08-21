@@ -82,7 +82,7 @@ ddns --dns dnspod --id your_id --token your_token
 
 ## Supported DNS Providers
 
-51DNS, AliDNS, Ali ESA, Callback, Cloudflare, ClouDNS, Debug, DNS.COM, DNSPod Global, DNSPod China, Tencent Cloud DNS, EdgeOne, EdgeOne DNS, HE.net, Huawei Cloud DNS, NameSilo, No-IP, and West.cn.
+Canonical provider IDs: `51dns`, `alidns`, `aliesa`, `callback`, `cloudflare`, `cloudns`, `debug`, `dnscom`, `dnspod_com`, `dnspod`, `edgeone`, `edgeone_dns`, `he`, `huaweidns`, `namesilo`, `noip`, `tencentcloud`, and `west`.
 
 ## Technical Details
 

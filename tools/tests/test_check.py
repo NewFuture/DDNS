@@ -115,8 +115,26 @@ class ChangedPathsTests(unittest.TestCase):
                 with self.assertRaisesRegex(check.CheckError, "could not find a merge-base reference"):
                     check.changed_paths(root)
 
+    def test_format_arguments_respect_git_ignores_and_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._git(root, "init", "-b", "master")
+            self._write(root / ".gitignore", ".venv/\n")
+            self._write(root / "tools/check.py", "tracked = True\n")
+            self._write(root / "tools/untracked.py", "untracked = True\n")
+            self._write(root / "tools/.venv/lib/site.py", "ignored = True\n")
+            self._write(root / "docs/example.py", "out_of_scope = True\n")
+            self._git(root, "add", ".gitignore", "tools/check.py", "docs/example.py")
+
+            arguments = set(check._python_format_arguments(root)[3:])
+            self.assertIn("tools/check.py", arguments)
+            self.assertIn("tools/untracked.py", arguments)
+            self.assertNotIn("tools/.venv/lib/site.py", arguments)
+            self.assertNotIn("docs/example.py", arguments)
+
     @staticmethod
     def _write(path: Path, content: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
 
@@ -143,10 +161,13 @@ locales: {
 
     def _llms_provider_index(self, doc: str) -> str:
         return (
+            "- Multiple DNS provider support (1 providers)\n\n"
             "### DNS Provider Guides\n"
             "- https://ddns.newfuture.cc/providers/{0} "
             "([.md](https://ddns.newfuture.cc/providers/{0}.md))\n\n"
-            "### Developer Documentation\n".format(doc)
+            "### Developer Documentation\n\n"
+            "## Supported DNS Providers\n"
+            "Canonical provider IDs: `{0}`.\n".format(doc)
         )
 
     def _provider_repo(self) -> Path:
@@ -264,6 +285,18 @@ locales: {
             encoding="utf-8",
         )
         self.assertIn("docs/llms.txt missing provider docs: example", check.provider_parity_errors(root))
+
+    def test_llms_provider_count_and_inventory_match_metadata(self) -> None:
+        root = self._provider_repo()
+        llms_path = root / "docs/llms.txt"
+        content = llms_path.read_text(encoding="utf-8")
+        content = content.replace("(1 providers)", "(2 providers)")
+        content = content.replace("Canonical provider IDs: `example`", "Canonical provider IDs: `stale`")
+        llms_path.write_text(content, encoding="utf-8")
+        errors = check.provider_parity_errors(root)
+        self.assertIn("docs/llms.txt provider count is 2; expected 1", errors)
+        self.assertIn("docs/llms.txt supported provider IDs missing: example", errors)
+        self.assertIn("docs/llms.txt supported provider IDs unknown: stale", errors)
 
     def test_missing_temporary_surface_raises_check_error(self) -> None:
         root = Path(tempfile.mkdtemp())
