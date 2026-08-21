@@ -11,7 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -77,6 +77,7 @@ def lanes_for_path(path: str) -> tuple[str, ...]:
     ):
         lanes.append("Docs")
     if path.startswith(("docker/", ".github/workflows/", ".github/patch.py")) or path in (
+        "run.py",
         "pyproject.toml",
         "setup.cfg",
         "requirements.txt",
@@ -399,9 +400,13 @@ def _provider_navigation_errors(repo: Path, docs: set[str]) -> list[str]:
     errors = []
     for locale in ("zh", "en"):
         for section, label in (("nav", "navigation"), ("sidebar", "sidebar")):
-            missing = sorted(docs - _provider_docs_in_config_section(config, locale, section))
+            linked_docs = _provider_docs_in_config_section(config, locale, section)
+            missing = sorted(docs - linked_docs)
+            invalid = sorted(linked_docs - docs)
             if missing:
                 errors.append("{} provider {} missing: {}".format(locale, label, ", ".join(missing)))
+            if invalid:
+                errors.append("{} provider {} links unknown docs: {}".format(locale, label, ", ".join(invalid)))
     return errors
 
 
@@ -437,10 +442,19 @@ def _provider_llms_errors(repo: Path, docs: set[str]) -> list[str]:
     llms = repo / "docs" / "llms.txt"
     if not llms.is_file():
         return ["missing docs/llms.txt"]
-    links = set(re.findall(r"/providers/([a-z0-9_]+)\.md", llms.read_text(encoding="utf-8")))
+    content = llms.read_text(encoding="utf-8")
+    section = re.search(r"(?ms)^### DNS Provider Guides\s*\n(.*?)(?=^### |\Z)", content)
+    if section is None:
+        return ["docs/llms.txt missing DNS Provider Guides section"]
+    content = re.sub(r"<!--.*?-->", "", section.group(1), flags=re.DOTALL)
+    link_counts = Counter(re.findall(r"/providers/([a-z0-9_]+)\.md", content))
+    links = set(link_counts)
     errors = []
+    duplicate_links = sorted(link for link, count in link_counts.items() if count > 1)
     invalid_links = sorted(links - docs)
     missing_links = sorted(docs - links)
+    if duplicate_links:
+        errors.append("docs/llms.txt duplicate provider docs: {}".format(", ".join(duplicate_links)))
     if invalid_links:
         errors.append("docs/llms.txt links unknown provider docs: {}".format(", ".join(invalid_links)))
     if missing_links:

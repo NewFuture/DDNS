@@ -46,6 +46,9 @@ class LaneSelectionTests(unittest.TestCase):
         self.assertEqual(check.lanes_for_path("docs/public/install.sh"), ("Docs", "Build/Release"))
         self.assertEqual(check.lanes_for_path("docs/esa.js"), ("Docs", "Build/Release"))
 
+    def test_run_entrypoint_selects_core_and_build_release(self) -> None:
+        self.assertEqual(check.lanes_for_path("run.py"), ("Core", "Build/Release"))
+
     def test_schema_changes_also_validate_docs(self) -> None:
         self.assertEqual(check.lanes_for_path("schema/v4.1.json"), ("Config", "Provider", "Docs"))
 
@@ -138,6 +141,14 @@ locales: {
 }
 """ % (doc, doc, doc, doc)
 
+    def _llms_provider_index(self, doc: str) -> str:
+        return (
+            "### DNS Provider Guides\n"
+            "- https://ddns.newfuture.cc/providers/{0} "
+            "([.md](https://ddns.newfuture.cc/providers/{0}.md))\n\n"
+            "### Developer Documentation\n".format(doc)
+        )
+
     def _provider_repo(self) -> Path:
         root = Path(tempfile.mkdtemp())
         model = {"providers": [{"id": "example", "docs": "example"}]}
@@ -160,11 +171,7 @@ locales: {
         self._write(root, "docs/providers/README.md", "| Provider |\n| --- |\n| `example` |\n")
         self._write(root, "docs/en/providers/README.md", "| Provider |\n| --- |\n| `example` |\n")
         self._write(root, "docs/.vitepress/config.mts", self._vitepress_config("example"))
-        self._write(
-            root,
-            "docs/llms.txt",
-            "https://ddns.newfuture.cc/providers/example ([.md](https://ddns.newfuture.cc/providers/example.md))\n",
-        )
+        self._write(root, "docs/llms.txt", self._llms_provider_index("example"))
         return root
 
     def test_provider_parity_accepts_consistent_surfaces(self) -> None:
@@ -212,6 +219,20 @@ locales: {
         self.assertIn("zh provider navigation missing: example", errors)
         self.assertIn("zh provider sidebar missing: example", errors)
 
+    def test_provider_navigation_rejects_unknown_links(self) -> None:
+        root = self._provider_repo()
+        config_path = root / "docs/.vitepress/config.mts"
+        config = config_path.read_text(encoding="utf-8")
+        config_path.write_text(
+            config.replace(
+                "nav: [{ link: '/providers/example' }]",
+                "nav: [{ link: '/providers/example' }, { link: '/providers/stale' }]",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn("zh provider navigation links unknown docs: stale", check.provider_parity_errors(root))
+
     def test_provider_parity_rejects_empty_metadata(self) -> None:
         root = self._provider_repo()
         (root / "ddns/config/field-model.json").write_text(json.dumps({"providers": []}), encoding="utf-8")
@@ -228,6 +249,21 @@ locales: {
         self.assertIn(
             "runtime provider classes lack canonical IDs: RuntimeOnlyProvider", check.provider_parity_errors(root)
         )
+
+    def test_llms_provider_index_rejects_duplicates_and_comments(self) -> None:
+        root = self._provider_repo()
+        llms_path = root / "docs/llms.txt"
+        link = "https://ddns.newfuture.cc/providers/example.md\n"
+        llms_path.write_text(
+            "### DNS Provider Guides\n" + link + link + "\n### Developer Documentation\n", encoding="utf-8"
+        )
+        self.assertIn("docs/llms.txt duplicate provider docs: example", check.provider_parity_errors(root))
+
+        llms_path.write_text(
+            "### DNS Provider Guides\n<!-- {} -->\n\n### Developer Documentation\n".format(link.strip()),
+            encoding="utf-8",
+        )
+        self.assertIn("docs/llms.txt missing provider docs: example", check.provider_parity_errors(root))
 
     def test_missing_temporary_surface_raises_check_error(self) -> None:
         root = Path(tempfile.mkdtemp())
@@ -255,10 +291,7 @@ locales: {
         for relative in ("docs/providers/README.md", "docs/en/providers/README.md"):
             self._write(root, relative, "| Provider |\n| --- |\n\n- **he** is mentioned outside the table.\n")
         (root / "docs/.vitepress/config.mts").write_text(self._vitepress_config("he"), encoding="utf-8")
-        (root / "docs/llms.txt").write_text(
-            "https://ddns.newfuture.cc/providers/he ([.md](https://ddns.newfuture.cc/providers/he.md))\n",
-            encoding="utf-8",
-        )
+        (root / "docs/llms.txt").write_text(self._llms_provider_index("he"), encoding="utf-8")
         self.assertIn("docs/providers/README.md missing provider IDs: he", check.provider_parity_errors(root))
 
     def test_portable_profiles_must_reference_skills(self) -> None:
