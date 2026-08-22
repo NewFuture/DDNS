@@ -130,6 +130,7 @@ interface GlobalState {
   cachePath: string
   cacheMaxAge: string
   interval: string
+  httpText: string
   logLevel: LogLevel
   logFile: string
   logFilePresent: boolean
@@ -182,6 +183,8 @@ interface StoredDraft {
 }
 
 const SCHEMA_URL = configModel.schema.url
+const DEFAULT_HTTP_HOST = '127.0.0.1'
+const DEFAULT_HTTP_PORT = 9876
 const DRAFT_STORAGE_KEY = 'ddns-config-studio-draft-v1'
 const DRAFT_VERSION = 2
 const DRAFT_SAVE_DELAY = 400
@@ -290,6 +293,8 @@ const copy = {
     runtimeTitle: '配置缓存、日志与扩展字段',
     runtimeHint: '先设置全局缓存与日志；如有需要，再为当前服务商覆盖对应设置。',
     interval: '自动同步间隔（分钟）',
+    httpConfig: 'Web 与 HTTP MCP 配置（JSON 对象）',
+    httpHint: '可选；保存后需重启。token 会按原文写入配置。',
     cache: '缓存策略',
     cacheOn: '启用默认缓存',
     cacheOff: '禁用缓存',
@@ -433,6 +438,8 @@ const copy = {
     runtimeTitle: 'Configure cache, logs & custom fields',
     runtimeHint: 'Set global cache and logging behavior, then add provider-specific overrides if needed.',
     interval: 'Automatic sync interval (minutes)',
+    httpConfig: 'Web and HTTP MCP settings (JSON object)',
+    httpHint: 'Optional; restart after saving. The token is written to the configuration verbatim.',
     cache: 'Cache policy',
     cacheOn: 'Enable default cache',
     cacheOff: 'Disable cache',
@@ -567,6 +574,7 @@ function makeGlobalState(): GlobalState {
     cachePath: '',
     cacheMaxAge: String(configModel.defaults.cacheMaxAge),
     interval: '',
+    httpText: '',
     logLevel: configModel.defaults.logLevel,
     logFile: '',
     logFilePresent: false,
@@ -1066,6 +1074,8 @@ function buildConfiguration(): JsonObject {
   if (globalState.interval.trim() && Number.isInteger(Number(globalState.interval))) {
     output.interval = Number(globalState.interval)
   }
+  const http = parseObjectText(globalState.httpText)
+  if (http && Object.keys(http).length) output.http = http
   const proxies = parseProxyValue(globalState.proxyText)
   if (globalState.proxyNull) output.proxy = null
   else if (proxies.length || globalState.proxyPresent) output.proxy = proxies
@@ -1243,6 +1253,7 @@ function globalStateFromDraft(value: unknown): GlobalState | null {
     cachePath: draftString(value, 'cachePath'),
     cacheMaxAge: draftString(value, 'cacheMaxAge', fallback.cacheMaxAge),
     interval: draftString(value, 'interval'),
+    httpText: draftString(value, 'httpText'),
     logLevel: draftLogLevel(value, fallback.logLevel),
     logFile: draftString(value, 'logFile'),
     logFilePresent: draftBoolean(value, 'logFilePresent'),
@@ -1472,6 +1483,112 @@ function childPath(base: string, key: string): string {
 function hasDuplicates(values: unknown[]): boolean {
   const normalized = values.map((value) => JSON.stringify(value))
   return new Set(normalized).size !== normalized.length
+}
+
+function isLoopbackHttpHost(value: string): boolean {
+  const host = value.trim().toLowerCase().replace(/^\[|\]$/g, '')
+  if (host === 'localhost' || host === '::1') return true
+  const octets = host.split('.')
+  return (
+    octets.length === 4 &&
+    Number(octets[0]) === 127 &&
+    octets.every((octet) => /^\d+$/.test(octet) && Number(octet) >= 0 && Number(octet) <= 255)
+  )
+}
+
+function isExactHttpOrigin(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return (
+      ['http:', 'https:'].includes(parsed.protocol) &&
+      !parsed.username &&
+      !parsed.password &&
+      (!parsed.pathname || parsed.pathname === '/') &&
+      !parsed.search &&
+      !parsed.hash
+    )
+  } catch {
+    return false
+  }
+}
+
+function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnostic[]) {
+  if (!isPlainObject(value)) {
+    diagnostics.push(makeDiagnostic(path, 'error', 'http 必须是对象。', 'http must be an object.'))
+    return
+  }
+  const unknown = Object.keys(value).filter((key) => !['host', 'port', 'token', 'origins'].includes(key))
+  unknown.forEach((key) => {
+    diagnostics.push(
+      makeDiagnostic(childPath(path, key), 'error', '不支持此 HTTP 设置。', 'Unsupported HTTP setting.'),
+    )
+  })
+  const host = 'host' in value ? value.host : DEFAULT_HTTP_HOST
+  const port = 'port' in value ? value.port : DEFAULT_HTTP_PORT
+  const token = 'token' in value ? value.token : null
+  const origins = 'origins' in value ? value.origins : []
+  if (typeof host !== 'string' || !host.trim()) {
+    diagnostics.push(
+      makeDiagnostic(childPath(path, 'host'), 'error', 'HTTP 监听地址不能为空。', 'HTTP bind host cannot be empty.'),
+    )
+  }
+  if (typeof port !== 'number' || !Number.isInteger(port) || port < 0 || port > 65535) {
+    diagnostics.push(
+      makeDiagnostic(
+        childPath(path, 'port'),
+        'error',
+        'HTTP 端口必须是 0 到 65535 的整数。',
+        'HTTP port must be an integer from 0 to 65535.',
+      ),
+    )
+  }
+  if (token !== null && typeof token !== 'string') {
+    diagnostics.push(
+      makeDiagnostic(childPath(path, 'token'), 'error', 'HTTP token 必须是字符串或 null。', 'HTTP token must be a string or null.'),
+    )
+  } else if (typeof token === 'string' && token && !/^[!-~]+$/.test(token)) {
+    diagnostics.push(
+      makeDiagnostic(
+        childPath(path, 'token'),
+        'error',
+        'HTTP token 只能包含无空格的可见 ASCII 字符。',
+        'HTTP token must contain visible ASCII characters without spaces.',
+      ),
+    )
+  }
+  if (typeof host === 'string' && !isLoopbackHttpHost(host) && !(typeof token === 'string' && token.trim())) {
+    diagnostics.push(
+      makeDiagnostic(
+        childPath(path, 'token'),
+        'warning',
+        '非回环 HTTP 监听在运行时必须通过 JSON、命令行或环境变量提供 token。',
+        'Non-loopback HTTP listeners require a token from JSON, CLI, or environment at runtime.',
+      ),
+    )
+  }
+  if (!Array.isArray(origins)) {
+    diagnostics.push(
+      makeDiagnostic(childPath(path, 'origins'), 'error', 'HTTP origins 必须是数组。', 'HTTP origins must be an array.'),
+    )
+    return
+  }
+  if (hasDuplicates(origins)) {
+    diagnostics.push(
+      makeDiagnostic(childPath(path, 'origins'), 'error', 'HTTP origins 不能重复。', 'HTTP origins must be unique.'),
+    )
+  }
+  origins.forEach((origin, index) => {
+    if (typeof origin !== 'string' || !isExactHttpOrigin(origin)) {
+      diagnostics.push(
+        makeDiagnostic(
+          `${childPath(path, 'origins')}[${index}]`,
+          'error',
+          'Origin 必须是无路径的精确 HTTP(S) 来源。',
+          'Origin must be an exact HTTP(S) origin without a path.',
+        ),
+      )
+    }
+  })
 }
 
 function validateDomainArray(value: unknown, path: string, diagnostics: Diagnostic[]) {
@@ -1788,6 +1905,7 @@ function validateCommonFields(
       ),
     )
   }
+  if ('http' in value) validateHttpSettings(value.http, childPath(path, 'http'), diagnostics)
   if ('ssl' in value && typeof value.ssl !== 'string' && typeof value.ssl !== 'boolean') {
     diagnostics.push(
       makeDiagnostic(childPath(path, 'ssl'), 'error', 'SSL 设置必须是字符串或布尔值。', 'SSL setting must be a string or boolean.'),
@@ -2214,6 +2332,18 @@ function validateConfig(value: unknown): Diagnostic[] {
             ),
           )
         }
+        if ('http' in provider) {
+          diagnostics.push(
+            makeDiagnostic(
+              childPath(path, 'http'),
+              'error',
+              'HTTP 监听只能配置在顶层。',
+              'HTTP listener settings can only be configured at the root.',
+              '将 http 移到 providers 数组外。',
+              'Move http outside the providers array.',
+            ),
+          )
+        }
         if (typeof provider.provider !== 'string' || !providerMap.has(provider.provider)) {
           diagnostics.push(
             makeDiagnostic(
@@ -2347,6 +2477,9 @@ function validateFormState(): Diagnostic[] {
       ),
     )
   }
+  diagnostics.push(...validateObjectEditor(globalState.httpText, '$.http'))
+  const http = parseObjectText(globalState.httpText)
+  if (http) validateHttpSettings(http, '$.http', diagnostics)
 
   providers.value.forEach((provider, index) => {
     const path = `$.providers[${index}]`
@@ -2459,7 +2592,9 @@ function fieldDescription(path: string): string | undefined {
 
 function diagnosticFieldKey(path: string): string {
   const providerMatch = path.match(/^\$\.providers\[\d+\](?:\.([a-zA-Z0-9_]+))?/)
+  const httpMatch = path.match(/^\$\.http\.([a-zA-Z0-9_]+)/)
   const rootMatch = path.match(/^\$\.([a-zA-Z0-9_]+)/)
+  if (httpMatch?.[1]) return 'http'
   const key = providerMatch?.[1] || rootMatch?.[1] || 'provider'
   const aliases: Record<string, string> = {
     cache_max_age: 'cache-age',
@@ -2486,7 +2621,7 @@ function openAdvancedForPath(path: string) {
   if (/\.endpoint(?:$|[.[\]])/.test(path)) providerAdvancedOpen.value = true
   if (/\.(?:index4|index6|ttl|line)(?:$|[.[\]])/.test(path)) sourceAdvancedOpen.value = true
   if (/\.ssl(?:$|[.[\]])/.test(path)) networkAdvancedOpen.value = true
-  if (/\.(?:cache|cache_max_age|log|extra)(?:$|[.[\]])/.test(path)) {
+  if (/\.(?:cache|cache_max_age|log|extra|http)(?:$|[.[\]])/.test(path)) {
     runtimeAdvancedOpen.value = true
   }
 }
@@ -2513,7 +2648,7 @@ function emptyIssueSummary(): IssueSummary {
 function sectionForPath(path: string): SectionKey {
   if (/\.(?:ipv4|ipv6|index4|index6|ttl|line)(?:$|[.[\]])/.test(path)) return 'records'
   if (/\.(?:proxy|ssl)(?:$|[.[\]])/.test(path)) return 'network'
-  if (/\.(?:cache|cache_max_age|log|extra)(?:$|[.[\]])/.test(path)) return 'runtime'
+  if (/\.(?:cache|cache_max_age|log|extra|http)(?:$|[.[\]])/.test(path)) return 'runtime'
   return 'provider'
 }
 
@@ -3377,6 +3512,7 @@ function loadConfigurationIntoBuilder(
   const logFile = logFieldState(value, 'file')
   const logFormat = logFieldState(value, 'format')
   const logDatefmt = logFieldState(value, 'datefmt')
+  const httpText = isPlainObject(value.http) ? JSON.stringify(value.http, null, 2) : ''
   Object.assign(globalState, {
     proxyText: inputToText(value.proxy),
     proxyPresent: 'proxy' in value,
@@ -3387,6 +3523,7 @@ function loadConfigurationIntoBuilder(
     cachePath: cache.path,
     cacheMaxAge: typeof value.cache_max_age === 'number' ? String(value.cache_max_age) : '',
     interval: typeof value.interval === 'number' ? String(value.interval) : '',
+    httpText,
     logLevel: logLevelFromObject(value),
     logFile: logFile.value,
     logFilePresent: logFile.present,
@@ -4371,6 +4508,25 @@ async function useRuntimeCredential(field: 'id' | 'token') {
                 spellcheck="false"
                 placeholder="/var/cache/ddns.cache"
               />
+            </label>
+          </div>
+
+          <div class="subsection-heading">
+            <h3>{{ c.httpConfig }}</h3>
+            <p>{{ c.httpHint }}</p>
+          </div>
+          <div class="field-grid">
+            <label class="field field-wide">
+              <span>{{ c.httpConfig }}</span>
+              <textarea
+                :id="globalFieldId('http')"
+                v-model="globalState.httpText"
+                rows="6"
+                placeholder='{ "host": "127.0.0.1", "port": 9876 }'
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
+              ></textarea>
             </label>
           </div>
 

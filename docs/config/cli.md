@@ -317,7 +317,7 @@ SSL证书验证方式，控制HTTPS连接的证书验证行为。
 
 ## Web 控制台与内置调度
 
-提供 `--interval` 会自动启动仅监听本机回环地址的常驻控制台，无需额外写 `web`。Web 进程同时负责周期同步，不需要 cron、systemd timer、launchd job 或 Windows 任务计划程序重复执行 DDNS。原有 `ddns web` 写法继续兼容。
+提供 `--interval` 会自动启动常驻控制台，无需额外写 `web`。Web 进程同时负责周期同步，并在同一监听地址的 `/mcp` 提供 MCP `2026-07-28` Streamable HTTP。原有 `ddns web` 写法继续兼容。
 
 ```bash
 ddns -c /etc/ddns/config.json --interval 5 --open
@@ -326,26 +326,32 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 | 参数 | 描述 |
 |------|------|
 | `-c, --config FILE` | 选择一份可由控制台维护的本地配置文件 |
-| `--host` | 本机监听地址：`127.0.0.1`、`localhost` 或 `::1` |
-| `--port` | 控制台端口，默认 `9876`；设为 `0` 时由系统分配空闲端口 |
+| `--host` | Web/MCP 共享监听地址；默认 `127.0.0.1`，支持具体局域网地址及 `0.0.0.0` / `::` |
+| `--port` | Web/MCP 共享端口，默认 `9876`；设为 `0` 时由系统分配空闲端口 |
+| `--http-token` | Web API 与 HTTP MCP 共享的访问 token；仅允许无空格的可见 ASCII 字符 |
+| `--http-origin ORIGIN` | 允许浏览器跨源访问 `/mcp` 的精确 HTTP(S) origin；可重复 |
 | `--interval MINs` | 当前 Web 进程的内置同步间隔，范围 1–1440 分钟，默认 5 |
 | `--open` | 启动后打开浏览器 |
 
-`--interval` 是显式的 Web 模式标识；本地 JSON 顶层的 `interval` 也会让 `ddns -c FILE` 自动进入 Web 模式。优先级为命令行 `--interval` > JSON `interval` > 默认 5 分钟。控制台中保存的新间隔会写回 JSON 并立即应用；暂停和恢复只影响当前进程，不会创建额外状态文件。生产环境应使用 systemd service、launchd、Windows 服务或 Docker 重启策略保活 Web 进程，而不是再创建周期任务。
+监听配置优先级为命令行 > JSON 顶层 `http` > `DDNS_HTTP_*` 环境变量 > `127.0.0.1:9876`。回环地址未配置 token 时，Web API（包括完整配置和服务商凭据）与 `/mcp` 均免认证；非回环或通配监听必须配置非空、无空格的可见 ASCII token。配置 token 后，页面继续使用 `X-DDNS-Token`，也接受 `Authorization: Bearer`；MCP 使用 Bearer token。
 
-如果检测到已启用的 `ddns task` 系统任务，Web 内置调度会停止执行并显示冲突。可以在控制台中显式接管，或先运行 `ddns task --disable`。两种调度方式不能同时运行。
+DDNS 不提供 TLS。局域网监听必须置于受信 HTTPS 反向代理之后，并保留 `Authorization`、`Host` 和 `Origin`。浏览器跨源访问 `/mcp` 还必须把精确 origin 配置到 `http.origins` 或 `--http-origin`；原生 MCP 客户端可不发送 `Origin`。
+
+`--interval` 是显式的 Web 模式标识；本地 JSON 顶层的 `interval` 也会让 `ddns -c FILE` 自动进入 Web 模式。优先级为命令行 `--interval` > JSON `interval` > 默认 5 分钟。控制台中保存的新间隔会写回 JSON 并立即应用；HTTP 监听和认证设置需重启后生效。暂停和恢复只影响当前进程。
+
+如果检测到已启用的 `ddns task` 系统任务，Web 内置调度会停止执行并显示冲突。可以在控制台中显式接管，或先运行 `ddns task --disable`。不要让多个 Web、MCP 或系统任务进程同时更新同一份配置。
 
 ## MCP 服务
 
-`mcp` 子命令通过 stdio 启动一个仅使用 Python 标准库的本机 MCP 服务。它不会监听网络，也不会在协议参数或结果中返回服务商凭据。
+### stdio（默认）
+
+`mcp` 子命令默认通过 stdio 启动仅使用 Python 标准库的本机 MCP 服务。它不会监听网络，也不会在协议参数或结果中返回服务商凭据。
 
 ```bash
 ddns mcp -c /etc/ddns/config.json
 ```
 
-配置路径优先级为 `-c/--config` > `DDNS_CONFIG` > 默认本地配置路径。MCP 模式只接受一份本地配置文件，不支持远程 URL 或多个 `-c`。stdout 专用于每行一条的 JSON-RPC 消息，运行日志只写入 stderr。
-
-### MCP 客户端配置
+配置路径优先级为 `-c/--config` > `DDNS_CONFIG` > 默认本地配置路径。MCP 模式只接受一份本地配置文件，不支持远程 URL 或多个 `-c`。stdout 专用于每行一条 JSON-RPC 消息，运行日志只写入 stderr。
 
 在 GitHub Copilot CLI 中可以直接添加：
 
@@ -368,6 +374,18 @@ copilot mcp add ddns -- ddns mcp -c /etc/ddns/config.json
 
 Windows JSON 路径中的反斜杠需要写成 `\\`，也可以将 `command` 替换为 `ddns` 可执行文件的绝对路径。
 
+### Streamable HTTP
+
+独立 HTTP MCP 使用：
+
+```bash
+ddns mcp -c /etc/ddns/config.json --transport http
+```
+
+默认 endpoint 为 `http://127.0.0.1:9876/mcp`。也可使用 Web 进程自动提供的同路径 endpoint。独立模式接受与 Web 相同的 `--host`、`--port`、`--http-token` 和 `--http-origin`，并读取同一份 `http` JSON 配置。
+
+HTTP transport 仅支持 MCP `2026-07-28`：每个请求单独 POST 到 `/mcp`，必须携带 `MCP-Protocol-Version`、`Mcp-Method`，调用工具时还需 `Mcp-Name`；`Accept` 必须同时包含 `application/json` 和 `text/event-stream`。当前 tools-only 实现返回 JSON，不提供 SSE、sessions、legacy HTTP、resources、prompts 或 subscriptions。
+
 ### 可用工具
 
 | 工具 | 参数 | 行为 |
@@ -377,9 +395,9 @@ Windows JSON 路径中的反斜杠需要写成 `\\`，也可以将 `command` 替
 
 `update_dns_records` 会修改外部 DNS 状态，客户端应在调用前保留人工确认。工具不接受域名、IP、服务商或凭据参数，避免模型绕过本地配置写入任意记录。
 
-客户端取消更新时，服务会在 IP 获取规则、域名记录及 DNS 服务商之间停止后续处理；已经发送给服务商的 API 请求无法撤销，可能仍会完成。
+stdio 客户端取消更新时，服务会在 IP 获取规则、域名记录及 DNS 服务商之间停止后续处理。当前 HTTP transport 只返回普通 JSON，不提供 SSE 取消；客户端断开后同步可能继续完成，已经发送给服务商的 API 请求也无法撤销。
 
-当前实现支持 MCP `2026-07-28` 的无握手协议，并兼容 GitHub Copilot CLI 使用的 `2025-11-25` `initialize` 生命周期；不兼容更早协议，也不提供 HTTP、resources、prompts 或 subscriptions。状态来自 DDNS 本地缓存；关闭缓存后，独立的后续状态请求无法还原上一进程的同步历史，但更新调用本身仍会返回本次结果。
+stdio 支持 MCP `2026-07-28`，并兼容 `2025-11-25` `initialize` 生命周期；HTTP 仅支持 `2026-07-28`。状态来自 DDNS 本地缓存；关闭缓存后，独立的后续状态请求无法还原另一进程的同步历史，但更新调用本身仍会返回本次结果。
 
 ## Task Management (定时任务管理)
 

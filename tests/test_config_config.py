@@ -133,6 +133,17 @@ class TestConfig(unittest.TestCase):
         self.assertNotIn("interval", config.extra)
         self.assertEqual(config.extra["custom"], "value")
 
+    def test_http_settings_are_runtime_metadata_not_provider_extra(self):
+        """Keep structured and environment HTTP settings away from provider APIs."""
+        config = Config(
+            json_config={"dns": "debug", "http": {"host": "127.0.0.1"}},
+            env_config={"http_token": "shared-secret", "http_origins": ["https://client.example"]},
+        )
+
+        self.assertNotIn("http", config.extra)
+        self.assertNotIn("http_token", config.extra)
+        self.assertNotIn("http_origins", config.extra)
+
     def test_config_array_and_conversion_parameters(self):
         """Test array parameter processing and type conversions"""
         # Array parameters

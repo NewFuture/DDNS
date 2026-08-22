@@ -185,7 +185,27 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertNotIn("default", definition)
         provider_schema = schema["properties"]["providers"]["items"]
         self.assertNotIn("interval", provider_schema["properties"])
-        self.assertEqual(provider_schema["not"], {"required": ["interval"]})
+        self.assertEqual(provider_schema["not"], {"anyOf": [{"required": ["interval"]}, {"required": ["http"]}]})
+
+    def test_http_schema_definition(self):
+        """Define one root-only Web/MCP listener object."""
+        schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "v4.1.json")
+        with open(schema_path, "rb") as schema_file:
+            schema = json.load(schema_file)
+
+        definition = schema["properties"]["http"]
+        self.assertEqual(definition["type"], "object")
+        self.assertFalse(definition["additionalProperties"])
+        self.assertEqual(definition["properties"]["host"]["default"], "127.0.0.1")
+        self.assertEqual(definition["properties"]["port"]["default"], 9876)
+        self.assertEqual(definition["properties"]["port"]["minimum"], 0)
+        self.assertEqual(definition["properties"]["port"]["maximum"], 65535)
+        self.assertEqual(definition["properties"]["origins"]["default"], [])
+        self.assertEqual(definition["properties"]["token"]["pattern"], "^[!-~]+$")
+        self.assertEqual(
+            definition["properties"]["origins"]["items"]["pattern"],
+            r"^https?://(?:\[[0-9A-Fa-f:.%]+\]|[^\s/@?#:]+)(?::[0-9]+)?/?$",
+        )
 
     def test_v40_to_v41_compatibility(self):
         """Test v4.0 config is compatible with v4.1 processing"""

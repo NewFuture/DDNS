@@ -27,6 +27,10 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_PROXY`             | `http://host:port` or `DIRECT`, multiple values separated by semicolons                             | HTTP proxy settings                       | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                 |
 | `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
 | `DDNS_CACHE_MAX_AGE`     | Non-negative integer (seconds)                                                                       | Whole cache file max age; default 259200, `0` clears an existing cache every invocation | `DDNS_CACHE_MAX_AGE=86400` |
+| `DDNS_HTTP_HOST`         | Bind host                                                                                             | Shared Web and HTTP MCP listener          | `DDNS_HTTP_HOST=127.0.0.1` |
+| `DDNS_HTTP_PORT`         | Integer from 0 to 65535                                                                               | Shared Web and HTTP MCP port              | `DDNS_HTTP_PORT=9876` |
+| `DDNS_HTTP_TOKEN`        | Visible ASCII string without spaces                                                                   | Shared Web API and HTTP MCP token         | `DDNS_HTTP_TOKEN="secret"` |
+| `DDNS_HTTP_ORIGINS`      | JSON array or comma/semicolon-separated list                                                          | Exact origins allowed to access `/mcp` cross-origin | `DDNS_HTTP_ORIGINS='["https://ddns.example.com"]'` |
 | `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
 | `DDNS_CRON`              | Cron expression format string (Docker only)                                                          | Cron schedule for Docker container        | `DDNS_CRON="*/10 * * * *"`                                  |
 | `DDNS_LOG_LEVEL`         | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                                     | Logging level                             | `DDNS_LOG_LEVEL="DEBUG"`                                    |
@@ -387,6 +391,12 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   ```
 
 `DDNS_CACHE_MAX_AGE` controls whole-file expiry in seconds. Expiry is checked on the next invocation; the exact boundary is stale and a future mtime is stale. It is not DNS TTL. The cache remains flat JSON with one mtime, so any content write refreshes every entry; no migration is performed and shared-cache limitations are unchanged.
+
+### Web and HTTP MCP
+
+`DDNS_HTTP_HOST`, `DDNS_HTTP_PORT`, `DDNS_HTTP_TOKEN`, and `DDNS_HTTP_ORIGINS` apply to both `ddns web` and `ddns mcp --transport http`. Command-line options and the root JSON `http` object override them.
+
+When loopback has no `DDNS_HTTP_TOKEN`, the Web APIs and `/mcp` are unauthenticated. Non-loopback and wildcard listeners require a non-empty token. DDNS does not include TLS; protect LAN listeners with a trusted HTTPS reverse proxy.
 
 ### Docker Cron Schedule Configuration
 

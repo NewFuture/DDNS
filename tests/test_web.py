@@ -23,6 +23,7 @@ except ImportError:  # Python 2
     from urllib2 import HTTPError, Request, urlopen
 
 from ddns.provider import get_provider_class
+from ddns.mcp import CLIENT_CAPABILITIES_KEY, PROTOCOL_VERSION, PROTOCOL_VERSION_KEY
 from ddns.web.server import DashboardRequestHandler, _resource_bytes, _write_stdout, create_server, serve
 from ddns.web.scheduler import WebScheduler
 from ddns.web.service import (
@@ -236,6 +237,47 @@ class TestDashboardService(unittest.TestCase):
             config["interval"] = invalid
             with self.assertRaises(ConfigValidationError):
                 validate_document(config)
+
+    def test_http_settings_are_validated_and_kept_global(self):
+        """Canonicalize the root listener without leaking it into providers."""
+        config = _valid_config()
+        config["http"] = {
+            "host": "0.0.0.0",
+            "port": "9877",
+            "token": "x",
+            "origins": ["https://CLIENT.example/", "https://client.example"],
+        }
+
+        validated = validate_document(config)
+
+        self.assertEqual(
+            validated["http"], {"host": "0.0.0.0", "port": 9877, "token": "x", "origins": ["https://client.example"]}
+        )
+        self.assertNotIn("http", validated["providers"][0])
+
+    def test_partial_http_settings_preserve_environment_fallbacks(self):
+        """Do not materialize omitted fields that should inherit at startup."""
+        config = _valid_config()
+        config["http"] = {"port": "9877"}
+
+        validated = validate_document(config)
+
+        self.assertEqual(validated["http"], {"port": 9877})
+
+    def test_http_settings_reject_provider_scope_and_null_object(self):
+        """Keep listener settings root-only and structurally valid."""
+        provider_config = _valid_config()
+        provider_config["providers"][0]["http"] = {"host": "127.0.0.1"}
+        lan_config = _valid_config()
+        lan_config["http"] = {"host": "0.0.0.0"}
+        null_config = _valid_config()
+        null_config["http"] = None
+
+        with self.assertRaises(ConfigValidationError):
+            validate_document(provider_config)
+        self.assertEqual(validate_document(lan_config)["http"], {"host": "0.0.0.0"})
+        with self.assertRaises(ConfigValidationError):
+            validate_document(null_config)
 
     def test_provider_interval_is_rejected(self):
         """Require scheduling metadata at the document root."""
@@ -910,6 +952,18 @@ class TestWebScheduler(unittest.TestCase):
 class TestDashboardStartup(unittest.TestCase):
     """Test safe dashboard process startup."""
 
+    def test_create_server_preserves_positional_logger_api(self):
+        """Keep the pre-HTTP public create_server positional signature."""
+        service = MagicMock()
+        service.config_path = "config.json"
+        logger = MagicMock()
+
+        server = create_server(service, "127.0.0.1", 0, logger)
+        self.addCleanup(server.server_close)
+
+        self.assertIsNone(server.access_token)
+        logger.getChild.assert_called()
+
     @patch("ddns.web.server.sys.stdout")
     def test_status_output_is_flushed(self, mock_stdout):
         """Expose the launch URL immediately for long-running processes."""
@@ -917,6 +971,35 @@ class TestDashboardStartup(unittest.TestCase):
 
         mock_stdout.write.assert_called_once_with("ready\n")
         mock_stdout.flush.assert_called_once_with()
+
+    def test_access_log_redacts_launch_token_and_query(self):
+        """Do not persist bootstrap or query credentials in access logs."""
+        handler = MagicMock()
+        handler.path = "/launch/single-use-secret?token=query-secret"
+        handler.address_string.return_value = "127.0.0.1"
+
+        DashboardRequestHandler.log_message(handler, '"%s" %s', handler.path, 302)
+
+        logged = handler.server.logger.info.call_args[0][-1]
+        self.assertNotIn("single-use-secret", logged)
+        self.assertNotIn("query-secret", logged)
+        self.assertIn("/launch/[redacted]", logged)
+
+    def test_access_log_handles_request_parse_failures(self):
+        """Allow the base handler to log errors before assigning a request path."""
+
+        class BareHandler(object):
+            server = MagicMock()
+
+            @staticmethod
+            def address_string():
+                """Return a stable test peer."""
+                return "127.0.0.1"
+
+        handler = BareHandler()
+        DashboardRequestHandler.log_message(handler, "%s", "bad request")
+
+        handler.server.logger.info.assert_called_once()
 
     @patch("ddns.web.server.webbrowser.open")
     @patch("ddns.web.server._write_stdout")
@@ -946,6 +1029,52 @@ class TestDashboardStartup(unittest.TestCase):
         service.stop_scheduler.assert_called_once_with()
         server.server_close.assert_called_once_with()
 
+    @patch("ddns.web.server.webbrowser.open")
+    @patch("ddns.web.server._write_stdout")
+    @patch("ddns.web.server.create_server")
+    @patch("ddns.web.server.DashboardService")
+    def test_tokenless_loopback_prints_direct_dashboard_url(
+        self, mock_service_class, mock_create_server, mock_stdout, mock_open
+    ):
+        """Skip the launch-token exchange when loopback authentication is disabled."""
+        service = MagicMock()
+        service.config_path = "dashboard.json"
+        mock_service_class.return_value = service
+        server = MagicMock()
+        server.server_address = ("127.0.0.1", 4321)
+        server.access_token = None
+        server.serve_forever.side_effect = KeyboardInterrupt
+        mock_create_server.return_value = server
+
+        serve(config_path="dashboard.json", open_browser=True)
+
+        output = "".join(call[0][0] for call in mock_stdout.call_args_list)
+        direct_url = "http://127.0.0.1:4321/#view=overview"
+        self.assertIn(direct_url, output)
+        server.issue_launch_token.assert_not_called()
+        mock_open.assert_called_once_with(direct_url)
+
+    @patch("ddns.web.server.create_server")
+    @patch("ddns.web.server.DashboardService")
+    def test_serve_preserves_original_positional_arguments(self, mock_service_class, mock_create_server):
+        """Append HTTP options without reinterpreting existing positional callers."""
+        logger = MagicMock()
+        service = MagicMock()
+        service.config_path = "dashboard.json"
+        mock_service_class.return_value = service
+        server = MagicMock()
+        server.server_address = ("127.0.0.1", 4321)
+        server.access_token = None
+        server.serve_forever.side_effect = KeyboardInterrupt
+        mock_create_server.return_value = server
+
+        serve("dashboard.json", "127.0.0.1", 0, False, logger, 9)
+
+        mock_service_class.assert_called_once_with(config_path="dashboard.json", logger=logger, scheduler_interval=9)
+        mock_create_server.assert_called_once_with(
+            service=service, host="127.0.0.1", port=0, token=None, origins=None, logger=logger
+        )
+
 
 class TestDashboardServer(unittest.TestCase):
     """Test local HTTP routing and write protections."""
@@ -965,7 +1094,9 @@ class TestDashboardServer(unittest.TestCase):
         self.mock_load_env_config = self.env_patcher.start()
         self.addCleanup(self.env_patcher.stop)
         self.service = DashboardService(config_path=config_path)
-        self.server = create_server(service=self.service, host="127.0.0.1", port=0, logger=MagicMock())
+        self.server = create_server(
+            service=self.service, host="127.0.0.1", port=0, token="test-dashboard-token", logger=MagicMock()
+        )
         self.assertFalse(self.server.allow_reuse_address)
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.daemon = True
@@ -1062,12 +1193,12 @@ class TestDashboardServer(unittest.TestCase):
         self.assertEqual(status, 403)
         self.assertEqual(json.loads(content)["error"]["code"], "invalid_token")
 
-    def test_rejects_nonlocal_host_header(self):
-        """Reject requests carrying a non-loopback Host header."""
+    def test_authenticated_server_accepts_proxy_host_header(self):
+        """Allow authenticated LAN/reverse-proxy host names."""
         status, _, content = self._request("/", headers={"Host": "dashboard.example.com"})
 
-        self.assertEqual(status, 421)
-        self.assertEqual(json.loads(content)["error"]["code"], "invalid_host")
+        self.assertEqual(status, 200)
+        self.assertIn("配置管理", content)
 
     def test_config_api_saves_and_reads_normalized_document(self):
         """Persist configuration through the protected JSON API."""
@@ -1083,6 +1214,56 @@ class TestDashboardServer(unittest.TestCase):
         get_payload = json.loads(get_content)
         self.assertEqual(get_payload["config"]["providers"][0]["index4"], ["public"])
         self.assertEqual(get_payload["model"]["defaults"]["provider"], "debug")
+
+    def test_dashboard_api_accepts_shared_bearer_token(self):
+        """Use the configured HTTP token through either supported Web header."""
+        status, _, content = self._request("/api/config", headers={"Authorization": "Bearer " + self.token})
+
+        self.assertEqual(status, 200)
+        self.assertIn("config", json.loads(content))
+
+    def test_integrated_mcp_uses_shared_listener_and_token(self):
+        """Serve modern MCP from the protected dashboard listener."""
+        message = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {"_meta": {PROTOCOL_VERSION_KEY: PROTOCOL_VERSION, CLIENT_CAPABILITIES_KEY: {}}},
+        }
+        headers = {
+            "Authorization": "Bearer " + self.token,
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+            "MCP-Protocol-Version": PROTOCOL_VERSION,
+            "Mcp-Method": "tools/list",
+        }
+
+        status, _, content = self._request("/mcp", method="POST", payload=message, headers=headers)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            [tool["name"] for tool in json.loads(content)["result"]["tools"]], ["get_ddns_status", "update_dns_records"]
+        )
+
+    def test_tokenless_loopback_allows_api_but_rejects_rebound_host(self):
+        """Honor the approved no-auth loopback mode without dropping Host checks."""
+        self._stop_server()
+        self.server = create_server(service=self.service, host="127.0.0.1", port=0, logger=MagicMock())
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.daemon = True
+        self.thread.start()
+        self.base_url = "http://127.0.0.1:{}".format(self.server.server_address[1])
+        self.token = None
+
+        status, _, content = self._request("/api/config")
+        rebound_status, _, rebound_content = self._request("/api/config", headers={"Host": "dashboard.example.com"})
+        malformed_status, _, _ = self._request("/api/config", headers={"Host": "attacker@127.0.0.1"})
+
+        self.assertEqual(status, 200)
+        self.assertIn("config", json.loads(content))
+        self.assertEqual(rebound_status, 421)
+        self.assertEqual(json.loads(rebound_content)["error"]["code"], "invalid_host")
+        self.assertEqual(malformed_status, 421)
 
 
 if __name__ == "__main__":

@@ -72,8 +72,10 @@ ddns/:	Main application code
 	__init__.py:	Package initialization and version info
 	__main__.py:	Entry point for module execution
 	cache.py:	Cache management
+	http_config.py:	Shared Web and MCP HTTP listener settings
 	ip.py:	IP address detection logic
 	mcp.py:	Model Context Protocol helper utilities
+	mcp_http.py:	MCP Streamable HTTP transport
 
 	config/:	Configuration management
 		__init__.py
@@ -134,6 +136,7 @@ tests/:	Unit tests
 	test_cache.py:	Cache tests
 	test_config_*.py:	Configuration tests
 	test_ip.py:	IP detection tests
+	test_mcp_http.py:	MCP Streamable HTTP tests
 	test_provider_*.py:	Provider-specific tests
 	test_scheduler_*.py:	Scheduler tests
 	test_util_*.py:	Utility tests

@@ -66,6 +66,7 @@ TOOLS = (
     },
 )
 _END_OF_INPUT = object()
+_STDOUT_REDIRECT_LOCK = threading.RLock()
 
 
 def _error_response(request_id, code, message, data=None):
@@ -79,11 +80,17 @@ def _error_response(request_id, code, message, data=None):
 class McpServer(object):
     """Handle modern MCP requests and the Copilot-compatible legacy lifecycle."""
 
-    def __init__(self, config_path=None, logger=None, service_factory=DashboardService):
-        # type: (str | None, logging.Logger | None, object) -> None
+    def __init__(
+        self, config_path=None, logger=None, service_factory=DashboardService, service=None, supported_versions=None
+    ):
+        # type: (str | None, logging.Logger | None, object, DashboardService | None, object | None) -> None
         self.config_path = config_path
         self.logger = (logger or logging.getLogger()).getChild("mcp")
         self._service_factory = service_factory
+        self._service = service
+        self.supported_versions = tuple(
+            SUPPORTED_PROTOCOL_VERSIONS if supported_versions is None else supported_versions
+        )
         self._cancelled = set()
         self._pending = set()
         self._cancel_lock = threading.Lock()
@@ -106,7 +113,7 @@ class McpServer(object):
         # type: () -> dict
         return self._complete_result(
             {
-                "supportedVersions": list(SUPPORTED_PROTOCOL_VERSIONS),
+                "supportedVersions": list(self.supported_versions),
                 "capabilities": {"tools": {}},
                 "instructions": (
                     "Use get_ddns_status to inspect local cached state. "
@@ -133,6 +140,8 @@ class McpServer(object):
 
     def _new_service(self):
         # type: () -> DashboardService
+        if self._service is not None:
+            return self._service
         return self._service_factory(config_path=self.config_path, logger=self.logger)
 
     def _tool_success(self, status, modern):
@@ -166,12 +175,13 @@ class McpServer(object):
             service = self._new_service()
             if name == "get_ddns_status":
                 return self._tool_success(service.dashboard(), modern=modern)
-            protocol_stdout = sys.stdout
-            try:
-                sys.stdout = sys.stderr
-                status = service.sync(source="MCP", cancelled=lambda: self._is_cancelled(request_id))
-            finally:
-                sys.stdout = protocol_stdout
+            with _STDOUT_REDIRECT_LOCK:
+                protocol_stdout = sys.stdout
+                try:
+                    sys.stdout = sys.stderr
+                    status = service.sync(source="MCP", cancelled=lambda: self._is_cancelled(request_id))
+                finally:
+                    sys.stdout = protocol_stdout
             return self._tool_success(status, modern=modern)
         except DashboardError as error:
             return self._tool_error(error, modern=modern)
@@ -252,7 +262,7 @@ class McpServer(object):
                 request_id,
                 -32022,
                 "Unsupported protocol version",
-                {"supported": list(SUPPORTED_PROTOCOL_VERSIONS), "requested": requested_version},
+                {"supported": list(self.supported_versions), "requested": requested_version},
             )
         return self._dispatch_response(request_id, method, params, modern=True)
 
@@ -304,6 +314,26 @@ class McpServer(object):
             return _error_response(request_id, -32602, "Invalid params")
         if method == "initialize" or self._legacy_initialized:
             return self._handle_legacy_request(request_id, method, params)
+        return self._handle_modern_request(request_id, method, params)
+
+    def handle_modern_message(self, message):
+        # type: (object) -> dict | None
+        """Handle one modern request without entering the legacy lifecycle."""
+        if not isinstance(message, dict):
+            return _error_response(None, -32600, "Invalid Request")
+
+        request_id = self._request_id(message)
+        method = message.get("method")
+        if message.get("jsonrpc") != "2.0" or not isinstance(method, string_types):
+            return _error_response(request_id, -32600, "Invalid Request")
+        if "id" not in message:
+            return None
+        if request_id is None:
+            return _error_response(None, -32600, "Invalid Request")
+
+        params = message.get("params", {})
+        if not isinstance(params, dict):
+            return _error_response(request_id, -32602, "Invalid params")
         return self._handle_modern_request(request_id, method, params)
 
     def handle_line(self, line):

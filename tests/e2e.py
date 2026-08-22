@@ -849,6 +849,64 @@ class TestMcpE2E(OfflineE2ETestCase):
         self.assertFalse(responses[3]["result"]["isError"])
         self.assertNotIn("resultType", responses[3]["result"])
 
+    def test_modern_streamable_http_tools(self):
+        """Run modern MCP over the standalone HTTP transport."""
+        config_path = self._write_config(
+            "http-mcp.json", self._callback_config("/callback/http-mcp", ["http-mcp.example.com"], cache=True)
+        )
+        process = self._start(
+            [
+                "mcp",
+                "--transport",
+                "http",
+                "--config",
+                config_path,
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "0",
+                "--http-token",
+                "http-mcp-secret",
+            ]
+        )
+        output = process.wait_for_stdout("DDNS MCP HTTP:", timeout=STARTUP_TIMEOUT)
+        endpoint = next(
+            line.split("DDNS MCP HTTP:", 1)[1].strip() for line in output.splitlines() if "DDNS MCP HTTP:" in line
+        )
+        port = urlparse(endpoint).port
+        self.assertIsNotNone(port)
+
+        requests = [
+            self._modern_request(1, "server/discover"),
+            self._modern_request(2, "tools/call", {"name": "update_dns_records", "arguments": {}}),
+            self._modern_request(3, "tools/call", {"name": "get_ddns_status", "arguments": {}}),
+        ]
+        responses = []
+        for request in requests:
+            headers = {
+                "Authorization": "Bearer http-mcp-secret",
+                "MCP-Protocol-Version": self.MODERN_VERSION,
+                "Mcp-Method": request["method"],
+                "Accept": "application/json, text/event-stream",
+            }
+            if request["method"] == "tools/call":
+                headers["Mcp-Name"] = request["params"]["name"]
+            status, _, body = self._http_request(port, "/mcp", method="POST", payload=request, headers=headers)
+            self.assertEqual(status, 200, body)
+            responses.append(json.loads(body))
+
+        self.assertEqual(responses[0]["result"]["supportedVersions"], [self.MODERN_VERSION])
+        self.assertEqual(responses[1]["result"]["structuredContent"]["state"], "synced")
+        self.assertEqual(responses[2]["result"]["structuredContent"]["records"][0]["domain"], "http-mcp.example.com")
+        self.assertNotIn("http-mcp-secret", json.dumps(responses))
+        self.assertEqual(len(self.fixture_state.requests_for("/callback/http-mcp")), 1)
+
+        returncode = process.stop()
+        if os.name == "nt":
+            self.assertIsNotNone(returncode)
+        else:
+            self.assertEqual(returncode, 0, "MCP HTTP did not stop cleanly.\nstderr:\n{}".format(process.stderr))
+
 
 class TestWebE2E(OfflineE2ETestCase):
     """Exercise the dashboard process and protected JSON API."""
@@ -857,7 +915,19 @@ class TestWebE2E(OfflineE2ETestCase):
         """Start the real dashboard, synchronize, and manage its scheduler."""
         config_path = os.path.join(self.temp_dir, "dashboard.json")
         process = self._start(
-            ["web", "--config", config_path, "--host", "127.0.0.1", "--port", "0", "--interval", "30"]
+            [
+                "web",
+                "--config",
+                config_path,
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "0",
+                "--http-token",
+                "web-http-secret",
+                "--interval",
+                "30",
+            ]
         )
         output = process.wait_for_stdout("DDNS dashboard:", timeout=STARTUP_TIMEOUT)
         launch_url = next(
@@ -886,6 +956,7 @@ class TestWebE2E(OfflineE2ETestCase):
 
         location = launch_headers["Location"]
         access_token = parse_qs(urlparse(location).fragment)["token"][0]
+        self.assertEqual(access_token, "web-http-secret")
         api_headers = {"X-DDNS-Token": access_token}
         config_headers = {"X-DDNS-Token": access_token, "Content-Type": "application/json"}
         callback_token = json.dumps(
@@ -945,6 +1016,32 @@ class TestWebE2E(OfflineE2ETestCase):
         self.assertEqual(dashboard["providers"][0]["status"], "synced")
         self.assertEqual(dashboard["records"][0]["domain"], "web.example.com")
         self.assertEqual(dashboard["records"][0]["value"], TEST_IPV4)
+
+        mcp_request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "get_ddns_status",
+                "arguments": {},
+                "_meta": {
+                    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                    "io.modelcontextprotocol/clientCapabilities": {},
+                },
+            },
+        }
+        mcp_headers = {
+            "Authorization": "Bearer " + access_token,
+            "MCP-Protocol-Version": "2026-07-28",
+            "Mcp-Method": "tools/call",
+            "Mcp-Name": "get_ddns_status",
+            "Accept": "application/json, text/event-stream",
+        }
+        mcp_status, _, mcp_body = self._http_request(
+            port, "/mcp", method="POST", payload=mcp_request, headers=mcp_headers
+        )
+        self.assertEqual(mcp_status, 200, mcp_body)
+        self.assertEqual(json.loads(mcp_body)["result"]["structuredContent"]["state"], "synced")
 
         callback_requests = self.fixture_state.requests_for("/callback/web")
         self.assertEqual(len(callback_requests), 1)

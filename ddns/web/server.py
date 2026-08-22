@@ -17,13 +17,17 @@ import webbrowser
 try:
     from http.server import BaseHTTPRequestHandler, HTTPServer
     from socketserver import ThreadingMixIn
-    from urllib.parse import urlparse
+    from urllib.parse import quote, urlparse
 except ImportError:  # Python 2
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
     from SocketServer import ThreadingMixIn
+    from urllib import quote
     from urlparse import urlparse
 
 from .service import DashboardError, DashboardService
+from ..http_config import is_loopback_host, normalize_http_settings, request_token_matches
+
+MCP_PATH = "/mcp"
 
 try:
     text_type = unicode  # type: ignore[name-defined]
@@ -130,10 +134,18 @@ def _json_bytes(payload):
 def _local_hostname(host_header):
     # type: (str) -> bool
     try:
-        hostname = urlparse("http://{}".format(host_header)).hostname
+        parsed = urlparse("http://{}".format(host_header))
+        parsed.port
     except (AttributeError, TypeError, ValueError):
         return False
-    return hostname in ("127.0.0.1", "localhost", "::1")
+    return (
+        parsed.username is None
+        and parsed.password is None
+        and not parsed.path
+        and not parsed.query
+        and not parsed.fragment
+        and is_loopback_host(parsed.hostname)
+    )
 
 
 class DashboardRequestHandler(BaseHTTPRequestHandler):
@@ -155,7 +167,13 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format_string, *args):
         # type: (str, *object) -> None
-        self.server.logger.info("%s - %s", self.address_string(), format_string % args)  # type: ignore[attr-defined]
+        message = format_string % args
+        request_path = getattr(self, "path", "") or ""
+        if request_path:
+            path = urlparse(request_path).path
+            safe_path = LAUNCH_PATH_PREFIX + "[redacted]" if path.startswith(LAUNCH_PATH_PREFIX) else path
+            message = message.replace(request_path, safe_path)
+        self.server.logger.info("%s - %s", self.address_string(), message)  # type: ignore[attr-defined]
 
     def _security_headers(self):
         # type: () -> None
@@ -206,15 +224,19 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def _request_is_local(self):
         # type: () -> bool
+        if self.access_token is not None:
+            return True
         host_header = self.headers.get("Host", "")
         if _local_hostname(host_header):
             return True
-        self._send_json(421, {"error": {"code": "invalid_host", "message": "Dashboard only accepts local hosts."}})
+        self._send_json(
+            421, {"error": {"code": "invalid_host", "message": "Unauthenticated dashboard only accepts local hosts."}}
+        )
         return False
 
     def _request_has_token(self):
         # type: () -> bool
-        if self.headers.get("X-DDNS-Token") == self.access_token:
+        if request_token_matches(self.headers, self.access_token, allow_dashboard_header=True):
             return True
         self._send_json(403, {"error": {"code": "invalid_token", "message": "Dashboard request token is invalid."}})
         return False
@@ -265,6 +287,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         if not self._request_is_local():
             return
         path = urlparse(self.path).path
+        if path == MCP_PATH:
+            self.server.mcp_endpoint.method_not_allowed(self)  # type: ignore[attr-defined]
+            return
         if path.startswith(LAUNCH_PATH_PREFIX):
             launch_token = path[len(LAUNCH_PATH_PREFIX) :]
             if head_only or not self.server.consume_launch_token(launch_token):  # type: ignore[attr-defined]
@@ -274,7 +299,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                     head_only=head_only,
                 )
                 return
-            self._send_redirect("/#token={}&view=overview".format(self.access_token))
+            token = self.access_token.encode("utf-8") if isinstance(self.access_token, text_type) else self.access_token
+            self._send_redirect("/#token={}&view=overview".format(quote(token, safe="")))
             return
         if path in INDEX_PATHS:
             content = _resource_bytes("index.html")
@@ -318,6 +344,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         # type: () -> None
+        if urlparse(self.path).path == MCP_PATH:
+            self.server.mcp_endpoint.method_not_allowed(self)  # type: ignore[attr-defined]
+            return
         if not self._request_is_local() or not self._request_has_token():
             return
         path = urlparse(self.path).path
@@ -335,6 +364,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         # type: () -> None
+        if urlparse(self.path).path == MCP_PATH:
+            self.server.mcp_endpoint.handle_post(self)  # type: ignore[attr-defined]
+            return
         if not self._request_is_local() or not self._request_has_token():
             return
         path = urlparse(self.path).path
@@ -361,38 +393,64 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         # type: () -> None
+        if urlparse(self.path).path == MCP_PATH:
+            self.server.mcp_endpoint.handle_options(self)  # type: ignore[attr-defined]
+            return
         self._send_json(405, {"error": {"code": "method_not_allowed", "message": "CORS is not enabled."}})
 
+    def do_DELETE(self):
+        # type: () -> None
+        if urlparse(self.path).path == MCP_PATH:
+            self.server.mcp_endpoint.method_not_allowed(self)  # type: ignore[attr-defined]
+            return
+        self._send_not_found()
 
-def create_server(service=None, host="127.0.0.1", port=9876, logger=None):
-    # type: (DashboardService | None, str, int, logging.Logger | None) -> ThreadingHTTPServer
-    """Create a local dashboard server without starting its loop."""
-    if host not in ("127.0.0.1", "localhost", "::1"):
-        raise ValueError("Dashboard host must be a loopback address.")
+
+def create_server(service=None, host="127.0.0.1", port=9876, logger=None, token=None, origins=None):
+    # type: (DashboardService | None, str, int, logging.Logger | None, str | None, list[str] | None) -> ThreadingHTTPServer
+    """Create the shared Web and MCP HTTP server without starting its loop."""
+    settings = normalize_http_settings({"host": host, "port": port, "token": token, "origins": origins or []})
     logger = (logger or logging.getLogger()).getChild("web.server")
-    server_class = ThreadingHTTPServerV6 if host == "::1" else ThreadingHTTPServer
-    server = server_class((host, port), DashboardRequestHandler)
+    server_class = ThreadingHTTPServerV6 if ":" in settings["host"] else ThreadingHTTPServer
+    server = server_class((settings["host"], settings["port"]), DashboardRequestHandler)
     server.dashboard_service = service or DashboardService(logger=logger)
-    server.access_token = binascii.hexlify(os.urandom(24)).decode("ascii")
+    server.access_token = settings["token"]
+    server.http_settings = settings
     server.launch_token_lock = threading.Lock()
     server.launch_token = None
     server.launch_token_expires = 0
     server.logger = logger
+    from ..mcp import PROTOCOL_VERSION, McpServer
+    from ..mcp_http import McpHttpEndpoint
+
+    mcp_server = McpServer(
+        config_path=server.dashboard_service.config_path,
+        logger=logger,
+        service=server.dashboard_service,
+        supported_versions=(PROTOCOL_VERSION,),
+    )
+    server.mcp_endpoint = McpHttpEndpoint(mcp_server, settings=settings, logger=logger)
     return server
 
 
-def serve(config_path=None, host="127.0.0.1", port=9876, open_browser=False, logger=None, interval=5):
-    # type: (str | None, str, int, bool, logging.Logger | None, int) -> None
+def serve(
+    config_path=None, host="127.0.0.1", port=9876, open_browser=False, logger=None, interval=5, token=None, origins=None
+):
+    # type: (str | None, str, int, bool, logging.Logger | None, int, str | None, list[str] | None) -> None
     """Run the embedded dashboard until interrupted."""
     logger = logger or logging.getLogger()
     service = DashboardService(config_path=config_path, logger=logger, scheduler_interval=interval)
-    server = create_server(service=service, host=host, port=port, logger=logger)
+    server = create_server(service=service, host=host, port=port, token=token, origins=origins, logger=logger)
     bound_host, bound_port = server.server_address[:2]
-    display_host = "127.0.0.1" if bound_host == "0.0.0.0" else bound_host
+    display_host = "127.0.0.1" if bound_host == "0.0.0.0" else "::1" if bound_host == "::" else bound_host
     if ":" in display_host:
         display_host = "[{}]".format(display_host)
     origin = "http://{}:{}".format(display_host, bound_port)
-    url = "{}/launch/{}".format(origin, server.issue_launch_token())
+    url = (
+        "{}/launch/{}".format(origin, server.issue_launch_token())
+        if server.access_token is not None
+        else "{}/#view=overview".format(origin)
+    )
     try:
         service.start_scheduler()
         _write_stdout("DDNS dashboard: {}\n".format(url))

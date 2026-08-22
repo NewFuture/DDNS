@@ -23,6 +23,46 @@
       "minimum": 1,
       "maximum": 1440
     },
+    "http": {
+      "$id": "/properties/http",
+      "type": "object",
+      "title": "Web and MCP HTTP listener",
+      "description": "Web控制台与MCP Streamable HTTP共享的监听和认证配置",
+      "properties": {
+        "host": {
+          "type": "string",
+          "minLength": 1,
+          "default": "127.0.0.1",
+          "description": "监听地址；非回环地址和通配地址必须同时配置token"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535,
+          "default": 9876
+        },
+        "token": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "pattern": "^[!-~]+$",
+          "description": "Web API与MCP HTTP共享的Bearer token；回环监听可省略"
+        },
+        "origins": {
+          "type": "array",
+          "uniqueItems": true,
+          "default": [],
+          "items": {
+            "type": "string",
+            "pattern": "^https?://(?:\\[[0-9A-Fa-f:.%]+\\]|[^\\s/@?#:]+)(?::[0-9]+)?/?$"
+          },
+          "description": "允许跨源访问MCP endpoint的精确HTTP(S) origin"
+        }
+      },
+      "additionalProperties": false
+    },
     "providers": {
       "$id": "/properties/providers",
       "type": "array",
@@ -254,8 +294,17 @@
           "provider"
         ],
         "not": {
-          "required": [
-            "interval"
+          "anyOf": [
+            {
+              "required": [
+                "interval"
+              ]
+            },
+            {
+              "required": [
+                "http"
+              ]
+            }
           ]
         },
         "additionalProperties": true
