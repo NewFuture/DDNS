@@ -285,7 +285,7 @@ ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
 
 ## Web console and in-process scheduling
 
-Providing `--interval` automatically starts the long-running console on a loopback address, so the `web` word is optional. The Web process also owns periodic synchronization, so cron, systemd timers, launchd jobs, and Windows Task Scheduler must not invoke DDNS at the same time. The existing `ddns web` form remains compatible.
+Providing `--interval` automatically starts the long-running console, so the `web` word is optional. The Web process also owns periodic synchronization and exposes MCP `2026-07-28` Streamable HTTP at `/mcp` on the same listener. The existing `ddns web` form remains compatible.
 
 ```bash
 ddns -c /etc/ddns/config.json --interval 5 --open
@@ -294,16 +294,24 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 | Option | Description |
 |--------|-------------|
 | `-c, --config FILE` | Select one local configuration file managed by the console |
-| `--host` | Loopback listener: `127.0.0.1`, `localhost`, or `::1` |
-| `--port` | Console port, default `9876`; use `0` to let the OS select an available port |
+| `--host` | Shared Web/MCP bind host; defaults to `127.0.0.1` and accepts a LAN address or `0.0.0.0` / `::` |
+| `--port` | Shared Web/MCP port, default `9876`; use `0` to let the OS select an available port |
+| `--http-token` | Shared Web API and HTTP MCP token; visible ASCII without spaces |
+| `--http-origin ORIGIN` | Exact HTTP(S) origin allowed to access `/mcp` cross-origin; repeatable |
 | `--interval MINs` | Built-in interval for the current Web process, from 1 to 1440 minutes, default 5 |
 | `--open` | Open the browser after startup |
 
-`--interval` is the explicit Web mode signal; a top-level JSON `interval` also makes `ddns -c FILE` enter Web mode automatically. Precedence is command-line `--interval` > JSON `interval` > the 5-minute default. Saving a new interval in the console writes it to JSON and applies it immediately; pausing and resuming affect only the current process and create no extra state file. In production, use a systemd service, launchd, a Windows service, or a Docker restart policy to supervise the Web process instead of creating another periodic task.
+Listener precedence is command line > root JSON `http` > `DDNS_HTTP_*` environment variables > `127.0.0.1:9876`. When loopback has no token, the Web APIs (including full configuration and provider credentials) and `/mcp` are unauthenticated. A non-loopback or wildcard listener requires a non-empty visible-ASCII token without spaces. With a token, the page continues to use `X-DDNS-Token` and also accepts `Authorization: Bearer`; MCP uses the Bearer form.
 
-When an enabled `ddns task` system task is detected, Web scheduling stops and reports a conflict. Explicitly take over in the console or run `ddns task --disable` first. The two scheduling modes cannot run together.
+DDNS does not provide TLS. Put LAN listeners behind a trusted HTTPS reverse proxy that preserves `Authorization`, `Host`, and `Origin`. Browser cross-origin access to `/mcp` must also list the exact origin in `http.origins` or `--http-origin`; native MCP clients may omit `Origin`.
+
+`--interval` is the explicit Web mode signal; a top-level JSON `interval` also makes `ddns -c FILE` enter Web mode automatically. Precedence is command-line `--interval` > JSON `interval` > the 5-minute default. Saving an interval applies it immediately; HTTP listener and authentication changes require a restart.
+
+When an enabled `ddns task` system task is detected, Web scheduling stops and reports a conflict. Explicitly take over in the console or run `ddns task --disable` first. Do not let multiple Web, MCP, or system-task processes update the same configuration concurrently.
 
 ## MCP server
+
+### stdio (default)
 
 The `mcp` subcommand starts a local stdio MCP server implemented with the Python standard library only. It opens no network listener and never returns provider credentials in protocol arguments or results.
 
@@ -312,8 +320,6 @@ ddns mcp -c /etc/ddns/config.json
 ```
 
 Configuration path precedence is `-c/--config` > `DDNS_CONFIG` > the conventional local config paths. MCP mode accepts exactly one local file; remote URLs and multiple `-c` values are rejected. stdout is reserved for one JSON-RPC message per line, while runtime logs go to stderr.
-
-### MCP client configuration
 
 Add the server directly to GitHub Copilot CLI:
 
@@ -336,6 +342,18 @@ Alternatively, add the following to an MCP client configuration:
 
 Escape Windows path backslashes as `\\` in JSON, or replace `command` with the absolute path to the `ddns` executable.
 
+### Streamable HTTP
+
+Run a standalone HTTP MCP server with:
+
+```bash
+ddns mcp -c /etc/ddns/config.json --transport http
+```
+
+The default endpoint is `http://127.0.0.1:9876/mcp`; every Web process exposes the same path automatically. Standalone mode accepts the shared `--host`, `--port`, `--http-token`, and `--http-origin` options and reads the same root `http` JSON settings.
+
+HTTP supports MCP `2026-07-28` only. Each message is a separate POST to `/mcp` with `MCP-Protocol-Version` and `Mcp-Method`; tool calls also require `Mcp-Name`. `Accept` must list both `application/json` and `text/event-stream`. This tools-only implementation returns JSON and does not provide SSE, sessions, legacy HTTP, resources, prompts, or subscriptions.
+
 ### Available tools
 
 | Tool | Arguments | Behavior |
@@ -345,9 +363,9 @@ Escape Windows path backslashes as `\\` in JSON, or replace `command` with the a
 
 `update_dns_records` changes external DNS state, so clients should retain user confirmation before invoking it. The tool accepts no domain, address, provider, or credential arguments, preventing a model from bypassing the local configuration to write arbitrary records.
 
-When a client cancels an update, the server stops before subsequent IP rules, domain records, or providers. A provider API request that has already been sent cannot be rolled back and may still complete.
+When a stdio client cancels an update, the server stops before subsequent IP rules, domain records, or providers. The current HTTP transport returns plain JSON and provides no SSE cancellation; work may continue after an HTTP client disconnects, and a provider request already sent cannot be rolled back.
 
-This implementation supports the handshake-free MCP `2026-07-28` protocol and the `2025-11-25` `initialize` lifecycle used by GitHub Copilot CLI. It does not support earlier revisions or expose HTTP, resources, prompts, or subscriptions. Status comes from the local DDNS cache; when caching is disabled, a later independent status request cannot reconstruct sync history from a previous process, although the update call still returns its own result.
+stdio supports MCP `2026-07-28` and the `2025-11-25` `initialize` lifecycle; HTTP supports `2026-07-28` only. Status comes from the local DDNS cache; with caching disabled, a later request in another process cannot reconstruct previous sync history, although the update call still returns its own result.
 
 ## Task Management
 

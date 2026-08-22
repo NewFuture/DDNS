@@ -28,12 +28,14 @@ class TestWebSubcommand(unittest.TestCase):
         sys.argv = self.original_argv
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def _config_file(self, interval=None):
+    def _config_file(self, interval=None, http=None):
         """Create one local configuration file for CLI routing tests."""
         config_path = os.path.join(self.temp_dir, "config.json")
         document = {"dns": "debug", "ipv4": ["test.example.com"]}
         if interval is not None:
             document["interval"] = interval
+        if http is not None:
+            document["http"] = http
         with io.open(config_path, "w", encoding="utf-8") as config_file:
             config_file.write(json.dumps(document, ensure_ascii=False))
         return config_path
@@ -49,8 +51,10 @@ class TestWebSubcommand(unittest.TestCase):
                 load_config("Test DDNS", "Test doc", "1.0.0", "2026-01-01")
 
         self.assertEqual(context.exception.code, 0)
-        self.assertEqual(captured[0]["host"], "127.0.0.1")
-        self.assertEqual(captured[0]["port"], 9876)
+        self.assertIsNone(captured[0]["host"])
+        self.assertIsNone(captured[0]["port"])
+        self.assertIsNone(captured[0]["http_token"])
+        self.assertIsNone(captured[0]["http_origins"])
         self.assertIsNone(captured[0]["interval"])
         self.assertFalse(captured[0]["open"])
 
@@ -80,8 +84,8 @@ class TestWebSubcommand(unittest.TestCase):
         self.assertEqual(context.exception.code, 0)
         self.assertEqual(captured[0]["command"], "web")
         self.assertEqual(captured[0]["interval"], 12)
-        self.assertEqual(captured[0]["host"], "127.0.0.1")
-        self.assertEqual(captured[0]["port"], 9876)
+        self.assertIsNone(captured[0]["host"])
+        self.assertIsNone(captured[0]["port"])
 
     def test_interval_shorthand_accepts_local_config(self):
         """Keep the common config-first command order for implicit Web mode."""
@@ -251,6 +255,10 @@ class TestWebSubcommand(unittest.TestCase):
             "::1",
             "--port",
             "8765",
+            "--http-token",
+            "shared-secret",
+            "--http-origin",
+            "https://client.example",
             "--interval",
             "12",
             "--open",
@@ -266,12 +274,14 @@ class TestWebSubcommand(unittest.TestCase):
         self.assertEqual(captured[0]["config"], "dashboard.json")
         self.assertEqual(captured[0]["host"], "::1")
         self.assertEqual(captured[0]["port"], 8765)
+        self.assertEqual(captured[0]["http_token"], "shared-secret")
+        self.assertEqual(captured[0]["http_origins"], ["https://client.example"])
         self.assertEqual(captured[0]["interval"], 12)
         self.assertTrue(captured[0]["open"])
         self.assertTrue(captured[0]["debug"])
 
-    def test_web_subcommand_rejects_public_host(self):
-        """Reject dashboard bindings outside loopback addresses."""
+    def test_web_subcommand_requires_token_for_public_host(self):
+        """Reject unauthenticated dashboard bindings outside loopback."""
         sys.argv = ["ddns", "web", "--host", "0.0.0.0"]
 
         with self.assertRaises(SystemExit) as context:
@@ -326,9 +336,16 @@ class TestWebSubcommand(unittest.TestCase):
         )
 
         mock_basic_config.assert_called_once()
-        mock_load_env.assert_not_called()
+        mock_load_env.assert_called_once_with()
         mock_serve.assert_called_once_with(
-            config_path="dashboard.json", host="127.0.0.1", port=7654, open_browser=True, logger=mock.ANY, interval=9
+            config_path="dashboard.json",
+            host="127.0.0.1",
+            port=7654,
+            token=None,
+            origins=[],
+            open_browser=True,
+            logger=mock.ANY,
+            interval=9,
         )
 
     @patch("ddns.web.serve")
@@ -341,7 +358,14 @@ class TestWebSubcommand(unittest.TestCase):
 
         mock_basic_config.assert_called_once()
         mock_serve.assert_called_once_with(
-            config_path=config_path, host="127.0.0.1", port=7654, open_browser=False, logger=mock.ANY, interval=13
+            config_path=config_path,
+            host="127.0.0.1",
+            port=7654,
+            token=None,
+            origins=[],
+            open_browser=False,
+            logger=mock.ANY,
+            interval=13,
         )
 
     @patch("ddns.web.serve")
@@ -357,7 +381,14 @@ class TestWebSubcommand(unittest.TestCase):
         mock_basic_config.assert_called_once()
         mock_load_env.assert_called_once_with()
         mock_serve.assert_called_once_with(
-            config_path=config_path, host="127.0.0.1", port=7654, open_browser=False, logger=mock.ANY, interval=17
+            config_path=config_path,
+            host="127.0.0.1",
+            port=7654,
+            token=None,
+            origins=[],
+            open_browser=False,
+            logger=mock.ANY,
+            interval=17,
         )
 
     @patch("ddns.web.serve")
@@ -370,7 +401,41 @@ class TestWebSubcommand(unittest.TestCase):
         mock_basic_config.assert_called_once()
         mock_load_env.assert_called_once_with()
         mock_serve.assert_called_once_with(
-            config_path="environment.json", host="127.0.0.1", port=7654, open_browser=False, logger=mock.ANY, interval=5
+            config_path="environment.json",
+            host="127.0.0.1",
+            port=7654,
+            token=None,
+            origins=[],
+            open_browser=False,
+            logger=mock.ANY,
+            interval=5,
+        )
+
+    @patch("ddns.web.serve")
+    @patch(
+        "ddns.config.cli.load_env_config",
+        return_value={"http_host": "127.0.0.2", "http_port": "9000", "http_token": "environment"},
+    )
+    @patch("ddns.config.cli.basicConfig")
+    def test_web_handler_applies_http_precedence(self, mock_basic_config, mock_load_env, mock_serve):
+        """Resolve CLI over JSON over environment HTTP settings."""
+        config_path = self._config_file(
+            http={"host": "0.0.0.0", "port": 9001, "token": "json-secret", "origins": ["https://json.example"]}
+        )
+
+        _handle_web_command({"config": config_path, "port": 0, "http_origins": ["https://cli.example"]})
+
+        mock_basic_config.assert_called_once()
+        mock_load_env.assert_called_once_with()
+        mock_serve.assert_called_once_with(
+            config_path=config_path,
+            host="0.0.0.0",
+            port=0,
+            token="json-secret",
+            origins=["https://cli.example"],
+            open_browser=False,
+            logger=mock.ANY,
+            interval=5,
         )
 
     @patch("ddns.web.serve")

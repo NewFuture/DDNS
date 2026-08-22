@@ -71,11 +71,38 @@ Configuration Parameters Table
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
 | cache_max_age | integer | No | `259200` | Cache File Max Age (seconds) | `0` clears an existing cache on the next invocation; distinct from DNS TTL |
 | interval | integer | No | None | Web automatic synchronization interval (minutes) | Root-only, from 1 to 1440; enables Web mode during normal startup |
+| http | object | No | `127.0.0.1:9876` | Shared Web and HTTP MCP listener | Root-only; supports `host`, `port`, `token`, and `origins` |
 | log | object | No | `null` | Log Configuration | Log configuration object, supports `level`, `file`, `format`, `datefmt` parameters |
 
 ### interval
 
 When a root-level `interval` is present, `ddns -c config.json` starts the long-running Web console and synchronizes at that minute interval. Command-line `--interval` overrides the configured value. When both are omitted, normal `ddns -c config.json` still performs one synchronization and exits. `interval` is root-only and must be from 1 to 1440.
+
+### http
+
+`http` controls both the Web console and the MCP `2026-07-28` Streamable HTTP endpoint at `/mcp`:
+
+```jsonc
+{
+  "http": {
+    "host": "127.0.0.1",
+    "port": 9876,
+    "token": null,
+    "origins": ["https://ddns.example.com"]
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|------|------|---------|-------------|
+| `host` | string | `"127.0.0.1"` | Bind host; accepts a LAN address and `0.0.0.0` / `::` |
+| `port` | integer | `9876` | Port from 0 to 65535; `0` lets the OS select one |
+| `token` | string\|null | `null` | Shared Web API and HTTP MCP token; visible ASCII without spaces, stored as plaintext |
+| `origins` | array | `[]` | Exact HTTP(S) origins allowed to access `/mcp` cross-origin; no wildcard or path |
+
+When loopback has no token, the Web APIs (including complete provider configuration and credentials) and `/mcp` are unauthenticated. A non-loopback or wildcard listener requires a non-empty token. HTTP MCP sends it with `Authorization: Bearer`, and the Web page uses the same value. DDNS does not include TLS; put LAN listeners behind a trusted HTTPS reverse proxy and ensure the proxy does not log the token.
+
+Listener precedence is command-line options > JSON `http` > `DDNS_HTTP_HOST`, `DDNS_HTTP_PORT`, `DDNS_HTTP_TOKEN`, and `DDNS_HTTP_ORIGINS` > defaults. Restart the process after saving these settings.
 
 ### dns
 

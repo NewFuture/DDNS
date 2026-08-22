@@ -20,7 +20,7 @@ def _process_multi_providers(config):
     result = []
 
     # 提取全局配置（除providers之外的所有配置）
-    global_config = _flatten_single_config(config, exclude_keys=["providers"], preserve_keys=["extra"])
+    global_config = _flatten_single_config(config, exclude_keys=["providers"], preserve_keys=["extra", "http"])
 
     # 检查providers和dns字段不能同时使用
     if global_config.get("dns"):
@@ -139,7 +139,7 @@ def load_config(config_path, proxy=None, ssl="auto", raw=False, timeout=None):
     if "providers" in config and isinstance(config["providers"], list):
         return _process_multi_providers(config)
     else:
-        return _flatten_single_config(config, preserve_keys=["extra"])
+        return _flatten_single_config(config, preserve_keys=["extra", "http"])
 
 
 def save_config(config_path, config):

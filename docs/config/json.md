@@ -73,11 +73,38 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
 | cache_max_age | integer | 否 | `259200` | 缓存文件最大有效期（秒） | `0` 表示下一次运行清空已有缓存；与 DNS TTL 无关 |
 | interval | integer | 否 | 无 | Web 自动同步间隔（分钟） | 顶层配置，范围 1–1440；配置后普通启动会自动进入 Web 模式 |
+| http | object | 否 | `127.0.0.1:9876` | Web 与 HTTP MCP 共享监听配置 | 顶层配置；支持 `host`、`port`、`token`、`origins` |
 |  log     |       object       |  否  |   `null`    | 日志配置  | 日志配置对象，支持`level`、`file`、`format`、`datefmt`参数                                                |
 
 ### interval
 
 在配置文件顶层设置 `interval` 后，`ddns -c config.json` 会启动常驻 Web 控制台，并按该分钟数自动同步。命令行 `--interval` 优先于配置值；省略两者时，普通 `ddns -c config.json` 仍只同步一次。`interval` 只能配置在顶层，范围为 1–1440。
+
+### http
+
+`http` 同时控制 Web 控制台及 MCP `2026-07-28` Streamable HTTP endpoint `/mcp`：
+
+```jsonc
+{
+  "http": {
+    "host": "127.0.0.1",
+    "port": 9876,
+    "token": null,
+    "origins": ["https://ddns.example.com"]
+  }
+}
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `host` | string | `"127.0.0.1"` | 监听地址；支持具体局域网地址及 `0.0.0.0` / `::` |
+| `port` | integer | `9876` | 监听端口，范围 0–65535；`0` 由系统分配 |
+| `token` | string\|null | `null` | Web API 与 HTTP MCP 共享 token；使用无空格的可见 ASCII 字符，明文保存在配置中 |
+| `origins` | array | `[]` | 允许跨源访问 `/mcp` 的精确 HTTP(S) origin，不支持通配符或路径 |
+
+回环监听且 `token` 为空时，Web API（包括完整 provider 配置和凭据）与 `/mcp` 均免认证。非回环或通配监听必须配置非空 token；HTTP MCP 通过 `Authorization: Bearer` 发送，Web 页面也使用相同 token。DDNS 不内置 TLS，局域网监听应放在受信 HTTPS 反向代理后，并确保代理不会记录 token。
+
+监听设置优先级为命令行参数 > JSON `http` > `DDNS_HTTP_HOST`、`DDNS_HTTP_PORT`、`DDNS_HTTP_TOKEN`、`DDNS_HTTP_ORIGINS` > 默认值。保存这些设置后需重启进程。
 
 ### dns
 
