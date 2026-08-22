@@ -109,7 +109,8 @@ class TestMcpHttpServer(unittest.TestCase):
             connection.request(method, path, body=body, headers=headers or {})
             response = connection.getresponse()
             content = response.read().decode("utf-8")
-            return response.status, dict(response.getheaders()), content
+            headers = {name.lower(): value for name, value in response.getheaders()}
+            return response.status, headers, content
         finally:
             connection.close()
 
@@ -282,10 +283,10 @@ class TestMcpHttpServer(unittest.TestCase):
 
         self.assertEqual(direct_status, 200)
         self.assertEqual(allowed_status, 200)
-        self.assertEqual(allowed_headers["Access-Control-Allow-Origin"], allowed)
+        self.assertEqual(allowed_headers["access-control-allow-origin"], allowed)
         self.assertEqual(denied_status, 403)
         self.assertEqual(options_status, 204)
-        self.assertIn("MCP-Protocol-Version", options_headers["Access-Control-Allow-Headers"])
+        self.assertIn("MCP-Protocol-Version", options_headers["access-control-allow-headers"])
 
     def test_allowed_origin_can_read_transport_errors(self):
         """Attach CORS headers after Origin validation even when the request fails."""
@@ -299,7 +300,7 @@ class TestMcpHttpServer(unittest.TestCase):
         status, response_headers, _ = self._request(message, headers)
 
         self.assertEqual(status, 415)
-        self.assertEqual(response_headers["Access-Control-Allow-Origin"], allowed)
+        self.assertEqual(response_headers["access-control-allow-origin"], allowed)
 
     def test_tokenless_listener_rejects_malformed_loopback_host(self):
         """Do not let userinfo syntax bypass the unauthenticated Host check."""
@@ -328,7 +329,8 @@ class TestMcpHttpServer(unittest.TestCase):
         handler.path = "/mcp?token=do-not-log"
         handler.address_string.return_value = "127.0.0.1"
 
-        McpHttpRequestHandler.log_message(handler, '"%s" %s', handler.path, 200)
+        log_message = getattr(McpHttpRequestHandler.log_message, "im_func", McpHttpRequestHandler.log_message)
+        log_message(handler, '"%s" %s', handler.path, 200)
 
         logged = handler.server.logger.info.call_args[0][-1]
         self.assertNotIn("do-not-log", logged)
@@ -345,7 +347,8 @@ class TestMcpHttpServer(unittest.TestCase):
                 return "127.0.0.1"
 
         handler = BareHandler()
-        McpHttpRequestHandler.log_message(handler, "%s", "bad request")
+        log_message = getattr(McpHttpRequestHandler.log_message, "im_func", McpHttpRequestHandler.log_message)
+        log_message(handler, "%s", "bad request")
 
         handler.server.logger.info.assert_called_once()
 

@@ -978,7 +978,8 @@ class TestDashboardStartup(unittest.TestCase):
         handler.path = "/launch/single-use-secret?token=query-secret"
         handler.address_string.return_value = "127.0.0.1"
 
-        DashboardRequestHandler.log_message(handler, '"%s" %s', handler.path, 302)
+        log_message = getattr(DashboardRequestHandler.log_message, "im_func", DashboardRequestHandler.log_message)
+        log_message(handler, '"%s" %s', handler.path, 302)
 
         logged = handler.server.logger.info.call_args[0][-1]
         self.assertNotIn("single-use-secret", logged)
@@ -997,7 +998,8 @@ class TestDashboardStartup(unittest.TestCase):
                 return "127.0.0.1"
 
         handler = BareHandler()
-        DashboardRequestHandler.log_message(handler, "%s", "bad request")
+        log_message = getattr(DashboardRequestHandler.log_message, "im_func", DashboardRequestHandler.log_message)
+        log_message(handler, "%s", "bad request")
 
         handler.server.logger.info.assert_called_once()
 
