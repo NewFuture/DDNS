@@ -20,7 +20,13 @@ except ImportError:  # Python 2
     from SocketServer import ThreadingMixIn
     from urlparse import urlparse
 
-from .http_config import is_loopback_host, normalize_http_settings, normalize_origin, request_token_matches
+from .http_config import (
+    HTTP_CONNECTION_TIMEOUT,
+    is_loopback_host,
+    normalize_http_settings,
+    normalize_origin,
+    request_token_matches,
+)
 from .mcp import CLIENT_CAPABILITIES_KEY, PROTOCOL_VERSION, PROTOCOL_VERSION_KEY, McpServer, _error_response
 from .web.service import DashboardService
 
@@ -260,10 +266,9 @@ class McpHttpEndpoint(object):
                 pass
         handler.mcp_body_consumed = True
 
-    @staticmethod
-    def _header_mismatch(message, detail):
+    def _header_mismatch(self, message, detail):
         # type: (dict, str) -> McpHttpRequestError
-        request_id = message.get("id")
+        request_id = self.server._request_id(message)
         return McpHttpRequestError(400, _error_response(request_id, HEADER_MISMATCH, detail))
 
     def _validate_envelope(self, handler, message):
@@ -280,7 +285,10 @@ class McpHttpEndpoint(object):
             raise self._header_mismatch(message, "Mcp-Method does not match the JSON-RPC method.")
         if not isinstance(meta.get(CLIENT_CAPABILITIES_KEY) if isinstance(meta, dict) else None, dict):
             raise McpHttpRequestError(
-                400, _error_response(message.get("id"), -32602, "{} is required.".format(CLIENT_CAPABILITIES_KEY))
+                400,
+                _error_response(
+                    self.server._request_id(message), -32602, "{} is required.".format(CLIENT_CAPABILITIES_KEY)
+                ),
             )
         if body_method == "tools/call":
             header_name = _decode_mirrored_value(handler.headers.get("Mcp-Name"))
@@ -356,6 +364,13 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
     allow_reuse_address = False
     daemon_threads = True
+    connection_timeout = HTTP_CONNECTION_TIMEOUT
+
+    def get_request(self):
+        # type: () -> tuple[object, object]
+        request, client_address = HTTPServer.get_request(self)
+        request.settimeout(self.connection_timeout)
+        return request, client_address
 
     def server_bind(self):
         # type: () -> None

@@ -20,6 +20,7 @@ except NameError:
 
 DEFAULT_HTTP_HOST = "127.0.0.1"
 DEFAULT_HTTP_PORT = 9876
+HTTP_CONNECTION_TIMEOUT = 15
 
 
 class HttpConfigError(ValueError):
@@ -248,6 +249,7 @@ def resolve_http_settings(cli_config=None, document=None, env_config=None):
 __all__ = [
     "DEFAULT_HTTP_HOST",
     "DEFAULT_HTTP_PORT",
+    "HTTP_CONNECTION_TIMEOUT",
     "HttpConfigError",
     "is_loopback_host",
     "normalize_http_settings",

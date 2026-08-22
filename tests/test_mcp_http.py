@@ -163,6 +163,21 @@ class TestMcpHttpServer(unittest.TestCase):
             self.assertEqual(status, 400)
             self.assertEqual(json.loads(body)["error"]["code"], -32020)
 
+    def test_transport_errors_never_echo_invalid_request_ids(self):
+        """Use null response IDs until the JSON-RPC request ID is validated."""
+        message = self._message("tools/list")
+        message["id"] = []
+        mismatch_headers = self._headers(message, overrides={"Mcp-Method": "tools/call"})
+
+        mismatch_status, _, mismatch_body = self._request(message, mismatch_headers)
+        del message["params"]["_meta"][CLIENT_CAPABILITIES_KEY]
+        capability_status, _, capability_body = self._request(message, self._headers(message))
+
+        self.assertEqual(mismatch_status, 400)
+        self.assertIsNone(json.loads(mismatch_body)["id"])
+        self.assertEqual(capability_status, 400)
+        self.assertIsNone(json.loads(capability_body)["id"])
+
     def test_requires_json_and_both_accepted_media_types(self):
         """Enforce current Streamable HTTP media negotiation."""
         message = self._message("tools/list")
@@ -266,6 +281,17 @@ class TestMcpHttpServer(unittest.TestCase):
         connection.close()
 
         self.assertIn(b"401 Unauthorized", response)
+
+    def test_incomplete_headers_are_closed_after_read_timeout(self):
+        """Bound worker lifetime before request parsing and authentication."""
+        self.server.connection_timeout = 0.1
+        connection = socket.create_connection(("127.0.0.1", self.port), timeout=2)
+        connection.sendall(b"POST /mcp HTTP/1.1\r\nHost: 127.0.0.1")
+
+        response = connection.recv(4096)
+        connection.close()
+
+        self.assertEqual(response, b"")
 
     def test_origin_policy_and_preflight(self):
         """Allow direct/configured origins and reject untrusted browser origins."""

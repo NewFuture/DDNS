@@ -25,7 +25,7 @@ except ImportError:  # Python 2
     from urlparse import urlparse
 
 from .service import DashboardError, DashboardService
-from ..http_config import is_loopback_host, normalize_http_settings, request_token_matches
+from ..http_config import HTTP_CONNECTION_TIMEOUT, is_loopback_host, normalize_http_settings, request_token_matches
 
 MCP_PATH = "/mcp"
 
@@ -65,6 +65,13 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
     allow_reuse_address = False
     daemon_threads = True
+    connection_timeout = HTTP_CONNECTION_TIMEOUT
+
+    def get_request(self):
+        # type: () -> tuple[object, object]
+        request, client_address = HTTPServer.get_request(self)
+        request.settimeout(self.connection_timeout)
+        return request, client_address
 
     def server_bind(self):
         # type: () -> None

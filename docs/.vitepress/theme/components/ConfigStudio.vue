@@ -1527,9 +1527,16 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
   const port = 'port' in value ? value.port : DEFAULT_HTTP_PORT
   const token = 'token' in value ? value.token : null
   const origins = 'origins' in value ? value.origins : []
-  if (typeof host !== 'string' || !host.trim()) {
+  const normalizedHost =
+    typeof host === 'string' ? host.trim().replace(/^\[|\]$/g, '') : ''
+  if (!normalizedHost || /[\/\\\0]/.test(normalizedHost) || /\s/.test(normalizedHost)) {
     diagnostics.push(
-      makeDiagnostic(childPath(path, 'host'), 'error', 'HTTP 监听地址不能为空。', 'HTTP bind host cannot be empty.'),
+      makeDiagnostic(
+        childPath(path, 'host'),
+        'error',
+        'HTTP 监听地址不能为空，也不能包含空白、斜杠或反斜杠。',
+        'HTTP bind host cannot be empty or contain whitespace or slashes.',
+      ),
     )
   }
   if (typeof port !== 'number' || !Number.isInteger(port) || port < 0 || port > 65535) {
@@ -1546,7 +1553,7 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
     diagnostics.push(
       makeDiagnostic(childPath(path, 'token'), 'error', 'HTTP token 必须是字符串或 null。', 'HTTP token must be a string or null.'),
     )
-  } else if (typeof token === 'string' && token && !/^[!-~]+$/.test(token)) {
+  } else if (typeof token === 'string' && !/^[!-~]+$/.test(token)) {
     diagnostics.push(
       makeDiagnostic(
         childPath(path, 'token'),
@@ -1556,7 +1563,7 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
       ),
     )
   }
-  if (typeof host === 'string' && !isLoopbackHttpHost(host) && !(typeof token === 'string' && token.trim())) {
+  if (typeof host === 'string' && !isLoopbackHttpHost(host) && token === null) {
     diagnostics.push(
       makeDiagnostic(
         childPath(path, 'token'),

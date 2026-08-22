@@ -1100,6 +1100,7 @@ class TestDashboardServer(unittest.TestCase):
             service=self.service, host="127.0.0.1", port=0, token="test-dashboard-token", logger=MagicMock()
         )
         self.assertFalse(self.server.allow_reuse_address)
+        self.assertEqual(self.server.connection_timeout, 15)
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.daemon = True
         self.thread.start()

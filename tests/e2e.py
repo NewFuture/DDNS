@@ -904,6 +904,10 @@ class TestMcpE2E(OfflineE2ETestCase):
         returncode = process.stop()
         if os.name == "nt":
             self.assertIsNotNone(returncode)
+        elif E2E_EXECUTABLE:
+            self.assertIn(
+                returncode, (0, 130), "MCP HTTP did not stop after SIGINT.\nstderr:\n{}".format(process.stderr)
+            )
         else:
             self.assertEqual(returncode, 0, "MCP HTTP did not stop cleanly.\nstderr:\n{}".format(process.stderr))
 
