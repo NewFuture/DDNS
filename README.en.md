@@ -117,7 +117,7 @@ Let a local MCP client such as GitHub Copilot inspect cached status or trigger o
 ddns mcp -c /etc/ddns/config.json
 ```
 
-This stdio server uses only the Python standard library, opens no network listener, and does not expose configuration credentials to the model. It supports MCP `2026-07-28` and the `2025-11-25` lifecycle used by GitHub Copilot CLI. See the [MCP command documentation](docs/en/config/cli.md#mcp-server) for client setup, tools, and limitations.
+This stdio server uses only the Python standard library, opens no network listener, and does not expose configuration credentials to the model. It supports MCP `2026-07-28` and the `2025-11-25` lifecycle used by GitHub Copilot CLI. See the [MCP server documentation](docs/en/config/mcp.md) for client setup, tools, and limitations.
 
 MCP clients that cannot launch a local process can use the standalone HTTP endpoint:
 

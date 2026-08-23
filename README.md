@@ -117,7 +117,7 @@ ddns -c config.json --interval 5 --open
 ddns mcp -c /etc/ddns/config.json
 ```
 
-该 stdio 服务只使用 Python 标准库，不监听网络，也不会向模型暴露配置凭据；支持 MCP `2026-07-28`，并兼容 GitHub Copilot CLI 使用的 `2025-11-25`。具体客户端配置、工具与限制见 [MCP 命令文档](docs/config/cli.md#mcp-服务)。
+该 stdio 服务只使用 Python 标准库，不监听网络，也不会向模型暴露配置凭据；支持 MCP `2026-07-28`，并兼容 GitHub Copilot CLI 使用的 `2025-11-25`。具体客户端配置、工具与限制见 [MCP 服务文档](docs/config/mcp.md)。
 
 不能启动本机进程的 MCP 客户端也可连接独立 HTTP endpoint：
 

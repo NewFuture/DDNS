@@ -149,6 +149,7 @@ docs/:	Documentation (VitePress-based)
 		cli.md:	CLI usage guide
 		env.md:	Environment variables guide
 		json.md:	JSON configuration guide
+		mcp.md:	MCP server guide
 
 	dev/:	Developer guides (Chinese)
 		provider.md:	Provider development guide

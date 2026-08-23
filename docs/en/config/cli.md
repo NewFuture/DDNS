@@ -285,7 +285,7 @@ ddns --dns alidns --id ACCESS_KEY --token SECRET_KEY \
 
 ## Web console and in-process scheduling
 
-Providing `--interval` automatically starts the long-running console, so the `web` word is optional. The Web process also owns periodic synchronization and exposes MCP `2026-07-28` Streamable HTTP at `/mcp` on the same listener. The existing `ddns web` form remains compatible.
+Providing `--interval` automatically starts the long-running console, so the `web` word is optional. The Web process also owns periodic synchronization and exposes [MCP `2026-07-28` Streamable HTTP](mcp.md) at `/mcp` on the same listener. The existing `ddns web` form remains compatible.
 
 ```bash
 ddns -c /etc/ddns/config.json --interval 5 --open
@@ -309,63 +309,7 @@ DDNS does not provide TLS. Put LAN listeners behind a trusted HTTPS reverse prox
 
 When an enabled `ddns task` system task is detected, Web scheduling stops and reports a conflict. Explicitly take over in the console or run `ddns task --disable` first. Do not let multiple Web, MCP, or system-task processes update the same configuration concurrently.
 
-## MCP server
-
-### stdio (default)
-
-The `mcp` subcommand starts a local stdio MCP server implemented with the Python standard library only. It opens no network listener and never returns provider credentials in protocol arguments or results.
-
-```bash
-ddns mcp -c /etc/ddns/config.json
-```
-
-Configuration path precedence is `-c/--config` > `DDNS_CONFIG` > the conventional local config paths. MCP mode accepts exactly one local file; remote URLs and multiple `-c` values are rejected. stdout is reserved for one JSON-RPC message per line, while runtime logs go to stderr.
-
-Add the server directly to GitHub Copilot CLI:
-
-```bash
-copilot mcp add ddns -- ddns mcp -c /etc/ddns/config.json
-```
-
-Alternatively, add the following to an MCP client configuration:
-
-```json
-{
-  "mcpServers": {
-    "ddns": {
-      "command": "ddns",
-      "args": ["mcp", "-c", "/etc/ddns/config.json"]
-    }
-  }
-}
-```
-
-Escape Windows path backslashes as `\\` in JSON, or replace `command` with the absolute path to the `ddns` executable.
-
-### Streamable HTTP
-
-Run a standalone HTTP MCP server with:
-
-```bash
-ddns mcp -c /etc/ddns/config.json --transport http
-```
-
-The default endpoint is `http://127.0.0.1:9876/mcp`; every Web process exposes the same path automatically. Standalone mode accepts the shared `--host`, `--port`, `--http-token`, and `--http-origin` options and reads the same root `http` JSON settings.
-
-HTTP supports MCP `2026-07-28` only. Each message is a separate POST to `/mcp` using `Content-Type: application/json` with `MCP-Protocol-Version` and `Mcp-Method`; tool calls also require `Mcp-Name`. `Accept` must list both `application/json` and `text/event-stream`. This tools-only implementation returns JSON and does not provide SSE, sessions, legacy HTTP, resources, prompts, or subscriptions.
-
-### Available tools
-
-| Tool | Arguments | Behavior |
-|------|-----------|----------|
-| `get_ddns_status` | None | Read local configuration, cached addresses and records, provider summaries, and the latest sync time; it does not query providers live |
-| `update_dns_records` | None | Resolve current addresses using the configuration, synchronize every configured record once, and return the resulting status |
-
-`update_dns_records` changes external DNS state, so clients should retain user confirmation before invoking it. The tool accepts no domain, address, provider, or credential arguments, preventing a model from bypassing the local configuration to write arbitrary records.
-
-When a stdio client cancels an update, the server stops before subsequent IP rules, domain records, or providers. The current HTTP transport returns plain JSON and provides no SSE cancellation; work may continue after an HTTP client disconnects, and a provider request already sent cannot be rolled back.
-
-stdio supports MCP `2026-07-28` and the `2025-11-25` `initialize` lifecycle; HTTP supports `2026-07-28` only. Status comes from the local DDNS cache; with caching disabled, a later request in another process cannot reconstruct previous sync history, although the update call still returns its own result.
+See [MCP Server](mcp.md) for client configuration, stdio and HTTP usage, tools, and protocol limits.
 
 ## Task Management
 
