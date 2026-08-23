@@ -183,12 +183,18 @@ class TestMcpHttpServer(unittest.TestCase):
         message = self._message("tools/list")
         wrong_content = self._headers(message, overrides={"Content-Type": "text/plain"})
         incomplete_accept = self._headers(message, overrides={"Accept": "application/json"})
+        refused_json = self._headers(message, overrides={"Accept": "application/json; q=0, text/event-stream"})
+        invalid_quality = self._headers(message, overrides={"Accept": "application/json; q=invalid, text/event-stream"})
 
         content_status, _, _ = self._request(message, wrong_content)
         accept_status, _, _ = self._request(message, incomplete_accept)
+        refused_status, _, _ = self._request(message, refused_json)
+        invalid_status, _, _ = self._request(message, invalid_quality)
 
         self.assertEqual(content_status, 415)
         self.assertEqual(accept_status, 406)
+        self.assertEqual(refused_status, 406)
+        self.assertEqual(invalid_status, 406)
 
     def test_rejects_json_rpc_batches(self):
         """Do not accept JSON-RPC batch arrays."""

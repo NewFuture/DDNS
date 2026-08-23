@@ -195,7 +195,25 @@ class McpHttpEndpoint(object):
     @staticmethod
     def _media_types(header_value):
         # type: (str) -> set[str]
-        return {item.split(";", 1)[0].strip().lower() for item in header_value.split(",") if item.strip()}
+        accepted = set()
+        for item in header_value.split(","):
+            parts = [part.strip() for part in item.split(";")]
+            if not parts[0]:
+                continue
+            quality = 1.0
+            valid = True
+            for parameter in parts[1:]:
+                name, separator, value = parameter.partition("=")
+                if separator and name.strip().lower() == "q":
+                    try:
+                        quality = float(value.strip())
+                    except (TypeError, ValueError):
+                        valid = False
+                    if quality < 0 or quality > 1:
+                        valid = False
+            if valid and quality > 0:
+                accepted.add(parts[0].lower())
+        return accepted
 
     def _read_message(self, handler):
         # type: (BaseHTTPRequestHandler) -> dict

@@ -197,6 +197,7 @@ class TestAllConfigFormatsIntegration(unittest.TestCase):
         self.assertEqual(definition["type"], "object")
         self.assertFalse(definition["additionalProperties"])
         self.assertEqual(definition["properties"]["host"]["default"], "127.0.0.1")
+        self.assertEqual(definition["properties"]["host"]["pattern"], r"^[^\s/\\\u0000]+$")
         self.assertEqual(definition["properties"]["port"]["default"], 9876)
         self.assertEqual(definition["properties"]["port"]["minimum"], 0)
         self.assertEqual(definition["properties"]["port"]["maximum"], 65535)
