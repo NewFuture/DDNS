@@ -277,6 +277,25 @@ class TestMcpHttpServer(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertEqual(json.loads(body)["error"]["code"], -32601)
 
+    def test_named_unsupported_methods_validate_mcp_name_first(self):
+        """Validate standard named envelopes before reporting unsupported methods."""
+        cases = (
+            ("resources/read", {"uri": "file:///status"}, "file:///status"),
+            ("prompts/get", {"name": "status"}, "status"),
+        )
+        for method, params, name in cases:
+            message = self._message(method, params)
+            headers = self._headers(message)
+
+            missing_status, _, missing_body = self._request(message, headers)
+            headers["Mcp-Name"] = name
+            valid_status, _, valid_body = self._request(message, headers)
+
+            self.assertEqual(missing_status, 400)
+            self.assertEqual(json.loads(missing_body)["error"]["code"], -32020)
+            self.assertEqual(valid_status, 404)
+            self.assertEqual(json.loads(valid_body)["error"]["code"], -32601)
+
     def test_decodes_base64_mcp_name_before_validation(self):
         """Accept the protocol sentinel encoding for mirrored non-plain values."""
         message = self._message("tools/call", {"name": "get_ddns_status", "arguments": {}})

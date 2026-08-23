@@ -345,11 +345,12 @@ class McpHttpEndpoint(object):
                     self.server._request_id(message), -32602, "{} is required.".format(CLIENT_CAPABILITIES_KEY)
                 ),
             )
-        if body_method == "tools/call":
+        name_field = {"tools/call": "name", "prompts/get": "name", "resources/read": "uri"}.get(body_method)
+        if name_field is not None:
             header_name = _decode_mirrored_value(handler.headers.get("Mcp-Name"))
-            body_name = params.get("name") if isinstance(params, dict) else None
+            body_name = params.get(name_field) if isinstance(params, dict) else None
             if not header_name or header_name != body_name:
-                raise self._header_mismatch(message, "Mcp-Name does not match the requested tool.")
+                raise self._header_mismatch(message, "Mcp-Name does not match the named request.")
 
     def handle_post(self, handler):
         # type: (BaseHTTPRequestHandler) -> None
