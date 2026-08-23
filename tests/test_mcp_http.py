@@ -172,6 +172,35 @@ class TestMcpHttpServer(unittest.TestCase):
             self.assertEqual(status, 400)
             self.assertEqual(json.loads(body)["error"]["code"], -32020)
 
+    def test_rejects_duplicate_routing_headers(self):
+        """Reject ambiguous routing metadata before dispatch."""
+        message = self._message("tools/list")
+        body = json.dumps(message, separators=(",", ":")).encode("utf-8")
+        request = (
+            "POST /mcp HTTP/1.1\r\n"
+            "Host: 127.0.0.1:{port}\r\n"
+            "Content-Type: application/json\r\n"
+            "Accept: application/json, text/event-stream\r\n"
+            "MCP-Protocol-Version: {version}\r\n"
+            "MCP-Protocol-Version: {version}\r\n"
+            "Mcp-Method: tools/list\r\n"
+            "Content-Length: {length}\r\n"
+            "\r\n"
+        ).format(port=self.port, version=PROTOCOL_VERSION, length=len(body))
+        connection = socket.create_connection(("127.0.0.1", self.port), timeout=2)
+        connection.sendall(request.encode("ascii") + body)
+        chunks = []
+        while True:
+            chunk = connection.recv(4096)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        connection.close()
+        response = b"".join(chunks)
+
+        self.assertIn(b"400 Bad Request", response)
+        self.assertIn(b"-32020", response)
+
     def test_transport_errors_never_echo_invalid_request_ids(self):
         """Use null response IDs until the JSON-RPC request ID is validated."""
         message = self._message("tools/list")

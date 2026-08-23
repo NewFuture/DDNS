@@ -289,6 +289,18 @@ class McpHttpEndpoint(object):
         request_id = self.server._request_id(message)
         return McpHttpRequestError(400, _error_response(request_id, HEADER_MISMATCH, detail))
 
+    @staticmethod
+    def _header_values(headers, name):
+        # type: (object, str) -> list[str]
+        get_all = getattr(headers, "get_all", None)
+        if get_all is not None:
+            return get_all(name, [])
+        getheaders = getattr(headers, "getheaders", None)
+        if getheaders is not None:
+            return getheaders(name)
+        value = headers.get(name)
+        return [] if value is None else [value]
+
     def _validate_message(self, message):
         # type: (dict) -> None
         request_id = self.server._request_id(message) if "id" in message else None
@@ -303,6 +315,9 @@ class McpHttpEndpoint(object):
 
     def _validate_envelope(self, handler, message):
         # type: (BaseHTTPRequestHandler, dict) -> None
+        for header_name in ("MCP-Protocol-Version", "Mcp-Method", "Mcp-Name"):
+            if len(self._header_values(handler.headers, header_name)) > 1:
+                raise self._header_mismatch(message, "{} must not be repeated.".format(header_name))
         header_version = handler.headers.get("MCP-Protocol-Version")
         header_method = handler.headers.get("Mcp-Method")
         body_method = message.get("method")
