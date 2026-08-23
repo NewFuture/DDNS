@@ -392,11 +392,15 @@ class McpHttpEndpoint(object):
 
     def method_not_allowed(self, handler):
         # type: (BaseHTTPRequestHandler) -> None
+        if not self._origin_allowed(handler):
+            self._send(
+                handler, 403, {"error": {"code": "invalid_origin", "message": "HTTP request origin is not allowed."}}
+            )
+            return
+        headers = {"Allow": "POST, OPTIONS"}
+        headers.update(self._cors_headers(handler))
         self._send(
-            handler,
-            405,
-            {"error": {"code": "method_not_allowed", "message": "MCP HTTP only accepts POST."}},
-            {"Allow": "POST, OPTIONS"},
+            handler, 405, {"error": {"code": "method_not_allowed", "message": "MCP HTTP only accepts POST."}}, headers
         )
 
 

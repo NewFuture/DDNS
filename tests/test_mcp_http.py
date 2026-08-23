@@ -379,6 +379,19 @@ class TestMcpHttpServer(unittest.TestCase):
         self.assertIn("method_not_allowed", method_body)
         self.assertEqual(path_status, 404)
 
+    def test_non_post_requests_enforce_origin_policy(self):
+        """Validate Origin before returning the MCP method error."""
+        allowed = "https://client.example"
+        self._start_server(origins=[allowed])
+        message = self._message("tools/list")
+
+        denied_status, _, _ = self._request(message, {"Origin": "https://evil.example"}, method="GET", raw_body=b"")
+        allowed_status, allowed_headers, _ = self._request(message, {"Origin": allowed}, method="GET", raw_body=b"")
+
+        self.assertEqual(denied_status, 403)
+        self.assertEqual(allowed_status, 405)
+        self.assertEqual(allowed_headers["access-control-allow-origin"], allowed)
+
     def test_access_log_drops_query_values(self):
         """Keep accidental query-string credentials out of HTTP logs."""
         handler = MagicMock()
