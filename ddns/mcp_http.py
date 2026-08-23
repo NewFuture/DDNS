@@ -289,6 +289,18 @@ class McpHttpEndpoint(object):
         request_id = self.server._request_id(message)
         return McpHttpRequestError(400, _error_response(request_id, HEADER_MISMATCH, detail))
 
+    def _validate_message(self, message):
+        # type: (dict) -> None
+        request_id = self.server._request_id(message) if "id" in message else None
+        if (
+            message.get("jsonrpc") != "2.0"
+            or not isinstance(message.get("method"), string_types)
+            or ("id" in message and request_id is None)
+        ):
+            raise McpHttpRequestError(400, _error_response(request_id, -32600, "Invalid Request"))
+        if not isinstance(message.get("params", {}), dict):
+            raise McpHttpRequestError(400, _error_response(request_id, -32602, "Invalid params"))
+
     def _validate_envelope(self, handler, message):
         # type: (BaseHTTPRequestHandler, dict) -> None
         header_version = handler.headers.get("MCP-Protocol-Version")
@@ -320,6 +332,7 @@ class McpHttpEndpoint(object):
         try:
             self._validate_access(handler)
             message = self._read_message(handler)
+            self._validate_message(message)
             self._validate_envelope(handler, message)
         except McpHttpRequestError as error:
             self._discard_request_body(handler)

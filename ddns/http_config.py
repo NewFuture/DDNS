@@ -99,7 +99,9 @@ def _normalize_host(value):
     if not isinstance(value, string_types):
         raise HttpConfigError("HTTP host must be a string.")
     host = value.strip()
-    if host.startswith("[") and host.endswith("]"):
+    if host.startswith("[") != host.endswith("]"):
+        raise HttpConfigError("HTTP host contains mismatched brackets.")
+    if host.startswith("["):
         host = host[1:-1]
     if (
         not host
@@ -129,9 +131,9 @@ def _normalize_token(value):
         return None
     if not isinstance(value, string_types):
         raise HttpConfigError("HTTP token must be a string or null.")
-    token = value.strip()
+    token = value
     if not token:
-        return None
+        raise HttpConfigError("HTTP token must be non-empty or null.")
     if "\r" in token or "\n" in token or "\x00" in token:
         raise HttpConfigError("HTTP token cannot contain control characters.")
     try:

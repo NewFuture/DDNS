@@ -1486,7 +1486,9 @@ function hasDuplicates(values: unknown[]): boolean {
 }
 
 function isLoopbackHttpHost(value: string): boolean {
-  const host = value.trim().toLowerCase().replace(/^\[|\]$/g, '')
+  const trimmed = value.trim().toLowerCase()
+  if (trimmed.startsWith('[') !== trimmed.endsWith(']')) return false
+  const host = trimmed.startsWith('[') ? trimmed.slice(1, -1) : trimmed
   if (host === 'localhost' || host === '::1') return true
   const octets = host.split('.')
   return (
@@ -1527,9 +1529,15 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
   const port = 'port' in value ? value.port : DEFAULT_HTTP_PORT
   const token = 'token' in value ? value.token : null
   const origins = 'origins' in value ? value.origins : []
-  const normalizedHost =
-    typeof host === 'string' ? host.trim().replace(/^\[|\]$/g, '') : ''
-  if (!normalizedHost || /[\/\\\0]/.test(normalizedHost) || /\s/.test(normalizedHost)) {
+  const rawHost = typeof host === 'string' ? host.trim() : ''
+  const mismatchedBrackets = rawHost.startsWith('[') !== rawHost.endsWith(']')
+  const normalizedHost = rawHost.startsWith('[') && rawHost.endsWith(']') ? rawHost.slice(1, -1) : rawHost
+  if (
+    mismatchedBrackets ||
+    !normalizedHost ||
+    /[\/\\\0]/.test(normalizedHost) ||
+    /\s/.test(normalizedHost)
+  ) {
     diagnostics.push(
       makeDiagnostic(
         childPath(path, 'host'),
@@ -1563,7 +1571,7 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
       ),
     )
   }
-  if (typeof host === 'string' && !isLoopbackHttpHost(host) && token === null) {
+  if (typeof host === 'string' && !mismatchedBrackets && !isLoopbackHttpHost(host) && token === null) {
     diagnostics.push(
       makeDiagnostic(
         childPath(path, 'token'),

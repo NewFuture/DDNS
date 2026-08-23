@@ -206,6 +206,21 @@ class TestMcpHttpServer(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(json.loads(body)["error"]["code"], -32600)
 
+    def test_invalid_json_rpc_shape_is_bad_request_before_header_validation(self):
+        """Classify malformed JSON-RPC requests before mirrored-header checks."""
+        missing_method = self._message("tools/list")
+        del missing_method["method"]
+        missing_jsonrpc = self._message("tools/list")
+        del missing_jsonrpc["jsonrpc"]
+
+        method_status, _, method_body = self._request(missing_method, self._headers(self._message("tools/list")))
+        jsonrpc_status, _, jsonrpc_body = self._request(missing_jsonrpc, self._headers(missing_jsonrpc))
+
+        self.assertEqual(method_status, 400)
+        self.assertEqual(json.loads(method_body)["error"]["code"], -32600)
+        self.assertEqual(jsonrpc_status, 400)
+        self.assertEqual(json.loads(jsonrpc_body)["error"]["code"], -32600)
+
     def test_rejects_legacy_protocol_on_http(self):
         """Keep the legacy initialize era limited to stdio."""
         message = self._message("tools/list", version="2025-11-25")
@@ -421,8 +436,11 @@ class TestHttpSettings(unittest.TestCase):
         invalid_settings = (
             {"port": 1.5},
             {"host": "127.0.0.1/path"},
+            {"host": "[::1"},
             {"origins": None},
             {"origins": ["https://client.example/path"]},
+            {"token": ""},
+            {"token": "   "},
             {"token": "two words"},
             {"token": "not ascii 密钥"},
         )
