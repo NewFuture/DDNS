@@ -303,7 +303,7 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 
 Listener precedence is command line > root JSON `http` > `DDNS_HTTP_*` environment variables > `127.0.0.1:9876`. When loopback has no token, the Web APIs (including full configuration and provider credentials) and `/mcp` are unauthenticated. A non-loopback or wildcard listener requires a non-empty visible-ASCII token without spaces. With a token, the page continues to use `X-DDNS-Token` and also accepts `Authorization: Bearer`; MCP uses the Bearer form.
 
-DDNS does not provide TLS. Put LAN listeners behind a trusted HTTPS reverse proxy that preserves `Authorization`, `Host`, and `Origin`. Browser cross-origin access to `/mcp` must also list the exact origin in `http.origins` or `--http-origin`; native MCP clients may omit `Origin`.
+DDNS does not provide TLS. Put LAN listeners behind a trusted HTTPS reverse proxy that preserves `Authorization`, `Host`, and `Origin`. Browser access through a TLS-terminating proxy must list the exact public HTTPS origin in `http.origins` or `--http-origin`, even when the public page appears same-origin; native MCP clients may omit `Origin`.
 
 `--interval` is the explicit Web mode signal; a top-level JSON `interval` also makes `ddns -c FILE` enter Web mode automatically. Precedence is command-line `--interval` > JSON `interval` > the 5-minute default. Saving an interval applies it immediately; HTTP listener and authentication changes require a restart.
 

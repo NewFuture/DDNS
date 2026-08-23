@@ -335,7 +335,7 @@ ddns -c /etc/ddns/config.json --interval 5 --open
 
 监听配置优先级为命令行 > JSON 顶层 `http` > `DDNS_HTTP_*` 环境变量 > `127.0.0.1:9876`。回环地址未配置 token 时，Web API（包括完整配置和服务商凭据）与 `/mcp` 均免认证；非回环或通配监听必须配置非空、无空格的可见 ASCII token。配置 token 后，页面继续使用 `X-DDNS-Token`，也接受 `Authorization: Bearer`；MCP 使用 Bearer token。
 
-DDNS 不提供 TLS。局域网监听必须置于受信 HTTPS 反向代理之后，并保留 `Authorization`、`Host` 和 `Origin`。浏览器跨源访问 `/mcp` 还必须把精确 origin 配置到 `http.origins` 或 `--http-origin`；原生 MCP 客户端可不发送 `Origin`。
+DDNS 不提供 TLS。局域网监听必须置于受信 HTTPS 反向代理之后，并保留 `Authorization`、`Host` 和 `Origin`。浏览器通过 TLS 终止代理访问 `/mcp` 时，即使公网页面看起来同源，也必须把精确的公网 HTTPS origin 配置到 `http.origins` 或 `--http-origin`；原生 MCP 客户端可不发送 `Origin`。
 
 `--interval` 是显式的 Web 模式标识；本地 JSON 顶层的 `interval` 也会让 `ddns -c FILE` 自动进入 Web 模式。优先级为命令行 `--interval` > JSON `interval` > 默认 5 分钟。控制台中保存的新间隔会写回 JSON 并立即应用；HTTP 监听和认证设置需重启后生效。暂停和恢复只影响当前进程。
 
