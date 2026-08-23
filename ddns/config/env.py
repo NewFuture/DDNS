@@ -72,6 +72,8 @@ def load_config(prefix="DDNS_"):
             config_key = lower_key[len(prefix) :].replace(".", "_")  # noqa: E203
 
         if config_key:
-            env_vars[config_key] = _try_parse_array(value, key=key)
+            env_vars[config_key] = (
+                value.strip() if config_key in ("token", "http_token") else _try_parse_array(value, key=key)
+            )
 
     return env_vars

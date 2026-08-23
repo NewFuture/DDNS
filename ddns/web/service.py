@@ -19,6 +19,7 @@ from ast import literal_eval
 from ..config.config import Config, split_array_string
 from ..config.env import load_config as load_env_config
 from ..config.file import DEFAULT_CONFIG_PATHS, _flatten_single_config, _process_multi_providers
+from ..http_config import HttpConfigError, normalize_http_settings
 from ..provider import get_provider_class
 from ..util.comment import remove_comment
 from ..util.fileio import read_file
@@ -102,6 +103,11 @@ FLAT_METADATA_FIELDS = {
     "log_format",
     "log_level",
     "interval",
+    "http",
+    "http_host",
+    "http_port",
+    "http_token",
+    "http_origins",
     "provider",
 }
 
@@ -169,9 +175,9 @@ def resolve_config_path(config_path=None):
 
 def _global_from_flat(source):
     # type: (dict) -> dict
-    flat_source = _flatten_single_config(source, preserve_keys=["extra"])
+    flat_source = _flatten_single_config(source, preserve_keys=["extra", "http"])
     result = {}
-    for key in ("ssl", "proxy", "cache", "cache_max_age", "interval"):
+    for key in ("ssl", "proxy", "cache", "cache_max_age", "interval", "http"):
         if key in flat_source:
             result[key] = copy.deepcopy(flat_source[key])
 
@@ -191,7 +197,7 @@ def _global_from_flat(source):
 
 def _provider_from_flat(source, exclude_keys=None):
     # type: (dict, object) -> dict
-    flat_source = _flatten_single_config(source, preserve_keys=["extra"])
+    flat_source = _flatten_single_config(source, preserve_keys=["extra", "http"])
     excluded = set(exclude_keys or ())
     provider = {"provider": flat_source.get("provider", flat_source.get("dns", ""))}
     for key in PROVIDER_FIELDS:
@@ -591,6 +597,17 @@ def validate_document(document, fallback_provider=None):  # noqa: C901
     _validate_inherited_fields(result, "Global")
     if "interval" in result:
         result["interval"] = _validate_interval(result["interval"])
+    if "http" in result:
+        if not isinstance(result["http"], dict):
+            raise ConfigValidationError("http must be an object.")
+        http = result["http"]
+        if "origins" in http and not isinstance(http["origins"], (list, tuple)):
+            raise ConfigValidationError("HTTP origins must be an array.")
+        try:
+            normalized_http = normalize_http_settings(http, enforce_bind_auth=False)
+        except HttpConfigError as error:
+            raise ConfigValidationError(text_type(error))
+        result["http"] = {key: normalized_http[key] for key in http}
 
     validated_providers = []
     for index, raw_provider in enumerate(providers):
@@ -603,6 +620,8 @@ def validate_document(document, fallback_provider=None):  # noqa: C901
             )
         if "interval" in provider:
             raise ConfigValidationError("Provider {} interval must be configured globally.".format(index + 1))
+        if "http" in provider:
+            raise ConfigValidationError("Provider {} http must be configured globally.".format(index + 1))
         provider_name = _validate_string(
             provider.get("provider"), "Provider {}".format(index + 1), allow_empty=False
         ).lower()

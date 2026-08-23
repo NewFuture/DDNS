@@ -181,6 +181,7 @@ export default defineConfig({
           { text: '生成与校验', link: '/config/studio' },
           { text: 'JSON 配置', link: '/config/json' },
           { text: '命令行参数', link: '/config/cli' },
+          { text: 'MCP 服务', link: '/config/mcp' },
           { text: '环境变量', link: '/config/env' }
         ]
       },
@@ -240,6 +241,7 @@ export default defineConfig({
           items: [
             { text: '配置生成与校验', link: '/config/studio' },
             { text: '命令行参数', link: '/config/cli' },
+            { text: 'MCP 服务', link: '/config/mcp' },
             { text: '环境变量', link: '/config/env' },
             { text: 'JSON配置文件', link: '/config/json' }
           ]
@@ -475,6 +477,7 @@ export default defineConfig({
               { text: 'Build & Validate', link: '/en/config/studio' },
               { text: 'JSON Configuration', link: '/en/config/json' },
               { text: 'CLI', link: '/en/config/cli' },
+              { text: 'MCP Server', link: '/en/config/mcp' },
               { text: 'Environment', link: '/en/config/env' }
             ]
           },
@@ -531,6 +534,7 @@ export default defineConfig({
               items: [
                 { text: 'Build & Validate', link: '/en/config/studio' },
                 { text: 'CLI Parameters', link: '/en/config/cli' },
+                { text: 'MCP Server', link: '/en/config/mcp' },
                 { text: 'Environment Variables', link: '/en/config/env' },
                 { text: 'JSON Configuration', link: '/en/config/json' }
               ]

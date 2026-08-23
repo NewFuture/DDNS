@@ -37,6 +37,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 
 ### Configuration Guides
 - CLI Arguments: https://ddns.newfuture.cc/config/cli ([.md](https://ddns.newfuture.cc/config/cli.md))
+- MCP Server: https://ddns.newfuture.cc/config/mcp ([.md](https://ddns.newfuture.cc/config/mcp.md))
 - Environment Variables: https://ddns.newfuture.cc/config/env ([.md](https://ddns.newfuture.cc/config/env.md))
 - JSON Configuration: https://ddns.newfuture.cc/config/json ([.md](https://ddns.newfuture.cc/config/json.md))
 - Interactive Config Studio: https://ddns.newfuture.cc/config/studio.html (build and validate DDNS configurations in the browser)

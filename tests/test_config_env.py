@@ -4,7 +4,9 @@ Configuration loader tests for environment variables.
 """
 
 import os
+import io
 import unittest
+import ddns.config.env as env_module
 from ddns.config.env import load_config
 
 
@@ -102,6 +104,36 @@ class TestConfigEnv(unittest.TestCase):
 
         self.assertEqual(config.get("cache_max_age"), "86400")
         del os.environ["DDNS_CACHE_MAX_AGE"]
+
+    def test_http_environment_settings(self):
+        """Load the shared listener settings without treating origins as a scalar."""
+        os.environ["DDNS_HTTP_HOST"] = "0.0.0.0"
+        os.environ["DDNS_HTTP_PORT"] = "9877"
+        os.environ["DDNS_HTTP_TOKEN"] = "secret"
+        os.environ["DDNS_HTTP_ORIGINS"] = '["https://one.example", "https://two.example"]'
+
+        config = load_config()
+
+        self.assertEqual(config["http_host"], "0.0.0.0")
+        self.assertEqual(config["http_port"], "9877")
+        self.assertEqual(config["http_token"], "secret")
+        self.assertEqual(config["http_origins"], ["https://one.example", "https://two.example"])
+
+    def test_token_values_are_never_array_parsed_or_logged(self):
+        """Preserve bracket-prefixed secrets without writing them to stderr."""
+        os.environ["DDNS_TOKEN"] = "[provider-secret]"
+        os.environ["DDNS_HTTP_TOKEN"] = "[http-secret]"
+        capture = io.StringIO()
+        original_stderr = env_module.stderr
+        env_module.stderr = capture
+        try:
+            config = load_config()
+        finally:
+            env_module.stderr = original_stderr
+
+        self.assertEqual(config["token"], "[provider-secret]")
+        self.assertEqual(config["http_token"], "[http-secret]")
+        self.assertEqual(capture.getvalue(), "")
 
     def test_ddns_variables_override_standard_vars(self):
         """Test that DDNS variables take precedence over standard environment variables"""

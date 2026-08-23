@@ -27,6 +27,10 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
 | `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
 | `DDNS_CACHE_MAX_AGE`   | 非负整数（秒）                                                                                       | 缓存文件最大有效期，默认 259200，0 表示每次运行清空已有缓存 | `DDNS_CACHE_MAX_AGE=86400` |
+| `DDNS_HTTP_HOST`       | 监听地址                                                                                             | Web 与 HTTP MCP 共享监听地址       | `DDNS_HTTP_HOST=127.0.0.1` |
+| `DDNS_HTTP_PORT`       | 0–65535 的整数                                                                                       | Web 与 HTTP MCP 共享端口           | `DDNS_HTTP_PORT=9876` |
+| `DDNS_HTTP_TOKEN`      | 无空格的可见 ASCII 字符串                                                                             | Web API 与 HTTP MCP 共享 token     | `DDNS_HTTP_TOKEN="secret"` |
+| `DDNS_HTTP_ORIGINS`    | JSON 数组或逗号/分号分隔列表                                                                         | 允许跨源访问 `/mcp` 的精确 origin | `DDNS_HTTP_ORIGINS='["https://ddns.example.com"]'` |
 | `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
 | `DDNS_CRON`            | Cron 表达式格式字符串（仅 Docker 环境有效）                                                          | Docker 容器内定时任务周期         | `DDNS_CRON="*/10 * * * *"`                               |
 | `DDNS_LOG_LEVEL`       | DEBUG、INFO、WARNING、ERROR、CRITICAL                                                               | 设置日志等级                      | `DDNS_LOG_LEVEL="DEBUG"`                                 |
@@ -231,6 +235,12 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   ```
 
 `DDNS_CACHE_MAX_AGE` 控制整个缓存文件的有效期（秒），在下一次运行时按文件 mtime 判断，边界值也算过期，未来 mtime 也算过期。它不是 DNS TTL；缓存仍是扁平 JSON，任何内容写入都会刷新整个文件并影响所有记录，不进行迁移，共享缓存限制不变。
+
+### Web 与 HTTP MCP
+
+`DDNS_HTTP_HOST`、`DDNS_HTTP_PORT`、`DDNS_HTTP_TOKEN` 和 `DDNS_HTTP_ORIGINS` 对 `ddns web` 与 `ddns mcp --transport http` 同时生效。命令行参数和 JSON 顶层 `http` 会覆盖这些值。
+
+回环监听未设置 `DDNS_HTTP_TOKEN` 时，Web API 和 `/mcp` 均免认证；非回环或通配监听必须设置非空 token。DDNS 不内置 TLS，局域网监听应由受信 HTTPS 反向代理保护。
 
 ### SSL证书验证
 

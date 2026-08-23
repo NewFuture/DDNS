@@ -109,7 +109,7 @@ Keep the local console running and synchronize every five minutes in the same pr
 ddns -c config.json --interval 5 --open
 ```
 
-Providing `--interval` automatically selects Web mode, so the `web` word is optional. You can also set top-level `"interval": 5` in a local JSON file; then `ddns -c config.json` starts Web automatically. The command-line value overrides the configuration, and the existing `ddns web` command remains compatible. Saving a new interval in the page writes it back to the configuration; pausing and resuming affect only the current process. Web mode blocks duplicate scheduling when an enabled system task is detected. Use systemd, launchd, a Windows service, or Docker to supervise the Web process in production.
+Providing `--interval` automatically selects Web mode, so the `web` word is optional; top-level JSON `"interval": 5` does the same. Web also exposes MCP `2026-07-28` Streamable HTTP at `/mcp`. When the default loopback listener has no token, the Web APIs and `/mcp` are unauthenticated; non-loopback and wildcard listeners require a shared HTTP token and should be protected by an HTTPS reverse proxy. Saving an interval writes it back to the configuration; pausing and resuming affect only the current process.
 
 Let a local MCP client such as GitHub Copilot inspect cached status or trigger one complete synchronization after user approval:
 
@@ -117,7 +117,13 @@ Let a local MCP client such as GitHub Copilot inspect cached status or trigger o
 ddns mcp -c /etc/ddns/config.json
 ```
 
-This stdio server uses only the Python standard library, opens no network listener, and does not expose configuration credentials to the model. It supports MCP `2026-07-28` and the `2025-11-25` lifecycle used by GitHub Copilot CLI. See the [MCP command documentation](docs/en/config/cli.md#mcp-server) for client setup, tools, and limitations.
+This stdio server uses only the Python standard library, opens no network listener, and does not expose configuration credentials to the model. It supports MCP `2026-07-28` and the `2025-11-25` lifecycle used by GitHub Copilot CLI. See the [MCP server documentation](docs/en/config/mcp.md) for client setup, tools, and limitations.
+
+MCP clients that cannot launch a local process can use the standalone HTTP endpoint:
+
+```bash
+ddns mcp -c /etc/ddns/config.json --transport http
+```
 
 For a headless deployment, install a system task that runs every five minutes:
 

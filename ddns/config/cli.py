@@ -10,6 +10,7 @@ from argparse import SUPPRESS, Action, ArgumentParser, ArgumentTypeError, RawTex
 from logging import DEBUG, basicConfig, getLevelName, getLogger
 from os import path as os_path
 
+from ..http_config import HttpConfigError, resolve_http_settings
 from ..scheduler import get_scheduler
 from .env import load_config as load_env_config
 from .file import DEFAULT_CONFIG_PATHS, load_config as load_file_config, save_config
@@ -286,10 +287,15 @@ def _add_web_subcommand(subparsers):
     web = subparsers.add_parser("web", help="Run local management dashboard [运行本机管理控制台]")
     web.set_defaults(func=_handle_web_command)
     web.add_argument("-c", "--config", metavar="FILE", help="local config file [本机配置文件]")
+    web.add_argument("--host", help="HTTP bind host [HTTP 监听地址]")
+    web.add_argument("--port", type=port_number, help="shared Web/MCP HTTP port [Web/MCP 共享端口]")
+    web.add_argument("--http-token", help="shared Web/MCP bearer token [Web/MCP 共享令牌]")
     web.add_argument(
-        "--host", choices=["127.0.0.1", "localhost", "::1"], default="127.0.0.1", help="loopback address [本机监听地址]"
+        "--http-origin",
+        dest="http_origins",
+        action="append",
+        help="allowed MCP browser origin; repeatable [允许的 MCP 浏览器来源，可重复]",
     )
-    web.add_argument("--port", type=port_number, default=9876, help="dashboard port [控制台端口]")
     web.add_argument(
         "--interval",
         type=interval_minutes,
@@ -309,6 +315,16 @@ def _add_mcp_subcommand(subparsers):
     mcp = subparsers.add_parser("mcp", help="Run the local MCP server [运行本机 MCP 服务]")
     mcp.set_defaults(func=_handle_mcp_command)
     mcp.add_argument("-c", "--config", metavar="FILE", help="local config file [本机配置文件]")
+    mcp.add_argument("--transport", choices=["stdio", "http"], default="stdio", help="MCP transport [MCP 传输方式]")
+    mcp.add_argument("--host", help="HTTP bind host [HTTP 监听地址]")
+    mcp.add_argument("--port", type=port_number, help="HTTP MCP port [HTTP MCP 端口]")
+    mcp.add_argument("--http-token", help="HTTP bearer token [HTTP 令牌]")
+    mcp.add_argument(
+        "--http-origin",
+        dest="http_origins",
+        action="append",
+        help="allowed MCP browser origin; repeatable [允许的 MCP 浏览器来源，可重复]",
+    )
 
 
 def _add_task_subcommand_if_needed(parser):  # type: (ArgumentParser) -> None
@@ -437,7 +453,7 @@ def _validate_web_mode_arguments():
     # type: () -> None
     if len(sys.argv) <= 1 or sys.argv[1] != "web":
         return
-    value_options = ("-c", "--config", "--host", "--port", "--interval", "--log-level")
+    value_options = ("-c", "--config", "--host", "--port", "--http-token", "--http-origin", "--interval", "--log-level")
     flag_options = ("--open", "--debug", "-h", "--help")
     long_value_prefixes = tuple(option + "=" for option in value_options if option.startswith("--"))
     arguments = sys.argv[2:]
@@ -460,8 +476,8 @@ def _validate_mcp_mode_arguments():
     # type: () -> None
     if len(sys.argv) <= 1 or sys.argv[1] != "mcp":
         return
-    value_options = ("-c", "--config")
-    long_value_prefixes = ("--config=",)
+    value_options = ("-c", "--config", "--transport", "--host", "--port", "--http-token", "--http-origin")
+    long_value_prefixes = tuple(option + "=" for option in value_options if option.startswith("--"))
     arguments = sys.argv[2:]
     index = 0
     while index < len(arguments):
@@ -646,12 +662,12 @@ def _handle_task_command(args):  # type: (dict) -> None
             sys.exit(1)
 
 
-def _local_config_path(args, command):
-    # type: (dict, str) -> str | None
+def _local_config_path(args, command, env_config=None):
+    # type: (dict, str, dict | None) -> str | None
     """Resolve one local config path shared by long-running local services."""
     config_path = args.get("config")
     if not config_path:
-        config_path = load_env_config().get("config")
+        config_path = (env_config if env_config is not None else load_env_config()).get("config")
     if not config_path:
         config_path = _default_local_config_path()
     if config_path:
@@ -668,19 +684,38 @@ def _local_config_path(args, command):
     return config_path
 
 
+def _local_document(config_path):
+    # type: (str | None) -> dict
+    """Read one local root document when it already exists."""
+    if not config_path or not os_path.isfile(config_path):
+        return {}
+    document = load_file_config(config_path, raw=True)
+    return document if isinstance(document, dict) else {}
+
+
+def _http_settings_or_exit(args, document, env_config, command):
+    # type: (dict, dict, dict, str) -> dict
+    try:
+        return resolve_http_settings(cli_config=args, document=document, env_config=env_config)
+    except HttpConfigError as error:
+        sys.stderr.write("ddns {}: {}\n".format(command, error))
+        sys.exit(2)
+
+
 def _handle_web_command(args):
     # type: (dict) -> None
-    """Run the local-only embedded management dashboard."""
+    """Run the embedded Web and MCP HTTP server."""
     basicConfig(level=args.get("debug") and DEBUG or args.get("log_level", "INFO"))
-    config_path = _local_config_path(args, "web")
+    env_config = load_env_config()
+    config_path = _local_config_path(args, "web", env_config=env_config)
+    document = _local_document(config_path)
+    http_settings = _http_settings_or_exit(args, document, env_config, "web")
 
     interval = args.get("interval")
     interval_from_config = False
-    if interval is None and config_path and os_path.isfile(config_path):
-        document = load_file_config(config_path, raw=True)
-        if isinstance(document, dict):
-            interval = document.get("interval")
-            interval_from_config = interval is not None
+    if interval is None:
+        interval = document.get("interval")
+        interval_from_config = interval is not None
     if interval is None:
         interval = 5
     try:
@@ -693,8 +728,10 @@ def _handle_web_command(args):
 
     serve(
         config_path=config_path,
-        host=args.get("host", "127.0.0.1"),
-        port=args.get("port", 9876),
+        host=http_settings["host"],
+        port=http_settings["port"],
+        token=http_settings["token"],
+        origins=http_settings["origins"],
         open_browser=args.get("open", False),
         logger=getLogger(),
         interval=interval,
@@ -703,10 +740,24 @@ def _handle_web_command(args):
 
 def _handle_mcp_command(args):
     # type: (dict) -> None
-    """Run the local stdio MCP server."""
+    """Run the selected MCP transport."""
     basicConfig()
-    config_path = _local_config_path(args, "mcp")
+    transport = args.get("transport", "stdio")
+    if transport == "stdio":
+        if any(args.get(name) is not None for name in ("host", "port", "http_token", "http_origins")):
+            sys.stderr.write("ddns mcp: HTTP options require --transport http.\n")
+            sys.exit(2)
+        env_config = {} if args.get("config") else load_env_config()
+        config_path = _local_config_path(args, "mcp", env_config=env_config)
+        from ..mcp import serve
 
-    from ..mcp import serve
+        serve(config_path=config_path)
+        return
 
-    serve(config_path=config_path)
+    env_config = load_env_config()
+    config_path = _local_config_path(args, "mcp", env_config=env_config)
+    document = _local_document(config_path)
+    http_settings = _http_settings_or_exit(args, document, env_config, "mcp")
+    from ..mcp_http import serve as serve_http
+
+    serve_http(config_path=config_path, settings=http_settings, logger=getLogger())
