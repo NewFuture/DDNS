@@ -311,6 +311,16 @@ class McpHttpEndpoint(object):
         body_version = meta.get(PROTOCOL_VERSION_KEY) if isinstance(meta, dict) else None
         if not header_version or header_version != body_version:
             raise self._header_mismatch(message, "MCP-Protocol-Version does not match request metadata.")
+        if body_version != PROTOCOL_VERSION:
+            raise McpHttpRequestError(
+                400,
+                _error_response(
+                    self.server._request_id(message),
+                    -32022,
+                    "Unsupported protocol version",
+                    {"supported": [PROTOCOL_VERSION], "requested": body_version},
+                ),
+            )
         if not header_method or header_method != body_method:
             raise self._header_mismatch(message, "Mcp-Method does not match the JSON-RPC method.")
         if not isinstance(meta.get(CLIENT_CAPABILITIES_KEY) if isinstance(meta, dict) else None, dict):

@@ -148,6 +148,15 @@ class TestMcpHttpServer(unittest.TestCase):
         self.assertEqual(status, 202)
         self.assertEqual(body, "")
 
+    def test_notification_rejects_legacy_protocol(self):
+        """Apply modern-only version validation before accepting notifications."""
+        message = self._message("notifications/cancelled", {"requestId": 1}, request_id=None, version="2025-11-25")
+
+        status, _, body = self._request(message, self._headers(message))
+
+        self.assertEqual(status, 400)
+        self.assertEqual(json.loads(body)["error"]["code"], -32022)
+
     def test_header_mismatches_are_transport_errors(self):
         """Reject version, method, and tool-name envelope mismatches."""
         message = self._message("tools/call", {"name": "get_ddns_status", "arguments": {}})
@@ -437,6 +446,7 @@ class TestHttpSettings(unittest.TestCase):
             {"port": 1.5},
             {"host": "127.0.0.1/path"},
             {"host": "[::1"},
+            {"host": "[[::1]]"},
             {"origins": None},
             {"origins": ["https://client.example/path"]},
             {"token": ""},

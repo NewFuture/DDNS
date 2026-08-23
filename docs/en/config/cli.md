@@ -352,7 +352,7 @@ ddns mcp -c /etc/ddns/config.json --transport http
 
 The default endpoint is `http://127.0.0.1:9876/mcp`; every Web process exposes the same path automatically. Standalone mode accepts the shared `--host`, `--port`, `--http-token`, and `--http-origin` options and reads the same root `http` JSON settings.
 
-HTTP supports MCP `2026-07-28` only. Each message is a separate POST to `/mcp` with `MCP-Protocol-Version` and `Mcp-Method`; tool calls also require `Mcp-Name`. `Accept` must list both `application/json` and `text/event-stream`. This tools-only implementation returns JSON and does not provide SSE, sessions, legacy HTTP, resources, prompts, or subscriptions.
+HTTP supports MCP `2026-07-28` only. Each message is a separate POST to `/mcp` using `Content-Type: application/json` with `MCP-Protocol-Version` and `Mcp-Method`; tool calls also require `Mcp-Name`. `Accept` must list both `application/json` and `text/event-stream`. This tools-only implementation returns JSON and does not provide SSE, sessions, legacy HTTP, resources, prompts, or subscriptions.
 
 ### Available tools
 

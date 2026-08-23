@@ -1535,7 +1535,7 @@ function validateHttpSettings(value: unknown, path: string, diagnostics: Diagnos
   if (
     mismatchedBrackets ||
     !normalizedHost ||
-    /[\/\\\0]/.test(normalizedHost) ||
+    /[\/\\\0\[\]]/.test(normalizedHost) ||
     /\s/.test(normalizedHost)
   ) {
     diagnostics.push(

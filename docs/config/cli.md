@@ -384,7 +384,7 @@ ddns mcp -c /etc/ddns/config.json --transport http
 
 默认 endpoint 为 `http://127.0.0.1:9876/mcp`。也可使用 Web 进程自动提供的同路径 endpoint。独立模式接受与 Web 相同的 `--host`、`--port`、`--http-token` 和 `--http-origin`，并读取同一份 `http` JSON 配置。
 
-HTTP transport 仅支持 MCP `2026-07-28`：每个请求单独 POST 到 `/mcp`，必须携带 `MCP-Protocol-Version`、`Mcp-Method`，调用工具时还需 `Mcp-Name`；`Accept` 必须同时包含 `application/json` 和 `text/event-stream`。当前 tools-only 实现返回 JSON，不提供 SSE、sessions、legacy HTTP、resources、prompts 或 subscriptions。
+HTTP transport 仅支持 MCP `2026-07-28`：每个请求单独 POST 到 `/mcp`，必须使用 `Content-Type: application/json` 并携带 `MCP-Protocol-Version`、`Mcp-Method`，调用工具时还需 `Mcp-Name`；`Accept` 必须同时包含 `application/json` 和 `text/event-stream`。当前 tools-only 实现返回 JSON，不提供 SSE、sessions、legacy HTTP、resources、prompts 或 subscriptions。
 
 ### 可用工具
 

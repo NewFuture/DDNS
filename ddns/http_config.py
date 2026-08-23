@@ -105,7 +105,7 @@ def _normalize_host(value):
         host = host[1:-1]
     if (
         not host
-        or any(character in host for character in ("\r", "\n", "\x00", "/", "\\"))
+        or any(character in host for character in ("\r", "\n", "\x00", "/", "\\", "[", "]"))
         or any(character.isspace() for character in host)
     ):
         raise HttpConfigError("HTTP host must be a non-empty bind address.")
