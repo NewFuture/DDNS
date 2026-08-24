@@ -50,12 +50,35 @@ impl ProviderContext {
         body: Option<String>,
         headers: BTreeMap<String, String>,
     ) -> Result<HttpResponse> {
+        self.send_internal(method, path, query, body, headers, true)
+    }
+
+    pub fn send_sensitive(
+        &self,
+        method: Method,
+        path: &str,
+        query: &BTreeMap<String, String>,
+        body: Option<String>,
+        headers: BTreeMap<String, String>,
+    ) -> Result<HttpResponse> {
+        self.send_internal(method, path, query, body, headers, false)
+    }
+
+    fn send_internal(
+        &self,
+        method: Method,
+        path: &str,
+        query: &BTreeMap<String, String>,
+        body: Option<String>,
+        headers: BTreeMap<String, String>,
+        log_body: bool,
+    ) -> Result<HttpResponse> {
         let url = append_query(&self.url(path), query);
         self.logger.info(
             "provider.http",
             format!("{} {}", method_name(method), redact_url(&url)),
         );
-        if let Some(body) = &body {
+        if log_body && let Some(body) = &body {
             self.logger.debug("provider.http", format!("body: {body}"));
         }
         let response = self.client.execute(&HttpRequest {

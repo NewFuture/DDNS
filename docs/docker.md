@@ -12,6 +12,17 @@
 
 ## 镜像说明
 
+### 实验性 Rust 镜像
+
+稳定默认镜像仍是 `newfuture/ddns` / `ghcr.io/newfuture/ddns`，不会被 Rust
+镜像替换。包含 Rust 资产的标签发布后，实验性 Rust 镜像为
+`ghcr.io/newfuture/ddns-rs`，支持 Linux
+amd64 和 arm64，并直接运行 `ddns-rs`（不包含 Python 镜像的内置定时任务）：
+
+```bash
+docker run --rm ghcr.io/newfuture/ddns-rs:latest --help
+```
+
 ### 镜像版本
 
 DDNS 镜像版本(Docker Tag)：

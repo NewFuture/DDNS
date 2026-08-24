@@ -155,3 +155,22 @@ fn debug_provider_fallback_requires_cli_debug_without_loaded_file() {
         .is_err()
     );
 }
+
+#[test]
+fn callback_object_token_survives_normal_file_loading() {
+    let cli = CliOptions {
+        values: BTreeMap::new(),
+        config_paths: Some(vec!["https://config.example/callback.json".to_owned()]),
+        new_config: None,
+    };
+    let document = r#"{
+        "dns": "callback",
+        "id": "https://callback.example/update",
+        "token": {"api_key": "secret", "address": "__IP__"}
+    }"#;
+    let configs = load(&cli, &BTreeMap::new(), &|_| Ok(document.to_owned())).unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&configs[0].token).unwrap(),
+        json!({"api_key": "secret", "address": "__IP__"})
+    );
+}

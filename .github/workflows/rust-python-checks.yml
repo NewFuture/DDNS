@@ -7,18 +7,38 @@ on:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
+      - ".github/workflows/publish-rust.yml"
       - ".github/instructions/rust.instructions.md"
+      - "docker/rust.Dockerfile"
+      - "docs/public/install-rust.sh"
+      - "tests/scripts/test-install-rust.sh"
       - "docs/dev/rust.md"
       - "docs/en/dev/rust.md"
+      - "docs/install.md"
+      - "docs/en/install.md"
+      - "docs/docker.md"
+      - "docs/en/docker.md"
+      - "README.md"
+      - "README.en.md"
   pull_request:
     branches: ["master", "main", "abc"]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
+      - ".github/workflows/publish-rust.yml"
       - ".github/instructions/rust.instructions.md"
+      - "docker/rust.Dockerfile"
+      - "docs/public/install-rust.sh"
+      - "tests/scripts/test-install-rust.sh"
       - "docs/dev/rust.md"
       - "docs/en/dev/rust.md"
+      - "docs/install.md"
+      - "docs/en/install.md"
+      - "docs/docker.md"
+      - "docs/en/docker.md"
+      - "README.md"
+      - "README.en.md"
 
 permissions:
   contents: read
@@ -54,7 +74,7 @@ jobs:
           pure_rust=true
           while IFS= read -r path; do
             case "$path" in
-              rust/*|.github/workflows/rust.yml|.github/workflows/rust-python-checks.yml|.github/instructions/rust.instructions.md|docs/dev/rust.md|docs/en/dev/rust.md)
+              rust/*|.github/workflows/rust.yml|.github/workflows/rust-python-checks.yml|.github/workflows/publish-rust.yml|.github/instructions/rust.instructions.md|docker/rust.Dockerfile|docs/public/install-rust.sh|tests/scripts/test-install-rust.sh|docs/dev/rust.md|docs/en/dev/rust.md|docs/install.md|docs/en/install.md|docs/docker.md|docs/en/docker.md|README.md|README.en.md)
                 ;;
               *)
                 pure_rust=false

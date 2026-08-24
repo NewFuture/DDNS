@@ -74,7 +74,7 @@ pub fn flatten(
         if excluded.contains(&key.as_str()) {
             continue;
         }
-        if key == "extra" {
+        if matches!(key.as_str(), "extra" | "token") {
             flattened.insert(key, value);
         } else if let Value::Object(nested) = value {
             for (nested_key, nested_value) in nested {

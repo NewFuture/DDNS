@@ -1,17 +1,20 @@
 # Rust 客户端开发
 
-`ddns-rs` 是与 Python `ddns` 并行维护的实验性实现。MVP 只负责单次同步，不替换现有命令、安装方式或发布资产。
+`ddns-rs` 是与 Python `ddns` 并行维护的实验性实现。MVP 只负责单次同步，
+不替换稳定的 Python `ddns` 命令或默认安装方式。
 
 ## 当前支持
 
 | 能力 | 状态 |
 | --- | --- |
-| Cloudflare、AliDNS、DNSPod、Debug | 已支持 |
+| 全部 Python DNS Provider 及其兼容别名（Cloudflare、AliDNS/ESA、DNSPod、EdgeOne、ClouDNS、DNS.COM、HE.net、华为云、NameSilo、No-IP、Callback、West.cn、Debug） | 已支持 |
 | IPv4/IPv6 与全部现有 IP 规则类型 | 已支持；`regex:` 使用 Rust 语法 |
 | CLI、`DDNS_*`、本地/远程/多配置、v4.1 `providers` | 已支持 |
 | JSON 注释与受限 Python 数据字面量 | 已支持 |
 | 缓存、代理回退、重试、TLS 与自定义 CA | 已支持 |
-| `task`、Web、MCP、其他 Provider、Docker | 计划中 |
+| Linux amd64/arm64 Docker 镜像 | 标签发布工作流推送到 `ghcr.io/newfuture/ddns-rs`；仅运行 `ddns-rs`，无内置调度 |
+| Linux x64/arm64、macOS x64/arm64、Windows x64 Release 资产 | 标签发布工作流生成 `ddns-rs-*`，每个资产附带 `.sha256` |
+| `task`、Web、MCP | 计划中 |
 
 ## 构建与运行
 
@@ -32,7 +35,7 @@ Windows 产物为 `rust\target\release\ddns-rs.exe`。
 - `http.rs`：基于 `ureq`/rustls 的同步传输、代理、重试、TLS 和脱敏。
 - `ip.rs`：IPv4/IPv6 地址发现与规则回退。
 - `cache.rs`：独立于 Python 的版本化缓存和原子写入。
-- `provider/`：公共 CRUD 编排及首批 Provider。
+- `provider/`：公共 CRUD 编排及全部 DNS Provider。
 - `update.rs`：逐配置、地址族和域名执行，继续后续项并汇总失败。
 
 生产代码不使用 unsafe，不引入异步运行时、通用错误框架或 mock 框架。Provider 测试通过注入 HTTP 客户端完成，集成测试只访问本机 fixture。
@@ -45,7 +48,8 @@ cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-featur
 cargo test --manifest-path rust/Cargo.toml --locked
 ```
 
-CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建并冒烟测试二进制。
+CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建、测试并打包
+二进制；Linux x64/arm64 还会构建和离线冒烟测试 Docker 镜像。
 
 ## 安全边界
 
@@ -58,8 +62,6 @@ CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建并冒烟测�
 
 ## 后续顺序
 
-1. 迁移 Callback、No-IP、HE 等简单 Provider。
-2. 迁移其余 CRUD Provider 和共享签名算法。
-3. 迁移 systemd、cron、launchd、schtasks。
-4. 迁移 Web 控制台与 MCP。
-5. 增加 Rust Docker、安装脚本和正式 Release；达到完整等价并稳定运行后再讨论改名为 `ddns`。
+1. 迁移 systemd、cron、launchd、schtasks。
+2. 迁移 Web 控制台与 MCP。
+3. 达到完整等价并稳定运行后再讨论改名为 `ddns`。

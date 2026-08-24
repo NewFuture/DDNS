@@ -2,18 +2,20 @@
 
 `ddns-rs` is an experimental implementation maintained alongside the Python
 `ddns` client. The MVP performs one synchronization per process and does not
-replace the existing command, installers, or release assets.
+replace the stable Python `ddns` command or default installer.
 
 ## Current support
 
 | Capability | Status |
 | --- | --- |
-| Cloudflare, AliDNS, DNSPod, and Debug | Supported |
+| All Python DNS providers and documented compatibility aliases (Cloudflare, AliDNS/ESA, DNSPod, EdgeOne, ClouDNS, DNS.COM, HE.net, Huawei DNS, NameSilo, No-IP, Callback, West.cn, and Debug) | Supported |
 | IPv4/IPv6 and every existing address rule type | Supported; `regex:` uses Rust syntax |
 | CLI, `DDNS_*`, local/remote/multiple configs, v4.1 `providers` | Supported |
 | JSON comments and restricted Python data literals | Supported |
 | Cache, proxy fallback, retries, TLS, and custom CA files | Supported |
-| `task`, Web, MCP, other providers, and Docker | Planned |
+| Linux amd64/arm64 Docker image | Tag publishing pushes `ghcr.io/newfuture/ddns-rs`; it runs only `ddns-rs`, without a scheduler |
+| Linux x64/arm64, macOS x64/arm64, Windows x64 Release assets | Tag publishing creates `ddns-rs-*`, each with a `.sha256` checksum |
+| `task`, Web, and MCP | Planned |
 
 ## Build and run
 
@@ -34,7 +36,7 @@ The Windows artifact is `rust\target\release\ddns-rs.exe`.
 - `http.rs`: synchronous `ureq`/rustls transport, proxies, retries, TLS, and redaction.
 - `ip.rs`: IPv4/IPv6 discovery and rule fallback.
 - `cache.rs`: a versioned cache independent from the Python cache.
-- `provider/`: shared CRUD orchestration and the initial providers.
+- `provider/`: shared CRUD orchestration and all DNS providers.
 - `update.rs`: deterministic execution with continued attempts and aggregated failures.
 
 Production code forbids unsafe code and does not use an async runtime, a generic
@@ -49,8 +51,9 @@ cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-featur
 cargo test --manifest-path rust/Cargo.toml --locked
 ```
 
-CI also builds and smoke-tests binaries on Linux x64/arm64, Windows x64, and
-macOS x64/arm64.
+CI also builds, tests, and packages binaries on Linux x64/arm64, Windows x64,
+and macOS x64/arm64; it builds and smoke-tests the Docker image offline on
+Linux x64/arm64.
 
 ## Security boundaries
 
@@ -68,9 +71,7 @@ macOS x64/arm64.
 
 ## Parity roadmap
 
-1. Port simple providers such as Callback, No-IP, and HE.
-2. Port the remaining CRUD providers and shared signing families.
-3. Port systemd, cron, launchd, and schtasks support.
-4. Port the Web dashboard and MCP server.
-5. Add Rust Docker images, installers, and release assets. Consider renaming the
-   binary to `ddns` only after complete parity and a separate stability period.
+1. Port systemd, cron, launchd, and schtasks support.
+2. Port the Web dashboard and MCP server.
+3. Consider renaming the binary to `ddns` only after complete parity and a
+   separate stability period.

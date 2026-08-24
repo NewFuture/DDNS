@@ -7,18 +7,38 @@ on:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
+      - ".github/workflows/publish-rust.yml"
       - ".github/instructions/rust.instructions.md"
+      - "docker/rust.Dockerfile"
+      - "docs/public/install-rust.sh"
+      - "tests/scripts/test-install-rust.sh"
       - "docs/dev/rust.md"
       - "docs/en/dev/rust.md"
+      - "docs/install.md"
+      - "docs/en/install.md"
+      - "docs/docker.md"
+      - "docs/en/docker.md"
+      - "README.md"
+      - "README.en.md"
   pull_request:
     branches: ["master", "main", "abc"]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
+      - ".github/workflows/publish-rust.yml"
       - ".github/instructions/rust.instructions.md"
+      - "docker/rust.Dockerfile"
+      - "docs/public/install-rust.sh"
+      - "tests/scripts/test-install-rust.sh"
       - "docs/dev/rust.md"
       - "docs/en/dev/rust.md"
+      - "docs/install.md"
+      - "docs/en/install.md"
+      - "docs/docker.md"
+      - "docs/en/docker.md"
+      - "README.md"
+      - "README.en.md"
 
 permissions:
   contents: read
@@ -42,6 +62,7 @@ jobs:
       - run: cargo fmt --manifest-path rust/Cargo.toml --check
       - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
       - run: cargo test --manifest-path rust/Cargo.toml --locked
+      - run: sh tests/scripts/test-install-rust.sh
 
   binary:
     needs: check
@@ -88,3 +109,32 @@ jobs:
           path: rust/target/release/ddns-rs${{ runner.os == 'Windows' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'push' && 30 || 3 }}
+
+  container:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/rust.Dockerfile
+          platforms: ${{ matrix.platform }}
+          load: true
+          push: false
+          tags: ddns-rs:test
+      - name: Smoke test Rust container offline
+        run: |
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --version
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --help
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com

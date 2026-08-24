@@ -18,6 +18,93 @@ pub fn hmac_sha256_hex(key: impl AsRef<[u8]>, message: impl AsRef<[u8]>) -> Resu
     Ok(hex_lower(&mac.finalize().into_bytes()))
 }
 
+pub fn hmac_sha256(key: impl AsRef<[u8]>, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
+    let mut mac = HmacSha256::new_from_slice(key.as_ref())
+        .map_err(|error| Error::Provider(format!("invalid HMAC key: {error}")))?;
+    mac.update(message.as_ref());
+    Ok(mac.finalize().into_bytes().to_vec())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn hmac_sha256_authorization(
+    secret: impl AsRef<[u8]>,
+    algorithm: &str,
+    timestamp: &str,
+    credential: &str,
+    method: &str,
+    path: &str,
+    query: &str,
+    headers: &BTreeMap<String, String>,
+    body_hash: &str,
+) -> Result<String> {
+    let normalized = headers
+        .iter()
+        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
+        .collect::<BTreeMap<_, _>>();
+    let canonical_headers = normalized
+        .iter()
+        .map(|(name, value)| format!("{name}:{value}\n"))
+        .collect::<String>();
+    let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
+    let canonical_request = [
+        method.to_ascii_uppercase(),
+        path.to_owned(),
+        query.to_owned(),
+        canonical_headers,
+        signed_headers.clone(),
+        body_hash.to_owned(),
+    ]
+    .join("\n");
+    let string_to_sign = format!(
+        "{algorithm}\n{timestamp}\n{}",
+        sha256_hex(canonical_request)
+    );
+    let signature = hmac_sha256_hex(secret, string_to_sign)?;
+    Ok(format!(
+        "{algorithm} {credential}, SignedHeaders={signed_headers}, Signature={signature}"
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn tc3_authorization(
+    secret: impl AsRef<[u8]>,
+    timestamp: &str,
+    access_key_id: &str,
+    scope: &str,
+    method: &str,
+    path: &str,
+    query: &str,
+    headers: &BTreeMap<String, String>,
+    body_hash: &str,
+) -> Result<String> {
+    let normalized = headers
+        .iter()
+        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
+        .collect::<BTreeMap<_, _>>();
+    let canonical_headers = normalized
+        .iter()
+        .map(|(name, value)| format!("{name}:{value}\n"))
+        .collect::<String>();
+    let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
+    let canonical_request = [
+        method.to_ascii_uppercase(),
+        path.to_owned(),
+        query.to_owned(),
+        canonical_headers,
+        signed_headers.clone(),
+        body_hash.to_owned(),
+    ]
+    .join("\n");
+    let string_to_sign = format!(
+        "TC3-HMAC-SHA256\n{timestamp}\n{scope}\n{}",
+        sha256_hex(canonical_request)
+    );
+    let signature = hmac_sha256_hex(secret, string_to_sign)?;
+    Ok(format!(
+        "TC3-HMAC-SHA256 Credential={access_key_id}/{scope}, SignedHeaders={signed_headers}, Signature={signature}"
+    ))
+}
+
 pub fn acs3_authorization(
     access_key_id: &str,
     secret: &str,
@@ -72,7 +159,7 @@ const fn hex_digit(value: u8) -> char {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{acs3_authorization, sha256_hex};
+    use super::{acs3_authorization, sha256_hex, tc3_authorization};
 
     #[test]
     fn hashes_known_vector() {
@@ -105,6 +192,31 @@ mod tests {
         assert_eq!(
             signature,
             "ACS3-HMAC-SHA256 Credential=test-id,SignedHeaders=host;x-acs-content-sha256;x-acs-date,Signature=1b2814647ddf27f425cb6319c8973d72d998188eb84357279a0d2af3a1b77c23"
+        );
+    }
+
+    #[test]
+    fn tc3_signature_includes_credential_scope() {
+        let headers = BTreeMap::from([
+            ("content-type".to_owned(), "application/json".to_owned()),
+            ("host".to_owned(), "dnspod.tencentcloudapi.com".to_owned()),
+        ]);
+        let authorization = tc3_authorization(
+            b"derived-signing-key",
+            "1700000000",
+            "secret-id",
+            "2023-11-14/dnspod/tc3_request",
+            "POST",
+            "/",
+            "",
+            &headers,
+            &sha256_hex("{}"),
+        )
+        .unwrap();
+        assert!(authorization.contains("Credential=secret-id/2023-11-14/dnspod/tc3_request"));
+        assert_eq!(
+            authorization,
+            "TC3-HMAC-SHA256 Credential=secret-id/2023-11-14/dnspod/tc3_request, SignedHeaders=content-type;host, Signature=97ab304556363150d2c72f6f983edc9782cd1eead94e72a13b0d56c7d472e91d"
         );
     }
 }

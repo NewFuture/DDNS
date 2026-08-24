@@ -4,6 +4,9 @@ DDNS one-click installation script with support for automatic download and insta
 
 ## Quick Installation
 
+The default installer installs the stable Python `ddns`. The Rust client uses
+the separate `ddns-rs` command and never overwrites `ddns`:
+
 ```bash
 # Install latest stable version online
 curl -#fSL https://ddns.newfuture.cc/install.sh | sh
@@ -16,6 +19,31 @@ wget -qO- https://ddns.newfuture.cc/install.sh | sh
 ```
 
 > **Note:** Default installation to `/usr/local/bin`. If the directory requires administrator privileges, the script will automatically prompt to use sudo, or you can run with sudo in advance.
+
+### Experimental Rust client
+
+The Rust installer supports Linux x64/arm64 and macOS x64/arm64. It downloads
+the separate `ddns-rs-linux-x64`, `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`,
+or `ddns-rs-macos-arm64` Release asset and its `.sha256` checksum. Download
+`ddns-rs-windows-x64.exe` from Releases on Windows x64.
+It installs to `~/.local/bin/ddns-rs` by default without requiring administrator
+privileges. Pass `--install-dir /usr/local/bin` explicitly for a system-wide
+installation and provide the required permission yourself.
+The installer applies only to tagged releases that contain `ddns-rs-*` assets.
+
+```bash
+# Install the latest stable Rust client as ddns-rs; Python ddns is unchanged
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
+
+# Install beta or a version; --uninstall removes only ddns-rs
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- beta
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- vX.Y.Z --install-dir ~/.local/bin
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- --uninstall
+```
+
+When `sha256sum` or `shasum` is available, the installer verifies the published
+checksum. Use `--verify` to require it, or `--no-verify` only when the risk is
+understood.
 
 ## Version Selection
 

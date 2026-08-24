@@ -150,7 +150,47 @@ impl Config {
         }
         if !matches!(
             provider.as_str(),
-            "debug" | "cloudflare" | "alidns" | "dnspod"
+            "debug"
+                | "print"
+                | "cloudflare"
+                | "alidns"
+                | "aliyun"
+                | "dnspod"
+                | "dnspod_cn"
+                | "dnspod_com"
+                | "dnspod_global"
+                | "tencentcloud"
+                | "tencent"
+                | "qcloud"
+                | "edgeone"
+                | "edgeone_acc"
+                | "teo_acc"
+                | "teo"
+                | "edgeone_dns"
+                | "teo_dns"
+                | "edgeone_noacc"
+                | "cloudns"
+                | "aliesa"
+                | "esa"
+                | "dnscom"
+                | "51dns"
+                | "dns_com"
+                | "he"
+                | "he_net"
+                | "huaweidns"
+                | "huawei"
+                | "huaweicloud"
+                | "namesilo"
+                | "namesilo_com"
+                | "noip"
+                | "no-ip"
+                | "noip_com"
+                | "callback"
+                | "webhook"
+                | "http"
+                | "west"
+                | "west_cn"
+                | "35cn"
         ) {
             return Err(Error::Unsupported(format!(
                 "provider `{provider}` is not supported by the Rust MVP"
@@ -158,7 +198,14 @@ impl Config {
         }
 
         let id = optional_string(merged.get("id"))?.unwrap_or_default();
-        let token = optional_string(merged.get("token"))?.unwrap_or_default();
+        let token = match merged.get("token") {
+            Some(Value::Object(value))
+                if matches!(provider.as_str(), "callback" | "webhook" | "http") =>
+            {
+                serde_json::to_string(value)?
+            }
+            value => optional_string(value)?.unwrap_or_default(),
+        };
         let endpoint =
             optional_string(merged.get("endpoint"))?.filter(|endpoint| !endpoint.is_empty());
         if let Some(endpoint) = &endpoint
@@ -705,5 +752,23 @@ mod tests {
         ]);
         let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
         assert_eq!(config.endpoint, None);
+    }
+
+    #[test]
+    fn serializes_callback_object_tokens() {
+        let document = BTreeMap::from([
+            ("dns".to_owned(), json!("callback")),
+            ("id".to_owned(), json!("https://callback.example/update")),
+            (
+                "token".to_owned(),
+                json!({"api_key": "secret", "address": "__IP__"}),
+            ),
+        ]);
+        let config =
+            Config::from_sources(&BTreeMap::new(), &document, &BTreeMap::new(), false).unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&config.token).unwrap(),
+            json!({"api_key": "secret", "address": "__IP__"})
+        );
     }
 }

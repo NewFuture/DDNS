@@ -6,7 +6,9 @@ Python `ddns` command.
 
 ## MVP support
 
-- Cloudflare, AliDNS, DNSPod, and Debug providers
+- All canonical Python DNS providers and their documented aliases: Cloudflare,
+  AliDNS/ESA, DNSPod (China, global, and Tencent Cloud), EdgeOne, ClouDNS,
+  DNS.COM, HE.net, Huawei DNS, NameSilo, No-IP, Callback, West.cn, and Debug
 - IPv4 and IPv6
 - Existing CLI options, `DDNS_*` environment variables, and Schema v4.1 files
 - Local, remote, multiple, JSONC, and restricted Python-literal configurations
@@ -14,8 +16,12 @@ Python `ddns` command.
 - Cache, proxy fallback, retries, custom CA files, and existing TLS policies
 - One update run per process on Linux, macOS, and Windows
 
-The `task`, `web`, and `mcp` commands, other providers, Docker images, and stable
-release installation are not implemented yet.
+The `task`, `web`, and `mcp` commands are not implemented yet. Tag publishing
+pushes the Linux amd64/arm64 image as `ghcr.io/newfuture/ddns-rs`; it runs
+`ddns-rs` once and has no scheduler. Separate Release assets are named `ddns-rs-linux-x64`,
+`ddns-rs-linux-arm64`, `ddns-rs-macos-x64`, `ddns-rs-macos-arm64`, and
+`ddns-rs-windows-x64.exe`, each with a `.sha256` checksum. Linux and macOS can
+use `docs/public/install-rust.sh`; it installs only `ddns-rs`, never `ddns`.
 
 ## Build and run
 

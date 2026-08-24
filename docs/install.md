@@ -4,6 +4,9 @@ DDNS 一键安装脚本，支持 Linux 和 macOS 系统自动下载安装。
 
 ## 快速安装
 
+默认安装方式会安装稳定的 Python `ddns`。Rust 客户端使用独立命令
+`ddns-rs`，不会覆盖 `ddns`：
+
 ```bash
 # 在线安装最新稳定版
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
@@ -15,6 +18,29 @@ wget -qO- https://ddns.newfuture.cc/install.sh | sh
 ```
 
 > **说明：** 默认安装到 `/usr/local/bin`，如果该目录需要管理员权限，脚本会自动提示使用 sudo，或者可以预先使用 sudo 运行。
+
+### 实验性 Rust 客户端
+
+Rust 安装脚本仅支持 Linux x64/arm64 和 macOS x64/arm64，下载独立的
+`ddns-rs-linux-x64`、`ddns-rs-linux-arm64`、`ddns-rs-macos-x64` 或
+`ddns-rs-macos-arm64` Release 资产及其 `.sha256` 校验文件。Windows x64
+请从 Release 下载 `ddns-rs-windows-x64.exe`。
+Rust 安装器默认写入 `~/.local/bin/ddns-rs`，无需管理员权限；如需系统级安装，
+显式传入 `--install-dir /usr/local/bin` 并自行提供相应权限。
+安装器仅适用于已包含 `ddns-rs-*` 资产的标签版本。
+
+```bash
+# 默认安装最新稳定 Rust 版本为 ddns-rs，不影响 Python ddns
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
+
+# 安装 beta 或指定版本；--uninstall 只删除 ddns-rs
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- beta
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- vX.Y.Z --install-dir ~/.local/bin
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- --uninstall
+```
+
+安装器会在系统提供 `sha256sum` 或 `shasum` 时校验下载的发布校验和。可用
+`--verify` 强制要求校验，或仅在已理解风险时使用 `--no-verify`。
 
 ## 版本选择
 
