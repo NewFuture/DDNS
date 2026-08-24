@@ -289,7 +289,7 @@ Classify the task first, then read only the nearest code, tests, docs, and schem
 - **Config/schema**: `ddns/config/`, `schema/`, `tests/test_config_*.py`, `docs/config/`, `docs/en/config/`
 - **IP/HTTP**: `ddns/ip.py`, `ddns/util/http.py`, `tests/test_ip.py`, `tests/test_util_http*.py`
 - **Scheduler**: `ddns/scheduler/`, `tests/test_scheduler_*.py`
-- **Web/MCP**: `ddns/web/`, `web/`, `ddns/mcp.py`, `tests/test_web.py`, `tests/test_mcp.py`
+- **Web/MCP**: `ddns/web/`, `web/`, `ddns/http_config.py`, `ddns/mcp.py`, `ddns/mcp_http.py`, `tests/test_web.py`, `tests/test_mcp*.py`, `tests/test_config_cli_{web,mcp}.py`
 - **Docs**: `README*.md`, `docs/`, `docs/AGENTS.md`
 - **Build/release**: `pyproject.toml`, `run.py`, `.github/patch.py`, `docker/`, `.github/workflows/`
 - **Agent control plane**: `AGENTS.md`, `.agents/skills/`, `.github/agents/`, `.github/instructions/`
@@ -397,6 +397,8 @@ Use these focused targets as a guide:
 - Config/schema: `python -m unittest discover tests -p "test_config*.py" -v`
 - IP/HTTP: `python -m unittest tests.test_ip tests.test_util_http tests.test_util_http_retry tests.test_util_http_proxy_list -v`
 - Scheduler: `python -m unittest tests.test_scheduler_<name> -v`
+- Web: `python -m unittest tests.test_web tests.test_config_cli_web -v`
+- MCP: `python -m unittest tests.test_mcp tests.test_mcp_http tests.test_config_cli_mcp -v`
 - Broad shared change: `python -m unittest discover tests -v`
 
 For touched files or examples:
@@ -454,6 +456,6 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 
 ---
 
-**Version**: 1.1.0
-**Last Updated**: 2026-08-21
+**Version**: 1.1.1
+**Last Updated**: 2026-08-24
 **Maintained by**: DDNS Project Contributors
