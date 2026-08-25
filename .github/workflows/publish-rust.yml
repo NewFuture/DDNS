@@ -16,48 +16,66 @@ jobs:
         include:
           - os: ubuntu-latest
             asset: ddns-rs-linux-x64
+            target: x86_64-unknown-linux-musl
           - os: ubuntu-24.04-arm
             asset: ddns-rs-linux-arm64
+            target: aarch64-unknown-linux-musl
           - os: windows-latest
             asset: ddns-rs-windows-x64.exe
+            target: x86_64-pc-windows-msvc
           - os: macos-15-intel
             asset: ddns-rs-macos-x64
+            target: x86_64-apple-darwin
           - os: macos-latest
             asset: ddns-rs-macos-arm64
+            target: aarch64-apple-darwin
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
-      - run: cargo build --manifest-path rust/Cargo.toml --release --locked
       - run: cargo test --manifest-path rust/Cargo.toml --locked
+      - name: Install musl toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
+      - name: Build static Linux binary
+        if: runner.os == 'Linux'
+        run: cargo build --manifest-path rust/Cargo.toml --release --locked --target ${{ matrix.target }}
+        env:
+          CC: musl-gcc
+      - name: Build native binary
+        if: runner.os != 'Linux'
+        run: cargo build --manifest-path rust/Cargo.toml --release --locked --target ${{ matrix.target }}
       - name: Smoke test Rust binary
         if: runner.os != 'Windows'
         run: |
-          rust/target/release/ddns-rs --version
-          rust/target/release/ddns-rs --help
-          rust/target/release/ddns-rs --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+          binary="rust/target/${{ matrix.target }}/release/ddns-rs"
+          "$binary" --version
+          "$binary" --help
+          "$binary" --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
       - name: Smoke test Rust Windows binary
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $binary = "rust\target\release\ddns-rs.exe"
+          $binary = "rust\target\${{ matrix.target }}\release\ddns-rs.exe"
           & $binary --version
           & $binary --help
           & $binary --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
       - name: Package Unix artifact and checksum
         if: runner.os != 'Windows'
         run: |
-          cp rust/target/release/ddns-rs "${{ matrix.asset }}"
+          cp "rust/target/${{ matrix.target }}/release/ddns-rs" "${{ matrix.asset }}"
           shasum -a 256 "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"
       - name: Package Windows artifact and checksum
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Copy-Item 'rust\target\release\ddns-rs.exe' '${{ matrix.asset }}'
+          Copy-Item 'rust\target\${{ matrix.target }}\release\ddns-rs.exe' '${{ matrix.asset }}'
           $hash = (Get-FileHash -Algorithm SHA256 '${{ matrix.asset }}').Hash.ToLowerInvariant()
           Set-Content -NoNewline -Path '${{ matrix.asset }}.sha256' -Value "$hash  ${{ matrix.asset }}"
       - uses: actions/upload-artifact@v7

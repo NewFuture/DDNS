@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release --locked \
     && cp target/release/ddns-rs /tmp/ddns-rs
 
-FROM alpine:3.20
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates \
     && addgroup -S ddns \

@@ -74,6 +74,9 @@ pub fn flatten(
         if excluded.contains(&key.as_str()) {
             continue;
         }
+        if key == "http" {
+            continue;
+        }
         if matches!(key.as_str(), "extra" | "token") {
             flattened.insert(key, value);
         } else if let Value::Object(nested) = value {

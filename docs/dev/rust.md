@@ -13,7 +13,7 @@
 | JSON 注释与受限 Python 数据字面量 | 已支持 |
 | 缓存、代理回退、重试、TLS 与自定义 CA | 已支持 |
 | Linux amd64/arm64 Docker 镜像 | 标签发布工作流推送到 `ghcr.io/newfuture/ddns-rs`；仅运行 `ddns-rs`，无内置调度 |
-| Linux x64/arm64、macOS x64/arm64、Windows x64 Release 资产 | 标签发布工作流生成 `ddns-rs-*`，每个资产附带 `.sha256` |
+| Linux x64/arm64、macOS x64/arm64、Windows x64 Release 资产 | 标签发布工作流生成 `ddns-rs-*`，每个资产附带 `.sha256`；Linux 使用静态 musl 目标 |
 | `task`、Web、MCP | 计划中 |
 
 ## 构建与运行

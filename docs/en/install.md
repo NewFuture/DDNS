@@ -26,6 +26,7 @@ The Rust installer supports Linux x64/arm64 and macOS x64/arm64. It downloads
 the separate `ddns-rs-linux-x64`, `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`,
 or `ddns-rs-macos-arm64` Release asset and its `.sha256` checksum. Download
 `ddns-rs-windows-x64.exe` from Releases on Windows x64.
+Linux assets use static musl targets and run on both glibc and musl distributions.
 It installs to `~/.local/bin/ddns-rs` by default without requiring administrator
 privileges. Pass `--install-dir /usr/local/bin` explicitly for a system-wide
 installation and provide the required permission yourself.

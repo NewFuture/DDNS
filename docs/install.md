@@ -25,6 +25,7 @@ Rust 安装脚本仅支持 Linux x64/arm64 和 macOS x64/arm64，下载独立的
 `ddns-rs-linux-x64`、`ddns-rs-linux-arm64`、`ddns-rs-macos-x64` 或
 `ddns-rs-macos-arm64` Release 资产及其 `.sha256` 校验文件。Windows x64
 请从 Release 下载 `ddns-rs-windows-x64.exe`。
+Linux 资产使用静态 musl 目标，可同时运行于 glibc 与 musl 发行版。
 Rust 安装器默认写入 `~/.local/bin/ddns-rs`，无需管理员权限；如需系统级安装，
 显式传入 `--install-dir /usr/local/bin` 并自行提供相应权限。
 安装器仅适用于已包含 `ddns-rs-*` 资产的标签版本。

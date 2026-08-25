@@ -14,7 +14,7 @@ replace the stable Python `ddns` command or default installer.
 | JSON comments and restricted Python data literals | Supported |
 | Cache, proxy fallback, retries, TLS, and custom CA files | Supported |
 | Linux amd64/arm64 Docker image | Tag publishing pushes `ghcr.io/newfuture/ddns-rs`; it runs only `ddns-rs`, without a scheduler |
-| Linux x64/arm64, macOS x64/arm64, Windows x64 Release assets | Tag publishing creates `ddns-rs-*`, each with a `.sha256` checksum |
+| Linux x64/arm64, macOS x64/arm64, Windows x64 Release assets | Tag publishing creates `ddns-rs-*`, each with a `.sha256` checksum; Linux uses static musl targets |
 | `task`, Web, and MCP | Planned |
 
 ## Build and run

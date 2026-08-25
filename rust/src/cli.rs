@@ -38,7 +38,11 @@ Options:
   -v, --version                Print version information
   -h, --help                   Print help
 
-MVP providers: debug, cloudflare, alidns, dnspod
+Providers:
+  debug, cloudflare, alidns, dnspod, dnspod_com, tencentcloud, edgeone,
+  edgeone_dns, cloudns, aliesa, dnscom, he, huaweidns, namesilo, noip,
+  callback, west
+Documented compatibility aliases are also accepted.
 Regex note: regex: rules use Rust regex syntax; Python look-around/backreferences are unsupported.
 ";
 
@@ -400,5 +404,31 @@ mod tests {
         assert_eq!(options.values["ipv4"], serde_json::json!([]));
         assert_eq!(options.values["index4"], serde_json::json!([]));
         assert_eq!(options.values["proxy"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn help_describes_full_provider_support() {
+        for provider in [
+            "debug",
+            "cloudflare",
+            "alidns",
+            "dnspod",
+            "dnspod_com",
+            "tencentcloud",
+            "edgeone",
+            "edgeone_dns",
+            "cloudns",
+            "aliesa",
+            "dnscom",
+            "he",
+            "huaweidns",
+            "namesilo",
+            "noip",
+            "callback",
+            "west",
+        ] {
+            assert!(super::HELP.contains(provider), "missing {provider}");
+        }
+        assert!(!super::HELP.contains("MVP providers:"));
     }
 }

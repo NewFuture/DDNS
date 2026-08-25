@@ -168,6 +168,26 @@ fn aliases_build_their_canonical_provider() {
 }
 
 #[test]
+fn aliyun_alias_uses_alidns_default_endpoint() {
+    let client = FakeHttpClient::responses([
+        (200, json!({"DomainName":"example.com","RR":"www"})),
+        (200, json!({"DomainRecords":{"Record":[]}})),
+        (200, json!({"RecordId":"record"})),
+    ]);
+    let mut alias_config = config("aliyun", "id", "secret");
+    alias_config.endpoint = None;
+    let client_for_provider: Arc<dyn HttpClient> = client.clone();
+    let mut provider = build(&alias_config, client_for_provider, logger("secret")).unwrap();
+    provider.set_record(&request()).unwrap();
+    assert!(
+        client
+            .requests()
+            .iter()
+            .all(|request| request.url.starts_with("https://alidns.aliyuncs.com/"))
+    );
+}
+
+#[test]
 fn dnspod_com_create_and_error_are_offline() {
     let success = FakeHttpClient::responses([
         (200, json!({"status":{"code":"1"},"domain":{"id":"zone"}})),

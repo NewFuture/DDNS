@@ -89,7 +89,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
     let mut failures = Vec::new();
 
     for (index, config) in configs.iter().enumerate() {
-        let secrets = vec![config.id.clone(), config.token.clone()];
+        let secrets = provider_secrets(&config.provider, &config.id, &config.token);
         let logger = match Logger::new(
             config.log.level,
             config.log.file.as_deref(),
@@ -285,6 +285,35 @@ fn masked_error(logger: &Logger, error: &impl std::fmt::Display) -> String {
     logger.mask(&error.to_string())
 }
 
+fn provider_secrets(provider: &str, id: &str, token: &str) -> Vec<String> {
+    let mut secrets = vec![id.to_owned(), token.to_owned()];
+    if matches!(provider, "callback" | "webhook" | "http")
+        && let Ok(value) = serde_json::from_str::<serde_json::Value>(token)
+    {
+        collect_scalar_secrets(&value, &mut secrets);
+    }
+    secrets
+}
+
+fn collect_scalar_secrets(value: &serde_json::Value, secrets: &mut Vec<String>) {
+    match value {
+        serde_json::Value::String(value) => secrets.push(value.clone()),
+        serde_json::Value::Number(value) => secrets.push(value.to_string()),
+        serde_json::Value::Bool(value) => secrets.push(value.to_string()),
+        serde_json::Value::Array(values) => {
+            for value in values {
+                collect_scalar_secrets(value, secrets);
+            }
+        }
+        serde_json::Value::Object(values) => {
+            for value in values.values() {
+                collect_scalar_secrets(value, secrets);
+            }
+        }
+        serde_json::Value::Null => {}
+    }
+}
+
 fn bootstrap_level(
     cli: &std::collections::BTreeMap<String, serde_json::Value>,
     environment: &std::collections::BTreeMap<String, serde_json::Value>,
@@ -321,7 +350,7 @@ mod tests {
     use crate::logging::{Level, Logger};
     use crate::provider::{Provider, RecordRequest};
 
-    use super::update_domains;
+    use super::{provider_secrets, update_domains};
 
     struct PartialProvider {
         calls: Vec<String>,
@@ -367,5 +396,16 @@ mod tests {
         assert_eq!(failures.len(), 1);
         assert!(failures[0].contains("fail.example.com"));
         assert!(!failures[0].contains("secret-token"));
+    }
+
+    #[test]
+    fn callback_nested_scalar_values_are_registered_as_secrets() {
+        let secrets = provider_secrets(
+            "callback",
+            "https://callback.example/update",
+            r#"{"api_key":"callback-secret","nested":{"account":12345}}"#,
+        );
+        assert!(secrets.contains(&"callback-secret".to_owned()));
+        assert!(secrets.contains(&"12345".to_owned()));
     }
 }

@@ -32,7 +32,7 @@ pub fn build(
         endpoint: config.endpoint.clone().unwrap_or_else(|| {
             match config.provider.as_str() {
                 "cloudflare" => "https://api.cloudflare.com",
-                "alidns" => "https://alidns.aliyuncs.com",
+                "alidns" | "aliyun" => "https://alidns.aliyuncs.com",
                 "dnspod" | "dnspod_cn" => "https://dnsapi.cn",
                 "dnspod_com" | "dnspod_global" => "https://api.dnspod.com",
                 "tencentcloud" | "tencent" | "qcloud" => "https://dnspod.tencentcloudapi.com",

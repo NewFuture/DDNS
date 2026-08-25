@@ -174,3 +174,26 @@ fn callback_object_token_survives_normal_file_loading() {
         json!({"api_key": "secret", "address": "__IP__"})
     );
 }
+
+#[test]
+fn reserved_http_listener_settings_never_become_provider_extras() {
+    let cli = CliOptions {
+        values: BTreeMap::new(),
+        config_paths: Some(vec!["https://config.example/http.json".to_owned()]),
+        new_config: None,
+    };
+    let document = r#"{
+        "dns": "debug",
+        "http": {
+            "host": "127.0.0.1",
+            "port": 9876,
+            "token": "web-secret"
+        }
+    }"#;
+    let environment = BTreeMap::from([("http_token".to_owned(), json!("environment-secret"))]);
+    let configs = load(&cli, &environment, &|_| Ok(document.to_owned())).unwrap();
+    assert!(!configs[0].extra.contains_key("http"));
+    assert!(!configs[0].extra.contains_key("http_host"));
+    assert!(!configs[0].extra.contains_key("http_port"));
+    assert!(!configs[0].extra.contains_key("http_token"));
+}

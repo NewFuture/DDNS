@@ -22,6 +22,8 @@ pushes the Linux amd64/arm64 image as `ghcr.io/newfuture/ddns-rs`; it runs
 `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`, `ddns-rs-macos-arm64`, and
 `ddns-rs-windows-x64.exe`, each with a `.sha256` checksum. Linux and macOS can
 use `docs/public/install-rust.sh`; it installs only `ddns-rs`, never `ddns`.
+The Linux assets use static musl targets so the same names work on glibc and
+musl distributions.
 
 ## Build and run
 
