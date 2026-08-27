@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
-      target_sha: ${{ steps.validate.outputs.target_sha }}
       release_tag: ${{ steps.validate.outputs.release_tag }}
     steps:
       - name: Validate selected branch, tag, and immutable source
@@ -47,7 +46,6 @@ jobs:
             echo "GitHub did not provide a full immutable commit SHA" >&2
             exit 1
           fi
-          printf 'target_sha=%s\n' "$SELECTED_SHA" >> "$GITHUB_OUTPUT"
           printf 'release_tag=%s\n' "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
   build-pypi:
@@ -56,8 +54,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
@@ -103,10 +99,20 @@ jobs:
           (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
       - name: Test task management from the source distribution
         run: tests/scripts/test-task-systemd.sh "python3 -m ddns"
+      - name: Prepare versioned release document
+        run: python3 .github/patch.py release
+        env:
+          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
       - uses: actions/upload-artifact@v7
         with:
           name: release-pypi
           path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-document
+          path: docs/release.md
           if-no-files-found: error
           retention-days: 14
 
@@ -134,8 +140,6 @@ jobs:
     timeout-minutes: ${{ matrix.arch == 'x86' && 25 || contains(matrix.os, 'windows') && 16 || 12 }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -244,8 +248,6 @@ jobs:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v7
         with:
@@ -294,8 +296,6 @@ jobs:
       RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
       - name: Patch the selected release version for Docker
         run: python3 .github/patch.py docker
         env:
@@ -306,6 +306,14 @@ jobs:
           platforms: ${{ env.platforms }}
       - uses: docker/setup-buildx-action@v4
         id: buildx
+      - uses: docker/metadata-action@v6
+        id: meta
+        with:
+          images: ghcr.io/newfuture/ddns
+          tags: |
+            type=raw,value=${{ needs.preflight.outputs.release_tag }}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -313,6 +321,8 @@ jobs:
           platforms: ${{ env.platforms }}
           push: false
           tags: ddns:test
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           outputs: type=oci,dest=./multi-platform-image.tar
           build-args: |
             BUILDER=ghcr.io/newfuture/nuitka-builder:master
@@ -358,8 +368,81 @@ jobs:
               sh tests/scripts/test-docker-zombies.sh "$DOCKER_IMG:$tag" "$platform"
             fi
           done
-  publish-pypi:
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-docker-${{ matrix.host }}
+          path: ddns-oci-*.tar
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  validate-release:
     needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      # Draft releases are visible only to tokens with push access.
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      TARGET_SHA: ${{ github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Reject conflicting release state
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          refs_json="$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$RELEASE_TAG")"
+          ref_json="$(jq -c --arg ref "refs/tags/$RELEASE_TAG" '.[] | select(.ref == $ref)' <<< "$refs_json")"
+          tag_sha=""
+          if [ -n "$ref_json" ]; then
+            object_type="$(jq -r '.object.type' <<< "$ref_json")"
+            tag_sha="$(jq -r '.object.sha' <<< "$ref_json")"
+            if [ "$object_type" = "tag" ]; then
+              tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.object.sha')"
+            fi
+            test "$tag_sha" = "$TARGET_SHA" || {
+              echo "Tag $RELEASE_TAG already targets $tag_sha, not $TARGET_SHA" >&2
+              exit 1
+            }
+          fi
+
+          release_matches="$(
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+              jq -c --arg tag "$RELEASE_TAG" '[.[][] | select(.tag_name == $tag)]'
+          )"
+          release_count="$(jq 'length' <<< "$release_matches")"
+          test "$release_count" -le 1 || {
+            echo "Multiple releases unexpectedly use tag $RELEASE_TAG." >&2
+            exit 1
+          }
+          if [ "$release_count" -eq 1 ]; then
+            release_json="$(jq -c '.[0]' <<< "$release_matches")"
+            test "$(jq -r '.draft' <<< "$release_json")" = "true" || {
+              echo "Release $RELEASE_TAG is already published." >&2
+              exit 1
+            }
+            test "$(jq -r '.tag_name' <<< "$release_json")" = "$RELEASE_TAG" || {
+              echo "Draft release tag does not match $RELEASE_TAG." >&2
+              exit 1
+            }
+            test -n "$tag_sha" || {
+              echo "Draft release $RELEASE_TAG has no corresponding tag." >&2
+              exit 1
+            }
+            expected_prerelease=false
+            case "$RELEASE_TAG" in
+              *-alpha*|*-beta*|*-rc*) expected_prerelease=true ;;
+            esac
+            test "$(jq -r '.prerelease' <<< "$release_json")" = "$expected_prerelease" || {
+              echo "Draft prerelease state does not match $RELEASE_TAG." >&2
+              exit 1
+            }
+          fi
+
+  publish-pypi:
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries, validate-release]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:
@@ -378,7 +461,7 @@ jobs:
           print-hash: true
 
   publish-docker:
-    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries, validate-release]
     runs-on: ubuntu-latest
     timeout-minutes: 150
     environment:
@@ -391,16 +474,11 @@ jobs:
       RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
       platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
-      - name: Patch the selected release version for Docker
-        run: python3 .github/patch.py docker
-        env:
-          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
-      - uses: docker/setup-qemu-action@v4
-        with:
-          platforms: ${{ env.platforms }}
+          pattern: release-docker-*
+          path: promotion
+          merge-multiple: true
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -423,21 +501,49 @@ jobs:
             type=raw,value=${{ needs.preflight.outputs.release_tag }}
             type=raw,value=next,enable=${{ !contains(needs.preflight.outputs.release_tag, 'alpha') }}
         env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: ${{ env.platforms }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          build-args: |
-            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
+      - name: Push tested platform images and registry-local indexes
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(promotion/ddns-oci-*.tar)
+          test "${#archives[@]}" -eq 8
+          for archive in "${archives[@]}"; do docker load -i "$archive"; done
+
+          IFS=',' read -ra PLATFORMS <<< "$platforms"
+          ghcr_sources=()
+          dockerhub_sources=()
+          for platform in "${PLATFORMS[@]}"; do
+            platform_tag=$(printf '%s-%s' "$RELEASE_TAG" "$platform" | tr '/' '_')
+            ghcr_source="$DOCKER_IMG:$platform_tag"
+            dockerhub_source="newfuture/ddns:$platform_tag"
+            docker image inspect "$ghcr_source" >/dev/null
+            docker tag "$ghcr_source" "$dockerhub_source"
+            docker push "$ghcr_source"
+            docker push "$dockerhub_source"
+            ghcr_sources+=("$ghcr_source")
+            dockerhub_sources+=("$dockerhub_source")
+          done
+
+          ghcr_tags=()
+          dockerhub_tags=()
+          while IFS= read -r tag; do
+            case "$tag" in
+              ghcr.io/newfuture/ddns:*) ghcr_tags+=(--tag "$tag") ;;
+              newfuture/ddns:*) dockerhub_tags+=(--tag "$tag") ;;
+              *) echo "Unexpected metadata tag: $tag" >&2; exit 1 ;;
+            esac
+          done <<< "${{ steps.meta.outputs.tags }}"
+          annotations=()
+          while IFS= read -r annotation; do
+            test -n "$annotation" && annotations+=(--annotation "$annotation")
+          done <<< "${{ steps.meta.outputs.annotations }}"
+          docker buildx imagetools create "${ghcr_tags[@]}" "${annotations[@]}" "${ghcr_sources[@]}"
+          docker buildx imagetools create "${dockerhub_tags[@]}" "${annotations[@]}" "${dockerhub_sources[@]}"
 
   publish-github:
-    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries, validate-release]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -447,16 +553,17 @@ jobs:
       contents: write
     env:
       RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
-      TARGET_SHA: ${{ needs.preflight.outputs.target_sha }}
+      TARGET_SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: actions/download-artifact@v8
         with:
           pattern: release-native-*
           path: assets
           merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-document
+          path: release-document
       - uses: actions/download-artifact@v8
         with:
           pattern: release-linux-*
@@ -469,6 +576,8 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$(find assets -maxdepth 1 -type f -print -quit)"
+          release_document="$(find release-document -type f -name release.md -print -quit)"
+          test -n "$release_document"
 
           resolve_tag_sha() {
             local ref object_type object_sha
@@ -541,14 +650,13 @@ jobs:
             fi
           done < <(jq -r '.assets[].name' <<< "$release_json")
 
-          require_draft
-          gh release upload "$RELEASE_TAG" assets/* changelog.md --clobber
           if ! grep -Fq "## 各版本一览表" changelog.md; then
-            DDNS_RELEASE_TAG="$RELEASE_TAG" python3 .github/patch.py release
-            cat docs/release.md >> changelog.md
+            cat "$release_document" >> changelog.md
             require_draft
             gh release edit "$RELEASE_TAG" --notes-file changelog.md
           fi
+          require_draft
+          gh release upload "$RELEASE_TAG" assets/* changelog.md --clobber
           require_draft
           tag_sha="$(resolve_tag_sha)"
           test "$tag_sha" = "$TARGET_SHA" || {
