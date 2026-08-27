@@ -301,7 +301,9 @@ def ten_minute_bucket_id():
 
 
 def generate_version():
-    ref = os.environ.get("GITHUB_REF_NAME", "")
+    # Release dispatches run from a branch, so their version tag is supplied
+    # explicitly.  Keep GITHUB_REF_NAME as the fallback for existing CI jobs.
+    ref = os.environ.get("DDNS_RELEASE_TAG") or os.environ.get("GITHUB_REF_NAME", "")
     if re.match(r"^v\d+\.\d+", ref):
         return normalize_tag(ref)
 
@@ -318,11 +320,11 @@ def generate_version():
 def resolve_version(mode: str) -> str:
     """
     仅在 PyPI 发布步骤（mode = 'version'）使用 generate_version；
-    其他步骤优先使用标签 GITHUB_REF_NAME（规范化），没有标签时回退到 generate_version。
+    其他步骤优先使用显式 DDNS_RELEASE_TAG 或标签 GITHUB_REF_NAME（规范化），没有标签时回退到 generate_version。
     """
     if mode == "version":
         return generate_version()
-    ref = os.environ.get("GITHUB_REF_NAME", "")
+    ref = os.environ.get("DDNS_RELEASE_TAG") or os.environ.get("GITHUB_REF_NAME", "")
     if re.match(r"^v\d+\.\d+", ref):
         return normalize_tag(ref)
     return generate_version()
@@ -454,7 +456,10 @@ def main():
         release_md_path = os.path.join(ROOT, "docs", "release.md")
         if os.path.exists(release_md_path):
             replace_links_for_release_in_file(
-                release_md_path, version, label="docs/release.md", tag=os.environ.get("GITHUB_REF_NAME")
+                release_md_path,
+                version,
+                label="docs/release.md",
+                tag=os.environ.get("DDNS_RELEASE_TAG") or os.environ.get("GITHUB_REF_NAME"),
             )
         exit(0)
 

@@ -1,108 +1,117 @@
 name: Publish
-run-name: Release ${{github.ref_name}}
+run-name: Release ${{ inputs.release_tag }} from ${{ github.ref_name }}
 
 on:
-  push:
-    tags: [v*]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to create (for example v4.2.0 or v4.2.0-beta1)"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
-jobs:
-  publish-docker:
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    environment:
-      name: publish
-      url: https://hub.docker.com/r/newfuture/ddns
-    permissions:
-      packages: write
-      id-token: write
-      attestations: write
-    env:
-      platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
-    steps:
-      - uses: actions/checkout@v7
-      - run: python3 .github/patch.py docker
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-      - uses: docker/setup-qemu-action@v4
-        with:
-          platforms: ${{ env.platforms }}
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/metadata-action@v6
-        id: meta
-        with:
-          images: |
-            ghcr.io/newfuture/ddns
-            newfuture/ddns
-          flavor: | # exclude alpha, beta, rc
-            latest=${{ !(contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'c')) }}
-          tags: | # next for beta and rc or stable (none alpha)
-            type=ref,event=tag
-            type=raw,value=next,enable=${{ !contains(github.ref_name, 'alpha')}} 
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
-      - uses: docker/build-push-action@v7
-        id: push
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: ${{ env.platforms }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          build-args: |
-            BUILDER=ghcr.io/newfuture/nuitka-builder:master   
-            GITHUB_REF_NAME=${{ github.ref_name }}
+concurrency:
+  group: release-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
-  publish-pypi:
+jobs:
+  preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment:
-      name: publish
-      url: https://pypi.org/project/ddns/
-    permissions:
-      # IMPORTANT: this permission is mandatory for Trusted Publishing
-      id-token: write
+    timeout-minutes: 3
+    outputs:
+      target_sha: ${{ steps.validate.outputs.target_sha }}
+      release_tag: ${{ steps.validate.outputs.release_tag }}
+    steps:
+      - name: Validate selected branch, tag, and immutable source
+        id: validate
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SELECTED_REF_NAME: ${{ github.ref_name }}
+          SELECTED_REF_TYPE: ${{ github.ref_type }}
+          SELECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$SELECTED_REF_TYPE" = "branch"
+          case "$SELECTED_REF_NAME" in
+            master|v4) ;;
+            *) echo "Release dispatches must run from master or v4, not $SELECTED_REF_NAME" >&2; exit 1 ;;
+          esac
+          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+(\.[0-9]+){1,3}(-(alpha|beta|rc)[0-9]*)?$ ]]; then
+            echo "release_tag must be a supported v-prefixed release tag" >&2
+            exit 1
+          fi
+          if ! [[ "$SELECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "GitHub did not provide a full immutable commit SHA" >&2
+            exit 1
+          fi
+          printf 'target_sha=%s\n' "$SELECTED_SHA" >> "$GITHUB_OUTPUT"
+          printf 'release_tag=%s\n' "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+  build-pypi:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
-      - name: Install dependencies
+      - name: Install build dependency
         run: pip install build
-      - run: python3 .github/patch.py version
-      - name: Replace url in Readme
-        run: sed -i'' -E 's#([("'\''`])(/docs/[^)"'\''`]+)\.md([)"'\''`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'\''`])/docs/#\1https://ddns.newfuture.cc/docs/#g' README.md
-
-      - name: run unit tests
+      - name: Patch the selected release version
+        run: python3 .github/patch.py version
+        env:
+          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      - name: Replace relative README documentation URLs
+        run: sed -i'' -E 's#([("'"'"'`])(/docs/[^)"'"'"'`]+)\.md([)"'"'"'`])#\1https://ddns.newfuture.cc\2.html\3#g; s#([("'"'"'`])/docs/#\1https://ddns.newfuture.cc/docs/#g' README.md
+      - name: Run unit tests
         run: python -m unittest discover tests -v
-
-      - name: test callback config
-        run: python3 -m ddns -c tests/config/callback.json
-      - name: test debug config
-        run: python3 -m ddns -c tests/config/debug.json
-      - name: test noip config
-        run: python3 -m ddns -c tests/config/noip.json
-
+      - name: Test package configuration fixtures
+        run: |
+          python3 -m ddns -c tests/config/callback.json
+          python3 -m ddns -c tests/config/multi-provider.json
+          python3 -m ddns -c tests/config/debug.json -c tests/config/noip.json
+          python3 -m ddns -c tests/config/he-proxies.json --debug
+      - name: Verify deployed debug configuration
+        run: python3 -m ddns -c https://ddns.newfuture.cc/tests/config/debug.json
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Test pip install from wheel
+        run: |
+          wheel_file=$(find dist -name "*.whl" -type f)
+          test -n "$wheel_file" || { echo "No wheel file found"; exit 1; }
+          python3 -m pip install --force-reinstall "$wheel_file"
+          ddns --version
+          ddns --help
+          ddns --new-config /tmp/test-pip-config.json
+          test -f /tmp/test-pip-config.json
+          python3 -m ddns --version
+          (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
+      - name: Test pip install from source distribution
+        run: |
+          python3 -m pip uninstall -y ddns
+          tarball_file=$(find dist -name "*.tar.gz" -type f)
+          test -n "$tarball_file" || { echo "No source distribution found"; exit 1; }
+          python3 -m pip install --force-reinstall "$tarball_file"
+          ddns --version
+          python3 -m ddns --help
+          (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
+      - name: Test task management from the source distribution
+        run: tests/scripts/test-task-systemd.sh "python3 -m ddns"
+      - uses: actions/upload-artifact@v7
         with:
-          print-hash: true
+          name: release-pypi
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
 
-  publish-binary:
+  build-native-binaries:
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -123,30 +132,29 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.arch == 'x86' && 25 || contains(matrix.os, 'windows') && 16 || 12 }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
-
-      - run:  python3 .github/patch.py
-
-      - name: Set up on Linux
+      - name: Patch the selected release version
+        run: python3 .github/patch.py
+        env:
+          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      - name: Set up Linux
         if: runner.os == 'Linux'
         run: sudo apt-get install -y --no-install-recommends patchelf
-      - name: Set up on macOS
+      - name: Set up macOS
         if: runner.os == 'macOS'
         run: python3 -m pip install imageio
-
-      - name: run unit tests
+      - name: Run unit tests
         run: python -m unittest discover tests -v
-      - name: test run.py
+      - name: Test run.py
         run: python3 ./run.py -h
-
-      - name: Build Executable
+      - name: Build onefile executable
         uses: Nuitka/Nuitka-Action@v1.4
         with:
           nuitka-version: 4.2
@@ -154,12 +162,11 @@ jobs:
           mode: onefile
           output-dir: dist
           lto: yes
-          windows-icon-from-ico:  ${{ runner.os == 'Windows' && 'docs/public/favicon.ico' || '' }}
+          windows-icon-from-ico: ${{ runner.os == 'Windows' && 'docs/public/favicon.ico' || '' }}
           linux-icon: ${{ runner.os == 'Linux' && 'docs/public/img/ddns.svg' || '' }}
           static-libpython: ${{ runner.os == 'Linux' && 'yes' || 'auto' }}
           macos-app-name: ${{ runner.os == 'macOS' && 'DDNS' || '' }}
           macos-app-icon: ${{ runner.os == 'macOS' && 'docs/public/img/ddns.png' || '' }}
-
       - run: ./dist/ddns || test -e config.json
       - run: ./dist/ddns -v
       - run: ./dist/ddns -h
@@ -168,7 +175,7 @@ jobs:
         env:
           DDNS_E2E_EXECUTABLE: ./dist/ddns${{ runner.os == 'Windows' && '.exe' || '' }}
           PYTHONIOENCODING: utf-8
-
+      - run: ./dist/ddns task --status
       - name: Test Windows schtasks task
         if: runner.os == 'Windows'
         run: tests/scripts/test-task-windows.bat .\\dist\\ddns.exe
@@ -178,8 +185,7 @@ jobs:
       - name: Test macOS launchd service
         if: runner.os == 'macOS'
         run: tests/scripts/test-task-macos.sh "./dist/ddns"
-
-      - name: Build Windows App (standalone)
+      - name: Build Windows standalone application
         if: runner.os == 'Windows'
         uses: Nuitka/Nuitka-Action@v1.4
         with:
@@ -188,10 +194,9 @@ jobs:
           mode: standalone
           output-dir: dist-app
           lto: yes
-          file-description: "DDNS客户端 ${{ github.ref_name }}"
+          file-description: "DDNS客户端 ${{ needs.preflight.outputs.release_tag }}"
           windows-console-mode: attach
           windows-icon-from-ico: docs/public/favicon.ico
-
       - name: Run Windows standalone E2E tests
         if: runner.os == 'Windows'
         shell: pwsh
@@ -203,8 +208,7 @@ jobs:
           $env:DDNS_E2E_EXECUTABLE = $executable
           $env:PYTHONIOENCODING = 'utf-8'
           python -m unittest tests.e2e -v
-
-      - name: Package Windows app as ddns.zip
+      - name: Package Windows standalone application
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -213,37 +217,35 @@ jobs:
           if (-not $appDir) { throw 'Standalone app folder (*.dist) not found in dist' }
           $zipName = "ddns-windows-${{ matrix.arch }}.zip"
           if (Test-Path "dist/$zipName") { Remove-Item "dist/$zipName" -Force }
-          # Package the contents of the .dist folder directly, not the folder itself
           Compress-Archive -Path "$($appDir.FullName)\*" -DestinationPath "dist/$zipName"
-          # Clean up temporary output directory
           Remove-Item 'dist-app' -Recurse -Force
-
       - run: mv ./dist/ddns ./dist/ddns-ubuntu24.04-${{ matrix.arch }}
         if: runner.os == 'Linux'
       - run: mv ./dist/ddns ./dist/ddns-mac-${{ matrix.arch }}
         if: runner.os == 'macOS'
       - run: mv ./dist/ddns.exe ./dist/ddns-windows-${{ matrix.arch }}.exe
         if: runner.os == 'Windows'
-      - name: Upload binary
-        run: gh release upload ${{ github.ref_name }} dist/ddns*
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-native-${{ runner.os }}-${{ matrix.arch }}
+          path: dist/ddns*
+          if-no-files-found: error
+          retention-days: 14
 
-  publish-linux-binary:
+  build-linux-binaries:
+    needs: preflight
     strategy:
       matrix:
-        host: [ amd, arm ]
-        libc: [ musl, glibc ]
+        host: [amd, arm]
+        libc: [musl, glibc]
     runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
-    permissions:
-      contents: write
+    timeout-minutes: 10
     env:
       platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.libc == 'glibc' && 'linux/arm/v7,linux/arm64/v8' || 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' }}
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
       - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v7
         with:
@@ -255,18 +257,15 @@ jobs:
           target: export
           outputs: type=local,dest=./output
           build-args: |
-            BUILDER=ghcr.io/newfuture/nuitka-builder:${{matrix.libc}}-master
-            GITHUB_REF_NAME=${{ github.ref_name }}
-      # 测试构建的二进制文件
+            BUILDER=ghcr.io/newfuture/nuitka-builder:${{ matrix.libc }}-master
+            GITHUB_REF_NAME=${{ needs.preflight.outputs.release_tag }}
       - name: Test built binaries
         run: |
           set -ex
           for f in output/*/ddns; do
-            platform=$(basename $(dirname "$f") | tr '_' '/')
-            tests/scripts/test-in-docker.sh $platform ${{matrix.libc}} "$f"
+            platform=$(basename "$(dirname "$f")" | tr '_' '/')
+            tests/scripts/test-in-docker.sh "$platform" "${{ matrix.libc }}" "$f"
           done
-
-      # 输出目录结构扁平化
       - name: Flatten output directory structure
         run: |
           set -e
@@ -275,31 +274,286 @@ jobs:
             name=$(basename "$(dirname "$f")")
             mv "$f" "dist/ddns-${{ matrix.libc }}-$name"
           done
-      - name: Upload binary
-        run: gh release upload ${{ github.ref_name }} dist/ddns*
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-${{ matrix.libc }}-${{ matrix.host }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
 
-  github-release:
+  build-docker:
+    needs: preflight
+    timeout-minutes: ${{ matrix.host == 'qemu' && 90 || 30 }}
+    strategy:
+      matrix:
+        host: [amd, arm, qemu]
+    runs-on: ubuntu-${{ matrix.host == 'arm' && '24.04-arm' || 'latest' }}
+    env:
+      DOCKER_IMG: ghcr.io/newfuture/ddns
+      platforms: ${{ matrix.host == 'amd' && 'linux/386,linux/amd64' || matrix.host == 'arm' && 'linux/arm/v6,linux/arm/v7,linux/arm64/v8' || 'linux/ppc64le,linux/riscv64,linux/s390x' }}
+      RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
+      - name: Patch the selected release version for Docker
+        run: python3 .github/patch.py docker
+        env:
+          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      - uses: docker/setup-qemu-action@v4
+        if: matrix.host == 'qemu'
+        with:
+          platforms: ${{ env.platforms }}
+      - uses: docker/setup-buildx-action@v4
+        id: buildx
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          tags: ddns:test
+          outputs: type=oci,dest=./multi-platform-image.tar
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master
+      - name: Prepare test environment
+        run: mkdir -p oci-image && tar -vxf multi-platform-image.tar -C oci-image
+      - name: Extract platform images with skopeo
+        uses: addnab/docker-run-action@v3
+        with:
+          image: quay.io/skopeo/stable:latest
+          options: |
+            -v ${{ github.workspace }}/:/oci
+            -e PLATFORMS=${{ env.platforms }}
+            -e RELEASE_TAG=${{ env.RELEASE_TAG }}
+            -e DOCKER_IMG=${{ env.DOCKER_IMG }}
+          run: |
+            IFS="," read -ra PLATFORMS <<< "$PLATFORMS"
+            for platform in "${PLATFORMS[@]}"; do
+              tag=$(echo "$RELEASE_TAG-$platform" | tr '/' '_')
+              arch=$(echo "$platform" | cut -d'/' -f2)
+              variant=$(echo "$platform" | cut -d'/' -f3)
+              variantFlag=""
+              if [ -n "$variant" ]; then variantFlag="--override-variant $variant"; fi
+              skopeo copy --override-os linux --override-arch "$arch" $variantFlag \
+                oci:/oci/oci-image:test "docker-archive:/oci/ddns-oci-${tag}.tar:${DOCKER_IMG}:${tag}"
+            done
+      - name: Test platform images
+        run: |
+          set -e
+          IFS=',' read -ra PLATFORMS <<< "$platforms"
+          for platform in "${PLATFORMS[@]}"; do
+            tag=$(echo "$RELEASE_TAG-$platform" | tr '/' '_')
+            docker load < "ddns-oci-${tag}.tar"
+            docker run --platform "$platform" --rm "$DOCKER_IMG:$tag" -v
+            docker run --platform "$platform" --rm "$DOCKER_IMG:$tag" -h
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" || test -e config.json
+            sudo rm -f config.json
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" -c /ddns/tests/config/callback.json
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" -c /ddns/tests/config/multi-provider.json
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" -c /ddns/tests/config/debug.json -c /ddns/tests/config/noip.json
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" -c https://ddns.newfuture.cc/tests/config/debug.json
+            docker run --platform "$platform" --rm -v "$(pwd):/ddns/" "$DOCKER_IMG:$tag" -c /ddns/tests/config/he-proxies.json
+            if [ "$platform" = "linux/amd64" ]; then
+              sh tests/scripts/test-docker-zombies.sh "$DOCKER_IMG:$tag" "$platform"
+            fi
+          done
+  publish-pypi:
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:
       name: publish
-      url: https://github.com/NewFuture/DDNS/releases/tag/${{ github.ref_name }}
+      url: https://pypi.org/project/ddns/
     permissions:
-      contents: write
-    needs: [publish-docker, publish-pypi, publish-binary, publish-linux-binary]
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-pypi
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          print-hash: true
+
+  publish-docker:
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment:
+      name: publish
+      url: https://hub.docker.com/r/newfuture/ddns
+    permissions:
+      packages: write
+    env:
+      DOCKER_IMG: ghcr.io/newfuture/ddns
+      RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/riscv64,linux/s390x
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
+      - name: Patch the selected release version for Docker
+        run: python3 .github/patch.py docker
+        env:
+          DDNS_RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: ${{ env.platforms }}
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/metadata-action@v6
+        id: meta
+        with:
+          images: |
+            ghcr.io/newfuture/ddns
+            newfuture/ddns
+          flavor: |
+            latest=${{ !(contains(needs.preflight.outputs.release_tag, 'a') || contains(needs.preflight.outputs.release_tag, 'b') || contains(needs.preflight.outputs.release_tag, 'c')) }}
+          tags: |
+            type=raw,value=${{ needs.preflight.outputs.release_tag }}
+            type=raw,value=next,enable=${{ !contains(needs.preflight.outputs.release_tag, 'alpha') }}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ env.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          build-args: |
+            BUILDER=ghcr.io/newfuture/nuitka-builder:master
 
-      - run: python3 .github/patch.py release
-
-      - name: Generate release notes and append README.md
+  publish-github:
+    needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: publish
+      url: https://github.com/NewFuture/DDNS/releases/tag/${{ needs.preflight.outputs.release_tag }}
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+      TARGET_SHA: ${{ needs.preflight.outputs.target_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.preflight.outputs.target_sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-native-*
+          path: assets
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-linux-*
+          path: assets
+          merge-multiple: true
+      - name: Create or safely resume the immutable release draft
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view ${{ github.ref_name }} --json body -q '.body' > changelog.md
-          gh release upload ${{ github.ref_name }} changelog.md --clobber
-          cat docs/release.md >> changelog.md
-          gh release edit ${{ github.ref_name }} --notes-file changelog.md
+          set -euo pipefail
+          test -n "$(find assets -maxdepth 1 -type f -print -quit)"
+
+          resolve_tag_sha() {
+            local ref object_type object_sha
+            ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" 2>/dev/null)" || return 1
+            object_type="$(jq -r '.object.type' <<< "$ref")"
+            object_sha="$(jq -r '.object.sha' <<< "$ref")"
+            if [ "$object_type" = "tag" ]; then
+              object_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$object_sha" --jq '.object.sha')"
+            fi
+            printf '%s\n' "$object_sha"
+          }
+          if tag_sha="$(resolve_tag_sha)"; then
+            test "$tag_sha" = "$TARGET_SHA" || {
+              echo "Tag $RELEASE_TAG already targets $tag_sha, not $TARGET_SHA" >&2
+              exit 1
+            }
+          fi
+
+          is_prerelease=false
+          case "$RELEASE_TAG" in
+            *-alpha*|*-beta*|*-rc*) is_prerelease=true ;;
+          esac
+
+          release_json=""
+          if release_json="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,assets 2>/dev/null)"; then
+            if [ "$(jq -r '.isDraft' <<< "$release_json")" != "true" ]; then
+              echo "Release $RELEASE_TAG is already published; immutable releases are not modified by this workflow." >&2
+              exit 1
+            fi
+            if [ "$(jq -r '.isPrerelease' <<< "$release_json")" != "$is_prerelease" ]; then
+              echo "Draft $RELEASE_TAG has an unexpected prerelease setting." >&2
+              exit 1
+            fi
+          else
+            if ! resolve_tag_sha >/dev/null; then
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f ref="refs/tags/$RELEASE_TAG" \
+                -f sha="$TARGET_SHA" >/dev/null
+            fi
+            prerelease_args=()
+            if [ "$is_prerelease" = "true" ]; then
+              prerelease_args=(--prerelease)
+            fi
+            gh release create "$RELEASE_TAG" --draft --verify-tag --generate-notes --title "$RELEASE_TAG" "${prerelease_args[@]}"
+          fi
+
+          require_draft() {
+            if [ "$(gh release view "$RELEASE_TAG" --json isDraft -q '.isDraft')" != "true" ]; then
+              echo "Release $RELEASE_TAG is no longer a draft; refusing to modify it." >&2
+              exit 1
+            fi
+          }
+
+          tag_sha="$(resolve_tag_sha)"
+          test "$tag_sha" = "$TARGET_SHA" || {
+            echo "Release tag $RELEASE_TAG does not resolve to $TARGET_SHA" >&2
+            exit 1
+          }
+
+          release_json="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,assets)"
+          gh release view "$RELEASE_TAG" --json body -q '.body' > changelog.md
+          expected_assets="$(
+            find assets -maxdepth 1 -type f -printf '%f\n'
+            printf '%s\n' changelog.md
+          )"
+          while IFS= read -r existing_asset; do
+            if ! grep -Fxq -- "$existing_asset" <<< "$expected_assets"; then
+              echo "Draft $RELEASE_TAG contains unexpected asset $existing_asset." >&2
+              exit 1
+            fi
+          done < <(jq -r '.assets[].name' <<< "$release_json")
+
+          require_draft
+          gh release upload "$RELEASE_TAG" assets/* changelog.md --clobber
+          if ! grep -Fq "## 各版本一览表" changelog.md; then
+            DDNS_RELEASE_TAG="$RELEASE_TAG" python3 .github/patch.py release
+            cat docs/release.md >> changelog.md
+            require_draft
+            gh release edit "$RELEASE_TAG" --notes-file changelog.md
+          fi
+          require_draft
+          tag_sha="$(resolve_tag_sha)"
+          test "$tag_sha" = "$TARGET_SHA" || {
+            echo "Release tag $RELEASE_TAG changed before publication" >&2
+            exit 1
+          }
+          # This is intentionally the final release-mutating command.
+          gh release edit "$RELEASE_TAG" --draft=false
