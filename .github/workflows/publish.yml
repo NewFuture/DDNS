@@ -38,8 +38,8 @@ jobs:
             master|v4) ;;
             *) echo "Release dispatches must run from master or v4, not $SELECTED_REF_NAME" >&2; exit 1 ;;
           esac
-          if ! [[ "$RELEASE_TAG" =~ ^v[0-9]+(\.[0-9]+){1,3}(-(alpha|beta|rc)[0-9]*)?$ ]]; then
-            echo "release_tag must be a supported v-prefixed release tag" >&2
+          if ! [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)([1-9][0-9]*))?$ ]]; then
+            echo "release_tag must use canonical vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE-NUMBER form" >&2
             exit 1
           fi
           if ! [[ "$SELECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
@@ -98,7 +98,10 @@ jobs:
           python3 -m ddns --help
           (cd /tmp && python3 -c 'from ddns.web.server import _resource_bytes; assert b"<html" in _resource_bytes("index.html")')
       - name: Test task management from the source distribution
-        run: tests/scripts/test-task-systemd.sh "python3 -m ddns"
+        working-directory: /tmp
+        run: |
+          python_path="$(command -v python3)"
+          "$GITHUB_WORKSPACE/tests/scripts/test-task-systemd.sh" "$python_path -m ddns"
       - name: Prepare versioned release document
         run: python3 .github/patch.py release
         env:
@@ -440,6 +443,16 @@ jobs:
               exit 1
             }
           fi
+          if [ -z "$tag_sha" ]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$RELEASE_TAG" \
+              -f sha="$TARGET_SHA" >/dev/null
+          fi
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
+          test "$tag_sha" = "$TARGET_SHA" || {
+            echo "Tag $RELEASE_TAG does not resolve to $TARGET_SHA after validation." >&2
+            exit 1
+          }
 
   publish-pypi:
     needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries, validate-release]
@@ -449,12 +462,21 @@ jobs:
       name: publish
       url: https://pypi.org/project/ddns/
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@v8
         with:
           name: release-pypi
           path: dist
+      - name: Revalidate release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
+          test "$tag_sha" = "$TARGET_SHA"
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
@@ -468,6 +490,7 @@ jobs:
       name: publish
       url: https://hub.docker.com/r/newfuture/ddns
     permissions:
+      contents: read
       packages: write
     env:
       DOCKER_IMG: ghcr.io/newfuture/ddns
@@ -479,6 +502,13 @@ jobs:
           pattern: release-docker-*
           path: promotion
           merge-multiple: true
+      - name: Revalidate release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
+          test "$tag_sha" = "$TARGET_SHA"
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
