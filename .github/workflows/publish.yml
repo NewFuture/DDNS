@@ -39,7 +39,7 @@ jobs:
             *) echo "Release dispatches must run from master or v4, not $SELECTED_REF_NAME" >&2; exit 1 ;;
           esac
           if ! [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)([1-9][0-9]*))?$ ]]; then
-            echo "release_tag must use canonical vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE-NUMBER form" >&2
+            echo "release_tag must use canonical form such as v4.2.0 or v4.2.0-beta1" >&2
             exit 1
           fi
           if ! [[ "$SELECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
@@ -443,16 +443,6 @@ jobs:
               exit 1
             }
           fi
-          if [ -z "$tag_sha" ]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
-              -f ref="refs/tags/$RELEASE_TAG" \
-              -f sha="$TARGET_SHA" >/dev/null
-          fi
-          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
-          test "$tag_sha" = "$TARGET_SHA" || {
-            echo "Tag $RELEASE_TAG does not resolve to $TARGET_SHA after validation." >&2
-            exit 1
-          }
 
   publish-pypi:
     needs: [preflight, build-pypi, build-docker, build-native-binaries, build-linux-binaries, validate-release]
@@ -462,21 +452,12 @@ jobs:
       name: publish
       url: https://pypi.org/project/ddns/
     permissions:
-      contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@v8
         with:
           name: release-pypi
           path: dist
-      - name: Revalidate release tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.preflight.outputs.release_tag }}
-          TARGET_SHA: ${{ github.sha }}
-        run: |
-          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
-          test "$tag_sha" = "$TARGET_SHA"
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
@@ -490,7 +471,6 @@ jobs:
       name: publish
       url: https://hub.docker.com/r/newfuture/ddns
     permissions:
-      contents: read
       packages: write
     env:
       DOCKER_IMG: ghcr.io/newfuture/ddns
@@ -502,13 +482,6 @@ jobs:
           pattern: release-docker-*
           path: promotion
           merge-multiple: true
-      - name: Revalidate release tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ github.sha }}
-        run: |
-          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
-          test "$tag_sha" = "$TARGET_SHA"
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -655,8 +628,10 @@ jobs:
           fi
 
           require_draft() {
-            if [ "$(gh release view "$RELEASE_TAG" --json isDraft -q '.isDraft')" != "true" ]; then
-              echo "Release $RELEASE_TAG is no longer a draft; refusing to modify it." >&2
+            release_state="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease)"
+            if [ "$(jq -r '.isDraft' <<< "$release_state")" != "true" ] ||
+              [ "$(jq -r '.isPrerelease' <<< "$release_state")" != "$is_prerelease" ]; then
+              echo "Release $RELEASE_TAG no longer has the expected draft state; refusing to modify it." >&2
               exit 1
             fi
           }
