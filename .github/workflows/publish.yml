@@ -576,6 +576,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           test -n "$(find assets -maxdepth 1 -type f -print -quit)"
