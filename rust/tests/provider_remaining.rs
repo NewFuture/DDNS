@@ -24,7 +24,6 @@ impl FakeHttpClient {
                     .map(|(status, body)| HttpResponse {
                         status,
                         reason: if status < 300 { "OK" } else { "Error" }.to_owned(),
-                        headers: BTreeMap::new(),
                         body: body.to_string(),
                     })
                     .collect(),
@@ -41,7 +40,6 @@ impl FakeHttpClient {
                     .map(|(status, body)| HttpResponse {
                         status,
                         reason: if status < 300 { "OK" } else { "Error" }.to_owned(),
-                        headers: BTreeMap::new(),
                         body: body.to_owned(),
                     })
                     .collect(),
@@ -210,6 +208,10 @@ fn tencent_and_edgeone_create_and_errors_are_offline() {
     ]);
     run("tencentcloud", "id", "secret", tencent.clone()).unwrap();
     assert_eq!(tencent.requests()[2].headers["x-tc-action"], "CreateRecord");
+    let invalid_id =
+        FakeHttpClient::responses([(200, json!({"Response":{"DomainInfo":{"DomainId":"bad"}}}))]);
+    assert!(run("tencentcloud", "id", "secret", invalid_id.clone()).is_err());
+    assert_eq!(invalid_id.requests().len(), 1);
     let edgeone = FakeHttpClient::responses([
         (
             200,
@@ -315,6 +317,12 @@ fn aliesa_and_huawei_create_and_errors_are_offline() {
     ]);
     run("aliesa", "id", "secret", aliesa.clone()).unwrap();
     assert_eq!(aliesa.requests()[2].headers["x-acs-action"], "CreateRecord");
+    let invalid_id = FakeHttpClient::responses([(
+        200,
+        json!({"Sites":[{"SiteId":"bad","SiteName":"example.com"}]}),
+    )]);
+    assert!(run("aliesa", "id", "secret", invalid_id.clone()).is_err());
+    assert_eq!(invalid_id.requests().len(), 1);
     assert!(
         run(
             "aliesa",

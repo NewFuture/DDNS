@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::config::{AddressRules, TlsMode};
+use crate::config::TlsMode;
 use crate::error::{Error, Result};
 use crate::http::{HttpClient, HttpRequest, redact_url};
 use crate::logging::Logger;
@@ -54,14 +54,11 @@ impl AddressFamily {
 
 pub fn resolve(
     family: AddressFamily,
-    rules: &AddressRules,
+    rules: &[String],
     tls: &TlsMode,
     client: &dyn HttpClient,
     logger: &Logger,
-) -> Result<Option<IpAddr>> {
-    let AddressRules::Rules(rules) = rules else {
-        return Ok(None);
-    };
+) -> Result<IpAddr> {
     let mut failures = Vec::new();
     for rule in rules {
         let displayed_rule = display_rule(rule);
@@ -72,7 +69,7 @@ pub fn resolve(
         match resolve_rule(family, rule, tls, client) {
             Ok(address) => {
                 logger.info("ip", format!("resolved {} as {address}", family.label()));
-                return Ok(Some(address));
+                return Ok(address);
             }
             Err(error) => {
                 logger.warning("ip", format!("rule `{displayed_rule}` failed: {error}"));
@@ -286,12 +283,11 @@ fn network_configuration() -> Result<String> {
 
 fn extract_address(family: AddressFamily, content: &str) -> Result<IpAddr> {
     addresses_in_text(family, content)
-        .into_iter()
         .next()
         .ok_or_else(|| Error::Ip(format!("response contains no valid {}", family.label())))
 }
 
-fn addresses_in_text(family: AddressFamily, content: &str) -> Vec<IpAddr> {
+fn addresses_in_text(family: AddressFamily, content: &str) -> impl Iterator<Item = IpAddr> + '_ {
     content
         .split(|character: char| {
             character.is_whitespace()
@@ -300,7 +296,7 @@ fn addresses_in_text(family: AddressFamily, content: &str) -> Vec<IpAddr> {
                     ',' | ';' | '=' | '[' | ']' | '(' | ')' | '<' | '>' | '"' | '\''
                 )
         })
-        .filter_map(|token| {
+        .filter_map(move |token| {
             let token = token
                 .trim_matches(|character: char| matches!(character, '/' | '%' | '.'))
                 .split('/')
@@ -314,7 +310,6 @@ fn addresses_in_text(family: AddressFamily, content: &str) -> Vec<IpAddr> {
                 .ok()
                 .filter(|address| family.matches(*address))
         })
-        .collect()
 }
 
 fn validate_family(family: AddressFamily, address: IpAddr) -> Result<IpAddr> {
@@ -376,10 +371,9 @@ fn split_command(command: &str) -> Result<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
     use std::path::Path;
 
-    use crate::config::{AddressRules, TlsMode};
+    use crate::config::TlsMode;
     use crate::error::Result;
     use crate::http::{HttpClient, HttpRequest, HttpResponse};
     use crate::logging::{Level, Logger};
@@ -401,7 +395,6 @@ mod tests {
             Ok(HttpResponse {
                 status: 200,
                 reason: "OK".to_owned(),
-                headers: BTreeMap::new(),
                 body: body.to_owned(),
             })
         }
@@ -444,26 +437,26 @@ mod tests {
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
         let address = resolve(
             AddressFamily::V4,
-            &AddressRules::Rules(vec![
+            &[
                 "url:http://test/invalid".to_owned(),
                 "url:http://test/valid".to_owned(),
-            ]),
+            ],
             &TlsMode::Verify,
             &FakeClient,
             &logger,
         )
         .unwrap();
-        assert_eq!(address.unwrap().to_string(), "192.0.2.44");
+        assert_eq!(address.to_string(), "192.0.2.44");
 
         let public = resolve(
             AddressFamily::V4,
-            &AddressRules::Rules(vec!["public".to_owned()]),
+            &["public".to_owned()],
             &TlsMode::Verify,
             &FakeClient,
             &logger,
         )
         .unwrap();
-        assert_eq!(public.unwrap().to_string(), "192.0.2.44");
+        assert_eq!(public.to_string(), "192.0.2.44");
     }
 
     #[test]

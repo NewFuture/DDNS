@@ -1,16 +1,15 @@
 use std::collections::BTreeMap;
 
 use serde_json::Value;
-use time::OffsetDateTime;
 
 use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
-use crate::signature::{acs3_authorization, sha256_hex};
+use crate::signature::{acs_timestamp, acs3_authorization, request_nonce, sha256_hex};
 
 use super::base::{
-    CrudProvider, Provider, ProviderContext, RecordRequest, ZoneMatch, join_domain, value_to_string,
+    CrudProvider, ProviderContext, RecordRequest, ZoneMatch, endpoint_host, join_domain,
+    string_parameters, value_to_string,
 };
-use super::empty_zone_cache;
 
 pub struct AlidnsProvider {
     context: ProviderContext,
@@ -31,7 +30,7 @@ impl AlidnsProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -39,7 +38,10 @@ impl AlidnsProvider {
         let body = form_encode(&parameters);
         let body_hash = sha256_hex(&body);
         let mut headers = BTreeMap::from([
-            ("host".to_owned(), endpoint_host(&self.context.endpoint)?),
+            (
+                "host".to_owned(),
+                endpoint_host(&self.context.endpoint, "AliDNS")?,
+            ),
             (
                 "content-type".to_owned(),
                 "application/x-www-form-urlencoded".to_owned(),
@@ -47,7 +49,7 @@ impl AlidnsProvider {
             ("x-acs-action".to_owned(), action.to_owned()),
             ("x-acs-content-sha256".to_owned(), body_hash.clone()),
             ("x-acs-date".to_owned(), acs_timestamp()),
-            ("x-acs-signature-nonce".to_owned(), nonce()?),
+            ("x-acs-signature-nonce".to_owned(), request_nonce()?),
             ("x-acs-version".to_owned(), "2015-01-09".to_owned()),
         ]);
         let authorization = acs3_authorization(
@@ -75,36 +77,13 @@ impl AlidnsProvider {
         }
         Ok(response)
     }
-
-    fn parameters_with_extra(
-        request: &RecordRequest,
-        values: impl IntoIterator<Item = (&'static str, Option<String>)>,
-    ) -> BTreeMap<String, String> {
-        let mut parameters = request
-            .extra
-            .iter()
-            .filter_map(|(key, value)| value_to_string(value).map(|value| (key.clone(), value)))
-            .collect::<BTreeMap<_, _>>();
-        parameters.extend(
-            values
-                .into_iter()
-                .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value))),
-        );
-        parameters
-    }
 }
 
-impl Provider for AlidnsProvider {
+impl CrudProvider for AlidnsProvider {
     fn name(&self) -> &'static str {
         "alidns"
     }
 
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
-
-impl CrudProvider for AlidnsProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }
@@ -192,7 +171,7 @@ impl CrudProvider for AlidnsProvider {
         main_domain: &str,
         request: &RecordRequest,
     ) -> Result<()> {
-        let parameters = Self::parameters_with_extra(
+        let parameters = string_parameters(
             request,
             [
                 ("DomainName", Some(main_domain.to_owned())),
@@ -234,7 +213,7 @@ impl CrudProvider for AlidnsProvider {
                 .info("alidns", "record already has the requested value");
             return Ok(());
         }
-        let parameters = Self::parameters_with_extra(
+        let parameters = string_parameters(
             request,
             [
                 ("RecordId", record.get("RecordId").and_then(value_to_string)),
@@ -259,49 +238,5 @@ impl CrudProvider for AlidnsProvider {
                 "AliDNS failed to update record: {response}"
             )))
         }
-    }
-}
-
-fn endpoint_host(endpoint: &str) -> Result<String> {
-    endpoint
-        .split_once("://")
-        .map(|(_, remainder)| remainder)
-        .unwrap_or(endpoint)
-        .split('/')
-        .next()
-        .filter(|host| !host.is_empty())
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| Error::Config(format!("invalid AliDNS endpoint `{endpoint}`")))
-}
-
-fn acs_timestamp() -> String {
-    let now = OffsetDateTime::now_utc();
-    format!(
-        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-        now.year(),
-        u8::from(now.month()),
-        now.day(),
-        now.hour(),
-        now.minute(),
-        now.second()
-    )
-}
-
-fn nonce() -> Result<String> {
-    let mut bytes = [0_u8; 16];
-    getrandom::fill(&mut bytes)
-        .map_err(|error| Error::Provider(format!("failed to generate request nonce: {error}")))?;
-    let mut output = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        output.push(hex(byte >> 4));
-        output.push(hex(byte & 0x0f));
-    }
-    Ok(output)
-}
-
-const fn hex(value: u8) -> char {
-    match value {
-        0..=9 => (b'0' + value) as char,
-        _ => (b'a' + value - 10) as char,
     }
 }

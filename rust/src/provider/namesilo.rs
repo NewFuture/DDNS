@@ -5,8 +5,7 @@ use serde_json::Value;
 use crate::error::{Error, Result};
 use crate::http::Method;
 
-use super::base::{CrudProvider, Provider, ProviderContext, RecordRequest, value_to_string};
-use super::empty_zone_cache;
+use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
 pub struct NamesiloProvider {
     context: ProviderContext,
@@ -22,7 +21,7 @@ impl NamesiloProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -60,16 +59,11 @@ impl NamesiloProvider {
     }
 }
 
-impl Provider for NamesiloProvider {
+impl CrudProvider for NamesiloProvider {
     fn name(&self) -> &'static str {
         "namesilo"
     }
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
 
-impl CrudProvider for NamesiloProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }

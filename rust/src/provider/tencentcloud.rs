@@ -8,9 +8,9 @@ use crate::http::Method;
 use crate::signature::{hmac_sha256, sha256_hex, tc3_authorization};
 
 use super::base::{
-    CrudProvider, Provider, ProviderContext, RecordRequest, join_domain, value_to_string,
+    CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain, numeric_id,
+    value_to_string,
 };
-use super::empty_zone_cache;
 
 pub struct TencentCloudProvider {
     context: ProviderContext,
@@ -36,7 +36,7 @@ impl TencentCloudProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
             name,
             service,
             version,
@@ -60,7 +60,10 @@ impl TencentCloudProvider {
         let secret_signing = hmac_sha256(secret_service, "tc3_request")?;
         let headers = BTreeMap::from([
             ("content-type".to_owned(), "application/json".to_owned()),
-            ("host".to_owned(), endpoint_host(&self.context.endpoint)?),
+            (
+                "host".to_owned(),
+                endpoint_host(&self.context.endpoint, "Tencent Cloud")?,
+            ),
         ]);
         let authorization = tc3_authorization(
             secret_signing,
@@ -117,16 +120,11 @@ impl TencentCloudProvider {
     }
 }
 
-impl Provider for TencentCloudProvider {
+impl CrudProvider for TencentCloudProvider {
     fn name(&self) -> &'static str {
         self.name
     }
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
 
-impl CrudProvider for TencentCloudProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }
@@ -173,7 +171,7 @@ impl CrudProvider for TencentCloudProvider {
             values.extend([
                 (
                     "DomainId".to_owned(),
-                    json!(zone_id.parse::<u64>().unwrap_or_default()),
+                    json!(numeric_id(zone_id, "Tencent Cloud domain id")?),
                 ),
                 ("Subdomain".to_owned(), json!(subdomain)),
                 ("Domain".to_owned(), json!(main_domain)),
@@ -253,7 +251,7 @@ impl CrudProvider for TencentCloudProvider {
                 ("Domain".to_owned(), json!(main_domain)),
                 (
                     "DomainId".to_owned(),
-                    json!(zone_id.parse::<u64>().unwrap_or_default()),
+                    json!(numeric_id(zone_id, "Tencent Cloud domain id")?),
                 ),
                 ("SubDomain".to_owned(), json!(subdomain)),
                 ("RecordType".to_owned(), json!(request.record_type)),
@@ -313,18 +311,16 @@ impl CrudProvider for TencentCloudProvider {
             values
                 .entry("Remark".to_owned())
                 .or_insert_with(|| json!("Managed by DDNS"));
+            let domain_id = match record.get("DomainId") {
+                Some(domain_id) => domain_id.clone(),
+                None => json!(numeric_id(zone_id, "Tencent Cloud domain id")?),
+            };
             values.extend([
                 (
                     "Domain".to_owned(),
                     record.get("Domain").cloned().unwrap_or(Value::Null),
                 ),
-                (
-                    "DomainId".to_owned(),
-                    record
-                        .get("DomainId")
-                        .cloned()
-                        .unwrap_or_else(|| json!(zone_id.parse::<u64>().unwrap_or_default())),
-                ),
+                ("DomainId".to_owned(), domain_id),
                 (
                     "SubDomain".to_owned(),
                     record.get("Name").cloned().unwrap_or(Value::Null),
@@ -380,16 +376,4 @@ impl CrudProvider for TencentCloudProvider {
         }
         Ok(())
     }
-}
-
-fn endpoint_host(endpoint: &str) -> Result<String> {
-    endpoint
-        .split_once("://")
-        .map(|(_, value)| value)
-        .unwrap_or(endpoint)
-        .split('/')
-        .next()
-        .filter(|value| !value.is_empty())
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| Error::Config(format!("invalid Tencent Cloud endpoint `{endpoint}`")))
 }

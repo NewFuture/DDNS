@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -11,24 +11,18 @@ use crate::error::{Error, Result};
 use crate::logging::Logger;
 use crate::signature::sha256_hex;
 
-const CACHE_VERSION: u32 = 2;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-struct CacheEntry {
-    address: String,
-    updated_at: u64,
-}
+const CACHE_VERSION: u32 = 3;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct CacheFile {
     version: u32,
-    records: BTreeMap<String, CacheEntry>,
+    records: BTreeMap<String, String>,
 }
 
 pub struct Cache {
-    path: Option<PathBuf>,
+    path: PathBuf,
     namespace: String,
-    records: BTreeMap<String, CacheEntry>,
+    records: BTreeMap<String, String>,
     changed: bool,
     logger: Logger,
 }
@@ -39,14 +33,17 @@ impl Cache {
         identity: &Value,
         max_age: u64,
         logger: Logger,
-    ) -> Result<Self> {
+    ) -> Result<Option<Self>> {
         let namespace = sha256_hex(serde_json::to_vec(identity)?);
         let path = match setting {
-            CacheSetting::Disabled => None,
-            CacheSetting::Default => {
-                Some(std::env::temp_dir().join(format!("ddns-rs.{namespace}.cache")))
+            CacheSetting::Disabled => {
+                logger.debug("cache", "cache is disabled");
+                return Ok(None);
             }
-            CacheSetting::Path(path) => Some(rust_cache_path(path)),
+            CacheSetting::Default => {
+                std::env::temp_dir().join(format!("ddns-rs.{namespace}.cache"))
+            }
+            CacheSetting::Path(path) => rust_cache_path(path),
         };
         let mut cache = Self {
             path,
@@ -56,23 +53,13 @@ impl Cache {
             logger,
         };
         cache.load(max_age)?;
-        Ok(cache)
-    }
-
-    pub fn disabled(logger: Logger) -> Self {
-        Self {
-            path: None,
-            namespace: String::new(),
-            records: BTreeMap::new(),
-            changed: false,
-            logger,
-        }
+        Ok(Some(cache))
     }
 
     pub fn get(&self, provider: &str, domain: &str, record_type: &str) -> Option<&str> {
         self.records
             .get(&cache_key(&self.namespace, provider, domain, record_type))
-            .map(|entry| entry.address.as_str())
+            .map(String::as_str)
     }
 
     pub fn set(&mut self, provider: &str, domain: &str, record_type: &str, address: &str) {
@@ -80,27 +67,19 @@ impl Cache {
         if self
             .records
             .get(&key)
-            .is_some_and(|entry| entry.address == address)
+            .is_some_and(|cached| cached == address)
         {
             return;
         }
-        self.records.insert(
-            key,
-            CacheEntry {
-                address: address.to_owned(),
-                updated_at: unix_time(),
-            },
-        );
+        self.records.insert(key, address.to_owned());
         self.changed = true;
     }
 
     pub fn sync(&mut self) -> Result<()> {
-        let Some(path) = &self.path else {
-            return Ok(());
-        };
         if !self.changed {
             return Ok(());
         }
+        let path = &self.path;
         if let Some(parent) = path
             .parent()
             .filter(|parent| !parent.as_os_str().is_empty())
@@ -128,10 +107,7 @@ impl Cache {
     }
 
     fn load(&mut self, max_age: u64) -> Result<()> {
-        let Some(path) = &self.path else {
-            self.logger.debug("cache", "cache is disabled");
-            return Ok(());
-        };
+        let path = &self.path;
         if !path.exists() {
             return Ok(());
         }
@@ -191,12 +167,6 @@ fn cache_key(namespace: &str, provider: &str, domain: &str, record_type: &str) -
     )
 }
 
-fn unix_time() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |duration| duration.as_secs())
-}
-
 fn temporary_path(path: &Path) -> PathBuf {
     let mut name = path
         .file_name()
@@ -216,26 +186,32 @@ fn rust_cache_path(path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     use crate::config::CacheSetting;
     use crate::logging::{Level, Logger};
 
     use super::{Cache, rust_cache_path};
 
+    fn unique_path(name: &str) -> std::path::PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("{name}-{}-{suffix}.json", std::process::id()))
+    }
+
     #[test]
     fn stores_only_successful_record_values() {
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let path = std::env::temp_dir().join(format!(
-            "ddns-rs-cache-test-{}-{}.json",
-            std::process::id(),
-            super::unix_time()
-        ));
+        let path = unique_path("ddns-rs-cache-test");
         let mut cache = Cache::open(
             &CacheSetting::Path(path.clone()),
             &serde_json::json!({"test": true}),
             3600,
             logger.clone(),
         )
+        .unwrap()
         .unwrap();
         cache.set("debug", "example.com", "A", "192.0.2.1");
         cache.sync().unwrap();
@@ -246,6 +222,7 @@ mod tests {
             3600,
             logger,
         )
+        .unwrap()
         .unwrap();
         assert_eq!(cache.get("debug", "example.com", "A"), Some("192.0.2.1"));
         let _ = std::fs::remove_file(rust_cache_path(&path));
@@ -254,11 +231,7 @@ mod tests {
     #[test]
     fn namespaces_shared_custom_cache_by_configuration_identity() {
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let path = std::env::temp_dir().join(format!(
-            "ddns-rs-shared-cache-test-{}-{}.json",
-            std::process::id(),
-            super::unix_time()
-        ));
+        let path = unique_path("ddns-rs-shared-cache-test");
         let setting = CacheSetting::Path(path.clone());
 
         let mut first = Cache::open(
@@ -267,6 +240,7 @@ mod tests {
             3600,
             logger.clone(),
         )
+        .unwrap()
         .unwrap();
         first.set("dnspod", "example.com", "A", "192.0.2.10");
         first.sync().unwrap();
@@ -277,6 +251,7 @@ mod tests {
             3600,
             logger.clone(),
         )
+        .unwrap()
         .unwrap();
         assert_eq!(second.get("dnspod", "example.com", "A"), None);
         second.set("dnspod", "example.com", "A", "192.0.2.10");
@@ -288,6 +263,7 @@ mod tests {
             3600,
             logger,
         )
+        .unwrap()
         .unwrap();
         assert_eq!(first.get("dnspod", "example.com", "A"), Some("192.0.2.10"));
         let _ = std::fs::remove_file(rust_cache_path(&path));
@@ -296,11 +272,7 @@ mod tests {
     #[test]
     fn preserves_python_cache_at_shared_custom_path() {
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let path = std::env::temp_dir().join(format!(
-            "ddns-python-cache-test-{}-{}.json.ddns-rs",
-            std::process::id(),
-            super::unix_time()
-        ));
+        let path = unique_path("ddns-python-cache-test").with_extension("json.ddns-rs");
         let python_content = r#"{"example.com:A":"192.0.2.1"}"#;
         std::fs::write(&path, python_content).unwrap();
 
@@ -310,6 +282,7 @@ mod tests {
             3600,
             logger,
         )
+        .unwrap()
         .unwrap();
         cache.set("debug", "example.com", "A", "192.0.2.2");
         cache.sync().unwrap();

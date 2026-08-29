@@ -5,8 +5,7 @@ use serde_json::Value;
 use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
 
-use super::base::{CrudProvider, Provider, ProviderContext, RecordRequest, value_to_string};
-use super::empty_zone_cache;
+use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
 pub struct CloudnsProvider {
     context: ProviderContext,
@@ -22,7 +21,7 @@ impl CloudnsProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -54,17 +53,11 @@ impl CloudnsProvider {
     }
 }
 
-impl Provider for CloudnsProvider {
+impl CrudProvider for CloudnsProvider {
     fn name(&self) -> &'static str {
         "cloudns"
     }
 
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
-
-impl CrudProvider for CloudnsProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }

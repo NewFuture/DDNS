@@ -154,7 +154,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
                 let message = masked_error(&logger, &error);
                 logger.error("cache", &message);
                 failures.push(format!("configuration {} cache: {message}", index + 1));
-                Cache::disabled(logger.clone())
+                None
             }
         };
 
@@ -162,12 +162,14 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             (AddressFamily::V4, &config.index4, &config.ipv4),
             (AddressFamily::V6, &config.index6, &config.ipv6),
         ] {
-            if domains.is_empty() || matches!(rules, AddressRules::Disabled) {
+            let AddressRules::Rules(rules) = rules else {
+                continue;
+            };
+            if domains.is_empty() {
                 continue;
             }
             let address = match ip::resolve(family, rules, &config.tls, client.as_ref(), &logger) {
-                Ok(Some(address)) => address,
-                Ok(None) => continue,
+                Ok(address) => address,
                 Err(error) => {
                     let message = masked_error(&logger, &error);
                     logger.error("ip", &message);
@@ -182,7 +184,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             failures.extend(
                 update_domains(
                     provider.as_mut(),
-                    &mut cache,
+                    cache.as_mut(),
                     family,
                     address,
                     domains,
@@ -196,7 +198,9 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             );
         }
 
-        if let Err(error) = cache.sync() {
+        if let Some(cache) = &mut cache
+            && let Err(error) = cache.sync()
+        {
             let message = masked_error(&logger, &error);
             logger.error("cache", &message);
             failures.push(format!("configuration {} cache sync: {message}", index + 1));
@@ -217,7 +221,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
 #[allow(clippy::too_many_arguments)]
 fn update_domains(
     provider: &mut dyn provider::Provider,
-    cache: &mut Cache,
+    mut cache: Option<&mut Cache>,
     family: AddressFamily,
     address: std::net::IpAddr,
     domains: &[String],
@@ -231,7 +235,11 @@ fn update_domains(
     let address = address.to_string();
     for domain in domains {
         let domain = domain.to_ascii_lowercase();
-        if cache.get(provider_name, &domain, family.record_type()) == Some(address.as_str()) {
+        if cache
+            .as_deref()
+            .and_then(|cache| cache.get(provider_name, &domain, family.record_type()))
+            == Some(address.as_str())
+        {
             logger.info(
                 "cache",
                 format!(
@@ -262,7 +270,9 @@ fn update_domains(
                         address
                     ),
                 );
-                cache.set(provider_name, &domain, family.record_type(), &address);
+                if let Some(cache) = cache.as_deref_mut() {
+                    cache.set(provider_name, &domain, family.record_type(), &address);
+                }
             }
             Err(error) => {
                 let message = masked_error(logger, &error);
@@ -344,7 +354,6 @@ mod tests {
     use std::net::{IpAddr, Ipv4Addr};
     use std::path::Path;
 
-    use crate::cache::Cache;
     use crate::error::{Error, Result};
     use crate::ip::AddressFamily;
     use crate::logging::{Level, Logger};
@@ -379,11 +388,10 @@ mod tests {
             vec!["secret-token".to_owned()],
         )
         .unwrap();
-        let mut cache = Cache::disabled(logger.clone());
         let mut provider = PartialProvider { calls: Vec::new() };
         let failures = update_domains(
             &mut provider,
-            &mut cache,
+            None,
             AddressFamily::V4,
             IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1)),
             &["fail.example.com".to_owned(), "ok.example.com".to_owned()],

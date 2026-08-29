@@ -92,7 +92,7 @@ where
         let (name, inline) = split_option(&raw);
         match name {
             "-c" | "--config" => {
-                let values = collect_list(&args, &mut index, inline, name)?;
+                let values = collect_list(&args, &mut index, inline)?;
                 options
                     .config_paths
                     .get_or_insert_with(Vec::new)
@@ -100,7 +100,7 @@ where
             }
             "--index4" | "--index6" | "--ipv4" | "--ipv6" | "--proxy" => {
                 let key = name.trim_start_matches('-').replace('-', "_");
-                let values = collect_list(&args, &mut index, inline, name)?;
+                let values = collect_list(&args, &mut index, inline)?;
                 append_array(&mut options.values, &key, values);
             }
             "--dns" | "--id" | "--token" | "--endpoint" | "--line" => {
@@ -145,29 +145,13 @@ where
                 options.values.insert("debug".to_owned(), Value::Bool(true));
                 index += 1;
             }
-            "--log_file" | "--log.file" | "--log-file" => {
+            "--log_file" | "--log.file" | "--log-file" | "--log_level" | "--log.level"
+            | "--log-level" | "--log_format" | "--log.format" | "--log-format"
+            | "--log_datefmt" | "--log.datefmt" | "--log-datefmt" => {
                 let value = collect_scalar(&args, &mut index, inline, name)?;
                 options
                     .values
-                    .insert("log_file".to_owned(), Value::String(value));
-            }
-            "--log_level" | "--log.level" | "--log-level" => {
-                let value = collect_scalar(&args, &mut index, inline, name)?;
-                options
-                    .values
-                    .insert("log_level".to_owned(), Value::String(value));
-            }
-            "--log_format" | "--log.format" | "--log-format" => {
-                let value = collect_scalar(&args, &mut index, inline, name)?;
-                options
-                    .values
-                    .insert("log_format".to_owned(), Value::String(value));
-            }
-            "--log_datefmt" | "--log.datefmt" | "--log-datefmt" => {
-                let value = collect_scalar(&args, &mut index, inline, name)?;
-                options
-                    .values
-                    .insert("log_datefmt".to_owned(), Value::String(value));
+                    .insert(format!("log_{}", &name[6..]), Value::String(value));
             }
             "--new-config" => {
                 options.new_config = Some(collect_optional(&args, &mut index, inline));
@@ -255,12 +239,7 @@ fn collect_optional(args: &[OsString], index: &mut usize, inline: Option<&str>) 
     None
 }
 
-fn collect_list(
-    args: &[OsString],
-    index: &mut usize,
-    inline: Option<&str>,
-    _name: &str,
-) -> Result<Vec<String>> {
+fn collect_list(args: &[OsString], index: &mut usize, inline: Option<&str>) -> Result<Vec<String>> {
     if let Some(value) = inline {
         *index += 1;
         return Ok(vec![value.to_owned()]);

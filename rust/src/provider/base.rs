@@ -76,7 +76,7 @@ impl ProviderContext {
         let url = append_query(&self.url(path), query);
         self.logger.info(
             "provider.http",
-            format!("{} {}", method_name(method), redact_url(&url)),
+            format!("{} {}", method.as_str(), redact_url(&url)),
         );
         if log_body && let Some(body) = &body {
             self.logger.debug("provider.http", format!("body: {body}"));
@@ -130,6 +130,7 @@ pub trait Provider {
 }
 
 pub trait CrudProvider {
+    fn name(&self) -> &'static str;
     fn context(&self) -> &ProviderContext;
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String>;
     fn query_zone_id(&mut self, domain: &str) -> Result<Option<String>>;
@@ -222,6 +223,16 @@ pub trait CrudProvider {
     }
 }
 
+impl<T: CrudProvider> Provider for T {
+    fn name(&self) -> &'static str {
+        CrudProvider::name(self)
+    }
+
+    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
+        self.apply(request)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ZoneMatch {
     pub zone_id: String,
@@ -260,18 +271,44 @@ pub fn value_to_string(value: &Value) -> Option<String> {
     }
 }
 
-const fn method_name(method: Method) -> &'static str {
-    match method {
-        Method::Get => "GET",
-        Method::Post => "POST",
-        Method::Put => "PUT",
-        Method::Delete => "DELETE",
-    }
+pub fn numeric_id(value: &str, name: &str) -> Result<u64> {
+    value
+        .parse()
+        .map_err(|_| Error::Provider(format!("{name} `{value}` is not numeric")))
+}
+
+pub fn string_parameters(
+    request: &RecordRequest,
+    values: impl IntoIterator<Item = (&'static str, Option<String>)>,
+) -> BTreeMap<String, String> {
+    let mut parameters = request
+        .extra
+        .iter()
+        .filter_map(|(key, value)| value_to_string(value).map(|value| (key.clone(), value)))
+        .collect::<BTreeMap<_, _>>();
+    parameters.extend(
+        values
+            .into_iter()
+            .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value))),
+    );
+    parameters
+}
+
+pub fn endpoint_host(endpoint: &str, provider: &str) -> Result<String> {
+    endpoint
+        .split_once("://")
+        .map(|(_, host)| host)
+        .unwrap_or(endpoint)
+        .split('/')
+        .next()
+        .filter(|host| !host.is_empty())
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| Error::Config(format!("invalid {provider} endpoint `{endpoint}`")))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{join_domain, split_custom_domain};
+    use super::{join_domain, numeric_id, split_custom_domain};
 
     #[test]
     fn handles_custom_domain_separators() {
@@ -289,5 +326,11 @@ mod tests {
     fn joins_root_and_nested_records() {
         assert_eq!(join_domain("@", "example.com"), "example.com");
         assert_eq!(join_domain("www", "example.com"), "www.example.com");
+    }
+
+    #[test]
+    fn rejects_non_numeric_ids() {
+        assert_eq!(numeric_id("42", "record id").unwrap(), 42);
+        assert!(numeric_id("invalid", "record id").is_err());
     }
 }

@@ -27,7 +27,7 @@ pub fn expand_document(document: Value) -> Result<Vec<BTreeMap<String, Value>>> 
 
 fn expand_object(mut object: BTreeMap<String, Value>) -> Result<Vec<BTreeMap<String, Value>>> {
     let Some(providers) = object.remove("providers") else {
-        return Ok(vec![flatten(object, &[])?]);
+        return Ok(vec![flatten(object)]);
     };
     if object.contains_key("dns") {
         return Err(Error::Config(
@@ -42,7 +42,7 @@ fn expand_object(mut object: BTreeMap<String, Value>) -> Result<Vec<BTreeMap<Str
     let Value::Array(providers) = providers else {
         return Err(Error::Config("`providers` must be an array".to_owned()));
     };
-    let global = flatten(object, &[])?;
+    let global = flatten(object);
     let mut result = Vec::with_capacity(providers.len());
     for (index, provider) in providers.into_iter().enumerate() {
         let Value::Object(provider) = provider else {
@@ -58,22 +58,16 @@ fn expand_object(mut object: BTreeMap<String, Value>) -> Result<Vec<BTreeMap<Str
                 Error::Config(format!("providers[{index}].provider must be a string"))
             })?;
         let mut expanded = global.clone();
-        expanded.extend(flatten(provider, &[])?);
+        expanded.extend(flatten(provider));
         expanded.insert("dns".to_owned(), Value::String(name));
         result.push(expanded);
     }
     Ok(result)
 }
 
-pub fn flatten(
-    object: BTreeMap<String, Value>,
-    excluded: &[&str],
-) -> Result<BTreeMap<String, Value>> {
+fn flatten(object: BTreeMap<String, Value>) -> BTreeMap<String, Value> {
     let mut flattened = BTreeMap::new();
     for (key, value) in object {
-        if excluded.contains(&key.as_str()) {
-            continue;
-        }
         if key == "http" {
             continue;
         }
@@ -87,16 +81,5 @@ pub fn flatten(
             flattened.insert(key, value);
         }
     }
-    Ok(flattened)
-}
-
-pub fn merge(
-    environment: &BTreeMap<String, Value>,
-    file: &BTreeMap<String, Value>,
-    cli: &BTreeMap<String, Value>,
-) -> BTreeMap<String, Value> {
-    let mut merged = environment.clone();
-    merged.extend(file.clone());
-    merged.extend(cli.clone());
-    merged
+    flattened
 }

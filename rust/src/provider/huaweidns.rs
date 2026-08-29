@@ -7,8 +7,7 @@ use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
 use crate::signature::{hmac_sha256_authorization, sha256_hex};
 
-use super::base::{CrudProvider, Provider, ProviderContext, RecordRequest, join_domain};
-use super::empty_zone_cache;
+use super::base::{CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain};
 
 pub struct HuaweiDnsProvider {
     context: ProviderContext,
@@ -24,7 +23,7 @@ impl HuaweiDnsProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -62,7 +61,10 @@ impl HuaweiDnsProvider {
         );
         let headers = BTreeMap::from([
             ("content-type".to_owned(), "application/json".to_owned()),
-            ("host".to_owned(), endpoint_host(&self.context.endpoint)?),
+            (
+                "host".to_owned(),
+                endpoint_host(&self.context.endpoint, "Huawei")?,
+            ),
             ("x-sdk-date".to_owned(), timestamp.clone()),
         ]);
         let signed_path = if path.ends_with('/') {
@@ -75,7 +77,7 @@ impl HuaweiDnsProvider {
             "SDK-HMAC-SHA256",
             &timestamp,
             &format!("Access={}", self.context.id),
-            method_name(method),
+            method.as_str(),
             &signed_path,
             &canonical_query,
             &headers,
@@ -93,16 +95,11 @@ impl HuaweiDnsProvider {
     }
 }
 
-impl Provider for HuaweiDnsProvider {
+impl CrudProvider for HuaweiDnsProvider {
     fn name(&self) -> &'static str {
         "huaweidns"
     }
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
 
-impl CrudProvider for HuaweiDnsProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }
@@ -254,26 +251,5 @@ impl CrudProvider for HuaweiDnsProvider {
                 "Huawei DNS failed to update record".to_owned(),
             ))
         }
-    }
-}
-
-fn endpoint_host(endpoint: &str) -> Result<String> {
-    endpoint
-        .split_once("://")
-        .map(|(_, value)| value)
-        .unwrap_or(endpoint)
-        .split('/')
-        .next()
-        .filter(|value| !value.is_empty())
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| Error::Config(format!("invalid Huawei endpoint `{endpoint}`")))
-}
-
-const fn method_name(method: Method) -> &'static str {
-    match method {
-        Method::Get => "GET",
-        Method::Post => "POST",
-        Method::Put => "PUT",
-        Method::Delete => "DELETE",
     }
 }

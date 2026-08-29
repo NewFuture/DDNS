@@ -1,16 +1,15 @@
 use std::collections::BTreeMap;
 
 use serde_json::{Map, Value, json};
-use time::OffsetDateTime;
 
 use crate::error::{Error, Result};
 use crate::http::Method;
-use crate::signature::{acs3_authorization, sha256_hex};
+use crate::signature::{acs_timestamp, acs3_authorization, request_nonce, sha256_hex};
 
 use super::base::{
-    CrudProvider, Provider, ProviderContext, RecordRequest, join_domain, value_to_string,
+    CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain, numeric_id,
+    value_to_string,
 };
-use super::empty_zone_cache;
 
 pub struct AliesaProvider {
     context: ProviderContext,
@@ -26,7 +25,7 @@ impl AliesaProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -46,18 +45,21 @@ impl AliesaProvider {
         };
         let body_hash = sha256_hex(body.as_deref().unwrap_or(""));
         let headers = BTreeMap::from([
-            ("host".to_owned(), endpoint_host(&self.context.endpoint)?),
+            (
+                "host".to_owned(),
+                endpoint_host(&self.context.endpoint, "AliESA")?,
+            ),
             ("content-type".to_owned(), "application/json".to_owned()),
             ("x-acs-action".to_owned(), action.to_owned()),
             ("x-acs-content-sha256".to_owned(), body_hash.clone()),
             ("x-acs-date".to_owned(), acs_timestamp()),
-            ("x-acs-signature-nonce".to_owned(), nonce()?),
+            ("x-acs-signature-nonce".to_owned(), request_nonce()?),
             ("x-acs-version".to_owned(), "2024-09-10".to_owned()),
         ]);
         let authorization = acs3_authorization(
             &self.context.id,
             &self.context.token,
-            method_name(method),
+            method.as_str(),
             "/",
             &crate::http::form_encode(&query),
             &headers,
@@ -81,16 +83,11 @@ impl AliesaProvider {
     }
 }
 
-impl Provider for AliesaProvider {
+impl CrudProvider for AliesaProvider {
     fn name(&self) -> &'static str {
         "aliesa"
     }
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
 
-impl CrudProvider for AliesaProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }
@@ -130,7 +127,7 @@ impl CrudProvider for AliesaProvider {
             Map::from_iter([
                 (
                     "SiteId".to_owned(),
-                    json!(zone_id.parse::<u64>().unwrap_or_default()),
+                    json!(numeric_id(zone_id, "AliESA site id")?),
                 ),
                 (
                     "RecordName".to_owned(),
@@ -164,7 +161,7 @@ impl CrudProvider for AliesaProvider {
         values.extend([
             (
                 "SiteId".to_owned(),
-                json!(zone_id.parse::<u64>().unwrap_or_default()),
+                json!(numeric_id(zone_id, "AliESA site id")?),
             ),
             (
                 "RecordName".to_owned(),
@@ -245,46 +242,5 @@ impl CrudProvider for AliesaProvider {
         } else {
             Err(Error::Provider("AliESA failed to update record".to_owned()))
         }
-    }
-}
-
-fn endpoint_host(endpoint: &str) -> Result<String> {
-    endpoint
-        .split_once("://")
-        .map(|(_, value)| value)
-        .unwrap_or(endpoint)
-        .split('/')
-        .next()
-        .filter(|value| !value.is_empty())
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| Error::Config(format!("invalid AliESA endpoint `{endpoint}`")))
-}
-
-fn acs_timestamp() -> String {
-    let now = OffsetDateTime::now_utc();
-    format!(
-        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-        now.year(),
-        u8::from(now.month()),
-        now.day(),
-        now.hour(),
-        now.minute(),
-        now.second()
-    )
-}
-
-fn nonce() -> Result<String> {
-    let mut bytes = [0_u8; 16];
-    getrandom::fill(&mut bytes)
-        .map_err(|error| Error::Provider(format!("failed to generate request nonce: {error}")))?;
-    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
-}
-
-const fn method_name(method: Method) -> &'static str {
-    match method {
-        Method::Get => "GET",
-        Method::Post => "POST",
-        Method::Put => "PUT",
-        Method::Delete => "DELETE",
     }
 }

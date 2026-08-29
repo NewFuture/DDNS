@@ -2,10 +2,31 @@ use std::collections::BTreeMap;
 
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::{Digest, Sha256};
+use time::OffsetDateTime;
 
 use crate::error::{Error, Result};
 
 type HmacSha256 = Hmac<Sha256>;
+
+pub(crate) fn acs_timestamp() -> String {
+    let now = OffsetDateTime::now_utc();
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        now.year(),
+        u8::from(now.month()),
+        now.day(),
+        now.hour(),
+        now.minute(),
+        now.second()
+    )
+}
+
+pub(crate) fn request_nonce() -> Result<String> {
+    let mut bytes = [0_u8; 16];
+    getrandom::fill(&mut bytes)
+        .map_err(|error| Error::Provider(format!("failed to generate request nonce: {error}")))?;
+    Ok(hex_lower(&bytes))
+}
 
 pub fn sha256_hex(data: impl AsRef<[u8]>) -> String {
     hex_lower(&Sha256::digest(data.as_ref()))
@@ -37,24 +58,8 @@ pub fn hmac_sha256_authorization(
     headers: &BTreeMap<String, String>,
     body_hash: &str,
 ) -> Result<String> {
-    let normalized = headers
-        .iter()
-        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
-        .collect::<BTreeMap<_, _>>();
-    let canonical_headers = normalized
-        .iter()
-        .map(|(name, value)| format!("{name}:{value}\n"))
-        .collect::<String>();
-    let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
-    let canonical_request = [
-        method.to_ascii_uppercase(),
-        path.to_owned(),
-        query.to_owned(),
-        canonical_headers,
-        signed_headers.clone(),
-        body_hash.to_owned(),
-    ]
-    .join("\n");
+    let (canonical_request, signed_headers) =
+        canonical_request(method, path, query, headers, body_hash);
     let string_to_sign = format!(
         "{algorithm}\n{timestamp}\n{}",
         sha256_hex(canonical_request)
@@ -77,24 +82,8 @@ pub fn tc3_authorization(
     headers: &BTreeMap<String, String>,
     body_hash: &str,
 ) -> Result<String> {
-    let normalized = headers
-        .iter()
-        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
-        .collect::<BTreeMap<_, _>>();
-    let canonical_headers = normalized
-        .iter()
-        .map(|(name, value)| format!("{name}:{value}\n"))
-        .collect::<String>();
-    let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
-    let canonical_request = [
-        method.to_ascii_uppercase(),
-        path.to_owned(),
-        query.to_owned(),
-        canonical_headers,
-        signed_headers.clone(),
-        body_hash.to_owned(),
-    ]
-    .join("\n");
+    let (canonical_request, signed_headers) =
+        canonical_request(method, path, query, headers, body_hash);
     let string_to_sign = format!(
         "TC3-HMAC-SHA256\n{timestamp}\n{scope}\n{}",
         sha256_hex(canonical_request)
@@ -114,6 +103,22 @@ pub fn acs3_authorization(
     headers: &BTreeMap<String, String>,
     body_hash: &str,
 ) -> Result<String> {
+    let (canonical_request, signed_headers) =
+        canonical_request(method, path, query, headers, body_hash);
+    let string_to_sign = format!("ACS3-HMAC-SHA256\n{}", sha256_hex(canonical_request));
+    let signature = hmac_sha256_hex(secret, string_to_sign)?;
+    Ok(format!(
+        "ACS3-HMAC-SHA256 Credential={access_key_id},SignedHeaders={signed_headers},Signature={signature}"
+    ))
+}
+
+fn canonical_request(
+    method: &str,
+    path: &str,
+    query: &str,
+    headers: &BTreeMap<String, String>,
+    body_hash: &str,
+) -> (String, String) {
     let normalized = headers
         .iter()
         .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
@@ -132,11 +137,7 @@ pub fn acs3_authorization(
         body_hash.to_owned(),
     ]
     .join("\n");
-    let string_to_sign = format!("ACS3-HMAC-SHA256\n{}", sha256_hex(canonical_request));
-    let signature = hmac_sha256_hex(secret, string_to_sign)?;
-    Ok(format!(
-        "ACS3-HMAC-SHA256 Credential={access_key_id},SignedHeaders={signed_headers},Signature={signature}"
-    ))
+    (canonical_request, signed_headers)
 }
 
 fn hex_lower(bytes: &[u8]) -> String {

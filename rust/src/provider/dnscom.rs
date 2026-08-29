@@ -7,8 +7,7 @@ use time::OffsetDateTime;
 use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
 
-use super::base::{CrudProvider, Provider, ProviderContext, RecordRequest, value_to_string};
-use super::empty_zone_cache;
+use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
 pub struct DnscomProvider {
     context: ProviderContext,
@@ -24,7 +23,7 @@ impl DnscomProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -65,16 +64,11 @@ impl DnscomProvider {
     }
 }
 
-impl Provider for DnscomProvider {
+impl CrudProvider for DnscomProvider {
     fn name(&self) -> &'static str {
         "dnscom"
     }
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
 
-impl CrudProvider for DnscomProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }

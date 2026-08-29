@@ -127,14 +127,6 @@ impl Logger {
         })
     }
 
-    pub fn with_secrets(&self, secrets: Vec<String>) -> Self {
-        Self {
-            level: self.level,
-            destination: Arc::clone(&self.destination),
-            secrets: Arc::new(normalize_secrets(secrets)),
-        }
-    }
-
     pub fn debug(&self, target: &str, message: impl AsRef<str>) {
         self.write(Level::Debug, target, message.as_ref());
     }
@@ -149,10 +141,6 @@ impl Logger {
 
     pub fn error(&self, target: &str, message: impl AsRef<str>) {
         self.write(Level::Error, target, message.as_ref());
-    }
-
-    pub fn critical(&self, target: &str, message: impl AsRef<str>) {
-        self.write(Level::Critical, target, message.as_ref());
     }
 
     pub fn mask(&self, value: &str) -> String {

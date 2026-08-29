@@ -3,7 +3,7 @@ pub mod file;
 mod legacy;
 mod merge;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -135,7 +135,9 @@ impl Config {
         environment: &BTreeMap<String, Value>,
         allow_debug_provider: bool,
     ) -> Result<Self> {
-        let merged = merge::merge(environment, document, cli);
+        let mut merged = environment.clone();
+        merged.extend(document.clone());
+        merged.extend(cli.clone());
         let debug = parse_bool(merged.get("debug"), false)?;
         let mut provider = optional_string(merged.get("dns"))?
             .unwrap_or_default()
@@ -148,50 +150,7 @@ impl Config {
                 "no DNS provider specified; set `dns` or use `--dns`".to_owned(),
             ));
         }
-        if !matches!(
-            provider.as_str(),
-            "debug"
-                | "print"
-                | "cloudflare"
-                | "alidns"
-                | "aliyun"
-                | "dnspod"
-                | "dnspod_cn"
-                | "dnspod_com"
-                | "dnspod_global"
-                | "tencentcloud"
-                | "tencent"
-                | "qcloud"
-                | "edgeone"
-                | "edgeone_acc"
-                | "teo_acc"
-                | "teo"
-                | "edgeone_dns"
-                | "teo_dns"
-                | "edgeone_noacc"
-                | "cloudns"
-                | "aliesa"
-                | "esa"
-                | "dnscom"
-                | "51dns"
-                | "dns_com"
-                | "he"
-                | "he_net"
-                | "huaweidns"
-                | "huawei"
-                | "huaweicloud"
-                | "namesilo"
-                | "namesilo_com"
-                | "noip"
-                | "no-ip"
-                | "noip_com"
-                | "callback"
-                | "webhook"
-                | "http"
-                | "west"
-                | "west_cn"
-                | "35cn"
-        ) {
+        if canonical_provider(&provider).is_none() {
             return Err(Error::Unsupported(format!(
                 "provider `{provider}` is not supported by the Rust MVP"
             )));
@@ -288,81 +247,48 @@ pub fn write_template(path: &Path, cli: &BTreeMap<String, Value>) -> Result<()> 
     {
         fs::create_dir_all(parent)?;
     }
-    let mut document = Map::new();
-    document.insert(
-        "$schema".to_owned(),
-        Value::String("https://ddns.newfuture.cc/schema/v4.1.json".to_owned()),
-    );
-    document.insert(
-        "dns".to_owned(),
-        cli.get("dns")
-            .cloned()
-            .unwrap_or_else(|| Value::String("debug".to_owned())),
-    );
-    document.insert(
-        "id".to_owned(),
-        cli.get("id")
-            .cloned()
-            .unwrap_or_else(|| Value::String("YOUR ID or EMAIL for DNS Provider".to_owned())),
-    );
-    document.insert(
-        "token".to_owned(),
-        cli.get("token")
-            .cloned()
-            .unwrap_or_else(|| Value::String("YOUR TOKEN or KEY for DNS Provider".to_owned())),
-    );
-    document.insert(
-        "endpoint".to_owned(),
-        cli.get("endpoint").cloned().unwrap_or(Value::Null),
-    );
-    document.insert(
-        "ipv4".to_owned(),
-        cli.get("ipv4")
-            .cloned()
-            .unwrap_or_else(|| json!(["ddns.newfuture.cc"])),
-    );
-    document.insert(
-        "index4".to_owned(),
-        cli.get("index4")
-            .cloned()
-            .unwrap_or_else(|| json!(["default"])),
-    );
-    document.insert(
-        "ipv6".to_owned(),
-        cli.get("ipv6").cloned().unwrap_or_else(|| json!([])),
-    );
-    document.insert(
-        "index6".to_owned(),
-        cli.get("index6").cloned().unwrap_or_else(|| json!([])),
-    );
-    document.insert(
-        "ttl".to_owned(),
-        cli.get("ttl").cloned().unwrap_or_else(|| json!(600)),
-    );
-    document.insert(
-        "line".to_owned(),
-        cli.get("line").cloned().unwrap_or(Value::Null),
-    );
-    document.insert(
-        "proxy".to_owned(),
-        cli.get("proxy").cloned().unwrap_or_else(|| json!([])),
-    );
-    document.insert(
-        "cache".to_owned(),
-        cli.get("cache").cloned().unwrap_or(Value::Bool(true)),
-    );
-    document.insert(
-        "cache_max_age".to_owned(),
-        cli.get("cache_max_age")
-            .cloned()
-            .unwrap_or_else(|| json!(259_200)),
-    );
-    document.insert(
-        "ssl".to_owned(),
-        cli.get("ssl")
-            .cloned()
-            .unwrap_or_else(|| Value::String("auto".to_owned())),
-    );
+    let value = |key: &str, default: Value| cli.get(key).cloned().unwrap_or(default);
+    let mut document = Map::from_iter([
+        (
+            "$schema".to_owned(),
+            json!("https://ddns.newfuture.cc/schema/v4.1.json"),
+        ),
+        ("dns".to_owned(), value("dns", json!("debug"))),
+        (
+            "id".to_owned(),
+            value("id", json!("YOUR ID or EMAIL for DNS Provider")),
+        ),
+        (
+            "token".to_owned(),
+            value("token", json!("YOUR TOKEN or KEY for DNS Provider")),
+        ),
+        ("endpoint".to_owned(), value("endpoint", Value::Null)),
+        (
+            "ipv4".to_owned(),
+            value("ipv4", json!(["ddns.newfuture.cc"])),
+        ),
+        ("index4".to_owned(), value("index4", json!(["default"]))),
+        ("ipv6".to_owned(), value("ipv6", json!([]))),
+        ("index6".to_owned(), value("index6", json!([]))),
+        ("ttl".to_owned(), value("ttl", json!(600))),
+        ("line".to_owned(), value("line", Value::Null)),
+        ("proxy".to_owned(), value("proxy", json!([]))),
+        ("cache".to_owned(), value("cache", Value::Bool(true))),
+        (
+            "cache_max_age".to_owned(),
+            value("cache_max_age", json!(259_200)),
+        ),
+        ("ssl".to_owned(), value("ssl", json!("auto"))),
+        (
+            "log".to_owned(),
+            json!({
+                "level": value("log_level", json!("INFO")),
+                "file": value("log_file", Value::Null),
+                "format": value("log_format", Value::Null),
+                "datefmt": value("log_datefmt", Value::Null),
+            }),
+        ),
+    ]);
     let extra = cli
         .iter()
         .filter_map(|(key, value)| {
@@ -373,15 +299,6 @@ pub fn write_template(path: &Path, cli: &BTreeMap<String, Value>) -> Result<()> 
     if !extra.is_empty() {
         document.insert("extra".to_owned(), Value::Object(extra));
     }
-    document.insert(
-        "log".to_owned(),
-        json!({
-            "level": cli.get("log_level").cloned().unwrap_or_else(|| Value::String("INFO".to_owned())),
-            "file": cli.get("log_file").cloned().unwrap_or(Value::Null),
-            "format": cli.get("log_format").cloned().unwrap_or(Value::Null),
-            "datefmt": cli.get("log_datefmt").cloned().unwrap_or(Value::Null),
-        }),
-    );
     let serialized = serde_json::to_string_pretty(&Value::Object(document))?;
     fs::write(path, format!("{serialized}\n"))?;
     Ok(())
@@ -392,7 +309,6 @@ fn collect_extra(
     document: &BTreeMap<String, Value>,
     cli: &BTreeMap<String, Value>,
 ) -> Result<BTreeMap<String, Value>> {
-    let known = known_keys();
     let mut result = BTreeMap::new();
     for source in [environment, document, cli] {
         if let Some(value) = source.get("extra") {
@@ -404,7 +320,7 @@ fn collect_extra(
         for (key, value) in source {
             if let Some(key) = key.strip_prefix("extra_") {
                 result.insert(key.to_owned(), value.clone());
-            } else if !known.contains(key.as_str()) {
+            } else if !KNOWN_KEYS.contains(&key.as_str()) {
                 result.insert(key.clone(), value.clone());
             }
         }
@@ -412,40 +328,59 @@ fn collect_extra(
     Ok(result)
 }
 
-fn known_keys() -> BTreeSet<&'static str> {
-    [
-        "$schema",
-        "cache",
-        "cache_max_age",
-        "command",
-        "config",
-        "debug",
-        "dns",
-        "endpoint",
-        "extra",
-        "id",
-        "http",
-        "http_host",
-        "http_origins",
-        "http_port",
-        "http_token",
-        "index4",
-        "index6",
-        "interval",
-        "ipv4",
-        "ipv6",
-        "line",
-        "log_datefmt",
-        "log_file",
-        "log_format",
-        "log_level",
-        "proxy",
-        "ssl",
-        "token",
-        "ttl",
-    ]
-    .into_iter()
-    .collect()
+const KNOWN_KEYS: &[&str] = &[
+    "$schema",
+    "cache",
+    "cache_max_age",
+    "command",
+    "config",
+    "debug",
+    "dns",
+    "endpoint",
+    "extra",
+    "id",
+    "http",
+    "http_host",
+    "http_origins",
+    "http_port",
+    "http_token",
+    "index4",
+    "index6",
+    "interval",
+    "ipv4",
+    "ipv6",
+    "line",
+    "log_datefmt",
+    "log_file",
+    "log_format",
+    "log_level",
+    "proxy",
+    "ssl",
+    "token",
+    "ttl",
+];
+
+pub(crate) fn canonical_provider(provider: &str) -> Option<&'static str> {
+    match provider {
+        "debug" | "print" => Some("debug"),
+        "cloudflare" => Some("cloudflare"),
+        "alidns" | "aliyun" => Some("alidns"),
+        "dnspod" | "dnspod_cn" => Some("dnspod"),
+        "dnspod_com" | "dnspod_global" => Some("dnspod_com"),
+        "tencentcloud" | "tencent" | "qcloud" => Some("tencentcloud"),
+        "edgeone" | "edgeone_acc" | "teo_acc" | "teo" => Some("edgeone"),
+        "edgeone_dns" | "teo_dns" | "edgeone_noacc" => Some("edgeone_dns"),
+        "cloudns" => Some("cloudns"),
+        "aliesa" | "esa" => Some("aliesa"),
+        "dnscom" | "51dns" | "dns_com" => Some("dnscom"),
+        "he" | "he_net" => Some("he"),
+        "huaweidns" | "huawei" | "huaweicloud" => Some("huaweidns"),
+        "namesilo" | "namesilo_com" => Some("namesilo"),
+        "noip" | "no-ip" | "noip_com" => Some("noip"),
+        "callback" | "webhook" | "http" => Some("callback"),
+        "west" | "west_cn" | "35cn" => Some("west"),
+        _ => None,
+    }
 }
 
 fn domain_list(value: Option<&Value>) -> Result<Vec<String>> {

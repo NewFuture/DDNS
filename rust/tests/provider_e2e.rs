@@ -24,7 +24,6 @@ impl FakeHttpClient {
                     .map(|body| HttpResponse {
                         status: 200,
                         reason: "OK".to_owned(),
-                        headers: BTreeMap::new(),
                         body: body.to_string(),
                     })
                     .collect(),

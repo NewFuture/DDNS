@@ -5,8 +5,9 @@ use serde_json::Value;
 use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
 
-use super::base::{CrudProvider, Provider, ProviderContext, RecordRequest, value_to_string};
-use super::empty_zone_cache;
+use super::base::{
+    CrudProvider, ProviderContext, RecordRequest, string_parameters, value_to_string,
+};
 
 pub struct DnspodProvider {
     context: ProviderContext,
@@ -43,7 +44,7 @@ impl DnspodProvider {
     ) -> Self {
         Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
             name,
             default_line,
         }
@@ -87,36 +88,13 @@ impl DnspodProvider {
             self.context.logger.mask(message)
         )))
     }
-
-    fn parameters_with_extra(
-        request: &RecordRequest,
-        values: impl IntoIterator<Item = (&'static str, Option<String>)>,
-    ) -> BTreeMap<String, String> {
-        let mut parameters = request
-            .extra
-            .iter()
-            .filter_map(|(key, value)| value_to_string(value).map(|value| (key.clone(), value)))
-            .collect::<BTreeMap<_, _>>();
-        parameters.extend(
-            values
-                .into_iter()
-                .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value))),
-        );
-        parameters
-    }
 }
 
-impl Provider for DnspodProvider {
+impl CrudProvider for DnspodProvider {
     fn name(&self) -> &'static str {
         self.name
     }
 
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
-
-impl CrudProvider for DnspodProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }
@@ -170,7 +148,7 @@ impl CrudProvider for DnspodProvider {
         _main_domain: &str,
         request: &RecordRequest,
     ) -> Result<()> {
-        let parameters = Self::parameters_with_extra(
+        let parameters = string_parameters(
             request,
             [
                 ("domain_id", Some(zone_id.to_owned())),
@@ -216,7 +194,7 @@ impl CrudProvider for DnspodProvider {
             })
             .unwrap_or_else(|| self.default_line.to_owned())
             .replace("Default", "default");
-        let parameters = Self::parameters_with_extra(
+        let parameters = string_parameters(
             request,
             [
                 ("domain_id", Some(zone_id.to_owned())),

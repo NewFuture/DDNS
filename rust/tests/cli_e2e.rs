@@ -126,11 +126,9 @@ fn applies_cli_over_environment_precedence() {
 
 #[test]
 fn cache_skips_unchanged_provider_update() {
-    let path = std::env::temp_dir().join(format!(
-        "ddns-rs-e2e-cache-{}-{}.json",
-        std::process::id(),
-        "unchanged"
-    ));
+    let directory = std::env::temp_dir().join(format!("ddns-rs-e2e-cache-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("cache.json");
     let arguments = [
         "--dns",
         "debug",
@@ -149,7 +147,35 @@ fn cache_skips_unchanged_provider_update() {
     assert!(second.status.success());
     assert!(!String::from_utf8_lossy(&second.stdout).contains("[IPv4]"));
     assert!(String::from_utf8_lossy(&second.stderr).contains("is unchanged"));
-    let _ = std::fs::remove_file(path);
+    let _ = std::fs::remove_dir_all(directory);
+}
+
+#[test]
+fn no_cache_does_not_deduplicate_updates() {
+    let output = Command::new(binary())
+        .args([
+            "--dns",
+            "debug",
+            "--no-cache",
+            "--index4",
+            "shell:echo 192.0.2.89",
+            "--ipv4",
+            "duplicate.example.com",
+            "duplicate.example.com",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout)
+            .matches("[IPv4]")
+            .count(),
+        2
+    );
 }
 
 #[test]

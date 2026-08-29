@@ -5,10 +5,7 @@ use serde_json::{Map, Value, json};
 use crate::error::{Error, Result};
 use crate::http::Method;
 
-use super::base::{
-    CrudProvider, Provider, ProviderContext, RecordRequest, join_domain, value_to_string,
-};
-use super::empty_zone_cache;
+use super::base::{CrudProvider, ProviderContext, RecordRequest, join_domain, value_to_string};
 
 pub struct CloudflareProvider {
     context: ProviderContext,
@@ -29,7 +26,7 @@ impl CloudflareProvider {
         }
         Ok(Self {
             context,
-            zones: empty_zone_cache(),
+            zones: BTreeMap::new(),
         })
     }
 
@@ -77,17 +74,11 @@ impl CloudflareProvider {
     }
 }
 
-impl Provider for CloudflareProvider {
+impl CrudProvider for CloudflareProvider {
     fn name(&self) -> &'static str {
         "cloudflare"
     }
 
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        CrudProvider::apply(self, request)
-    }
-}
-
-impl CrudProvider for CloudflareProvider {
     fn context(&self) -> &ProviderContext {
         &self.context
     }

@@ -28,7 +28,7 @@ pub enum Method {
 }
 
 impl Method {
-    const fn as_str(self) -> &'static str {
+    pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::Get => "GET",
             Self::Post => "POST",
@@ -69,7 +69,6 @@ impl HttpRequest {
 pub struct HttpResponse {
     pub status: u16,
     pub reason: String,
-    pub headers: BTreeMap<String, String>,
     pub body: String,
 }
 
@@ -137,21 +136,10 @@ impl UreqClient {
             .canonical_reason()
             .unwrap_or_default()
             .to_owned();
-        let headers = response
-            .headers()
-            .iter()
-            .filter_map(|(name, value)| {
-                value
-                    .to_str()
-                    .ok()
-                    .map(|value| (name.to_string(), value.to_owned()))
-            })
-            .collect();
         let body = response.body_mut().read_to_string()?;
         Ok(HttpResponse {
             status,
             reason,
-            headers,
             body,
         })
     }
@@ -363,28 +351,14 @@ fn safe_transport_error(error: &ureq::Error) -> String {
     }
 }
 
-fn is_retryable_error(error: &ureq::Error) -> bool {
+fn is_retryable_for_method(error: &ureq::Error, method: Method) -> bool {
     matches!(
         error,
-        ureq::Error::Io(_)
-            | ureq::Error::Timeout(_)
-            | ureq::Error::HostNotFound
+        ureq::Error::HostNotFound
             | ureq::Error::ConnectionFailed
             | ureq::Error::ConnectProxyFailed(_)
-    )
-}
-
-fn is_retryable_for_method(error: &ureq::Error, method: Method) -> bool {
-    if !is_retryable_error(error) {
-        return false;
-    }
-    matches!(method, Method::Get | Method::Delete)
-        || matches!(
-            error,
-            ureq::Error::HostNotFound
-                | ureq::Error::ConnectionFailed
-                | ureq::Error::ConnectProxyFailed(_)
-        )
+    ) || (matches!(method, Method::Get | Method::Delete)
+        && matches!(error, ureq::Error::Io(_) | ureq::Error::Timeout(_)))
 }
 
 fn is_certificate_error(error: &ureq::Error) -> bool {
