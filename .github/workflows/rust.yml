@@ -112,7 +112,9 @@ jobs:
           binary="rust/target/${{ matrix.target }}/release/ddns-rs"
           "$binary" --version
           "$binary" --help
-          "$binary" --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+          "$binary" --dns debug --no-cache \
+            --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com \
+            --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com
       - name: Smoke test Windows binary
         if: runner.os == 'Windows'
         shell: pwsh
@@ -120,7 +122,9 @@ jobs:
           $binary = "rust\target\${{ matrix.target }}\release\ddns-rs.exe"
           & $binary --version
           & $binary --help
-          & $binary --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+          & $binary --dns debug --no-cache `
+            --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com `
+            --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -155,4 +159,6 @@ jobs:
         run: |
           docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --version
           docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --help
-          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --dns debug --no-cache \
+            --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com \
+            --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com
