@@ -154,6 +154,7 @@ docs/:	Documentation (VitePress-based)
 	dev/:	Developer guides (Chinese)
 		provider.md:	Provider development guide
 		config.md:	Configuration system design
+		rust.md:	Rust client development guide
 
 	providers/:	Provider-specific documentation (Chinese)
 		README.md:	Provider list and overview
@@ -455,5 +456,5 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 ---
 
 **Version**: 1.1.0
-**Last Updated**: 2026-08-21
+**Last Updated**: 2026-08-25
 **Maintained by**: DDNS Project Contributors

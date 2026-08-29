@@ -57,6 +57,25 @@ Linux 与 macOS 也可以使用一键安装脚本获取匹配当前平台的二�
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
+### 实验性 Rust 客户端
+
+仓库内的 [`rust/`](https://github.com/NewFuture/DDNS/tree/master/rust) 提供并行开发的 `ddns-rs` MVP。它可复用现有 CLI、环境变量和配置文件，但不会替换稳定的 Python `ddns`；其中 `regex:` 使用 Rust 正则语法，不支持 Python 环视与反向引用。
+
+Rust 产物是独立的 `ddns-rs-*` Release 资产（Linux x64/arm64、macOS x64/arm64、Windows x64），Linux/macOS 可明确选择 Rust 安装器：
+
+```bash
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
+```
+
+包含 Rust 资产的标签发布后，也可运行仅支持 Linux amd64/arm64 的 Rust 镜像 `ghcr.io/newfuture/ddns-rs:latest`。它只执行 `ddns-rs`，不包含 Python 镜像的定时调度行为。
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs -c config.json
+```
+
+架构、验证命令、支持矩阵和迁移路线见 [Rust 开发文档](docs/dev/rust.md)。
+
 ## 为什么适合长期运行
 
 ### DNS 更新能力

@@ -65,6 +65,7 @@ DDNS is a Python-based dynamic DNS client that automatically updates DNS records
 ### Developer Documentation
 - Configuration Design: https://ddns.newfuture.cc/dev/config ([.md](https://ddns.newfuture.cc/dev/config.md))
 - Provider Development Guide: https://ddns.newfuture.cc/dev/provider ([.md](https://ddns.newfuture.cc/dev/provider.md))
+- Rust Client Development: https://ddns.newfuture.cc/dev/rust ([.md](https://ddns.newfuture.cc/dev/rust.md))
 
 ### Configuration Schemas
 - v4.1 Schema: https://ddns.newfuture.cc/schema/v4.1.json

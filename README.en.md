@@ -57,6 +57,29 @@ Linux and macOS users can also install the matching binary with one command:
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
+### Experimental Rust client
+
+The [`rust/`](https://github.com/NewFuture/DDNS/tree/master/rust) directory contains the parallel `ddns-rs` MVP. It reuses the existing CLI, environment, and configuration formats, but does not replace the stable Python `ddns` command. `regex:` uses Rust regex syntax and does not support Python look-around or backreferences.
+
+Rust builds are separate `ddns-rs-*` Release assets (Linux x64/arm64, macOS
+x64/arm64, and Windows x64). Linux and macOS users can explicitly choose the
+Rust installer:
+
+```bash
+curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
+```
+
+After a tag with Rust assets is published, the Linux amd64/arm64 image is
+`ghcr.io/newfuture/ddns-rs:latest`. It runs
+only `ddns-rs`; it does not include the Python image's scheduler behavior.
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs -c config.json
+```
+
+See the [Rust development guide](docs/en/dev/rust.md) for architecture, validation, support status, and the parity roadmap.
+
 ## Why it works for long-running deployments
 
 ### DNS update capabilities

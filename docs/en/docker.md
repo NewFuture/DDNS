@@ -12,6 +12,18 @@
 
 ## Image Information
 
+### Experimental Rust image
+
+The stable default image remains `newfuture/ddns` / `ghcr.io/newfuture/ddns`;
+the Rust image does not replace it. After a tag with Rust assets is published,
+the experimental Rust image is
+`ghcr.io/newfuture/ddns-rs`, supports Linux amd64 and arm64, and runs
+`ddns-rs` directly without the Python image's built-in scheduler:
+
+```bash
+docker run --rm ghcr.io/newfuture/ddns-rs:latest --help
+```
+
 ### Image Versions
 
 DDNS image versions (Docker Tags):
