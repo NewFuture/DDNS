@@ -12,19 +12,17 @@ use super::base::{
     value_to_string,
 };
 
-pub struct TencentCloudProvider {
-    context: ProviderContext,
+pub struct TencentCloudProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
-    name: &'static str,
     service: &'static str,
     version: &'static str,
     edgeone_dns: bool,
 }
 
-impl TencentCloudProvider {
+impl<'a> TencentCloudProvider<'a> {
     pub fn new(
-        context: ProviderContext,
-        name: &'static str,
+        context: ProviderContext<'a>,
         service: &'static str,
         version: &'static str,
         edgeone_dns: bool,
@@ -37,7 +35,6 @@ impl TencentCloudProvider {
         Ok(Self {
             context,
             zones: BTreeMap::new(),
-            name,
             service,
             version,
             edgeone_dns,
@@ -107,11 +104,11 @@ impl TencentCloudProvider {
         Ok(response)
     }
 
-    fn extra(request: &RecordRequest) -> Map<String, Value> {
-        request.extra.clone().into_iter().collect()
+    fn extra(request: &RecordRequest<'_>) -> Map<String, Value> {
+        super::base::json_parameters(request)
     }
 
-    fn edgeone_dns_request(&self, request: &RecordRequest) -> bool {
+    fn edgeone_dns_request(&self, request: &RecordRequest<'_>) -> bool {
         request
             .extra
             .get("teoDomainType")
@@ -120,12 +117,8 @@ impl TencentCloudProvider {
     }
 }
 
-impl CrudProvider for TencentCloudProvider {
-    fn name(&self) -> &'static str {
-        self.name
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for TencentCloudProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String> {
@@ -164,7 +157,7 @@ impl CrudProvider for TencentCloudProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         if self.service == "dnspod" {
             let mut values = Self::extra(request);
@@ -177,7 +170,7 @@ impl CrudProvider for TencentCloudProvider {
                 ("Domain".to_owned(), json!(main_domain)),
                 ("RecordType".to_owned(), json!(request.record_type)),
             ]);
-            if let Some(line) = &request.line {
+            if let Some(line) = request.line {
                 values.insert("RecordLine".to_owned(), json!(line));
             }
             return Ok(self
@@ -190,7 +183,7 @@ impl CrudProvider for TencentCloudProvider {
                         .find(|record| {
                             record.get("Name").and_then(Value::as_str) == Some(subdomain)
                                 && record.get("Type").and_then(Value::as_str)
-                                    == Some(request.record_type.as_str())
+                                    == Some(request.record_type)
                         })
                         .cloned()
                 }));
@@ -226,7 +219,7 @@ impl CrudProvider for TencentCloudProvider {
                         if edgeone_dns {
                             record.get("Name").and_then(Value::as_str) == Some(domain.as_str())
                                 && record.get("Type").and_then(Value::as_str)
-                                    == Some(request.record_type.as_str())
+                                    == Some(request.record_type)
                         } else {
                             record.get("DomainName").and_then(Value::as_str)
                                 == Some(domain.as_str())
@@ -240,7 +233,7 @@ impl CrudProvider for TencentCloudProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let mut values = Self::extra(request);
         if self.service == "dnspod" {
@@ -258,7 +251,7 @@ impl CrudProvider for TencentCloudProvider {
                 ("Value".to_owned(), json!(request.address)),
                 (
                     "RecordLine".to_owned(),
-                    json!(request.line.clone().unwrap_or_else(|| "默认".to_owned())),
+                    json!(request.line.unwrap_or("默认")),
                 ),
             ]);
             if let Some(ttl) = request.ttl {
@@ -304,7 +297,7 @@ impl CrudProvider for TencentCloudProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let mut values = Self::extra(request);
         if self.service == "dnspod" {
@@ -332,9 +325,10 @@ impl CrudProvider for TencentCloudProvider {
                 ("RecordType".to_owned(), json!(request.record_type)),
                 (
                     "RecordLine".to_owned(),
-                    record.get("Line").cloned().unwrap_or_else(|| {
-                        json!(request.line.clone().unwrap_or_else(|| "默认".to_owned()))
-                    }),
+                    record
+                        .get("Line")
+                        .cloned()
+                        .unwrap_or_else(|| json!(request.line.unwrap_or("默认"))),
                 ),
                 ("Value".to_owned(), json!(request.address)),
             ]);

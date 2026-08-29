@@ -5,15 +5,17 @@ use serde_json::{Map, Value, json};
 use crate::error::{Error, Result};
 use crate::http::Method;
 
-use super::base::{CrudProvider, ProviderContext, RecordRequest, join_domain, value_to_string};
+use super::base::{
+    CrudProvider, ProviderContext, RecordRequest, join_domain, json_parameters, value_to_string,
+};
 
-pub struct CloudflareProvider {
-    context: ProviderContext,
+pub struct CloudflareProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl CloudflareProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> CloudflareProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.token.is_empty() {
             return Err(Error::Config(
                 "Cloudflare token must be configured".to_owned(),
@@ -38,8 +40,8 @@ impl CloudflareProvider {
                 format!("Bearer {}", self.context.token),
             );
         } else {
-            headers.insert("x-auth-email".to_owned(), self.context.id.clone());
-            headers.insert("x-auth-key".to_owned(), self.context.token.clone());
+            headers.insert("x-auth-email".to_owned(), self.context.id.to_owned());
+            headers.insert("x-auth-key".to_owned(), self.context.token.to_owned());
         }
         let path = format!("/client/v4/zones{action}");
         let (query, body) = if method == Method::Get || method == Method::Delete {
@@ -74,12 +76,8 @@ impl CloudflareProvider {
     }
 }
 
-impl CrudProvider for CloudflareProvider {
-    fn name(&self) -> &'static str {
-        "cloudflare"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for CloudflareProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
 
@@ -111,7 +109,7 @@ impl CrudProvider for CloudflareProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let name = join_domain(subdomain, main_domain);
         let mut parameters = Map::from_iter([
@@ -125,11 +123,11 @@ impl CrudProvider for CloudflareProvider {
         }
         let action = format!("/{zone_id}/dns_records");
         let mut result = self.api(Method::Get, &action, parameters.clone())?;
-        let mut record = find_record(&result, &name, &request.record_type);
+        let mut record = find_record(&result, &name, request.record_type);
         if record.is_none() && proxied.is_some() {
             parameters.remove("proxied");
             result = self.api(Method::Get, &action, parameters)?;
-            record = find_record(&result, &name, &request.record_type);
+            record = find_record(&result, &name, request.record_type);
         }
         Ok(record)
     }
@@ -139,13 +137,9 @@ impl CrudProvider for CloudflareProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
-        let mut parameters = request
-            .extra
-            .clone()
-            .into_iter()
-            .collect::<Map<String, Value>>();
+        let mut parameters = json_parameters(request);
         parameters
             .entry("comment".to_owned())
             .or_insert_with(|| json!("Managed by [DDNS](https://ddns.newfuture.cc)"));
@@ -166,17 +160,13 @@ impl CrudProvider for CloudflareProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_id = record
             .get("id")
             .and_then(Value::as_str)
             .ok_or_else(|| Error::Provider("Cloudflare record has no id".to_owned()))?;
-        let mut parameters = request
-            .extra
-            .clone()
-            .into_iter()
-            .collect::<Map<String, Value>>();
+        let mut parameters = json_parameters(request);
         for key in ["proxied", "tags", "settings"] {
             if !parameters.contains_key(key)
                 && let Some(value) = record.get(key)

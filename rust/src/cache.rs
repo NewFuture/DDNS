@@ -9,6 +9,7 @@ use serde_json::Value;
 use crate::config::CacheSetting;
 use crate::error::{Error, Result};
 use crate::logging::Logger;
+use crate::provider::ProviderId;
 use crate::signature::sha256_hex;
 
 const CACHE_VERSION: u32 = 3;
@@ -56,13 +57,13 @@ impl Cache {
         Ok(Some(cache))
     }
 
-    pub fn get(&self, provider: &str, domain: &str, record_type: &str) -> Option<&str> {
+    pub fn get(&self, provider: ProviderId, domain: &str, record_type: &str) -> Option<&str> {
         self.records
             .get(&cache_key(&self.namespace, provider, domain, record_type))
             .map(String::as_str)
     }
 
-    pub fn set(&mut self, provider: &str, domain: &str, record_type: &str, address: &str) {
+    pub fn set(&mut self, provider: ProviderId, domain: &str, record_type: &str, address: &str) {
         let key = cache_key(&self.namespace, provider, domain, record_type);
         if self
             .records
@@ -157,11 +158,11 @@ impl Cache {
     }
 }
 
-fn cache_key(namespace: &str, provider: &str, domain: &str, record_type: &str) -> String {
+fn cache_key(namespace: &str, provider: ProviderId, domain: &str, record_type: &str) -> String {
     format!(
         "{}:{}:{}:{}",
         namespace,
-        provider.to_ascii_lowercase(),
+        provider.as_str(),
         domain.to_ascii_lowercase(),
         record_type.to_ascii_uppercase()
     )
@@ -190,6 +191,7 @@ mod tests {
 
     use crate::config::CacheSetting;
     use crate::logging::{Level, Logger};
+    use crate::provider::ProviderId;
 
     use super::{Cache, rust_cache_path};
 
@@ -213,7 +215,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        cache.set("debug", "example.com", "A", "192.0.2.1");
+        cache.set(ProviderId::Debug, "example.com", "A", "192.0.2.1");
         cache.sync().unwrap();
 
         let cache = Cache::open(
@@ -224,7 +226,10 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        assert_eq!(cache.get("debug", "example.com", "A"), Some("192.0.2.1"));
+        assert_eq!(
+            cache.get(ProviderId::Debug, "example.com", "A"),
+            Some("192.0.2.1")
+        );
         let _ = std::fs::remove_file(rust_cache_path(&path));
     }
 
@@ -242,7 +247,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        first.set("dnspod", "example.com", "A", "192.0.2.10");
+        first.set(ProviderId::Dnspod, "example.com", "A", "192.0.2.10");
         first.sync().unwrap();
 
         let mut second = Cache::open(
@@ -253,8 +258,8 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        assert_eq!(second.get("dnspod", "example.com", "A"), None);
-        second.set("dnspod", "example.com", "A", "192.0.2.10");
+        assert_eq!(second.get(ProviderId::Dnspod, "example.com", "A"), None);
+        second.set(ProviderId::Dnspod, "example.com", "A", "192.0.2.10");
         second.sync().unwrap();
 
         let first = Cache::open(
@@ -265,7 +270,10 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        assert_eq!(first.get("dnspod", "example.com", "A"), Some("192.0.2.10"));
+        assert_eq!(
+            first.get(ProviderId::Dnspod, "example.com", "A"),
+            Some("192.0.2.10")
+        );
         let _ = std::fs::remove_file(rust_cache_path(&path));
     }
 
@@ -284,7 +292,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        cache.set("debug", "example.com", "A", "192.0.2.2");
+        cache.set(ProviderId::Debug, "example.com", "A", "192.0.2.2");
         cache.sync().unwrap();
 
         assert_eq!(std::fs::read_to_string(&path).unwrap(), python_content);

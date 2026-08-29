@@ -7,13 +7,13 @@ use crate::http::{Method, form_encode};
 
 use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
-pub struct CloudnsProvider {
-    context: ProviderContext,
+pub struct CloudnsProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl CloudnsProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> CloudnsProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() || context.token.is_empty() {
             return Err(Error::Config(
                 "ClouDNS auth id and password must be configured".to_owned(),
@@ -26,8 +26,8 @@ impl CloudnsProvider {
     }
 
     fn api(&self, path: &str, mut parameters: BTreeMap<String, String>) -> Result<Value> {
-        parameters.insert("auth-id".to_owned(), self.context.id.clone());
-        parameters.insert("auth-password".to_owned(), self.context.token.clone());
+        parameters.insert("auth-id".to_owned(), self.context.id.to_owned());
+        parameters.insert("auth-password".to_owned(), self.context.token.to_owned());
         let response = self.context.send_json(
             Method::Post,
             path,
@@ -53,12 +53,8 @@ impl CloudnsProvider {
     }
 }
 
-impl CrudProvider for CloudnsProvider {
-    fn name(&self) -> &'static str {
-        "cloudns"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for CloudnsProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
 
@@ -82,7 +78,7 @@ impl CrudProvider for CloudnsProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let host = if subdomain == "@" { "" } else { subdomain };
         let response = self.api(
@@ -90,7 +86,7 @@ impl CrudProvider for CloudnsProvider {
             BTreeMap::from([
                 ("domain-name".to_owned(), zone_id.to_owned()),
                 ("host".to_owned(), host.to_owned()),
-                ("type".to_owned(), request.record_type.clone()),
+                ("type".to_owned(), request.record_type.to_owned()),
             ]),
         )?;
         Ok(response.as_object().and_then(|records| {
@@ -99,8 +95,7 @@ impl CrudProvider for CloudnsProvider {
                     || (subdomain == "@"
                         && matches!(record.get("host").and_then(Value::as_str), Some("" | "@")));
                 (matches_host
-                    && record.get("type").and_then(Value::as_str)
-                        == Some(request.record_type.as_str()))
+                    && record.get("type").and_then(Value::as_str) == Some(request.record_type))
                 .then(|| record.clone())
             })
         }))
@@ -111,18 +106,18 @@ impl CrudProvider for CloudnsProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let response = self.api(
             "/dns/add-record.json",
             BTreeMap::from([
                 ("domain-name".to_owned(), zone_id.to_owned()),
-                ("record-type".to_owned(), request.record_type.clone()),
+                ("record-type".to_owned(), request.record_type.to_owned()),
                 (
                     "host".to_owned(),
                     if subdomain == "@" { "" } else { subdomain }.to_owned(),
                 ),
-                ("record".to_owned(), request.address.clone()),
+                ("record".to_owned(), request.address.to_owned()),
                 ("ttl".to_owned(), request.ttl.unwrap_or(60).to_string()),
             ]),
         )?;
@@ -139,7 +134,7 @@ impl CrudProvider for CloudnsProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_id = record
             .get("id")
@@ -157,7 +152,7 @@ impl CrudProvider for CloudnsProvider {
                         .and_then(value_to_string)
                         .unwrap_or_default(),
                 ),
-                ("record".to_owned(), request.address.clone()),
+                ("record".to_owned(), request.address.to_owned()),
                 ("ttl".to_owned(), request.ttl.unwrap_or(60).to_string()),
             ]),
         )?;

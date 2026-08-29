@@ -7,15 +7,17 @@ use crate::error::{Error, Result};
 use crate::http::{Method, form_encode};
 use crate::signature::{hmac_sha256_authorization, sha256_hex};
 
-use super::base::{CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain};
+use super::base::{
+    CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain, json_parameters,
+};
 
-pub struct HuaweiDnsProvider {
-    context: ProviderContext,
+pub struct HuaweiDnsProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl HuaweiDnsProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> HuaweiDnsProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() || context.token.is_empty() {
             return Err(Error::Config(
                 "Huawei Cloud access key and secret must be configured".to_owned(),
@@ -95,12 +97,8 @@ impl HuaweiDnsProvider {
     }
 }
 
-impl CrudProvider for HuaweiDnsProvider {
-    fn name(&self) -> &'static str {
-        "huaweidns"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for HuaweiDnsProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String> {
@@ -134,7 +132,7 @@ impl CrudProvider for HuaweiDnsProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let name = format!("{}.", join_domain(subdomain, main_domain));
         let mut values = Map::from_iter([
@@ -143,7 +141,7 @@ impl CrudProvider for HuaweiDnsProvider {
             ("type".to_owned(), json!(&request.record_type)),
             ("search_mode".to_owned(), json!("equal")),
         ]);
-        if let Some(line) = &request.line {
+        if let Some(line) = request.line {
             values.insert("line_id".to_owned(), json!(line));
         }
         let response = self.api(
@@ -160,7 +158,7 @@ impl CrudProvider for HuaweiDnsProvider {
                     .find(|record| {
                         record.get("name").and_then(Value::as_str) == Some(name.as_str())
                             && record.get("type").and_then(Value::as_str)
-                                == Some(request.record_type.as_str())
+                                == Some(request.record_type)
                     })
                     .cloned()
             }))
@@ -170,9 +168,9 @@ impl CrudProvider for HuaweiDnsProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
-        let mut values = request.extra.clone().into_iter().collect::<Map<_, _>>();
+        let mut values = json_parameters(request);
         values.extend([
             (
                 "name".to_owned(),
@@ -187,7 +185,7 @@ impl CrudProvider for HuaweiDnsProvider {
         if let Some(ttl) = request.ttl {
             values.insert("ttl".to_owned(), json!(ttl));
         }
-        if let Some(line) = &request.line {
+        if let Some(line) = request.line {
             values.insert("line".to_owned(), json!(line));
         }
         if self
@@ -210,13 +208,13 @@ impl CrudProvider for HuaweiDnsProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_id = record
             .get("id")
             .and_then(Value::as_str)
             .ok_or_else(|| Error::Provider("Huawei DNS record has no id".to_owned()))?;
-        let mut values = request.extra.clone().into_iter().collect::<Map<_, _>>();
+        let mut values = json_parameters(request);
         values.extend([
             (
                 "name".to_owned(),

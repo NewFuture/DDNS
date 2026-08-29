@@ -1,6 +1,5 @@
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use crate::cache::Cache;
 use crate::cli::{self, Command};
@@ -9,7 +8,7 @@ use crate::error::{Error, Result};
 use crate::http::{HttpClient, HttpRequest, UreqClient, redact_url};
 use crate::ip::{self, AddressFamily};
 use crate::logging::{Level, Logger};
-use crate::provider::{self, RecordRequest};
+use crate::provider::{self, ProviderId, RecordRequest};
 
 pub fn run<I, S>(arguments: I) -> Result<()>
 where
@@ -89,7 +88,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
     let mut failures = Vec::new();
 
     for (index, config) in configs.iter().enumerate() {
-        let secrets = provider_secrets(&config.provider, &config.id, &config.token);
+        let secrets = provider_secrets(config.provider, &config.id, &config.token);
         let logger = match Logger::new(
             config.log.level,
             config.log.file.as_deref(),
@@ -133,8 +132,8 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
                 config.provider
             ),
         );
-        let client: Arc<dyn HttpClient> = Arc::new(UreqClient::new(logger.clone()));
-        let mut provider = match provider::build(config, Arc::clone(&client), logger.clone()) {
+        let client = UreqClient::new(logger.clone());
+        let mut provider = match provider::build(config, &client, logger.clone()) {
             Ok(provider) => provider,
             Err(error) => {
                 let message = masked_error(&logger, &error);
@@ -168,7 +167,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             if domains.is_empty() {
                 continue;
             }
-            let address = match ip::resolve(family, rules, &config.tls, client.as_ref(), &logger) {
+            let address = match ip::resolve(family, rules, &config.tls, &client, &logger) {
                 Ok(address) => address,
                 Err(error) => {
                     let message = masked_error(&logger, &error);
@@ -184,6 +183,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             failures.extend(
                 update_domains(
                     provider.as_mut(),
+                    config.provider,
                     cache.as_mut(),
                     family,
                     address,
@@ -221,6 +221,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
 #[allow(clippy::too_many_arguments)]
 fn update_domains(
     provider: &mut dyn provider::Provider,
+    provider_id: ProviderId,
     mut cache: Option<&mut Cache>,
     family: AddressFamily,
     address: std::net::IpAddr,
@@ -231,13 +232,12 @@ fn update_domains(
     logger: &Logger,
 ) -> Vec<String> {
     let mut failures = Vec::new();
-    let provider_name = provider.name();
     let address = address.to_string();
     for domain in domains {
         let domain = domain.to_ascii_lowercase();
         if cache
             .as_deref()
-            .and_then(|cache| cache.get(provider_name, &domain, family.record_type()))
+            .and_then(|cache| cache.get(provider_id, &domain, family.record_type()))
             == Some(address.as_str())
         {
             logger.info(
@@ -252,12 +252,12 @@ fn update_domains(
             continue;
         }
         let request = RecordRequest {
-            domain: domain.clone(),
-            address: address.clone(),
-            record_type: family.record_type().to_owned(),
+            domain: &domain,
+            address: &address,
+            record_type: family.record_type(),
             ttl,
-            line: line.map(ToOwned::to_owned),
-            extra: extra.clone(),
+            line,
+            extra,
         };
         match provider.set_record(&request) {
             Ok(()) => {
@@ -271,7 +271,7 @@ fn update_domains(
                     ),
                 );
                 if let Some(cache) = cache.as_deref_mut() {
-                    cache.set(provider_name, &domain, family.record_type(), &address);
+                    cache.set(provider_id, &domain, family.record_type(), &address);
                 }
             }
             Err(error) => {
@@ -295,9 +295,9 @@ fn masked_error(logger: &Logger, error: &impl std::fmt::Display) -> String {
     logger.mask(&error.to_string())
 }
 
-fn provider_secrets(provider: &str, id: &str, token: &str) -> Vec<String> {
+fn provider_secrets(provider: ProviderId, id: &str, token: &str) -> Vec<String> {
     let mut secrets = vec![id.to_owned(), token.to_owned()];
-    if matches!(provider, "callback" | "webhook" | "http")
+    if provider == ProviderId::Callback
         && let Ok(value) = serde_json::from_str::<serde_json::Value>(token)
     {
         collect_scalar_secrets(&value, &mut secrets);
@@ -357,7 +357,7 @@ mod tests {
     use crate::error::{Error, Result};
     use crate::ip::AddressFamily;
     use crate::logging::{Level, Logger};
-    use crate::provider::{Provider, RecordRequest};
+    use crate::provider::{Provider, ProviderId, RecordRequest};
 
     use super::{provider_secrets, update_domains};
 
@@ -366,12 +366,8 @@ mod tests {
     }
 
     impl Provider for PartialProvider {
-        fn name(&self) -> &'static str {
-            "partial"
-        }
-
-        fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-            self.calls.push(request.domain.clone());
+        fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()> {
+            self.calls.push(request.domain.to_owned());
             if request.domain.starts_with("fail") {
                 Err(Error::Provider("expected secret-token failure".to_owned()))
             } else {
@@ -391,6 +387,7 @@ mod tests {
         let mut provider = PartialProvider { calls: Vec::new() };
         let failures = update_domains(
             &mut provider,
+            ProviderId::Debug,
             None,
             AddressFamily::V4,
             IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1)),
@@ -409,7 +406,7 @@ mod tests {
     #[test]
     fn callback_nested_scalar_values_are_registered_as_secrets() {
         let secrets = provider_secrets(
-            "callback",
+            ProviderId::Callback,
             "https://callback.example/update",
             r#"{"api_key":"callback-secret","nested":{"account":12345}}"#,
         );

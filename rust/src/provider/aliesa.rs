@@ -7,17 +7,17 @@ use crate::http::Method;
 use crate::signature::{acs_timestamp, acs3_authorization, request_nonce, sha256_hex};
 
 use super::base::{
-    CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain, numeric_id,
-    value_to_string,
+    CrudProvider, ProviderContext, RecordRequest, endpoint_host, join_domain, json_parameters,
+    numeric_id, value_to_string,
 };
 
-pub struct AliesaProvider {
-    context: ProviderContext,
+pub struct AliesaProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl AliesaProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> AliesaProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() || context.token.is_empty() {
             return Err(Error::Config(
                 "AliESA access key id and secret must be configured".to_owned(),
@@ -83,12 +83,8 @@ impl AliesaProvider {
     }
 }
 
-impl CrudProvider for AliesaProvider {
-    fn name(&self) -> &'static str {
-        "aliesa"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for AliesaProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String> {
@@ -119,7 +115,7 @@ impl CrudProvider for AliesaProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let response = self.api(
             Method::Get,
@@ -135,10 +131,10 @@ impl CrudProvider for AliesaProvider {
                 ),
                 (
                     "Type".to_owned(),
-                    json!(if matches!(request.record_type.as_str(), "A" | "AAAA") {
+                    json!(if matches!(request.record_type, "A" | "AAAA") {
                         "A/AAAA"
                     } else {
-                        &request.record_type
+                        request.record_type
                     }),
                 ),
                 ("RecordMatchType".to_owned(), json!("exact")),
@@ -155,9 +151,9 @@ impl CrudProvider for AliesaProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
-        let mut values = request.extra.clone().into_iter().collect::<Map<_, _>>();
+        let mut values = json_parameters(request);
         values.extend([
             (
                 "SiteId".to_owned(),
@@ -169,10 +165,10 @@ impl CrudProvider for AliesaProvider {
             ),
             (
                 "Type".to_owned(),
-                json!(if matches!(request.record_type.as_str(), "A" | "AAAA") {
+                json!(if matches!(request.record_type, "A" | "AAAA") {
                     "A/AAAA"
                 } else {
-                    &request.record_type
+                    request.record_type
                 }),
             ),
             ("Data".to_owned(), json!({"Value": request.address})),
@@ -201,10 +197,10 @@ impl CrudProvider for AliesaProvider {
         &mut self,
         _zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let unchanged = record.pointer("/Data/Value").and_then(Value::as_str)
-            == Some(request.address.as_str())
+            == Some(request.address)
             && request.ttl.is_none_or(|ttl| {
                 record.get("Ttl").and_then(Value::as_u64) == Some(u64::from(ttl))
             });
@@ -219,7 +215,7 @@ impl CrudProvider for AliesaProvider {
                 _ => None,
             })
             .ok_or_else(|| Error::Provider("AliESA record has no numeric RecordId".to_owned()))?;
-        let mut values = request.extra.clone().into_iter().collect::<Map<_, _>>();
+        let mut values = json_parameters(request);
         values.extend([
             ("RecordId".to_owned(), record_id),
             ("Data".to_owned(), json!({"Value": request.address})),

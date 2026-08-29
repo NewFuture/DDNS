@@ -9,13 +9,13 @@ use crate::http::{Method, form_encode};
 
 use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
-pub struct DnscomProvider {
-    context: ProviderContext,
+pub struct DnscomProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl DnscomProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> DnscomProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() || context.token.is_empty() {
             return Err(Error::Config(
                 "DNS.COM API key and secret must be configured".to_owned(),
@@ -28,7 +28,7 @@ impl DnscomProvider {
     }
 
     fn api(&self, action: &str, mut parameters: BTreeMap<String, String>) -> Result<Value> {
-        parameters.insert("apiKey".to_owned(), self.context.id.clone());
+        parameters.insert("apiKey".to_owned(), self.context.id.to_owned());
         parameters.insert(
             "timestamp".to_owned(),
             OffsetDateTime::now_utc().unix_timestamp().to_string(),
@@ -64,12 +64,8 @@ impl DnscomProvider {
     }
 }
 
-impl CrudProvider for DnscomProvider {
-    fn name(&self) -> &'static str {
-        "dnscom"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for DnscomProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String> {
@@ -89,7 +85,7 @@ impl CrudProvider for DnscomProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let response = self.api(
             "record/list",
@@ -108,9 +104,9 @@ impl CrudProvider for DnscomProvider {
                     .find(|record| {
                         record.get("record").and_then(Value::as_str) == Some(subdomain)
                             && record.get("type").and_then(Value::as_str)
-                                == Some(request.record_type.as_str())
-                            && request.line.as_ref().is_none_or(|line| {
-                                record.get("viewID").and_then(value_to_string).as_ref()
+                                == Some(request.record_type)
+                            && request.line.is_none_or(|line| {
+                                record.get("viewID").and_then(value_to_string).as_deref()
                                     == Some(line)
                             })
                     })
@@ -122,7 +118,7 @@ impl CrudProvider for DnscomProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let mut parameters = request
             .extra
@@ -131,9 +127,9 @@ impl CrudProvider for DnscomProvider {
             .collect::<BTreeMap<_, _>>();
         parameters.extend([
             ("domainID".to_owned(), zone_id.to_owned()),
-            ("value".to_owned(), request.address.clone()),
+            ("value".to_owned(), request.address.to_owned()),
             ("host".to_owned(), subdomain.to_owned()),
-            ("type".to_owned(), request.record_type.clone()),
+            ("type".to_owned(), request.record_type.to_owned()),
         ]);
         parameters
             .entry("remark".to_owned())
@@ -141,8 +137,8 @@ impl CrudProvider for DnscomProvider {
         if let Some(ttl) = request.ttl {
             parameters.insert("TTL".to_owned(), ttl.to_string());
         }
-        if let Some(line) = &request.line {
-            parameters.insert("viewID".to_owned(), line.clone());
+        if let Some(line) = request.line {
+            parameters.insert("viewID".to_owned(), line.to_owned());
         }
         if self
             .api("record/create", parameters)?
@@ -160,7 +156,7 @@ impl CrudProvider for DnscomProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_id = record
             .get("recordID")
@@ -169,7 +165,7 @@ impl CrudProvider for DnscomProvider {
         let mut parameters = BTreeMap::from([
             ("domainID".to_owned(), zone_id.to_owned()),
             ("recordID".to_owned(), record_id),
-            ("newvalue".to_owned(), request.address.clone()),
+            ("newvalue".to_owned(), request.address.to_owned()),
         ]);
         if let Some(ttl) = request.ttl {
             parameters.insert("newTTL".to_owned(), ttl.to_string());

@@ -7,13 +7,13 @@ use crate::http::Method;
 
 use super::base::{CrudProvider, ProviderContext, RecordRequest, value_to_string};
 
-pub struct NamesiloProvider {
-    context: ProviderContext,
+pub struct NamesiloProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl NamesiloProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> NamesiloProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.token.is_empty() {
             return Err(Error::Config(
                 "NameSilo API key must be configured".to_owned(),
@@ -29,7 +29,7 @@ impl NamesiloProvider {
         parameters.extend([
             ("version".to_owned(), "1".to_owned()),
             ("type".to_owned(), "json".to_owned()),
-            ("key".to_owned(), self.context.token.clone()),
+            ("key".to_owned(), self.context.token.to_owned()),
         ]);
         let response = self.context.send_json(
             Method::Get,
@@ -59,12 +59,8 @@ impl NamesiloProvider {
     }
 }
 
-impl CrudProvider for NamesiloProvider {
-    fn name(&self) -> &'static str {
-        "namesilo"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for NamesiloProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String> {
@@ -86,7 +82,7 @@ impl CrudProvider for NamesiloProvider {
         _zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let reply = self.api(
             "dnsListRecords",
@@ -101,7 +97,7 @@ impl CrudProvider for NamesiloProvider {
                     .find(|record| {
                         record.get("host").and_then(Value::as_str) == Some(subdomain)
                             && record.get("type").and_then(Value::as_str)
-                                == Some(request.record_type.as_str())
+                                == Some(request.record_type)
                     })
                     .cloned()
             }))
@@ -111,13 +107,13 @@ impl CrudProvider for NamesiloProvider {
         _zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let mut parameters = BTreeMap::from([
             ("domain".to_owned(), main_domain.to_owned()),
-            ("rrtype".to_owned(), request.record_type.clone()),
+            ("rrtype".to_owned(), request.record_type.to_owned()),
             ("rrhost".to_owned(), subdomain.to_owned()),
-            ("rrvalue".to_owned(), request.address.clone()),
+            ("rrvalue".to_owned(), request.address.to_owned()),
         ]);
         if let Some(ttl) = request.ttl {
             parameters.insert("rrttl".to_owned(), ttl.to_string());
@@ -135,7 +131,7 @@ impl CrudProvider for NamesiloProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_id = record
             .get("record_id")
@@ -151,8 +147,8 @@ impl CrudProvider for NamesiloProvider {
                     .and_then(value_to_string)
                     .unwrap_or_default(),
             ),
-            ("rrvalue".to_owned(), request.address.clone()),
-            ("rrtype".to_owned(), request.record_type.clone()),
+            ("rrvalue".to_owned(), request.address.to_owned()),
+            ("rrtype".to_owned(), request.record_type.to_owned()),
         ]);
         if let Some(ttl) = request.ttl.or_else(|| {
             record

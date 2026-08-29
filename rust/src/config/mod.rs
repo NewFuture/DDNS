@@ -12,6 +12,7 @@ use serde_json::{Map, Value, json};
 use crate::cli::CliOptions;
 use crate::error::{Error, Result};
 use crate::logging::Level;
+use crate::provider::ProviderId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AddressRules {
@@ -44,7 +45,7 @@ pub struct LogConfig {
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub provider: String,
+    pub provider: ProviderId,
     pub id: String,
     pub token: String,
     pub endpoint: Option<String>,
@@ -150,17 +151,11 @@ impl Config {
                 "no DNS provider specified; set `dns` or use `--dns`".to_owned(),
             ));
         }
-        if canonical_provider(&provider).is_none() {
-            return Err(Error::Unsupported(format!(
-                "provider `{provider}` is not supported by the Rust MVP"
-            )));
-        }
+        let provider = provider.parse::<ProviderId>()?;
 
         let id = optional_string(merged.get("id"))?.unwrap_or_default();
         let token = match merged.get("token") {
-            Some(Value::Object(value))
-                if matches!(provider.as_str(), "callback" | "webhook" | "http") =>
-            {
+            Some(Value::Object(value)) if provider == ProviderId::Callback => {
                 serde_json::to_string(value)?
             }
             value => optional_string(value)?.unwrap_or_default(),
@@ -223,7 +218,7 @@ impl Config {
 
     pub fn cache_identity(&self) -> Value {
         json!({
-            "provider": self.provider,
+            "provider": self.provider.as_str(),
             "id": self.id,
             "token": self.token,
             "endpoint": self.endpoint,
@@ -359,29 +354,6 @@ const KNOWN_KEYS: &[&str] = &[
     "token",
     "ttl",
 ];
-
-pub(crate) fn canonical_provider(provider: &str) -> Option<&'static str> {
-    match provider {
-        "debug" | "print" => Some("debug"),
-        "cloudflare" => Some("cloudflare"),
-        "alidns" | "aliyun" => Some("alidns"),
-        "dnspod" | "dnspod_cn" => Some("dnspod"),
-        "dnspod_com" | "dnspod_global" => Some("dnspod_com"),
-        "tencentcloud" | "tencent" | "qcloud" => Some("tencentcloud"),
-        "edgeone" | "edgeone_acc" | "teo_acc" | "teo" => Some("edgeone"),
-        "edgeone_dns" | "teo_dns" | "edgeone_noacc" => Some("edgeone_dns"),
-        "cloudns" => Some("cloudns"),
-        "aliesa" | "esa" => Some("aliesa"),
-        "dnscom" | "51dns" | "dns_com" => Some("dnscom"),
-        "he" | "he_net" => Some("he"),
-        "huaweidns" | "huawei" | "huaweicloud" => Some("huaweidns"),
-        "namesilo" | "namesilo_com" => Some("namesilo"),
-        "noip" | "no-ip" | "noip_com" => Some("noip"),
-        "callback" | "webhook" | "http" => Some("callback"),
-        "west" | "west_cn" | "35cn" => Some("west"),
-        _ => None,
-    }
-}
 
 fn domain_list(value: Option<&Value>) -> Result<Vec<String>> {
     let domains = value_list(value, false)?;
@@ -597,6 +569,8 @@ mod tests {
 
     use crate::logging::Level;
 
+    use crate::provider::ProviderId;
+
     use super::{AddressRules, Config, TlsMode, parse_tls, split_array_string};
 
     #[test]
@@ -637,7 +611,7 @@ mod tests {
     fn normalizes_provider_names_and_empty_tls_environment_value() {
         let cli = BTreeMap::from([("dns".to_owned(), json!("CloudFlare"))]);
         let config = Config::from_sources(&cli, &BTreeMap::new(), &BTreeMap::new(), false).unwrap();
-        assert_eq!(config.provider, "cloudflare");
+        assert_eq!(config.provider, ProviderId::Cloudflare);
         assert_eq!(
             parse_tls(Some(&serde_json::Value::String(String::new()))).unwrap(),
             TlsMode::Insecure
@@ -670,7 +644,7 @@ mod tests {
         let cli_debug = BTreeMap::from([("debug".to_owned(), json!(true))]);
         let config =
             Config::from_sources(&cli_debug, &BTreeMap::new(), &BTreeMap::new(), true).unwrap();
-        assert_eq!(config.provider, "debug");
+        assert_eq!(config.provider, ProviderId::Debug);
         assert!(
             Config::from_sources(&cli_debug, &BTreeMap::new(), &BTreeMap::new(), false).is_err()
         );
@@ -709,6 +683,23 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(&config.token).unwrap(),
             json!({"api_key": "secret", "address": "__IP__"})
+        );
+    }
+
+    #[test]
+    fn aliases_share_canonical_cache_identity() {
+        let config = |provider| {
+            Config::from_sources(
+                &BTreeMap::from([("dns".to_owned(), json!(provider))]),
+                &BTreeMap::new(),
+                &BTreeMap::new(),
+                false,
+            )
+            .unwrap()
+        };
+        assert_eq!(
+            config("aliyun").cache_identity(),
+            config("alidns").cache_identity()
         );
     }
 }

@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use ddns_rs::config::{AddressRules, CacheSetting, Config, LogConfig, TlsMode};
 use ddns_rs::error::{Error, Result};
 use ddns_rs::http::{HttpClient, HttpRequest, HttpResponse, Method};
 use ddns_rs::logging::{Level, Logger};
-use ddns_rs::provider::{RecordRequest, build};
+use ddns_rs::provider::{ProviderId, RecordRequest, build};
 use serde_json::{Value, json};
 
 #[derive(Default)]
@@ -50,7 +50,7 @@ impl HttpClient for FakeHttpClient {
 
 fn config(provider: &str, id: &str, token: &str) -> Config {
     Config {
-        provider: provider.to_owned(),
+        provider: provider.parse::<ProviderId>().unwrap(),
         id: id.to_owned(),
         token: token.to_owned(),
         endpoint: Some("http://mock.local".to_owned()),
@@ -79,14 +79,16 @@ fn logger(token: &str) -> Logger {
     Logger::new(Level::Critical, None::<&Path>, vec![token.to_owned()]).unwrap()
 }
 
-fn request(address: &str) -> RecordRequest {
+static EMPTY_EXTRA: LazyLock<BTreeMap<String, Value>> = LazyLock::new(BTreeMap::new);
+
+fn request(address: &str) -> RecordRequest<'_> {
     RecordRequest {
-        domain: "www.example.com".to_owned(),
-        address: address.to_owned(),
-        record_type: "A".to_owned(),
+        domain: "www.example.com",
+        address,
+        record_type: "A",
         ttl: Some(300),
         line: None,
-        extra: BTreeMap::new(),
+        extra: &EMPTY_EXTRA,
     }
 }
 
@@ -98,8 +100,12 @@ fn cloudflare_create_and_update_flows() {
         json!({"success": true, "result": []}),
         json!({"success": true, "result": {"id": "record-1"}}),
     ]);
-    let client: Arc<dyn HttpClient> = create_client.clone();
-    let mut provider = build(&config("cloudflare", "", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("cloudflare", "", token),
+        create_client.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     provider.set_record(&request("192.0.2.10")).unwrap();
     let requests = create_client.requests();
     assert_eq!(requests.len(), 3);
@@ -127,8 +133,12 @@ fn cloudflare_create_and_update_flows() {
         }]}),
         json!({"success": true, "result": {"id": "record-1"}}),
     ]);
-    let client: Arc<dyn HttpClient> = update_client.clone();
-    let mut provider = build(&config("cloudflare", "", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("cloudflare", "", token),
+        update_client.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     provider.set_record(&request("192.0.2.11")).unwrap();
     let requests = update_client.requests();
     assert_eq!(requests[2].method, Method::Put);
@@ -145,20 +155,18 @@ fn alidns_create_and_unchanged_update_flows() {
         json!({"DomainRecords": {"Record": []}}),
         json!({"RecordId": "record-1"}),
     ]);
-    let client: Arc<dyn HttpClient> = create_client.clone();
     let mut provider = build(
         &config("alidns", "access-key", token),
-        client,
+        create_client.as_ref(),
         logger(token),
     )
     .unwrap();
+    let extra = BTreeMap::from([
+        ("Priority".to_owned(), json!(10)),
+        ("Remark".to_owned(), json!("managed")),
+    ]);
     let mut create_request = request("192.0.2.20");
-    create_request
-        .extra
-        .insert("Priority".to_owned(), json!(10));
-    create_request
-        .extra
-        .insert("Remark".to_owned(), json!("managed"));
+    create_request.extra = &extra;
     provider.set_record(&create_request).unwrap();
     let requests = create_client.requests();
     assert_eq!(requests.len(), 3);
@@ -196,10 +204,9 @@ fn alidns_create_and_unchanged_update_flows() {
             "TTL": 300
         }]}}),
     ]);
-    let client: Arc<dyn HttpClient> = unchanged_client.clone();
     let mut provider = build(
         &config("alidns", "access-key", token),
-        client,
+        unchanged_client.as_ref(),
         logger(token),
     )
     .unwrap();
@@ -210,10 +217,9 @@ fn alidns_create_and_unchanged_update_flows() {
         json!({"DomainName": "example.com", "RR": "www"}),
         json!({"Code": "InvalidAccessKey", "Message": format!("bad credential {token}")}),
     ]);
-    let client: Arc<dyn HttpClient> = echoed_secret;
     let mut provider = build(
         &config("alidns", "access-key", token),
-        client,
+        echoed_secret.as_ref(),
         logger(token),
     )
     .unwrap();
@@ -233,8 +239,12 @@ fn dnspod_create_and_update_flows() {
         json!({"status": {"code": "10", "message": "Empty result"}}),
         json!({"status": {"code": "1"}, "record": {"id": "record-1"}}),
     ]);
-    let client: Arc<dyn HttpClient> = create_client.clone();
-    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("dnspod", "12345", token),
+        create_client.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     provider.set_record(&request("192.0.2.30")).unwrap();
     let requests = create_client.requests();
     assert_eq!(requests.len(), 3);
@@ -253,8 +263,12 @@ fn dnspod_create_and_update_flows() {
         }]}),
         json!({"status": {"code": "1"}, "record": {"id": "record-1"}}),
     ]);
-    let client: Arc<dyn HttpClient> = update_client.clone();
-    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("dnspod", "12345", token),
+        update_client.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     provider.set_record(&request("192.0.2.31")).unwrap();
     let requests = update_client.requests();
     assert!(requests[2].url.ends_with("/Record.Modify"));
@@ -271,8 +285,12 @@ fn dnspod_create_and_update_flows() {
         json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
         json!({"status": {"code": "0", "message": "Authentication failed"}}),
     ]);
-    let client: Arc<dyn HttpClient> = failed_lookup.clone();
-    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("dnspod", "12345", token),
+        failed_lookup.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     let error = provider.set_record(&request("192.0.2.32")).unwrap_err();
     assert!(error.to_string().contains("DNSPod API error 0"));
     assert_eq!(failed_lookup.requests().len(), 2);
@@ -283,10 +301,14 @@ fn dnspod_create_and_update_flows() {
         json!({"status": {"code": "10", "message": "Empty result"}}),
         json!({"status": {"code": "1"}, "record": {"id": "record-uk"}}),
     ]);
-    let client: Arc<dyn HttpClient> = multi_label_zone.clone();
-    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("dnspod", "12345", token),
+        multi_label_zone.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     let mut multi_label_request = request("192.0.2.33");
-    multi_label_request.domain = "host.example.co.uk".to_owned();
+    multi_label_request.domain = "host.example.co.uk";
     provider.set_record(&multi_label_request).unwrap();
     let requests = multi_label_zone.requests();
     assert_eq!(requests.len(), 4);
@@ -308,8 +330,12 @@ fn dnspod_create_and_update_flows() {
     let authentication_failure = FakeHttpClient::with_json([json!({
         "status": {"code": "-1", "message": "Authentication failed"}
     })]);
-    let client: Arc<dyn HttpClient> = authentication_failure.clone();
-    let mut provider = build(&config("dnspod", "12345", token), client, logger(token)).unwrap();
+    let mut provider = build(
+        &config("dnspod", "12345", token),
+        authentication_failure.as_ref(),
+        logger(token),
+    )
+    .unwrap();
     let error = provider.set_record(&request("192.0.2.34")).unwrap_err();
     assert!(error.to_string().contains("DNSPod API error -1"));
     assert_eq!(authentication_failure.requests().len(), 1);

@@ -38,6 +38,12 @@ Windows 产物为 `rust\target\release\ddns-rs.exe`。
 - `provider/`：公共 CRUD 编排及全部 DNS Provider。
 - `update.rs`：逐配置、地址族和域名执行，继续后续项并汇总失败。
 
+兼容性处理限制在 CLI 与配置加载边界；进入核心后，Provider 使用
+`ProviderId` 枚举，别名只解析一次。Provider 通过 trait object 做运行时分发，
+借用同步 HTTP 客户端；单次更新请求借用域名、地址和 Provider 扩展配置，避免
+为每个域名复制整份配置。Provider 特有的 `extra` 仍保留动态 JSON 值，因为其
+字段由各 DNS API 定义。
+
 生产代码不使用 unsafe，不引入异步运行时、通用错误框架或 mock 框架。Provider 测试通过注入 HTTP 客户端完成，集成测试只访问本机 fixture。
 
 ## 验证

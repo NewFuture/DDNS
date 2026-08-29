@@ -15,14 +15,13 @@ pub enum SimpleKind {
     West,
 }
 
-pub struct SimpleProvider {
-    context: ProviderContext,
+pub struct SimpleProvider<'a> {
+    context: ProviderContext<'a>,
     kind: SimpleKind,
-    name: &'static str,
 }
 
-impl SimpleProvider {
-    pub fn new(context: ProviderContext, kind: SimpleKind, name: &'static str) -> Result<Self> {
+impl<'a> SimpleProvider<'a> {
+    pub fn new(context: ProviderContext<'a>, kind: SimpleKind) -> Result<Self> {
         match kind {
             SimpleKind::Callback if !context.id.contains("://") => {
                 return Err(Error::Config("callback id must be a URL".to_owned()));
@@ -44,11 +43,7 @@ impl SimpleProvider {
             }
             _ => {}
         }
-        Ok(Self {
-            context,
-            kind,
-            name,
-        })
+        Ok(Self { context, kind })
     }
 
     fn form(&self, path: &str, values: BTreeMap<String, String>) -> Result<String> {
@@ -66,7 +61,7 @@ impl SimpleProvider {
             .map(|response| response.body)
     }
 
-    fn callback(&self, request: &RecordRequest) -> Result<()> {
+    fn callback(&self, request: &RecordRequest<'_>) -> Result<()> {
         let variables = callback_variables(request);
         let url = replace_variables(&self.context.id, &variables);
         let token = self.context.token.trim();
@@ -107,7 +102,7 @@ impl SimpleProvider {
         Ok(())
     }
 
-    fn west(&self, request: &RecordRequest) -> Result<()> {
+    fn west(&self, request: &RecordRequest<'_>) -> Result<()> {
         let domain = request.domain.to_ascii_lowercase();
         let candidates = if let Some((subdomain, main_domain)) = split_custom_domain(&domain) {
             vec![(subdomain, main_domain)]
@@ -128,16 +123,16 @@ impl SimpleProvider {
                 ("act".to_owned(), "dnsrec.update".to_owned()),
                 ("domain".to_owned(), domain),
                 ("hostname".to_owned(), host),
-                ("record_value".to_owned(), request.address.clone()),
+                ("record_value".to_owned(), request.address.to_owned()),
             ]);
             if self.context.id.is_empty() {
-                values.insert("apidomainkey".to_owned(), self.context.token.clone());
+                values.insert("apidomainkey".to_owned(), self.context.token.to_owned());
             } else {
-                values.insert("username".to_owned(), self.context.id.clone());
-                values.insert("apikey".to_owned(), self.context.token.clone());
+                values.insert("username".to_owned(), self.context.id.to_owned());
+                values.insert("apikey".to_owned(), self.context.token.to_owned());
             }
-            if let Some(line) = &request.line {
-                values.insert("record_line".to_owned(), line.clone());
+            if let Some(line) = request.line {
+                values.insert("record_line".to_owned(), line.to_owned());
             }
             let result: Value = serde_json::from_str(&self.form("", values)?).map_err(|error| {
                 Error::Provider(format!("West API returned invalid JSON: {error}"))
@@ -166,21 +161,17 @@ impl SimpleProvider {
     }
 }
 
-impl Provider for SimpleProvider {
-    fn name(&self) -> &'static str {
-        self.name
-    }
-
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
+impl Provider for SimpleProvider<'_> {
+    fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()> {
         match self.kind {
             SimpleKind::Callback => self.callback(request),
             SimpleKind::He => {
                 let response = self.form(
                     "/nic/update",
                     BTreeMap::from([
-                        ("hostname".to_owned(), request.domain.clone()),
-                        ("myip".to_owned(), request.address.clone()),
-                        ("password".to_owned(), self.context.token.clone()),
+                        ("hostname".to_owned(), request.domain.to_owned()),
+                        ("myip".to_owned(), request.address.to_owned()),
+                        ("password".to_owned(), self.context.token.to_owned()),
                     ]),
                 )?;
                 if response.starts_with("good") || response.starts_with("nochg") {
@@ -207,8 +198,8 @@ impl Provider for SimpleProvider {
                     Method::Get,
                     &format!("{url}/nic/update"),
                     &BTreeMap::from([
-                        ("hostname".to_owned(), request.domain.clone()),
-                        ("myip".to_owned(), request.address.clone()),
+                        ("hostname".to_owned(), request.domain.to_owned()),
+                        ("myip".to_owned(), request.address.to_owned()),
                     ]),
                     None,
                     BTreeMap::new(),
@@ -227,25 +218,27 @@ impl Provider for SimpleProvider {
     }
 }
 
-fn callback_variables(request: &RecordRequest) -> BTreeMap<String, String> {
+fn callback_variables(request: &RecordRequest<'_>) -> BTreeMap<String, String> {
     let mut values = request
         .extra
         .iter()
         .filter_map(|(key, value)| value_to_string(value).map(|value| (key.clone(), value)))
         .collect::<BTreeMap<_, _>>();
     values.extend([
-        ("__DOMAIN__".to_owned(), request.domain.clone()),
-        ("__RECORDTYPE__".to_owned(), request.record_type.clone()),
+        ("__DOMAIN__".to_owned(), request.domain.to_owned()),
+        ("__RECORDTYPE__".to_owned(), request.record_type.to_owned()),
         (
             "__TTL__".to_owned(),
             request
                 .ttl
                 .map_or_else(|| "None".to_owned(), |ttl| ttl.to_string()),
         ),
-        ("__IP__".to_owned(), request.address.clone()),
+        ("__IP__".to_owned(), request.address.to_owned()),
         (
             "__LINE__".to_owned(),
-            request.line.clone().unwrap_or_else(|| "None".to_owned()),
+            request
+                .line
+                .map_or_else(|| "None".to_owned(), ToOwned::to_owned),
         ),
         (
             "__TIMESTAMP__".to_owned(),

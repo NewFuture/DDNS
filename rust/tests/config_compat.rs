@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use ddns_rs::cli::CliOptions;
 use ddns_rs::config::{AddressRules, TlsMode, load};
+use ddns_rs::provider::ProviderId;
 use serde_json::{Value, json};
 
 #[test]
@@ -44,12 +45,12 @@ fn loads_remote_jsonc_multi_provider_with_cli_and_env_precedence() {
     .unwrap();
 
     assert_eq!(configs.len(), 2);
-    assert_eq!(configs[0].provider, "cloudflare");
+    assert_eq!(configs[0].provider, ProviderId::Cloudflare);
     assert_eq!(configs[0].ttl, Some(900));
     assert_eq!(configs[0].ipv4, vec!["cf.example.com"]);
     assert_eq!(configs[0].extra["proxied"], Value::Bool(true));
     assert_eq!(configs[0].tls, TlsMode::Auto);
-    assert_eq!(configs[1].provider, "dnspod");
+    assert_eq!(configs[1].provider, ProviderId::Dnspod);
     assert_eq!(configs[1].id, "12345");
     assert_eq!(configs[1].index6, AddressRules::Disabled);
 }
@@ -68,7 +69,7 @@ fn loads_python_literal_configuration_without_executing_code() {
     let mut cli = cli;
     cli.config_paths = Some(vec![path.display().to_string()]);
     let configs = load(&cli, &BTreeMap::new(), &|_| unreachable!()).unwrap();
-    assert_eq!(configs[0].provider, "debug");
+    assert_eq!(configs[0].provider, ProviderId::Debug);
     assert_eq!(configs[0].index4, AddressRules::Disabled);
     let _ = std::fs::remove_file(path);
 }
@@ -122,7 +123,7 @@ fn empty_cli_config_list_overrides_environment_config_path() {
     })
     .unwrap();
     assert_eq!(configs.len(), 1);
-    assert_eq!(configs[0].provider, "debug");
+    assert_eq!(configs[0].provider, ProviderId::Debug);
 }
 
 #[test]
@@ -141,7 +142,7 @@ fn debug_provider_fallback_requires_cli_debug_without_loaded_file() {
         new_config: None,
     };
     let configs = load(&cli_debug, &BTreeMap::new(), &|_| unreachable!()).unwrap();
-    assert_eq!(configs[0].provider, "debug");
+    assert_eq!(configs[0].provider, ProviderId::Debug);
 
     let cli_debug_with_file = CliOptions {
         values: BTreeMap::from([("debug".to_owned(), json!(true))]),

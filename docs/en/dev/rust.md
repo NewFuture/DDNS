@@ -39,6 +39,14 @@ The Windows artifact is `rust\target\release\ddns-rs.exe`.
 - `provider/`: shared CRUD orchestration and all DNS providers.
 - `update.rs`: deterministic execution with continued attempts and aggregated failures.
 
+Compatibility handling stays at the CLI and configuration boundary. Inside the
+core, providers use the `ProviderId` enum and aliases are parsed once. Providers
+use trait objects only for runtime dispatch and borrow the synchronous HTTP
+client; each update request borrows its domain, address, and provider extras
+instead of copying the full configuration per domain. Provider-specific
+`extra` values remain dynamic JSON because their fields are defined by each DNS
+API.
+
 Production code forbids unsafe code and does not use an async runtime, a generic
 error framework, or a mock framework. Provider tests inject an HTTP client, and
 integration tests only access local fixtures.

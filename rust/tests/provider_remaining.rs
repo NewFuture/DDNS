@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use ddns_rs::config::{AddressRules, CacheSetting, Config, LogConfig, TlsMode};
 use ddns_rs::error::{Error, Result};
 use ddns_rs::http::{HttpClient, HttpRequest, HttpResponse, Method};
 use ddns_rs::logging::{Level, Logger};
-use ddns_rs::provider::{RecordRequest, build};
+use ddns_rs::provider::{ProviderId, RecordRequest, build};
 use serde_json::{Value, json};
 
 #[derive(Default)]
@@ -66,7 +66,7 @@ impl HttpClient for FakeHttpClient {
 
 fn config(provider: &str, id: &str, token: &str) -> Config {
     Config {
-        provider: provider.to_owned(),
+        provider: provider.parse::<ProviderId>().unwrap(),
         id: id.to_owned(),
         token: token.to_owned(),
         endpoint: Some("http://mock.local".to_owned()),
@@ -95,14 +95,16 @@ fn logger(token: &str) -> Logger {
     Logger::new(Level::Critical, None::<&Path>, vec![token.to_owned()]).unwrap()
 }
 
-fn request() -> RecordRequest {
+static EMPTY_EXTRA: LazyLock<BTreeMap<String, Value>> = LazyLock::new(BTreeMap::new);
+
+fn request() -> RecordRequest<'static> {
     RecordRequest {
-        domain: "www.example.com".to_owned(),
-        address: "192.0.2.45".to_owned(),
-        record_type: "A".to_owned(),
+        domain: "www.example.com",
+        address: "192.0.2.45",
+        record_type: "A",
         ttl: Some(300),
         line: None,
-        extra: BTreeMap::new(),
+        extra: &EMPTY_EXTRA,
     }
 }
 
@@ -115,50 +117,42 @@ fn run_request(
     id: &str,
     token: &str,
     client: Arc<FakeHttpClient>,
-    request: RecordRequest,
+    request: RecordRequest<'_>,
 ) -> Result<()> {
-    let client_for_provider: Arc<dyn HttpClient> = client;
-    let mut provider = build(
-        &config(provider, id, token),
-        client_for_provider,
-        logger(token),
-    )?;
+    let mut provider = build(&config(provider, id, token), client.as_ref(), logger(token))?;
     provider.set_record(&request)
 }
 
 #[test]
 fn aliases_build_their_canonical_provider() {
-    for (alias, id, token, canonical) in [
-        ("dnspod_cn", "id", "token", "dnspod"),
-        ("aliyun", "id", "token", "alidns"),
-        ("print", "", "", "debug"),
-        ("dnspod_global", "id", "token", "dnspod_com"),
-        ("tencent", "id", "token", "tencentcloud"),
-        ("qcloud", "id", "token", "tencentcloud"),
-        ("edgeone_acc", "id", "token", "edgeone"),
-        ("teo_acc", "id", "token", "edgeone"),
-        ("teo", "id", "token", "edgeone"),
-        ("teo_dns", "id", "token", "edgeone_dns"),
-        ("edgeone_noacc", "id", "token", "edgeone_dns"),
-        ("esa", "id", "token", "aliesa"),
-        ("51dns", "id", "token", "dnscom"),
-        ("dns_com", "id", "token", "dnscom"),
-        ("he_net", "", "token", "he"),
-        ("huawei", "id", "token", "huaweidns"),
-        ("huaweicloud", "id", "token", "huaweidns"),
-        ("namesilo_com", "", "token", "namesilo"),
-        ("no-ip", "id", "token", "noip"),
-        ("noip_com", "id", "token", "noip"),
-        ("webhook", "http://mock.local/callback", "", "callback"),
-        ("http", "http://mock.local/callback", "", "callback"),
-        ("west_cn", "id", "token", "west"),
-        ("35cn", "id", "token", "west"),
+    for (alias, canonical) in [
+        ("dnspod_cn", "dnspod"),
+        ("aliyun", "alidns"),
+        ("print", "debug"),
+        ("dnspod_global", "dnspod_com"),
+        ("tencent", "tencentcloud"),
+        ("qcloud", "tencentcloud"),
+        ("edgeone_acc", "edgeone"),
+        ("teo_acc", "edgeone"),
+        ("teo", "edgeone"),
+        ("teo_dns", "edgeone_dns"),
+        ("edgeone_noacc", "edgeone_dns"),
+        ("esa", "aliesa"),
+        ("51dns", "dnscom"),
+        ("dns_com", "dnscom"),
+        ("he_net", "he"),
+        ("huawei", "huaweidns"),
+        ("huaweicloud", "huaweidns"),
+        ("namesilo_com", "namesilo"),
+        ("no-ip", "noip"),
+        ("noip_com", "noip"),
+        ("webhook", "callback"),
+        ("http", "callback"),
+        ("west_cn", "west"),
+        ("35cn", "west"),
     ] {
-        let client: Arc<dyn HttpClient> = Arc::new(FakeHttpClient::default());
         assert_eq!(
-            build(&config(alias, id, token), client, logger(token))
-                .unwrap()
-                .name(),
+            alias.parse::<ProviderId>().unwrap().as_str(),
             canonical,
             "{alias}"
         );
@@ -174,8 +168,7 @@ fn aliyun_alias_uses_alidns_default_endpoint() {
     ]);
     let mut alias_config = config("aliyun", "id", "secret");
     alias_config.endpoint = None;
-    let client_for_provider: Arc<dyn HttpClient> = client.clone();
-    let mut provider = build(&alias_config, client_for_provider, logger("secret")).unwrap();
+    let mut provider = build(&alias_config, client.as_ref(), logger("secret")).unwrap();
     provider.set_record(&request()).unwrap();
     assert!(
         client
@@ -364,10 +357,9 @@ fn aliesa_and_huawei_create_and_errors_are_offline() {
     ]);
     run("huaweidns", "id", "secret", huawei.clone()).unwrap();
     assert_eq!(huawei.requests()[2].method, Method::Post);
+    let huawei_extra = BTreeMap::from([("description".to_owned(), json!("custom description"))]);
     let mut huawei_request = request();
-    huawei_request
-        .extra
-        .insert("description".to_owned(), json!("custom description"));
+    huawei_request.extra = &huawei_extra;
     let huawei_description = FakeHttpClient::responses([
         (200, json!({"zones":[{"id":"zone","name":"example.com."}]})),
         (200, json!({"recordsets":[]})),
@@ -462,7 +454,7 @@ fn namesilo_zone_candidates_and_string_ttl_are_preserved() {
         (200, json!({"reply":{"code":"300","record_id":"record"}})),
     ]);
     let mut namesilo_request = request();
-    namesilo_request.domain = "www.example.co.uk".to_owned();
+    namesilo_request.domain = "www.example.co.uk";
     namesilo_request.ttl = None;
     run_request("namesilo", "", "secret", client.clone(), namesilo_request).unwrap();
     let requests = client.requests();
@@ -473,10 +465,9 @@ fn namesilo_zone_candidates_and_string_ttl_are_preserved() {
 
 #[test]
 fn provider_specific_create_extras_are_preserved() {
+    let dnscom_extra = BTreeMap::from([("remark".to_owned(), json!("custom remark"))]);
     let mut dnscom_request = request();
-    dnscom_request
-        .extra
-        .insert("remark".to_owned(), json!("custom remark"));
+    dnscom_request.extra = &dnscom_extra;
     let dnscom = FakeHttpClient::responses([
         (200, json!({"code":0,"data":{"domainID":"example.com"}})),
         (200, json!({"code":0,"data":{"data":[]}})),
@@ -498,14 +489,13 @@ fn callback_object_body_is_not_written_to_debug_log() {
         std::env::temp_dir().join(format!("ddns-rs-callback-log-{}.log", std::process::id()));
     let _ = std::fs::remove_file(&path);
     let client = FakeHttpClient::text([(200, "ok")]);
-    let client_for_provider: Arc<dyn HttpClient> = client.clone();
     let mut provider = build(
         &config(
             "callback",
             "http://mock.local/callback",
             r#"{"api_key":"callback-secret","address":"__IP__"}"#,
         ),
-        client_for_provider,
+        client.as_ref(),
         Logger::new(Level::Debug, Some(&path), Vec::new()).unwrap(),
     )
     .unwrap();
@@ -529,7 +519,7 @@ fn cloudns_validates_multi_label_zone_candidates() {
         (200, json!({"status":"Success"})),
     ]);
     let mut cloudns_request = request();
-    cloudns_request.domain = "www.example.co.uk".to_owned();
+    cloudns_request.domain = "www.example.co.uk";
     run_request("cloudns", "id", "secret", client.clone(), cloudns_request).unwrap();
     let requests = client.requests();
     assert!(

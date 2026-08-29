@@ -5,12 +5,8 @@ use super::base::{Provider, RecordRequest};
 pub struct DebugProvider;
 
 impl Provider for DebugProvider {
-    fn name(&self) -> &'static str {
-        "debug"
-    }
-
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
-        let label = match request.record_type.as_str() {
+    fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()> {
+        let label = match request.record_type {
             "A" => "IPv4",
             "AAAA" => "IPv6",
             value => value,

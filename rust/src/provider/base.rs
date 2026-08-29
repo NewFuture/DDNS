@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::Value;
@@ -9,28 +8,27 @@ use crate::error::{Error, Result};
 use crate::http::{HttpClient, HttpRequest, HttpResponse, Method, append_query, redact_url};
 use crate::logging::Logger;
 
-#[derive(Clone, Debug)]
-pub struct RecordRequest {
-    pub domain: String,
-    pub address: String,
-    pub record_type: String,
+#[derive(Clone, Copy, Debug)]
+pub struct RecordRequest<'a> {
+    pub domain: &'a str,
+    pub address: &'a str,
+    pub record_type: &'a str,
     pub ttl: Option<u32>,
-    pub line: Option<String>,
-    pub extra: BTreeMap<String, Value>,
+    pub line: Option<&'a str>,
+    pub extra: &'a BTreeMap<String, Value>,
 }
 
-#[derive(Clone)]
-pub struct ProviderContext {
+pub struct ProviderContext<'a> {
     pub id: String,
     pub token: String,
     pub endpoint: String,
     pub proxies: Vec<String>,
     pub tls: TlsMode,
-    pub client: Arc<dyn HttpClient>,
+    pub client: &'a dyn HttpClient,
     pub logger: Logger,
 }
 
-impl ProviderContext {
+impl ProviderContext<'_> {
     pub fn url(&self, path: &str) -> String {
         if path.starts_with("http://") || path.starts_with("https://") {
             return path.to_owned();
@@ -125,13 +123,11 @@ impl ProviderContext {
 }
 
 pub trait Provider {
-    fn name(&self) -> &'static str;
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()>;
+    fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()>;
 }
 
 pub trait CrudProvider {
-    fn name(&self) -> &'static str;
-    fn context(&self) -> &ProviderContext;
+    fn context(&self) -> &ProviderContext<'_>;
     fn zone_cache(&mut self) -> &mut BTreeMap<String, String>;
     fn query_zone_id(&mut self, domain: &str) -> Result<Option<String>>;
     fn query_record(
@@ -139,20 +135,20 @@ pub trait CrudProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>>;
     fn create_record(
         &mut self,
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()>;
     fn update_record(
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()>;
 
     fn split_zone_and_sub(&mut self, domain: &str) -> Result<ZoneMatch> {
@@ -200,7 +196,7 @@ pub trait CrudProvider {
         Ok(zone_id)
     }
 
-    fn apply(&mut self, request: &RecordRequest) -> Result<()>
+    fn apply(&mut self, request: &RecordRequest<'_>) -> Result<()>
     where
         Self: Sized,
     {
@@ -224,11 +220,7 @@ pub trait CrudProvider {
 }
 
 impl<T: CrudProvider> Provider for T {
-    fn name(&self) -> &'static str {
-        CrudProvider::name(self)
-    }
-
-    fn set_record(&mut self, request: &RecordRequest) -> Result<()> {
+    fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()> {
         self.apply(request)
     }
 }
@@ -278,7 +270,7 @@ pub fn numeric_id(value: &str, name: &str) -> Result<u64> {
 }
 
 pub fn string_parameters(
-    request: &RecordRequest,
+    request: &RecordRequest<'_>,
     values: impl IntoIterator<Item = (&'static str, Option<String>)>,
 ) -> BTreeMap<String, String> {
     let mut parameters = request
@@ -292,6 +284,14 @@ pub fn string_parameters(
             .filter_map(|(key, value)| value.map(|value| (key.to_owned(), value))),
     );
     parameters
+}
+
+pub fn json_parameters(request: &RecordRequest<'_>) -> serde_json::Map<String, Value> {
+    request
+        .extra
+        .iter()
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
 }
 
 pub fn endpoint_host(endpoint: &str, provider: &str) -> Result<String> {

@@ -72,7 +72,7 @@ pub struct HttpResponse {
     pub body: String,
 }
 
-pub trait HttpClient: Send + Sync {
+pub trait HttpClient {
     fn execute(&self, request: &HttpRequest) -> Result<HttpResponse>;
 }
 

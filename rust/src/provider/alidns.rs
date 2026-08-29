@@ -11,13 +11,13 @@ use super::base::{
     string_parameters, value_to_string,
 };
 
-pub struct AlidnsProvider {
-    context: ProviderContext,
+pub struct AlidnsProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
 }
 
-impl AlidnsProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> AlidnsProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() {
             return Err(Error::Config(
                 "AliDNS access key id must be configured".to_owned(),
@@ -79,12 +79,8 @@ impl AlidnsProvider {
     }
 }
 
-impl CrudProvider for AlidnsProvider {
-    fn name(&self) -> &'static str {
-        "alidns"
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for AlidnsProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
 
@@ -132,13 +128,13 @@ impl CrudProvider for AlidnsProvider {
         zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let parameters = [
             ("SubDomain", Some(join_domain(subdomain, main_domain))),
             ("DomainName", Some(main_domain.to_owned())),
-            ("Type", Some(request.record_type.clone())),
-            ("Line", request.line.clone()),
+            ("Type", Some(request.record_type.to_owned())),
+            ("Line", request.line.map(ToOwned::to_owned)),
             ("PageSize", Some("500".to_owned())),
             ("Lang", request.extra.get("Lang").and_then(value_to_string)),
             (
@@ -169,17 +165,17 @@ impl CrudProvider for AlidnsProvider {
         _zone_id: &str,
         subdomain: &str,
         main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let parameters = string_parameters(
             request,
             [
                 ("DomainName", Some(main_domain.to_owned())),
                 ("RR", Some(subdomain.to_owned())),
-                ("Value", Some(request.address.clone())),
-                ("Type", Some(request.record_type.clone())),
+                ("Value", Some(request.address.to_owned())),
+                ("Type", Some(request.record_type.to_owned())),
                 ("TTL", request.ttl.map(|ttl| ttl.to_string())),
-                ("Line", request.line.clone()),
+                ("Line", request.line.map(ToOwned::to_owned)),
             ],
         );
         let response = self.api("AddDomainRecord", parameters)?;
@@ -196,11 +192,10 @@ impl CrudProvider for AlidnsProvider {
         &mut self,
         _zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
-        let unchanged = record.get("Value").and_then(Value::as_str)
-            == Some(request.address.as_str())
-            && record.get("Type").and_then(Value::as_str) == Some(request.record_type.as_str())
+        let unchanged = record.get("Value").and_then(Value::as_str) == Some(request.address)
+            && record.get("Type").and_then(Value::as_str) == Some(request.record_type)
             && request.ttl.is_none_or(|ttl| {
                 record
                     .get("TTL")
@@ -217,15 +212,15 @@ impl CrudProvider for AlidnsProvider {
             request,
             [
                 ("RecordId", record.get("RecordId").and_then(value_to_string)),
-                ("Value", Some(request.address.clone())),
+                ("Value", Some(request.address.to_owned())),
                 ("RR", record.get("RR").and_then(value_to_string)),
-                ("Type", Some(request.record_type.clone())),
+                ("Type", Some(request.record_type.to_owned())),
                 ("TTL", request.ttl.map(|ttl| ttl.to_string())),
                 (
                     "Line",
                     request
                         .line
-                        .clone()
+                        .map(ToOwned::to_owned)
                         .or_else(|| record.get("Line").and_then(value_to_string)),
                 ),
             ],

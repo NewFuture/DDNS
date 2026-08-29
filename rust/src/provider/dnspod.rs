@@ -9,43 +9,37 @@ use super::base::{
     CrudProvider, ProviderContext, RecordRequest, string_parameters, value_to_string,
 };
 
-pub struct DnspodProvider {
-    context: ProviderContext,
+pub struct DnspodProvider<'a> {
+    context: ProviderContext<'a>,
     zones: BTreeMap<String, String>,
-    name: &'static str,
     default_line: &'static str,
 }
 
-impl DnspodProvider {
-    pub fn new(context: ProviderContext) -> Result<Self> {
+impl<'a> DnspodProvider<'a> {
+    pub fn new(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() {
             return Err(Error::Config("DNSPod id must be configured".to_owned()));
         }
         if context.token.is_empty() {
             return Err(Error::Config("DNSPod token must be configured".to_owned()));
         }
-        Ok(Self::with_settings(context, "dnspod", "默认"))
+        Ok(Self::with_settings(context, "默认"))
     }
 
-    pub fn global(context: ProviderContext) -> Result<Self> {
+    pub fn global(context: ProviderContext<'a>) -> Result<Self> {
         if context.id.is_empty() {
             return Err(Error::Config("DNSPod id must be configured".to_owned()));
         }
         if context.token.is_empty() {
             return Err(Error::Config("DNSPod token must be configured".to_owned()));
         }
-        Ok(Self::with_settings(context, "dnspod_com", "default"))
+        Ok(Self::with_settings(context, "default"))
     }
 
-    fn with_settings(
-        context: ProviderContext,
-        name: &'static str,
-        default_line: &'static str,
-    ) -> Self {
+    fn with_settings(context: ProviderContext<'a>, default_line: &'static str) -> Self {
         Self {
             context,
             zones: BTreeMap::new(),
-            name,
             default_line,
         }
     }
@@ -90,12 +84,8 @@ impl DnspodProvider {
     }
 }
 
-impl CrudProvider for DnspodProvider {
-    fn name(&self) -> &'static str {
-        self.name
-    }
-
-    fn context(&self) -> &ProviderContext {
+impl CrudProvider for DnspodProvider<'_> {
+    fn context(&self) -> &ProviderContext<'_> {
         &self.context
     }
 
@@ -116,15 +106,15 @@ impl CrudProvider for DnspodProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let mut parameters = BTreeMap::from([
             ("domain_id".to_owned(), zone_id.to_owned()),
             ("sub_domain".to_owned(), subdomain.to_owned()),
-            ("record_type".to_owned(), request.record_type.clone()),
+            ("record_type".to_owned(), request.record_type.to_owned()),
         ]);
-        if let Some(line) = &request.line {
-            parameters.insert("line".to_owned(), line.clone());
+        if let Some(line) = request.line {
+            parameters.insert("line".to_owned(), line.to_owned());
         }
         let response = self.api("Record.List", parameters)?;
         let records = response
@@ -146,22 +136,21 @@ impl CrudProvider for DnspodProvider {
         zone_id: &str,
         subdomain: &str,
         _main_domain: &str,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let parameters = string_parameters(
             request,
             [
                 ("domain_id", Some(zone_id.to_owned())),
                 ("sub_domain", Some(subdomain.to_owned())),
-                ("value", Some(request.address.clone())),
-                ("record_type", Some(request.record_type.clone())),
+                ("value", Some(request.address.to_owned())),
+                ("record_type", Some(request.record_type.to_owned())),
                 (
                     "record_line",
                     Some(
                         request
                             .line
-                            .clone()
-                            .unwrap_or_else(|| self.default_line.to_owned()),
+                            .map_or_else(|| self.default_line.to_owned(), ToOwned::to_owned),
                     ),
                 ),
                 ("ttl", request.ttl.map(|ttl| ttl.to_string())),
@@ -181,11 +170,11 @@ impl CrudProvider for DnspodProvider {
         &mut self,
         zone_id: &str,
         record: &Value,
-        request: &RecordRequest,
+        request: &RecordRequest<'_>,
     ) -> Result<()> {
         let record_line = request
             .line
-            .clone()
+            .map(ToOwned::to_owned)
             .or_else(|| {
                 record
                     .get("line")
@@ -200,8 +189,8 @@ impl CrudProvider for DnspodProvider {
                 ("domain_id", Some(zone_id.to_owned())),
                 ("record_id", record.get("id").and_then(value_to_string)),
                 ("sub_domain", record.get("name").and_then(value_to_string)),
-                ("record_type", Some(request.record_type.clone())),
-                ("value", Some(request.address.clone())),
+                ("record_type", Some(request.record_type.to_owned())),
+                ("value", Some(request.address.to_owned())),
                 ("record_line", Some(record_line)),
                 ("ttl", request.ttl.map(|ttl| ttl.to_string())),
             ],
