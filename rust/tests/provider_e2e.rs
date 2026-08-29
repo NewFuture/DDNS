@@ -1,100 +1,24 @@
-use std::collections::{BTreeMap, VecDeque};
-use std::path::Path;
-use std::sync::{Arc, LazyLock, Mutex};
+mod common;
 
-use ddns_rs::config::{AddressRules, CacheSetting, Config, LogConfig, TlsMode};
-use ddns_rs::error::{Error, Result};
-use ddns_rs::http::{HttpClient, HttpRequest, HttpResponse, Method};
-use ddns_rs::logging::{Level, Logger};
-use ddns_rs::provider::{ProviderId, RecordRequest, build};
+use std::collections::BTreeMap;
+
+use common::{FakeHttpClient, config, logger, request};
+use ddns_rs::http::{HttpResponse, Method};
+use ddns_rs::provider::build;
 use serde_json::{Value, json};
 
-#[derive(Default)]
-struct FakeHttpClient {
-    responses: Mutex<VecDeque<HttpResponse>>,
-    requests: Mutex<Vec<HttpRequest>>,
-}
-
-impl FakeHttpClient {
-    fn with_json(responses: impl IntoIterator<Item = Value>) -> Arc<Self> {
-        Arc::new(Self {
-            responses: Mutex::new(
-                responses
-                    .into_iter()
-                    .map(|body| HttpResponse {
-                        status: 200,
-                        reason: "OK".to_owned(),
-                        body: body.to_string(),
-                    })
-                    .collect(),
-            ),
-            requests: Mutex::new(Vec::new()),
-        })
-    }
-
-    fn requests(&self) -> Vec<HttpRequest> {
-        self.requests.lock().unwrap().clone()
-    }
-}
-
-impl HttpClient for FakeHttpClient {
-    fn execute(&self, request: &HttpRequest) -> Result<HttpResponse> {
-        self.requests.lock().unwrap().push(request.clone());
-        self.responses
-            .lock()
-            .unwrap()
-            .pop_front()
-            .ok_or_else(|| Error::Http("fake response queue is empty".to_owned()))
-    }
-}
-
-fn config(provider: &str, id: &str, token: &str) -> Config {
-    Config {
-        provider: provider.parse::<ProviderId>().unwrap(),
-        id: id.to_owned(),
-        token: token.to_owned(),
-        endpoint: Some("http://mock.local".to_owned()),
-        index4: AddressRules::Disabled,
-        index6: AddressRules::Disabled,
-        ipv4: Vec::new(),
-        ipv6: Vec::new(),
-        ttl: Some(300),
-        line: None,
-        proxies: vec!["DIRECT".to_owned()],
-        cache: CacheSetting::Disabled,
-        cache_max_age: 3600,
-        tls: TlsMode::Insecure,
-        log: LogConfig {
-            level: Level::Critical,
-            file: None,
-            format: None,
-            date_format: None,
-        },
-        extra: BTreeMap::new(),
-    }
-}
-
-fn logger(token: &str) -> Logger {
-    Logger::new(Level::Critical, None::<&Path>, vec![token.to_owned()]).unwrap()
-}
-
-static EMPTY_EXTRA: LazyLock<BTreeMap<String, Value>> = LazyLock::new(BTreeMap::new);
-
-fn request(address: &str) -> RecordRequest<'_> {
-    RecordRequest {
-        domain: "www.example.com",
-        address,
-        record_type: "A",
-        ttl: Some(300),
-        line: None,
-        extra: &EMPTY_EXTRA,
-    }
+fn json_responses(values: impl IntoIterator<Item = Value>) -> std::sync::Arc<FakeHttpClient> {
+    FakeHttpClient::new(values.into_iter().map(|body| HttpResponse {
+        status: 200,
+        reason: "OK".to_owned(),
+        body: body.to_string(),
+    }))
 }
 
 #[test]
 fn cloudflare_create_and_update_flows() {
     let token = "cloudflare-secret";
-    let create_client = FakeHttpClient::with_json([
+    let create_client = json_responses([
         json!({"success": true, "result": [{"id": "zone-1", "name": "example.com"}]}),
         json!({"success": true, "result": []}),
         json!({"success": true, "result": {"id": "record-1"}}),
@@ -121,7 +45,7 @@ fn cloudflare_create_and_update_flows() {
         "Managed by [DDNS](https://ddns.newfuture.cc)"
     );
 
-    let update_client = FakeHttpClient::with_json([
+    let update_client = json_responses([
         json!({"success": true, "result": [{"id": "zone-1", "name": "example.com"}]}),
         json!({"success": true, "result": [{
             "id": "record-1",
@@ -149,7 +73,7 @@ fn cloudflare_create_and_update_flows() {
 #[test]
 fn alidns_create_and_unchanged_update_flows() {
     let token = "ali-secret";
-    let create_client = FakeHttpClient::with_json([
+    let create_client = json_responses([
         json!({"DomainName": "example.com", "RR": "www"}),
         json!({"DomainRecords": {"Record": []}}),
         json!({"RecordId": "record-1"}),
@@ -192,7 +116,7 @@ fn alidns_create_and_unchanged_update_flows() {
             .contains("Remark=managed")
     );
 
-    let unchanged_client = FakeHttpClient::with_json([
+    let unchanged_client = json_responses([
         json!({"DomainName": "example.com", "RR": "www"}),
         json!({"DomainRecords": {"Record": [{
             "RecordId": "record-1",
@@ -212,7 +136,7 @@ fn alidns_create_and_unchanged_update_flows() {
     provider.set_record(&request("192.0.2.20")).unwrap();
     assert_eq!(unchanged_client.requests().len(), 2);
 
-    let echoed_secret = FakeHttpClient::with_json([
+    let echoed_secret = json_responses([
         json!({"DomainName": "example.com", "RR": "www"}),
         json!({"Code": "InvalidAccessKey", "Message": format!("bad credential {token}")}),
     ]);
@@ -233,7 +157,7 @@ fn alidns_create_and_unchanged_update_flows() {
 #[test]
 fn dnspod_create_and_update_flows() {
     let token = "dnspod-secret";
-    let create_client = FakeHttpClient::with_json([
+    let create_client = json_responses([
         json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
         json!({"status": {"code": "10", "message": "Empty result"}}),
         json!({"status": {"code": "1"}, "record": {"id": "record-1"}}),
@@ -253,7 +177,7 @@ fn dnspod_create_and_update_flows() {
     assert!(body.contains("login_token=12345%2Cdnspod-secret"));
     assert!(body.contains("record_line=%E9%BB%98%E8%AE%A4"));
 
-    let update_client = FakeHttpClient::with_json([
+    let update_client = json_responses([
         json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
         json!({"status": {"code": "1"}, "records": [{
             "id": "record-1",
@@ -280,7 +204,7 @@ fn dnspod_create_and_update_flows() {
     );
     assert!(requests[2].body.as_deref().unwrap().contains("ttl=300"));
 
-    let failed_lookup = FakeHttpClient::with_json([
+    let failed_lookup = json_responses([
         json!({"status": {"code": "1"}, "domain": {"id": "zone-1"}}),
         json!({"status": {"code": "0", "message": "Authentication failed"}}),
     ]);
@@ -294,7 +218,7 @@ fn dnspod_create_and_update_flows() {
     assert!(error.to_string().contains("DNSPod API error 0"));
     assert_eq!(failed_lookup.requests().len(), 2);
 
-    let multi_label_zone = FakeHttpClient::with_json([
+    let multi_label_zone = json_responses([
         json!({"status": {"code": "7", "message": "No permission"}}),
         json!({"status": {"code": "1"}, "domain": {"id": "zone-uk"}}),
         json!({"status": {"code": "10", "message": "Empty result"}}),
@@ -326,7 +250,7 @@ fn dnspod_create_and_update_flows() {
             .contains("domain=example.co.uk")
     );
 
-    let authentication_failure = FakeHttpClient::with_json([json!({
+    let authentication_failure = json_responses([json!({
         "status": {"code": "-1", "message": "Authentication failed"}
     })]);
     let mut provider = build(
