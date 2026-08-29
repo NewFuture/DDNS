@@ -13,17 +13,18 @@ use crate::provider::ProviderId;
 use crate::signature::sha256_hex;
 
 const CACHE_VERSION: u32 = 3;
+type CacheRecords = BTreeMap<String, String>;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-struct CacheFile {
+#[derive(Deserialize, Serialize)]
+struct CacheFile<T = CacheRecords> {
     version: u32,
-    records: BTreeMap<String, String>,
+    records: T,
 }
 
 pub struct Cache {
     path: PathBuf,
     namespace: String,
-    records: BTreeMap<String, String>,
+    records: CacheRecords,
     changed: bool,
     logger: Logger,
 }
@@ -89,7 +90,7 @@ impl Cache {
         }
         let serialized = serde_json::to_vec(&CacheFile {
             version: CACHE_VERSION,
-            records: self.records.clone(),
+            records: &self.records,
         })?;
         let temporary = temporary_path(path);
         fs::write(&temporary, serialized)?;

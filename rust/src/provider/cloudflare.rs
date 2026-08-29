@@ -32,7 +32,7 @@ impl<'a> CloudflareProvider<'a> {
         })
     }
 
-    fn api(&self, method: Method, action: &str, parameters: Map<String, Value>) -> Result<Value> {
+    fn api(&self, method: Method, action: &str, parameters: &Map<String, Value>) -> Result<Value> {
         let mut headers = BTreeMap::new();
         if self.context.id.is_empty() {
             headers.insert(
@@ -52,10 +52,7 @@ impl<'a> CloudflareProvider<'a> {
             (query, None)
         } else {
             headers.insert("content-type".to_owned(), "application/json".to_owned());
-            (
-                BTreeMap::new(),
-                Some(serde_json::to_string(&Value::Object(parameters))?),
-            )
+            (BTreeMap::new(), Some(serde_json::to_string(parameters)?))
         };
         let response = self
             .context
@@ -89,7 +86,7 @@ impl CrudProvider for CloudflareProvider<'_> {
         let result = self.api(
             Method::Get,
             "",
-            Map::from_iter([
+            &Map::from_iter([
                 ("name.exact".to_owned(), json!(domain)),
                 ("per_page".to_owned(), json!(50)),
             ]),
@@ -117,16 +114,16 @@ impl CrudProvider for CloudflareProvider<'_> {
             ("type".to_owned(), json!(request.record_type)),
             ("per_page".to_owned(), json!(10_000)),
         ]);
-        let proxied = request.extra.get("proxied").cloned();
-        if let Some(proxied) = &proxied {
+        let proxied = request.extra.get("proxied");
+        if let Some(proxied) = proxied {
             parameters.insert("proxied".to_owned(), proxied.clone());
         }
         let action = format!("/{zone_id}/dns_records");
-        let mut result = self.api(Method::Get, &action, parameters.clone())?;
+        let mut result = self.api(Method::Get, &action, &parameters)?;
         let mut record = find_record(&result, &name, request.record_type);
         if record.is_none() && proxied.is_some() {
             parameters.remove("proxied");
-            result = self.api(Method::Get, &action, parameters)?;
+            result = self.api(Method::Get, &action, &parameters)?;
             record = find_record(&result, &name, request.record_type);
         }
         Ok(record)
@@ -152,7 +149,11 @@ impl CrudProvider for CloudflareProvider<'_> {
         if let Some(ttl) = request.ttl {
             parameters.insert("ttl".to_owned(), json!(ttl));
         }
-        self.api(Method::Post, &format!("/{zone_id}/dns_records"), parameters)?;
+        self.api(
+            Method::Post,
+            &format!("/{zone_id}/dns_records"),
+            &parameters,
+        )?;
         Ok(())
     }
 
@@ -189,7 +190,7 @@ impl CrudProvider for CloudflareProvider<'_> {
         self.api(
             Method::Put,
             &format!("/{zone_id}/dns_records/{record_id}"),
-            parameters,
+            &parameters,
         )?;
         Ok(())
     }

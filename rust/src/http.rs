@@ -45,27 +45,25 @@ pub struct HttpRequest {
     pub headers: BTreeMap<String, String>,
     pub body: Option<String>,
     pub proxies: Vec<String>,
-    pub tls: TlsMode,
     pub timeout: Duration,
     pub retries: u32,
 }
 
 impl HttpRequest {
-    pub fn get(url: impl Into<String>, tls: TlsMode, proxies: Vec<String>) -> Self {
+    pub fn get(url: impl Into<String>, proxies: Vec<String>) -> Self {
         Self {
             method: Method::Get,
             url: url.into(),
             headers: BTreeMap::new(),
             body: None,
             proxies,
-            tls,
             timeout: Duration::from_secs(60),
             retries: 2,
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct HttpResponse {
     pub status: u16,
     pub reason: String,
@@ -76,23 +74,28 @@ pub trait HttpClient {
     fn execute(&self, request: &HttpRequest) -> Result<HttpResponse>;
 }
 
-#[derive(Clone)]
 pub struct UreqClient {
     logger: Logger,
+    tls: TlsMode,
     sleeper: fn(Duration),
 }
 
 impl UreqClient {
-    pub const fn new(logger: Logger) -> Self {
+    pub const fn new(logger: Logger, tls: TlsMode) -> Self {
         Self {
             logger,
+            tls,
             sleeper: thread::sleep,
         }
     }
 
     #[cfg(test)]
-    fn with_sleeper(logger: Logger, sleeper: fn(Duration)) -> Self {
-        Self { logger, sleeper }
+    fn with_sleeper(logger: Logger, tls: TlsMode, sleeper: fn(Duration)) -> Self {
+        Self {
+            logger,
+            tls,
+            sleeper,
+        }
     }
 
     fn execute_with_proxy(
@@ -101,7 +104,7 @@ impl UreqClient {
         proxy: Option<Proxy>,
         insecure: bool,
     ) -> std::result::Result<HttpResponse, ureq::Error> {
-        let agent = build_agent(request, proxy, insecure).map_err(|error| {
+        let agent = build_agent(request, &self.tls, proxy, insecure).map_err(|error| {
             ureq::Error::Other(Box::new(std::io::Error::other(error.to_string())))
         })?;
         let (url, basic_auth) = embedded_basic_auth(&request.url);
@@ -127,7 +130,7 @@ impl UreqClient {
             builder = builder.header("user-agent", USER_AGENT);
         }
         let request = builder
-            .body(request.body.clone().unwrap_or_default())
+            .body(request.body.as_deref().unwrap_or_default())
             .map_err(ureq::Error::Http)?;
         let mut response = agent.run(request)?;
         let status = response.status().as_u16();
@@ -231,12 +234,10 @@ impl HttpClient for UreqClient {
             match self.run_policy(
                 request,
                 proxy.clone(),
-                matches!(request.tls, TlsMode::Insecure),
+                matches!(self.tls, TlsMode::Insecure),
             ) {
                 Ok(response) => return Ok(response),
-                Err(error)
-                    if matches!(request.tls, TlsMode::Auto) && is_certificate_error(&error) =>
-                {
+                Err(error) if matches!(self.tls, TlsMode::Auto) && is_certificate_error(&error) => {
                     self.logger.warning(
                         "http",
                         "TLS certificate validation failed in ssl=auto mode; retrying once without certificate verification. This connection is vulnerable to interception.",
@@ -262,8 +263,13 @@ impl HttpClient for UreqClient {
     }
 }
 
-fn build_agent(request: &HttpRequest, proxy: Option<Proxy>, insecure: bool) -> Result<Agent> {
-    let root_certs = match &request.tls {
+fn build_agent(
+    request: &HttpRequest,
+    tls: &TlsMode,
+    proxy: Option<Proxy>,
+    insecure: bool,
+) -> Result<Agent> {
+    let root_certs = match tls {
         TlsMode::CustomCa(path) => {
             let pem = fs::read(path).map_err(|error| {
                 Error::Http(format!(
@@ -564,15 +570,15 @@ mod tests {
     #[test]
     fn constructs_client_with_test_sleeper() {
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let _client = UreqClient::with_sleeper(logger, |_| {});
+        let _client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
     }
 
     #[test]
     fn performs_real_local_request_and_retries_get_status() {
         let (url, server) = local_server(&[(503, "retry"), (200, "ok")]);
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
-        let mut request = HttpRequest::get(url, TlsMode::Verify, vec!["DIRECT".to_owned()]);
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
+        let mut request = HttpRequest::get(url, vec!["DIRECT".to_owned()]);
         request.retries = 1;
         let response = client.execute(&request).unwrap();
         assert_eq!(response.status, 200);
@@ -603,10 +609,9 @@ mod tests {
                 .unwrap();
         });
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
         let request = HttpRequest::get(
             format!("http://us%65r:p%40ss@{address}/secure"),
-            TlsMode::Verify,
             vec!["DIRECT".to_owned()],
         );
         let response = client.execute(&request).unwrap();
@@ -618,14 +623,13 @@ mod tests {
     fn does_not_retry_post_after_http_response() {
         let (url, server) = local_server(&[(503, "not retried")]);
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
         let request = HttpRequest {
             method: Method::Post,
             url,
             headers: BTreeMap::new(),
             body: Some("value".to_owned()),
             proxies: vec!["DIRECT".to_owned()],
-            tls: TlsMode::Verify,
             timeout: Duration::from_secs(5),
             retries: 3,
         };
@@ -652,10 +656,9 @@ mod tests {
         drop(unavailable);
         let (url, server) = local_server(&[(200, "direct")]);
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
         let mut request = HttpRequest::get(
             url,
-            TlsMode::Verify,
             vec![format!("http://{unavailable_address}"), "DIRECT".to_owned()],
         );
         request.retries = 0;
@@ -668,10 +671,9 @@ mod tests {
     fn valid_route_is_not_blocked_by_malformed_backup_proxy() {
         let (url, server) = local_server(&[(200, "direct")]);
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
         let mut request = HttpRequest::get(
             url,
-            TlsMode::Verify,
             vec![
                 "DIRECT".to_owned(),
                 "http://user:backup-password@[".to_owned(),
@@ -704,10 +706,9 @@ mod tests {
         );
 
         let logger = Logger::new(Level::Critical, None::<&Path>, Vec::new()).unwrap();
-        let client = UreqClient::with_sleeper(logger, |_| {});
+        let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
         let request = HttpRequest::get(
             "http://127.0.0.1/",
-            TlsMode::Verify,
             vec!["socks5://user:password@127.0.0.1:1080".to_owned()],
         );
         assert!(matches!(

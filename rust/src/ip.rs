@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::config::TlsMode;
 use crate::error::{Error, Result};
 use crate::http::{HttpClient, HttpRequest, redact_url};
 use crate::logging::Logger;
@@ -55,7 +54,6 @@ impl AddressFamily {
 pub fn resolve(
     family: AddressFamily,
     rules: &[String],
-    tls: &TlsMode,
     client: &dyn HttpClient,
     logger: &Logger,
 ) -> Result<IpAddr> {
@@ -66,7 +64,7 @@ pub fn resolve(
             "ip",
             format!("trying {} rule `{displayed_rule}`", family.label()),
         );
-        match resolve_rule(family, rule, tls, client) {
+        match resolve_rule(family, rule, client) {
             Ok(address) => {
                 logger.info("ip", format!("resolved {} as {address}", family.label()));
                 return Ok(address);
@@ -96,17 +94,12 @@ fn display_rule(rule: &str) -> String {
     }
 }
 
-fn resolve_rule(
-    family: AddressFamily,
-    rule: &str,
-    tls: &TlsMode,
-    client: &dyn HttpClient,
-) -> Result<IpAddr> {
+fn resolve_rule(family: AddressFamily, rule: &str, client: &dyn HttpClient) -> Result<IpAddr> {
     if let Ok(index) = rule.parse::<usize>() {
         return local_address(family, index);
     }
     if let Some(url) = rule.strip_prefix("url:") {
-        return fetch_address(family, url, tls, client);
+        return fetch_address(family, url, client);
     }
     if let Some(pattern) = rule.strip_prefix("regex:") {
         return regex_address(family, pattern);
@@ -119,7 +112,7 @@ fn resolve_rule(
     }
     match rule {
         "default" => default_address(family),
-        "public" => public_address(family, tls, client),
+        "public" => public_address(family, client),
         "local" => local_address(family, 0),
         _ => Err(Error::Ip("unknown address rule".to_owned())),
     }
@@ -160,14 +153,14 @@ fn local_address(family: AddressFamily, index: usize) -> Result<IpAddr> {
     })
 }
 
-fn public_address(family: AddressFamily, tls: &TlsMode, client: &dyn HttpClient) -> Result<IpAddr> {
+fn public_address(family: AddressFamily, client: &dyn HttpClient) -> Result<IpAddr> {
     let mut failures = Vec::new();
     let endpoints = match family {
         AddressFamily::V4 => PUBLIC_IPV4_APIS,
         AddressFamily::V6 => PUBLIC_IPV6_APIS,
     };
     for endpoint in endpoints {
-        match fetch_address(family, endpoint, tls, client) {
+        match fetch_address(family, endpoint, client) {
             Ok(address) => return Ok(address),
             Err(error) => failures.push(format!("{endpoint}: {error}")),
         }
@@ -175,14 +168,8 @@ fn public_address(family: AddressFamily, tls: &TlsMode, client: &dyn HttpClient)
     Err(Error::Ip(failures.join("; ")))
 }
 
-fn fetch_address(
-    family: AddressFamily,
-    url: &str,
-    tls: &TlsMode,
-    client: &dyn HttpClient,
-) -> Result<IpAddr> {
-    let mut request = HttpRequest::get(url, tls.clone(), Vec::new());
-    request.retries = 2;
+fn fetch_address(family: AddressFamily, url: &str, client: &dyn HttpClient) -> Result<IpAddr> {
+    let request = HttpRequest::get(url, Vec::new());
     let response = client.execute(&request)?;
     if !(200..300).contains(&response.status) {
         return Err(Error::Ip(format!(
@@ -373,7 +360,6 @@ fn split_command(command: &str) -> Result<Vec<String>> {
 mod tests {
     use std::path::Path;
 
-    use crate::config::TlsMode;
     use crate::error::Result;
     use crate::http::{HttpClient, HttpRequest, HttpResponse};
     use crate::logging::{Level, Logger};
@@ -441,7 +427,6 @@ mod tests {
                 "url:http://test/invalid".to_owned(),
                 "url:http://test/valid".to_owned(),
             ],
-            &TlsMode::Verify,
             &FakeClient,
             &logger,
         )
@@ -451,7 +436,6 @@ mod tests {
         let public = resolve(
             AddressFamily::V4,
             &["public".to_owned()],
-            &TlsMode::Verify,
             &FakeClient,
             &logger,
         )

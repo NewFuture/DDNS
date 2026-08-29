@@ -67,13 +67,10 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         bootstrap_secrets(&options.values, &environment),
     )?;
     let bootstrap = Bootstrap::from_sources(&options.values, &environment)?;
-    let bootstrap_client = UreqClient::new(bootstrap_logger.clone());
+    let bootstrap_client = UreqClient::new(bootstrap_logger.clone(), bootstrap.tls);
     let fetch = |url: &str| -> Result<String> {
-        let response = bootstrap_client.execute(&HttpRequest::get(
-            url,
-            bootstrap.tls.clone(),
-            bootstrap.proxies.clone(),
-        ))?;
+        let response =
+            bootstrap_client.execute(&HttpRequest::get(url, bootstrap.proxies.clone()))?;
         if !(200..300).contains(&response.status) || response.body.is_empty() {
             return Err(Error::Config(format!(
                 "failed to load remote configuration `{}`: HTTP {} {}",
@@ -132,7 +129,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
                 config.provider
             ),
         );
-        let client = UreqClient::new(logger.clone());
+        let client = UreqClient::new(logger.clone(), config.tls.clone());
         let mut provider = match provider::build(config, &client, logger.clone()) {
             Ok(provider) => provider,
             Err(error) => {
@@ -167,7 +164,7 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             if domains.is_empty() {
                 continue;
             }
-            let address = match ip::resolve(family, rules, &config.tls, &client, &logger) {
+            let address = match ip::resolve(family, rules, &client, &logger) {
                 Ok(address) => address,
                 Err(error) => {
                     let message = masked_error(&logger, &error);

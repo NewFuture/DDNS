@@ -35,7 +35,7 @@ pub enum TlsMode {
     CustomCa(PathBuf),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct LogConfig {
     pub level: Level,
     pub file: Option<PathBuf>,
@@ -43,7 +43,7 @@ pub struct LogConfig {
     pub date_format: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Config {
     pub provider: ProviderId,
     pub id: String,
@@ -61,10 +61,9 @@ pub struct Config {
     pub tls: TlsMode,
     pub log: LogConfig,
     pub extra: BTreeMap<String, Value>,
-    pub debug: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Bootstrap {
     pub proxies: Vec<String>,
     pub tls: TlsMode,
@@ -75,11 +74,10 @@ impl Bootstrap {
         cli: &BTreeMap<String, Value>,
         environment: &BTreeMap<String, Value>,
     ) -> Result<Self> {
-        let mut merged = environment.clone();
-        merged.extend(cli.clone());
+        let value = |key| cli.get(key).or_else(|| environment.get(key));
         Ok(Self {
-            proxies: value_list(merged.get("proxy"), false)?,
-            tls: parse_tls(merged.get("ssl"))?,
+            proxies: value_list(value("proxy"), false)?,
+            tls: parse_tls(value("ssl"))?,
         })
     }
 }
@@ -136,11 +134,13 @@ impl Config {
         environment: &BTreeMap<String, Value>,
         allow_debug_provider: bool,
     ) -> Result<Self> {
-        let mut merged = environment.clone();
-        merged.extend(document.clone());
-        merged.extend(cli.clone());
-        let debug = parse_bool(merged.get("debug"), false)?;
-        let mut provider = optional_string(merged.get("dns"))?
+        let value = |key| {
+            cli.get(key)
+                .or_else(|| document.get(key))
+                .or_else(|| environment.get(key))
+        };
+        parse_bool(value("debug"), false)?;
+        let mut provider = optional_string(value("dns"))?
             .unwrap_or_default()
             .to_ascii_lowercase();
         if provider.is_empty() && allow_debug_provider {
@@ -153,15 +153,14 @@ impl Config {
         }
         let provider = provider.parse::<ProviderId>()?;
 
-        let id = optional_string(merged.get("id"))?.unwrap_or_default();
-        let token = match merged.get("token") {
+        let id = optional_string(value("id"))?.unwrap_or_default();
+        let token = match value("token") {
             Some(Value::Object(value)) if provider == ProviderId::Callback => {
                 serde_json::to_string(value)?
             }
             value => optional_string(value)?.unwrap_or_default(),
         };
-        let endpoint =
-            optional_string(merged.get("endpoint"))?.filter(|endpoint| !endpoint.is_empty());
+        let endpoint = optional_string(value("endpoint"))?.filter(|endpoint| !endpoint.is_empty());
         if let Some(endpoint) = &endpoint
             && !endpoint.starts_with("http://")
             && !endpoint.starts_with("https://")
@@ -171,27 +170,27 @@ impl Config {
             ));
         }
 
-        let ipv4 = domain_list(merged.get("ipv4"))?;
-        let ipv6 = domain_list(merged.get("ipv6"))?;
-        let index4 = address_rules(merged.get("index4"), &["default"])?;
-        let index6 = address_rules(merged.get("index6"), &["default"])?;
-        let ttl = optional_u32(merged.get("ttl"), "ttl")?;
-        let line = optional_string(merged.get("line"))?;
-        let proxies = value_list(merged.get("proxy"), false)?;
-        let cache = parse_cache(merged.get("cache"))?;
+        let ipv4 = domain_list(value("ipv4"))?;
+        let ipv6 = domain_list(value("ipv6"))?;
+        let index4 = address_rules(value("index4"), &["default"])?;
+        let index6 = address_rules(value("index6"), &["default"])?;
+        let ttl = optional_u32(value("ttl"), "ttl")?;
+        let line = optional_string(value("line"))?;
+        let proxies = value_list(value("proxy"), false)?;
+        let cache = parse_cache(value("cache"))?;
         let cache_max_age =
-            optional_u64(merged.get("cache_max_age"), "cache_max_age")?.unwrap_or(259_200);
-        let tls = parse_tls(merged.get("ssl"))?;
+            optional_u64(value("cache_max_age"), "cache_max_age")?.unwrap_or(259_200);
+        let tls = parse_tls(value("ssl"))?;
         let level = Level::parse(
-            optional_string(merged.get("log_level"))?
+            optional_string(value("log_level"))?
                 .as_deref()
                 .unwrap_or("INFO"),
         )?;
         let log = LogConfig {
             level,
-            file: optional_string(merged.get("log_file"))?.map(PathBuf::from),
-            format: optional_string(merged.get("log_format"))?,
-            date_format: optional_string(merged.get("log_datefmt"))?,
+            file: optional_string(value("log_file"))?.map(PathBuf::from),
+            format: optional_string(value("log_format"))?,
+            date_format: optional_string(value("log_datefmt"))?,
         };
         let extra = collect_extra(environment, document, cli)?;
 
@@ -212,7 +211,6 @@ impl Config {
             tls,
             log,
             extra,
-            debug,
         })
     }
 

@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::config::TlsMode;
 use crate::error::{Error, Result};
 use crate::http::{HttpClient, HttpRequest, HttpResponse, Method, append_query, redact_url};
 use crate::logging::Logger;
@@ -23,7 +22,6 @@ pub struct ProviderContext<'a> {
     pub token: String,
     pub endpoint: String,
     pub proxies: Vec<String>,
-    pub tls: TlsMode,
     pub client: &'a dyn HttpClient,
     pub logger: Logger,
 }
@@ -85,7 +83,6 @@ impl ProviderContext<'_> {
             headers,
             body,
             proxies: self.proxies.clone(),
-            tls: self.tls.clone(),
             timeout: if method == Method::Get {
                 Duration::from_secs(60)
             } else {

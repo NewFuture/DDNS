@@ -30,18 +30,18 @@ impl<'a> AliesaProvider<'a> {
     }
 
     fn api(&self, method: Method, action: &str, values: Map<String, Value>) -> Result<Value> {
-        let body = if matches!(method, Method::Get) {
-            None
+        let (query, body) = if matches!(method, Method::Get) {
+            (
+                values
+                    .iter()
+                    .filter_map(|(key, value)| {
+                        value_to_string(value).map(|value| (key.clone(), value))
+                    })
+                    .collect(),
+                None,
+            )
         } else {
-            Some(serde_json::to_string(&Value::Object(values.clone()))?)
-        };
-        let query = if matches!(method, Method::Get) {
-            values
-                .iter()
-                .filter_map(|(key, value)| value_to_string(value).map(|value| (key.clone(), value)))
-                .collect()
-        } else {
-            BTreeMap::new()
+            (BTreeMap::new(), Some(serde_json::to_string(&values)?))
         };
         let body_hash = sha256_hex(body.as_deref().unwrap_or(""));
         let headers = BTreeMap::from([

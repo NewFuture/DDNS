@@ -128,15 +128,10 @@ fn canonical_request(
         .map(|(name, value)| format!("{name}:{value}\n"))
         .collect::<String>();
     let signed_headers = normalized.keys().cloned().collect::<Vec<_>>().join(";");
-    let canonical_request = [
-        method.to_ascii_uppercase(),
-        path.to_owned(),
-        query.to_owned(),
-        canonical_headers,
-        signed_headers.clone(),
-        body_hash.to_owned(),
-    ]
-    .join("\n");
+    let canonical_request = format!(
+        "{}\n{path}\n{query}\n{canonical_headers}\n{signed_headers}\n{body_hash}",
+        method.to_ascii_uppercase()
+    );
     (canonical_request, signed_headers)
 }
 

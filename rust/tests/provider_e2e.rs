@@ -71,7 +71,6 @@ fn config(provider: &str, id: &str, token: &str) -> Config {
             date_format: None,
         },
         extra: BTreeMap::new(),
-        debug: false,
     }
 }
 

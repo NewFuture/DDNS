@@ -135,7 +135,6 @@ pub fn build<'a>(
             .clone()
             .unwrap_or_else(|| provider.default_endpoint().to_owned()),
         proxies: config.proxies.clone(),
-        tls: config.tls.clone(),
         client,
         logger,
     };
