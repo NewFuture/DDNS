@@ -387,8 +387,8 @@ python -m unittest tests.test_config_config -v
 python -m unittest tests.test_ip -v
 python -m unittest discover tests -v
 python -m pytest tests/ -v  # optional, when pytest is installed
-ruff check --fix --unsafe-fixes .
-ruff format .
+python3 tools/check.py --changed
+ruff check .
 ```
 
 Use these focused targets as a guide:
@@ -426,7 +426,7 @@ Common checks:
 - Proxy/network issue: compare with `ddns/util/http.py`; use `--proxy=DIRECT` or `--ssl=false` only as diagnostics.
 - Schema mismatch: update `schema/v4.1.json` and matching config tests together.
 - Test failure: inspect mock return values and `mock_http.call_args`.
-- Linting issue: run `ruff check --fix --unsafe-fixes .` and `ruff format .`.
+- Linting issue: run `ruff check .` and `python3 tools/check.py --changed`; apply focused fixes instead of repository-wide unsafe fixes.
 
 ```bash
 python -m ddns --debug --dns=myprovider --ipv4=test.com
@@ -455,5 +455,5 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 ---
 
 **Version**: 1.1.0
-**Last Updated**: 2026-08-21
+**Last Updated**: 2026-08-31
 **Maintained by**: DDNS Project Contributors
