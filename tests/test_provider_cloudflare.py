@@ -5,9 +5,17 @@ Unit tests for CloudflareProvider
 @author: GitHub Copilot
 """
 
-from base_test import BaseProviderTestCase, patch, unittest
+import json
+import os
+import shutil
+import tempfile
 
+from base_test import BaseProviderTestCase, patch, unittest
+from ddns.__main__ import update_ip
+from ddns.cache import Cache
+from ddns.config import Config
 from ddns.provider.cloudflare import CloudflareProvider
+from ddns.util.http import HttpResponse
 
 
 class TestCloudflareProvider(BaseProviderTestCase):
@@ -103,9 +111,10 @@ class TestCloudflareProvider(BaseProviderTestCase):
         with patch.object(provider, "_http") as mock_http:
             mock_http.return_value = {"success": False, "errors": ["Invalid API key"]}
 
-            result = provider._request("GET", "/test")
+            with self.assertRaises(RuntimeError):
+                provider._request("GET", "/test")
 
-            self.assertEqual(result, {"success": False, "errors": ["Invalid API key"]})
+            mock_http.assert_called_once()
 
     def test_request_filters_none_params(self):
         """Test _request method filters out None parameters"""
@@ -659,6 +668,144 @@ class TestCloudflareProviderIntegration(BaseProviderTestCase):
 
             self.assertTrue(result)
             # The workflow should work the same regardless of auth method
+
+
+class TestCloudflareProviderHTTPResponses(BaseProviderTestCase):
+    """Exercise the real provider and disk cache with only transport/IP discovery mocked."""
+
+    def setUp(self):
+        super(TestCloudflareProviderHTTPResponses, self).setUp()
+        self.temp_dir = tempfile.mkdtemp(prefix="ddns-cloudflare-test-")
+        self.addCleanup(shutil.rmtree, self.temp_dir)
+        self.cache_path = os.path.join(self.temp_dir, "records.cache")
+        # Keep file timestamps aligned with the clock, including on coarse Windows clocks.
+        self.cache_timestamp = 1700000000
+        cache_clock = patch("ddns.cache.time", return_value=self.cache_timestamp)
+        cache_clock.start()
+        self.addCleanup(cache_clock.stop)
+        self.domain = "www.example.com"
+        self.address = "192.0.2.9"
+        self.config = Config(
+            json_config={"dns": "cloudflare", "token": self.token, "ipv4": [self.domain], "cache": self.cache_path}
+        )
+        self.api_error = {"success": False, "errors": [{"code": 1000, "message": "Request failed"}]}
+
+    def _response(self, payload, status=200):
+        return HttpResponse(status, "Test response", {}, json.dumps(payload))
+
+    def _lookup_responses(self, existing):
+        records = [{"id": "rec123", "name": self.domain, "type": "A", "content": "192.0.2.1"}] if existing else []
+        return [
+            self._response({"success": True, "result": [{"id": "zone123", "name": "example.com"}]}),
+            self._response({"success": True, "result": records}),
+        ]
+
+    def _sync_once(self, responses, extra=None):
+        provider = CloudflareProvider("", self.token)
+        self.mock_logger(provider)
+        self.config.extra = extra or {}
+        cache = Cache.new(self.config.cache, self.config.md5(), provider.logger, self.config.cache_max_age)
+        try:
+            with patch("ddns.__main__.get_ip", return_value=self.address), patch(
+                "ddns.provider._base.request", side_effect=responses
+            ) as mock_request:
+                result = update_ip(provider, cache, ["public"], [self.domain], "A", self.config)
+                return result, list(mock_request.call_args_list)
+        finally:
+            cache.close()
+            os.utime(self.cache_path, (self.cache_timestamp, self.cache_timestamp))
+
+    def _read_cache(self):
+        with open(self.cache_path, "r") as cache_file:
+            return json.load(cache_file)
+
+    def _assert_write_failure_retries(self, existing, status):
+        responses = self._lookup_responses(existing) + [self._response(self.api_error, status)]
+        result, calls = self._sync_once(responses)
+        self.assertFalse(result)
+        self.assertEqual([call[0][0] for call in calls], ["GET", "GET", "PUT" if existing else "POST"])
+        self.assertEqual(self._read_cache(), {})
+
+        # Reload the actual cache file: a failed write must not suppress the next attempt.
+        responses = self._lookup_responses(existing) + [self._response({"success": True, "result": {"id": "rec123"}})]
+        result, calls = self._sync_once(responses)
+        self.assertTrue(result)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(self._read_cache(), {self.domain + ":A": self.address})
+
+        # A successful retry, unlike the failure, may suppress a subsequent update.
+        result, calls = self._sync_once([])
+        self.assertTrue(result)
+        self.assertEqual(calls, [])
+
+    def test_create_rate_limit_is_not_cached(self):
+        self._assert_write_failure_retries(False, 429)
+
+    def test_update_rate_limit_is_not_cached(self):
+        self._assert_write_failure_retries(True, 429)
+
+    def test_create_api_failure_is_not_cached(self):
+        self._assert_write_failure_retries(False, 200)
+
+    def test_update_api_failure_is_not_cached(self):
+        self._assert_write_failure_retries(True, 200)
+
+    def test_create_http_400_is_not_cached(self):
+        self._assert_write_failure_retries(False, 400)
+
+    def test_update_http_400_is_not_cached(self):
+        self._assert_write_failure_retries(True, 400)
+
+    def test_http_failure_overrides_success_envelope(self):
+        responses = self._lookup_responses(True) + [self._response({"success": True, "result": {"id": "rec123"}}, 429)]
+        result, calls = self._sync_once(responses)
+        self.assertFalse(result)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(self._read_cache(), {})
+
+    def test_record_query_failure_does_not_create(self):
+        for payload, status in ((self.api_error, 200), (self.api_error, 429), ({}, 200)):
+            responses = self._lookup_responses(False)[:1] + [
+                self._response(payload, status),
+                self._response({"success": True, "result": {"id": "unexpected-create"}}),
+            ]
+            result, calls = self._sync_once(responses)
+            self.assertFalse(result)
+            self.assertEqual([call[0][0] for call in calls], ["GET", "GET"])
+            self.assertEqual(self._read_cache(), {})
+
+    def test_filtered_query_failure_does_not_fallback(self):
+        responses = self._lookup_responses(False)[:1] + [self._response(self.api_error)]
+        result, calls = self._sync_once(responses, extra={"proxied": False})
+        self.assertFalse(result)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(self._read_cache(), {})
+
+    def test_zone_query_failure_does_not_try_another_zone(self):
+        result, calls = self._sync_once([self._response({})])
+        self.assertFalse(result)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self._read_cache(), {})
+
+    def test_successful_empty_record_list_creates(self):
+        responses = self._lookup_responses(False) + [self._response({"success": True, "result": {"id": "created"}})]
+        result, calls = self._sync_once(responses)
+        self.assertTrue(result)
+        self.assertEqual([call[0][0] for call in calls], ["GET", "GET", "POST"])
+
+    def test_successful_empty_zone_list_is_not_an_api_error(self):
+        provider = CloudflareProvider("", self.token)
+        self.mock_logger(provider)
+        with patch("ddns.provider._base.request", return_value=self._response({"success": True, "result": []})):
+            self.assertIsNone(provider._query_zone_id("example.com"))
+
+    def test_non_object_api_response_raises(self):
+        provider = CloudflareProvider("", self.token)
+        self.mock_logger(provider)
+        for payload in (None, [], "Invalid response"):
+            with patch("ddns.provider._base.request", return_value=self._response(payload)):
+                with self.assertRaises(RuntimeError):
+                    provider._request("GET", "")
 
 
 if __name__ == "__main__":

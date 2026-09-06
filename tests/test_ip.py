@@ -3,7 +3,7 @@
 Tests for ddns.ip module including integration tests
 """
 
-from __init__ import unittest, patch, MagicMock
+from __init__ import unittest, patch
 from ddns import ip
 from ddns.__main__ import get_ip
 from ddns.util.http import HttpResponse
@@ -24,9 +24,7 @@ class TestIpModule(unittest.TestCase):
     def test_url_v4_success(self, mock_request):
         """测试自定义URL获取IPv4 - 成功"""
         # 模拟成功响应
-        mock_response = MagicMock()
-        mock_response.body = "1.2.3.4"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "1.2.3.4")
 
         result = ip.public_v4("https://test.example.com/ip")
 
@@ -37,9 +35,7 @@ class TestIpModule(unittest.TestCase):
     def test_url_v6_success(self, mock_request):
         """测试自定义URL获取IPv6 - 成功"""
         # 模拟成功响应
-        mock_response = MagicMock()
-        mock_response.body = "2001:db8::1"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "2001:db8::1")
 
         result = ip.public_v6("https://test.example.com/ipv6")
 
@@ -61,9 +57,7 @@ class TestIpModule(unittest.TestCase):
     def test_url_v4_invalid_response(self, mock_request):
         """测试自定义URL获取IPv4 - 无效响应"""
         # 模拟无效响应
-        mock_response = MagicMock()
-        mock_response.body = "invalid response"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "invalid response")
 
         result = ip.public_v4("https://test.example.com/ip")
 
@@ -74,9 +68,7 @@ class TestIpModule(unittest.TestCase):
     def test_public_v4_multiple_apis_first_success(self, mock_request):
         """测试公网IPv4获取 - 多个API第一个成功"""
         # 模拟第一个API成功
-        mock_response = MagicMock()
-        mock_response.body = "1.2.3.4"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "1.2.3.4")
 
         result = ip.public_v4()
 
@@ -91,10 +83,7 @@ class TestIpModule(unittest.TestCase):
         def mock_request_side_effect(method, url, **kwargs):
             if url == ip.PUBLIC_IPV4_APIS[0]:
                 raise Exception("First API failed")
-            else:
-                mock_response = MagicMock()
-                mock_response.body = "1.2.3.4"
-                return mock_response
+            return HttpResponse(200, "OK", {}, "1.2.3.4")
 
         mock_request.side_effect = mock_request_side_effect
 
@@ -122,9 +111,7 @@ class TestIpModule(unittest.TestCase):
     def test_public_v6_multiple_apis_first_success(self, mock_request):
         """测试公网IPv6获取 - 多个API第一个成功"""
         # 模拟第一个API成功
-        mock_response = MagicMock()
-        mock_response.body = "2001:db8::1"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "2001:db8::1")
 
         result = ip.public_v6()
 
@@ -139,10 +126,7 @@ class TestIpModule(unittest.TestCase):
         def mock_request_side_effect(method, url, **kwargs):
             if url == ip.PUBLIC_IPV6_APIS[0]:
                 raise Exception("First API failed")
-            else:
-                mock_response = MagicMock()
-                mock_response.body = "2001:db8::1"
-                return mock_response
+            return HttpResponse(200, "OK", {}, "2001:db8::1")
 
         mock_request.side_effect = mock_request_side_effect
 
@@ -184,9 +168,7 @@ class TestIpModule(unittest.TestCase):
             if url == ip.PUBLIC_IPV4_APIS[0]:
                 raise Exception("First API failed")
             elif url == ip.PUBLIC_IPV4_APIS[1]:
-                mock_response = MagicMock()
-                mock_response.body = "1.2.3.4"
-                return mock_response
+                return HttpResponse(200, "OK", {}, "1.2.3.4")
             else:
                 raise Exception("Unexpected URL")
 
@@ -203,9 +185,7 @@ class TestIpModule(unittest.TestCase):
     def test_get_ip_url_mode_backward_compatibility(self, mock_request):
         """测试通过get_ip使用url:模式的向后兼容性"""
         # 模拟成功响应
-        mock_response = MagicMock()
-        mock_response.body = "1.2.3.4"
-        mock_request.return_value = mock_response
+        mock_request.return_value = HttpResponse(200, "OK", {}, "1.2.3.4")
 
         # 使用"url:"规则获取IPv4地址
         result = get_ip("4", ["url:https://custom.api.com/ip"])
@@ -221,14 +201,13 @@ class TestIpModule(unittest.TestCase):
         """测试get_ip在多个URL规则之间回退"""
 
         def mock_request_side_effect(method, url, **kwargs):
-            mock_response = MagicMock()
             if url == "https://primary.example.com/ip":
-                mock_response.body = "invalid response"
+                body = "invalid response"
             elif url == "https://backup.example.com/ip":
-                mock_response.body = "1.2.3.4"
+                body = "1.2.3.4"
             else:
                 raise Exception("Unexpected URL")
-            return mock_response
+            return HttpResponse(200, "OK", {}, body)
 
         mock_request.side_effect = mock_request_side_effect
 
@@ -242,14 +221,13 @@ class TestIpModule(unittest.TestCase):
         """测试get_ip在规则返回空结果时继续尝试下一条"""
 
         def mock_request_side_effect(method, url, **kwargs):
-            mock_response = MagicMock()
             if url in ip.PUBLIC_IPV4_APIS:
-                mock_response.body = "invalid response"
+                body = "invalid response"
             elif url == "https://backup.api.com/ip":
-                mock_response.body = "1.2.3.4"
+                body = "1.2.3.4"
             else:
                 raise Exception("Unexpected URL")
-            return mock_response
+            return HttpResponse(200, "OK", {}, body)
 
         mock_request.side_effect = mock_request_side_effect
 
@@ -369,14 +347,13 @@ class TestIpModule(unittest.TestCase):
         """测试IPv6规则链在空结果时继续回退"""
 
         def mock_request_side_effect(method, url, **kwargs):
-            mock_response = MagicMock()
             if url == "https://primary.example.com/ipv6":
-                mock_response.body = "invalid response"
+                body = "invalid response"
             elif url == "https://backup.example.com/ipv6":
-                mock_response.body = "2001:db8::1"
+                body = "2001:db8::1"
             else:
                 raise Exception("Unexpected URL")
-            return mock_response
+            return HttpResponse(200, "OK", {}, body)
 
         mock_request.side_effect = mock_request_side_effect
 
@@ -384,6 +361,75 @@ class TestIpModule(unittest.TestCase):
 
         self.assertEqual(result, "2001:db8::1")
         self.assertEqual(mock_request.call_count, 2)
+
+    @patch("ddns.ip.request")
+    def test_error_response_address_is_not_used(self, mock_request):
+        """Do not treat an address in an HTTP failure body as a discovery result."""
+        for status in (302, 403, 404, 429, 500, 503):
+            mock_request.return_value = HttpResponse(status, "request failed", {}, "upstream 198.51.100.20 failed")
+
+            self.assertIsNone(ip.public_v4("https://test.example.com/ip"), str(status))
+
+    @patch("ddns.ip.request")
+    def test_public_apis_fall_back_after_http_error(self, mock_request):
+        """HTTP errors must advance to the next IPv4 or IPv6 discovery endpoint."""
+        for public, failed_address, expected_address in (
+            (ip.public_v4, "198.51.100.20", "192.0.2.10"),
+            (ip.public_v6, "2001:db8::bad", "2001:db8::10"),
+        ):
+            mock_request.reset_mock()
+            mock_request.side_effect = [
+                HttpResponse(503, "Unavailable", {}, "upstream {} unavailable".format(failed_address)),
+                HttpResponse(200, "OK", {}, expected_address),
+            ]
+
+            self.assertEqual(public(), expected_address)
+            self.assertEqual(mock_request.call_count, 2)
+
+    @patch("ddns.ip.request")
+    def test_ipv6_literals_are_not_truncated(self, mock_request):
+        """Keep compressed, uncompressed, and embedded-IPv4 literals complete."""
+        for address in (
+            "::",
+            "::1",
+            "2001:db8::1",
+            "2001:db8:0:1:2:3:4:5",
+            "2001:db8::192.0.2.10",
+            "::ffff:192.0.2.10",
+            "::192.0.2.10",
+            "2001:db8:0:1:2:3:192.0.2.10",
+            "2001:db8:0:1::192.0.2.10",
+            "2001:db8:0:1:2::192.0.2.10",
+            "2001:db8::1:2:192.0.2.10",
+            "2001:DB8::192.0.2.10",
+        ):
+            mock_request.return_value = HttpResponse(200, "OK", {}, "Address: {}.".format(address))
+
+            self.assertEqual(ip.public_v6("https://test.example.com/ip"), address)
+
+    @patch("ddns.ip.request")
+    def test_ipv6_compact_labels_preserve_complete_addresses(self, mock_request):
+        """A text-label colon is a separator, not part of the IPv6 literal."""
+        for label in ("IP:", "address:"):
+            for address in ("2001:db8::1", "::1", "::ffff:192.0.2.10", "2001:db8::192.0.2.10"):
+                mock_request.return_value = HttpResponse(200, "OK", {}, label + address)
+
+                self.assertEqual(ip.public_v6("https://test.example.com/ip"), address, label + address)
+
+    @patch("ddns.ip.request")
+    def test_invalid_ipv6_literal_does_not_yield_a_valid_fragment(self, mock_request):
+        """A malformed address must not be replaced with one of its valid-looking fragments."""
+        for address in (
+            "2001:db8::192.0.2.999",
+            "2001:db8:0:0:0:0:0:0:1",
+            "2001:db8:::1",
+            ":2001:db8::1",
+            "2001:db8::1:",
+            ":::1",
+        ):
+            mock_request.return_value = HttpResponse(200, "OK", {}, address)
+
+            self.assertIsNone(ip.public_v6("https://test.example.com/ip"), address)
 
 
 if __name__ == "__main__":

@@ -17,3 +17,9 @@ FORM: A complete Operate page inside the established documentation world, using 
 -->
 
 <ConfigStudio />
+
+::: details Imports, drafts, and custom fields
+For configurations created, pasted, or edited on this page, **Load into builder** does not count as an export. When temporary browser storage is available, complete unexported drafts (including credentials) are saved in the current tab and can be restored after a refresh; copying or downloading marks them as exported. An unchanged file import still uses the original file as its saved baseline. Older drafts without file-origin information are conservatively retained as unexported.
+
+Leave provider custom fields blank to inherit the global JSON `extra`; enter `{}` for an explicit empty override, which does not clear custom fields supplied by environment variables. Imports resolve flat fields, `extra_` aliases, and nested `extra` in runtime precedence order. To preserve effective values, inherited fields are expanded into explicit provider custom fields when needed; those explicit values subsequently override global settings.
+:::

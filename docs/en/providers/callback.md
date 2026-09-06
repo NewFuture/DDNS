@@ -49,6 +49,12 @@ Return to [All Providers](/en/providers/) to see more options
 | GET | token is empty | Use URL query parameters |
 | POST | token is not empty | Use JSON request body |
 
+### HTTP Responses and Caching
+
+Callback accepts only final HTTP statuses from 200 to 299 as success. Empty response bodies, such as HTTP 204 responses, are allowed.
+HTTP 404, 429, and all other non-2xx statuses are failures. The current IP is not cached as a successful update, so a later synchronization will retry.
+Callback does not interpret custom business errors in an HTTP 200 response body. To report an update failure, the callback endpoint should return an appropriate non-2xx HTTP status.
+
 ### GET Request Example
 
 ```jsonc
