@@ -10,6 +10,7 @@ from ._base import TYPE_JSON, BaseProvider, join_domain
 class CloudflareProvider(BaseProvider):
     endpoint = "https://api.cloudflare.com"
     content_type = TYPE_JSON
+    _require_http_success = True
 
     def _validate(self):
         if not self.token:
@@ -31,11 +32,12 @@ class CloudflareProvider(BaseProvider):
 
         params = {k: v for k, v in params.items() if v is not None}  # 过滤掉None参数
         data = self._http(method, "/client/v4/zones" + action, headers=headers, params=params)
-        if data and data.get("success"):
-            return data.get("result")  # 返回结果或原始数据
-        else:
-            self.logger.warning("Cloudflare API error: %s", data.get("errors", "Unknown error"))
-        return data
+        if isinstance(data, dict) and data.get("success") is True:
+            return data.get("result")  # 成功的空列表仍表示没有匹配记录
+        errors = data.get("errors", "Unknown error") if isinstance(data, dict) else "Invalid response"
+        self.logger.warning("Cloudflare API error: %s", errors)
+        # Do not let a failed lookup become an empty result and trigger record creation.
+        raise RuntimeError("Cloudflare API request failed")
 
     def _query_zone_id(self, domain):
         """https://developers.cloudflare.com/api/resources/zones/methods/list/"""

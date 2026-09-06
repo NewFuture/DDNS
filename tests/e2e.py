@@ -163,7 +163,13 @@ class _FixtureHandler(BaseHTTPRequestHandler):
             self._send(200, "current address: {}\n".format(TEST_IPV4))
         elif path == "/ip/v6":
             self._send(200, "{}\n".format(TEST_IPV6))
-        elif path == "/callback/fail":
+        elif path == "/ip/error-address":
+            self._send(403, "upstream 198.51.100.20 unavailable")
+        elif path == "/ip/mixed-v6":
+            self._send(200, "2001:db8::192.0.2.10")
+        elif path == "/ip/compact-v6":
+            self._send(200, "IP:{}".format(TEST_IPV6))
+        elif path in ("/callback/fail", "/callback/fail.example.com"):
             self._send(400, "callback rejected")
         elif path.startswith("/callback/"):
             self._send(200, "callback accepted")
@@ -173,7 +179,7 @@ class _FixtureHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self._read_body()
         path = self._record(body)
-        if path == "/callback/fail":
+        if path in ("/callback/fail", "/callback/fail.example.com"):
             self._send(400, "callback rejected")
         elif path.startswith("/callback/"):
             self._send(200, "callback accepted")
@@ -407,6 +413,92 @@ class OfflineE2ETestCase(unittest.TestCase):
 
 class TestCliE2E(OfflineE2ETestCase):
     """Exercise complete DDNS update flows through public process entrypoints."""
+
+    def test_ipv6_runs_when_ipv4_is_disabled_or_fails(self):
+        """Update the working family independently of a disabled or unavailable IPv4 source."""
+        for name, index4, expected_exit in (
+            ("disabled", False, 0),
+            ("unavailable", ["url:" + self.fixture_url + "/ip/invalid"], 1),
+        ):
+            self.fixture_state.reset()
+            config = self._callback_config(
+                "/callback/dual-failure?type=__RECORDTYPE__&ip=__IP__", ["v4.example.com"], ["v6.example.com"]
+            )
+            config["index4"] = index4
+            config_path = self._write_config(name + ".json", config)
+
+            result = self._run(["--config", config_path])
+
+            self.assertEqual(result.returncode, expected_exit, result.stderr)
+            requests = self.fixture_state.requests_for("/callback/dual-failure")
+            self.assertEqual(len(requests), 1, result.stderr)
+            self.assertEqual(requests[0]["query"], {"type": ["AAAA"], "ip": [TEST_IPV6]})
+            self.assertEqual(len(self.fixture_state.requests_for("/ip/v6")), 1)
+
+    def test_partial_domain_failure_preserves_only_successful_cache(self):
+        """Report partial failure and retry the rejected domain, while retaining successful cached records."""
+        config = self._callback_config("/callback/__DOMAIN__", ["ok.example.com", "fail.example.com"], cache=True)
+        config_path = self._write_config("partial-domains.json", config)
+
+        for attempt in (1, 2):
+            result = self._run(["--config", config_path])
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(len(self.fixture_state.requests_for("/callback/ok.example.com")), 1)
+            self.assertEqual(len(self.fixture_state.requests_for("/callback/fail.example.com")), attempt)
+
+    def test_http_error_address_is_ignored(self):
+        """Do not update DNS from the address contained in an IP endpoint error page."""
+        config = self._callback_config("/callback/error-address?ip=__IP__", ["ip.example.com"])
+        config["index4"] = ["url:" + self.fixture_url + "/ip/error-address", "url:" + self.fixture_url + "/ip/v4"]
+        config_path = self._write_config("error-address.json", config)
+
+        result = self._run(["--config", config_path])
+
+        self.assert_process_success(result)
+        requests = self.fixture_state.requests_for("/callback/error-address")
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0]["query"]["ip"], [TEST_IPV4])
+        self.assertEqual(len(self.fixture_state.requests_for("/ip/error-address")), 1)
+        self.assertEqual(len(self.fixture_state.requests_for("/ip/v4")), 1)
+
+    def test_mixed_ipv6_address_is_preserved(self):
+        """Forward a complete mixed-notation IPv6 address to the callback."""
+        config = self._callback_config("/callback/mixed-v6?ip=__IP__", ipv6_domains=["mixed.example.com"])
+        config["index6"] = ["url:" + self.fixture_url + "/ip/mixed-v6"]
+        config_path = self._write_config("mixed-v6.json", config)
+
+        result = self._run(["--config", config_path])
+
+        self.assert_process_success(result)
+        requests = self.fixture_state.requests_for("/callback/mixed-v6")
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0]["query"]["ip"], ["2001:db8::192.0.2.10"])
+
+    def test_compact_ipv6_label_is_preserved(self):
+        """Resolve a compact text response over real HTTP and forward its IPv6 address."""
+        config = self._callback_config("/callback/compact-v6?ip=__IP__", ipv6_domains=["label.example.com"])
+        config["index6"] = ["url:" + self.fixture_url + "/ip/compact-v6"]
+        config_path = self._write_config("compact-v6.json", config)
+
+        result = self._run(["--config", config_path])
+
+        self.assert_process_success(result)
+        requests = self.fixture_state.requests_for("/callback/compact-v6")
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0]["query"]["ip"], [TEST_IPV6])
+        self.assertEqual(len(self.fixture_state.requests_for("/ip/compact-v6")), 1)
+
+    def test_callback_http_failure_is_not_cached(self):
+        """Retry a missing callback endpoint instead of caching its error body as a successful update."""
+        config = self._callback_config("/missing", ["callback.example.com"], cache=True)
+        config_path = self._write_config("missing-callback.json", config)
+
+        for attempt in (1, 2):
+            result = self._run(["--config", config_path])
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(len(self.fixture_state.requests_for("/missing")), attempt)
 
     def test_cli_only_dual_stack_and_rule_fallback(self):
         """Resolve both address families and fall back after an unusable rule."""
@@ -705,6 +797,23 @@ class TestMcpE2E(OfflineE2ETestCase):
             "Unexpected MCP stdout.\nstdout:\n{}\nstderr:\n{}".format(result.stdout, result.stderr),
         )
         return result, [json.loads(line) for line in lines]
+
+    def test_partial_domain_failure_is_a_tool_error(self):
+        """Report a rejected domain through MCP and retry it without repeating successful writes."""
+        config = self._callback_config("/callback/__DOMAIN__", ["ok.example.com", "fail.example.com"], cache=True)
+        config_path = self._write_config("partial-mcp.json", config)
+        requests = [
+            self._modern_request(request_id, "tools/call", {"name": "update_dns_records", "arguments": {}})
+            for request_id in (1, 2)
+        ]
+
+        _, responses = self._run_mcp(config_path, requests)
+
+        for response in responses:
+            self.assertTrue(response["result"]["isError"])
+            self.assertIn("Synchronization failed", response["result"]["content"][0]["text"])
+        self.assertEqual(len(self.fixture_state.requests_for("/callback/ok.example.com")), 1)
+        self.assertEqual(len(self.fixture_state.requests_for("/callback/fail.example.com")), 2)
 
     def test_modern_discovery_tools_update_and_cached_status(self):
         """Discover tools, synchronize dual-stack records, and read cached status."""

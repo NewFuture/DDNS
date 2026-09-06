@@ -170,6 +170,12 @@ ddns -c config.json --debug
 - **Record creation failed**：检查记录格式和 TTL 值，确认权限设置
 - **Rate limit exceeded**：API 调用频率超限，降低请求频率
 
+### 错误处理与缓存
+
+Cloudflare 请求只有在 HTTP 状态为 2xx 且 API 返回 `success: true` 时才视为成功。
+最终收到 HTTP 429 等错误状态，或 API 返回 `success: false`、无效响应时，本次域名更新会失败，不会将待更新的 IP 写入成功缓存，后续同步仍会重试。
+区域或记录查询失败会终止当前域名的处理，不会被当作“记录不存在”而创建新记录；成功查询返回空记录列表时，仍会正常进入创建流程。
+
 ## 支持与资源
 
 - [Cloudflare 开发者文档](https://developers.cloudflare.com/)

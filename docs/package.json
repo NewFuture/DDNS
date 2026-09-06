@@ -4,9 +4,12 @@
   "description": "DDNS Documentation Website",
   "type": "module",
   "scripts": {
+    "test:studio": "node --test tests/config-studio.test.mjs",
     "docs:dev": "vitepress dev .",
+    "predocs:build": "npm run test:studio",
     "docs:build": "vitepress build .",
     "docs:preview": "vitepress preview .",
+    "prebuild": "npm run test:studio",
     "build": "vitepress build ."
   },
   "devDependencies": {

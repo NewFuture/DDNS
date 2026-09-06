@@ -7,12 +7,19 @@ Unit tests for CallbackProvider
 
 import os
 import sys
+import json
 import logging
 import random
 import platform
+import shutil
+import tempfile
 from time import sleep
 from base_test import BaseProviderTestCase, is_network_error, patch, unittest
+from ddns.__main__ import update_ip
+from ddns.cache import Cache
+from ddns.config import Config
 from ddns.provider.callback import CallbackProvider
+from ddns.util.http import HttpResponse
 
 
 class TestCallbackProvider(BaseProviderTestCase):
@@ -270,6 +277,114 @@ class TestCallbackProvider(BaseProviderTestCase):
         # This should raise an exception when trying to decode invalid JSON
         with self.assertRaises(ValueError):
             provider.set_record("example.com", "192.168.1.1")
+
+
+class TestCallbackProviderHTTPResponses(BaseProviderTestCase):
+    """Use real response handling and isolated on-disk caches without network requests."""
+
+    def setUp(self):
+        super(TestCallbackProviderHTTPResponses, self).setUp()
+        self.temp_dir = tempfile.mkdtemp(prefix="ddns-callback-test-")
+        self.addCleanup(shutil.rmtree, self.temp_dir)
+        self.cache_path = os.path.join(self.temp_dir, "records.cache")
+        # Keep file timestamps aligned with the clock, including on coarse Windows clocks.
+        self.cache_timestamp = 1700000000
+        cache_clock = patch("ddns.cache.time", return_value=self.cache_timestamp)
+        cache_clock.start()
+        self.addCleanup(cache_clock.stop)
+        self.domain = "www.example.com"
+        self.address = "192.0.2.9"
+        self.url = "https://example.invalid/update?domain=__DOMAIN__&ip=__IP__"
+        self.post_body = '{"domain": "__DOMAIN__", "value": "__IP__"}'
+
+    def _sync_once(self, status, body, token):
+        config = Config(
+            json_config={
+                "dns": "callback",
+                "id": self.url,
+                "token": token,
+                "ipv4": [self.domain],
+                "cache": self.cache_path,
+            }
+        )
+        provider = CallbackProvider(config.id, config.token)
+        self.mock_logger(provider)
+        cache = Cache.new(config.cache, config.md5(), provider.logger, config.cache_max_age)
+        try:
+            response = HttpResponse(status, "Test response", {}, body)
+            with patch("ddns.__main__.get_ip", return_value=self.address), patch(
+                "ddns.provider._base.request", return_value=response
+            ) as mock_request:
+                result = update_ip(provider, cache, ["public"], [self.domain], "A", config)
+                return result, list(mock_request.call_args_list)
+        finally:
+            cache.close()
+            os.utime(self.cache_path, (self.cache_timestamp, self.cache_timestamp))
+
+    def _read_cache(self):
+        with open(self.cache_path, "r") as cache_file:
+            return json.load(cache_file)
+
+    def _assert_failure_retries(self, status, token):
+        result, calls = self._sync_once(status, "Nonempty error response", token)
+        self.assertFalse(result)
+        self.assertEqual([call[0][0] for call in calls], ["POST" if token else "GET"])
+        self.assertEqual(self._read_cache(), {})
+
+        result, calls = self._sync_once(204, "", token)
+        self.assertTrue(result)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self._read_cache(), {self.domain + ":A": self.address})
+
+        result, calls = self._sync_once(429, "Must not be requested after success", token)
+        self.assertTrue(result)
+        self.assertEqual(calls, [])
+
+    def test_get_404_is_not_cached(self):
+        self._assert_failure_retries(404, "")
+
+    def test_post_404_is_not_cached(self):
+        self._assert_failure_retries(404, self.post_body)
+
+    def test_get_429_is_not_cached(self):
+        self._assert_failure_retries(429, "")
+
+    def test_post_429_is_not_cached(self):
+        self._assert_failure_retries(429, self.post_body)
+
+    def test_get_400_is_not_cached(self):
+        self._assert_failure_retries(400, "")
+
+    def test_post_400_is_not_cached(self):
+        self._assert_failure_retries(400, self.post_body)
+
+    def test_empty_2xx_response_is_success(self):
+        provider = CallbackProvider(self.url, "")
+        self.mock_logger(provider)
+        for status in (200, 201, 204, 299):
+            with patch(
+                "ddns.provider._base.request", return_value=HttpResponse(status, "Success", {}, "")
+            ) as mock_request:
+                self.assertTrue(provider.set_record(self.domain, self.address))
+                mock_request.assert_called_once()
+
+    def test_other_non_2xx_responses_fail(self):
+        provider = CallbackProvider(self.url, "")
+        self.mock_logger(provider)
+        for status in (199, 300, 302, 304, 403, 409, 500):
+            with patch(
+                "ddns.provider._base.request", return_value=HttpResponse(status, "Failure", {}, "Error body")
+            ) as mock_request:
+                self.assertFalse(provider.set_record(self.domain, self.address))
+                mock_request.assert_called_once()
+
+    def test_http_200_business_error_body_is_not_interpreted(self):
+        provider = CallbackProvider(self.url, "")
+        self.mock_logger(provider)
+        body = '{"success": false, "error": "Custom application response"}'
+        with patch("ddns.provider._base.request", return_value=HttpResponse(200, "OK", {}, body)) as mock_request:
+            self.assertTrue(provider.set_record(self.domain, self.address))
+            mock_request.assert_called_once()
 
 
 class TestCallbackProviderRealIntegration(BaseProviderTestCase):
