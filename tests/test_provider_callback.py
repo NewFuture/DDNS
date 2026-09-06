@@ -287,6 +287,11 @@ class TestCallbackProviderHTTPResponses(BaseProviderTestCase):
         self.temp_dir = tempfile.mkdtemp(prefix="ddns-callback-test-")
         self.addCleanup(shutil.rmtree, self.temp_dir)
         self.cache_path = os.path.join(self.temp_dir, "records.cache")
+        # Keep file timestamps aligned with the clock, including on coarse Windows clocks.
+        self.cache_timestamp = 1700000000
+        cache_clock = patch("ddns.cache.time", return_value=self.cache_timestamp)
+        cache_clock.start()
+        self.addCleanup(cache_clock.stop)
         self.domain = "www.example.com"
         self.address = "192.0.2.9"
         self.url = "https://example.invalid/update?domain=__DOMAIN__&ip=__IP__"
@@ -314,6 +319,7 @@ class TestCallbackProviderHTTPResponses(BaseProviderTestCase):
                 return result, list(mock_request.call_args_list)
         finally:
             cache.close()
+            os.utime(self.cache_path, (self.cache_timestamp, self.cache_timestamp))
 
     def _read_cache(self):
         with open(self.cache_path, "r") as cache_file:
