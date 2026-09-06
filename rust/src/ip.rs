@@ -218,23 +218,20 @@ fn direct_command(command: &str) -> Result<String> {
         .split_first()
         .ok_or_else(|| Error::Ip("cmd rule is empty".to_owned()))?;
     let output = Command::new(program).args(arguments).output()?;
-    command_output(output, command)
+    command_output(output)
 }
 
 #[cfg(windows)]
 fn shell_command(command: &str) -> Result<String> {
-    command_output(Command::new("cmd").args(["/C", command]).output()?, command)
+    command_output(Command::new("cmd").args(["/C", command]).output()?)
 }
 
 #[cfg(not(windows))]
 fn shell_command(command: &str) -> Result<String> {
-    command_output(
-        Command::new("/bin/sh").args(["-c", command]).output()?,
-        command,
-    )
+    command_output(Command::new("/bin/sh").args(["-c", command]).output()?)
 }
 
-fn command_output(output: std::process::Output, _command: &str) -> Result<String> {
+fn command_output(output: std::process::Output) -> Result<String> {
     if !output.status.success() {
         return Err(Error::Ip(format!(
             "command exited with {}: {}",
@@ -285,13 +282,22 @@ fn addresses_in_text(family: AddressFamily, content: &str) -> impl Iterator<Item
         })
         .filter_map(move |token| {
             let token = token
-                .trim_matches(|character: char| matches!(character, '/' | '%' | '.'))
-                .split('/')
-                .next()
-                .unwrap_or_default()
-                .split('%')
+                .trim_matches(['/', '%', '.'])
+                .split(['/', '%'])
                 .next()
                 .unwrap_or_default();
+            // A hex prefix can be part of IPv6; only strip unambiguous text labels.
+            let token = match token.split_once(':') {
+                Some((label, address))
+                    if label
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+                        && label.bytes().any(|byte| !byte.is_ascii_hexdigit()) =>
+                {
+                    address
+                }
+                _ => token,
+            };
             token
                 .parse::<IpAddr>()
                 .ok()
@@ -401,6 +407,79 @@ mod tests {
                 .to_string(),
             "2001:db8::1"
         );
+    }
+
+    #[test]
+    fn extracts_labeled_addresses_without_truncating_ipv6() {
+        for address in [
+            "::",
+            "::1",
+            "2001:db8::1",
+            "2001:db8:0:1:2:3:4:5",
+            "2001:db8::192.0.2.10",
+            "::ffff:192.0.2.10",
+            "::192.0.2.10",
+            "2001:db8:0:1:2:3:192.0.2.10",
+            "2001:db8:0:1::192.0.2.10",
+            "2001:db8:0:1:2::192.0.2.10",
+            "2001:db8::1:2:192.0.2.10",
+            "2001:DB8::192.0.2.10",
+            "dead:2001:db8::1",
+        ] {
+            let expected = address.parse::<std::net::IpAddr>().unwrap();
+            for label in ["", "IP:", "address:", "IPv6:"] {
+                let content = format!("{label}{address}.");
+                assert_eq!(
+                    extract_address(AddressFamily::V6, &content).unwrap(),
+                    expected,
+                    "{content}"
+                );
+            }
+        }
+        assert_eq!(
+            extract_address(AddressFamily::V4, "IP:192.0.2.10")
+                .unwrap()
+                .to_string(),
+            "192.0.2.10"
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_address_fragments_even_with_labels() {
+        for address in [
+            "2001:db8::192.0.2.999",
+            "2001:db8:0:0:0:0:0:0:1",
+            "2001:db8:::1",
+            ":2001:db8::1",
+            "2001:db8::1:",
+            ":::1",
+            "2001.0:db8::1",
+            "192.0.2.10",
+        ] {
+            for label in ["", "IP:", "address:"] {
+                let content = format!("{label}{address}");
+                assert!(
+                    extract_address(AddressFamily::V6, &content).is_err(),
+                    "{content}"
+                );
+            }
+        }
+        assert!(extract_address(AddressFamily::V4, "IP:192.0.2.999").is_err());
+        assert!(extract_address(AddressFamily::V4, "IP:::ffff:192.0.2.10").is_err());
+    }
+
+    #[test]
+    fn preserves_scoped_and_cidr_addresses() {
+        for (family, content, expected) in [
+            (AddressFamily::V4, "inet 192.0.2.10/24", "192.0.2.10"),
+            (AddressFamily::V6, "inet6 2001:db8::1/64", "2001:db8::1"),
+            (AddressFamily::V6, "[fe80::1%eth0]", "fe80::1"),
+        ] {
+            assert_eq!(
+                extract_address(family, content).unwrap().to_string(),
+                expected
+            );
+        }
     }
 
     #[test]

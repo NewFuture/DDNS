@@ -44,6 +44,15 @@ Windows 产物为 `rust\target\release\ddns-rs.exe`。
 为每个域名复制整份配置。Provider 特有的 `extra` 仍保留动态 JSON 值，因为其
 字段由各 DNS API 定义。
 
+Cloudflare 和腾讯云查询用 `Result<Option<_>>` 区分记录不存在与请求失败；只有正常空列表或已知的
+查询未命中错误码才允许继续查找或创建。Cloudflare 和腾讯云写入响应必须包含
+有效的结果标识，畸形响应不会被当作成功写入缓存。腾讯云的 DNSPod、EdgeOne
+加速和 EdgeOne DNS 模式由枚举确定服务与 API 版本，避免自由组合字符串和布尔状态。
+
+DNSPod 中国版和国际版在标准写入参数之后合并 `extra`，保留其覆盖优先级。
+IP 文本提取使用标准库 `IpAddr` 校验完整地址，支持 `IP:2001:db8::1`、
+`address:192.0.2.1` 等紧凑文本标签；无效 IPv6 不会被截断成可用片段。
+
 生产代码不使用 unsafe，不引入异步运行时、通用错误框架或 mock 框架。Provider 测试通过注入 HTTP 客户端完成，集成测试只访问本机 fixture。
 
 ## 验证

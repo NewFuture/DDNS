@@ -26,7 +26,11 @@ fn accept_with_timeout(listener: &TcpListener) -> TcpStream {
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         match listener.accept() {
-            Ok((stream, _)) => return stream,
+            Ok((stream, _)) => {
+                // Accepted sockets inherit nonblocking mode on Windows.
+                stream.set_nonblocking(false).unwrap();
+                return stream;
+            }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 assert!(
                     Instant::now() < deadline,
@@ -116,6 +120,42 @@ fn runs_dual_stack_update() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("[IPv4] 192.0.2.45"));
     assert!(stdout.contains("[IPv6] 2001:db8::45"));
+}
+
+#[test]
+fn falls_back_from_invalid_literals_to_labeled_addresses() {
+    let output = command()
+        .args([
+            "--config",
+            "--dns",
+            "debug",
+            "--no-cache",
+            "--index4",
+            "shell:echo IP:192.0.2.999",
+            "shell:echo IP:192.0.2.45",
+            "--index6",
+            "shell:echo IP:2001:db8::192.0.2.999",
+            "shell:echo address:2001:db8::45",
+            "--ipv4",
+            "v4.example.com",
+            "--ipv6",
+            "v6.example.com",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(
+        stdout.lines().collect::<Vec<_>>(),
+        ["[IPv4] 192.0.2.45", "[IPv6] 2001:db8::45"]
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("response contains no valid IPv4"));
+    assert!(stderr.contains("response contains no valid IPv6"));
 }
 
 #[test]
@@ -276,9 +316,7 @@ fn loads_remote_configuration_and_address_from_local_http() {
             stream
                 .set_read_timeout(Some(Duration::from_secs(2)))
                 .unwrap();
-            let mut buffer = [0_u8; 4096];
-            let count = stream.read(&mut buffer).unwrap();
-            let request = String::from_utf8_lossy(&buffer[..count]);
+            let request = read_http_request(&mut stream);
             let path = request
                 .lines()
                 .next()

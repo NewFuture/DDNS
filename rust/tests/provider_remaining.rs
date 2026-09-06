@@ -105,6 +105,13 @@ fn dnspod_com_create_and_error_are_offline() {
     ]);
     run("dnspod_com", "id", "secret", success.clone()).unwrap();
     assert!(success.requests()[2].url.ends_with("/Record.Create"));
+    assert!(
+        success.requests()[2]
+            .body
+            .as_deref()
+            .unwrap()
+            .contains("record_line=default")
+    );
     let failure = json_responses([(200, json!({"status":{"code":"-1","message":"bad"}}))]);
     assert!(run("dnspod_com", "id", "secret", failure).is_err());
 }
@@ -152,6 +159,541 @@ fn tencent_and_edgeone_create_and_errors_are_offline() {
         json!({"Response":{"Error":{"Code":"AuthFailure","Message":"bad"}}}),
     )]);
     assert!(run("tencentcloud", "id", "secret", failure).is_err());
+}
+
+#[test]
+fn tencent_documented_empty_record_error_creates() {
+    let client = json_responses([
+        (200, json!({"Response": {"DomainInfo": {"DomainId": 7}}})),
+        (
+            200,
+            json!({"Response": {"Error": {"Code": "ResourceNotFound.NoDataOfRecord"}}}),
+        ),
+        (200, json!({"Response": {"RecordId": 8}})),
+    ]);
+    run("tencentcloud", "id", "secret", client.clone()).unwrap();
+    let requests = client.requests();
+    assert_eq!(requests.len(), 3);
+    assert_eq!(requests[1].headers["x-tc-action"], "DescribeRecordList");
+    assert_eq!(requests[2].headers["x-tc-action"], "CreateRecord");
+    let body: Value = serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
+    assert_eq!(body["DomainId"], 7);
+    assert_eq!(body["SubDomain"], "www");
+    assert_eq!(body["RecordLine"], "默认");
+    assert_eq!(body["Value"], "192.0.2.45");
+    assert_eq!(body["TTL"], 300);
+}
+
+#[test]
+fn tencent_documented_domain_candidate_misses_continue_lookup() {
+    for code in [
+        "InvalidParameter.DomainInvalid",
+        "InvalidParameterValue.DomainNotExists",
+    ] {
+        let client = json_responses([
+            (200, json!({"Response": {"Error": {"Code": code}}})),
+            (200, json!({"Response": {"DomainInfo": {"DomainId": "7"}}})),
+            (200, json!({"Response": {"RecordList": []}})),
+            (200, json!({"Response": {"RecordId": 8}})),
+        ]);
+        let mut create = request("192.0.2.45");
+        create.domain = "host.example.co.uk";
+        run_request("tencentcloud", "id", "secret", client.clone(), create).unwrap();
+        let requests = client.requests();
+        assert_eq!(requests.len(), 4, "{code}");
+        for (index, domain) in [(0, "co.uk"), (1, "example.co.uk")] {
+            assert_eq!(requests[index].headers["x-tc-action"], "DescribeDomain");
+            let body: Value =
+                serde_json::from_str(requests[index].body.as_deref().unwrap()).unwrap();
+            assert_eq!(body["Domain"], domain);
+        }
+        let body: Value = serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
+        assert_eq!(body["DomainId"], 7);
+        assert_eq!(body["Subdomain"], "host");
+        assert_eq!(requests[3].headers["x-tc-action"], "CreateRecord");
+    }
+}
+
+#[test]
+fn tencent_lookup_errors_are_not_absence() {
+    let token = "tencent-secret";
+    for stage in 0..2 {
+        let mut codes = vec![
+            "AuthFailure",
+            "AuthFailure.SignatureFailure",
+            "UnauthorizedOperation",
+            "OperationDenied.NoPermissionToOperateDomain",
+            "OperationDenied.DomainOwnerAllowedOnly",
+            "FailedOperation",
+            "InternalError",
+            "ResourceNotFound",
+            "ResourceNotFound.Unknown",
+            "ResourceNotFound.NoDataOfRecord.Unrecognized",
+            "InvalidParameter.DomainIdInvalid",
+            "UnexpectedProviderError",
+            token,
+        ];
+        // Even documented absence codes are failures outside their lookup operation.
+        if stage == 0 {
+            codes.push("ResourceNotFound.NoDataOfRecord");
+        } else {
+            codes.extend([
+                "InvalidParameter.DomainInvalid",
+                "InvalidParameterValue.DomainNotExists",
+            ]);
+        }
+        for code in codes {
+            let mut responses = Vec::new();
+            if stage == 1 {
+                responses.push((200, json!({"Response": {"DomainInfo": {"DomainId": 7}}})));
+            }
+            responses.push((
+                200,
+                json!({"Response": {
+                    "Error": {"Code": code, "Message": format!("rejected {token}")},
+                    "RecordList": [], "RecordId": 8
+                }}),
+            ));
+            let client = json_responses(responses);
+            let error = run("tencentcloud", "id", token, client.clone())
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains("Tencent Cloud API error"));
+            assert!(!error.contains(token));
+            let requests = client.requests();
+            assert_eq!(requests.len(), stage + 1, "{code}");
+            assert!(
+                requests
+                    .iter()
+                    .all(|request| request.headers["x-tc-action"].starts_with("Describe"))
+            );
+        }
+    }
+}
+
+#[test]
+fn tencent_malformed_lookup_responses_never_mutate() {
+    for (provider, zone) in [
+        (
+            "tencentcloud",
+            json!({"Response": {"DomainInfo": {"DomainId": 7}}}),
+        ),
+        (
+            "edgeone",
+            json!({"Response": {"Zones": [{"ZoneId": "zone", "ZoneName": "example.com"}]}}),
+        ),
+        (
+            "edgeone_dns",
+            json!({"Response": {"Zones": [{"ZoneId": "zone", "ZoneName": "example.com"}]}}),
+        ),
+    ] {
+        for bad_response in [
+            json!({}),
+            json!({"Response": null}),
+            json!({"Response": []}),
+            json!({"Response": "invalid"}),
+            json!({"Response": {}}),
+            json!({"Response": {"Error": null}}),
+            json!({"Response": {
+                "DomainInfo": {}, "Zones": null, "RecordList": null,
+                "DnsRecords": null, "AccelerationDomains": null
+            }}),
+            json!({"Response": {
+                "DomainInfo": [], "Zones": {}, "RecordList": {},
+                "DnsRecords": {}, "AccelerationDomains": {}
+            }}),
+            json!({"Response": {
+                "DomainInfo": null, "Zones": [null], "RecordList": [null],
+                "DnsRecords": [null], "AccelerationDomains": [null]
+            }}),
+            json!({"Response": {
+                "DomainInfo": null, "Zones": [{}], "RecordList": [{}],
+                "DnsRecords": [{}], "AccelerationDomains": [{}]
+            }}),
+        ] {
+            for stage in 0..2 {
+                let mut responses = Vec::new();
+                if stage == 1 {
+                    responses.push((200, zone.clone()));
+                }
+                responses.push((200, bad_response.clone()));
+                let client = json_responses(responses);
+                assert!(run(provider, "id", "secret", client.clone()).is_err());
+                assert_eq!(
+                    client.requests().len(),
+                    stage + 1,
+                    "{provider}: {bad_response}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn tencent_http_errors_and_mutation_errors_are_never_absence_or_retried() {
+    for status in [200, 401, 403, 429, 500] {
+        for stage in 0..3 {
+            for code in [
+                "AuthFailure",
+                "InvalidParameter.DomainInvalid",
+                "InvalidParameterValue.DomainNotExists",
+                "ResourceNotFound.NoDataOfRecord",
+            ] {
+                if status == 200
+                    && ((stage == 0 && code.starts_with("InvalidParameter"))
+                        || (stage == 1 && code == "ResourceNotFound.NoDataOfRecord"))
+                {
+                    continue;
+                }
+                let mut responses = vec![
+                    (200, json!({"Response": {"DomainInfo": {"DomainId": 7}}})),
+                    (200, json!({"Response": {"RecordList": []}})),
+                ];
+                responses.truncate(stage);
+                responses.push((
+                    status,
+                    json!({"Response": {
+                        "Error": {"Code": code, "Message": "rejected tencent-secret"}, "RecordId": 8
+                    }}),
+                ));
+                let client = json_responses(responses);
+                let error = run("tencentcloud", "id", "tencent-secret", client.clone())
+                    .unwrap_err()
+                    .to_string();
+                assert!(!error.contains("tencent-secret"));
+                assert_eq!(client.requests().len(), stage + 1, "HTTP {status}, {code}");
+                if status != 200 {
+                    assert!(error.contains(&format!("HTTP {status}")));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn tencent_mutations_require_a_numeric_record_id() {
+    for modify in [false, true] {
+        let records = if modify {
+            json!([{"RecordId": 8, "Name": "www", "Type": "A", "Line": "默认"}])
+        } else {
+            json!([])
+        };
+        for (response, succeeds) in [
+            (json!({"Response": {"RecordId": 8}}), true),
+            (json!({"Response": {"RecordId": "8"}}), true),
+            (json!({"Response": {}}), false),
+            (json!({"Response": {"RequestId": "request"}}), false),
+            (json!({"Response": {"RecordId": null}}), false),
+            (json!({"Response": {"RecordId": ""}}), false),
+            (json!({"Response": {"RecordId": false}}), false),
+            (json!({"Response": {"RecordId": {}}}), false),
+            (json!({"Response": {"RecordId": []}}), false),
+            (json!({"Response": {"RecordId": "invalid"}}), false),
+            (json!({"Response": {"RecordId": 1.5}}), false),
+            (
+                json!({"Response": {"Error": {"Code": "ResourceNotFound.NoDataOfRecord"}}}),
+                false,
+            ),
+        ] {
+            let client = json_responses([
+                (200, json!({"Response": {"DomainInfo": {"DomainId": 7}}})),
+                (200, json!({"Response": {"RecordList": records}})),
+                (200, response.clone()),
+            ]);
+            assert_eq!(
+                run("tencentcloud", "id", "secret", client.clone()).is_ok(),
+                succeeds,
+                "{response}"
+            );
+            let requests = client.requests();
+            assert_eq!(requests.len(), 3);
+            assert_eq!(
+                requests[2].headers["x-tc-action"],
+                if modify {
+                    "ModifyRecord"
+                } else {
+                    "CreateRecord"
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn edgeone_mutations_accept_request_id_only_but_reject_invalid_responses() {
+    for (provider_id, list_key, record) in [
+        (
+            "edgeone",
+            "AccelerationDomains",
+            json!({"DomainName": "www.example.com"}),
+        ),
+        (
+            "edgeone_dns",
+            "DnsRecords",
+            json!({"RecordId": "record", "Name": "www.example.com", "Type": "A"}),
+        ),
+    ] {
+        for modify in [false, true] {
+            let records = if modify { json!([record]) } else { json!([]) };
+            for (status, response, succeeds) in [
+                (200, json!({"Response": {"RequestId": "request"}}), true),
+                (
+                    200,
+                    json!({"Response": {"RequestId": "request", "RecordId": "record"}}),
+                    true,
+                ),
+                (200, json!({"Response": {}}), false),
+                (200, json!({"Response": {"RequestId": null}}), false),
+                (200, json!({"Response": {"RequestId": ""}}), false),
+                (200, json!({"Response": {"RequestId": 42}}), false),
+                (200, json!({"Response": {"RequestId": false}}), false),
+                (
+                    200,
+                    json!({"Response": {"Error": {"Code": "AuthFailure", "Message": "edgeone-secret"}}}),
+                    false,
+                ),
+                (
+                    200,
+                    json!({"Response": {"Error": {"Code": "ResourceNotFound.NoDataOfRecord"}}}),
+                    false,
+                ),
+                (503, json!({"Response": {"RequestId": "request"}}), false),
+            ] {
+                let client = json_responses([
+                    (
+                        200,
+                        json!({"Response": {"Zones": [{"ZoneId": "zone", "ZoneName": "example.com"}]}}),
+                    ),
+                    (200, json!({"Response": {list_key: records}})),
+                    (status, response.clone()),
+                ]);
+                let result = run(provider_id, "id", "edgeone-secret", client.clone());
+                assert_eq!(result.is_ok(), succeeds, "{provider_id}: {response}");
+                if let Err(error) = result {
+                    assert!(!error.to_string().contains("edgeone-secret"));
+                }
+                let requests = client.requests();
+                assert_eq!(requests.len(), 3);
+                assert!(requests[2].headers["x-tc-action"].starts_with(if modify {
+                    "Modify"
+                } else {
+                    "Create"
+                }));
+            }
+        }
+    }
+}
+
+#[test]
+fn tencent_empty_root_alias_is_normalized_for_lookup_and_creation() {
+    for domain in [
+        "~example.com",
+        "+example.com",
+        "@~example.com",
+        "example.com",
+    ] {
+        for modify in [false, true] {
+            let records = if modify {
+                json!([{"RecordId": 8, "Name": "@", "Type": "A", "Line": "默认"}])
+            } else {
+                json!([])
+            };
+            let client = json_responses([
+                (200, json!({"Response": {"DomainInfo": {"DomainId": 7}}})),
+                (200, json!({"Response": {"RecordList": records}})),
+                (200, json!({"Response": {"RecordId": 8}})),
+            ]);
+            let mut update = request("192.0.2.45");
+            update.domain = domain;
+            run_request("tencentcloud", "id", "secret", client.clone(), update).unwrap();
+            let requests = client.requests();
+            assert_eq!(requests.len(), 3);
+            let query: Value = serde_json::from_str(requests[1].body.as_deref().unwrap()).unwrap();
+            assert_eq!(query["Subdomain"], "@");
+            let mutation: Value =
+                serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
+            assert_eq!(mutation["SubDomain"], "@");
+            assert_eq!(
+                requests[2].headers["x-tc-action"],
+                if modify {
+                    "ModifyRecord"
+                } else {
+                    "CreateRecord"
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn tencent_modes_and_per_request_overrides_keep_headers_and_dispatch() {
+    for (provider_id, service, version, default_dns) in [
+        ("tencentcloud", "dnspod", "2021-03-23", false),
+        ("edgeone", "teo", "2022-09-01", false),
+        ("edgeone_dns", "teo", "2022-09-01", true),
+    ] {
+        for (override_value, dns) in [
+            (None, default_dns),
+            (Some(json!("DnS")), true),
+            (Some(json!("acceleration")), false),
+            (Some(json!("")), false),
+            (Some(json!("unknown")), false),
+            (Some(Value::Null), default_dns),
+            (Some(json!(true)), default_dns),
+            (Some(json!(42)), default_dns),
+        ] {
+            for modify in [false, true] {
+                let (zone, list_key, record, query_action, mutation_action) = if service == "dnspod"
+                {
+                    (
+                        json!({"DomainInfo": {"DomainId": 7}}),
+                        "RecordList",
+                        json!({"RecordId": 8, "Name": "www", "Type": "A", "Line": "old-line"}),
+                        "DescribeRecordList",
+                        if modify {
+                            "ModifyRecord"
+                        } else {
+                            "CreateRecord"
+                        },
+                    )
+                } else {
+                    let zone = json!({"Zones": [{"ZoneId": "zone", "ZoneName": "example.com"}]});
+                    if dns {
+                        (
+                            zone,
+                            "DnsRecords",
+                            json!({"RecordId": "record", "Name": "www.example.com", "Type": "A"}),
+                            "DescribeDnsRecords",
+                            if modify {
+                                "ModifyDnsRecords"
+                            } else {
+                                "CreateDnsRecord"
+                            },
+                        )
+                    } else {
+                        (
+                            zone,
+                            "AccelerationDomains",
+                            json!({"DomainName": "www.example.com", "OriginDetail": {"BackupOrigin": "198.51.100.9"}}),
+                            "DescribeAccelerationDomains",
+                            if modify {
+                                "ModifyAccelerationDomain"
+                            } else {
+                                "CreateAccelerationDomain"
+                            },
+                        )
+                    }
+                };
+                let records = if modify { json!([record]) } else { json!([]) };
+                let client = json_responses([
+                    (200, json!({"Response": zone})),
+                    (200, json!({"Response": {list_key: records}})),
+                    (
+                        200,
+                        json!({"Response": if service == "dnspod" {
+                            json!({"RecordId": 8})
+                        } else {
+                            json!({"RequestId": "request"})
+                        }}),
+                    ),
+                ]);
+                let mut extra = BTreeMap::from([
+                    ("TTL".to_owned(), json!(180)),
+                    ("Remark".to_owned(), json!("custom")),
+                ]);
+                if let Some(value) = &override_value {
+                    extra.insert("teoDomainType".to_owned(), value.clone());
+                }
+                let mut update = request("192.0.2.45");
+                update.line = Some("request-line");
+                update.extra = &extra;
+                let mut provider_config = config(provider_id, "id", "secret");
+                provider_config.endpoint = None;
+                let mut provider =
+                    build(&provider_config, client.as_ref(), logger("secret")).unwrap();
+                provider.set_record(&update).unwrap();
+                let requests = client.requests();
+                assert_eq!(requests.len(), 3);
+                for request in &requests {
+                    assert_eq!(request.method, Method::Post);
+                    assert_eq!(
+                        request.url,
+                        format!("https://{service}.tencentcloudapi.com/")
+                    );
+                    assert_eq!(
+                        request.headers["host"],
+                        format!("{service}.tencentcloudapi.com")
+                    );
+                    assert_eq!(request.headers["x-tc-version"], version);
+                    assert!(request.headers["x-tc-timestamp"].parse::<i64>().is_ok());
+                    assert!(
+                        request.headers["authorization"]
+                            .contains(&format!("/{service}/tc3_request"))
+                    );
+                    assert!(!request.headers["authorization"].contains("secret"));
+                }
+                assert_eq!(
+                    requests[0].headers["x-tc-action"],
+                    if service == "dnspod" {
+                        "DescribeDomain"
+                    } else {
+                        "DescribeZones"
+                    }
+                );
+                assert_eq!(requests[1].headers["x-tc-action"], query_action);
+                assert_eq!(requests[2].headers["x-tc-action"], mutation_action);
+                let query: Value =
+                    serde_json::from_str(requests[1].body.as_deref().unwrap()).unwrap();
+                let body: Value =
+                    serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
+                assert_eq!(body["Remark"], "custom");
+                if service == "dnspod" {
+                    assert_eq!(query.get("teoDomainType"), override_value.as_ref());
+                    assert_eq!(body.get("teoDomainType"), override_value.as_ref());
+                    assert_eq!(query["RecordLine"], "request-line");
+                    assert_eq!(
+                        body["RecordLine"],
+                        if modify { "old-line" } else { "request-line" }
+                    );
+                    assert_eq!(body["DomainId"], 7);
+                    assert_eq!(body["SubDomain"], "www");
+                    assert_eq!(body["Value"], update.address);
+                    assert_eq!(body["TTL"], 300);
+                } else {
+                    assert!(query.get("teoDomainType").is_none());
+                    assert!(body.get("teoDomainType").is_none());
+                    assert_eq!(
+                        query["Filters"],
+                        json!([{
+                            "Name": if dns { "name" } else { "domain-name" },
+                            "Values": ["www.example.com"], "Fuzzy": false
+                        }])
+                    );
+                    assert_eq!(body["ZoneId"], "zone");
+                    assert_eq!(body["TTL"], 180);
+                    if dns && modify {
+                        assert_eq!(
+                            body["DnsRecords"],
+                            json!([{
+                                "RecordId": "record", "Name": "www.example.com", "Type": "A", "Content": update.address
+                            }])
+                        );
+                    } else if dns {
+                        assert_eq!(body["Name"], "www.example.com");
+                        assert_eq!(body["Type"], "A");
+                        assert_eq!(body["Content"], update.address);
+                    } else {
+                        assert_eq!(body["DomainName"], "www.example.com");
+                        assert_eq!(body["OriginInfo"]["OriginType"], "IP_DOMAIN");
+                        assert_eq!(body["OriginInfo"]["Origin"], update.address);
+                        if modify {
+                            assert_eq!(body["OriginInfo"]["BackupOrigin"], "198.51.100.9");
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[test]

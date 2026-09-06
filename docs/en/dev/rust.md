@@ -47,6 +47,19 @@ instead of copying the full configuration per domain. Provider-specific
 `extra` values remain dynamic JSON because their fields are defined by each DNS
 API.
 
+Cloudflare and Tencent Cloud lookups use `Result<Option<_>>` to distinguish absence
+from request failure. Only valid empty lists or known lookup-miss error codes permit further lookup or
+creation. Cloudflare and Tencent Cloud mutation responses must contain a valid
+result identifier; malformed responses are not cached as successful updates.
+An enum selects the service and API version for Tencent DNSPod, EdgeOne
+acceleration, and EdgeOne DNS instead of freely combining strings and booleans.
+
+Both DNSPod endpoints merge `extra` after standard mutation parameters, preserving
+its override priority. IP extraction validates complete addresses with the
+standard-library `IpAddr` type and supports compact labels such as
+`IP:2001:db8::1` and `address:192.0.2.1`; malformed IPv6 literals are not truncated
+into usable fragments.
+
 Production code forbids unsafe code and does not use an async runtime, a generic
 error framework, or a mock framework. Provider tests inject an HTTP client, and
 integration tests only access local fixtures.

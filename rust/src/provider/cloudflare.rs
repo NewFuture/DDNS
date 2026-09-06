@@ -58,7 +58,10 @@ impl<'a> CloudflareProvider<'a> {
             .context
             .send_json(method, &path, &query, body, headers)?;
         if response.get("success").and_then(Value::as_bool) == Some(true) {
-            return Ok(response.get("result").cloned().unwrap_or(Value::Null));
+            return response
+                .get("result")
+                .cloned()
+                .ok_or_else(|| Error::Provider("Cloudflare response has no result".to_owned()));
         }
         Err(Error::Provider(format!(
             "Cloudflare API error: {}",
@@ -91,14 +94,20 @@ impl CrudProvider for CloudflareProvider<'_> {
                 ("per_page".to_owned(), json!(50)),
             ]),
         )?;
-        Ok(result.as_array().and_then(|zones| {
-            zones
-                .iter()
-                .find(|zone| zone.get("name").and_then(Value::as_str) == Some(domain))
-                .and_then(|zone| zone.get("id"))
+        let zones = result.as_array().ok_or_else(|| {
+            Error::Provider("Cloudflare returned an invalid zone list".to_owned())
+        })?;
+        for zone in zones {
+            let name = zone
+                .get("name")
                 .and_then(Value::as_str)
-                .map(ToOwned::to_owned)
-        }))
+                .ok_or_else(|| Error::Provider("Cloudflare zone has no name".to_owned()))?;
+            let id = response_id(zone)?;
+            if name == domain {
+                return Ok(Some(id.to_owned()));
+            }
+        }
+        Ok(None)
     }
 
     fn query_record(
@@ -119,12 +128,12 @@ impl CrudProvider for CloudflareProvider<'_> {
             parameters.insert("proxied".to_owned(), proxied.clone());
         }
         let action = format!("/{zone_id}/dns_records");
-        let mut result = self.api(Method::Get, &action, &parameters)?;
-        let mut record = find_record(&result, &name, request.record_type);
+        let result = self.api(Method::Get, &action, &parameters)?;
+        let record = find_record(&result, &name, request.record_type)?;
         if record.is_none() && proxied.is_some() {
             parameters.remove("proxied");
-            result = self.api(Method::Get, &action, &parameters)?;
-            record = find_record(&result, &name, request.record_type);
+            let result = self.api(Method::Get, &action, &parameters)?;
+            return find_record(&result, &name, request.record_type);
         }
         Ok(record)
     }
@@ -149,12 +158,12 @@ impl CrudProvider for CloudflareProvider<'_> {
         if let Some(ttl) = request.ttl {
             parameters.insert("ttl".to_owned(), json!(ttl));
         }
-        self.api(
+        let result = self.api(
             Method::Post,
             &format!("/{zone_id}/dns_records"),
             &parameters,
         )?;
-        Ok(())
+        response_id(&result).map(|_| ())
     }
 
     fn update_record(
@@ -163,10 +172,7 @@ impl CrudProvider for CloudflareProvider<'_> {
         record: &Value,
         request: &RecordRequest<'_>,
     ) -> Result<()> {
-        let record_id = record
-            .get("id")
-            .and_then(Value::as_str)
-            .ok_or_else(|| Error::Provider("Cloudflare record has no id".to_owned()))?;
+        let record_id = response_id(record)?;
         let mut parameters = json_parameters(request);
         for key in ["proxied", "tags", "settings"] {
             if !parameters.contains_key(key)
@@ -187,23 +193,45 @@ impl CrudProvider for CloudflareProvider<'_> {
         if let Some(ttl) = request.ttl {
             parameters.insert("ttl".to_owned(), json!(ttl));
         }
-        self.api(
+        let result = self.api(
             Method::Put,
             &format!("/{zone_id}/dns_records/{record_id}"),
             &parameters,
         )?;
+        if response_id(&result)? != record_id {
+            return Err(Error::Provider(
+                "Cloudflare returned a different record id".to_owned(),
+            ));
+        }
         Ok(())
     }
 }
 
-fn find_record(result: &Value, name: &str, record_type: &str) -> Option<Value> {
-    result.as_array().and_then(|records| {
-        records
-            .iter()
-            .find(|record| {
-                record.get("name").and_then(Value::as_str) == Some(name)
-                    && record.get("type").and_then(Value::as_str) == Some(record_type)
-            })
-            .cloned()
-    })
+fn response_id(result: &Value) -> Result<&str> {
+    result
+        .get("id")
+        .and_then(Value::as_str)
+        .filter(|id| !id.is_empty())
+        .ok_or_else(|| Error::Provider("Cloudflare response has no valid id".to_owned()))
+}
+
+fn find_record(result: &Value, name: &str, record_type: &str) -> Result<Option<Value>> {
+    let records = result
+        .as_array()
+        .ok_or_else(|| Error::Provider("Cloudflare returned an invalid record list".to_owned()))?;
+    for record in records {
+        let record_name = record
+            .get("name")
+            .and_then(Value::as_str)
+            .ok_or_else(|| Error::Provider("Cloudflare record has no name".to_owned()))?;
+        let kind = record
+            .get("type")
+            .and_then(Value::as_str)
+            .ok_or_else(|| Error::Provider("Cloudflare record has no type".to_owned()))?;
+        response_id(record)?;
+        if record_name == name && kind == record_type {
+            return Ok(Some(record.clone()));
+        }
+    }
+    Ok(None)
 }
