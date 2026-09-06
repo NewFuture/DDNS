@@ -102,6 +102,8 @@ class SimpleProvider(object):
     accept = TYPE_JSON  # type: str | None
     # Decode Response as JSON by default
     decode_response = True  # type: bool
+    # Opt in only when the provider cannot interpret non-2xx responses as normal API results.
+    _require_http_success = False  # type: bool
     # Description
     remark = "Managed by [DDNS](https://ddns.newfuture.cc)"
 
@@ -190,7 +192,8 @@ class SimpleProvider(object):
             Any: 解析后的响应内容
 
         Raises:
-            RuntimeError: 当响应状态码为400/401或5xx(服务器错误)时抛出异常
+            RuntimeError: 响应状态码为400/401/403或5xx时抛出异常；
+                启用_require_http_success的服务商会拒绝所有非2xx状态
         """
         method = method.upper()
 
@@ -262,6 +265,9 @@ class SimpleProvider(object):
                 raise RuntimeError("禁止访问 [403]: " + response.reason)
             else:
                 raise RuntimeError("服务器错误 [{}]: {}".format(status_code, response.reason))
+
+        if self._require_http_success and not (200 <= status_code < 300):
+            raise RuntimeError("HTTP error [{}]: {}".format(status_code, response.reason))
 
         self.logger.debug("response:\n%s", res)
         if not self.decode_response:

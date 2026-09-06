@@ -172,6 +172,12 @@ ddns -c config.json --debug
 - **Record creation failed**: Check record format and TTL values, confirm permission settings
 - **Rate limit exceeded**: API call frequency exceeded, reduce request frequency
 
+### Error Handling and Caching
+
+A Cloudflare request is considered successful only when its HTTP status is 2xx and the API returns `success: true`.
+A final HTTP error such as 429, an API response with `success: false`, or an invalid response makes the domain update fail. The pending IP is not cached as a successful update, so a later synchronization will retry.
+A failed zone or record lookup stops processing that domain; it is not treated as a missing record and cannot trigger record creation. A successful query with an empty record list still follows the normal creation flow.
+
 ## Support and Resources
 
 - [Cloudflare Developer Documentation](https://developers.cloudflare.com/)

@@ -171,6 +171,7 @@ interface StoredDraft {
   validationInput: string
   baselineValidationInput: string
   validatorTouched: boolean
+  validationFromFile: boolean
   view: {
     selectedProviderIndex: number
     activeSection: SectionKey
@@ -603,6 +604,7 @@ const providerQuery = ref('')
 const providerSearchAnnouncement = ref('')
 const validationInput = ref('')
 const validatorTouched = ref(false)
+const validationFromFile = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const providerPickerTrigger = ref<HTMLButtonElement | null>(null)
 const providerSearchInput = ref<HTMLInputElement | null>(null)
@@ -1053,12 +1055,12 @@ function buildProvider(provider: ProviderState): JsonObject {
   else if (provider.logLevel) output.log = { level: provider.logLevel }
 
   const extra = parseObjectText(provider.extraText)
-  if (extra && Object.keys(extra).length) output.extra = extra
+  if (extra) output.extra = extra
   return output
 }
 
 function buildConfiguration(): JsonObject {
-  const globalExtra = parseObjectText(globalState.extraText) || {}
+  const globalExtra = parseObjectText(globalState.extraText)
   const output: JsonObject = {
     $schema: SCHEMA_URL,
     providers: providers.value.map((provider) => buildProvider(provider)),
@@ -1094,7 +1096,7 @@ function buildConfiguration(): JsonObject {
   }
   if (Object.keys(log).length) output.log = log
 
-  if (Object.keys(globalExtra).length) output.extra = globalExtra
+  if (globalExtra) output.extra = globalExtra
   return output
 }
 
@@ -1357,6 +1359,7 @@ function persistDraft() {
       validationInput: validationInput.value,
       baselineValidationInput: baselineValidationInput.value,
       validatorTouched: validatorTouched.value,
+      validationFromFile: validationFromFile.value,
       view: currentDraftView(),
     }
     window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
@@ -1383,6 +1386,7 @@ function restoreLegacyDraft(value: Record<string, unknown>): boolean {
   if (!(config.providers as JsonValue[]).some((provider) => isPlainObject(provider))) return false
   if (!loadConfigurationIntoBuilder(config, false, c.value.legacyDraftRestored)) return false
   validationInput.value = typeof value.validationInput === 'string' ? value.validationInput : ''
+  validationFromFile.value = false
   validatorTouched.value = validationInput.value !== baselineValidationInput.value
   if (validationInput.value.trim()) inspectorTab.value = 'validate'
   return true
@@ -1405,6 +1409,8 @@ function restoreCurrentDraft(value: Record<string, unknown>): boolean {
     typeof value.validatorTouched === 'boolean'
       ? value.validatorTouched
       : validationInput.value !== baselineValidationInput.value
+  // Older drafts did not record an external saved copy; keep them unexported.
+  validationFromFile.value = draftBoolean(value, 'validationFromFile')
   restoreDraftView(value.view)
   showToast(c.value.draftRestored)
   return true
@@ -1445,6 +1451,7 @@ watch(
   [
     editorSnapshot,
     validationInput,
+    validationFromFile,
     selectedUid,
     activeSection,
     inspectorTab,
@@ -2964,6 +2971,7 @@ function handleProviderPickerKeydown(event: KeyboardEvent) {
 async function selectInspectorTab(tab: InspectorTab, focusTab = false) {
   if (tab === 'validate' && !validatorTouched.value) {
     validationInput.value = generatedJson.value
+    validationFromFile.value = false
   }
   inspectorTab.value = tab
   if (!focusTab) return
@@ -3317,6 +3325,7 @@ function resetBuilder() {
   providerQuery.value = ''
   validationInput.value = ''
   validatorTouched.value = false
+  validationFromFile.value = false
   Object.assign(globalState, makeGlobalState())
   nextTick(() => {
     markValidationHandled()
@@ -3371,6 +3380,7 @@ async function importFile(event: Event) {
   try {
     validationInput.value = await file.text()
     validatorTouched.value = true
+    validationFromFile.value = true
     inspectorTab.value = 'validate'
     showToast(c.value.imported)
   } catch {
@@ -3401,20 +3411,30 @@ function sslFromValue(value: unknown, fallback: SslMode): { mode: SslMode; path:
   return { mode: fallback, path: '' }
 }
 
-function collectExtra(value: Record<string, unknown>, known: Set<string>): JsonObject {
-  const extra: JsonObject = isPlainObject(value.extra) ? { ...(value.extra as JsonObject) } : {}
+function flattenExtraFields(value: Record<string, unknown>, known: Set<string>): JsonObject {
+  const fields: JsonObject = {}
   Object.keys(value).forEach((key) => {
-    if (known.has(key)) return
     const nested = value[key]
-    if (key.startsWith('extra_')) {
-      extra[key.slice(6)] = nested as JsonValue
-    } else if (isPlainObject(nested)) {
+    if (key === 'extra') {
+      if (isPlainObject(nested)) fields.extra = nested as JsonObject
+      return
+    }
+    if (known.has(key)) return
+    if (isPlainObject(nested)) {
       Object.keys(nested).forEach((nestedKey) => {
-        extra[`${key}_${nestedKey}`] = nested[nestedKey] as JsonValue
+        fields[`${key}_${nestedKey}`] = nested[nestedKey] as JsonValue
       })
     } else {
-      extra[key] = nested as JsonValue
+      fields[key] = nested as JsonValue
     }
+  })
+  return fields
+}
+
+function collectExtra(fields: JsonObject): JsonObject {
+  const extra: JsonObject = isPlainObject(fields.extra) ? { ...(fields.extra as JsonObject) } : {}
+  Object.keys(fields).forEach((key) => {
+    if (key !== 'extra') extra[key.startsWith('extra_') ? key.slice(6) : key] = fields[key]
   })
   return extra
 }
@@ -3440,7 +3460,10 @@ function logFieldState(
   }
 }
 
-function providerStateFromObject(value: Record<string, unknown>): ProviderState {
+function providerStateFromObject(
+  value: Record<string, unknown>,
+  inheritedExtraFields: JsonObject = {},
+): ProviderState {
   const providerName =
     typeof value.provider === 'string'
       ? value.provider
@@ -3449,7 +3472,13 @@ function providerStateFromObject(value: Record<string, unknown>): ProviderState 
         : ''
   const cache = cacheFromValue(value.cache, 'inherit')
   const ssl = sslFromValue(value.ssl, 'inherit')
-  const extra = collectExtra(value, PROVIDER_KNOWN_KEYS)
+  const extraFields = flattenExtraFields(value, PROVIDER_KNOWN_KEYS)
+  // Match the runtime's flatten -> inherit/override -> collect order. Canonical
+  // provider.extra replaces global.extra, so any override must retain its full
+  // effective JSON fields; a provider without overrides can still inherit.
+  const extraText = Object.keys(extraFields).length
+    ? JSON.stringify(collectExtra({ ...inheritedExtraFields, ...extraFields }), null, 2)
+    : ''
   return {
     uid: nextProviderUid++,
     provider: providerName,
@@ -3481,7 +3510,7 @@ function providerStateFromObject(value: Record<string, unknown>): ProviderState 
     cachePath: cache.path,
     cacheMaxAge: typeof value.cache_max_age === 'number' ? String(value.cache_max_age) : '',
     logLevel: logLevelFromObject(value),
-    extraText: Object.keys(extra).length ? JSON.stringify(extra, null, 2) : '',
+    extraText,
     revealToken: false,
   }
 }
@@ -3492,10 +3521,13 @@ function loadConfigurationIntoBuilder(
   message: string,
 ): boolean {
   const importedProviders: ProviderState[] = []
-  let importedGlobalExtra: JsonObject = {}
+  let importedGlobalExtraText = ''
 
   if (Array.isArray(value.providers)) {
-    importedGlobalExtra = collectExtra(value, ROOT_KNOWN_KEYS)
+    const globalExtraFields = flattenExtraFields(value, ROOT_KNOWN_KEYS)
+    if (Object.keys(globalExtraFields).length) {
+      importedGlobalExtraText = JSON.stringify(collectExtra(globalExtraFields), null, 2)
+    }
     const inherited: Record<string, unknown> = {}
     ;['ipv4', 'ipv6', 'index4', 'index6', 'ttl', 'line'].forEach((key) => {
       if (key in value) inherited[key] = value[key]
@@ -3503,10 +3535,13 @@ function loadConfigurationIntoBuilder(
     value.providers.forEach((provider) => {
       if (isPlainObject(provider)) {
         importedProviders.push(
-          providerStateFromObject({
-            ...inherited,
-            ...provider,
-          }),
+          providerStateFromObject(
+            {
+              ...inherited,
+              ...provider,
+            },
+            globalExtraFields,
+          ),
         )
       }
     })
@@ -3515,7 +3550,8 @@ function loadConfigurationIntoBuilder(
     ;['dns', 'id', 'token', 'endpoint', 'ipv4', 'ipv6', 'index4', 'index6', 'ttl', 'line'].forEach((key) => {
       if (key in value) providerObject[key] = value[key]
     })
-    providerObject.extra = collectExtra(value, ROOT_KNOWN_KEYS)
+    const extraFields = flattenExtraFields(value, ROOT_KNOWN_KEYS)
+    if (Object.keys(extraFields).length) providerObject.extra = collectExtra(extraFields)
     importedProviders.push(providerStateFromObject(providerObject))
   }
 
@@ -3549,9 +3585,7 @@ function loadConfigurationIntoBuilder(
     logDatefmt: logDatefmt.value,
     logDatefmtPresent: logDatefmt.present,
     logDatefmtNull: logDatefmt.isNull,
-    extraText: Object.keys(importedGlobalExtra).length
-      ? JSON.stringify(importedGlobalExtra, null, 2)
-      : '',
+    extraText: importedGlobalExtraText,
   })
   activeSection.value = 'provider'
   inspectorTab.value = 'preview'
@@ -3561,7 +3595,6 @@ function loadConfigurationIntoBuilder(
   runtimeAdvancedOpen.value = hasRuntimeAdvancedSettings.value
   nextTick(() => {
     if (markClean) {
-      markValidationHandled()
       commitBaseline()
     } else {
       scheduleDraftPersistence()
@@ -3574,7 +3607,10 @@ function loadConfigurationIntoBuilder(
 function applyToBuilder() {
   const parsedValue = parsedValidation.value.value
   if (!validationCanApply.value || !isPlainObject(parsedValue)) return
-  loadConfigurationIntoBuilder(parsedValue, true, c.value.applied)
+  if (loadConfigurationIntoBuilder(parsedValue, validationFromFile.value, c.value.applied)) {
+    markValidationHandled()
+    validationFromFile.value = false
+  }
 }
 
 async function useRuntimeCredential(field: 'id' | 'token') {
@@ -4939,7 +4975,10 @@ async function useRuntimeCredential(field: 'id' | 'token') {
             :aria-invalid="validationErrors.length ? 'true' : undefined"
             aria-describedby="studio-validator-hint studio-validator-status"
             :placeholder="c.validatorPlaceholder"
-            @input="validatorTouched = true"
+            @input="
+              validatorTouched = true;
+              validationFromFile = false
+            "
           ></textarea>
           <div class="validator-foot">
             <span>{{ validationLineCount }} {{ c.lineCount }}</span>

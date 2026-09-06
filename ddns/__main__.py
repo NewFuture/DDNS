@@ -75,7 +75,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config, cancelled=No
     更新IP并变更DNS记录
     """
     _raise_if_cancelled(cancelled)
-    if not domains:
+    if not domains or index_rule is False:
         return None
 
     ip_type = "4" if record_type == "A" else "6"
@@ -84,7 +84,7 @@ def update_ip(dns, cache, index_rule, domains, record_type, config, cancelled=No
         logger.error("Fail to get %s address!", ip_type)
         return False
 
-    update_success = False
+    update_success = True
 
     for domain in domains:
         _raise_if_cancelled(cancelled)
@@ -92,21 +92,22 @@ def update_ip(dns, cache, index_rule, domains, record_type, config, cancelled=No
         cache_key = "{}:{}".format(domain, record_type)
         if cache and cache.get(cache_key) == address:
             logger.info("%s[%s] address not changed, using cache: %s", domain, record_type, address)
-            update_success = True
-        else:
-            try:
-                result = dns.set_record(
-                    domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
-                )
-                if result:
-                    logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
-                    update_success = True
-                    if isinstance(cache, dict):
-                        cache[cache_key] = address
-                else:
-                    logger.error("Failed to update %s record for %s", record_type, domain)
-            except Exception as e:
-                logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
+            continue
+
+        try:
+            result = dns.set_record(
+                domain, address, record_type=record_type, ttl=config.ttl, line=config.line, **config.extra
+            )
+            if result:
+                logger.warning("set %s[IPv%s]: %s successfully.", domain, ip_type, address)
+                if isinstance(cache, dict):
+                    cache[cache_key] = address
+            else:
+                update_success = False
+                logger.error("Failed to update %s record for %s", record_type, domain)
+        except Exception as e:
+            update_success = False
+            logger.exception("Failed to update %s record for %s: %s", record_type, domain, e)
     _raise_if_cancelled(cancelled)
     return update_success
 
@@ -125,10 +126,9 @@ def run(config, cancelled=None):
         config.id, config.token, endpoint=config.endpoint, logger=logger, proxy=config.proxy, ssl=config.ssl
     )
     cache = Cache.new(config.cache, config.md5(), logger, config.cache_max_age)
-    return (
-        update_ip(dns, cache, config.index4, config.ipv4, "A", config, cancelled=cancelled) is not False
-        and update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config, cancelled=cancelled) is not False
-    )
+    result4 = update_ip(dns, cache, config.index4, config.ipv4, "A", config, cancelled=cancelled)
+    result6 = update_ip(dns, cache, config.index6, config.ipv6, "AAAA", config, cancelled=cancelled)
+    return result4 is not False and result6 is not False
 
 
 def main():

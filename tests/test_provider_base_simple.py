@@ -5,8 +5,9 @@ Unit tests for SimpleProvider
 @author: GitHub Copilot
 """
 
-from base_test import BaseProviderTestCase, unittest, MagicMock
+from base_test import BaseProviderTestCase, unittest, MagicMock, patch
 from ddns.provider._base import SimpleProvider, TYPE_FORM, encode_params
+from ddns.util.http import HttpResponse
 
 
 class _TestableSimpleProvider(SimpleProvider):
@@ -220,6 +221,46 @@ class _TestableSimpleProviderClass(BaseProviderTestCase):
         result = provider.set_record("example.com", "192.168.1.1")
 
         self.assertTrue(result)
+
+
+class TestSimpleProviderHTTPStatus(BaseProviderTestCase):
+    """A provider may opt in to strict HTTP status checks without changing the default."""
+
+    def setUp(self):
+        super(TestSimpleProviderHTTPStatus, self).setUp()
+        self.provider = _TestableSimpleProvider(self.id, self.token)
+        self.mock_logger(self.provider)
+
+    def test_default_preserves_non_fatal_status_responses(self):
+        for status in (199, 300, 304, 404, 408, 409, 422, 429):
+            response = HttpResponse(status, "Test response", {}, '{"error": "Provider-specific result"}')
+            with patch("ddns.provider._base.request", return_value=response):
+                self.assertEqual(self.provider._http("GET", "/test"), {"error": "Provider-specific result"})
+
+    def test_default_keeps_existing_fatal_errors(self):
+        for status in (400, 401, 403, 500, 502, 503):
+            response = HttpResponse(status, "Test response", {}, '{"error": "Failure"}')
+            with patch("ddns.provider._base.request", return_value=response):
+                with self.assertRaises(RuntimeError) as context:
+                    self.provider._http("GET", "/test")
+                self.assertIn(str(status), str(context.exception))
+
+    def test_strict_status_rejects_non_2xx_responses(self):
+        self.provider._require_http_success = True
+        for status in (199, 300, 304, 400, 401, 403, 404, 408, 409, 422, 429, 500):
+            response = HttpResponse(status, "Test response", {}, '{"error": "Failure"}')
+            with patch("ddns.provider._base.request", return_value=response):
+                with self.assertRaises(RuntimeError) as context:
+                    self.provider._http("GET", "/test")
+                self.assertIn(str(status), str(context.exception))
+
+    def test_strict_status_accepts_2xx_and_empty_bodies(self):
+        self.provider._require_http_success = True
+        self.provider.decode_response = False
+        for status in (200, 201, 204, 299):
+            response = HttpResponse(status, "Success", {}, "")
+            with patch("ddns.provider._base.request", return_value=response):
+                self.assertEqual(self.provider._http("GET", "/test"), "")
 
 
 class _TestableSimpleProviderWithNoAPI(SimpleProvider):

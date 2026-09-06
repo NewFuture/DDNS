@@ -20,6 +20,7 @@ class CallbackProvider(SimpleProvider):
     endpoint = ""  # CallbackProvider uses id as URL, no fixed API endpoint
     content_type = TYPE_JSON
     decode_response = False  # Callback response is not JSON, it's a custom response
+    _require_http_success = True
 
     def set_record(self, domain, value, record_type="A", ttl=None, line=None, **extra):
         """

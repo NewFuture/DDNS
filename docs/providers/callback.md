@@ -49,6 +49,12 @@ Callback Provider 是一个通用的自定义回调接口，允许您将 DDNS �
 | GET  | token 为空 | 使用 URL 查询参数  |
 | POST | token 非空 | 使用 JSON 请求体   |
 
+### HTTP 响应与缓存
+
+Callback 仅将最终 HTTP 状态为 200–299 的响应视为成功，允许响应体为空，例如 HTTP 204。
+HTTP 404、429 及其他非 2xx 状态均视为失败，不会将本次 IP 写入成功缓存，后续同步仍会重试。
+Callback 不解析 HTTP 200 响应体中的自定义业务错误；如需报告更新失败，请让回调接口返回适当的非 2xx HTTP 状态。
+
 ### GET 请求示例
 
 ```jsonc

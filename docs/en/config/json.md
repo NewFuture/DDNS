@@ -134,6 +134,8 @@ Supported formats:
 * **Single domain**: `"ddns.newfuture.cc"`
 * **Multiple domains**: `["ddns.newfuture.cc", "ipv6.ddns.newfuture.cc"]`
 
+IPv4 and IPv6 are processed independently: disabling one family or failing to discover its address does not prevent the other family from updating. Synchronization continues with the remaining domains, but any failed enabled record makes a one-shot CLI run exit nonzero; Web/MCP report the synchronization failure. When caching is enabled, successfully updated records are still cached.
+
 ### index4-index6
 
 The `index4` and `index6` parameters are used to specify the method for obtaining IP addresses. The following values can be used:
@@ -149,6 +151,8 @@ Supported types:
   * Note: Backslashes need to be escaped in JSON, e.g., `"regex:10\\.00\\..*"` matches IPs starting with `10.00.`
 * `"cmd:xxx"`: Execute specified command and use its output as IP
 * `"shell:xxx"`: Use system shell to run command and use its output as IP
+
+The `public` and `url:` rules extract addresses only from successful HTTP responses. An error response falls back to the next API or rule instead of using an IP found in its error page. IPv6 addresses retain complete dotted-IPv4 tails, such as `2001:db8::192.0.2.10`.
 
 Configuration examples:
 
