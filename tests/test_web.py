@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import base64
 import copy
+import hashlib
 import io
 import json
 import logging
@@ -122,6 +123,28 @@ class TestDashboardAssets(unittest.TestCase):
         css_path = os.path.join(os.path.dirname(__file__), "..", "docs", ".vitepress", "theme", "docs-layout.css")
         with io.open(css_path, "r", encoding="utf-8") as css_file:
             self.assertIn("--ddns-c-logo: {};".format(next(iter(colors))), css_file.read())
+
+    def test_brand_exports_match_reviewed_snapshots(self):
+        """Pin reviewed SVG/raster exports, including their pixel colors and alpha."""
+        snapshots = (
+            (("img", "ddns.svg"), "1639b4afc3abdbc434d31f1eb34c3c9da8c23cca34cc8d3caa0d63583d38051e"),
+            (("img", "ddns.png"), "14fa1dee79f5c532374a05d445cb8a86e8a66ebbba70e1efc6df33c3d84b898d"),
+            (("favicon.ico",), "a63b903232ae3da14b1fd80f97d5df409cd5464122f9d577058865bf23bb910b"),
+            (("img", "github-cover.svg"), "b3d4f3a809ed14ea288d018f409f871ed008b510ac3850c13f1f22d8947e84ef"),
+            (("img", "github-cover.png"), "033556d100ab6a1359084a52b9269914e288659afbea5d9180777735a79806c7"),
+        )
+        for parts, expected in snapshots:
+            data = self._public_asset_bytes(*parts)
+            # Normalize Git checkout line endings for SVGs, never for binary assets.
+            if parts[-1].endswith(".svg"):
+                data = b"\n".join(data.splitlines())
+            self.assertEqual(
+                hashlib.sha256(data).hexdigest(),
+                expected,
+                "Regenerate and review matching SVG/raster exports before updating the snapshot: {}".format(
+                    os.path.join(*parts)
+                ),
+            )
 
     def test_native_icon_assets_keep_their_formats_and_sizes(self):
         """Retain the transparent app PNG and four legacy/modern ICO frames."""
