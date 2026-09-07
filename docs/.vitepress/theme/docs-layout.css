@@ -1,5 +1,5 @@
 :root {
-  --ddns-c-logo: #2f91ff;
+  --ddns-c-logo: #2f84eb;
   --ddns-c-focus: #1679d2;
   --ddns-c-selection: color-mix(in srgb, var(--ddns-c-logo) 23%, transparent);
   --ddns-c-code-canvas: #f0f5fa;

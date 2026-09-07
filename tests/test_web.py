@@ -3,16 +3,20 @@
 
 from __future__ import unicode_literals
 
+import base64
 import copy
 import io
 import json
 import logging
 import os
 import shutil
+import struct
 import sys
 import tempfile
 import threading
 import time
+import zlib
+from xml.etree import ElementTree
 
 from __init__ import MagicMock, patch, unittest
 
@@ -65,12 +69,130 @@ def _valid_config(line="default"):
 class TestDashboardAssets(unittest.TestCase):
     """Test the standalone source and packaged asset loading paths."""
 
+    def _public_asset_bytes(self, *parts):
+        asset_path = os.path.join(os.path.dirname(__file__), "..", "docs", "public", *parts)
+        with io.open(asset_path, "rb") as asset_file:
+            return asset_file.read()
+
+    def _png_chunks(self, data, dimensions):
+        self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+        chunks = []
+        offset = 8
+        while offset < len(data):
+            self.assertLessEqual(offset + 12, len(data))
+            length = struct.unpack_from(">I", data, offset)[0]
+            end = offset + length + 12
+            self.assertLessEqual(end, len(data))
+            kind = data[offset + 4 : offset + 8]
+            payload = data[offset + 8 : end - 4]
+            checksum = struct.unpack_from(">I", data, end - 4)[0]
+            self.assertEqual(checksum, zlib.crc32(kind + payload) & 0xFFFFFFFF)
+            chunks.append((kind, payload))
+            offset = end
+        self.assertTrue(chunks)
+        self.assertEqual(chunks[0][0], b"IHDR")
+        self.assertEqual(len(chunks[0][1]), 13)
+        self.assertEqual(struct.unpack(">II", chunks[0][1][:8]), dimensions)
+        self.assertTrue(any(kind == b"IDAT" for kind, _payload in chunks))
+        self.assertEqual(chunks[-1], (b"IEND", b""))
+        return chunks
+
     def test_frontend_sources_live_in_top_level_web_directory(self):
         """Keep one canonical frontend source outside the Python package."""
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
         for asset_name in ("index.html", "dashboard.css", "dashboard.js", "ddns.svg"):
             self.assertTrue(os.path.isfile(os.path.join(project_root, "web", asset_name)))
             self.assertFalse(os.path.isfile(os.path.join(project_root, "ddns", "web", "static", asset_name)))
+
+    def test_dashboard_logo_matches_documentation(self):
+        """Keep the packaged dashboard and public documentation logo in sync."""
+        public_logo = self._public_asset_bytes("img", "ddns.svg")
+        self.assertEqual(_resource_bytes("ddns.svg").splitlines(), public_logo.splitlines())
+
+    def test_documentation_brand_color_matches_logo(self):
+        """Keep the theme token aligned with the single-color logo."""
+        logo = ElementTree.fromstring(self._public_asset_bytes("img", "ddns.svg"))
+        colors = {
+            value
+            for element in logo.iter()
+            for key, value in element.attrib.items()
+            if key in ("fill", "stroke") and value != "none"
+        }
+        self.assertEqual(len(colors), 1)
+        css_path = os.path.join(os.path.dirname(__file__), "..", "docs", ".vitepress", "theme", "docs-layout.css")
+        with io.open(css_path, "r", encoding="utf-8") as css_file:
+            self.assertIn("--ddns-c-logo: {};".format(next(iter(colors))), css_file.read())
+
+    def test_native_icon_assets_keep_their_formats_and_sizes(self):
+        """Retain the transparent app PNG and four legacy/modern ICO frames."""
+        self._png_chunks(self._public_asset_bytes("img", "ddns.png"), (1024, 1024))
+        icon = self._public_asset_bytes("favicon.ico")
+        sizes = (16, 32, 48, 256)
+        self.assertEqual(struct.unpack_from("<HHH", icon), (0, 1, len(sizes)))
+        expected_offset = 6 + 16 * len(sizes)
+        for index, size in enumerate(sizes):
+            width, height, colors, reserved, planes, depth, length, offset = struct.unpack_from(
+                "<BBBBHHII", icon, 6 + 16 * index
+            )
+            self.assertEqual((width or 256, height or 256, colors, reserved, planes, depth), (size, size, 0, 0, 1, 32))
+            self.assertEqual(offset, expected_offset)
+            frame = icon[offset : offset + length]
+            self.assertEqual(len(frame), length)
+            if size == 256:
+                self._png_chunks(frame, (size, size))
+            else:
+                self.assertEqual(struct.unpack_from("<IIIHHI", frame), (40, size, 2 * size, 1, 32, 0))
+                mask_stride = ((size + 31) // 32) * 4
+                self.assertEqual(length, 40 + size * size * 4 + mask_stride * size)
+            expected_offset += length
+        self.assertEqual(expected_offset, len(icon))
+
+    def test_social_cover_preserves_logo_and_embeds_its_assets(self):
+        """Keep a portable cover with the same logo geometry and no remote images."""
+        ns = "{http://www.w3.org/2000/svg}"
+        cover = ElementTree.fromstring(self._public_asset_bytes("img", "github-cover.svg"))
+        self.assertEqual(cover.get("viewBox"), "0 0 1280 640")
+        logo = ElementTree.fromstring(self._public_asset_bytes("img", "ddns.svg"))
+        expected = [dict(path.attrib) for path in logo.findall(ns + "path")]
+        for attributes in expected:
+            for key in ("fill", "stroke"):
+                if key in attributes and attributes[key] != "none":
+                    attributes[key] = "#ffffff"
+        symbol = cover.find(".//" + ns + "g[@data-brand='ddns']")
+        self.assertIsNotNone(symbol)
+        self.assertEqual([dict(path.attrib) for path in symbol.findall(ns + "path")], expected)
+        self.assertFalse(cover.findall(".//" + ns + "script"))
+        for image in cover.findall(".//" + ns + "image"):
+            href = image.get("href", "")
+            self.assertTrue(href.startswith("data:image/png;base64,"))
+            self.assertTrue(base64.b64decode(href.partition(",")[2]).startswith(b"\x89PNG\r\n\x1a\n"))
+        cover_png = self._public_asset_bytes("img", "github-cover.png")
+        self.assertLess(len(cover_png), 1000000)
+        self._png_chunks(cover_png, (1280, 640))
+
+    def test_social_cover_keeps_provenance_and_license_notices(self):
+        """Preserve source records and notices in both downloadable image formats."""
+        ns = "{http://www.w3.org/2000/svg}"
+        cover = ElementTree.fromstring(self._public_asset_bytes("img", "github-cover.svg"))
+        records = json.loads(self._public_asset_bytes("img", "github-cover.sources.json").decode("utf-8"))
+        brands = {group.get("data-brand") for group in cover.iter(ns + "g") if group.get("data-brand")} - {"ddns"}
+        self.assertEqual({record["name"] for record in records}, brands)
+        self.assertEqual(len(records), len(brands))
+        for record in records:
+            self.assertTrue(record["source"].startswith("https://"))
+            self.assertTrue(record["license"])
+            self.assertTrue(record.get("gitBlob") or record.get("sha256"))
+        notice = self._public_asset_bytes("img", "github-cover.NOTICE.txt").decode("utf-8").splitlines()
+        metadata = cover.find(ns + "metadata")
+        self.assertIsNotNone(metadata)
+        self.assertEqual(metadata.text.splitlines(), notice)
+        chunks = self._png_chunks(self._public_asset_bytes("img", "github-cover.png"), (1280, 640))
+        prefix = b"Attribution\0\0\0\0\0"
+        embedded = [
+            payload[len(prefix) :] for kind, payload in chunks if kind == b"iTXt" and payload.startswith(prefix)
+        ]
+        self.assertEqual(len(embedded), 1)
+        self.assertEqual(embedded[0].decode("utf-8").splitlines(), notice)
 
     @patch("ddns.web.server.pkgutil.get_data")
     def test_resource_loader_prefers_standalone_source(self, mock_get_data):
