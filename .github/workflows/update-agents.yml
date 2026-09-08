@@ -10,6 +10,7 @@ on:
       - 'AGENTS.md'
       - '.agents/**'
       - '.github/agents/**'
+      - '.github/aw/**'
       - '.github/instructions/**'
       - '.github/scripts/update_agents_structure.py'
       - '.github/workflows/**'
@@ -56,6 +57,14 @@ jobs:
 
       - name: Run provider parity contract
         run: python3 tools/check.py --providers
+
+      - name: Check compiled Copilot issue workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh extension install github/gh-aw --pin v0.88.2
+          gh aw compile auto-reply-issue --strict --no-check-update
+          git diff --exit-code -- .github/workflows/auto-reply-issue.lock.yml .github/aw/actions-lock.json
 
   report-structure-drift:
     if: github.event_name != 'pull_request'
