@@ -20,27 +20,29 @@ wget -qO- https://ddns.newfuture.cc/install.sh | sh
 
 > **Note:** Default installation to `/usr/local/bin`. If the directory requires administrator privileges, the script will automatically prompt to use sudo, or you can run with sudo in advance.
 
-### Experimental Rust client
+### Rust V5 development version
 
-The Rust installer supports Linux x64/arm64 and macOS x64/arm64. It downloads
+Rust V5 is developed on `v5`; the current `5.0.0-alpha1` has not been published.
+Build from source or use the Rust CI's five-platform binary artifacts. Do not
+treat Python's `latest` / `beta` channels as V5 downloads:
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs --help
+```
+
+The retained Rust installer is future release tooling for Linux x64/arm64 and
+macOS x64/arm64. It downloads
 the separate `ddns-rs-linux-x64`, `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`,
-or `ddns-rs-macos-arm64` Release asset and its `.sha256` checksum. Download
-`ddns-rs-windows-x64.exe` from Releases on Windows x64.
+or `ddns-rs-macos-arm64` Release asset and its `.sha256` checksum. The Windows x64
+artifact is named `ddns-rs-windows-x64.exe`.
 Linux assets use static musl targets and run on both glibc and musl distributions.
 It installs to `~/.local/bin/ddns-rs` by default without requiring administrator
 privileges. Pass `--install-dir /usr/local/bin` explicitly for a system-wide
 installation and provide the required permission yourself.
-The installer applies only to tagged releases that contain `ddns-rs-*` assets.
-
-```bash
-# Install the latest stable Rust client as ddns-rs; Python ddns is unchanged
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
-
-# Install beta or a version; --uninstall removes only ddns-rs
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- beta
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- vX.Y.Z --install-dir ~/.local/bin
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- --uninstall
-```
+The installer applies only to tagged releases that contain `ddns-rs-*` assets;
+version selection must be isolated before publishing V5. See the
+[Rust V5 development guide](dev/rust.md) for the preparation boundaries.
 
 When `sha256sum` or `shasum` is available, the installer verifies the published
 checksum. Use `--verify` to require it, or `--no-verify` only when the risk is

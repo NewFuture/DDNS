@@ -439,7 +439,7 @@ locales: {
         failures = check.merge_gate_failures(results, "pull_request")
         self.assertEqual(failures, ["python finished with 'cancelled'; expected success"])
 
-    def test_merge_gate_allows_only_pr_policy_skips(self) -> None:
+    def test_merge_gate_without_full_ref_allows_only_pr_policy_skips(self) -> None:
         results = {job: {"result": "success"} for job in check.MERGE_GATE_REQUIRED}
         results["preview-pypi"] = {"result": "skipped"}
         results["preview-docker"] = {"result": "skipped"}
@@ -447,6 +447,85 @@ locales: {
         self.assertIn(
             "preview-pypi finished with 'skipped'; expected success", check.merge_gate_failures(results, "push")
         )
+
+    def test_merge_gate_preview_skip_exception_requires_exact_v5_push_ref(self) -> None:
+        results = {job: {"result": "success"} for job in check.MERGE_GATE_REQUIRED}
+        results.update({job: {"result": "skipped"} for job in check.MERGE_GATE_TRUSTED_ONLY})
+        self.assertEqual(check.merge_gate_failures(results, "push", "refs/heads/v5"), [])
+        for event, ref in (
+            ("push", "refs/heads/master"),
+            ("push", "refs/heads/main"),
+            ("push", "refs/heads/abc"),
+            ("push", "refs/heads/v5-extra"),
+            ("push", "refs/heads/feature/v5"),
+            ("push", "refs/tags/v5"),
+            ("push", "refs/tags/v5.0.0-alpha1"),
+            ("push", "v5"),
+            ("push", ""),
+            ("workflow_dispatch", "refs/heads/v5"),
+            ("schedule", "refs/heads/v5"),
+        ):
+            with self.subTest(event=event, ref=ref):
+                self.assertEqual(
+                    check.merge_gate_failures(results, event, ref),
+                    [
+                        "{} finished with 'skipped'; expected success".format(job)
+                        for job in check.MERGE_GATE_TRUSTED_ONLY
+                    ],
+                )
+
+    def test_merge_gate_requires_every_mandatory_job_on_stable_and_v5(self) -> None:
+        for event, ref in (
+            ("push", "refs/heads/master"),
+            ("push", "refs/heads/main"),
+            ("push", "refs/heads/v5"),
+            ("pull_request", "refs/pull/728/merge"),
+            ("workflow_dispatch", "refs/heads/v5"),
+        ):
+            for job in check.MERGE_GATE_REQUIRED:
+                for status in ("failure", "cancelled", "skipped", None):
+                    with self.subTest(event=event, ref=ref, job=job, status=status):
+                        results = {
+                            name: {"result": "success"}
+                            for name in (*check.MERGE_GATE_REQUIRED, *check.MERGE_GATE_TRUSTED_ONLY)
+                        }
+                        if status is None:
+                            del results[job]
+                        else:
+                            results[job] = {"result": status}
+                        self.assertEqual(
+                            check.merge_gate_failures(results, event, ref),
+                            ["{} finished with {!r}; expected success".format(job, status)],
+                        )
+
+    def test_merge_gate_preview_failure_or_cancellation_is_never_a_policy_skip(self) -> None:
+        for event, ref, policy in (
+            ("push", "refs/heads/master", "success"),
+            ("push", "refs/heads/main", "success"),
+            ("push", "refs/heads/v5", "success or v5 push skip"),
+            ("pull_request", "refs/pull/728/merge", "success or PR skip"),
+        ):
+            for job in check.MERGE_GATE_TRUSTED_ONLY:
+                for status in ("failure", "cancelled", None):
+                    with self.subTest(event=event, ref=ref, job=job, status=status):
+                        results = {
+                            name: {"result": "success"}
+                            for name in (*check.MERGE_GATE_REQUIRED, *check.MERGE_GATE_TRUSTED_ONLY)
+                        }
+                        if status is None:
+                            del results[job]
+                        else:
+                            results[job] = {"result": status}
+                        self.assertEqual(
+                            check.merge_gate_failures(results, event, ref),
+                            ["{} finished with {!r}; expected {}".format(job, status, policy)],
+                        )
+
+    def test_merge_gate_success_remains_valid_on_stable_and_v5(self) -> None:
+        results = {job: {"result": "success"} for job in (*check.MERGE_GATE_REQUIRED, *check.MERGE_GATE_TRUSTED_ONLY)}
+        for ref in ("refs/heads/master", "refs/heads/main", "refs/heads/v5"):
+            with self.subTest(ref=ref):
+                self.assertEqual(check.merge_gate_failures(results, "push", ref), [])
 
 
 class StructureWorkflowTests(unittest.TestCase):

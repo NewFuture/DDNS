@@ -12,17 +12,20 @@
 
 ## Image Information
 
-### Experimental Rust image
+### Rust V5 development image
 
 The stable default image remains `newfuture/ddns` / `ghcr.io/newfuture/ddns`;
-the Rust image does not replace it. After a tag with Rust assets is published,
-the experimental Rust image is
-`ghcr.io/newfuture/ddns-rs`, supports Linux amd64 and arm64, and runs
-`ddns-rs` directly without the Python image's built-in scheduler:
+the Rust image does not replace it. Rust V5 is developed on `v5` and currently
+produces Linux amd64/arm64 OCI artifacts without pushing a public image.
+It runs `ddns-rs` directly without the Python image's built-in scheduler.
+Build it locally from the branch source:
 
 ```bash
-docker run --rm ghcr.io/newfuture/ddns-rs:latest --help
+docker build -f docker/rust.Dockerfile -t ddns-rs:v5-dev .
+docker run --rm ddns-rs:v5-dev --help
 ```
+
+V5 has not been published; no public `latest` / `next` Rust channel is promised yet.
 
 ### Image Versions
 

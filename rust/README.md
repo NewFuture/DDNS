@@ -1,10 +1,15 @@
-# DDNS Rust client
+# DDNS Rust V5
 
-`ddns-rs` is the parallel, experimental Rust implementation of
-[NewFuture/DDNS](https://github.com/NewFuture/DDNS). It does not replace the stable
-Python `ddns` command.
+`ddns-rs` is the Rust implementation for the next major version of
+[NewFuture/DDNS](https://github.com/NewFuture/DDNS), developed on the `v5`
+integration branch. Python maintenance stays on `master` / `v4`; Rust changes
+target `v5`, not the stable Python branch.
 
-## MVP support
+The current development version is `5.0.0-alpha1`, not a published release.
+The crate stays under `rust/` and the command remains `ddns-rs`; it does not yet
+replace the stable Python `ddns` command.
+
+## Current V5 scope
 
 - All canonical Python DNS providers and their documented aliases: Cloudflare,
   AliDNS/ESA, DNSPod (China, global, and Tencent Cloud), EdgeOne, ClouDNS,
@@ -16,14 +21,29 @@ Python `ddns` command.
 - Cache, proxy fallback, retries, custom CA files, and existing TLS policies
 - One update run per process on Linux, macOS, and Windows
 
-The `task`, `web`, and `mcp` commands are not implemented yet. Tag publishing
-pushes the Linux amd64/arm64 image as `ghcr.io/newfuture/ddns-rs`; it runs
-`ddns-rs` once and has no scheduler. Separate Release assets are named `ddns-rs-linux-x64`,
-`ddns-rs-linux-arm64`, `ddns-rs-macos-x64`, `ddns-rs-macos-arm64`, and
-`ddns-rs-windows-x64.exe`, each with a `.sha256` checksum. Linux and macOS can
-use `docs/public/install-rust.sh`; it installs only `ddns-rs`, never `ddns`.
-The Linux assets use static musl targets so the same names work on glibc and
-musl distributions.
+The `task`, `web`, and `mcp` commands are not implemented yet. The Linux
+amd64/arm64 container runs `ddns-rs` once and has no scheduler. Native artifacts
+are named `ddns-rs-linux-x64`, `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`,
+`ddns-rs-macos-arm64`, and `ddns-rs-windows-x64.exe`. Linux uses static musl
+targets so the same names work on glibc and musl distributions.
+
+## Release preparation
+
+The Rust CI validates `v5` commits and pull requests targeting `v5`.
+`Prepare Rust V5` builds and verifies native artifacts with SHA-256 checksums
+and a two-platform OCI archive. Changes to the Cargo version files or this
+workflow on `v5` automatically start preparation without needing a tag. It also
+accepts manual preparation on `v5` or a canonical `v5.*` tag matching both Cargo
+version files. Outputs stay in
+GitHub Actions artifacts; it does not create a release, upload release assets,
+or push images to a registry.
+
+No V5 tag or public release is created by this preparation. Before the first
+public V5 tag, separate Python/Rust release selection in the installers and
+download service, and explicitly prepare a Rust publication workflow. Until
+then, use source builds or CI artifacts rather than `latest` / `beta` downloads.
+The retained `docs/public/install-rust.sh` is future release tooling, not a
+working V5 download channel. V5 docs builds do not deploy over the stable site.
 
 ## Build and run
 

@@ -578,7 +578,7 @@ def portable_contract_errors(repo: Path = REPO_ROOT) -> list[str]:
     return _instruction_errors(repo) + _skill_errors(repo) + _profile_errors(repo)
 
 
-def merge_gate_failures(results: dict[str, object], event_name: str) -> list[str]:
+def merge_gate_failures(results: dict[str, object], event_name: str, ref: str = "") -> list[str]:
     """Return failed, cancelled, or policy-invalid workflow prerequisites."""
     failures = []
     for job in MERGE_GATE_REQUIRED:
@@ -590,9 +590,10 @@ def merge_gate_failures(results: dict[str, object], event_name: str) -> list[str
     for job in MERGE_GATE_TRUSTED_ONLY:
         result = results.get(job)
         status = result.get("result") if isinstance(result, dict) else None
-        if event_name == "pull_request":
+        if event_name == "pull_request" or (event_name == "push" and ref == "refs/heads/v5"):
             if status not in ("success", "skipped"):
-                failures.append("{} finished with {!r}; expected success or PR skip".format(job, status))
+                policy = "PR" if event_name == "pull_request" else "v5 push"
+                failures.append("{} finished with {!r}; expected success or {} skip".format(job, status, policy))
         elif status != "success":
             failures.append("{} finished with {!r}; expected success".format(job, status))
     return failures

@@ -1,8 +1,10 @@
-# Rust client development
+# Rust V5 client development
 
-`ddns-rs` is an experimental implementation maintained alongside the Python
-`ddns` client. The MVP performs one synchronization per process and does not
-replace the stable Python `ddns` command or default installer.
+`ddns-rs` is the Rust implementation for DDNS V5, integrated on the `v5` branch.
+Python maintenance continues on `master` / `v4`; Rust feature PRs should target
+`v5`. The current development version is `5.0.0-alpha1`. It performs one
+synchronization per process, is not published, and does not replace the stable
+Python `ddns` command or default installer.
 
 ## Current support
 
@@ -13,9 +15,26 @@ replace the stable Python `ddns` command or default installer.
 | CLI, `DDNS_*`, local/remote/multiple configs, v4.1 `providers` | Supported |
 | JSON comments and restricted Python data literals | Supported |
 | Cache, proxy fallback, retries, TLS, and custom CA files | Supported |
-| Linux amd64/arm64 Docker image | Tag publishing pushes `ghcr.io/newfuture/ddns-rs`; it runs only `ddns-rs`, without a scheduler |
-| Linux x64/arm64, macOS x64/arm64, Windows x64 Release assets | Tag publishing creates `ddns-rs-*`, each with a `.sha256` checksum; Linux uses static musl targets |
+| Linux amd64/arm64 Docker image | Build and offline smoke coverage; preparation saves an OCI artifact without registry publication or a scheduler |
+| Linux x64/arm64, macOS x64/arm64, Windows x64 binaries | Preparation saves `ddns-rs-*` and `.sha256` Actions artifacts; Linux uses static musl targets |
 | `task`, Web, and MCP | Planned |
+
+## V5 branch and release preparation
+
+Keep the `rust/` layout, `ddns-rs` command, and existing configuration boundaries;
+do not remove Python yet. The versions in `rust/Cargo.toml` and `rust/Cargo.lock`
+must match. Changes to the version files or preparation workflow on `v5`
+automatically run `Prepare Rust V5` without requiring a tag. It also accepts
+manual preparation on `v5` or canonical `v5.*` tags matching Cargo, then produces verified native and two-platform OCI
+artifacts. It does not create Releases, upload release assets, or push images.
+V5 documentation builds do not deploy over the stable site. The Python publisher
+retained on this branch rejects `v5.*` inputs; stable-branch publishing
+configuration is unchanged.
+
+There is no installable V5 release yet; use source or CI artifacts. Before the
+first public V5 tag, isolate Python/Rust version selection in installers and
+the download service, and separately confirm the Rust publication workflow.
+Do not use repository-wide `latest` / `beta` downloads as V5 install channels yet.
 
 ## Build and run
 

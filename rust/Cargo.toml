@@ -1,8 +1,8 @@
 [package]
 name = "ddns-rs"
-version = "0.1.0"
+version = "5.0.0-alpha1"
 edition = "2024"
-description = "Parallel Rust implementation of the NewFuture DDNS client"
+description = "Rust implementation for the next major version of NewFuture DDNS"
 license = "MIT"
 repository = "https://github.com/NewFuture/DDNS"
 publish = false

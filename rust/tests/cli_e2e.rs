@@ -173,7 +173,14 @@ fn prints_help_and_version() {
 
     let version = command().arg("--version").output().unwrap();
     assert!(version.status.success());
-    assert!(String::from_utf8_lossy(&version.stdout).contains("ddns-rs v"));
+    assert_eq!(
+        String::from_utf8_lossy(&version.stdout).trim(),
+        format!(
+            "ddns-rs v{} ({})",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::OS
+        )
+    );
 }
 
 #[test]

@@ -1,7 +1,9 @@
-# Rust 客户端开发
+# Rust V5 客户端开发
 
-`ddns-rs` 是与 Python `ddns` 并行维护的实验性实现。MVP 只负责单次同步，
-不替换稳定的 Python `ddns` 命令或默认安装方式。
+`ddns-rs` 是 DDNS 下一主版本 V5 的 Rust 实现，集成分支为 `v5`。
+Python 版本继续在 `master` / `v4` 维护；Rust 功能 PR 应以 `v5` 为目标。
+当前开发版本为 `5.0.0-alpha1`，只负责单次同步，尚未发布，也不替换稳定的
+Python `ddns` 命令或默认安装方式。
 
 ## 当前支持
 
@@ -12,9 +14,23 @@
 | CLI、`DDNS_*`、本地/远程/多配置、v4.1 `providers` | 已支持 |
 | JSON 注释与受限 Python 数据字面量 | 已支持 |
 | 缓存、代理回退、重试、TLS 与自定义 CA | 已支持 |
-| Linux amd64/arm64 Docker 镜像 | 标签发布工作流推送到 `ghcr.io/newfuture/ddns-rs`；仅运行 `ddns-rs`，无内置调度 |
-| Linux x64/arm64、macOS x64/arm64、Windows x64 Release 资产 | 标签发布工作流生成 `ddns-rs-*`，每个资产附带 `.sha256`；Linux 使用静态 musl 目标 |
+| Linux amd64/arm64 Docker 镜像 | 构建和离线冒烟测试；准备流程保存 OCI 工件，不推送公共镜像，无内置调度 |
+| Linux x64/arm64、macOS x64/arm64、Windows x64 二进制 | 准备流程保存 `ddns-rs-*` 与 `.sha256` Actions 工件；Linux 使用静态 musl 目标 |
 | `task`、Web、MCP | 计划中 |
+
+## V5 分支与发布准备
+
+保留 `rust/` 布局、`ddns-rs` 命令及现有配置兼容边界，暂不删除 Python 实现。
+`rust/Cargo.toml` 与 `rust/Cargo.lock` 的版本必须一致。`v5` 上的版本文件或
+准备工作流发生变更时，`Prepare Rust V5` 自动构建，无需创建标签。它也接受
+`v5` 分支上的手动准备，或与 Cargo 版本一致的规范 `v5.*` 标签，并生成经过
+校验的原生工件和双架构 OCI 工件；不会创建 Release、上传发布资产或推送镜像。
+V5 文档构建也不会部署覆盖稳定站点；本分支保留的 Python 发布入口拒绝 `v5.*`，
+不改动稳定分支的发布配置。
+
+当前没有可安装的 V5 发布版本，应使用源码或 CI 工件。在首次创建公开 V5 标签前，
+还需隔离安装器和下载服务的 Python/Rust 版本选择，并单独确认 Rust 发布流程；
+暂不要使用仓库级 `latest` / `beta` 下载作为 V5 安装入口。
 
 ## 构建与运行
 

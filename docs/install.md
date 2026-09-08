@@ -19,26 +19,26 @@ wget -qO- https://ddns.newfuture.cc/install.sh | sh
 
 > **说明：** 默认安装到 `/usr/local/bin`，如果该目录需要管理员权限，脚本会自动提示使用 sudo，或者可以预先使用 sudo 运行。
 
-### 实验性 Rust 客户端
+### Rust V5 开发版本
 
-Rust 安装脚本仅支持 Linux x64/arm64 和 macOS x64/arm64，下载独立的
+Rust V5 在 `v5` 分支开发，当前 `5.0.0-alpha1` 尚未发布。请从源码构建，
+或使用 Rust CI 的五平台二进制工件，不要把 Python 的 `latest` / `beta`
+当作 V5 下载入口：
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs --help
+```
+
+保留的 Rust 安装脚本是未来发布工具，仅支持 Linux x64/arm64 和 macOS x64/arm64，下载独立的
 `ddns-rs-linux-x64`、`ddns-rs-linux-arm64`、`ddns-rs-macos-x64` 或
 `ddns-rs-macos-arm64` Release 资产及其 `.sha256` 校验文件。Windows x64
-请从 Release 下载 `ddns-rs-windows-x64.exe`。
+工件名为 `ddns-rs-windows-x64.exe`。
 Linux 资产使用静态 musl 目标，可同时运行于 glibc 与 musl 发行版。
 Rust 安装器默认写入 `~/.local/bin/ddns-rs`，无需管理员权限；如需系统级安装，
 显式传入 `--install-dir /usr/local/bin` 并自行提供相应权限。
-安装器仅适用于已包含 `ddns-rs-*` 资产的标签版本。
-
-```bash
-# 默认安装最新稳定 Rust 版本为 ddns-rs，不影响 Python ddns
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh
-
-# 安装 beta 或指定版本；--uninstall 只删除 ddns-rs
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- beta
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- vX.Y.Z --install-dir ~/.local/bin
-curl -fsSL https://ddns.newfuture.cc/install-rust.sh | sh -s -- --uninstall
-```
+安装器仅适用于已包含 `ddns-rs-*` 资产的标签版本；V5 发布前还需隔离版本选择逻辑。
+开发与发布准备边界见 [Rust V5 开发文档](dev/rust.md)。
 
 安装器会在系统提供 `sha256sum` 或 `shasum` 时校验下载的发布校验和。可用
 `--verify` 强制要求校验，或仅在已理解风险时使用 `--no-verify`。

@@ -38,6 +38,9 @@ jobs:
             master|v4) ;;
             *) echo "Release dispatches must run from master or v4, not $SELECTED_REF_NAME" >&2; exit 1 ;;
           esac
+          case "$RELEASE_TAG" in
+            v5.*) echo "V5 release tags are reserved for Rust, not Python publishing." >&2; exit 1 ;;
+          esac
           if ! [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)([1-9][0-9]*))?$ ]]; then
             echo "release_tag must use canonical form such as v4.2.0 or v4.2.0-beta1" >&2
             exit 1

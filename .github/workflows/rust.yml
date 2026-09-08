@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches: ["master", "main"]
+    branches: ["master", "main", "v5"]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
@@ -21,7 +21,7 @@ on:
       - "README.md"
       - "README.en.md"
   pull_request:
-    branches: ["master", "main", "abc"]
+    branches: ["master", "main", "abc", "v5"]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
@@ -59,6 +59,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
+          save-if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v5') }}
       - run: cargo fmt --manifest-path rust/Cargo.toml --check
       - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
       - run: cargo test --manifest-path rust/Cargo.toml --locked
@@ -95,6 +96,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
+          save-if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v5') }}
       - name: Install musl toolchain
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
