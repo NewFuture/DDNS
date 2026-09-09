@@ -351,6 +351,8 @@ fn is_retryable_status(status: u16) -> bool {
 
 fn safe_transport_error(error: &ureq::Error) -> String {
     match error {
+        ureq::Error::BadUri(_) => "invalid request URL".to_owned(),
+        ureq::Error::RequireHttpsOnly(_) => "request URL must use HTTPS".to_owned(),
         ureq::Error::ConnectProxyFailed(_) => "proxy connection failed".to_owned(),
         ureq::Error::InvalidProxyUrl => "invalid proxy URL".to_owned(),
         _ => error.to_string(),
@@ -419,6 +421,12 @@ pub fn redact_url(url: &str) -> String {
     let (path, query) = suffix
         .split_once('?')
         .map_or((suffix, None), |(path, query)| (path, Some(query)));
+    // Path credentials cannot be identified by token names or URL templates.
+    let path = if !prefix.is_empty() && !matches!(path, "" | "/") {
+        "/***"
+    } else {
+        path
+    };
     let query = query.map(|query| {
         query
             .split('&')
@@ -541,7 +549,7 @@ mod tests {
         );
         assert_eq!(
             redact_url("https://user:password@example.com/config?api_key=secret&flag#private"),
-            "https://***@example.com/config?api_key=***&***#***"
+            "https://***@example.com/***?api_key=***&***#***"
         );
         assert_eq!(
             embedded_basic_auth("https://us%65r:p%40ss@example.com/config?key=value"),
@@ -549,6 +557,44 @@ mod tests {
                 "https://example.com/config?key=value".to_owned(),
                 Some("Basic dXNlcjpwQHNz".to_owned())
             )
+        );
+    }
+
+    #[test]
+    fn redacts_url_paths_independently_of_registered_secrets() {
+        for (url, expected) in [
+            (
+                "https://hooks.example/private/path-secret/__DOMAIN__?ip=__IP__&key=query-secret",
+                "https://hooks.example/***?ip=***&key=***",
+            ),
+            (
+                "https://config.example/config/encoded%2Fpath%20secret.json?version=1#fragment-secret",
+                "https://config.example/***?version=***#***",
+            ),
+            ("http://[::1]:8000/path-secret", "http://[::1]:8000/***"),
+            ("https://example.com", "https://example.com"),
+            ("https://example.com/", "https://example.com/"),
+            (
+                "https://example.com/?token=query-secret",
+                "https://example.com/?token=***",
+            ),
+            ("config/local.json", "config/local.json"),
+            (r"C:\config\local.json", r"C:\config\local.json"),
+        ] {
+            assert_eq!(redact_url(url), expected);
+        }
+    }
+
+    #[test]
+    fn transport_url_errors_do_not_include_untrusted_uri_details() {
+        let url = "https://config.example/path-secret?token=query-secret";
+        assert_eq!(
+            safe_transport_error(&ureq::Error::BadUri(url.to_owned())),
+            "invalid request URL"
+        );
+        assert_eq!(
+            safe_transport_error(&ureq::Error::RequireHttpsOnly(url.to_owned())),
+            "request URL must use HTTPS"
         );
     }
 
@@ -584,6 +630,43 @@ mod tests {
         assert_eq!(response.status, 200);
         assert_eq!(response.body, "ok");
         server.join().unwrap();
+    }
+
+    #[test]
+    fn redacts_url_paths_in_retry_logs_and_final_errors() {
+        let path = std::env::temp_dir().join(format!(
+            "ddns-rs-http-path-redaction-{}.log",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&path);
+        let (url, server) = local_server(&[(503, "retry"), (200, "ok")]);
+        let error = {
+            let logger = Logger::new(Level::Debug, Some(&path), Vec::new()).unwrap();
+            let client = UreqClient::with_sleeper(logger, TlsMode::Verify, |_| {});
+            let mut request = HttpRequest::get(
+                format!("{url}/transport-path-secret?token=query-secret"),
+                vec!["DIRECT".to_owned()],
+            );
+            request.retries = 1;
+            assert_eq!(client.execute(&request).unwrap().body, "ok");
+            server.join().unwrap();
+
+            let unused = TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = unused.local_addr().unwrap();
+            drop(unused);
+            request.url = format!("http://{address}/transport-path-secret?token=query-secret");
+            request.retries = 0;
+            client.execute(&request).unwrap_err().to_string()
+        };
+        let log = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(path).unwrap();
+        assert!(log.contains("retrying"));
+        assert!(error.contains("request to"));
+        for diagnostic in [&log, &error] {
+            assert!(diagnostic.contains("/***?token=***"));
+            assert!(!diagnostic.contains("transport-path-secret"));
+            assert!(!diagnostic.contains("query-secret"));
+        }
     }
 
     #[test]

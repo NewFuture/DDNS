@@ -369,6 +369,91 @@ fn loads_remote_configuration_and_address_from_local_http() {
 }
 
 #[test]
+fn callback_and_remote_config_paths_are_not_logged() {
+    for status in [200, 400] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let config = serde_json::json!({
+                "dns": "callback",
+                "id": format!("http://{address}/hooks/callback-path-secret/__DOMAIN__?ip=__IP__&key=query-secret"),
+                "index4": ["shell:echo 192.0.2.45"],
+                "ipv4": ["callback.example.com"],
+                "cache": false,
+                "proxy": ["DIRECT"],
+                "ssl": false
+            })
+            .to_string();
+            let mut requests = Vec::new();
+            for (status, body) in [(200, config.as_str()), (status, "callback response")] {
+                let mut stream = accept_with_timeout(&listener);
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .unwrap();
+                requests.push(read_http_request(&mut stream));
+                write!(
+                    stream,
+                    "HTTP/1.1 {status} Test\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                )
+                .unwrap();
+            }
+            requests
+        });
+        let log_path = std::env::temp_dir().join(format!(
+            "ddns-rs-url-path-log-{}-{status}.log",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&log_path);
+        let output = command()
+            .args([
+                "-c",
+                &format!("http://{address}/config/remote%2Fpath-secret?key=config-query-secret"),
+                "--proxy",
+                "DIRECT",
+                "--debug",
+                "--log-file",
+            ])
+            .arg(&log_path)
+            .output()
+            .unwrap();
+        let requests = server.join().unwrap();
+        let log = std::fs::read_to_string(&log_path).unwrap();
+        std::fs::remove_file(&log_path).unwrap();
+
+        assert!(
+            requests[0].starts_with(
+                "GET /config/remote%2Fpath-secret?key=config-query-secret HTTP/1.1\r\n"
+            )
+        );
+        assert!(requests[1].starts_with(
+            "GET /hooks/callback-path-secret/callback.example.com?ip=192.0.2.45&key=query-secret HTTP/1.1\r\n"
+        ));
+        assert_eq!(
+            output.status.code(),
+            Some(if status == 200 { 0 } else { 1 })
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if status == 400 {
+            assert!(stderr.contains("HTTP 400"));
+            assert!(stderr.contains("update operation(s) failed"));
+        }
+        assert!(stderr.contains(&format!("http://{address}/***")));
+        assert!(log.contains(&format!("http://{address}/***")));
+        for diagnostic in [&*stderr, &*String::from_utf8_lossy(&output.stdout), &log] {
+            for secret in [
+                "callback-path-secret",
+                "remote%2Fpath-secret",
+                "remote/path-secret",
+                "query-secret",
+            ] {
+                assert!(!diagnostic.contains(secret));
+            }
+        }
+    }
+}
+
+#[test]
 fn rejects_empty_configuration_documents() {
     let path =
         std::env::temp_dir().join(format!("ddns-rs-empty-config-{}.json", std::process::id()));

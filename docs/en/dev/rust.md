@@ -108,6 +108,9 @@ Linux x64/arm64.
 - The Python-literal parser accepts only dictionaries, lists/tuples, strings,
   numbers, `True`, `False`, and `None`; it cannot execute expressions.
 - Logs redact tokens and their percent-encoded forms. Cache files contain no credentials.
+- URL diagnostics hide userinfo, non-root paths, query values, and fragments to
+  protect credentials embedded in callback or remote-configuration paths. The
+  actual request URL is unchanged.
 
 ## Parity roadmap
 
