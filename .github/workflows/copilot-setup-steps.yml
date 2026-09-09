@@ -8,12 +8,14 @@ on:
       - 'docs/package.json'
       - 'docs/package-lock.json'
       - 'pyproject.toml'
+      - 'tools/check.py'
   pull_request:
     paths:
       - '.github/workflows/copilot-setup-steps.yml'
       - 'docs/package.json'
       - 'docs/package-lock.json'
       - 'pyproject.toml'
+      - 'tools/check.py'
 
 permissions:
   contents: read
@@ -25,27 +27,57 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - uses: actions/setup-node@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: docs/package-lock.json
+          # Explicit restore/save steps keep PR and agent cache access read-only.
+          package-manager-cache: false
+
+      - name: Restore dependency downloads
+        id: dependency-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.npm/_cacache
+          key: copilot-setup-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/copilot-setup-steps.yml', 'docs/package-lock.json') }}
+          restore-keys: |
+            copilot-setup-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install repository tooling
         run: python -m pip install --disable-pip-version-check ruff==0.16.2
 
       - name: Install documentation dependencies
-        run: npm --prefix docs ci
+        run: npm --prefix docs ci --prefer-offline --no-audit --no-fund
 
-      - name: Report tool versions
+      - name: Verify development environment
         run: |
           python --version
           ruff --version
           node --version
           npm --version
+          python -m ddns --version
+          python run.py --version
+          python tools/check.py --help
+          npm --prefix docs ls --depth=0
+
+      - name: Save dependency downloads
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+          steps.dependency-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.npm/_cacache
+          key: ${{ steps.dependency-cache.outputs.cache-primary-key }}

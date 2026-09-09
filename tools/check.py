@@ -86,7 +86,7 @@ def lanes_for_path(path: str) -> tuple[str, ...]:
     ):
         lanes.append("Build/Release")
     if (
-        path == "AGENTS.md"
+        path in ("AGENTS.md", ".github/copilot-instructions.md")
         or path.endswith("/AGENTS.md")
         or path.startswith(
             (".agents/", ".github/agents/", ".github/instructions/", ".github/scripts/", ".github/workflows/", "tools/")

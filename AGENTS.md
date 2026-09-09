@@ -289,12 +289,22 @@ Classify the task first, then read only the nearest code, tests, docs, and schem
 - **Config/schema**: `ddns/config/`, `schema/`, `tests/test_config_*.py`, `docs/config/`, `docs/en/config/`
 - **IP/HTTP**: `ddns/ip.py`, `ddns/util/http.py`, `tests/test_ip.py`, `tests/test_util_http*.py`
 - **Scheduler**: `ddns/scheduler/`, `tests/test_scheduler_*.py`
-- **Web/MCP**: `ddns/web/`, `web/`, `ddns/mcp.py`, `tests/test_web.py`, `tests/test_mcp.py`
+- **Web/MCP**: `ddns/web/`, `web/`, `ddns/mcp.py`, `ddns/mcp_http.py`, `ddns/http_config.py`, `tests/test_web.py`, `tests/test_mcp*.py`
 - **Docs**: `README*.md`, `docs/`, `docs/AGENTS.md`
 - **Build/release**: `pyproject.toml`, `run.py`, `.github/patch.py`, `docker/`, `.github/workflows/`
-- **Agent control plane**: `AGENTS.md`, `.agents/skills/`, `.github/agents/`, `.github/instructions/`
+- **Agent control plane**: `AGENTS.md`, `.agents/skills/`, `.github/agents/`, `.github/copilot-instructions.md`, `.github/instructions/`, `tools/`
 
 Use `rg` / `rg --files` for discovery, make narrow edits, validate the touched behavior, and report any command that could not run. A task is complete only when code, tests, schemas, docs, and generated metadata affected by the behavior are consistent.
+
+### Source execution and validation
+
+- Run Python commands from the repository root. `python -m ddns --help` and `python run.py --help` work without installing DDNS or adding runtime dependencies.
+- `web/` contains the dashboard's plain HTML/CSS/JavaScript assets, served and packaged by Python. It has no npm build. `docs/` is the separate VitePress site and the only npm project.
+- `ddns/web/service.py` shares configuration, status, and synchronization behavior with MCP. `ddns/http_config.py` shares HTTP listener settings between Web and MCP HTTP; cover both callers when changing shared behavior.
+- `ddns/config/field-model.json` supplies provider and field metadata to the dashboard and documentation configuration studio. Keep the registry, CLI, latest schema, and bilingual docs aligned; `python tools/check.py --providers` checks provider parity without installing dependencies.
+- After focused tests, use `python tools/check.py --changed` for lane-specific checks. It includes merge-base, staged, unstaged, and untracked changes; unknown paths deliberately select all lanes. Set `DDNS_CHECK_BASE_REF` for a non-default comparison base. Use `--all` when a complete cross-lane check is needed, not for every iteration.
+- `tests/e2e.py` is an explicit, offline suite and is not included in `unittest discover tests`. Run it separately for CLI, Web, MCP, or shared runtime changes. Sample configurations under `tests/config/` are not a substitute for its loopback fixtures.
+- `.github/patch.py` transforms source and packaging metadata in place. Use it only for the relevant build in a disposable checkout, not for ordinary setup, linting, or source tests. Keep real scheduler lifecycle and platform/artifact validation in the appropriate CI environments.
 
 ### Useful Commands
 
@@ -387,9 +397,11 @@ python -m unittest tests.test_config_config -v
 python -m unittest tests.test_ip -v
 python -m unittest discover tests -v
 python -m pytest tests/ -v  # optional, when pytest is installed
-ruff check --fix --unsafe-fixes .
-ruff format .
+ruff check .
+ruff format --check .
 ```
+
+Inspect proposed lint and formatting fixes and limit them to files touched by the task.
 
 Use these focused targets as a guide:
 
@@ -426,7 +438,7 @@ Common checks:
 - Proxy/network issue: compare with `ddns/util/http.py`; use `--proxy=DIRECT` or `--ssl=false` only as diagnostics.
 - Schema mismatch: update `schema/v4.1.json` and matching config tests together.
 - Test failure: inspect mock return values and `mock_http.call_args`.
-- Linting issue: run `ruff check --fix --unsafe-fixes .` and `ruff format .`.
+- Linting issue: run `ruff check .` and `ruff format --check .`, then review fixes only for the affected files.
 
 ```bash
 python -m ddns --debug --dns=myprovider --ipv4=test.com

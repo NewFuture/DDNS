@@ -42,6 +42,11 @@ class LaneSelectionTests(unittest.TestCase):
         self.assertEqual(check.lanes_for_path("docs/AGENTS.md"), ("Docs", "Agent/Workflow"))
         self.assertEqual(check.lanes_for_path("ddns/provider/AGENTS.md"), ("Provider", "Agent/Workflow"))
 
+    def test_copilot_instructions_select_only_agent_lane(self) -> None:
+        for path in (".github/copilot-instructions.md", r".github\copilot-instructions.md"):
+            self.assertEqual(check.lanes_for_path(path), ("Agent/Workflow",))
+            self.assertEqual(check.select_lanes([path])[0], ("Agent/Workflow",))
+
     def test_executable_docs_are_build_changes(self) -> None:
         self.assertEqual(check.lanes_for_path("docs/public/install.sh"), ("Docs", "Build/Release"))
         self.assertEqual(check.lanes_for_path("docs/esa.js"), ("Docs", "Build/Release"))

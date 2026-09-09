@@ -10,6 +10,7 @@ on:
       - 'AGENTS.md'
       - '.agents/**'
       - '.github/agents/**'
+      - '.github/copilot-instructions.md'
       - '.github/aw/**'
       - '.github/instructions/**'
       - '.github/scripts/update_agents_structure.py'
