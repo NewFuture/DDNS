@@ -25,7 +25,7 @@ impl<'a> CloudnsProvider<'a> {
         })
     }
 
-    fn api(&self, path: &str, mut parameters: BTreeMap<String, String>) -> Result<Value> {
+    fn api(&self, path: &str, mut parameters: BTreeMap<String, String>) -> Result<Option<Value>> {
         parameters.insert("auth-id".to_owned(), self.context.id.to_owned());
         parameters.insert("auth-password".to_owned(), self.context.token.to_owned());
         let response = self.context.send_json(
@@ -39,17 +39,20 @@ impl<'a> CloudnsProvider<'a> {
             )]),
         )?;
         if response.get("status").and_then(Value::as_str) == Some("Failed") {
+            let description = response
+                .get("statusDescription")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown error");
+            // This exact lookup miss is documented at cloudns.net/wiki/article/134/.
+            if path == "/dns/get-zone-info.json" && description == "Missing domain-name" {
+                return Ok(None);
+            }
             return Err(Error::Provider(format!(
                 "ClouDNS API error: {}",
-                self.context.logger.mask(
-                    response
-                        .get("statusDescription")
-                        .and_then(Value::as_str)
-                        .unwrap_or("unknown error")
-                )
+                self.context.logger.mask(description)
             )));
         }
-        Ok(response)
+        Ok(Some(response))
     }
 }
 
@@ -63,14 +66,20 @@ impl CrudProvider for CloudnsProvider<'_> {
     }
 
     fn query_zone_id(&mut self, domain: &str) -> Result<Option<String>> {
-        match self.api(
+        self.api(
             "/dns/get-zone-info.json",
             BTreeMap::from([("domain-name".to_owned(), domain.to_owned())]),
-        ) {
-            Ok(_) => Ok(Some(domain.to_owned())),
-            Err(Error::Provider(_)) => Ok(None),
-            Err(error) => Err(error),
-        }
+        )?
+        .map(|response| {
+            if response.get("name").and_then(Value::as_str) == Some(domain) {
+                Ok(domain.to_owned())
+            } else {
+                Err(Error::Provider(
+                    "ClouDNS returned invalid zone information".to_owned(),
+                ))
+            }
+        })
+        .transpose()
     }
 
     fn query_record(
@@ -81,14 +90,16 @@ impl CrudProvider for CloudnsProvider<'_> {
         request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
         let host = if subdomain == "@" { "" } else { subdomain };
-        let response = self.api(
-            "/dns/records.json",
-            BTreeMap::from([
-                ("domain-name".to_owned(), zone_id.to_owned()),
-                ("host".to_owned(), host.to_owned()),
-                ("type".to_owned(), request.record_type.to_owned()),
-            ]),
-        )?;
+        let response = self
+            .api(
+                "/dns/records.json",
+                BTreeMap::from([
+                    ("domain-name".to_owned(), zone_id.to_owned()),
+                    ("host".to_owned(), host.to_owned()),
+                    ("type".to_owned(), request.record_type.to_owned()),
+                ]),
+            )?
+            .ok_or_else(|| Error::Provider("ClouDNS returned no record list".to_owned()))?;
         Ok(response.as_object().and_then(|records| {
             records.values().find_map(|record| {
                 let matches_host = record.get("host").and_then(Value::as_str) == Some(host)
@@ -121,12 +132,17 @@ impl CrudProvider for CloudnsProvider<'_> {
                 ("ttl".to_owned(), request.ttl.unwrap_or(60).to_string()),
             ]),
         )?;
-        if response.get("status").and_then(Value::as_str) == Some("Success") {
+        if response
+            .as_ref()
+            .and_then(|response| response.get("status"))
+            .and_then(Value::as_str)
+            == Some("Success")
+        {
             Ok(())
         } else {
-            Err(Error::Provider(format!(
-                "ClouDNS failed to create record: {response}"
-            )))
+            Err(Error::Provider(
+                "ClouDNS failed to create record".to_owned(),
+            ))
         }
     }
 
@@ -156,12 +172,17 @@ impl CrudProvider for CloudnsProvider<'_> {
                 ("ttl".to_owned(), request.ttl.unwrap_or(60).to_string()),
             ]),
         )?;
-        if response.get("status").and_then(Value::as_str) == Some("Success") {
+        if response
+            .as_ref()
+            .and_then(|response| response.get("status"))
+            .and_then(Value::as_str)
+            == Some("Success")
+        {
             Ok(())
         } else {
-            Err(Error::Provider(format!(
-                "ClouDNS failed to update record: {response}"
-            )))
+            Err(Error::Provider(
+                "ClouDNS failed to update record".to_owned(),
+            ))
         }
     }
 }

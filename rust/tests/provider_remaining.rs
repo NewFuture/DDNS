@@ -8,6 +8,7 @@ use ddns_rs::error::Result;
 use ddns_rs::http::{HttpResponse, Method};
 use ddns_rs::logging::{Level, Logger};
 use ddns_rs::provider::{ProviderId, RecordRequest, build};
+use ddns_rs::signature::{hmac_sha256_authorization, sha256_hex};
 use serde_json::{Value, json};
 
 fn json_responses(values: impl IntoIterator<Item = (u16, Value)>) -> Arc<FakeHttpClient> {
@@ -843,6 +844,53 @@ fn aliesa_and_huawei_create_and_errors_are_offline() {
 }
 
 #[test]
+fn huawei_signed_queries_use_rfc3986_encoding() {
+    for (line, canonical_line, wire_line) in [
+        ("default", "default", "default"),
+        ("", "", ""),
+        (
+            "custom line+/%~",
+            "custom%20line%2B%2F%25~",
+            "custom+line%2B%2F%25~",
+        ),
+        ("line\u{e9}", "line%C3%A9", "line%C3%A9"),
+    ] {
+        let client = json_responses([
+            (200, json!({"zones":[{"id":"zone","name":"example.com."}]})),
+            (200, json!({"recordsets":[]})),
+            (200, json!({"id":"record"})),
+        ]);
+        let mut update = request("192.0.2.45");
+        update.line = Some(line);
+        run_request("huaweidns", "id", "secret", client.clone(), update).unwrap();
+        let requests = client.requests();
+        assert_eq!(requests.len(), 3);
+        let query_request = &requests[1];
+        assert_eq!(query_request.method, Method::Get);
+        assert!(query_request.url.contains(&format!("line_id={wire_line}&")));
+        let mut headers = query_request.headers.clone();
+        let actual = headers.remove("authorization").unwrap();
+        let expected = hmac_sha256_authorization(
+            "secret",
+            "SDK-HMAC-SHA256",
+            &headers["x-sdk-date"],
+            "Access=id",
+            "GET",
+            "/v2.1/zones/zone/recordsets/",
+            &format!(
+                "limit=500&line_id={canonical_line}&name=www.example.com.&search_mode=equal&type=A"
+            ),
+            &headers,
+            &sha256_hex(""),
+        )
+        .unwrap();
+        assert_eq!(actual, expected, "line: {line}");
+        let body: Value = serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
+        assert_eq!(body["line"], line);
+    }
+}
+
+#[test]
 fn simple_providers_direct_success_and_error_are_offline() {
     for (provider, id, token, success, failure) in [
         ("he", "", "secret", "good 192.0.2.45", "badauth"),
@@ -891,7 +939,7 @@ fn namesilo_zone_candidates_and_string_ttl_are_preserved() {
     let client = json_responses([
         (
             200,
-            json!({"reply":{"code":"400","detail":"not in account"}}),
+            json!({"reply":{"code":"200","detail":"Domain is not active, or does not belong to this user"}}),
         ),
         (
             200,
@@ -964,31 +1012,194 @@ fn callback_object_body_is_not_written_to_debug_log() {
 
 #[test]
 fn cloudns_validates_multi_label_zone_candidates() {
-    let client = json_responses([
+    for (records, mutation_path) in [
+        (json!({}), "/dns/add-record.json"),
         (
-            200,
-            json!({"status":"Failed","statusDescription":"zone not found"}),
+            json!({"record":{"id":"record","host":"www","type":"A"}}),
+            "/dns/mod-record.json",
         ),
-        (200, json!({"name":"example.co.uk"})),
-        (200, json!({})),
-        (200, json!({"status":"Success"})),
-    ]);
-    let mut cloudns_request = request("192.0.2.45");
-    cloudns_request.domain = "www.example.co.uk";
-    run_request("cloudns", "id", "secret", client.clone(), cloudns_request).unwrap();
-    let requests = client.requests();
-    assert!(
-        requests[0]
-            .body
-            .as_deref()
-            .unwrap()
-            .contains("domain-name=co.uk")
-    );
-    assert!(
-        requests[1]
-            .body
-            .as_deref()
-            .unwrap()
-            .contains("domain-name=example.co.uk")
-    );
+    ] {
+        let client = json_responses([
+            (
+                200,
+                json!({"status":"Failed","statusDescription":"Missing domain-name"}),
+            ),
+            (200, json!({"name":"example.co.uk"})),
+            (200, records),
+            (200, json!({"status":"Success"})),
+        ]);
+        let mut cloudns_request = request("192.0.2.45");
+        cloudns_request.domain = "www.example.co.uk";
+        run_request("cloudns", "id", "secret", client.clone(), cloudns_request).unwrap();
+        let requests = client.requests();
+        assert_eq!(requests.len(), 4);
+        assert!(
+            requests[0]
+                .body
+                .as_deref()
+                .unwrap()
+                .contains("domain-name=co.uk")
+        );
+        assert!(
+            requests[1]
+                .body
+                .as_deref()
+                .unwrap()
+                .contains("domain-name=example.co.uk")
+        );
+        assert!(requests[3].url.ends_with(mutation_path));
+    }
+}
+
+#[test]
+fn zone_lookup_failures_are_not_missing_domains() {
+    for (provider, zone, records, success, failures) in [
+        (
+            "namesilo",
+            json!({"reply":{"code":"300","domain":{"domain":"example.co.uk"}}}),
+            json!({"reply":{"code":"300","resource_record":[]}}),
+            json!({"reply":{"code":"300","record_id":"record"}}),
+            vec![
+                (
+                    200,
+                    json!({"reply":{"code":"110","detail":"Invalid API Key lookup-secret"}}),
+                ),
+                (
+                    200,
+                    json!({"reply":{"code":"400","detail":"Unexpected provider error lookup-secret"}}),
+                ),
+                (
+                    200,
+                    json!({"reply":{"code":"201","detail":"Internal system error"}}),
+                ),
+                (
+                    200,
+                    json!({"reply":{"code":"210","detail":"General error"}}),
+                ),
+                (
+                    200,
+                    json!({"reply":{"code":"999","detail":"Permission denied"}}),
+                ),
+                (
+                    403,
+                    json!({"reply":{"code":"200","detail":"not in account"}}),
+                ),
+                (
+                    500,
+                    json!({"reply":{"code":"300","domain":{"domain":"co.uk"}}}),
+                ),
+                (200, json!({"reply":{"code":"300","domain":null}})),
+                (200, json!({})),
+            ],
+        ),
+        (
+            "cloudns",
+            json!({"name":"example.co.uk"}),
+            json!({}),
+            json!({"status":"Success"}),
+            vec![
+                (
+                    200,
+                    json!({"status":"Failed","statusDescription":"Invalid authentication, incorrect auth-id or auth-password. lookup-secret"}),
+                ),
+                (
+                    200,
+                    json!({"status":"Failed","statusDescription":"Permission denied"}),
+                ),
+                (
+                    200,
+                    json!({"status":"Failed","statusDescription":"Unexpected provider error lookup-secret"}),
+                ),
+                (
+                    200,
+                    json!({"status":"Failed","statusDescription":"Missing domain-name: unexpected detail"}),
+                ),
+                (
+                    403,
+                    json!({"status":"Failed","statusDescription":"Missing domain-name"}),
+                ),
+                (500, json!({"name":"co.uk"})),
+                (200, json!({"name":null})),
+                (200, json!({"name":"another.example"})),
+                (200, json!({})),
+            ],
+        ),
+    ] {
+        for (status, failure) in failures {
+            let client = json_responses([
+                (status, failure.clone()),
+                (200, zone.clone()),
+                (200, records.clone()),
+                (200, success.clone()),
+            ]);
+            let mut update = request("192.0.2.45");
+            update.domain = "host.example.co.uk";
+            let error = run_request(provider, "id", "lookup-secret", client.clone(), update)
+                .unwrap_err()
+                .to_string();
+            assert_eq!(client.requests().len(), 1, "{provider}: {failure}");
+            assert!(!error.contains("lookup-secret"));
+            assert!(!error.contains("zone not found"), "{provider}: {error}");
+            if status != 200 {
+                assert!(error.contains(&format!("HTTP {status}")));
+            }
+        }
+    }
+}
+
+#[test]
+fn zone_lookup_transport_and_json_errors_stop_immediately() {
+    for provider in ["namesilo", "cloudns"] {
+        for (client, expected) in [
+            (FakeHttpClient::new([]), "fake response queue is empty"),
+            (
+                text_responses([(200, "not JSON lookup-secret")]),
+                "invalid JSON",
+            ),
+        ] {
+            let mut update = request("192.0.2.45");
+            update.domain = "host.example.co.uk";
+            let error = run_request(provider, "id", "lookup-secret", client.clone(), update)
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains(expected), "{provider}: {error}");
+            assert!(!error.contains("lookup-secret"));
+            assert_eq!(client.requests().len(), 1);
+        }
+    }
+}
+
+#[test]
+fn missing_domain_errors_are_failures_outside_zone_lookup() {
+    for (provider, zone, records, existing_records, missing) in [
+        (
+            "namesilo",
+            json!({"reply":{"code":"300","domain":{"domain":"example.com"}}}),
+            json!({"reply":{"code":"300","resource_record":[]}}),
+            json!({"reply":{"code":"300","resource_record":[{"record_id":"record","host":"www","type":"A"}]}}),
+            json!({"reply":{"code":"200","detail":"Domain is not active, or does not belong to this user"}}),
+        ),
+        (
+            "cloudns",
+            json!({"name":"example.com"}),
+            json!({}),
+            json!({"record":{"id":"record","host":"www","type":"A"}}),
+            json!({"status":"Failed","statusDescription":"Missing domain-name"}),
+        ),
+    ] {
+        for record_list in [None, Some(records), Some(existing_records)] {
+            let mut responses = vec![(200, zone.clone())];
+            if let Some(record_list) = record_list {
+                responses.push((200, record_list));
+            }
+            responses.push((200, missing.clone()));
+            let expected_requests = responses.len();
+            let client = json_responses(responses);
+            let error = run(provider, "id", "lookup-secret", client.clone())
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains("API error"), "{error}");
+            assert_eq!(client.requests().len(), expected_requests);
+        }
+    }
 }

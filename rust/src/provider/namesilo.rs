@@ -25,7 +25,7 @@ impl<'a> NamesiloProvider<'a> {
         })
     }
 
-    fn api(&self, action: &str, mut parameters: BTreeMap<String, String>) -> Result<Value> {
+    fn api(&self, action: &str, mut parameters: BTreeMap<String, String>) -> Result<Option<Value>> {
         parameters.extend([
             ("version".to_owned(), "1".to_owned()),
             ("type".to_owned(), "json".to_owned()),
@@ -39,22 +39,25 @@ impl<'a> NamesiloProvider<'a> {
             BTreeMap::new(),
         )?;
         let reply = response.get("reply").cloned().unwrap_or(Value::Null);
-        if reply.get("code").and_then(Value::as_str) == Some("300") {
-            Ok(reply)
-        } else {
-            Err(Error::Provider(format!(
-                "NameSilo API error {}: {}",
-                reply
-                    .get("code")
+        let code = reply
+            .get("code")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
+        match code {
+            "300" => Ok(Some(reply)),
+            // Code 200 means the domain is not active or not in this account.
+            "200" if action == "getDomainInfo" => Ok(None),
+            _ => {
+                let detail = reply
+                    .get("detail")
                     .and_then(Value::as_str)
-                    .unwrap_or("unknown"),
-                self.context.logger.mask(
-                    reply
-                        .get("detail")
-                        .and_then(Value::as_str)
-                        .unwrap_or("unknown error")
-                )
-            )))
+                    .unwrap_or("unknown error");
+                Err(Error::Provider(
+                    self.context
+                        .logger
+                        .mask(&format!("NameSilo API error {code}: {detail}")),
+                ))
+            }
         }
     }
 }
@@ -67,15 +70,20 @@ impl CrudProvider for NamesiloProvider<'_> {
         &mut self.zones
     }
     fn query_zone_id(&mut self, domain: &str) -> Result<Option<String>> {
-        let reply = match self.api(
+        self.api(
             "getDomainInfo",
             BTreeMap::from([("domain".to_owned(), domain.to_owned())]),
-        ) {
-            Ok(reply) => reply,
-            Err(Error::Provider(_)) => return Ok(None),
-            Err(error) => return Err(error),
-        };
-        Ok(reply.get("domain").is_some().then(|| domain.to_owned()))
+        )?
+        .map(|reply| {
+            reply
+                .get("domain")
+                .filter(|value| !value.is_null())
+                .map(|_| domain.to_owned())
+                .ok_or_else(|| {
+                    Error::Provider("NameSilo returned invalid domain information".to_owned())
+                })
+        })
+        .transpose()
     }
     fn query_record(
         &mut self,
@@ -84,10 +92,12 @@ impl CrudProvider for NamesiloProvider<'_> {
         main_domain: &str,
         request: &RecordRequest<'_>,
     ) -> Result<Option<Value>> {
-        let reply = self.api(
-            "dnsListRecords",
-            BTreeMap::from([("domain".to_owned(), main_domain.to_owned())]),
-        )?;
+        let reply = self
+            .api(
+                "dnsListRecords",
+                BTreeMap::from([("domain".to_owned(), main_domain.to_owned())]),
+            )?
+            .ok_or_else(|| Error::Provider("NameSilo returned no record list".to_owned()))?;
         Ok(reply
             .get("resource_record")
             .and_then(Value::as_array)
@@ -119,12 +129,16 @@ impl CrudProvider for NamesiloProvider<'_> {
             parameters.insert("rrttl".to_owned(), ttl.to_string());
         }
         let reply = self.api("dnsAddRecord", parameters)?;
-        if reply.get("record_id").is_some() {
+        if reply
+            .as_ref()
+            .and_then(|reply| reply.get("record_id"))
+            .is_some()
+        {
             Ok(())
         } else {
-            Err(Error::Provider(format!(
-                "NameSilo failed to create record: {reply}"
-            )))
+            Err(Error::Provider(
+                "NameSilo failed to create record".to_owned(),
+            ))
         }
     }
     fn update_record(
@@ -158,7 +172,8 @@ impl CrudProvider for NamesiloProvider<'_> {
         }) {
             parameters.insert("rrttl".to_owned(), ttl.to_string());
         }
-        self.api("dnsUpdateRecord", parameters)?;
-        Ok(())
+        self.api("dnsUpdateRecord", parameters)?
+            .map(|_| ())
+            .ok_or_else(|| Error::Provider("NameSilo failed to update record".to_owned()))
     }
 }

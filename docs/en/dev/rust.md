@@ -73,6 +73,12 @@ result identifier; malformed responses are not cached as successful updates.
 An enum selects the service and API version for Tencent DNSPod, EdgeOne
 acceleration, and EdgeOne DNS instead of freely combining strings and booleans.
 
+NameSilo and ClouDNS try the next candidate zone only for documented zone-lookup
+misses. Authentication, permission, HTTP, and malformed-response errors propagate
+instead of becoming "zone not found". Huawei query signatures use RFC3986 percent
+encoding, with spaces encoded as `%20` rather than `+`; form encoding for other
+providers is unchanged.
+
 Both DNSPod endpoints merge `extra` after standard mutation parameters, preserving
 its override priority. IP extraction validates complete addresses with the
 standard-library `IpAddr` type and supports compact labels such as

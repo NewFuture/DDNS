@@ -4,7 +4,7 @@ use serde_json::{Map, Value, json};
 use time::OffsetDateTime;
 
 use crate::error::{Error, Result};
-use crate::http::{Method, form_encode};
+use crate::http::{Method, percent_encode};
 use crate::signature::{hmac_sha256_authorization, sha256_hex};
 
 use super::base::{
@@ -50,7 +50,11 @@ impl<'a> HuaweiDnsProvider<'a> {
                 serde_json::to_string(&Value::Object(values))?,
             )
         };
-        let canonical_query = form_encode(&query);
+        let canonical_query = query
+            .iter()
+            .map(|(key, value)| format!("{}={}", percent_encode(key), percent_encode(value)))
+            .collect::<Vec<_>>()
+            .join("&");
         let now = OffsetDateTime::now_utc();
         let timestamp = format!(
             "{:04}{:02}{:02}T{:02}{:02}{:02}Z",
