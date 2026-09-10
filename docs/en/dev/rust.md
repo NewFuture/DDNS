@@ -107,7 +107,9 @@ Linux x64/arm64.
   file and never overwrites the Python cache.
 - The Python-literal parser accepts only dictionaries, lists/tuples, strings,
   numbers, `True`, `False`, and `None`; it cannot execute expressions.
-- Logs redact tokens and their percent-encoded forms. Cache files contain no credentials.
+- Logs and errors replace registered IDs, tokens, and their percent-encoded forms
+  with the constant `***` marker, without retaining credential prefixes or suffixes.
+  Cache files contain no credentials.
 - URL diagnostics hide userinfo, non-root paths, query values, and fragments to
   protect credentials embedded in callback or remote-configuration paths. The
   actual request URL is unchanged.

@@ -401,6 +401,14 @@ mod tests {
     }
 
     #[test]
+    fn masks_both_provider_ids_and_tokens() {
+        for provider in [ProviderId::Dnspod, ProviderId::Dnscom] {
+            let logger = Logger::stderr(Level::Debug, provider_secrets(provider, "ID123", "TK123"));
+            assert_eq!(logger.mask("id=ID123 token=TK123"), "id=*** token=***");
+        }
+    }
+
+    #[test]
     fn callback_nested_scalar_values_are_registered_as_secrets() {
         let secrets = provider_secrets(
             ProviderId::Callback,

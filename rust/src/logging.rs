@@ -147,24 +147,8 @@ impl Logger {
         self.secrets
             .iter()
             .fold(value.to_owned(), |masked, secret| {
-                let replacement = if secret.chars().count() > 4 {
-                    let first = secret.chars().take(2).collect::<String>();
-                    let last = secret
-                        .chars()
-                        .rev()
-                        .take(2)
-                        .collect::<String>()
-                        .chars()
-                        .rev()
-                        .collect::<String>();
-                    format!("{first}***{last}")
-                } else {
-                    "***".to_owned()
-                };
                 let encoded = crate::http::percent_encode(secret);
-                masked
-                    .replace(secret, &replacement)
-                    .replace(&encoded, &replacement)
+                masked.replace(secret, "***").replace(&encoded, "***")
             })
     }
 
@@ -218,6 +202,25 @@ mod tests {
     }
 
     #[test]
+    fn masks_every_secret_with_the_same_opaque_marker() {
+        for secret in [
+            "X",
+            "ABCD",
+            "ABCDE",
+            "long-test-credential",
+            "secret/token",
+            "\u{5bc6}\u{94a5}\u{4ee4}\u{724c}\u{503c}",
+        ] {
+            let logger = Logger::stderr(Level::Debug, vec![secret.to_owned()]);
+            let encoded = crate::http::percent_encode(secret);
+            assert_eq!(
+                logger.mask(&format!("{secret}|{encoded}|{secret}")),
+                "***|***|***"
+            );
+        }
+    }
+
+    #[test]
     fn masks_raw_and_percent_encoded_secrets() {
         let path =
             std::env::temp_dir().join(format!("ddns-rs-log-test-{}.log", std::process::id()));
@@ -238,7 +241,7 @@ mod tests {
         assert!(!content.contains("account-id"));
         assert!(!content.contains("secret/token"));
         assert!(!content.contains("secret%2Ftoken"));
-        assert!(content.contains("se***en"));
+        assert!(content.ends_with("ERROR [test]: id=*** raw=*** encoded=***\n"));
         let _ = std::fs::remove_file(path);
     }
 
@@ -256,5 +259,11 @@ mod tests {
         let masked = logger.mask("account-id-secret/token account-id");
         assert!(!masked.contains("secret/token"));
         assert!(!masked.contains("account-id"));
+        assert_eq!(masked, "*** ***");
+        assert_eq!(
+            logger.mask("account-id-secret%2Ftoken account-id"),
+            "*** ***"
+        );
+        assert_eq!(logger.mask(&masked), masked);
     }
 }

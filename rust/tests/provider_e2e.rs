@@ -155,7 +155,10 @@ fn alidns_create_and_unchanged_update_flows() {
         .unwrap_err()
         .to_string();
     assert!(!error.contains(token));
-    assert!(error.contains("al***et"));
+    assert_eq!(
+        error,
+        "AliDNS API error InvalidAccessKey: bad credential ***"
+    );
 }
 
 #[test]
