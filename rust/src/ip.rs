@@ -191,10 +191,9 @@ fn regex_address_in_text(family: AddressFamily, pattern: &str, output: &str) -> 
             "invalid Rust regex pattern: {error}; regex: rules do not support Python look-around or backreferences"
         ))
     })?;
-    for address in addresses_in_text(family, output) {
-        let address_text = address.to_string();
+    for (address_text, address) in addresses_in_text(family, output) {
         if matcher
-            .find(&address_text)
+            .find(address_text)
             .is_some_and(|matched| matched.start() == 0)
         {
             return Ok(address);
@@ -268,10 +267,14 @@ fn network_configuration() -> Result<String> {
 fn extract_address(family: AddressFamily, content: &str) -> Result<IpAddr> {
     addresses_in_text(family, content)
         .next()
+        .map(|(_, address)| address)
         .ok_or_else(|| Error::Ip(format!("response contains no valid {}", family.label())))
 }
 
-fn addresses_in_text(family: AddressFamily, content: &str) -> impl Iterator<Item = IpAddr> + '_ {
+fn addresses_in_text(
+    family: AddressFamily,
+    content: &str,
+) -> impl Iterator<Item = (&str, IpAddr)> + '_ {
     content
         .split(|character: char| {
             character.is_whitespace()
@@ -302,6 +305,7 @@ fn addresses_in_text(family: AddressFamily, content: &str) -> impl Iterator<Item
                 .parse::<IpAddr>()
                 .ok()
                 .filter(|address| family.matches(*address))
+                .map(|address| (token, address))
         })
 }
 
@@ -576,6 +580,65 @@ mod tests {
                 .unwrap()
                 .to_string(),
             "10.192.168.1"
+        );
+    }
+
+    #[test]
+    fn regex_rules_preserve_ipv6_spelling() {
+        for (pattern, output, expected) in [
+            ("^2001:0db8:", "inet6 2001:0db8::1/64", "2001:db8::1"),
+            (
+                "^2001:0db8:0000:0000:0000:0000:0000:0001$",
+                "inet6 2001:0db8:0000:0000:0000:0000:0000:0001/64",
+                "2001:db8::1",
+            ),
+            ("^2001:0DB8::AbCd$", "IP:2001:0DB8::AbCd", "2001:db8::abcd"),
+            ("^FE80::0001$", "IPv6 Address: [FE80::0001%eth0]", "fe80::1"),
+            (
+                r"^2001:0db8::192\.0\.2\.10$",
+                "inet6 2001:0db8::192.0.2.10/96",
+                "2001:db8::c000:20a",
+            ),
+        ] {
+            assert_eq!(
+                regex_address_in_text(AddressFamily::V6, pattern, output)
+                    .unwrap()
+                    .to_string(),
+                expected,
+                "{output}"
+            );
+        }
+    }
+
+    #[test]
+    fn regex_rules_do_not_match_reformatted_ipv6() {
+        for output in ["inet6 2001:0db8::1/64", "inet6 2001:DB8::1/64"] {
+            assert!(
+                regex_address_in_text(AddressFamily::V6, "^2001:db8::1$", output).is_err(),
+                "{output}"
+            );
+        }
+    }
+
+    #[test]
+    fn regex_rules_skip_invalid_and_other_family_candidates() {
+        let output = "inet6 2001:0db8:::1/64\ninet 192.0.2.10/24";
+        assert!(regex_address_in_text(AddressFamily::V6, ".*", output).is_err());
+        assert_eq!(
+            regex_address_in_text(AddressFamily::V4, ".*", output)
+                .unwrap()
+                .to_string(),
+            "192.0.2.10"
+        );
+        assert_eq!(
+            regex_address_in_text(
+                AddressFamily::V6,
+                "^2001:0db8:",
+                &format!("{output}\ninet6 2001:0db8::2/64"),
+            )
+            .unwrap()
+            .to_string(),
+            "2001:db8::2"
         );
     }
 }

@@ -84,6 +84,9 @@ its override priority. IP extraction validates complete addresses with the
 standard-library `IpAddr` type and supports compact labels such as
 `IP:2001:db8::1` and `address:192.0.2.1`; malformed IPv6 literals are not truncated
 into usable fragments.
+`regex:` matches from the start of the extracted original address, preserving
+IPv6 zero padding, case, and compression for matching. For example, `^2001:0db8:`
+matches `2001:0db8::1`; the returned value remains a validated `IpAddr`.
 
 Production code forbids unsafe code and does not use an async runtime, a generic
 error framework, or a mock framework. Provider tests inject an HTTP client, and
