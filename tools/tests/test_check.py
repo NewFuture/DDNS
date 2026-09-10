@@ -147,6 +147,11 @@ class ChangedPathsTests(unittest.TestCase):
 
 
 class ContractTests(unittest.TestCase):
+    def _temporary_root(self) -> Path:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name)
+
     def _write(self, root: Path, relative: str, content: str) -> None:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -179,7 +184,7 @@ locales: {
         )
 
     def _provider_repo(self) -> Path:
-        root = Path(tempfile.mkdtemp())
+        root = self._temporary_root()
         model = {"providers": [{"id": "example", "docs": "example"}]}
         schema = {
             "properties": {
@@ -314,7 +319,7 @@ locales: {
         self.assertIn("docs/llms.txt supported provider IDs missing: example", check.provider_parity_errors(root))
 
     def test_missing_temporary_surface_raises_check_error(self) -> None:
-        root = Path(tempfile.mkdtemp())
+        root = self._temporary_root()
         with self.assertRaisesRegex(check.CheckError, "required file is missing.*field-model.json"):
             check.provider_parity_errors(root)
 
@@ -353,7 +358,7 @@ locales: {
         self.assertIn("docs/providers/README.md lists unknown provider IDs: stale", check.provider_parity_errors(root))
 
     def test_portable_profiles_must_reference_skills(self) -> None:
-        root = Path(tempfile.mkdtemp())
+        root = self._temporary_root()
         self._write(root, "AGENTS.md", "# Rules\n")
         self._write(root, ".agents/skills/example/SKILL.md", "---\nname: example\ndescription: Example\n---\n")
         self._write(
@@ -367,7 +372,7 @@ locales: {
         )
 
     def test_portable_contracts_require_nearest_instruction_files(self) -> None:
-        root = Path(tempfile.mkdtemp())
+        root = self._temporary_root()
         self._write(root, "AGENTS.md", "# Rules\n")
         errors = check.portable_contract_errors(root)
         self.assertIn("missing required instructions: docs/AGENTS.md", errors)
@@ -382,7 +387,7 @@ locales: {
         self.assertIn("- '.github/workflows/**'", workflow)
 
     def test_portable_skill_must_not_preapprove_tools(self) -> None:
-        root = Path(tempfile.mkdtemp())
+        root = self._temporary_root()
         for relative in check.REQUIRED_AGENT_PATHS:
             self._write(root, relative, "# Rules\n")
         self._write(
@@ -452,6 +457,33 @@ locales: {
         self.assertIn(
             "preview-pypi finished with 'skipped'; expected success", check.merge_gate_failures(results, "push")
         )
+
+
+class ContractCleanupTests(unittest.TestCase):
+    def test_provider_repositories_are_removed_after_test_run(self) -> None:
+        for error, failures, errors in ((None, 0, 0), (AssertionError, 1, 0), (RuntimeError, 0, 1)):
+            with self.subTest(error=error), tempfile.TemporaryDirectory() as directory:
+                roots: list[Path] = []
+
+                class CleanupCase(ContractTests):
+                    def runTest(self) -> None:
+                        roots.extend((self._provider_repo(), self._provider_repo()))
+                        for root in roots:
+                            self.assertTrue(root.is_dir())
+                        if error is not None:
+                            raise error("intentional cleanup regression failure")
+
+                case = CleanupCase()
+                result = unittest.TestResult()
+                with patch.object(tempfile, "tempdir", directory):
+                    case.run(result)
+
+                self.assertEqual(len(roots), 2)
+                self.assertEqual(result.testsRun, 1)
+                self.assertEqual(len(result.failures), failures)
+                self.assertEqual(len(result.errors), errors)
+                for root in roots:
+                    self.assertFalse(root.exists(), str(root))
 
 
 class StructureWorkflowTests(unittest.TestCase):
