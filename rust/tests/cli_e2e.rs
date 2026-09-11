@@ -143,6 +143,32 @@ fn runs_callback_for_single_label_domain() {
 }
 
 #[test]
+fn runs_with_separated_negative_log_level() {
+    let output = command()
+        .args([
+            "--config",
+            "--dns",
+            "debug",
+            "--log-level",
+            "-5",
+            "--no-cache",
+            "--index4",
+            "shell:echo 192.0.2.44",
+            "--ipv4",
+            "log.example.com",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("[IPv4] 192.0.2.44"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("DEBUG [ip]"));
+}
+
+#[test]
 fn runs_dual_stack_update() {
     let output = command()
         .args([

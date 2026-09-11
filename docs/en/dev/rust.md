@@ -74,6 +74,7 @@ API.
 The configuration layer rejects only empty domain entries, allowing `debug`
 and `callback` to use single labels such as `localhost`. Provider-specific
 domain constraints are handled by each provider.
+Integer log levels support both `--log-level -5` and `--log-level=-5`.
 
 Cloudflare and Tencent Cloud lookups use `Result<Option<_>>` to distinguish absence
 from request failure. Only valid empty lists or known lookup-miss error codes permit further lookup or

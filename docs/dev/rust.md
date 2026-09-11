@@ -65,6 +65,7 @@ Windows 产物为 `rust\target\release\ddns-rs.exe`。
 字段由各 DNS API 定义。
 域名列表在配置层只拒绝空条目，允许 `debug`、`callback` 使用 `localhost` 等单标签；
 具体域名约束由各 Provider 处理。
+整数日志级别支持 `--log-level -5` 和 `--log-level=-5` 两种写法。
 
 Cloudflare 和腾讯云查询用 `Result<Option<_>>` 区分记录不存在与请求失败；只有正常空列表或已知的
 查询未命中错误码才允许继续查找或创建。Cloudflare 和腾讯云写入响应必须包含

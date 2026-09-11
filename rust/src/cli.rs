@@ -217,7 +217,9 @@ fn collect_scalar(
         .get(*index + 1)
         .ok_or_else(|| Error::Usage(format!("{name} requires a value")))?;
     let value = os_to_string(value)?;
-    if value.starts_with('-') {
+    if let Some(digits) = value.strip_prefix('-')
+        && (digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()))
+    {
         return Err(Error::Usage(format!("{name} requires a value")));
     }
     *index += 2;
@@ -312,6 +314,50 @@ mod tests {
         };
         assert_eq!(options.values["log_level"], "DEBUG");
         assert_eq!(options.values["cache"], "cache.json");
+    }
+
+    #[test]
+    fn parses_separated_negative_integer_scalars() {
+        for flag in ["--log-level", "--log_level", "--log.level"] {
+            for value in ["-5", "-2147483648", "-2147483649", "-99999999999999999999"] {
+                let Command::Run(separated) =
+                    parse(["ddns-rs", flag, value, "--no-cache"]).unwrap()
+                else {
+                    panic!("expected run command");
+                };
+                let Command::Run(inline) =
+                    parse(["ddns-rs", &format!("{flag}={value}"), "--no-cache"]).unwrap()
+                else {
+                    panic!("expected run command");
+                };
+                assert_eq!(separated.values["log_level"], value);
+                assert_eq!(separated.values["cache"], false);
+                assert_eq!(separated.values, inline.values);
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_option_names_in_place_of_scalar_values() {
+        for value in ["--debug", "--log-file", "-h", "-", "--5", "-INFO", "-5.0"] {
+            let error = parse(["ddns-rs", "--log-level", value]).unwrap_err();
+            assert_eq!(error.to_string(), "--log-level requires a value");
+        }
+        assert_eq!(
+            parse(["ddns-rs", "--log-level"]).unwrap_err().to_string(),
+            "--log-level requires a value"
+        );
+    }
+
+    #[test]
+    fn rejects_negative_unsigned_scalars_after_parsing() {
+        for flag in ["--ttl", "--cache-max-age"] {
+            let error = parse(["ddns-rs", flag, "-5"]).unwrap_err();
+            assert_eq!(
+                error.to_string(),
+                format!("{flag} must be a non-negative integer")
+            );
+        }
     }
 
     #[test]
