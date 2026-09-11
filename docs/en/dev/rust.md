@@ -27,6 +27,8 @@ must match. Changes to the version files or preparation workflow on `v5`
 automatically run `Prepare Rust V5` without requiring a tag. It also accepts
 manual preparation on `v5` or canonical `v5.*` tags matching Cargo, then produces verified native and two-platform OCI
 artifacts. It does not create Releases, upload release assets, or push images.
+Preparation accepts only V5 prereleases with an `alpha`, `beta`, or `rc` suffix,
+not stable versions.
 V5 documentation builds do not deploy over the stable site. The Python publisher
 retained on this branch rejects `v5.*` inputs; stable-branch publishing
 configuration is unchanged.
@@ -69,6 +71,9 @@ client; each update request borrows its domain, address, and provider extras
 instead of copying the full configuration per domain. Provider-specific
 `extra` values remain dynamic JSON because their fields are defined by each DNS
 API.
+The configuration layer rejects only empty domain entries, allowing `debug`
+and `callback` to use single labels such as `localhost`. Provider-specific
+domain constraints are handled by each provider.
 
 Cloudflare and Tencent Cloud lookups use `Result<Option<_>>` to distinguish absence
 from request failure. Only valid empty lists or known lookup-miss error codes permit further lookup or
@@ -82,9 +87,13 @@ misses. Authentication, permission, HTTP, and malformed-response errors propagat
 instead of becoming "zone not found". ClouDNS, Huawei, and NameSilo record lookups
 reject malformed collections and records missing matching fields to avoid
 duplicate creation; ClouDNS still accepts both `{}` and `[]` as empty collections.
-Huawei query signatures use RFC3986 percent
-encoding, with spaces encoded as `%20` rather than `+`; form encoding for other
-providers is unchanged.
+Huawei signing and requests use the same RFC3986 query string, encoding spaces
+as `%20` rather than `+` without a second form-encoding pass. Form encoding for
+other providers is unchanged.
+
+AliDNS and ESA send updates when `extra` is supplied even if the address and TTL
+are unchanged. The existing unchanged-record shortcut remains when no extras
+are supplied.
 
 Both DNSPod endpoints merge `extra` after standard mutation parameters, preserving
 its override priority. IP extraction validates complete addresses with the

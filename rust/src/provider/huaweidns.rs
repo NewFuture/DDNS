@@ -91,10 +91,15 @@ impl<'a> HuaweiDnsProvider<'a> {
         )?;
         let mut headers = headers;
         headers.insert("authorization".to_owned(), authorization);
+        let request_path = if canonical_query.is_empty() {
+            path.to_owned()
+        } else {
+            format!("{path}?{canonical_query}")
+        };
         self.context.send_json(
             method,
-            path,
-            &query,
+            &request_path,
+            &BTreeMap::new(),
             (!body.is_empty()).then_some(body),
             headers,
         )

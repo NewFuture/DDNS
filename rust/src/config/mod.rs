@@ -356,7 +356,7 @@ const KNOWN_KEYS: &[&str] = &[
 fn domain_list(value: Option<&Value>) -> Result<Vec<String>> {
     let domains = value_list(value, false)?;
     for domain in &domains {
-        if domain.trim().is_empty() || !domain.contains('.') {
+        if domain.trim().is_empty() {
             return Err(Error::Config(format!("invalid domain: `{domain}`")));
         }
     }

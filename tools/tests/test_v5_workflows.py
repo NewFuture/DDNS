@@ -301,17 +301,36 @@ class RustPreflightTests(unittest.TestCase):
         (self.root / "rust/Cargo.lock").write_text(lock, encoding="utf-8")
         return run_python(self.source, self.root, {"EVENT_NAME": event, "SELECTED_REF": ref})
 
-    def test_canonical_v5_versions_accept_manual_rehearsals_and_exact_tags(self) -> None:
-        for version in ("5.0.0-alpha1", "5.0.0-beta2", "5.0.0-rc10", "5.0.0", "5.12.34"):
+    def test_canonical_v5_prereleases_accept_manual_rehearsals_and_exact_tags(self) -> None:
+        for version in (
+            "5.0.0-alpha1",
+            "5.0.0-beta2",
+            "5.0.0-rc10",
+            "5.12.34-alpha123",
+            "5.12.34-beta12",
+            "5.12.34-rc1",
+        ):
             for event, ref in (
                 ("workflow_dispatch", "refs/heads/v5"),
                 ("push", "refs/heads/v5"),
                 ("push", "refs/tags/v" + version),
             ):
-                with self.subTest(version=version, event=event):
+                with self.subTest(version=version, event=event, ref=ref):
                     result = self.run_preflight(version, event, ref)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn("artifacts only", result.stdout)
+
+    def test_stable_v5_versions_are_rejected_for_all_preparation_refs(self) -> None:
+        for version in ("5.0.0", "5.12.34"):
+            for event, ref in (
+                ("workflow_dispatch", "refs/heads/v5"),
+                ("push", "refs/heads/v5"),
+                ("push", "refs/tags/v" + version),
+            ):
+                with self.subTest(version=version, event=event, ref=ref):
+                    result = self.run_preflight(version, event, ref)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("canonical version", result.stderr)
 
     def test_noncanonical_or_non_v5_manifest_versions_are_rejected(self) -> None:
         for version in (
@@ -321,6 +340,9 @@ class RustPreflightTests(unittest.TestCase):
             "05.0.0",
             "5.00.0",
             "5.0.00",
+            "05.0.0-alpha1",
+            "5.00.0-beta2",
+            "5.0.00-rc10",
             "5.0",
             "v5.0.0",
             "5.0.0-alpha",

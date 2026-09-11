@@ -46,9 +46,9 @@ jobs:
 
           package = tomllib.loads(Path("rust/Cargo.toml").read_text(encoding="utf-8"))["package"]
           version = package.get("version", "")
-          canonical = r"5\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)[1-9][0-9]*)?"
+          canonical = r"5\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(alpha|beta|rc)[1-9][0-9]*"
           if package.get("name") != "ddns-rs" or not isinstance(version, str) or not re.fullmatch(canonical, version):
-              raise SystemExit("Cargo package must be ddns-rs with canonical version 5.x.y[-alphaN|-betaN|-rcN].")
+              raise SystemExit("Cargo package must be ddns-rs with canonical version 5.x.y-(alphaN|betaN|rcN).")
           lock = tomllib.loads(Path("rust/Cargo.lock").read_text(encoding="utf-8"))
           locked_versions = [entry.get("version") for entry in lock.get("package", []) if entry.get("name") == "ddns-rs"]
           if locked_versions != [version]:

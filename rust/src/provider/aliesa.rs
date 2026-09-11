@@ -204,7 +204,7 @@ impl CrudProvider for AliesaProvider<'_> {
             && request.ttl.is_none_or(|ttl| {
                 record.get("Ttl").and_then(Value::as_u64) == Some(u64::from(ttl))
             });
-        if unchanged {
+        if unchanged && request.extra.is_empty() {
             return Ok(());
         }
         let record_id = record

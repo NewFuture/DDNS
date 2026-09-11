@@ -202,7 +202,7 @@ impl CrudProvider for AlidnsProvider<'_> {
                     .and_then(Value::as_u64)
                     .is_some_and(|old| old == u64::from(ttl))
             });
-        if unchanged {
+        if unchanged && request.extra.is_empty() {
             self.context
                 .logger
                 .info("alidns", "record already has the requested value");

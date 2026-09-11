@@ -74,15 +74,58 @@ fn read_http_request(stream: &mut impl Read) -> String {
 
 #[test]
 fn runs_debug_provider_with_shell_address_rule() {
+    for domain in ["test.example.com", "localhost"] {
+        let output = command()
+            .args([
+                "--config",
+                "--dns",
+                "debug",
+                "--no-cache",
+                "--index4",
+                "shell:echo 192.0.2.44",
+                "--ipv4",
+                domain,
+            ])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("[IPv4] 192.0.2.44"));
+    }
+}
+
+#[test]
+fn runs_callback_for_single_label_domain() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let mut stream = accept_with_timeout(&listener);
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let request = read_http_request(&mut stream);
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
+            .unwrap();
+        request
+    });
     let output = command()
         .args([
+            "--config",
             "--dns",
-            "debug",
+            "callback",
+            "--id",
+            &format!("http://{address}/update?domain=__DOMAIN__&ip=__IP__"),
+            "--proxy",
+            "DIRECT",
             "--no-cache",
             "--index4",
-            "shell:echo 192.0.2.44",
+            "shell:echo 192.0.2.45",
             "--ipv4",
-            "test.example.com",
+            "localhost",
         ])
         .output()
         .unwrap();
@@ -91,7 +134,12 @@ fn runs_debug_provider_with_shell_address_rule() {
         "stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(String::from_utf8_lossy(&output.stdout).contains("[IPv4] 192.0.2.44"));
+    assert!(
+        server
+            .join()
+            .unwrap()
+            .starts_with("GET /update?domain=localhost&ip=192.0.2.45 HTTP/1.1\r\n")
+    );
 }
 
 #[test]

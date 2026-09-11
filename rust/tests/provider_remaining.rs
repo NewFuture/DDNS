@@ -847,15 +847,11 @@ fn aliesa_and_huawei_create_and_errors_are_offline() {
 
 #[test]
 fn huawei_signed_queries_use_rfc3986_encoding() {
-    for (line, canonical_line, wire_line) in [
-        ("default", "default", "default"),
-        ("", "", ""),
-        (
-            "custom line+/%~",
-            "custom%20line%2B%2F%25~",
-            "custom+line%2B%2F%25~",
-        ),
-        ("line\u{e9}", "line%C3%A9", "line%C3%A9"),
+    for (line, canonical_line) in [
+        ("default", "default"),
+        ("", ""),
+        ("custom line+/%~", "custom%20line%2B%2F%25~"),
+        ("line\u{e9}", "line%C3%A9"),
     ] {
         let client = json_responses([
             (200, json!({"zones":[{"id":"zone","name":"example.com."}]})),
@@ -869,7 +865,14 @@ fn huawei_signed_queries_use_rfc3986_encoding() {
         assert_eq!(requests.len(), 3);
         let query_request = &requests[1];
         assert_eq!(query_request.method, Method::Get);
-        assert!(query_request.url.contains(&format!("line_id={wire_line}&")));
+        assert!(query_request.body.is_none());
+        let canonical_query = format!(
+            "limit=500&line_id={canonical_line}&name=www.example.com.&search_mode=equal&type=A"
+        );
+        assert_eq!(
+            query_request.url,
+            format!("http://mock.local/v2.1/zones/zone/recordsets?{canonical_query}")
+        );
         let mut headers = query_request.headers.clone();
         let actual = headers.remove("authorization").unwrap();
         let expected = hmac_sha256_authorization(
@@ -879,16 +882,89 @@ fn huawei_signed_queries_use_rfc3986_encoding() {
             "Access=id",
             "GET",
             "/v2.1/zones/zone/recordsets/",
-            &format!(
-                "limit=500&line_id={canonical_line}&name=www.example.com.&search_mode=equal&type=A"
-            ),
+            &canonical_query,
             &headers,
             &sha256_hex(""),
         )
         .unwrap();
         assert_eq!(actual, expected, "line: {line}");
+        assert_eq!(requests[2].method, Method::Post);
+        assert_eq!(
+            requests[2].url,
+            "http://mock.local/v2.1/zones/zone/recordsets"
+        );
         let body: Value = serde_json::from_str(requests[2].body.as_deref().unwrap()).unwrap();
         assert_eq!(body["line"], line);
+    }
+}
+
+#[test]
+fn ali_providers_apply_extras_when_address_and_ttl_are_unchanged() {
+    for (provider, zone, records, response, action, extras) in [
+        (
+            "alidns",
+            json!({"DomainName":"example.com","RR":"www"}),
+            json!({"DomainRecords":{"Record":[{
+                "RecordId":"record","RR":"www","Value":"192.0.2.45","Type":"A","TTL":300
+            }]}}),
+            json!({"RecordId":"record"}),
+            "UpdateDomainRecord",
+            BTreeMap::from([
+                ("Priority".to_owned(), json!(10)),
+                ("Remark".to_owned(), json!("updated remark")),
+            ]),
+        ),
+        (
+            "aliesa",
+            json!({"Sites":[{"SiteId":7,"SiteName":"example.com"}]}),
+            json!({"Records":[{
+                "RecordId":123,"Data":{"Value":"192.0.2.45"},"Ttl":300,"Proxied":true
+            }]}),
+            json!({"RecordId":123}),
+            "UpdateRecord",
+            BTreeMap::from([
+                ("Proxied".to_owned(), json!(false)),
+                ("Comment".to_owned(), json!("")),
+                ("BizName".to_owned(), json!("download")),
+            ]),
+        ),
+    ] {
+        for ttl in [None, Some(300)] {
+            for extra in [&BTreeMap::new(), &extras] {
+                let client = json_responses([
+                    (200, zone.clone()),
+                    (200, records.clone()),
+                    (200, response.clone()),
+                ]);
+                let mut update = request("192.0.2.45");
+                update.ttl = ttl;
+                update.extra = extra;
+                run_request(provider, "id", "secret", client.clone(), update).unwrap();
+                let requests = client.requests();
+                assert_eq!(
+                    requests.len(),
+                    if extra.is_empty() { 2 } else { 3 },
+                    "{provider}"
+                );
+                if !extra.is_empty() {
+                    let mutation = &requests[2];
+                    assert_eq!(mutation.headers["x-acs-action"], action);
+                    let body = mutation.body.as_deref().unwrap();
+                    if provider == "alidns" {
+                        assert!(body.contains("Value=192.0.2.45"));
+                        assert!(body.contains("Priority=10"));
+                        assert!(body.contains("Remark=updated+remark"));
+                    } else {
+                        let body: Value = serde_json::from_str(body).unwrap();
+                        assert_eq!(body["Data"]["Value"], "192.0.2.45");
+                        assert_eq!(body["RecordId"], 123);
+                        for (key, value) in extra {
+                            assert_eq!(&body[key], value);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

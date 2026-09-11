@@ -198,3 +198,43 @@ fn reserved_http_listener_settings_never_become_provider_extras() {
     assert!(!configs[0].extra.contains_key("http_port"));
     assert!(!configs[0].extra.contains_key("http_token"));
 }
+
+#[test]
+fn accepts_nonempty_single_label_domains_before_provider_dispatch() {
+    for provider in ["debug", "callback", "cloudflare"] {
+        let cli = CliOptions {
+            values: BTreeMap::new(),
+            config_paths: Some(vec!["https://config.example/single-label.json".to_owned()]),
+            new_config: None,
+        };
+        let document = json!({
+            "dns": provider,
+            "id": "https://callback.example/update",
+            "token": "test-token",
+            "ipv4": ["localhost"],
+            "ipv6": ["lan"]
+        })
+        .to_string();
+        let configs = load(&cli, &BTreeMap::new(), &|_| Ok(document.clone())).unwrap();
+        assert_eq!(configs[0].ipv4, ["localhost"]);
+        assert_eq!(configs[0].ipv6, ["lan"]);
+    }
+}
+
+#[test]
+fn rejects_empty_domain_entries() {
+    for family in ["ipv4", "ipv6"] {
+        for domain in ["", " \t"] {
+            let cli = CliOptions {
+                values: BTreeMap::from([
+                    ("dns".to_owned(), json!("debug")),
+                    (family.to_owned(), json!([domain])),
+                ]),
+                config_paths: Some(Vec::new()),
+                new_config: None,
+            };
+            let error = load(&cli, &BTreeMap::new(), &|_| unreachable!()).unwrap_err();
+            assert!(error.to_string().contains("invalid domain"));
+        }
+    }
+}
