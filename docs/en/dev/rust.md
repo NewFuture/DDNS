@@ -126,6 +126,9 @@ Linux x64/arm64.
 - Logs and errors replace registered IDs, tokens, and their percent-encoded forms
   with the constant `***` marker, without retaining credential prefixes or suffixes.
   Cache files contain no credentials.
+- DNS.COM signed request bodies are not logged, echoed current signatures are
+  redacted from API error messages, and JSON errors omit the raw response.
+  HTTP errors for sensitive requests retain only the status code.
 - URL diagnostics hide userinfo, non-root paths, query values, and fragments to
   protect credentials embedded in callback or remote-configuration paths. The
   actual request URL is unchanged.

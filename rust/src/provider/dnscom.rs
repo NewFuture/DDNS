@@ -37,8 +37,9 @@ impl<'a> DnscomProvider<'a> {
         let mut digest = Md5::new();
         digest.update(canonical.as_bytes());
         digest.update(self.context.token.as_bytes());
-        parameters.insert("hash".to_owned(), format!("{:x}", digest.finalize()));
-        let response = self.context.send_json(
+        let hash = format!("{:x}", digest.finalize());
+        parameters.insert("hash".to_owned(), hash.clone());
+        let response = self.context.send_sensitive(
             Method::Post,
             &format!("/api/{action}/"),
             &BTreeMap::new(),
@@ -48,17 +49,20 @@ impl<'a> DnscomProvider<'a> {
                 "application/x-www-form-urlencoded".to_owned(),
             )]),
         )?;
+        let response: Value = serde_json::from_str(&response.body).map_err(|error| {
+            Error::Provider(format!("DNS.COM API returned invalid JSON: {error}"))
+        })?;
         if response.get("code").and_then(Value::as_i64) == Some(0) {
             Ok(response.get("data").cloned().unwrap_or(Value::Null))
         } else {
+            let message = response
+                .get("message")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown error")
+                .replace(&hash, "***");
             Err(Error::Provider(format!(
                 "DNS.COM API error: {}",
-                self.context.logger.mask(
-                    response
-                        .get("message")
-                        .and_then(Value::as_str)
-                        .unwrap_or("unknown error")
-                )
+                self.context.logger.mask(&message)
             )))
         }
     }

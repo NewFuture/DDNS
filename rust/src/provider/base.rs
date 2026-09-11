@@ -91,6 +91,9 @@ impl ProviderContext<'_> {
             retries: 2,
         })?;
         if !(200..300).contains(&response.status) {
+            if !log_body {
+                return Err(Error::Provider(format!("HTTP {}", response.status)));
+            }
             return Err(Error::Provider(format!(
                 "HTTP {} {}: {}",
                 response.status,

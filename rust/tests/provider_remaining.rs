@@ -1,14 +1,16 @@
 mod common;
 
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use common::{FakeHttpClient, config, logger, request};
 use ddns_rs::error::Result;
-use ddns_rs::http::{HttpResponse, Method};
+use ddns_rs::http::{HttpClient, HttpRequest, HttpResponse, Method};
 use ddns_rs::logging::{Level, Logger};
 use ddns_rs::provider::{ProviderId, RecordRequest, build};
 use ddns_rs::signature::{hmac_sha256_authorization, sha256_hex};
+use md5::{Digest, Md5};
 use serde_json::{Value, json};
 
 fn json_responses(values: impl IntoIterator<Item = (u16, Value)>) -> Arc<FakeHttpClient> {
@@ -984,6 +986,175 @@ fn provider_specific_create_extras_are_preserved() {
             .unwrap()
             .contains("remark=custom+remark")
     );
+}
+
+#[test]
+fn dnscom_request_signatures_are_not_logged() {
+    let id = "dnscom-test-key";
+    let token = "dnscom-test-secret";
+    let path = std::env::temp_dir().join(format!("ddns-rs-dnscom-log-{}.log", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    let client = json_responses([
+        (200, json!({"code":0,"data":{"domainID":"example.com"}})),
+        (200, json!({"code":0,"data":{"data":[]}})),
+        (200, json!({"code":0,"data":{"recordID":"record"}})),
+        (
+            200,
+            json!({"code":0,"data":{"data":[{"recordID":"record","record":"www","type":"A"}]}}),
+        ),
+        (200, json!({"code":0,"data":{"recordID":"record"}})),
+    ]);
+    {
+        let mut provider = build(
+            &config("dnscom", id, token),
+            client.as_ref(),
+            Logger::new(
+                Level::Debug,
+                Some(&path),
+                vec![id.to_owned(), token.to_owned()],
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        provider.set_record(&request("192.0.2.45")).unwrap();
+        provider.set_record(&request("192.0.2.46")).unwrap();
+    }
+    let log = std::fs::read_to_string(&path).unwrap();
+    std::fs::remove_file(&path).unwrap();
+    let requests = client.requests();
+    assert_eq!(requests.len(), 5);
+    for (request, action) in requests.iter().zip([
+        "domain/getsingle",
+        "record/list",
+        "record/create",
+        "record/list",
+        "record/modify",
+    ]) {
+        assert_eq!(request.method, Method::Post);
+        assert!(request.url.ends_with(&format!("/api/{action}/")));
+        assert_eq!(
+            request.headers["content-type"],
+            "application/x-www-form-urlencoded"
+        );
+        let body = request.body.as_deref().unwrap();
+        let parameters = body
+            .split('&')
+            .map(|part| part.split_once('=').unwrap())
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(parameters["apiKey"], id);
+        assert!(parameters["timestamp"].parse::<i64>().is_ok());
+        let canonical = body
+            .split('&')
+            .filter(|part| !part.starts_with("hash="))
+            .collect::<Vec<_>>()
+            .join("&");
+        let expected = format!("{:x}", Md5::digest(format!("{canonical}{token}")));
+        assert_eq!(parameters["hash"], expected);
+        assert!(!log.contains(parameters["hash"]));
+    }
+    assert!(log.contains("[provider.http]"));
+    assert!(!log.contains("body:"));
+    assert!(!log.contains(id));
+    assert!(!log.contains(token));
+}
+
+#[test]
+fn dnscom_echoed_signatures_are_redacted_from_errors() {
+    struct EchoClient {
+        status: u16,
+        json: bool,
+        requests: RefCell<Vec<HttpRequest>>,
+    }
+
+    impl HttpClient for EchoClient {
+        fn execute(&self, request: &HttpRequest) -> Result<HttpResponse> {
+            self.requests.borrow_mut().push(request.clone());
+            let body = request.body.as_deref().unwrap();
+            Ok(HttpResponse {
+                status: self.status,
+                reason: if self.status == 200 {
+                    "OK"
+                } else {
+                    "Forbidden"
+                }
+                .to_owned(),
+                body: if self.json {
+                    json!({"code":2,"message":format!("Authentication failed: {body}")}).to_string()
+                } else {
+                    body.to_owned()
+                },
+            })
+        }
+    }
+
+    for (case, status, json, expected) in [
+        ("http", 403, false, "HTTP 403"),
+        ("json", 200, false, "invalid JSON"),
+        ("api", 200, true, "Authentication failed"),
+    ] {
+        let id = "dnscom-test-key";
+        let token = "dnscom-test-secret";
+        let path = std::env::temp_dir().join(format!(
+            "ddns-rs-dnscom-error-{case}-{}.log",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&path);
+        let client = EchoClient {
+            status,
+            json,
+            requests: RefCell::new(Vec::new()),
+        };
+        let error = {
+            let logger = Logger::new(
+                Level::Debug,
+                Some(&path),
+                vec![id.to_owned(), token.to_owned()],
+            )
+            .unwrap();
+            let mut provider =
+                build(&config("dnscom", id, token), &client, logger.clone()).unwrap();
+            let error = provider
+                .set_record(&request("192.0.2.45"))
+                .unwrap_err()
+                .to_string();
+            logger.error("test", &error);
+            error
+        };
+        let log = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        let requests = client.requests.borrow();
+        assert_eq!(requests.len(), 1);
+        let hash = requests[0]
+            .body
+            .as_deref()
+            .unwrap()
+            .split('&')
+            .find_map(|part| part.strip_prefix("hash="))
+            .unwrap();
+        assert_eq!(hash.len(), 32);
+        assert!(error.contains(expected), "{case}: {error}");
+        assert!(!error.contains(hash), "{case}");
+        assert!(!log.contains(hash), "{case}");
+        assert!(!log.contains("body:"), "{case}");
+        assert!(!log.contains(id), "{case}");
+        assert!(!log.contains(token), "{case}");
+        if !json {
+            assert!(!error.contains("domainID="), "{case}");
+            assert!(!error.contains("hash="), "{case}");
+        }
+    }
+}
+
+#[test]
+fn sensitive_http_errors_omit_response_bodies() {
+    for token in ["", r#"{"address":"__IP__"}"#] {
+        let client = text_responses([(403, "response-body-marker")]);
+        let error = run("callback", "http://mock.local/callback", token, client)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("HTTP 403"));
+        assert_eq!(error.contains("response-body-marker"), token.is_empty());
+    }
 }
 
 #[test]
