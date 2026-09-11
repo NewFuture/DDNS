@@ -208,10 +208,20 @@ class V5WorkflowTests(unittest.TestCase):
         )
         self.assertEqual(container_matrix, [("ubuntu-latest", "linux/amd64"), ("ubuntu-24.04-arm", "linux/arm64")])
         container = block(workflow("publish-rust.yml"), "container")
+        self.assertIn("    runs-on: ubuntu-latest\n", container)
         self.assertIn("      platforms: linux/amd64,linux/arm64\n", container)
-        self.assertIn("uses: docker/setup-qemu-action@v4", container)
+        self.assertIn(
+            "      - uses: docker/setup-qemu-action@v4\n        with:\n          platforms: arm64\n", container
+        )
         self.assertIn("uses: docker/setup-buildx-action@v4", container)
-        self.assertIn("          platforms: ${{ env.platforms }}", container)
+        self.assertIn(
+            "      - uses: docker/build-push-action@v7\n"
+            "        with:\n"
+            "          context: .\n"
+            "          file: docker/rust.Dockerfile\n"
+            "          platforms: ${{ env.platforms }}\n",
+            container,
+        )
         self.assertIn("          push: false", container)
         self.assertIn("          outputs: type=oci,dest=./ddns-rs-oci.tar", container)
         self.assertIn("uses: actions/upload-artifact@v7", container)
