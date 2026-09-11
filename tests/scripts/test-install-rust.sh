@@ -5,6 +5,7 @@ repo_root="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/ddns-rs-installer-test.XXXXXX")"
 test_root="$temp_dir"
 trap 'rm -rf "$temp_dir"' EXIT HUP INT TERM
+cleanup_trap="$(trap)"
 HOME="$temp_dir/home"
 export HOME
 mkdir -p "$HOME"
@@ -73,7 +74,9 @@ FORCE_INSTALL=false
 UNINSTALL_MODE=false
 VERIFY_CHECKSUM="auto"
 e2e_install_dir="$temp_dir/e2e-bin"
-main v-test --install-dir "$e2e_install_dir" --verify
+(main v-test --install-dir "$e2e_install_dir" --verify)
+test "$temp_dir" = "$test_root"
+test "$(trap)" = "$cleanup_trap"
 test -x "$e2e_install_dir/ddns-rs"
 test ! -e "$e2e_install_dir/ddns"
 
@@ -84,7 +87,9 @@ VERSION="latest"
 FORCE_INSTALL=false
 UNINSTALL_MODE=false
 VERIFY_CHECKSUM="auto"
-main v-test --install-dir "$test_root/no-checksum-tool"
+(main v-test --install-dir "$test_root/no-checksum-tool")
+test "$temp_dir" = "$test_root"
+test "$(trap)" = "$cleanup_trap"
 test -x "$test_root/no-checksum-tool/ddns-rs"
 
 echo "Rust installer offline tests passed"

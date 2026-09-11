@@ -1014,6 +1014,7 @@ fn callback_object_body_is_not_written_to_debug_log() {
 fn cloudns_validates_multi_label_zone_candidates() {
     for (records, mutation_path) in [
         (json!({}), "/dns/add-record.json"),
+        (json!([]), "/dns/add-record.json"),
         (
             json!({"record":{"id":"record","host":"www","type":"A"}}),
             "/dns/mod-record.json",
@@ -1201,5 +1202,124 @@ fn missing_domain_errors_are_failures_outside_zone_lookup() {
             assert!(error.contains("API error"), "{error}");
             assert_eq!(client.requests().len(), expected_requests);
         }
+    }
+}
+
+#[test]
+fn malformed_record_lookups_do_not_create_records() {
+    for (provider, zone, success, malformed_responses) in [
+        (
+            "cloudns",
+            json!({"name":"example.com"}),
+            json!({"status":"Success"}),
+            vec![
+                json!(null),
+                json!(true),
+                json!(300),
+                json!("lookup-secret"),
+                json!([{"host":"www","type":"A","id":"record"}]),
+                json!({"record":null}),
+                json!({"record":{}}),
+                json!({"record":{"host":"www"}}),
+                json!({"record":{"type":"A"}}),
+                json!({"record":{"host":null,"type":"A"}}),
+                json!({"record":{"host":"www","type":""}}),
+                json!({"status":"Success"}),
+            ],
+        ),
+        (
+            "huaweidns",
+            json!({"zones":[{"id":"zone","name":"example.com."}]}),
+            json!({"id":"record"}),
+            vec![
+                json!({}),
+                json!({"recordsets":null}),
+                json!({"recordsets":"lookup-secret"}),
+                json!({"recordsets":{}}),
+                json!({"recordsets":[null]}),
+                json!({"recordsets":[{}]}),
+                json!({"recordsets":[{"name":"www.example.com."}]}),
+                json!({"recordsets":[{"type":"A"}]}),
+                json!({"recordsets":[{"name":"","type":"A"}]}),
+                json!({"recordsets":[{"name":"www.example.com.","type":""}]}),
+            ],
+        ),
+        (
+            "namesilo",
+            json!({"reply":{"code":"300","domain":{"domain":"example.com"}}}),
+            json!({"reply":{"code":"300","record_id":"record"}}),
+            vec![
+                json!({"reply":{"code":"300"}}),
+                json!({"reply":{"code":"300","resource_record":null}}),
+                json!({"reply":{"code":"300","resource_record":"lookup-secret"}}),
+                json!({"reply":{"code":"300","resource_record":{}}}),
+                json!({"reply":{"code":"300","resource_record":[null]}}),
+                json!({"reply":{"code":"300","resource_record":[{}]}}),
+                json!({"reply":{"code":"300","resource_record":[{"host":"www"}]}}),
+                json!({"reply":{"code":"300","resource_record":[{"type":"A"}]}}),
+                json!({"reply":{"code":"300","resource_record":[{"host":null,"type":"A"}]}}),
+                json!({"reply":{"code":"300","resource_record":[{"host":"www","type":""}]}}),
+            ],
+        ),
+    ] {
+        for malformed in malformed_responses {
+            let client = json_responses([
+                (200, zone.clone()),
+                (200, malformed.clone()),
+                (200, success.clone()),
+            ]);
+            let error = run(provider, "id", "lookup-secret", client.clone())
+                .unwrap_err()
+                .to_string();
+            assert_eq!(client.requests().len(), 2, "{provider}: {malformed}");
+            assert!(error.contains("record"), "{provider}: {error}");
+            assert!(!error.contains("lookup-secret"));
+        }
+    }
+}
+
+#[test]
+fn valid_record_lookups_update_matching_records() {
+    for (provider, zone, records, success, method, path) in [
+        (
+            "cloudns",
+            json!({"name":"example.com"}),
+            json!({
+                "other":{"id":"other","host":"other","type":"A"},
+                "record":{"id":"record","host":"www","type":"A"}
+            }),
+            json!({"status":"Success"}),
+            Method::Post,
+            "/dns/mod-record.json",
+        ),
+        (
+            "huaweidns",
+            json!({"zones":[{"id":"zone","name":"example.com."}]}),
+            json!({"recordsets":[
+                {"id":"other","name":"other.example.com.","type":"A"},
+                {"id":"record","name":"www.example.com.","type":"A"}
+            ]}),
+            json!({"id":"record"}),
+            Method::Put,
+            "/v2.1/zones/zone/recordsets/record",
+        ),
+        (
+            "namesilo",
+            json!({"reply":{"code":"300","domain":{"domain":"example.com"}}}),
+            json!({"reply":{"code":"300","resource_record":[
+                {"record_id":"other","host":"other","type":"A"},
+                {"record_id":"record","host":"www","type":"A"}
+            ]}}),
+            json!({"reply":{"code":"300","record_id":"record"}}),
+            Method::Get,
+            "/api/dnsUpdateRecord?",
+        ),
+    ] {
+        let client = json_responses([(200, zone), (200, records), (200, success)]);
+        run(provider, "id", "secret", client.clone()).unwrap();
+        let requests = client.requests();
+        assert_eq!(requests.len(), 3);
+        assert_eq!(requests[2].method, method);
+        assert!(requests[2].url.contains(path), "{provider}");
     }
 }

@@ -98,19 +98,27 @@ impl CrudProvider for NamesiloProvider<'_> {
                 BTreeMap::from([("domain".to_owned(), main_domain.to_owned())]),
             )?
             .ok_or_else(|| Error::Provider("NameSilo returned no record list".to_owned()))?;
-        Ok(reply
+        let records = reply
             .get("resource_record")
             .and_then(Value::as_array)
-            .and_then(|records| {
-                records
-                    .iter()
-                    .find(|record| {
-                        record.get("host").and_then(Value::as_str) == Some(subdomain)
-                            && record.get("type").and_then(Value::as_str)
-                                == Some(request.record_type)
-                    })
-                    .cloned()
-            }))
+            .ok_or_else(|| {
+                Error::Provider("NameSilo returned an invalid record list".to_owned())
+            })?;
+        for record in records {
+            let record_host = record
+                .get("host")
+                .and_then(Value::as_str)
+                .ok_or_else(|| Error::Provider("NameSilo record has no host".to_owned()))?;
+            let record_type = record
+                .get("type")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| Error::Provider("NameSilo record has no type".to_owned()))?;
+            if record_host == subdomain && record_type == request.record_type {
+                return Ok(Some(record.clone()));
+            }
+        }
+        Ok(None)
     }
     fn create_record(
         &mut self,

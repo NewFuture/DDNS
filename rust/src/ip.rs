@@ -139,10 +139,25 @@ fn default_address(family: AddressFamily) -> Result<IpAddr> {
 }
 
 fn local_address(family: AddressFamily, index: usize) -> Result<IpAddr> {
-    let addresses = if_addrs::get_if_addrs()?
+    select_local_address(
+        family,
+        index,
+        if_addrs::get_if_addrs()?
+            .into_iter()
+            .map(|interface| interface.ip()),
+    )
+}
+
+fn select_local_address(
+    family: AddressFamily,
+    index: usize,
+    addresses: impl IntoIterator<Item = IpAddr>,
+) -> Result<IpAddr> {
+    let addresses = addresses
         .into_iter()
-        .map(|interface| interface.ip())
-        .filter(|address| family.matches(*address))
+        .filter(|address| {
+            family.matches(*address) && !address.is_loopback() && !address.is_unspecified()
+        })
         .collect::<Vec<_>>();
     addresses.get(index).copied().ok_or_else(|| {
         Error::Ip(format!(
@@ -376,7 +391,7 @@ mod tests {
 
     use super::{
         AddressFamily, command_address, default_address, extract_address, local_address,
-        regex_address_in_text, resolve, split_command,
+        regex_address_in_text, resolve, select_local_address, split_command,
     };
 
     struct FakeClient;
@@ -393,6 +408,50 @@ mod tests {
                 reason: "OK".to_owned(),
                 body: body.to_owned(),
             })
+        }
+    }
+
+    #[test]
+    fn local_address_indices_skip_loopback_and_unspecified() {
+        let addresses = [
+            "127.0.0.1",
+            "::1",
+            "0.0.0.0",
+            "::",
+            "192.168.1.2",
+            "fd00::1",
+            "127.2.3.4",
+            "192.0.2.10",
+            "fe80::2",
+        ]
+        .map(|address| address.parse::<std::net::IpAddr>().unwrap());
+        for (family, expected) in [
+            (AddressFamily::V4, ["192.168.1.2", "192.0.2.10"]),
+            (AddressFamily::V6, ["fd00::1", "fe80::2"]),
+        ] {
+            for (index, expected) in expected.iter().enumerate() {
+                assert_eq!(
+                    select_local_address(family, index, addresses)
+                        .unwrap()
+                        .to_string(),
+                    *expected
+                );
+            }
+            let error = select_local_address(family, 2, addresses).unwrap_err();
+            assert!(error.to_string().contains("2 matching addresses"));
+        }
+    }
+
+    #[test]
+    fn local_address_index_errors_without_usable_candidates() {
+        let addresses = ["127.0.0.1", "127.2.3.4", "0.0.0.0", "::1", "::"]
+            .map(|address| address.parse::<std::net::IpAddr>().unwrap());
+        for family in [AddressFamily::V4, AddressFamily::V6] {
+            for candidates in [addresses.as_slice(), &[]] {
+                let error =
+                    select_local_address(family, 0, candidates.iter().copied()).unwrap_err();
+                assert!(error.to_string().contains("0 matching addresses"));
+            }
         }
     }
 

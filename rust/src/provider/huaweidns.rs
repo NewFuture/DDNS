@@ -153,19 +153,28 @@ impl CrudProvider for HuaweiDnsProvider<'_> {
             &format!("/v2.1/zones/{zone_id}/recordsets"),
             values,
         )?;
-        Ok(response
+        let records = response
             .get("recordsets")
             .and_then(Value::as_array)
-            .and_then(|records| {
-                records
-                    .iter()
-                    .find(|record| {
-                        record.get("name").and_then(Value::as_str) == Some(name.as_str())
-                            && record.get("type").and_then(Value::as_str)
-                                == Some(request.record_type)
-                    })
-                    .cloned()
-            }))
+            .ok_or_else(|| {
+                Error::Provider("Huawei DNS returned an invalid record list".to_owned())
+            })?;
+        for record in records {
+            let record_name = record
+                .get("name")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| Error::Provider("Huawei DNS record has no name".to_owned()))?;
+            let record_type = record
+                .get("type")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| Error::Provider("Huawei DNS record has no type".to_owned()))?;
+            if record_name == name && record_type == request.record_type {
+                return Ok(Some(record.clone()));
+            }
+        }
+        Ok(None)
     }
     fn create_record(
         &mut self,

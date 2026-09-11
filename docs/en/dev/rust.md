@@ -75,7 +75,10 @@ acceleration, and EdgeOne DNS instead of freely combining strings and booleans.
 
 NameSilo and ClouDNS try the next candidate zone only for documented zone-lookup
 misses. Authentication, permission, HTTP, and malformed-response errors propagate
-instead of becoming "zone not found". Huawei query signatures use RFC3986 percent
+instead of becoming "zone not found". ClouDNS, Huawei, and NameSilo record lookups
+reject malformed collections and records missing matching fields to avoid
+duplicate creation; ClouDNS still accepts both `{}` and `[]` as empty collections.
+Huawei query signatures use RFC3986 percent
 encoding, with spaces encoded as `%20` rather than `+`; form encoding for other
 providers is unchanged.
 
@@ -87,6 +90,10 @@ into usable fragments.
 `regex:` matches from the start of the extracted original address, preserving
 IPv6 zero padding, case, and compression for matching. For example, `^2001:0db8:`
 matches `2001:0db8::1`; the returned value remains a validated `IpAddr`.
+`local` and numeric indices exclude loopback and unspecified addresses within
+the requested family before indexing from `0` in the original order. No usable
+address or an out-of-range index returns an error; private and link-local
+addresses remain selectable.
 
 Production code forbids unsafe code and does not use an async runtime, a generic
 error framework, or a mock framework. Provider tests inject an HTTP client, and

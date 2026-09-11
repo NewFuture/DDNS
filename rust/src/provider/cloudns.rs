@@ -100,16 +100,30 @@ impl CrudProvider for CloudnsProvider<'_> {
                 ]),
             )?
             .ok_or_else(|| Error::Provider("ClouDNS returned no record list".to_owned()))?;
-        Ok(response.as_object().and_then(|records| {
-            records.values().find_map(|record| {
-                let matches_host = record.get("host").and_then(Value::as_str) == Some(host)
-                    || (subdomain == "@"
-                        && matches!(record.get("host").and_then(Value::as_str), Some("" | "@")));
-                (matches_host
-                    && record.get("type").and_then(Value::as_str) == Some(request.record_type))
-                .then(|| record.clone())
-            })
-        }))
+        // The API also uses [] for an empty record collection.
+        if response.as_array().is_some_and(Vec::is_empty) {
+            return Ok(None);
+        }
+        let records = response
+            .as_object()
+            .ok_or_else(|| Error::Provider("ClouDNS returned an invalid record list".to_owned()))?;
+        for record in records.values() {
+            let record_host = record
+                .get("host")
+                .and_then(Value::as_str)
+                .ok_or_else(|| Error::Provider("ClouDNS record has no host".to_owned()))?;
+            let record_type = record
+                .get("type")
+                .and_then(Value::as_str)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| Error::Provider("ClouDNS record has no type".to_owned()))?;
+            let matches_host =
+                record_host == host || (subdomain == "@" && matches!(record_host, "" | "@"));
+            if matches_host && record_type == request.record_type {
+                return Ok(Some(record.clone()));
+            }
+        }
+        Ok(None)
     }
 
     fn create_record(
