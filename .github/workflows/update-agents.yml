@@ -5,7 +5,7 @@ name: Update AGENTS.md
 
 on:
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, v5 ]
     paths:
       - 'AGENTS.md'
       - '.agents/**'

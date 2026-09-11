@@ -154,6 +154,7 @@ docs/:	Documentation (VitePress-based)
 	dev/:	Developer guides (Chinese)
 		provider.md:	Provider development guide
 		config.md:	Configuration system design
+		rust.md:	Rust client development guide
 
 	providers/:	Provider-specific documentation (Chinese)
 		README.md:	Provider list and overview
@@ -292,6 +293,7 @@ Classify the task first, then read only the nearest code, tests, docs, and schem
 - **Web/MCP**: `ddns/web/`, `web/`, `ddns/mcp.py`, `tests/test_web.py`, `tests/test_mcp.py`
 - **Docs**: `README*.md`, `docs/`, `docs/AGENTS.md`
 - **Build/release**: `pyproject.toml`, `run.py`, `.github/patch.py`, `docker/`, `.github/workflows/`
+- **Rust V5**: `rust/`, `rust/tests/`, `docs/dev/rust.md`, `docs/en/dev/rust.md`; target the `v5` integration branch
 - **Agent control plane**: `AGENTS.md`, `.agents/skills/`, `.github/agents/`, `.github/instructions/`
 
 Use `rg` / `rg --files` for discovery, make narrow edits, validate the touched behavior, and report any command that could not run. A task is complete only when code, tests, schemas, docs, and generated metadata affected by the behavior are consistent.
@@ -353,6 +355,16 @@ Follow `.github/instructions/python.instructions.md` for shipped Python and test
 | Docs/site | Chinese/English parity, links, navigation, examples, `llms.txt` | documentation contracts and VitePress build |
 | Build/release | transformations, artifacts, matrices, release notes | package/binary/container checks and protected rehearsal |
 | Agent/workflow | instructions, permissions, validation logic | agent contracts and human review |
+
+### Rust V5 Development
+
+- Keep Python maintenance on `master` / `v4`; target Rust feature PRs at `v5`.
+- Preserve `rust/` and the `ddns-rs` command while V5 is under development.
+- Use a V5 prerelease version and keep `rust/Cargo.toml` and `rust/Cargo.lock` aligned.
+- V5 preparation produces Actions artifacts only. Do not create public V5 tags,
+  releases, registry images, or stable-site deployments as part of branch preparation.
+- Before the first public V5 tag, separate Python/Rust installer and download
+  selectors and obtain explicit direction for the Rust publication workflow.
 
 ### Provider Changes
 
@@ -455,5 +467,5 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 ---
 
 **Version**: 1.1.0
-**Last Updated**: 2026-08-21
+**Last Updated**: 2026-08-25
 **Maintained by**: DDNS Project Contributors

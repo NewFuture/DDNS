@@ -1,0 +1,226 @@
+name: Prepare Rust V5
+run-name: Prepare Rust V5 ${{ github.ref_name }}
+
+# Artifacts only. Actual release publication requires a separate decision and workflow.
+
+on:
+  push:
+    branches: [v5]
+    tags: [v5.*]
+    paths:
+      - "rust/Cargo.toml"
+      - "rust/Cargo.lock"
+      - ".github/workflows/publish-rust.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Validate Rust V5 preparation source
+        shell: python
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          event = os.environ.get("EVENT_NAME", "")
+          ref = os.environ.get("SELECTED_REF", "")
+          if event == "workflow_dispatch":
+              if ref != "refs/heads/v5":
+                  raise SystemExit("Manual Rust V5 preparation must run from the v5 branch.")
+          elif event != "push":
+              raise SystemExit("Rust V5 preparation requires a tag push or manual v5 branch dispatch.")
+
+          package = tomllib.loads(Path("rust/Cargo.toml").read_text(encoding="utf-8"))["package"]
+          version = package.get("version", "")
+          canonical = r"5\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(alpha|beta|rc)[1-9][0-9]*"
+          if package.get("name") != "ddns-rs" or not isinstance(version, str) or not re.fullmatch(canonical, version):
+              raise SystemExit("Cargo package must be ddns-rs with canonical version 5.x.y-(alphaN|betaN|rcN).")
+          lock = tomllib.loads(Path("rust/Cargo.lock").read_text(encoding="utf-8"))
+          locked_versions = [entry.get("version") for entry in lock.get("package", []) if entry.get("name") == "ddns-rs"]
+          if locked_versions != [version]:
+              raise SystemExit("Cargo.lock must contain exactly one ddns-rs package matching the manifest version.")
+          if event == "push" and ref not in ("refs/heads/v5", "refs/tags/v" + version):
+              raise SystemExit("Rust V5 push tag must exactly match v" + version)
+          print("Validated Rust V5 preparation for v" + version + " (artifacts only).")
+
+  binary:
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: ddns-rs-linux-x64
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            asset: ddns-rs-linux-arm64
+            target: aarch64-unknown-linux-musl
+          - os: windows-latest
+            asset: ddns-rs-windows-x64.exe
+            target: x86_64-pc-windows-msvc
+          - os: macos-15-intel
+            asset: ddns-rs-macos-x64
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            asset: ddns-rs-macos-arm64
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          save-if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v5') }}
+      - run: cargo test --manifest-path rust/Cargo.toml --locked
+      - name: Install musl toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
+      - name: Build static Linux binary
+        if: runner.os == 'Linux'
+        run: cargo build --manifest-path rust/Cargo.toml --release --locked --target ${{ matrix.target }}
+        env:
+          CC: musl-gcc
+      - name: Build native binary
+        if: runner.os != 'Linux'
+        run: cargo build --manifest-path rust/Cargo.toml --release --locked --target ${{ matrix.target }}
+      - name: Smoke test Rust binary
+        if: runner.os != 'Windows'
+        run: |
+          binary="rust/target/${{ matrix.target }}/release/ddns-rs"
+          "$binary" --version
+          "$binary" --help
+          "$binary" --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+      - name: Smoke test Rust Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binary = "rust\target\${{ matrix.target }}\release\ddns-rs.exe"
+          & $binary --version
+          & $binary --help
+          & $binary --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
+      - name: Package Unix artifact and checksum
+        if: runner.os != 'Windows'
+        run: |
+          cp "rust/target/${{ matrix.target }}/release/ddns-rs" "${{ matrix.asset }}"
+          shasum -a 256 "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"
+      - name: Package Windows artifact and checksum
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item 'rust\target\${{ matrix.target }}\release\ddns-rs.exe' '${{ matrix.asset }}'
+          $hash = (Get-FileHash -Algorithm SHA256 '${{ matrix.asset }}').Hash.ToLowerInvariant()
+          Set-Content -NoNewline -Path '${{ matrix.asset }}.sha256' -Value "$hash  ${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sha256
+          if-no-files-found: error
+
+  release-assets:
+    name: Bundle verified Rust V5 artifacts
+    needs: binary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: publish
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ddns-rs-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Verify complete Rust artifact set
+        shell: python
+        run: |
+          import hashlib
+          from pathlib import Path
+
+          assets = (
+              "ddns-rs-linux-x64",
+              "ddns-rs-linux-arm64",
+              "ddns-rs-windows-x64.exe",
+              "ddns-rs-macos-x64",
+              "ddns-rs-macos-arm64",
+          )
+          dist = Path("dist")
+          expected = {name for asset in assets for name in (asset, asset + ".sha256")}
+          actual = {path.name for path in dist.iterdir()}
+          if actual != expected:
+              raise SystemExit(
+                  f"Rust artifact set mismatch: missing={sorted(expected - actual)}, "
+                  f"unexpected={sorted(actual - expected)}"
+              )
+          for asset in assets:
+              binary = dist / asset
+              if not binary.is_file() or not binary.stat().st_size:
+                  raise SystemExit("Missing or empty Rust binary: " + asset)
+              with binary.open("rb") as stream:
+                  digest = hashlib.file_digest(stream, "sha256").hexdigest()
+              checksum = (dist / (asset + ".sha256")).read_text(encoding="utf-8").strip()
+              if checksum != f"{digest}  {asset}":
+                  raise SystemExit("SHA-256 checksum or filename mismatch: " + asset)
+              print("Verified SHA-256: " + asset)
+      - name: Upload verified native preparation bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-v5-native-bundle
+          path: dist/
+          if-no-files-found: error
+
+  container:
+    name: Prepare Rust V5 OCI image
+    needs: release-assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: publish
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    permissions:
+      contents: read
+    env:
+      platforms: linux/amd64,linux/arm64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/rust.Dockerfile
+          platforms: ${{ env.platforms }}
+          push: false
+          outputs: type=oci,dest=./ddns-rs-oci.tar
+      - name: Upload OCI preparation archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-v5-oci
+          path: ddns-rs-oci.tar
+          if-no-files-found: error

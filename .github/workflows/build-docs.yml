@@ -2,7 +2,7 @@ name: Build Documentation
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, v5 ]
     paths:
       - 'docs/**'
       - 'README.md'
@@ -12,7 +12,7 @@ on:
       - 'tests/config/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, v5 ]
     paths:
       - 'docs/**'
       - 'README.md'
@@ -54,6 +54,6 @@ jobs:
         path: docs/.vitepress/dist/
 
     - name: Deploy to GitHub Pages
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
       id: deployment
       uses: actions/deploy-pages@v5

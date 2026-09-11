@@ -57,6 +57,25 @@ Linux 与 macOS 也可以使用一键安装脚本获取匹配当前平台的二�
 curl -fsSL https://ddns.newfuture.cc/install.sh | sh
 ```
 
+### Rust V5（开发中）
+
+Rust 作为下一主版本 **V5** 在 [`v5` 分支](https://github.com/NewFuture/DDNS/tree/v5)开发，
+实现保留在 `rust/`，命令仍为 `ddns-rs`。`master` / `v4` 继续维护 Python 版本。
+Rust 可复用现有 CLI、环境变量和配置文件，但尚未完整替代 Python `ddns`；
+`regex:` 使用 Rust 正则语法，不支持 Python 环视与反向引用。
+
+当前 `5.0.0-alpha1` 仅为开发版本标识，**尚未发布 V5**。CI 保留五平台二进制和
+Linux amd64/arm64 容器验证；发布准备流程仅生成 Actions 工件，不上传 Release、
+不推送公共镜像，也不覆盖稳定文档站点。当前请使用源码或 CI 工件：
+
+```bash
+cargo build --manifest-path rust/Cargo.toml --release --locked
+rust/target/release/ddns-rs -c config.json
+```
+
+V5 目前只执行单次同步，不包含 `task`、Web、MCP 或内置调度。
+架构、验证命令、支持矩阵和迁移路线见 [Rust 开发文档](docs/dev/rust.md)。
+
 ## 为什么适合长期运行
 
 ### DNS 更新能力

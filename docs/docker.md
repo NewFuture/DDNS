@@ -12,6 +12,20 @@
 
 ## 镜像说明
 
+### Rust V5 开发镜像
+
+稳定默认镜像仍是 `newfuture/ddns` / `ghcr.io/newfuture/ddns`，不会被 Rust
+镜像替换。Rust V5 在 `v5` 分支开发，目前只构建 Linux amd64/arm64
+OCI 工件，不推送公共镜像。它直接运行 `ddns-rs`，不包含 Python 镜像的
+内置定时任务。可从分支源码本地构建：
+
+```bash
+docker build -f docker/rust.Dockerfile -t ddns-rs:v5-dev .
+docker run --rm ddns-rs:v5-dev --help
+```
+
+V5 尚未发布，暂不提供公共 `latest` / `next` Rust 镜像入口。
+
 ### 镜像版本
 
 DDNS 镜像版本(Docker Tag)：
