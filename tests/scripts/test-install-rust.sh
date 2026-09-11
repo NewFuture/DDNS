@@ -80,6 +80,27 @@ test "$(trap)" = "$cleanup_trap"
 test -x "$e2e_install_dir/ddns-rs"
 test ! -e "$e2e_install_dir/ddns"
 
+printf '%s\n' '#!/bin/sh' 'exit 1' > "$fixture_dir/ddns-rs-linux-x64"
+broken_hash="$(sha256sum "$fixture_dir/ddns-rs-linux-x64" | awk '{print $1}')"
+printf '%s  %s\n' "$broken_hash" "ddns-rs-linux-x64" > "$fixture_dir/ddns-rs-linux-x64.sha256"
+for install_dir in "$e2e_install_dir" "$test_root/rejected-new"; do
+    if (main v-broken --install-dir "$install_dir" --force --verify); then
+        echo "non-working artifact unexpectedly installed" >&2
+        exit 1
+    fi
+done
+test "$(sha256sum "$e2e_install_dir/ddns-rs" | awk '{print $1}')" = "$fixture_hash"
+test "$("$e2e_install_dir/ddns-rs" --version)" = "ddns-rs v-test"
+test ! -e "$test_root/rejected-new/ddns-rs"
+test "$temp_dir" = "$test_root"
+test "$(trap)" = "$cleanup_trap"
+
+printf '%s\n' '#!/bin/sh' 'echo ddns-rs v-updated' > "$fixture_dir/ddns-rs-linux-x64"
+updated_hash="$(sha256sum "$fixture_dir/ddns-rs-linux-x64" | awk '{print $1}')"
+printf '%s  %s\n' "$updated_hash" "ddns-rs-linux-x64" > "$fixture_dir/ddns-rs-linux-x64.sha256"
+(main v-updated --install-dir "$e2e_install_dir" --force --verify)
+test "$("$e2e_install_dir/ddns-rs" --version)" = "ddns-rs v-updated"
+
 verify_checksum() {
     return 2
 }

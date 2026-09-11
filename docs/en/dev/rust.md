@@ -48,6 +48,10 @@ rust/target/release/ddns-rs -c config.json
 
 The Windows artifact is `rust\target\release\ddns-rs.exe`.
 
+The experimental `install-rust.sh` runs `--version` on the temporary binary
+before moving it into place. An artifact that cannot run leaves the existing
+`ddns-rs` untouched, even with `--force`.
+
 ## Architecture
 
 - `cli.rs`: compatible options, aliases, and list rules without a CLI framework.
@@ -123,7 +127,7 @@ Linux x64/arm64.
   file and never overwrites the Python cache.
 - The Python-literal parser accepts only dictionaries, lists/tuples, strings,
   numbers, `True`, `False`, and `None`; it cannot execute expressions.
-- Logs and errors replace registered IDs, tokens, and their percent-encoded forms
+- Logs and errors replace registered IDs, tokens, and their percent-encoded and form-encoded forms
   with the constant `***` marker, without retaining credential prefixes or suffixes.
   Cache files contain no credentials.
 - DNS.COM signed request bodies are not logged, echoed current signatures are

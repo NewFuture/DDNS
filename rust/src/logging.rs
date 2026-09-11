@@ -148,7 +148,11 @@ impl Logger {
             .iter()
             .fold(value.to_owned(), |masked, secret| {
                 let encoded = crate::http::percent_encode(secret);
-                masked.replace(secret, "***").replace(&encoded, "***")
+                let form = crate::http::form_component(secret);
+                masked
+                    .replace(secret, "***")
+                    .replace(&encoded, "***")
+                    .replace(&form, "***")
             })
     }
 
@@ -189,7 +193,10 @@ fn normalize_secrets(secrets: Vec<String>) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::{Level, Logger};
+    use crate::http::form_encode;
 
     #[test]
     fn parses_python_compatible_log_levels() {
@@ -209,15 +216,43 @@ mod tests {
             "ABCDE",
             "long-test-credential",
             "secret/token",
+            "secret with spaces",
+            "secret+*~/% with \u{e9}",
             "\u{5bc6}\u{94a5}\u{4ee4}\u{724c}\u{503c}",
         ] {
             let logger = Logger::stderr(Level::Debug, vec![secret.to_owned()]);
             let encoded = crate::http::percent_encode(secret);
+            let form = form_encode(&BTreeMap::from([("value".to_owned(), secret.to_owned())]));
             assert_eq!(
-                logger.mask(&format!("{secret}|{encoded}|{secret}")),
-                "***|***|***"
+                logger.mask(&format!("{secret}|{encoded}|{form}|{secret}")),
+                "***|***|value=***|***"
             );
         }
+    }
+
+    #[test]
+    fn masks_form_encoded_credentials_in_log_file() {
+        let id = "user name";
+        let token = "pass word+*~/%\u{e9}";
+        let body = form_encode(&BTreeMap::from([
+            ("apiKey".to_owned(), id.to_owned()),
+            ("token".to_owned(), token.to_owned()),
+        ]));
+        let path =
+            std::env::temp_dir().join(format!("ddns-rs-form-log-test-{}.log", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        {
+            let logger = Logger::new(
+                Level::Debug,
+                Some(&path),
+                vec![id.to_owned(), token.to_owned()],
+            )
+            .unwrap();
+            logger.debug("test", format!("body: {body}"));
+        }
+        let content = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        assert!(content.ends_with("DEBUG [test]: body: apiKey=***&token=***\n"));
     }
 
     #[test]
@@ -253,6 +288,7 @@ mod tests {
             vec![
                 "account-id".to_owned(),
                 "account-id-secret/token".to_owned(),
+                "account-id-secret/token with space".to_owned(),
             ],
         )
         .unwrap();
@@ -262,6 +298,10 @@ mod tests {
         assert_eq!(masked, "*** ***");
         assert_eq!(
             logger.mask("account-id-secret%2Ftoken account-id"),
+            "*** ***"
+        );
+        assert_eq!(
+            logger.mask("account-id-secret%2Ftoken+with+space account-id"),
             "*** ***"
         );
         assert_eq!(logger.mask(&masked), masked);

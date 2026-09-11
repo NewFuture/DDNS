@@ -122,12 +122,16 @@ verify_checksum() {
 install_binary() {
     source_file="$1"
     target="$INSTALL_DIR/$BINARY_NAME"
-    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR" || return $?
     if [ -e "$target" ] && [ "$FORCE_INSTALL" != true ]; then
         echo "$target already exists; use --force to replace it" >&2
         return 1
     fi
-    chmod 755 "$source_file"
+    chmod 755 "$source_file" || return $?
+    if ! "$source_file" --version; then
+        echo "Downloaded ddns-rs binary failed its version check" >&2
+        return 1
+    fi
     mv -f "$source_file" "$target"
 }
 
@@ -201,8 +205,7 @@ main() {
         fi
     fi
 
-    install_binary "$binary"
-    "$INSTALL_DIR/$BINARY_NAME" --version
+    install_binary "$binary" || return $?
     rm -rf "$temp_dir"
     trap - EXIT HUP INT TERM
 }

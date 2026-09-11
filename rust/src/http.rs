@@ -502,7 +502,7 @@ pub fn append_query(url: &str, parameters: &BTreeMap<String, String>) -> String 
     format!("{url}{separator}{}", form_encode(parameters))
 }
 
-fn form_component(value: &str) -> String {
+pub(crate) fn form_component(value: &str) -> String {
     percent_encode(value).replace("%20", "+")
 }
 

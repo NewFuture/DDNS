@@ -473,6 +473,19 @@ mod tests {
     }
 
     #[test]
+    fn extracts_addresses_at_the_end_of_sentences() {
+        for (family, content, expected) in [
+            (AddressFamily::V4, "Current IP: 192.0.2.1.", "192.0.2.1"),
+            (AddressFamily::V6, "Current IP: 2001:db8::1.", "2001:db8::1"),
+        ] {
+            assert_eq!(
+                extract_address(family, content).unwrap().to_string(),
+                expected
+            );
+        }
+    }
+
+    #[test]
     fn extracts_labeled_addresses_without_truncating_ipv6() {
         for address in [
             "::",

@@ -44,6 +44,9 @@ rust/target/release/ddns-rs -c config.json
 
 Windows 产物为 `rust\target\release\ddns-rs.exe`。
 
+实验性 `install-rust.sh` 在移动临时二进制到安装目录前执行 `--version`；
+新程序无法运行时，即使使用 `--force` 也不会覆盖已有的 `ddns-rs`。
+
 ## 架构
 
 - `cli.rs`：兼容参数、别名和列表规则，不依赖 CLI 框架。
@@ -100,7 +103,7 @@ CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建、测试并�
 - `regex:` 使用 Rust `regex` 语法，不支持 Python 环视和反向引用；不兼容模式会返回明确错误。
 - 复用配置中的自定义 `cache` 路径时，Rust 写入同级 `<path>.ddns-rs`，不会覆盖 Python 缓存。
 - Python 字面量解析器只接受字典、列表/元组、字符串、数字、`True`、`False` 和 `None`，不会执行表达式。
-- 日志与错误信息将已登记的 ID、token 及其百分号编码形式替换为固定的 `***`，不保留凭据首尾字符；缓存不保存凭据。
+- 日志与错误信息将已登记的 ID、token 及其百分号编码、表单编码形式替换为固定的 `***`，不保留凭据首尾字符；缓存不保存凭据。
 - DNS.COM 签名请求体不写入日志，API 错误消息中的当前签名会脱敏，JSON 解析错误不回显原始响应；敏感请求的 HTTP 错误只保留状态码。
 - 诊断中的 URL 会隐藏用户信息、非根路径、查询值与片段，避免 Callback 或远程配置的路径凭据泄漏；实际发送的 URL 不变。
 
