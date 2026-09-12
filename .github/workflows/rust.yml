@@ -3,7 +3,7 @@ name: Rust
 on:
   workflow_dispatch:
   push:
-    branches: ["master", "main", "v5"]
+    branches: ["master", "main", "v5", "feat/**"]
     paths:
       - "rust/**"
       - "web/**"
