@@ -96,10 +96,7 @@ class V5WorkflowTests(unittest.TestCase):
     def test_v5_ci_triggers_preserve_existing_branches_and_paths(self) -> None:
         for name in ("rust.yml", "rust-python-checks.yml", "build.yml"):
             for event, branches in (
-                (
-                    "push",
-                    ("master", "main", "v5", "feat/**") if name == "rust.yml" else ("master", "main", "v5"),
-                ),
+                ("push", ("master", "main", "v5")),
                 ("pull_request", ("master", "main", "abc", "v5")),
             ):
                 with self.subTest(workflow=name, event=event):
