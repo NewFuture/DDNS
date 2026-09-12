@@ -2,7 +2,9 @@ use crate::error::Result;
 
 use super::base::{Provider, RecordRequest};
 
-pub struct DebugProvider;
+pub struct DebugProvider {
+    pub emit: bool,
+}
 
 impl Provider for DebugProvider {
     fn set_record(&mut self, request: &RecordRequest<'_>) -> Result<()> {
@@ -11,7 +13,9 @@ impl Provider for DebugProvider {
             "AAAA" => "IPv6",
             value => value,
         };
-        println!("[{label}] {}", request.address);
+        if self.emit {
+            println!("[{label}] {}", request.address);
+        }
         Ok(())
     }
 }

@@ -10,6 +10,9 @@ on:
     paths:
       - "rust/Cargo.toml"
       - "rust/Cargo.lock"
+      - "web/**"
+      - "ddns/config/field-model.json"
+      - "docker/rust.Dockerfile"
       - ".github/workflows/publish-rust.yml"
   workflow_dispatch:
 
@@ -107,6 +110,8 @@ jobs:
           binary="rust/target/${{ matrix.target }}/release/ddns-rs"
           "$binary" --version
           "$binary" --help
+          "$binary" web --help
+          "$binary" mcp --help
           "$binary" --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
       - name: Smoke test Rust Windows binary
         if: runner.os == 'Windows'
@@ -115,6 +120,10 @@ jobs:
           $binary = "rust\target\${{ matrix.target }}\release\ddns-rs.exe"
           & $binary --version
           & $binary --help
+          & $binary web --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $binary mcp --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $binary --dns debug --no-cache --index4 "shell:echo 192.0.2.44" --ipv4 test.example.com
       - name: Package Unix artifact and checksum
         if: runner.os != 'Windows'

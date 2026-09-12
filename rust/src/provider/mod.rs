@@ -126,6 +126,15 @@ pub fn build<'a>(
     client: &'a dyn HttpClient,
     logger: Logger,
 ) -> Result<Box<dyn Provider + 'a>> {
+    build_with_output(config, client, logger, true)
+}
+
+pub fn build_with_output<'a>(
+    config: &Config,
+    client: &'a dyn HttpClient,
+    logger: Logger,
+    emit_debug: bool,
+) -> Result<Box<dyn Provider + 'a>> {
     let provider = config.provider;
     let context = base::ProviderContext {
         id: config.id.clone(),
@@ -139,7 +148,7 @@ pub fn build<'a>(
         logger,
     };
     match provider {
-        ProviderId::Debug => Ok(Box::new(debug::DebugProvider)),
+        ProviderId::Debug => Ok(Box::new(debug::DebugProvider { emit: emit_debug })),
         ProviderId::Cloudflare => Ok(Box::new(cloudflare::CloudflareProvider::new(context)?)),
         ProviderId::Alidns => Ok(Box::new(alidns::AlidnsProvider::new(context)?)),
         ProviderId::Dnspod => Ok(Box::new(dnspod::DnspodProvider::new(context)?)),

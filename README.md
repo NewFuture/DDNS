@@ -73,7 +73,9 @@ cargo build --manifest-path rust/Cargo.toml --release --locked
 rust/target/release/ddns-rs -c config.json
 ```
 
-V5 目前只执行单次同步，不包含 `task`、Web、MCP 或内置调度。
+V5 支持单次同步、`web` 控制台与进程内定时同步，以及 `mcp` stdio/HTTP 服务；
+Web 同时提供 `/mcp`。Web/MCP 仅管理单个本地配置，非回环 HTTP 监听必须设置 token。
+尚未迁移 `task` 或系统任务检测/接管；启用 Rust 定时同步前必须手动停用旧 Python/主机任务。
 架构、验证命令、支持矩阵和迁移路线见 [Rust 开发文档](docs/dev/rust.md)。
 
 ## 为什么适合长期运行

@@ -58,6 +58,10 @@ impl Cache {
         Ok(Some(cache))
     }
 
+    pub(crate) fn modified(&self) -> Option<SystemTime> {
+        fs::metadata(&self.path).ok()?.modified().ok()
+    }
+
     pub fn get(&self, provider: ProviderId, domain: &str, record_type: &str) -> Option<&str> {
         self.records
             .get(&cache_key(&self.namespace, provider, domain, record_type))

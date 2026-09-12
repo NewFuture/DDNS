@@ -37,6 +37,7 @@ RUST_ONLY_PATHS = (
     "README.md",
     "README.en.md",
 )
+SHARED_RUST_INPUTS = ("web/**", "ddns/config/field-model.json")
 NATIVE_MATRIX = (
     ("ubuntu-latest", "ddns-rs-linux-x64", "x86_64-unknown-linux-musl"),
     ("ubuntu-24.04-arm", "ddns-rs-linux-arm64", "aarch64-unknown-linux-musl"),
@@ -102,7 +103,10 @@ class V5WorkflowTests(unittest.TestCase):
                     trigger = block(workflow(name), event)
                     self.assertEqual(inline_list(trigger, "branches"), branches)
                     paths = tuple(re.findall(r"""(?m)^      - ["']([^"']+)["']$""", trigger))
-                    self.assertEqual(paths, RUST_ONLY_PATHS)
+                    expected = RUST_ONLY_PATHS
+                    if name != "build.yml":
+                        expected = (RUST_ONLY_PATHS[0], *SHARED_RUST_INPUTS, *RUST_ONLY_PATHS[1:])
+                    self.assertEqual(paths, expected)
                     self.assertIn("    paths-ignore:" if name == "build.yml" else "    paths:", trigger)
         for name, events in (("build-docs.yml", ("push", "pull_request")), ("update-agents.yml", ("pull_request",))):
             for event in events:
@@ -114,6 +118,8 @@ class V5WorkflowTests(unittest.TestCase):
         changes = block(text, "changes")
         case_paths = "|".join(path.replace("rust/**", "rust/*") for path in RUST_ONLY_PATHS)
         self.assertIn(case_paths + ")", changes)
+        for path in SHARED_RUST_INPUTS:
+            self.assertNotIn(path.replace("/**", "/*"), changes)
         self.assertIn('echo "pure_rust=false"', changes)
         self.assertIn("*)\n                pure_rust=false", changes)
         self.assertIn("if: needs.changes.outputs.pure_rust == 'true'", block(text, "not-applicable"))
@@ -193,13 +199,20 @@ class V5WorkflowTests(unittest.TestCase):
                     expected = tuple((os, asset.removesuffix(".exe"), target) for os, asset, target in expected)
                 self.assertEqual(matrix, expected)
                 self.assertIn("fail-fast: false", binary)
-                self.assertIn("cargo test --manifest-path rust/Cargo.toml --locked", text)
+                self.assertIn("cargo test --manifest-path rust/Cargo.toml --locked", binary)
                 self.assertIn(
                     "cargo build --manifest-path rust/Cargo.toml --release --locked --target ${{ matrix.target }}",
                     binary,
                 )
                 self.assertIn('"$binary" --version', binary)
                 self.assertIn("& $binary --version", binary)
+                for command in ("web", "mcp"):
+                    self.assertIn(f'"$binary" {command} --help', binary)
+                    self.assertIn(
+                        f"& $binary {command} --help\n"
+                        "          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+                        binary,
+                    )
                 self.assertIn("--dns debug --no-cache", binary)
                 self.assertIn("if-no-files-found: error", binary)
         self.assertIn('lto = "thin"', (ROOT / "rust/Cargo.toml").read_text(encoding="utf-8"))
@@ -228,6 +241,24 @@ class V5WorkflowTests(unittest.TestCase):
         self.assertIn("          path: ddns-rs-oci.tar\n", container)
         self.assertIn("          if-no-files-found: error", container)
 
+    def test_container_embeds_only_explicit_public_assets_with_repository_layout(self) -> None:
+        text = (ROOT / "docker/rust.Dockerfile").read_text(encoding="utf-8")
+        builder = text.split("FROM alpine:", 1)[0]
+        self.assertIn("WORKDIR /build/rust\n", builder)
+        self.assertIn("target=/build/rust/target", builder)
+        copies = re.findall(r"(?m)^COPY (.+)$", builder)
+        self.assertEqual(
+            copies,
+            [
+                "rust/Cargo.toml rust/Cargo.lock ./",
+                "rust/src ./src",
+                "web/index.html web/dashboard.js web/dashboard.css web/ddns.svg /build/web/",
+                "ddns/config/field-model.json /build/ddns/config/field-model.json",
+            ],
+        )
+        for command in ("web", "mcp"):
+            self.assertIn(f"ddns-rs:test {command} --help", block(workflow("rust.yml"), "container"))
+
     def test_rust_preparation_has_only_read_permissions_and_artifact_outputs(self) -> None:
         text = "\n".join(
             line for line in workflow("publish-rust.yml").splitlines() if not line.lstrip().startswith("#")
@@ -239,7 +270,13 @@ class V5WorkflowTests(unittest.TestCase):
         self.assertEqual(inline_list(block(text, "push"), "branches"), ("v5",))
         self.assertEqual(
             tuple(re.findall(r'(?m)^      - "([^"]+)"$', block(text, "push"))),
-            ("rust/Cargo.toml", "rust/Cargo.lock", ".github/workflows/publish-rust.yml"),
+            (
+                "rust/Cargo.toml",
+                "rust/Cargo.lock",
+                *SHARED_RUST_INPUTS,
+                "docker/rust.Dockerfile",
+                ".github/workflows/publish-rust.yml",
+            ),
         )
         self.assertIn("permissions:\n  contents: read", text)
         self.assertIn("    needs: preflight\n", block(text, "binary"))

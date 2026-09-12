@@ -77,7 +77,11 @@ cargo build --manifest-path rust/Cargo.toml --release --locked
 rust/target/release/ddns-rs -c config.json
 ```
 
-V5 currently performs one update run, without `task`, Web, MCP, or a scheduler.
+V5 supports one-shot updates, the `web` dashboard with an in-process scheduler,
+and `mcp` over stdio/HTTP; Web also serves `/mcp`. Web/MCP manage one local
+configuration only; non-loopback HTTP listeners require a token.
+The `task` command and OS task detection/takeover are not ported: manually
+disable old Python/host tasks before enabling Rust scheduled updates.
 See the [Rust development guide](docs/en/dev/rust.md) for architecture, validation, support status, and the parity roadmap.
 
 ## Why it works for long-running deployments

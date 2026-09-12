@@ -5,6 +5,8 @@ on:
     branches: ["master", "main", "v5"]
     paths:
       - "rust/**"
+      - "web/**"
+      - "ddns/config/field-model.json"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
       - ".github/workflows/publish-rust.yml"
@@ -24,6 +26,8 @@ on:
     branches: ["master", "main", "abc", "v5"]
     paths:
       - "rust/**"
+      - "web/**"
+      - "ddns/config/field-model.json"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
       - ".github/workflows/publish-rust.yml"
