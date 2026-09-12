@@ -5,6 +5,8 @@ on:
     branches: ["master", "main", "v5"]
     paths:
       - "rust/**"
+      - "web/**"
+      - "ddns/config/field-model.json"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
       - ".github/workflows/publish-rust.yml"
@@ -24,6 +26,8 @@ on:
     branches: ["master", "main", "abc", "v5"]
     paths:
       - "rust/**"
+      - "web/**"
+      - "ddns/config/field-model.json"
       - ".github/workflows/rust.yml"
       - ".github/workflows/rust-python-checks.yml"
       - ".github/workflows/publish-rust.yml"
@@ -97,6 +101,8 @@ jobs:
         with:
           workspaces: rust
           save-if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v5') }}
+      - name: Run native unit and process tests
+        run: cargo test --manifest-path rust/Cargo.toml --locked
       - name: Install musl toolchain
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends musl-tools
@@ -114,6 +120,8 @@ jobs:
           binary="rust/target/${{ matrix.target }}/release/ddns-rs"
           "$binary" --version
           "$binary" --help
+          "$binary" web --help
+          "$binary" mcp --help
           "$binary" --dns debug --no-cache \
             --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com \
             --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com
@@ -124,6 +132,10 @@ jobs:
           $binary = "rust\target\${{ matrix.target }}\release\ddns-rs.exe"
           & $binary --version
           & $binary --help
+          & $binary web --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $binary mcp --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $binary --dns debug --no-cache `
             --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com `
             --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com
@@ -161,6 +173,8 @@ jobs:
         run: |
           docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --version
           docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --help
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test web --help
+          docker run --rm --platform ${{ matrix.platform }} ddns-rs:test mcp --help
           docker run --rm --platform ${{ matrix.platform }} ddns-rs:test --dns debug --no-cache \
             --index4 "shell:echo 192.0.2.44" --ipv4 v4.example.com \
             --index6 "shell:echo 2001:db8::44" --ipv6 v6.example.com

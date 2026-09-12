@@ -234,7 +234,7 @@ fn falls_back_from_invalid_literals_to_labeled_addresses() {
 
 #[test]
 fn reports_unsupported_modes_with_usage_exit_code() {
-    let output = command().arg("web").output().unwrap();
+    let output = command().arg("task").output().unwrap();
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("not supported"));
 }

@@ -2,7 +2,7 @@
 
 `ddns-rs` 是 DDNS 下一主版本 V5 的 Rust 实现，集成分支为 `v5`。
 Python 版本继续在 `master` / `v4` 维护；Rust 功能 PR 应以 `v5` 为目标。
-当前开发版本为 `5.0.0-alpha1`，只负责单次同步，尚未发布，也不替换稳定的
+当前开发版本为 `5.0.0-alpha1`，支持单次同步及 Web/MCP 服务，尚未发布，也不替换稳定的
 Python `ddns` 命令或默认安装方式。
 
 ## 当前支持
@@ -14,15 +14,18 @@ Python `ddns` 命令或默认安装方式。
 | CLI、`DDNS_*`、本地/远程/多配置、v4.1 `providers` | 已支持 |
 | JSON 注释与受限 Python 数据字面量 | 已支持 |
 | 缓存、代理回退、重试、TLS 与自定义 CA | 已支持 |
-| Linux amd64/arm64 Docker 镜像 | 构建和离线冒烟测试；准备流程保存 OCI 工件，不推送公共镜像，无内置调度 |
+| Linux amd64/arm64 Docker 镜像 | 构建和离线冒烟测试；准备流程保存 OCI 工件，不推送公共镜像；`web` 提供进程内调度 |
 | Linux x64/arm64、macOS x64/arm64、Windows x64 二进制 | 准备流程保存 `ddns-rs-*` 与 `.sha256` Actions 工件；Linux 使用静态 musl 目标 |
-| `task`、Web、MCP | 计划中 |
+| Web 控制台、配置管理与进程内调度 | 已支持；单个本地配置，间隔 1..1440 分钟 |
+| MCP stdio、独立 HTTP、Web `/mcp` | 已支持；现代协议及旧版 stdio 兼容 |
+| `task` 与系统任务检测/接管 | 尚未迁移；必须手动停用旧 Python/主机任务 |
 
 ## V5 分支与发布准备
 
 保留 `rust/` 布局、`ddns-rs` 命令及现有配置兼容边界，暂不删除 Python 实现。
 `rust/Cargo.toml` 与 `rust/Cargo.lock` 的版本必须一致。`v5` 上的版本文件或
-准备工作流发生变更时，`Prepare Rust V5` 自动构建，无需创建标签。它也接受
+准备工作流、内嵌 Web 资源/字段模型或 Rust Dockerfile 发生变更时，
+`Prepare Rust V5` 自动构建，无需创建标签。它也接受
 `v5` 分支上的手动准备，或与 Cargo 版本一致的规范 `v5.*` 标签，并生成经过
 校验的原生工件和双架构 OCI 工件；不会创建 Release、上传发布资产或推送镜像。
 准备流程仅接受带 `alpha`、`beta` 或 `rc` 后缀的 V5 预发布版本，不接受稳定版本。
@@ -47,6 +50,47 @@ Windows 产物为 `rust\target\release\ddns-rs.exe`。
 
 实验性 `install-rust.sh` 在移动临时二进制到安装目录前执行 `--version`；
 新程序无法运行时，即使使用 `--force` 也不会覆盖已有的 `ddns-rs`。
+
+## Web 与 MCP
+
+```bash
+ddns-rs web -c config.json --host 127.0.0.1 --port 8000 --interval 5 --open
+ddns-rs mcp -c config.json
+ddns-rs mcp -c config.json --transport http --host 127.0.0.1 --port 8001
+```
+
+`web` 接受 `-c FILE`、`--host HOST`、`--port PORT`、`--http-token TOKEN`、
+可重复的 `--http-origin ORIGIN`、`--interval MINUTES` 和 `--open`（打开浏览器）。
+未指定子命令时，顶层 `--interval` 或配置根级 `interval` 会选择 Web 模式。
+进程内调度间隔为 1..1440 分钟，仅在进程存活期间运行。
+
+控制台支持读取、校验和保存完整配置，管理备份/恢复、查看状态并触发同步。
+Web 与 MCP 复用同一个服务，仅接受单个本地配置文件，不接受远程或多配置来源。
+Web 使用现有兼容的 Rust 运行时校验配置，不代表与 Python 运行时完全等价。
+
+`mcp` 默认使用按行分隔的 stdio。`--transport http` 在 `/mcp` 提供独立的
+Streamable HTTP；Web 监听器也提供相同端点。现代 MCP 协议版本为
+`2026-07-28`；旧版 `2025-11-25` 仅通过 stdio 兼容。两种服务均提供与 Python
+相同的 `get_ddns_status`、`update_dns_records` 工具。
+
+HTTP 默认监听回环地址。非回环监听必须设置 `--http-token TOKEN`，客户端使用
+`Authorization: Bearer TOKEN` 鉴权。可重复传入 `--http-origin ORIGIN` 添加允许的
+浏览器来源。Web 和 MCP HTTP 均执行来源检查与鉴权。不要将明文 HTTP 暴露于
+不可信网络，应使用可信的 TLS 反向代理或隧道。状态响应不包含凭据，但受监听器
+鉴权保护的配置 API 会按设计返回完整配置，包括 Provider 凭据。监听 token、配置和
+备份均应视为机密；即使不设置回环监听 token，本机访问仍是信任边界。
+监听 token 授予敏感配置访问与 DNS 更新权限，不是只读监控凭据。Web 同步会以
+进程用户权限执行经鉴权管理的本地配置中的 `cmd:`/`shell:` 规则，因此只应向可信
+管理员授予访问权限。
+
+二进制在编译时内嵌现有 `web/` 控制台资源和 `ddns/config/field-model.json`，
+提供页面无需前端服务器或 Python 运行时。修改这些输入后须重新构建；源码构建需
+保留仓库布局，不能只复制孤立的 `rust/` 目录。
+
+**迁移限制：** 尚未实现 `task`、系统任务检测及自动接管。启用 Rust 定时同步前，
+必须手动停用旧 Python/主机的 systemd、cron、launchd 或 schtasks 任务，避免重复运行。
+Web 调度器不会安装或替代主机服务。已有 Rust `regex:` 与独立缓存限制仍然适用；
+`log_format`、`log_datefmt` 仅为配置兼容而接受，不保证 Python 日志格式等价。
 
 ## 架构
 
@@ -117,5 +161,5 @@ CI 还会在 Linux x64/arm64、Windows x64、macOS x64/arm64 构建、测试并�
 ## 后续顺序
 
 1. 迁移 systemd、cron、launchd、schtasks。
-2. 迁移 Web 控制台与 MCP。
+2. 验证 Web/MCP 在长期运行与平台迁移中的兼容性。
 3. 达到完整等价并稳定运行后再讨论改名为 `ddns`。

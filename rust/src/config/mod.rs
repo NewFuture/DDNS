@@ -117,6 +117,17 @@ pub fn load(
         .collect()
 }
 
+/// Merge an already parsed document using the same precedence as the CLI.
+pub fn from_document(
+    document: Value,
+    environment: &BTreeMap<String, Value>,
+) -> Result<Vec<Config>> {
+    merge::expand_document(document)?
+        .iter()
+        .map(|document| Config::from_sources(&BTreeMap::new(), document, environment, false))
+        .collect()
+}
+
 fn config_paths(cli: &CliOptions, environment: &BTreeMap<String, Value>) -> Result<Vec<String>> {
     if let Some(paths) = &cli.config_paths {
         return Ok(paths.clone());

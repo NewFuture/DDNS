@@ -31,6 +31,20 @@ cargo build --manifest-path rust/Cargo.toml --release --locked
 rust/target/release/ddns-rs --help
 ```
 
+Source builds and CI binaries support Web and MCP:
+
+```bash
+rust/target/release/ddns-rs web -c config.json --interval 5
+rust/target/release/ddns-rs mcp -c config.json
+```
+
+Web embeds the dashboard and exposes `/mcp`; standalone HTTP MCP uses
+`mcp --transport http`. Web/MCP manage one local config only; non-loopback HTTP
+listeners require `--http-token`. In-process scheduling does not migrate or
+detect OS tasks: manually disable old Python/host tasks to avoid duplicate runs.
+See the [Rust V5 development guide](dev/rust.md) for options, security boundaries,
+and compatibility limits.
+
 The retained Rust installer is future release tooling for Linux x64/arm64 and
 macOS x64/arm64. It downloads
 the separate `ddns-rs-linux-x64`, `ddns-rs-linux-arm64`, `ddns-rs-macos-x64`,

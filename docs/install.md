@@ -30,6 +30,18 @@ cargo build --manifest-path rust/Cargo.toml --release --locked
 rust/target/release/ddns-rs --help
 ```
 
+源码或 CI 二进制支持 Web 与 MCP：
+
+```bash
+rust/target/release/ddns-rs web -c config.json --interval 5
+rust/target/release/ddns-rs mcp -c config.json
+```
+
+Web 内嵌控制台并提供 `/mcp`；独立 HTTP MCP 使用 `mcp --transport http`。
+Web/MCP 仅管理单个本地配置，非回环 HTTP 监听必须设置 `--http-token`。
+进程内调度不迁移或检测系统任务；必须手动停用旧 Python/主机任务，避免重复运行。
+详细选项、安全边界及兼容限制见 [Rust V5 开发文档](dev/rust.md)。
+
 保留的 Rust 安装脚本是未来发布工具，仅支持 Linux x64/arm64 和 macOS x64/arm64，下载独立的
 `ddns-rs-linux-x64`、`ddns-rs-linux-arm64`、`ddns-rs-macos-x64` 或
 `ddns-rs-macos-arm64` Release 资产及其 `.sha256` 校验文件。Windows x64

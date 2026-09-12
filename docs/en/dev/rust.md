@@ -2,8 +2,8 @@
 
 `ddns-rs` is the Rust implementation for DDNS V5, integrated on the `v5` branch.
 Python maintenance continues on `master` / `v4`; Rust feature PRs should target
-`v5`. The current development version is `5.0.0-alpha1`. It performs one
-synchronization per process, is not published, and does not replace the stable
+`v5`. The current development version is `5.0.0-alpha1`. It supports one-shot
+updates and Web/MCP services, is not published, and does not replace the stable
 Python `ddns` command or default installer.
 
 ## Current support
@@ -15,17 +15,20 @@ Python `ddns` command or default installer.
 | CLI, `DDNS_*`, local/remote/multiple configs, v4.1 `providers` | Supported |
 | JSON comments and restricted Python data literals | Supported |
 | Cache, proxy fallback, retries, TLS, and custom CA files | Supported |
-| Linux amd64/arm64 Docker image | Build and offline smoke coverage; preparation saves an OCI artifact without registry publication or a scheduler |
+| Linux amd64/arm64 Docker image | Build and offline smoke coverage; preparation saves an OCI artifact without registry publication; `web` provides in-process scheduling |
 | Linux x64/arm64, macOS x64/arm64, Windows x64 binaries | Preparation saves `ddns-rs-*` and `.sha256` Actions artifacts; Linux uses static musl targets |
-| `task`, Web, and MCP | Planned |
+| Web dashboard, configuration management, and in-process scheduling | Supported; one local config, interval 1..1440 minutes |
+| MCP stdio, standalone HTTP, and Web `/mcp` | Supported; modern protocol and legacy stdio compatibility |
+| `task` and OS task detection/takeover | Not ported; manually disable old Python/host tasks |
 
 ## V5 branch and release preparation
 
 Keep the `rust/` layout, `ddns-rs` command, and existing configuration boundaries;
 do not remove Python yet. The versions in `rust/Cargo.toml` and `rust/Cargo.lock`
-must match. Changes to the version files or preparation workflow on `v5`
-automatically run `Prepare Rust V5` without requiring a tag. It also accepts
-manual preparation on `v5` or canonical `v5.*` tags matching Cargo, then produces verified native and two-platform OCI
+must match. Changes to the version files, preparation workflow, embedded Web
+assets/field model, or Rust Dockerfile on `v5` automatically run `Prepare Rust V5`
+without requiring a tag. It also accepts manual preparation on `v5` or canonical
+`v5.*` tags matching Cargo, then produces verified native and two-platform OCI
 artifacts. It does not create Releases, upload release assets, or push images.
 Preparation accepts only V5 prereleases with an `alpha`, `beta`, or `rc` suffix,
 not stable versions.
@@ -53,6 +56,58 @@ The Windows artifact is `rust\target\release\ddns-rs.exe`.
 The experimental `install-rust.sh` runs `--version` on the temporary binary
 before moving it into place. An artifact that cannot run leaves the existing
 `ddns-rs` untouched, even with `--force`.
+
+## Web and MCP
+
+```bash
+ddns-rs web -c config.json --host 127.0.0.1 --port 8000 --interval 5 --open
+ddns-rs mcp -c config.json
+ddns-rs mcp -c config.json --transport http --host 127.0.0.1 --port 8001
+```
+
+`web` accepts `-c FILE`, `--host HOST`, `--port PORT`, `--http-token TOKEN`,
+repeatable `--http-origin ORIGIN`, `--interval MINUTES`, and `--open` (open the
+browser). Without an explicit subcommand, top-level `--interval` or a root
+configuration `interval` selects Web mode. The in-process scheduler accepts
+1..1440 minutes and runs only while the process is alive.
+
+The dashboard reads, validates, and saves the full configuration, manages
+backups/restores, reports status, and triggers synchronization. Web and MCP use
+the same service. They require a single local configuration file, not remote or
+multiple configuration sources. Web validation uses the compatible Rust runtime;
+it does not promise full Python runtime parity.
+
+`mcp` defaults to newline-delimited stdio. `--transport http` serves standalone
+Streamable HTTP at `/mcp`; Web exposes the same endpoint on its own listener.
+Modern MCP uses protocol `2026-07-28`; legacy `2025-11-25` is supported over stdio
+only. Both expose the Python tool names `get_ddns_status` and
+`update_dns_records`.
+
+HTTP listeners default to loopback. A non-loopback bind requires
+`--http-token TOKEN`; clients authenticate with `Authorization: Bearer TOKEN`.
+Use repeated `--http-origin ORIGIN` flags for additional allowed browser origins.
+Origin checks and authentication apply to both Web and MCP HTTP. Do not expose
+plain HTTP on an untrusted network; use a trusted TLS reverse proxy or tunnel.
+Status responses exclude credentials, but the authenticated configuration API
+intentionally returns the full configuration, including provider credentials.
+Treat listener tokens, configuration files, and backups as secrets. With no
+listener token on loopback, local access is still a trust boundary.
+The listener token grants sensitive configuration access and DNS update authority,
+not read-only monitoring. Web updates execute `cmd:`/`shell:` rules from the
+authenticated local configuration with the process user's permissions; grant
+access only to trusted administrators.
+
+The binary embeds the existing `web/` dashboard assets and
+`ddns/config/field-model.json` at compile time; no frontend server or Python
+runtime is needed to serve them. Rebuild after changing these inputs. Source
+builds require the repository layout, not an isolated copy of `rust/`.
+
+**Migration limitation:** `task`, OS scheduler detection, and automatic takeover
+are not implemented. Manually disable old Python/host systemd, cron, launchd, or
+schtasks jobs before enabling Rust scheduled updates to avoid duplicate runs.
+The Web scheduler does not install or replace a host service. Existing Rust
+`regex:` and separate-cache limits still apply. `log_format` and `log_datefmt`
+are accepted for configuration compatibility, not Python formatting parity.
 
 ## Architecture
 
@@ -150,6 +205,6 @@ Linux x64/arm64.
 ## Parity roadmap
 
 1. Port systemd, cron, launchd, and schtasks support.
-2. Port the Web dashboard and MCP server.
+2. Validate Web/MCP compatibility in long-running deployments and platform migrations.
 3. Consider renaming the binary to `ddns` only after complete parity and a
    separate stability period.

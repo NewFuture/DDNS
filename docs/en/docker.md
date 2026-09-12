@@ -17,8 +17,9 @@
 The stable default image remains `newfuture/ddns` / `ghcr.io/newfuture/ddns`;
 the Rust image does not replace it. Rust V5 is developed on `v5` and currently
 produces Linux amd64/arm64 OCI artifacts without pushing a public image.
-It runs `ddns-rs` directly without the Python image's built-in scheduler.
-Build it locally from the branch source:
+It runs `ddns-rs` directly without the Python image's cron entrypoint. The default
+is one-shot synchronization; `web` enables in-process scheduling. Build it locally
+from the branch source:
 
 ```bash
 docker build -f docker/rust.Dockerfile -t ddns-rs:v5-dev .
@@ -26,6 +27,41 @@ docker run --rm ddns-rs:v5-dev --help
 ```
 
 V5 has not been published; no public `latest` / `next` Rust channel is promised yet.
+
+Web example (first prepare a local `config/` directory containing `config.json`
+and set a private `DDNS_HTTP_TOKEN` in your shell):
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 \
+  -v "$PWD/config:/ddns" ddns-rs:v5-dev \
+  web -c /ddns/config.json --host 0.0.0.0 --port 8000 \
+  --http-token "$DDNS_HTTP_TOKEN" --http-origin http://127.0.0.1:8000 --interval 5
+```
+
+A non-loopback bind inside the container also requires a token. Publish the port
+only on host loopback; clients authenticate with a Bearer token. For remote
+access, use a trusted TLS reverse proxy or tunnel and repeat `--http-origin ORIGIN`
+as needed. The dashboard and `/mcp` share the listener and service. For standalone
+MCP HTTP, use `mcp -c /ddns/config.json --transport http` with the same listener/auth
+options. For stdio MCP, use `docker run --rm -i` (without a TTY), mount the config,
+and run `mcp -c /ddns/config.json`.
+
+Web/MCP require one local configuration. Saving and backup/restore require the
+non-root container user `ddns` to have write access to the mounted directory;
+configure deployment-specific permissions rather than making it world-writable.
+The configuration API returns the full configuration, including credentials;
+keep configurations, backups, and listener tokens private. The image embeds only
+explicit public Web assets and the field model, not user configuration files.
+Build with the repository root as context.
+Listener tokens grant sensitive configuration access and DNS update authority.
+Web synchronization executes local configuration `cmd:`/`shell:` rules as the
+container user; only trusted administrators should receive access.
+
+The in-process interval is 1..1440 minutes; scheduling stops when the container
+exits. Neither `task` nor OS task detection/takeover is implemented: manually
+disable old Python/host tasks first. See the [Rust V5 development guide](dev/rust.md)
+for options and compatibility limits. The image versions and default cron
+behavior below apply only to the stable Python image.
 
 ### Image Versions
 

@@ -16,8 +16,8 @@
 
 稳定默认镜像仍是 `newfuture/ddns` / `ghcr.io/newfuture/ddns`，不会被 Rust
 镜像替换。Rust V5 在 `v5` 分支开发，目前只构建 Linux amd64/arm64
-OCI 工件，不推送公共镜像。它直接运行 `ddns-rs`，不包含 Python 镜像的
-内置定时任务。可从分支源码本地构建：
+OCI 工件，不推送公共镜像。它直接运行 `ddns-rs`，不包含 Python 镜像的 cron
+入口；默认单次同步，`web` 模式提供进程内定时同步。可从分支源码本地构建：
 
 ```bash
 docker build -f docker/rust.Dockerfile -t ddns-rs:v5-dev .
@@ -25,6 +25,33 @@ docker run --rm ddns-rs:v5-dev --help
 ```
 
 V5 尚未发布，暂不提供公共 `latest` / `next` Rust 镜像入口。
+
+Web 示例（先准备含 `config.json` 的本地 `config/` 目录，并在 shell 中设置私密的
+`DDNS_HTTP_TOKEN`）：
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 \
+  -v "$PWD/config:/ddns" ddns-rs:v5-dev \
+  web -c /ddns/config.json --host 0.0.0.0 --port 8000 \
+  --http-token "$DDNS_HTTP_TOKEN" --http-origin http://127.0.0.1:8000 --interval 5
+```
+
+容器内的非回环监听也必须设置 token；仅将发布端口绑定主机回环地址，客户端使用
+Bearer token 鉴权。若需远程访问，应使用可信 TLS 反向代理或隧道，并按需重复
+`--http-origin ORIGIN`。控制台与 `/mcp` 共用监听器和服务；独立 MCP HTTP 可改用
+`mcp -c /ddns/config.json --transport http` 并保留相同监听/鉴权选项。
+stdio MCP 使用 `docker run --rm -i`（不要分配 TTY），挂载配置后运行 `mcp -c /ddns/config.json`。
+
+Web/MCP 仅接受单个本地配置。保存及备份/恢复需要容器非 root 用户 `ddns` 对挂载目录
+有写权限；请按部署环境配置权限，不要将其设为全局可写。配置 API 会返回完整配置，
+包括凭据；配置、备份和监听 token 都应保密。镜像只内嵌明确列出的公共 Web 资源与
+字段模型，不复制用户配置。构建必须从仓库根目录提供上下文。
+监听 token 授予敏感配置访问与 DNS 更新权限。Web 同步会以容器用户身份执行
+本地配置中的 `cmd:`/`shell:` 规则，只应向可信管理员授予访问权限。
+
+进程内调度间隔为 1..1440 分钟；退出容器即停止。尚未实现 `task` 或系统任务
+检测/接管，启用前必须手动停用旧 Python/主机任务。兼容限制和详细选项见
+[Rust V5 开发文档](dev/rust.md)。以下镜像版本和默认 cron 行为仅适用于稳定 Python 镜像。
 
 ### 镜像版本
 

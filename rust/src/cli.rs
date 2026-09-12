@@ -9,6 +9,8 @@ pub const HELP: &str = "\
 DDNS Rust client
 
 Usage: ddns-rs [OPTIONS]
+       ddns-rs web [OPTIONS]
+       ddns-rs mcp [OPTIONS]
 
 Options:
   -c, --config <FILE>...       Load local or remote configuration files
@@ -361,8 +363,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_mvp_subcommands() {
-        let error = parse(["ddns-rs", "web"]).unwrap_err();
+    fn rejects_unsupported_task_command() {
+        let error = parse(["ddns-rs", "task"]).unwrap_err();
         assert!(error.to_string().contains("not supported"));
     }
 

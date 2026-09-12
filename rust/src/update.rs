@@ -82,128 +82,17 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
         Ok(response.body)
     };
     let configs = config::load(&options, &environment, &fetch)?;
-    let mut failures = Vec::new();
-
-    for (index, config) in configs.iter().enumerate() {
-        let secrets = provider_secrets(config.provider, &config.id, &config.token);
-        let logger = match Logger::new(
-            config.log.level,
-            config.log.file.as_deref(),
-            secrets.clone(),
-        ) {
-            Ok(logger) => logger,
-            Err(error) => {
-                let logger = Logger::stderr(config.log.level, secrets);
-                let message = masked_error(&logger, &error);
-                logger.error("config", format!("failed to configure log file: {message}"));
-                failures.push(format!("configuration {} log setup: {message}", index + 1));
-                logger
-            }
-        };
-        if config.log.format.is_some() || config.log.date_format.is_some() {
-            logger.warning(
-                "config",
-                "custom Python log format strings are accepted but not rendered by the Rust MVP",
-            );
-        }
-        if [&config.index4, &config.index6].iter().any(|rules| {
-            matches!(
-                rules,
-                AddressRules::Rules(rules)
-                    if rules
-                        .iter()
-                        .any(|rule| rule.starts_with("cmd:") || rule.starts_with("shell:"))
-            )
-        }) {
-            logger.warning(
-                "config",
-                "cmd: and shell: address rules execute local commands; use only trusted configuration sources",
-            );
-        }
-        logger.info(
-            "ddns",
-            format!(
-                "running configuration {}/{} with provider {}",
-                index + 1,
-                configs.len(),
-                config.provider
-            ),
-        );
-        let client = UreqClient::new(logger.clone(), config.tls.clone());
-        let mut provider = match provider::build(config, &client, logger.clone()) {
-            Ok(provider) => provider,
-            Err(error) => {
-                let message = masked_error(&logger, &error);
-                logger.error("ddns", &message);
-                failures.push(format!("configuration {}: {message}", index + 1));
-                continue;
-            }
-        };
-        let mut cache = match Cache::open(
-            &config.cache,
-            &config.cache_identity(),
-            config.cache_max_age,
-            logger.clone(),
-        ) {
-            Ok(cache) => cache,
-            Err(error) => {
-                let message = masked_error(&logger, &error);
-                logger.error("cache", &message);
-                failures.push(format!("configuration {} cache: {message}", index + 1));
-                None
-            }
-        };
-
-        for (family, rules, domains) in [
-            (AddressFamily::V4, &config.index4, &config.ipv4),
-            (AddressFamily::V6, &config.index6, &config.ipv6),
-        ] {
-            let AddressRules::Rules(rules) = rules else {
-                continue;
-            };
-            if domains.is_empty() {
-                continue;
-            }
-            let address = match ip::resolve(family, rules, &client, &logger) {
-                Ok(address) => address,
-                Err(error) => {
-                    let message = masked_error(&logger, &error);
-                    logger.error("ip", &message);
-                    failures.push(format!(
-                        "configuration {} {} discovery: {message}",
-                        index + 1,
-                        family.record_type()
-                    ));
-                    continue;
-                }
-            };
-            failures.extend(
-                update_domains(
-                    provider.as_mut(),
-                    config.provider,
-                    cache.as_mut(),
-                    family,
-                    address,
-                    domains,
-                    config.ttl,
-                    config.line.as_deref(),
-                    &config.extra,
-                    &logger,
-                )
-                .into_iter()
-                .map(|failure| format!("configuration {} {failure}", index + 1)),
-            );
-        }
-
-        if let Some(cache) = &mut cache
-            && let Err(error) = cache.sync()
-        {
-            let message = masked_error(&logger, &error);
-            logger.error("cache", &message);
-            failures.push(format!("configuration {} cache sync: {message}", index + 1));
-        }
-    }
-
+    let outcomes = update_configs_with_output(&configs, &|| false, true);
+    let failures: Vec<_> = outcomes
+        .iter()
+        .enumerate()
+        .flat_map(|(index, outcome)| {
+            outcome
+                .failures
+                .iter()
+                .map(move |failure| format!("configuration {} {failure}", index + 1))
+        })
+        .collect();
     if failures.is_empty() {
         Ok(())
     } else {
@@ -213,6 +102,180 @@ fn run_options(options: cli::CliOptions) -> Result<()> {
             failures.join(" | ")
         )))
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct UpdatedRecord {
+    pub domain: String,
+    pub record_type: &'static str,
+    pub address: String,
+    pub changed: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct UpdateOutcome {
+    pub failures: Vec<String>,
+    pub records: Vec<UpdatedRecord>,
+    pub cancelled: bool,
+}
+
+pub fn update_configs(
+    configs: &[config::Config],
+    cancelled: &(dyn Fn() -> bool + Sync),
+) -> Vec<UpdateOutcome> {
+    update_configs_with_output(configs, cancelled, false)
+}
+
+fn update_configs_with_output(
+    configs: &[config::Config],
+    cancelled: &(dyn Fn() -> bool + Sync),
+    emit_debug: bool,
+) -> Vec<UpdateOutcome> {
+    let mut outcomes = Vec::new();
+    for config in configs {
+        let outcome = update_config_with_output(config, cancelled, emit_debug);
+        let stopped = outcome.cancelled;
+        outcomes.push(outcome);
+        if stopped {
+            break;
+        }
+    }
+    outcomes
+}
+
+pub fn update_config(
+    config: &config::Config,
+    cancelled: &(dyn Fn() -> bool + Sync),
+) -> UpdateOutcome {
+    update_config_with_output(config, cancelled, false)
+}
+
+fn update_config_with_output(
+    config: &config::Config,
+    cancelled: &(dyn Fn() -> bool + Sync),
+    emit_debug: bool,
+) -> UpdateOutcome {
+    let mut result = UpdateOutcome::default();
+    if cancelled() {
+        result.cancelled = true;
+        return result;
+    }
+    let secrets = provider_secrets(config.provider, &config.id, &config.token);
+    let logger = match Logger::new(
+        config.log.level,
+        config.log.file.as_deref(),
+        secrets.clone(),
+    ) {
+        Ok(logger) => logger,
+        Err(error) => {
+            let logger = Logger::stderr(config.log.level, secrets);
+            let message = masked_error(&logger, &error);
+            logger.error("config", format!("failed to configure log file: {message}"));
+            result.failures.push(format!("log setup: {message}"));
+            logger
+        }
+    };
+    if config.log.format.is_some() || config.log.date_format.is_some() {
+        logger.warning(
+            "config",
+            "custom Python log format strings are accepted but not rendered by the Rust MVP",
+        );
+    }
+    if [&config.index4, &config.index6].iter().any(|rules| {
+        matches!(
+            rules,
+            AddressRules::Rules(rules)
+                if rules
+                    .iter()
+                    .any(|rule| rule.starts_with("cmd:") || rule.starts_with("shell:"))
+        )
+    }) {
+        logger.warning(
+            "config",
+            "cmd: and shell: address rules execute local commands; use only trusted configuration sources",
+        );
+    }
+    logger.info("ddns", format!("running provider {}", config.provider));
+    let client = UreqClient::new(logger.clone(), config.tls.clone());
+    let mut provider =
+        match provider::build_with_output(config, &client, logger.clone(), emit_debug) {
+            Ok(provider) => provider,
+            Err(error) => {
+                let message = masked_error(&logger, &error);
+                logger.error("ddns", &message);
+                result.failures.push(message);
+                return result;
+            }
+        };
+    let mut cache = match Cache::open(
+        &config.cache,
+        &config.cache_identity(),
+        config.cache_max_age,
+        logger.clone(),
+    ) {
+        Ok(cache) => cache,
+        Err(error) => {
+            let message = masked_error(&logger, &error);
+            logger.error("cache", &message);
+            result.failures.push(format!("cache: {message}"));
+            None
+        }
+    };
+
+    for (family, rules, domains) in [
+        (AddressFamily::V4, &config.index4, &config.ipv4),
+        (AddressFamily::V6, &config.index6, &config.ipv6),
+    ] {
+        if cancelled() {
+            result.cancelled = true;
+            break;
+        }
+        let AddressRules::Rules(rules) = rules else {
+            continue;
+        };
+        if domains.is_empty() {
+            continue;
+        }
+        let address = match ip::resolve(family, rules, &client, &logger) {
+            Ok(address) => address,
+            Err(error) => {
+                let message = masked_error(&logger, &error);
+                logger.error("ip", &message);
+                result
+                    .failures
+                    .push(format!("{} discovery: {message}", family.record_type()));
+                continue;
+            }
+        };
+        let domain_result = update_domains(
+            provider.as_mut(),
+            config.provider,
+            cache.as_mut(),
+            family,
+            address,
+            domains,
+            config.ttl,
+            config.line.as_deref(),
+            &config.extra,
+            &logger,
+            cancelled,
+        );
+        result.failures.extend(domain_result.failures);
+        result.records.extend(domain_result.records);
+        if domain_result.cancelled {
+            result.cancelled = true;
+            break;
+        }
+    }
+
+    if let Some(cache) = &mut cache
+        && let Err(error) = cache.sync()
+    {
+        let message = masked_error(&logger, &error);
+        logger.error("cache", &message);
+        result.failures.push(format!("cache sync: {message}"));
+    }
+    result
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -227,10 +290,15 @@ fn update_domains(
     line: Option<&str>,
     extra: &std::collections::BTreeMap<String, serde_json::Value>,
     logger: &Logger,
-) -> Vec<String> {
-    let mut failures = Vec::new();
+    cancelled: &(dyn Fn() -> bool + Sync),
+) -> UpdateOutcome {
+    let mut result = UpdateOutcome::default();
     let address = address.to_string();
     for domain in domains {
+        if cancelled() {
+            result.cancelled = true;
+            break;
+        }
         let domain = domain.to_ascii_lowercase();
         if cache
             .as_deref()
@@ -246,6 +314,12 @@ fn update_domains(
                     address
                 ),
             );
+            result.records.push(UpdatedRecord {
+                domain,
+                record_type: family.record_type(),
+                address: address.clone(),
+                changed: false,
+            });
             continue;
         }
         let request = RecordRequest {
@@ -267,6 +341,12 @@ fn update_domains(
                         address
                     ),
                 );
+                result.records.push(UpdatedRecord {
+                    domain: domain.clone(),
+                    record_type: family.record_type(),
+                    address: address.clone(),
+                    changed: true,
+                });
                 if let Some(cache) = cache.as_deref_mut() {
                     cache.set(provider_id, &domain, family.record_type(), &address);
                 }
@@ -281,11 +361,13 @@ fn update_domains(
                         family.record_type()
                     ),
                 );
-                failures.push(format!("{}[{}]: {message}", domain, family.record_type()));
+                result
+                    .failures
+                    .push(format!("{}[{}]: {message}", domain, family.record_type()));
             }
         }
     }
-    failures
+    result
 }
 
 fn masked_error(logger: &Logger, error: &impl std::fmt::Display) -> String {
@@ -393,7 +475,9 @@ mod tests {
             None,
             &BTreeMap::new(),
             &logger,
-        );
+            &|| false,
+        )
+        .failures;
         assert_eq!(provider.calls, vec!["fail.example.com", "ok.example.com"]);
         assert_eq!(failures.len(), 1);
         assert!(failures[0].contains("fail.example.com"));
