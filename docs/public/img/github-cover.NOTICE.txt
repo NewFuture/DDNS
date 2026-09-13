@@ -46,7 +46,7 @@ ClouDNS source layout: https://www.cloudns.net/css/new-style.css?ver=51758
 No-IP image source: Homarr Dashboard Icons, Apache License 2.0. RGB was changed to white; alpha is unchanged.
 No-IP and ClouDNS are embedded PNG silhouettes in the SVG, not vector traces.
 Official provider marks remain the property of their respective owners; no trademark license or endorsement is implied.
-The Dashboard Icons Apache license is included in the downloadable ZIP.
+The Dashboard Icons Apache license is reproduced below.
 
 No-IP icon collection license:
                                  Apache License
