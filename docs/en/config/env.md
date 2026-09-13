@@ -390,7 +390,7 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   export DDNS_CACHE="/tmp/ddns.cache"
   ```
 
-`DDNS_CACHE_MAX_AGE` controls whole-file expiry in seconds. Expiry is checked on the next invocation; the exact boundary is stale and a future mtime is stale. It is not DNS TTL. The cache remains flat JSON with one mtime, so any content write refreshes every entry; no migration is performed and shared-cache limitations are unchanged.
+`DDNS_CACHE_MAX_AGE` controls whole-file expiry in seconds. Expiry is checked on the next invocation; the exact boundary is stale, as is an mtime more than 2 seconds ahead of the system clock. An mtime up to 2 seconds ahead is treated as age zero to accommodate filesystem and clock precision differences; `0` still clears an existing cache every time. It is not DNS TTL. The cache remains flat JSON with one mtime, so any content write refreshes every entry; no migration is performed and shared-cache limitations are unchanged.
 
 ### Web and HTTP MCP
 

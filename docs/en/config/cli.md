@@ -87,7 +87,7 @@ ddns --ipv4=example.com,www.example.com
 | `--log_format`  |    String   | Log format string (compatible with Python `logging` module)                                                                                                               | `--log_format="%(asctime)s:%(message)s"`                 |
 | `--log_datefmt` |    String   | Date/time format string for logs                                                                                                                                          | `--log_datefmt="%Y-%m-%d %H:%M:%S"`                      |
 
-`--cache-max-age` controls whole-file cache expiry, in seconds. The default is 259200 (72 hours). On the next invocation, a cache is stale when `now - mtime >= cache_max_age` or its mtime is in the future; `0` clears an existing cache every time. This is distinct from DNS TTL. The flat JSON file has one mtime, so any cache write refreshes the age for every entry. The format is unchanged and no migration is performed; existing shared-cache limitations remain.
+`--cache-max-age` controls whole-file cache expiry, in seconds. The default is 259200 (72 hours). On the next invocation, a cache is stale when `now - mtime >= cache_max_age` or its mtime is more than 2 seconds ahead of the system clock. An mtime up to 2 seconds ahead is treated as age zero to accommodate filesystem and clock precision differences; `0` still clears an existing cache every time. This is distinct from DNS TTL. The flat JSON file has one mtime, so any cache write refreshes the age for every entry. The format is unchanged and no migration is performed; existing shared-cache limitations remain.
 
 #### Task Subcommand Parameters
 

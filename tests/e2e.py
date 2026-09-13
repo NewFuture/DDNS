@@ -807,13 +807,13 @@ class TestMcpE2E(OfflineE2ETestCase):
             for request_id in (1, 2)
         ]
 
-        _, responses = self._run_mcp(config_path, requests)
+        result, responses = self._run_mcp(config_path, requests)
 
         for response in responses:
             self.assertTrue(response["result"]["isError"])
             self.assertIn("Synchronization failed", response["result"]["content"][0]["text"])
-        self.assertEqual(len(self.fixture_state.requests_for("/callback/ok.example.com")), 1)
-        self.assertEqual(len(self.fixture_state.requests_for("/callback/fail.example.com")), 2)
+        self.assertEqual(len(self.fixture_state.requests_for("/callback/ok.example.com")), 1, result.stderr)
+        self.assertEqual(len(self.fixture_state.requests_for("/callback/fail.example.com")), 2, result.stderr)
 
     def test_modern_discovery_tools_update_and_cached_status(self):
         """Discover tools, synchronize dual-stack records, and read cached status."""

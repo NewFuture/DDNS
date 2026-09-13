@@ -1,0 +1,115 @@
+[
+  {
+    "name": "alibabacloud",
+    "source": "https://github.com/simple-icons/simple-icons/blob/777807a262bb7384ff406fd4b35fdcd02e9514c3/icons/alibabacloud.svg",
+    "gitBlob": "e0a1e9d1f9ae85be73427bd64d61e1fc7189be9f",
+    "license": "CC0-1.0",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  },
+  {
+    "name": "tencentcloud",
+    "source": "https://github.com/lobehub/lobe-icons/blob/a94750e3f5f8fc33757b839d85030e742284e43a/packages/static-svg/icons/tencentcloud.svg",
+    "gitBlob": "c14c91b4060f5c3efa54dd513280bb7ddb0db3a3",
+    "license": "MIT",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  },
+  {
+    "name": "huawei",
+    "source": "https://github.com/simple-icons/simple-icons/blob/777807a262bb7384ff406fd4b35fdcd02e9514c3/icons/huawei.svg",
+    "gitBlob": "0c72bab82edfc97cb2e8b885c40b63910ffd3e61",
+    "license": "CC0-1.0",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  },
+  {
+    "name": "dnspod",
+    "source": "https://cloudcache.tencent-cloud.com/qcloud/ui/dnspod/gateway/global/css/images/logo-min_3a0.svg",
+    "sha256": "2e17962f11bb47e35e115efb41332f438aa68a809d5a406671126d1889ec275e",
+    "license": "Official brand asset; rights retained by its owner",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "visible source path unchanged"
+    }
+  },
+  {
+    "name": "cloudns",
+    "source": "https://www.cloudns.net/i/sprite_optimized.png",
+    "sha256": "ff53809d818e8ce4f9f95e63ef35adacd90452b78b81718153024b3c980040f5",
+    "license": "Official brand asset; rights retained by its owner",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "source alpha silhouette preserved",
+      "format": "embedded PNG",
+      "crop": [
+        1,
+        2,
+        91,
+        44
+      ]
+    }
+  },
+  {
+    "name": "namesilo",
+    "source": "https://github.com/simple-icons/simple-icons/blob/777807a262bb7384ff406fd4b35fdcd02e9514c3/icons/namesilo.svg",
+    "gitBlob": "4fe3b2b4e1946ad8f0705d7feb890bc8c423c0d5",
+    "license": "CC0-1.0",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  },
+  {
+    "name": "noip",
+    "source": "https://github.com/homarr-labs/dashboard-icons/blob/f651f5798c7d58bff3cff4d3a9c4645d87657bbd/png/no-ip.png",
+    "sha256": "64c2ef3f64cd505de1042d8c89ed4cd362afe259e942f137cf12f6bde5484583",
+    "license": "Apache-2.0 (icon collection); trademark rights retained",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "source alpha silhouette preserved",
+      "format": "embedded PNG",
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ]
+    }
+  },
+  {
+    "name": "modelcontextprotocol",
+    "source": "https://github.com/simple-icons/simple-icons/blob/777807a262bb7384ff406fd4b35fdcd02e9514c3/icons/modelcontextprotocol.svg",
+    "gitBlob": "b01b160e21db8d310ecb484b58229305c155edce",
+    "license": "CC0-1.0",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  },
+  {
+    "name": "docker",
+    "source": "https://github.com/simple-icons/simple-icons/blob/777807a262bb7384ff406fd4b35fdcd02e9514c3/icons/docker.svg",
+    "gitBlob": "0021a8a7b34c50389e48d7035b19067f2d909fe3",
+    "license": "CC0-1.0",
+    "presentation": {
+      "fill": "#FFFFFF",
+      "background": "#2F84EB",
+      "geometry": "unchanged"
+    }
+  }
+]

@@ -222,7 +222,7 @@ The `cache` parameter is used to configure DNS record caching method. The follow
 
 ### cache_max_age
 
-The whole cache file is evaluated by its mtime, in seconds, with a default of 259200 (72 hours). On the next invocation, `now - mtime >= cache_max_age` or a future mtime is stale; `0` clears an existing cache every time. The cache remains the original flat JSON without per-record timestamps or migration. Because the file has one mtime, any cache content write refreshes the age for every entry; shared-cache limitations are unchanged.
+The whole cache file is evaluated by its mtime, in seconds, with a default of 259200 (72 hours). On the next invocation, `now - mtime >= cache_max_age` or an mtime more than 2 seconds ahead of the system clock is stale. To accommodate filesystem and clock precision differences, an mtime up to 2 seconds ahead is treated as age zero; `0` still clears an existing cache every time. The cache remains the original flat JSON without per-record timestamps or migration. Because the file has one mtime, any cache content write refreshes the age for every entry; shared-cache limitations are unchanged.
 
 ### log
 
