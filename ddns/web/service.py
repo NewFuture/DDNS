@@ -16,6 +16,7 @@ import threading
 import time
 from ast import literal_eval
 
+from ..cache import CACHE_MTIME_TOLERANCE_SECONDS
 from ..config.config import Config, split_array_string
 from ..config.env import load_config as load_env_config
 from ..config.file import DEFAULT_CONFIG_PATHS, _flatten_single_config, _process_multi_providers
@@ -69,7 +70,6 @@ PROVIDER_LABELS = {provider["id"]: provider["name"] for provider in CONFIG_MODEL
 DOMAIN_PATTERN = re.compile(CONFIG_RULES["domainPattern"])
 PROXY_PATTERN = re.compile(CONFIG_RULES["proxyPattern"])
 LOG_LEVELS = tuple(CONFIG_RULES["logLevels"])
-CACHE_MTIME_TOLERANCE_SECONDS = 2
 ADDRESS_SOURCE_NAMES = set(CONFIG_RULES["addressSourceNames"])
 ADDRESS_SOURCE_PREFIXES = tuple(CONFIG_RULES["addressSourcePrefixes"])
 FALSE_ALIASES = tuple(CONFIG_RULES["falseAliases"])

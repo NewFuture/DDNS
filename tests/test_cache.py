@@ -669,7 +669,7 @@ class TestCache(unittest.TestCase):
 
     @patch("ddns.cache.time")
     def test_cache_new_custom_max_age_and_boundary(self, mock_time):
-        """Test custom age, exact expiry boundary, and future mtimes."""
+        """Test exact expiry and future mtimes beyond the clock-skew tolerance."""
         import json
         import logging
 
@@ -687,10 +687,28 @@ class TestCache(unittest.TestCase):
         with open(self.cache_file, "w") as data:
             json.dump({"record": "1.2.3.4"}, data)
         with patch("ddns.cache.stat") as mock_stat:
-            mock_stat.return_value.st_mtime = 1001
+            mock_stat.return_value.st_mtime = 1002.001
             cache = Cache.new(self.cache_file, "hash", logger, 100)
         self.assertEqual(len(cache), 0)
         cache.close()
+
+    @patch("ddns.cache.time", return_value=1000)
+    def test_cache_new_keeps_records_with_small_future_mtime(self, mock_time):
+        """Filesystem clock precision must not cause duplicate successful updates."""
+        import json
+        import logging
+
+        records = {"ok.example.com:A": "192.0.2.1"}
+        with open(self.cache_file, "w") as data:
+            json.dump(records, data)
+        with patch("ddns.cache.stat") as mock_stat:
+            for ahead in (0.0001, 0.015625, 0.5, 2.0):
+                mock_stat.return_value.st_mtime = 1000 + ahead
+                cache = Cache.new(self.cache_file, "hash", logging.getLogger("test_logger"), 100)
+                try:
+                    self.assertEqual(cache.get(None), records, "mtime ahead by {} seconds".format(ahead))
+                finally:
+                    cache.close()
 
     @patch("ddns.cache.time")
     def test_cache_new_zero_age_clears_existing_cache(self, mock_time):
@@ -698,14 +716,17 @@ class TestCache(unittest.TestCase):
         import json
         import logging
 
-        with open(self.cache_file, "w") as data:
-            json.dump({"a": 1, "b": 2}, data)
         mock_time.return_value = 1000
         with patch("ddns.cache.stat") as mock_stat:
-            mock_stat.return_value.st_mtime = 1000
-            cache = Cache.new(self.cache_file, "hash", logging.getLogger("test_logger"), 0)
-        self.assertEqual(len(cache), 0)
-        cache.close()
+            for mtime in (1000, 1000.5, 1002):
+                with open(self.cache_file, "w") as data:
+                    json.dump({"a": 1, "b": 2}, data)
+                mock_stat.return_value.st_mtime = mtime
+                cache = Cache.new(self.cache_file, "hash", logging.getLogger("test_logger"), 0)
+                try:
+                    self.assertEqual(len(cache), 0, "mtime: {}".format(mtime))
+                finally:
+                    cache.close()
 
 
 if __name__ == "__main__":
