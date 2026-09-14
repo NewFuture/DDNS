@@ -398,7 +398,7 @@ python -m unittest tests.test_ip -v
 python -m unittest discover tests -v
 python -m pytest tests/ -v  # optional, when pytest is installed
 ruff check .
-ruff format --check .
+ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
 ```
 
 Inspect proposed lint and formatting fixes and limit them to files touched by the task.
@@ -438,7 +438,7 @@ Common checks:
 - Proxy/network issue: compare with `ddns/util/http.py`; use `--proxy=DIRECT` or `--ssl=false` only as diagnostics.
 - Schema mismatch: update `schema/v4.1.json` and matching config tests together.
 - Test failure: inspect mock return values and `mock_http.call_args`.
-- Linting issue: run `ruff check .` and `ruff format --check .`, then review fixes only for the affected files.
+- Linting issue: run `ruff check .` and the scoped format check above, then review fixes only for the affected files.
 
 ```bash
 python -m ddns --debug --dns=myprovider --ipv4=test.com
