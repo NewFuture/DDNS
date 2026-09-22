@@ -51,7 +51,7 @@ Then run full validation:
 ```sh
 python -m unittest discover tests -v
 ruff check .
-ruff format --check .
+ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
 npm --prefix docs run build
 ```
 

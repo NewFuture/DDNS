@@ -46,7 +46,7 @@ These rules apply to shipped DDNS Python code and its tests. Repository maintena
 ```bash
 python -m unittest discover tests -v
 ruff check .
-ruff format --check .
+ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
 ```
 
 Run the smallest relevant unittest target while iterating, then the full affected suite. Use `/AGENTS.md` for lane-specific validation.

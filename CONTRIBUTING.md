@@ -26,7 +26,7 @@
 python -m unittest discover tests -v
 python -m unittest tests.e2e -v
 ruff check .
-ruff format --check .
+ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
 npm --prefix docs ci
 npm --prefix docs run build
 ```

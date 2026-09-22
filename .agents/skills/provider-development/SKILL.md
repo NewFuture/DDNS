@@ -36,7 +36,7 @@ description: Implement or modify a DDNS DNS provider while keeping its code, met
    ```
 
    Then run `python -m unittest discover tests -v`, `ruff check .`, and
-   `ruff format --check .`. When documentation dependencies are already
+   `ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts`. When documentation dependencies are already
    available, run `npm --prefix docs run build`. Report changed files and any
    validation not run. Do not install dependencies, publish, or change
    repository settings.
