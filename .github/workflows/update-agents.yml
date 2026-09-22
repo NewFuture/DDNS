@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh extension install github/gh-aw --pin v0.88.2
+          gh extension install github/gh-aw --pin v0.89.9
           gh aw compile auto-reply-issue --strict --no-check-update
           git diff --exit-code -- .github/workflows/auto-reply-issue.lock.yml .github/aw/actions-lock.json
 
