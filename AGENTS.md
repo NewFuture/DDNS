@@ -328,52 +328,79 @@ Read the current workflows and Dockerfiles instead of relying on remembered vers
 
 ## Testing & Validation
 
-Use the smallest relevant check first, then broaden:
+Run the smallest useful test first, then broaden when shared behavior changed.
 
 ```bash
-python -m unittest tests.test_<area> -v
+python -m unittest tests.test_provider_cloudflare -v
+python -m unittest tests.test_config_config -v
+python -m unittest tests.test_ip -v
 python -m unittest discover tests -v
+python -m pytest tests/ -v  # optional, when pytest is installed
+ruff check .
+ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
+```
+
+Inspect proposed lint and formatting fixes and limit them to files touched by the task.
+
+Use these focused targets as a guide:
+
+- Provider: `python -m unittest tests.test_provider_<provider> -v`
+- Config/schema: `python -m unittest discover tests -p "test_config*.py" -v`
+- IP/HTTP: `python -m unittest tests.test_ip tests.test_util_http tests.test_util_http_retry tests.test_util_http_proxy_list -v`
+- Scheduler: `python -m unittest tests.test_scheduler_<name> -v`
+- Broad shared change: `python -m unittest discover tests -v`
+
+For touched files or examples:
+
+```bash
+python -m py_compile ddns/provider/myprovider.py
+python -m json.tool config.json
+```
+
+Provider tests should import from `base_test`; other tests should import from `tests/__init__.py`. Mock HTTP calls and assert request details, response parsing, and error handling.
+
+Additional lane checks, with scope and boundaries described in [Source execution and validation](#source-execution-and-validation):
+
+```bash
 python -m unittest tests.e2e -v
+python -m unittest tests.test_web tests.test_mcp tests.test_mcp_http -v
 python .github/scripts/update_agents_structure.py --check
 python tools/check.py --changed
 python tools/check.py --providers
-ruff check .
-ruff format --check ddns tests/*.py run.py .github/patch.py tools .github/scripts
 npm --prefix docs ci
 npm --prefix docs run build
 ```
 
-`tests.e2e` is a separate offline suite and is not included in unittest discovery. `tools/check.py --changed` selects lane-specific checks from committed, staged, unstaged, and untracked changes; use `--all` for the complete check set. Provider tests use helpers from `tests/base_test.py`; other tests use `tests/__init__.py`.
-
 The documentation commands require the locked dependencies from `docs/package-lock.json`. CI prepares Python 3.12, Node 24, and Ruff 0.16.2; local validation should use equivalent tools when available. The repository has no Makefile or pre-commit configuration.
-
-For focused examples:
-
-```bash
-python -m unittest tests.test_provider_cloudflare -v
-python -m unittest tests.test_web tests.test_mcp tests.test_mcp_http -v
-python -m unittest discover tests -p "test_config*.py" -v
-python -m py_compile ddns/provider/myprovider.py
-```
 
 ---
 
 ## Troubleshooting
 
-1. Reproduce with the smallest command or deterministic fixture.
-2. Locate the affected layer: configuration, IP detection, provider, HTTP, cache, scheduler, Web, or MCP.
-3. Read the nearest passing test and similar implementation.
-4. Fix the root cause, add regression coverage for behavior changes, and rerun focused validation.
+1. Reproduce with the smallest command, fixture, or unit test.
+2. Locate the layer: config parsing, IP detection, provider mapping, HTTP transport, cache, or scheduler.
+3. Read the nearest passing test and nearest similar implementation.
+4. Fix root cause, add a regression test when behavior changed, and re-run focused validation.
 
 Common checks:
 
-- Entry points: `python -m ddns --help`, `python run.py --help`.
-- Provider parity: `python tools/check.py --providers`.
-- Schema/config mismatch: update `schema/v4.1.json` and related config tests and docs together.
-- Stale local state: remove only the relevant temporary cache while debugging; do not use destructive Git recovery.
-- Network/provider failures: use mocked or offline tests, never live credentials.
+- Import error: file exists, provider registered, test path setup uses `tests/__init__.py` or `tests/base_test.py`.
+- Syntax error: remove Python 3-only syntax and keep Python 2.7 compatibility.
+- Auth/signature issue: verify credential shape and signing with mocked tests; never print real tokens.
+- Record not updated: inspect cache, record type, line, TTL, domain split, and provider response parsing.
+- Proxy/network issue: compare with `ddns/util/http.py`; use `--proxy=DIRECT` or `--ssl=false` only as diagnostics.
+- Schema mismatch: update `schema/v4.1.json` and matching config tests together.
+- Test failure: inspect mock return values and `mock_http.call_args`.
+- Linting issue: run `ruff check .` and the scoped format check above, then review fixes only for the affected files.
 
-Preserve user changes, avoid unrelated formatting, and report validation that could not run.
+```bash
+python -m ddns --debug --dns=myprovider --ipv4=test.com
+python -m ddns --debug --log_file=debug.log
+python -m ddns --dns=debug --ipv4=test.com --debug
+rm -f /tmp/ddns.cache
+```
+
+Use cache removal only when debugging stale local state. Avoid destructive git recovery unless the user explicitly requests it.
 
 ---
 
