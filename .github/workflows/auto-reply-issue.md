@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 timeout-minutes: 10
 # Copilot uses the short-lived Actions token; no personal token secret is needed.
-# Recompile with gh-aw v0.88.2: gh aw compile auto-reply-issue
+# Recompile with gh-aw v0.89.17: gh aw compile auto-reply-issue --strict --no-check-update
 engine:
   id: copilot
   version: "1.0.83"
