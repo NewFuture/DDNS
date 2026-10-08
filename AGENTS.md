@@ -368,6 +368,7 @@ python .github/scripts/update_agents_structure.py --check
 python tools/check.py --changed
 python tools/check.py --providers
 npm --prefix docs ci
+npm --prefix docs run test:studio
 npm --prefix docs run build
 ```
 
@@ -421,5 +422,5 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 ---
 
 **Version**: 2.0.0
-**Last Updated**: 2026-09-22
+**Last Updated**: 2026-10-06
 **Maintained by**: DDNS Project Contributors
