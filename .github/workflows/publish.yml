@@ -162,7 +162,7 @@ jobs:
       - name: Test run.py
         run: python3 ./run.py -h
       - name: Build onefile executable
-        uses: Nuitka/Nuitka-Action@v1.4
+        uses: Nuitka/Nuitka-Action@v1.5
         with:
           nuitka-version: 4.2
           script-name: run.py
@@ -194,7 +194,7 @@ jobs:
         run: tests/scripts/test-task-macos.sh "./dist/ddns"
       - name: Build Windows standalone application
         if: runner.os == 'Windows'
-        uses: Nuitka/Nuitka-Action@v1.4
+        uses: Nuitka/Nuitka-Action@v1.5
         with:
           nuitka-version: 4.2
           script-name: run.py
