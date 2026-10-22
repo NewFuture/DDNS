@@ -669,15 +669,15 @@ class TestCache(unittest.TestCase):
 
     @patch("ddns.cache.time")
     def test_cache_new_custom_max_age_and_boundary(self, mock_time):
-        """Test custom age, exact expiry boundary, and future mtimes."""
+        """Test custom age, exact expiry, and small future file-time skew."""
         import json
         import logging
 
-        with open(self.cache_file, "w") as data:
-            json.dump({"record": "1.2.3.4"}, data)
         logger = logging.getLogger("test_logger")
         mock_time.return_value = 1000
 
+        with open(self.cache_file, "w") as data:
+            json.dump({"record": "1.2.3.4"}, data)
         with patch("ddns.cache.stat") as mock_stat:
             mock_stat.return_value.st_mtime = 900
             cache = Cache.new(self.cache_file, "hash", logger, 100)
@@ -687,7 +687,15 @@ class TestCache(unittest.TestCase):
         with open(self.cache_file, "w") as data:
             json.dump({"record": "1.2.3.4"}, data)
         with patch("ddns.cache.stat") as mock_stat:
-            mock_stat.return_value.st_mtime = 1001
+            mock_stat.return_value.st_mtime = 1002
+            cache = Cache.new(self.cache_file, "hash", logger, 100)
+        self.assertEqual(cache.get("record"), "1.2.3.4")
+        cache.close()
+
+        with open(self.cache_file, "w") as data:
+            json.dump({"record": "1.2.3.4"}, data)
+        with patch("ddns.cache.stat") as mock_stat:
+            mock_stat.return_value.st_mtime = 1003
             cache = Cache.new(self.cache_file, "hash", logger, 100)
         self.assertEqual(len(cache), 0)
         cache.close()
