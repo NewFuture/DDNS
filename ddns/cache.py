@@ -10,6 +10,9 @@ from json import load, dump
 from tempfile import gettempdir
 from time import time
 
+# Windows file timestamps can be slightly ahead of time().
+CACHE_MTIME_TOLERANCE_SECONDS = 2
+
 
 class Cache(dict):
     """
@@ -175,7 +178,8 @@ class Cache(dict):
             logger.debug("Cache is disabled!")
         else:
             now = time()
-            expired = cache.time > now or now - cache.time >= cache_max_age
+            age = now - min(cache.time, now)
+            expired = cache.time - now > CACHE_MTIME_TOLERANCE_SECONDS or age >= cache_max_age
             if expired:
                 logger.info("Cache file is outdated.")
                 cache.clear()

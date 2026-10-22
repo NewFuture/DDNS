@@ -109,6 +109,7 @@ test_startup_signal_forwarding() {
     docker stop --time 5 "$signal_container" >/dev/null
     if [ ! -f "$signal_dir/terminated" ]; then
         echo "Tini did not forward SIGTERM to the initial DDNS process group" >&2
+        docker logs "$signal_container" >&2 || true
         exit 1
     fi
 
