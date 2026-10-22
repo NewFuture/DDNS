@@ -330,6 +330,8 @@ Read the current workflows and Dockerfiles instead of relying on remembered vers
 
 Run the smallest useful test first, then broaden when shared behavior changed.
 
+Full discovery includes public-network tests in `tests/test_util_http.py` and `tests/test_config_file_remote.py`; it is not an offline suite. Use focused offline tests and `tests.e2e` when public network access is not allowed.
+
 ```bash
 python -m unittest tests.test_provider_cloudflare -v
 python -m unittest tests.test_config_config -v
@@ -350,13 +352,6 @@ Use these focused targets as a guide:
 - Scheduler: `python -m unittest tests.test_scheduler_<name> -v`
 - Broad shared change: `python -m unittest discover tests -v`
 
-For touched files or examples:
-
-```bash
-python -m py_compile ddns/provider/myprovider.py
-python -m json.tool config.json
-```
-
 Provider tests should import from `base_test`; other tests should import from `tests/__init__.py`. Mock HTTP calls and assert request details, response parsing, and error handling.
 
 Additional lane checks, with scope and boundaries described in [Source execution and validation](#source-execution-and-validation):
@@ -364,6 +359,7 @@ Additional lane checks, with scope and boundaries described in [Source execution
 ```bash
 python -m unittest tests.e2e -v
 python -m unittest tests.test_web tests.test_mcp tests.test_mcp_http -v
+python -m unittest discover tools/tests -p "test_*.py" -v
 python .github/scripts/update_agents_structure.py --check
 python tools/check.py --changed
 python tools/check.py --providers
@@ -394,14 +390,9 @@ Common checks:
 - Test failure: inspect mock return values and `mock_http.call_args`.
 - Linting issue: run `ruff check .` and the scoped format check above, then review fixes only for the affected files.
 
-```bash
-python -m ddns --debug --dns=myprovider --ipv4=test.com
-python -m ddns --debug --log_file=debug.log
-python -m ddns --dns=debug --ipv4=test.com --debug
-rm -f /tmp/ddns.cache
-```
+Use the offline E2E suite above for a CLI smoke test; `--debug` alone does not prevent live updates.
 
-Use cache removal only when debugging stale local state. Avoid destructive git recovery unless the user explicitly requests it.
+Use `--cache=false` to bypass stale local state. The default cache is `ddns.<hash>.cache` under `tempfile.gettempdir()`, or a configured custom path; use debug logs to identify the actual file before removing it. Avoid destructive git recovery unless the user explicitly requests it.
 
 ---
 
@@ -422,5 +413,5 @@ Use cache removal only when debugging stale local state. Avoid destructive git r
 ---
 
 **Version**: 2.0.0
-**Last Updated**: 2026-10-06
+**Last Updated**: 2026-10-19
 **Maintained by**: DDNS Project Contributors
